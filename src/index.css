@@ -63,6 +63,7 @@ All colors MUST be HSL.
     --shadow-soft: 0 4px 6px -1px hsl(var(--brand-blue) / 0.1);
     --shadow-card: 0 10px 15px -3px hsl(var(--brand-blue) / 0.1);
     --shadow-hero: 0 20px 25px -5px hsl(var(--brand-blue) / 0.15);
+    --shadow-glow: 0 0 40px hsl(var(--brand-blue) / 0.3);
 
     /* Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -146,6 +147,10 @@ All colors MUST be HSL.
 
   .shadow-hero {
     box-shadow: var(--shadow-hero);
+  }
+
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
   }
 
   .transition-smooth {

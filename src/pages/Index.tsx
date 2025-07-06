@@ -118,6 +118,7 @@ export default function Index() {
       <ChatWidget
         isOpen={chatOpen}
         onToggle={handleToggleChat}
+        initialMessage={chatMessage}
       />
     </div>
   );
