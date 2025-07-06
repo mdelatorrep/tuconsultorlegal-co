@@ -312,7 +312,7 @@ export default function UnifiedDocumentPage({ onOpenChat }: UnifiedDocumentPageP
     await updateDocumentStatus('descargado');
     
     // Generate PDF download
-    generatePDFDownload(documentData);
+    generatePDFDownload(documentData, toast);
   };
 
   const handleSendObservations = async () => {

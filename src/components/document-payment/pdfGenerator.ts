@@ -1,8 +1,6 @@
 import jsPDF from 'jspdf';
-import { useToast } from "@/hooks/use-toast";
 
-export const generatePDFDownload = (documentData: any) => {
-  const { toast } = useToast();
+export const generatePDFDownload = (documentData: any, toast?: (options: any) => void) => {
   
   try {
     // Create a new PDF document
@@ -76,19 +74,23 @@ export const generatePDFDownload = (documentData: any) => {
     // Save the PDF
     doc.save(fileName);
 
-    toast({
-      title: "¡Descarga exitosa!",
-      description: `El documento "${documentData.document_type}" se ha descargado correctamente.`,
-    });
+    if (toast) {
+      toast({
+        title: "¡Descarga exitosa!",
+        description: `El documento "${documentData.document_type}" se ha descargado correctamente.`,
+      });
+    }
 
     return true;
   } catch (error) {
     console.error('Error generando PDF:', error);
-    toast({
-      title: "Error en la descarga",
-      description: "Ocurrió un error al generar el documento PDF. Intenta nuevamente.",
-      variant: "destructive",
-    });
+    if (toast) {
+      toast({
+        title: "Error en la descarga",
+        description: "Ocurrió un error al generar el documento PDF. Intenta nuevamente.",
+        variant: "destructive",
+      });
+    }
     return false;
   }
 };
