@@ -5,6 +5,7 @@ import ChatWidget from "@/components/ChatWidget";
 import HomePage from "@/components/HomePage";
 import PersonasPage from "@/components/PersonasPage";
 import DocumentPaymentPage from "@/components/DocumentPaymentPage";
+import DocumentStatusPage from "@/components/DocumentStatusPage";
 import EmptyPage from "@/components/EmptyPage";
 
 export default function Index() {
@@ -84,6 +85,8 @@ export default function Index() {
         );
       case "documento-pago":
         return <DocumentPaymentPage onOpenChat={handleOpenChat} />;
+      case "estado-documento":
+        return <DocumentStatusPage onOpenChat={handleOpenChat} />;
       case "terminos":
         return <EmptyPage title="Términos y Condiciones" />;
       case "privacidad":

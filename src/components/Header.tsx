@@ -14,6 +14,8 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
   const navItems = [
     { id: "personas", label: "Para Personas" },
     { id: "empresas", label: "Para Empresas" },
+    { id: "documento-pago", label: "Verificar y Pagar" },
+    { id: "estado-documento", label: "Estado de Documento" },
     { id: "precios", label: "Precios" },
     { id: "blog", label: "Blog" },
     { id: "contacto", label: "Contacto" },
