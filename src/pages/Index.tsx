@@ -7,6 +7,8 @@ import PersonasPage from "@/components/PersonasPage";
 import DocumentPaymentPage from "@/components/DocumentPaymentPage";
 import DocumentStatusPage from "@/components/DocumentStatusPage";
 import EmptyPage from "@/components/EmptyPage";
+import BlogPage from "@/components/BlogPage";
+import BlogArticlePage from "@/components/BlogArticlePage";
 
 export default function Index() {
   const [currentPage, setCurrentPage] = useState("home");
@@ -70,12 +72,13 @@ export default function Index() {
           />
         );
       case "blog":
-        return (
-          <EmptyPage
-            title="Blog Legal"
-            subtitle="Artículos y guías para entender mejor tus derechos y deberes en Colombia."
-          />
-        );
+        return <BlogPage onOpenChat={handleOpenChat} onNavigate={handleNavigate} />;
+      case "blog-articulo-arriendo":
+        return <BlogArticlePage articleId="arriendo" onOpenChat={handleOpenChat} onNavigate={handleNavigate} />;
+      case "blog-articulo-despido":
+        return <BlogArticlePage articleId="despido" onOpenChat={handleOpenChat} onNavigate={handleNavigate} />;
+      case "blog-articulo-vehiculo":
+        return <BlogArticlePage articleId="vehiculo" onOpenChat={handleOpenChat} onNavigate={handleNavigate} />;
       case "contacto":
         return (
           <EmptyPage
