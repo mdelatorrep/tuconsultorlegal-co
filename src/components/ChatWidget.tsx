@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Button } from "./ui/button";
-import { MessageCircle, X, AlertCircle } from "lucide-react";
+import { Scale, X, AlertCircle } from "lucide-react";
 import { createChat } from '@n8n/chat';
 
 interface ChatWidgetProps {
@@ -123,7 +123,7 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
         className="fixed bottom-6 right-6 w-16 h-16 bg-primary hover:bg-primary-light text-primary-foreground rounded-full shadow-hero flex items-center justify-center transition-bounce z-[9999] md:w-20 md:h-20"
         aria-label="Abrir chat de asistencia legal"
       >
-        <MessageCircle size={28} className="md:w-8 md:h-8" />
+        <Scale size={28} className="md:w-8 md:h-8" />
       </button>
     );
   }
