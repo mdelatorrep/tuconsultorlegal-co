@@ -6,67 +6,27 @@ export const generatePDFDownload = (documentData: any, toast?: (options: any) =>
     // Create a new PDF document
     const doc = new jsPDF();
     
-    // Set document properties
-    doc.setProperties({
-      title: documentData.document_type,
-      subject: `Documento Legal - ${documentData.document_type}`,
-      author: 'Tu Consultor Legal',
-      creator: 'Tu Consultor Legal'
-    });
-
-    // Add header
-    doc.setFontSize(20);
-    doc.setFont(undefined, 'bold');
-    doc.text(documentData.document_type, 20, 30);
-    
-    // Add document info
+    // Set font to Arial and font size to 12
+    doc.setFont('Arial', 'normal');
     doc.setFontSize(12);
-    doc.setFont(undefined, 'normal');
-    doc.text(`Código: ${documentData.token}`, 20, 45);
-    doc.text(`Fecha: ${new Date().toLocaleDateString('es-CO')}`, 20, 55);
+    doc.setTextColor(0, 0, 0); // Black text
     
-    if (documentData.user_name) {
-      doc.text(`Cliente: ${documentData.user_name}`, 20, 65);
-    }
-    
-    // Add separator line
-    doc.line(20, 75, 190, 75);
-    
-    // Add document content
-    doc.setFontSize(11);
+    // Get document content
     const content = documentData.document_content || 'Contenido del documento no disponible';
     
-    // Split content into lines that fit the page width
+    // Split content into lines that fit the page width (with proper margins)
     const splitContent = doc.splitTextToSize(content, 170);
-    let yPosition = 90;
+    let yPosition = 25; // Start near top of page
     
     splitContent.forEach((line: string) => {
       // Check if we need a new page
       if (yPosition > 270) {
         doc.addPage();
-        yPosition = 30;
+        yPosition = 25;
       }
       doc.text(line, 20, yPosition);
-      yPosition += 6;
+      yPosition += 7; // Line spacing for 12pt font
     });
-    
-    // Add footer on last page
-    const pageCount = doc.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      doc.setFontSize(8);
-      doc.setTextColor(128, 128, 128);
-      doc.text(
-        `Documento generado por Tu Consultor Legal - Página ${i} de ${pageCount}`,
-        20,
-        285
-      );
-      doc.text(
-        `${new Date().toLocaleDateString('es-CO')} ${new Date().toLocaleTimeString('es-CO')}`,
-        20,
-        290
-      );
-    }
     
     // Generate filename
     const fileName = `${documentData.document_type.replace(/\s+/g, '_')}_${documentData.token}_${Date.now()}.pdf`;
