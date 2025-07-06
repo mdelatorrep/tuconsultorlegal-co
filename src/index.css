@@ -8,50 +8,73 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Base Colors */
+    --background: 248 250 252; /* gray-50 */
+    --foreground: 30 41 59; /* slate-700 */
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 30 41 59;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 30 41 59;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Brand Colors - Legal Blue Theme */
+    --primary: 30 58 138; /* blue-800 brand color */
+    --primary-light: 37 99 235; /* blue-600 */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Success/CTA Colors - Emerald */
+    --success: 5 150 105; /* emerald-500 */
+    --success-dark: 4 120 87; /* emerald-600 */
+    --success-foreground: 0 0% 100%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Secondary Colors */
+    --secondary: 241 245 249; /* slate-100 */
+    --secondary-foreground: 30 58 138;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --muted: 248 250 252; /* gray-50 */
+    --muted-foreground: 100 116 139; /* slate-500 */
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --accent: 241 245 249;
+    --accent-foreground: 30 58 138;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --destructive: 239 68 68; /* red-500 */
+    --destructive-foreground: 0 0% 100%;
 
-    --radius: 0.5rem;
+    --border: 226 232 240; /* slate-200 */
+    --input: 226 232 240;
+    --ring: 30 58 138;
+
+    --radius: 0.75rem;
+
+    /* Legal Theme Specific Colors */
+    --legal-blue: 30 58 138; /* Primary brand blue */
+    --legal-blue-light: 37 99 235;
+    --legal-emerald: 5 150 105;
+    --legal-emerald-dark: 4 120 87;
+    --legal-gray-light: 248 250 252;
+    --legal-text-light: 148 163 184; /* slate-400 */
+
+    /* Gradients */
+    --gradient-hero: linear-gradient(135deg, hsl(var(--legal-blue)), hsl(var(--legal-blue-light)));
+    --gradient-card: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--muted)) 100%);
+
+    /* Shadows */
+    --shadow-soft: 0 4px 6px -1px hsl(var(--legal-blue) / 0.1);
+    --shadow-card: 0 10px 15px -3px hsl(var(--legal-blue) / 0.1);
+    --shadow-hero: 0 20px 25px -5px hsl(var(--legal-blue) / 0.15);
+
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.2s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
@@ -101,5 +124,52 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* Legal Theme Custom Styles */
+  .hero-gradient {
+    background: var(--gradient-hero);
+  }
+
+  .card-gradient {
+    background: var(--gradient-card);
+  }
+
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+
+  .shadow-hero {
+    box-shadow: var(--shadow-hero);
+  }
+
+  .transition-smooth {
+    transition: var(--transition-smooth);
+  }
+
+  .transition-bounce {
+    transition: var(--transition-bounce);
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Page transitions */
+  .page-enter {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  .page-enter-active {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
   }
 }

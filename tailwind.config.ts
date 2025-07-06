@@ -26,6 +26,7 @@ export default {
 				foreground: 'hsl(var(--foreground))',
 				primary: {
 					DEFAULT: 'hsl(var(--primary))',
+					light: 'hsl(var(--primary-light))',
 					foreground: 'hsl(var(--primary-foreground))'
 				},
 				secondary: {
@@ -52,6 +53,19 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				success: {
+					DEFAULT: 'hsl(var(--success))',
+					dark: 'hsl(var(--success-dark))',
+					foreground: 'hsl(var(--success-foreground))'
+				},
+				legal: {
+					blue: 'hsl(var(--legal-blue))',
+					'blue-light': 'hsl(var(--legal-blue-light))',
+					emerald: 'hsl(var(--legal-emerald))',
+					'emerald-dark': 'hsl(var(--legal-emerald-dark))',
+					'gray-light': 'hsl(var(--legal-gray-light))',
+					'text-light': 'hsl(var(--legal-text-light))'
+				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
@@ -62,6 +76,9 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				}
+			},
+			fontFamily: {
+				sans: ['Inter', 'sans-serif'],
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

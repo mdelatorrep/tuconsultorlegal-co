@@ -1,14 +1,114 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState, useEffect } from "react";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import ChatWidget from "@/components/ChatWidget";
+import HomePage from "@/components/HomePage";
+import PersonasPage from "@/components/PersonasPage";
+import EmptyPage from "@/components/EmptyPage";
 
-const Index = () => {
+export default function Index() {
+  const [currentPage, setCurrentPage] = useState("home");
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatMessage, setChatMessage] = useState<string>("");
+
+  // Handle browser navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      const hash = window.location.hash.replace("#", "") || "home";
+      setCurrentPage(hash);
+    };
+
+    // Set initial page from URL
+    const initialHash = window.location.hash.replace("#", "") || "home";
+    setCurrentPage(initialHash);
+
+    // Listen for browser back/forward
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  const handleNavigate = (page: string) => {
+    setCurrentPage(page);
+    window.history.pushState(null, "", `#${page}`);
+    window.scrollTo(0, 0);
+  };
+
+  const handleOpenChat = (message?: string) => {
+    if (message) {
+      setChatMessage(message);
+    }
+    setChatOpen(true);
+  };
+
+  const handleToggleChat = () => {
+    setChatOpen(!chatOpen);
+    if (chatOpen) {
+      setChatMessage("");
+    }
+  };
+
+  const renderCurrentPage = () => {
+    switch (currentPage) {
+      case "home":
+        return <HomePage onOpenChat={handleOpenChat} />;
+      case "personas":
+        return <PersonasPage onOpenChat={handleOpenChat} />;
+      case "empresas":
+        return (
+          <EmptyPage
+            title="Impulso Legal para tu Empresa"
+            subtitle="Soluciones legales diseñadas para PyMEs, startups y emprendedores. Formaliza, protege y haz crecer tu negocio con seguridad jurídica."
+          />
+        );
+      case "precios":
+        return (
+          <EmptyPage
+            title="Planes y Precios Flexibles"
+            subtitle="Elige el plan que mejor se adapte a tus necesidades. Sin contratos a largo plazo, sin costos ocultos."
+          />
+        );
+      case "blog":
+        return (
+          <EmptyPage
+            title="Blog Legal"
+            subtitle="Artículos y guías para entender mejor tus derechos y deberes en Colombia."
+          />
+        );
+      case "contacto":
+        return (
+          <EmptyPage
+            title="Contáctanos"
+            subtitle="¿Tienes preguntas sobre nuestros servicios o necesitas soporte? Estamos aquí para ayudarte."
+          />
+        );
+      case "terminos":
+        return <EmptyPage title="Términos y Condiciones" />;
+      case "privacidad":
+        return <EmptyPage title="Política de Privacidad" />;
+      default:
+        return <HomePage onOpenChat={handleOpenChat} />;
+    }
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen bg-background">
+      <Header
+        currentPage={currentPage}
+        onNavigate={handleNavigate}
+        onOpenChat={handleOpenChat}
+      />
+      
+      <main className="page-enter page-enter-active">
+        {renderCurrentPage()}
+      </main>
+
+      <Footer onNavigate={handleNavigate} />
+
+      <ChatWidget
+        isOpen={chatOpen}
+        onToggle={handleToggleChat}
+        initialMessage={chatMessage}
+      />
     </div>
   );
-};
-
-export default Index;
+}
