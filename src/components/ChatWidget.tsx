@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { MessageCircle, X, AlertCircle } from "lucide-react";
 
@@ -10,7 +10,40 @@ interface ChatWidgetProps {
 
 export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWidgetProps) {
   const [iframeError, setIframeError] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const iframeSrc = "https://buildera.app.n8n.cloud/webhook/a9c21cdd-8709-416a-a9c1-3b615b7e9f6b/chat";
+
+  const handleIframeLoad = () => {
+    setIsLoading(false);
+    setIframeError(false);
+  };
+
+  const handleIframeError = () => {
+    setIsLoading(false);
+    setIframeError(true);
+  };
+
+  // Reset loading state when chat opens
+  useEffect(() => {
+    if (isOpen) {
+      setIsLoading(true);
+      setIframeError(false);
+    }
+  }, [isOpen]);
+
+  // Timeout para detectar si el iframe no carga en 10 segundos
+  useEffect(() => {
+    if (isOpen && isLoading) {
+      const timeout = setTimeout(() => {
+        if (isLoading) {
+          setIsLoading(false);
+          setIframeError(true);
+        }
+      }, 10000);
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [isOpen, isLoading]);
 
   if (!isOpen) {
     return (
@@ -39,23 +72,38 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
             </p>
             <Button 
               variant="outline" 
-              onClick={() => setIframeError(false)}
+              onClick={() => {
+                setIframeError(false);
+                setIsLoading(true);
+              }}
               className="text-sm"
             >
               Reintentar
             </Button>
           </div>
         ) : (
-          <iframe
-            src={iframeSrc}
-            title="LexiLegal Chat"
-            className="w-full h-full"
-            style={{ border: "none", borderRadius: "0 0 0.5rem 0.5rem" }}
-            onError={() => setIframeError(true)}
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation-by-user-activation"
-            referrerPolicy="no-referrer-when-downgrade"
-            allow="microphone; camera; geolocation; payment; fullscreen"
-          />
+          <>
+            {isLoading && (
+              <div className="flex items-center justify-center h-full">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            )}
+            <iframe
+              src={iframeSrc}
+              title="LexiLegal Chat"
+              className="w-full h-full"
+              style={{ 
+                border: "none", 
+                borderRadius: "0 0 0.5rem 0.5rem",
+                display: isLoading ? "none" : "block"
+              }}
+              onLoad={handleIframeLoad}
+              onError={handleIframeError}
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation-by-user-activation"
+              referrerPolicy="no-referrer-when-downgrade"
+              allow="microphone; camera; geolocation; payment; fullscreen"
+            />
+          </>
         )}
       </div>
     </div>
