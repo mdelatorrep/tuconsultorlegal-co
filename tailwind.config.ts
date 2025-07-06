@@ -58,13 +58,13 @@ export default {
 					dark: 'hsl(var(--success-dark))',
 					foreground: 'hsl(var(--success-foreground))'
 				},
-				legal: {
-					blue: 'hsl(var(--legal-blue))',
-					'blue-light': 'hsl(var(--legal-blue-light))',
-					emerald: 'hsl(var(--legal-emerald))',
-					'emerald-dark': 'hsl(var(--legal-emerald-dark))',
-					'gray-light': 'hsl(var(--legal-gray-light))',
-					'text-light': 'hsl(var(--legal-text-light))'
+				brand: {
+					blue: 'hsl(var(--brand-blue))',
+					'blue-light': 'hsl(var(--brand-blue-light))',
+					orange: 'hsl(var(--brand-orange))',
+					'orange-dark': 'hsl(var(--brand-orange-dark))',
+					'gray-light': 'hsl(var(--brand-gray-light))',
+					'text-light': 'hsl(var(--brand-text-light))'
 				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
@@ -78,7 +78,7 @@ export default {
 				}
 			},
 			fontFamily: {
-				sans: ['Inter', 'sans-serif'],
+				sans: ['Montserrat', 'sans-serif'],
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

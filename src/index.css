@@ -9,60 +9,60 @@ All colors MUST be HSL.
 @layer base {
   :root {
     /* Base Colors */
-    --background: 248 250 252; /* gray-50 */
-    --foreground: 30 41 59; /* slate-700 */
+    --background: 0 0% 100%; /* blanco principal */
+    --foreground: 0 0% 0%; /* negro neutro */
 
     --card: 0 0% 100%;
-    --card-foreground: 30 41 59;
+    --card-foreground: 0 0% 0%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 30 41 59;
+    --popover-foreground: 0 0% 0%;
 
-    /* Brand Colors - Legal Blue Theme */
-    --primary: 30 58 138; /* blue-800 brand color */
-    --primary-light: 37 99 235; /* blue-600 */
+    /* Brand Colors - Electric Blue Theme */
+    --primary: 233 49% 46%; /* azul eléctrico #3C46B2 */
+    --primary-light: 233 60% 60%; /* azul eléctrico más claro */
     --primary-foreground: 0 0% 100%;
 
-    /* Success/CTA Colors - Emerald */
-    --success: 5 150 105; /* emerald-500 */
-    --success-dark: 4 120 87; /* emerald-600 */
+    /* Action/CTA Colors - Orange Red */
+    --success: 13 87% 58%; /* rojo naranja #F15438 */
+    --success-dark: 13 87% 50%; /* rojo naranja más oscuro */
     --success-foreground: 0 0% 100%;
 
     /* Secondary Colors */
-    --secondary: 241 245 249; /* slate-100 */
-    --secondary-foreground: 30 58 138;
+    --secondary: 0 0% 85%; /* gris claro #D8D8D8 */
+    --secondary-foreground: 0 0% 0%;
 
-    --muted: 248 250 252; /* gray-50 */
-    --muted-foreground: 100 116 139; /* slate-500 */
+    --muted: 0 0% 85%; /* gris claro */
+    --muted-foreground: 0 0% 40%; /* gris medio */
 
-    --accent: 241 245 249;
-    --accent-foreground: 30 58 138;
+    --accent: 0 0% 85%;
+    --accent-foreground: 0 0% 0%;
 
-    --destructive: 239 68 68; /* red-500 */
+    --destructive: 0 62% 50%; /* rojo destructivo */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 226 232 240; /* slate-200 */
-    --input: 226 232 240;
-    --ring: 30 58 138;
+    --border: 0 0% 85%; /* gris claro */
+    --input: 0 0% 85%;
+    --ring: 233 49% 46%;
 
     --radius: 0.75rem;
 
-    /* Legal Theme Specific Colors */
-    --legal-blue: 30 58 138; /* Primary brand blue */
-    --legal-blue-light: 37 99 235;
-    --legal-emerald: 5 150 105;
-    --legal-emerald-dark: 4 120 87;
-    --legal-gray-light: 248 250 252;
-    --legal-text-light: 148 163 184; /* slate-400 */
+    /* Brand Theme Specific Colors */
+    --brand-blue: 233 49% 46%; /* azul eléctrico principal */
+    --brand-blue-light: 233 60% 60%;
+    --brand-orange: 13 87% 58%; /* rojo naranja */
+    --brand-orange-dark: 13 87% 50%;
+    --brand-gray-light: 0 0% 85%;
+    --brand-text-light: 0 0% 60%;
 
     /* Gradients */
-    --gradient-hero: linear-gradient(135deg, hsl(var(--legal-blue)), hsl(var(--legal-blue-light)));
+    --gradient-hero: linear-gradient(135deg, hsl(var(--brand-blue)), hsl(var(--brand-blue-light)));
     --gradient-card: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--muted)) 100%);
 
     /* Shadows */
-    --shadow-soft: 0 4px 6px -1px hsl(var(--legal-blue) / 0.1);
-    --shadow-card: 0 10px 15px -3px hsl(var(--legal-blue) / 0.1);
-    --shadow-hero: 0 20px 25px -5px hsl(var(--legal-blue) / 0.15);
+    --shadow-soft: 0 4px 6px -1px hsl(var(--brand-blue) / 0.1);
+    --shadow-card: 0 10px 15px -3px hsl(var(--brand-blue) / 0.1);
+    --shadow-hero: 0 20px 25px -5px hsl(var(--brand-blue) / 0.15);
 
     /* Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -124,7 +124,7 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Montserrat', sans-serif;
   }
 
   /* Legal Theme Custom Styles */

@@ -8,7 +8,7 @@ export default function Footer({ onNavigate }: FooterProps) {
   };
 
   return (
-    <footer className="bg-legal-blue text-primary-foreground">
+    <footer className="bg-brand-blue text-primary-foreground">
       <div className="container mx-auto px-6 py-12">
         <div className="grid md:grid-cols-4 gap-8">
           {/* Brand */}

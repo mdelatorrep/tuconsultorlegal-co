@@ -128,7 +128,7 @@ export default function PersonasPage({ onOpenChat }: PersonasPageProps) {
                 <div className="p-8 pt-0">
                   <p className="text-xl font-bold text-success mb-6">{service.price}</p>
                   <Button
-                    variant="legal"
+                    variant="success"
                     className="w-full"
                     onClick={() => onOpenChat(service.message)}
                   >
@@ -151,7 +151,7 @@ export default function PersonasPage({ onOpenChat }: PersonasPageProps) {
               nuestro asistente de IA puede darte una primera orientación confiable.
             </p>
             <Button
-              variant="legal"
+              variant="success"
               size="lg"
               onClick={() => onOpenChat("Tengo una duda legal y necesito asesoría.")}
             >
