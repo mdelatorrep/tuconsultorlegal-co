@@ -14,49 +14,49 @@ interface DocumentPaymentPageProps {
 }
 
 export default function DocumentPaymentPage({ onOpenChat }: DocumentPaymentPageProps) {
-  const [token, setToken] = useState("");
+  const [trackingCode, setTrackingCode] = useState("");
   const [documentData, setDocumentData] = useState<any>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
-  const [tokenError, setTokenError] = useState("");
+  const [trackingCodeError, setTrackingCodeError] = useState("");
   const { toast } = useToast();
 
-  // Check for token in URL params on load
+  // Check for tracking code in URL params on load
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const urlToken = urlParams.get('token');
+    const urlTrackingCode = urlParams.get('code');
     
-    if (urlToken) {
-      setToken(urlToken);
-      handleVerifyToken(urlToken);
+    if (urlTrackingCode) {
+      setTrackingCode(urlTrackingCode);
+      handleVerifyTrackingCode(urlTrackingCode);
     }
   }, []);
 
-  const handleVerifyToken = async (tokenToVerify?: string) => {
-    const tokenValue = tokenToVerify || token;
+  const handleVerifyTrackingCode = async (codeToVerify?: string) => {
+    const codeValue = codeToVerify || trackingCode;
     
-    if (!tokenValue.trim()) {
-      setTokenError("Por favor ingresa un token válido");
+    if (!codeValue.trim()) {
+      setTrackingCodeError("Por favor ingresa un código de seguimiento válido");
       return;
     }
 
     setIsVerifying(true);
-    setTokenError("");
+    setTrackingCodeError("");
 
     try {
       const { data, error } = await supabase
         .from('document_tokens')
         .select('*')
-        .eq('token', tokenValue.trim())
+        .eq('token', codeValue.trim())
         .single();
 
       if (error || !data) {
-        setTokenError("Token no encontrado. Verifica que sea correcto.");
+        setTrackingCodeError("Código no encontrado. Verifica que sea correcto.");
         setDocumentData(null);
         toast({
-          title: "Token inválido",
-          description: "El token ingresado no existe o ha expirado.",
+          title: "Código inválido",
+          description: "El código de seguimiento ingresado no existe o ha expirado.",
           variant: "destructive",
         });
         return;
@@ -69,16 +69,16 @@ export default function DocumentPaymentPage({ onOpenChat }: DocumentPaymentPageP
 
       setDocumentData(data);
       toast({
-        title: "Token verificado",
+        title: "Código verificado",
         description: `Documento "${data.document_type}" encontrado correctamente.`,
       });
 
     } catch (error) {
-      console.error('Error verificando token:', error);
-      setTokenError("Error al verificar el token. Intenta nuevamente.");
+      console.error('Error verificando código:', error);
+      setTrackingCodeError("Error al verificar el código. Intenta nuevamente.");
       toast({
         title: "Error de verificación",
-        description: "Ocurrió un error al verificar el token.",
+        description: "Ocurrió un error al verificar el código de seguimiento.",
         variant: "destructive",
       });
     } finally {
@@ -262,55 +262,55 @@ startxref
             Verifica y Adquiere tu Documento
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Ingresa tu token de verificación para acceder a tu documento personalizado.
+            Ingresa tu código de seguimiento para acceder a tu documento personalizado.
           </p>
         </div>
 
-        {/* Token Verification Section */}
+        {/* Tracking Code Verification Section */}
         {!documentData && (
           <Card className="shadow-card mb-8">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Search className="h-5 w-5 text-primary" />
-                Verificación de Token
+                Verificación de Código de Seguimiento
               </CardTitle>
               <CardDescription>
-                Ingresa el token que recibiste por correo electrónico para acceder a tu documento.
+                Ingresa el código de seguimiento que recibiste por correo electrónico para acceder a tu documento.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="token">Token de Verificación</Label>
+                <Label htmlFor="trackingCode">Código de Seguimiento</Label>
                 <Input
-                  id="token"
+                  id="trackingCode"
                   type="text"
                   placeholder="Ej: ABC123DEF456"
-                  value={token}
-                  onChange={(e) => setToken(e.target.value.toUpperCase())}
-                  className={tokenError ? "border-destructive" : ""}
+                  value={trackingCode}
+                  onChange={(e) => setTrackingCode(e.target.value.toUpperCase())}
+                  className={trackingCodeError ? "border-destructive" : ""}
                 />
-                {tokenError && (
+                {trackingCodeError && (
                   <p className="text-sm text-destructive flex items-center gap-2">
                     <AlertCircle className="h-4 w-4" />
-                    {tokenError}
+                    {trackingCodeError}
                   </p>
                 )}
               </div>
               <Button
-                onClick={() => handleVerifyToken()}
-                disabled={isVerifying || !token.trim()}
+                onClick={() => handleVerifyTrackingCode()}
+                disabled={isVerifying || !trackingCode.trim()}
                 className="w-full"
                 size="lg"
               >
                 {isVerifying ? (
                   <>
                     <div className="animate-spin h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full" />
-                    Verificando Token...
+                    Verificando Código...
                   </>
                 ) : (
                   <>
                     <Search className="h-4 w-4 mr-2" />
-                    Verificar Token
+                    Verificar Código
                   </>
                 )}
               </Button>
@@ -318,7 +318,7 @@ startxref
           </Card>
         )}
 
-        {/* Document Content - Only show if token is verified */}
+        {/* Document Content - Only show if tracking code is verified */}
         {documentData && (
           <div className="grid md:grid-cols-2 gap-8">
             {/* Document Preview Card */}
