@@ -32,7 +32,7 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
           },
           target: chatContainer.current,
           
-          // Modo de visualización del chat. 'fullscreen' evita botones de conversación
+          // Modo fullscreen sin elementos adicionales
           mode: 'fullscreen',
 
           // Claves que se enviarán al webhook.
@@ -44,17 +44,14 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
           
           metadata: {},
 
-          // Inicia directamente en la conversación, sin pantalla de bienvenida.
+          // Ocultar pantalla de bienvenida para evitar duplicados
           showWelcomeScreen: false,
 
           // Establece el idioma por defecto a español.
           defaultLanguage: 'en',
 
-          // Mensajes iniciales que Lexi dirá al abrir el chat.
-          initialMessages: [
-            '👋 ¡Hola! Bienvenido(a) a tuconsultorlegal.co. Soy Lexi, tu asistente legal con Inteligencia Artificial.',
-            '¿Cómo te puedo ayudar hoy?\n\n1️⃣ Crear un documento legal\n2️⃣ Resolver una duda legal'
-          ],
+          // Sin mensajes iniciales para evitar duplicación
+          initialMessages: [],
 
           // Textos de la interfaz del chat en español.
           i18n: {
@@ -70,13 +67,15 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
 
           // Estilos personalizados para que coincida con la web
           theme: {
-            '--chat--color-primary': 'hsl(233 49% 46%)', // Azul principal del sitio
-            '--chat--color-secondary': 'hsl(13 87% 58%)', // Orange del sitio
+            '--chat--color-primary': 'hsl(233 49% 46%)',
+            '--chat--color-secondary': 'hsl(13 87% 58%)',
             '--chat--header--background': 'linear-gradient(135deg, hsl(233 49% 46%) 0%, hsl(233 60% 60%) 100%)',
             '--chat--message--user--background': 'hsl(13 87% 58%)',
             '--chat--font-family': "'Montserrat', sans-serif",
             '--chat--border-radius': '0.75rem',
             '--chat--spacing': '1rem',
+            '--chat--input--background': 'hsl(0 0% 100%)',
+            '--chat--input--border': 'hsl(0 0% 85%)',
           }
         });
 
