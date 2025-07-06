@@ -40,7 +40,7 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
 
       // Add initial message if provided
       if (initialMessage) {
-        setTimeout(() => {
+        setTimeout(async () => {
           setMessages(prev => [
             ...prev,
             {
@@ -50,8 +50,32 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
             },
           ]);
 
-          // Simulate bot response
-          setTimeout(() => {
+          // Send initial message to webhook
+          try {
+            const response = await fetch("https://buildera.app.n8n.cloud/webhook/a9c21cdd-8709-416a-a9c1-3b615b7e9f6b/chat", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                message: initialMessage,
+              }),
+            });
+
+            if (response.ok) {
+              const data = await response.text();
+              setMessages(prev => [
+                ...prev,
+                {
+                  text: data || `Entendido. Estoy procesando tu solicitud sobre "${initialMessage.slice(0, 30)}...". Por favor, dame un momento.`,
+                  sender: "bot",
+                  timestamp: Date.now(),
+                },
+              ]);
+            } else {
+              throw new Error("Error en la respuesta del servidor");
+            }
+          } catch (error) {
             setMessages(prev => [
               ...prev,
               {
@@ -60,13 +84,13 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
                 timestamp: Date.now(),
               },
             ]);
-          }, 1000);
+          }
         }, 500);
       }
     }
   }, [isOpen, initialMessage]);
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (inputValue.trim()) {
       const userMessage: Message = {
         text: inputValue.trim(),
@@ -75,17 +99,39 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
       };
 
       setMessages(prev => [...prev, userMessage]);
+      const messageText = inputValue.trim();
       setInputValue("");
 
-      // Simulate bot response
-      setTimeout(() => {
-        const botMessage: Message = {
-          text: "Gracias por tu mensaje. Estoy analizando tu consulta. Recuerda que esta es una simulación. El agente de IA real procesaría tu solicitud aquí.",
+      try {
+        const response = await fetch("https://buildera.app.n8n.cloud/webhook/a9c21cdd-8709-416a-a9c1-3b615b7e9f6b/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message: messageText,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.text();
+          const botMessage: Message = {
+            text: data || "He recibido tu mensaje y estoy procesándolo.",
+            sender: "bot",
+            timestamp: Date.now(),
+          };
+          setMessages(prev => [...prev, botMessage]);
+        } else {
+          throw new Error("Error en la respuesta del servidor");
+        }
+      } catch (error) {
+        const errorMessage: Message = {
+          text: "Lo siento, hubo un problema al procesar tu mensaje. Por favor, inténtalo de nuevo.",
           sender: "bot",
           timestamp: Date.now(),
         };
-        setMessages(prev => [...prev, botMessage]);
-      }, 1500);
+        setMessages(prev => [...prev, errorMessage]);
+      }
     }
   };
 
