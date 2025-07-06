@@ -48,7 +48,7 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
           showWelcomeScreen: false,
 
           // Establece el idioma por defecto a español.
-          defaultLanguage: 'es',
+          defaultLanguage: 'en',
 
           // Mensajes iniciales que Lexi dirá al abrir el chat.
           initialMessages: [
@@ -57,15 +57,16 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
           ],
 
           // Textos de la interfaz del chat en español.
-          i18n: {
-            es: {
-              title: 'Lexi, tu Asistente Legal ⚖️',
-              subtitle: 'Resuelve tus dudas o crea documentos legales al instante.',
-              footer: 'Con tecnología de tuconsultorlegal.co',
-              getStarted: 'Nueva Conversación',
-              inputPlaceholder: 'Escribe tu consulta aquí...',
-            },
-          },
+           i18n: {
+             es: {
+               title: 'Lexi, tu Asistente Legal ⚖️',
+               subtitle: 'Resuelve tus dudas o crea documentos legales al instante.',
+               footer: 'Con tecnología de tuconsultorlegal.co',
+               getStarted: 'Nueva Conversación',
+               inputPlaceholder: 'Escribe tu consulta aquí...',
+               closeButtonTooltip: 'Cerrar chat',
+             },
+           },
 
           // Estilos personalizados para que coincida con la web
           theme: {
