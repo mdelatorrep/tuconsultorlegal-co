@@ -54,6 +54,7 @@ export const useBoldCheckout = (documentData: any) => {
             merchantId: 'XMS1CF62IB',
             description: `Pago documento: ${documentData.document_type}`,
             redirectionUrl: `${window.location.origin}/?code=${documentData.token}&payment=success`,
+            renderMode: 'embedded', // Embedded Checkout - abre en modal sin salir de la página
           });
           setBoldCheckoutInstance(checkout);
         }
@@ -90,8 +91,8 @@ export const useBoldCheckout = (documentData: any) => {
     try {
       boldCheckoutInstance.open();
       toast({
-        title: "Redirigiendo a la pasarela de pago",
-        description: "Serás redirigido a la plataforma de pagos de Bold.",
+        title: "Abriendo pasarela de pago",
+        description: "La pasarela de pagos se abrirá en una ventana modal.",
       });
       return true;
     } catch (error) {
