@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { CheckCircle, Clock, FileText, Search, User, Download, AlertCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface DocumentStatusPageProps {
   onOpenChat: (message: string) => void;
@@ -15,37 +17,7 @@ export default function DocumentStatusPage({ onOpenChat }: DocumentStatusPagePro
   const [searchCode, setSearchCode] = useState("");
   const [documentData, setDocumentData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
-
-  // Simulate document status data
-  const mockDocuments = {
-    "DOC001": {
-      code: "DOC001",
-      type: "Contrato de Arrendamiento",
-      status: "en_revision",
-      requestDate: "2025-01-06",
-      lastUpdate: "2025-01-07",
-      price: 50000,
-      description: "Contrato de arrendamiento para vivienda en Medellín"
-    },
-    "DOC002": {
-      code: "DOC002", 
-      type: "Contrato de Trabajo",
-      status: "pagado",
-      requestDate: "2025-01-05",
-      lastUpdate: "2025-01-07",
-      price: 40000,
-      description: "Contrato laboral a término fijo"
-    },
-    "DOC003": {
-      code: "DOC003",
-      type: "Pagaré",
-      status: "descargado",
-      requestDate: "2025-01-04",
-      lastUpdate: "2025-01-06",
-      price: 25000,
-      description: "Pagaré con carta de instrucciones"
-    }
-  };
+  const { toast } = useToast();
 
   const statusConfig = {
     solicitado: {
@@ -55,7 +27,7 @@ export default function DocumentStatusPage({ onOpenChat }: DocumentStatusPagePro
       color: "bg-muted text-muted-foreground",
       step: 1
     },
-    en_revision: {
+    en_revision_abogado: {
       label: "En Revisión por Abogado", 
       description: "Un abogado especializado está revisando tu documento",
       icon: <User className="h-5 w-5" />,
@@ -89,13 +61,55 @@ export default function DocumentStatusPage({ onOpenChat }: DocumentStatusPagePro
     if (!searchCode.trim()) return;
     
     setIsLoading(true);
+    setDocumentData(null);
     
-    // Simulate API call
-    setTimeout(() => {
-      const foundDoc = mockDocuments[searchCode.toUpperCase() as keyof typeof mockDocuments];
-      setDocumentData(foundDoc || null);
+    try {
+      const { data, error } = await supabase
+        .from('document_tokens')
+        .select('*')
+        .eq('token', searchCode.trim().toUpperCase())
+        .single();
+
+      if (error || !data) {
+        setDocumentData(null);
+        toast({
+          title: "Documento no encontrado",
+          description: "No se encontró ningún documento con ese código de seguimiento.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Transform data to match expected format
+      const transformedData = {
+        code: data.token,
+        type: data.document_type,
+        status: data.status,
+        requestDate: new Date(data.created_at).toLocaleDateString('es-CO'),
+        lastUpdate: new Date(data.updated_at).toLocaleDateString('es-CO'),
+        price: data.price,
+        description: `${data.document_type} personalizado`,
+        user_email: data.user_email,
+        user_name: data.user_name
+      };
+
+      setDocumentData(transformedData);
+      toast({
+        title: "Documento encontrado",
+        description: `${data.document_type} - Estado: ${statusConfig[data.status as keyof typeof statusConfig]?.label}`,
+      });
+
+    } catch (error) {
+      console.error('Error buscando documento:', error);
+      setDocumentData(null);
+      toast({
+        title: "Error de búsqueda",
+        description: "Ocurrió un error al buscar el documento. Intenta nuevamente.",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const getProgressPercentage = (currentStep: number) => {
@@ -166,7 +180,7 @@ export default function DocumentStatusPage({ onOpenChat }: DocumentStatusPagePro
                 <Label htmlFor="search-code">Código de Seguimiento</Label>
                 <Input
                   id="search-code"
-                  placeholder="Ej: DOC001, DOC002..."
+                  placeholder="Ej: TEST123ABC, DEF456GHI..."
                   value={searchCode}
                   onChange={(e) => setSearchCode(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
@@ -194,7 +208,7 @@ export default function DocumentStatusPage({ onOpenChat }: DocumentStatusPagePro
             </div>
             
             <div className="text-sm text-muted-foreground">
-              <p>💡 <strong>Tip:</strong> Para probar, usa los códigos: DOC001, DOC002, o DOC003</p>
+              <p>💡 <strong>Tip:</strong> Para probar, usa los códigos: TEST123ABC o DEF456GHI</p>
             </div>
           </CardContent>
         </Card>
