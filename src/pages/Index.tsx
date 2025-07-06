@@ -6,6 +6,7 @@ import HomePage from "@/components/HomePage";
 import PersonasPage from "@/components/PersonasPage";
 import DocumentPaymentPage from "@/components/DocumentPaymentPage";
 import DocumentStatusPage from "@/components/DocumentStatusPage";
+import LawyerDashboardPage from "@/components/LawyerDashboardPage";
 import EmptyPage from "@/components/EmptyPage";
 import BlogPage from "@/components/BlogPage";
 import BlogArticlePage from "@/components/BlogArticlePage";
@@ -92,6 +93,8 @@ export default function Index() {
         return <DocumentPaymentPage onOpenChat={handleOpenChat} />;
       case "estado-documento":
         return <DocumentStatusPage onOpenChat={handleOpenChat} />;
+      case "abogados":
+        return <LawyerDashboardPage onOpenChat={handleOpenChat} />;
       case "terminos":
         return <TermsAndConditionsPage onOpenChat={handleOpenChat} />;
       case "privacidad":

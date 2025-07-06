@@ -19,6 +19,7 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
     { id: "precios", label: "Precios" },
     { id: "blog", label: "Blog" },
     { id: "contacto", label: "Contacto" },
+    { id: "abogados", label: "Panel Abogados" },
   ];
 
   const handleNavClick = (pageId: string) => {
