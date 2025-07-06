@@ -16,17 +16,24 @@ export const useDocumentPayment = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const urlTrackingCode = urlParams.get('code');
     const paymentStatus = urlParams.get('payment');
+    const boldOrderId = urlParams.get('bold-order-id');
+    const boldTxStatus = urlParams.get('bold-tx-status');
     
     if (urlTrackingCode) {
       setTrackingCode(urlTrackingCode);
-      handleVerifyTrackingCode(urlTrackingCode);
       
-      // Check if coming back from successful payment
-      if (paymentStatus === 'success') {
-        // Wait a moment for the webhook to process, then check payment status
-        setTimeout(() => {
-          handleVerifyTrackingCode(urlTrackingCode);
-        }, 2000);
+      // If Bold confirms payment is approved, directly update the document status
+      if (boldTxStatus === 'approved' && boldOrderId) {
+        handleDirectPaymentApproval(urlTrackingCode);
+      } else {
+        handleVerifyTrackingCode(urlTrackingCode);
+        
+        // Check if coming back from successful payment (fallback)
+        if (paymentStatus === 'success') {
+          setTimeout(() => {
+            handleVerifyTrackingCode(urlTrackingCode);
+          }, 2000);
+        }
       }
     }
   }, []);
@@ -79,6 +86,57 @@ export const useDocumentPayment = () => {
         description: "Ocurrió un error al verificar el código de seguimiento.",
         variant: "destructive",
       });
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const handleDirectPaymentApproval = async (codeToVerify: string) => {
+    setIsVerifying(true);
+    
+    try {
+      // First get document data
+      const { data, error } = await supabase
+        .from('document_tokens')
+        .select('*')
+        .eq('token', codeToVerify.trim())
+        .single();
+
+      if (error || !data) {
+        setTrackingCodeError("Código no encontrado. Verifica que sea correcto.");
+        setDocumentData(null);
+        return;
+      }
+
+      // Update document status to paid
+      const { error: updateError } = await supabase
+        .from('document_tokens')
+        .update({ 
+          status: 'pagado',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', data.id);
+
+      if (updateError) {
+        console.error('Error updating document status:', updateError);
+        // Fallback to normal verification if update fails
+        await handleVerifyTrackingCode(codeToVerify);
+        return;
+      }
+
+      // Set payment as completed
+      setPaymentCompleted(true);
+      setDocumentData({ ...data, status: 'pagado' });
+      
+      toast({
+        title: "¡Pago confirmado!",
+        description: "Tu pago ha sido procesado exitosamente. Puedes descargar el documento.",
+      });
+
+    } catch (error) {
+      console.error('Error processing direct payment approval:', error);
+      // Fallback to normal verification
+      await handleVerifyTrackingCode(codeToVerify);
     } finally {
       setIsVerifying(false);
     }
