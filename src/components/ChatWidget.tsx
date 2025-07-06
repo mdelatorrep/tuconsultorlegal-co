@@ -146,7 +146,8 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
     return (
       <button
         onClick={onToggle}
-        className="fixed bottom-6 right-6 w-16 h-16 bg-primary hover:bg-primary-light text-primary-foreground rounded-full shadow-hero flex items-center justify-center transition-bounce z-50"
+        className="fixed bottom-6 right-6 w-16 h-16 bg-primary hover:bg-primary-light text-primary-foreground rounded-full shadow-hero flex items-center justify-center transition-bounce z-[9999]"
+        style={{ zIndex: 9999 }}
       >
         <MessageCircle size={28} />
       </button>
@@ -154,7 +155,7 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
   }
 
   return (
-    <div className="fixed bottom-6 right-6 w-full max-w-md h-96 max-h-[80vh] bg-card rounded-lg shadow-hero flex flex-col z-50 border">
+    <div className="fixed bottom-6 right-6 w-full max-w-md h-96 max-h-[80vh] bg-card rounded-lg shadow-hero flex flex-col z-[9999] border" style={{ zIndex: 9999 }}>
       {/* Header */}
       <div className="bg-primary text-primary-foreground p-4 rounded-t-lg flex justify-between items-center">
         <div>
