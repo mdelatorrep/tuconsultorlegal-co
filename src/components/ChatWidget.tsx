@@ -5,9 +5,10 @@ import { MessageCircle, X, AlertCircle } from "lucide-react";
 interface ChatWidgetProps {
   isOpen: boolean;
   onToggle: () => void;
+  initialMessage?: string;
 }
 
-export default function ChatWidget({ isOpen, onToggle }: ChatWidgetProps) {
+export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWidgetProps) {
   const [iframeError, setIframeError] = useState(false);
   const iframeSrc = "https://buildera.app.n8n.cloud/webhook/a9c21cdd-8709-416a-a9c1-3b615b7e9f6b/chat";
 
