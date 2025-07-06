@@ -19,16 +19,25 @@ export default function DocumentPaymentPage({ onOpenChat }: DocumentPaymentPageP
   const [paymentCompleted, setPaymentCompleted] = useState(false);
   const [trackingCodeError, setTrackingCodeError] = useState("");
   const { toast } = useToast();
-  const { openCheckout } = useBoldCheckout(documentData);
+  const { openCheckout, currentOrderId } = useBoldCheckout(documentData);
 
-  // Check for tracking code in URL params on load
+  // Check for payment completion on load
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const urlTrackingCode = urlParams.get('code');
+    const paymentStatus = urlParams.get('payment');
     
     if (urlTrackingCode) {
       setTrackingCode(urlTrackingCode);
       handleVerifyTrackingCode(urlTrackingCode);
+      
+      // Check if coming back from successful payment
+      if (paymentStatus === 'success') {
+        // Wait a moment for the webhook to process, then check payment status
+        setTimeout(() => {
+          handleVerifyTrackingCode(urlTrackingCode);
+        }, 2000);
+      }
     }
   }, []);
 
@@ -127,14 +136,61 @@ export default function DocumentPaymentPage({ onOpenChat }: DocumentPaymentPageP
     
     const success = openCheckout();
     
-    setIsProcessingPayment(false);
-    
     if (!success) {
+      setIsProcessingPayment(false);
       return;
     }
 
-    // Note: In a real implementation, the payment completion would be handled
-    // via webhooks from Bold, not simulated here
+    // Start checking payment status periodically
+    const checkPaymentStatus = async () => {
+      if (!currentOrderId) return;
+      
+      try {
+        const { data, error } = await supabase.functions.invoke('check-payment-status', {
+          body: { orderId: currentOrderId }
+        });
+
+        if (error) {
+          console.error('Error checking payment status:', error);
+          return;
+        }
+
+        if (data?.paymentApproved) {
+          setPaymentCompleted(true);
+          setIsProcessingPayment(false);
+          toast({
+            title: "¡Pago completado!",
+            description: "Tu pago ha sido procesado exitosamente.",
+          });
+          // Refresh document data
+          await handleVerifyTrackingCode();
+          return true; // Payment completed
+        }
+      } catch (error) {
+        console.error('Payment status check failed:', error);
+      }
+      return false; // Payment not completed yet
+    };
+
+    // Check payment status every 3 seconds for up to 2 minutes
+    let attempts = 0;
+    const maxAttempts = 40; // 40 * 3 seconds = 2 minutes
+    
+    const intervalId = setInterval(async () => {
+      attempts++;
+      const paymentComplete = await checkPaymentStatus();
+      
+      if (attempts >= maxAttempts || paymentComplete) {
+        clearInterval(intervalId);
+        setIsProcessingPayment(false);
+      }
+    }, 3000);
+
+    // Clean up interval after payment completes
+    setTimeout(() => {
+      clearInterval(intervalId);
+      setIsProcessingPayment(false);
+    }, 120000); // 2 minutes timeout
   };
 
   const handleDownloadDocument = async () => {

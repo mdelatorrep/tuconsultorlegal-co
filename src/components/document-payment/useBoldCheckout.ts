@@ -10,6 +10,7 @@ declare global {
 
 export const useBoldCheckout = (documentData: any) => {
   const [boldCheckoutInstance, setBoldCheckoutInstance] = useState<any>(null);
+  const [currentOrderId, setCurrentOrderId] = useState<string>('');
   const { toast } = useToast();
 
   // Initialize Bold Checkout script
@@ -57,6 +58,7 @@ export const useBoldCheckout = (documentData: any) => {
             renderMode: 'embedded', // Embedded Checkout - abre en modal sin salir de la página
           });
           setBoldCheckoutInstance(checkout);
+          setCurrentOrderId(orderId);
         }
       };
 
@@ -108,6 +110,7 @@ export const useBoldCheckout = (documentData: any) => {
 
   return {
     boldCheckoutInstance,
-    openCheckout
+    openCheckout,
+    currentOrderId
   };
 };

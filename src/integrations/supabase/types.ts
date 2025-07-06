@@ -48,6 +48,48 @@ export type Database = {
         }
         Relationships: []
       }
+      webhook_logs: {
+        Row: {
+          amount: number | null
+          created_at: string
+          document_id: string | null
+          event_type: string
+          id: string
+          order_reference: string | null
+          payment_id: string | null
+          raw_payload: Json | null
+          status: string | null
+          updated_at: string
+          webhook_type: string
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          document_id?: string | null
+          event_type: string
+          id?: string
+          order_reference?: string | null
+          payment_id?: string | null
+          raw_payload?: Json | null
+          status?: string | null
+          updated_at?: string
+          webhook_type: string
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          document_id?: string | null
+          event_type?: string
+          id?: string
+          order_reference?: string | null
+          payment_id?: string | null
+          raw_payload?: Json | null
+          status?: string | null
+          updated_at?: string
+          webhook_type?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
