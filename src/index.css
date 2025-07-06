@@ -309,6 +309,22 @@ All colors MUST be HSL.
     display: none !important;
   }
 
+  /* Hide "Powered by n8n" footer */
+  .n8n-chat .powered-by,
+  .n8n-chat [data-testid="powered-by"],
+  .n8n-chat .footer,
+  .n8n-chat .chat-footer,
+  .n8n-chat footer {
+    display: none !important;
+  }
+
+  /* Hide any text containing "powered by" or "n8n" */
+  .n8n-chat *:has-text("Powered by"),
+  .n8n-chat *:has-text("powered by"),
+  .n8n-chat *:has-text("n8n") {
+    display: none !important;
+  }
+
   /* Typing indicator */
   .n8n-chat .typing-indicator {
     padding: 0.5rem 1rem !important;
