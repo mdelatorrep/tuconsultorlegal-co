@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "./ui/button";
-import { MessageCircle, X } from "lucide-react";
+import { MessageCircle, X, AlertCircle } from "lucide-react";
 
 interface ChatWidgetProps {
   isOpen: boolean;
@@ -8,6 +8,7 @@ interface ChatWidgetProps {
 }
 
 export default function ChatWidget({ isOpen, onToggle }: ChatWidgetProps) {
+  const [iframeError, setIframeError] = useState(false);
   const iframeSrc = "https://buildera.app.n8n.cloud/webhook/a9c21cdd-8709-416a-a9c1-3b615b7e9f6b/chat";
 
   if (!isOpen) {
@@ -42,12 +43,30 @@ export default function ChatWidget({ isOpen, onToggle }: ChatWidgetProps) {
 
       {/* Iframe con el chat embebido */}
       <div className="flex-1 overflow-hidden">
-        <iframe
-          src={iframeSrc}
-          title="LexiLegal Chat"
-          className="w-full h-full"
-          style={{ border: "none", borderRadius: "0 0 0.5rem 0.5rem" }}
-        />
+        {iframeError ? (
+          <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+            <AlertCircle className="w-12 h-12 text-destructive mb-4" />
+            <h4 className="font-semibold text-lg mb-2">Servicio no disponible</h4>
+            <p className="text-muted-foreground mb-4">
+              El chat no está disponible en este momento. Por favor, inténtalo más tarde.
+            </p>
+            <Button 
+              variant="outline" 
+              onClick={() => setIframeError(false)}
+              className="text-sm"
+            >
+              Reintentar
+            </Button>
+          </div>
+        ) : (
+          <iframe
+            src={iframeSrc}
+            title="LexiLegal Chat"
+            className="w-full h-full"
+            style={{ border: "none", borderRadius: "0 0 0.5rem 0.5rem" }}
+            onError={() => setIframeError(true)}
+          />
+        )}
       </div>
     </div>
   );
