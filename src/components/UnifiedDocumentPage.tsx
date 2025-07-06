@@ -308,11 +308,45 @@ export default function UnifiedDocumentPage({ onOpenChat }: UnifiedDocumentPageP
   const handleDownloadDocument = async () => {
     if (!documentData) return;
 
-    // Update status to 'descargado'
-    await updateDocumentStatus('descargado');
-    
-    // Generate PDF download
-    generatePDFDownload(documentData, toast);
+    try {
+      // First, generate the PDF download
+      const downloadSuccess = generatePDFDownload(documentData, toast);
+      
+      if (downloadSuccess) {
+        // Update status to 'descargado' only if download was successful
+        const { error } = await supabase
+          .from('document_tokens')
+          .update({ 
+            status: 'descargado',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', documentData.id);
+
+        if (error) {
+          console.error('Error updating document status to descargado:', error);
+          toast({
+            title: "Advertencia",
+            description: "El documento se descargó, pero no se pudo actualizar el estado. Contacta soporte si es necesario.",
+            variant: "destructive",
+          });
+        } else {
+          // Update local state to reflect the change
+          setDocumentData({ ...documentData, status: 'descargado' });
+          
+          toast({
+            title: "Documento descargado",
+            description: "El documento ha sido descargado y marcado como completado.",
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error during download process:', error);
+      toast({
+        title: "Error en la descarga",
+        description: "Ocurrió un error durante el proceso de descarga. Intenta nuevamente.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSendObservations = async () => {
