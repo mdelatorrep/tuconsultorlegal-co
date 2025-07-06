@@ -65,6 +65,9 @@ export default function ChatWidget({ isOpen, onToggle }: ChatWidgetProps) {
             className="w-full h-full"
             style={{ border: "none", borderRadius: "0 0 0.5rem 0.5rem" }}
             onError={() => setIframeError(true)}
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation-by-user-activation"
+            referrerPolicy="no-referrer-when-downgrade"
+            allow="microphone; camera; geolocation; payment; fullscreen"
           />
         )}
       </div>
