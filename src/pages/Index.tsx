@@ -4,8 +4,7 @@ import Footer from "@/components/Footer";
 import ChatWidget from "@/components/ChatWidget";
 import HomePage from "@/components/HomePage";
 import PersonasPage from "@/components/PersonasPage";
-import DocumentPaymentPage from "@/components/DocumentPaymentPage";
-import DocumentStatusPage from "@/components/DocumentStatusPage";
+import UnifiedDocumentPage from "@/components/UnifiedDocumentPage";
 import LawyerDashboardPage from "@/components/LawyerDashboardPage";
 import EmptyPage from "@/components/EmptyPage";
 import BlogPage from "@/components/BlogPage";
@@ -89,10 +88,10 @@ export default function Index() {
             subtitle="¿Tienes preguntas sobre nuestros servicios o necesitas soporte? Estamos aquí para ayudarte."
           />
         );
+      case "documento":
       case "documento-pago":
-        return <DocumentPaymentPage onOpenChat={handleOpenChat} />;
       case "estado-documento":
-        return <DocumentStatusPage onOpenChat={handleOpenChat} />;
+        return <UnifiedDocumentPage onOpenChat={handleOpenChat} />;
       case "abogados":
         return <LawyerDashboardPage onOpenChat={handleOpenChat} />;
       case "terminos":
