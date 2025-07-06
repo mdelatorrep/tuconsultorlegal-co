@@ -32,8 +32,8 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
           },
           target: chatContainer.current,
           
-          // Modo de visualización del chat. 'window' es la ventana flotante.
-          mode: 'window',
+          // Modo de visualización del chat. 'fullscreen' evita botones de conversación
+          mode: 'fullscreen',
 
           // Claves que se enviarán al webhook.
           chatInputKey: 'chatInput',
@@ -57,16 +57,16 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
           ],
 
           // Textos de la interfaz del chat en español.
-           i18n: {
-             es: {
-               title: 'Lexi, tu Asistente Legal ⚖️',
-               subtitle: 'Resuelve tus dudas o crea documentos legales al instante.',
-               footer: 'Con tecnología de tuconsultorlegal.co',
-               getStarted: 'Nueva Conversación',
-               inputPlaceholder: 'Escribe tu consulta aquí...',
-               closeButtonTooltip: 'Cerrar chat',
-             },
-           },
+          i18n: {
+            en: {
+              title: 'Lexi, tu Asistente Legal ⚖️',
+              subtitle: 'Resuelve tus dudas o crea documentos legales al instante.',
+              footer: 'Con tecnología de tuconsultorlegal.co',
+              getStarted: 'Nueva Conversación',
+              inputPlaceholder: 'Escribe tu consulta legal aquí...',
+              closeButtonTooltip: 'Cerrar chat',
+            },
+          },
 
           // Estilos personalizados para que coincida con la web
           theme: {
