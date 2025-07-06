@@ -202,47 +202,121 @@ All colors MUST be HSL.
     z-index: 10000 !important;
   }
 
-  /* Custom n8n chat styling for mobile-first design */
+  /* WhatsApp-style chat design */
   .n8n-chat {
     font-family: 'Montserrat', sans-serif !important;
     height: 100% !important;
     display: flex !important;
     flex-direction: column !important;
+    background: #f0f2f5 !important;
   }
 
   .n8n-chat * {
     font-family: inherit !important;
   }
 
-  /* Ensure chat messages area takes available space */
+  /* Chat messages area with WhatsApp-style background */
   .n8n-chat .chat-messages {
     flex: 1 !important;
     overflow-y: auto !important;
     padding: 1rem !important;
+    background: #f0f2f5 !important;
+    background-image: 
+      radial-gradient(circle at 25% 25%, rgba(255,255,255,0.1) 2px, transparent 2px),
+      radial-gradient(circle at 75% 75%, rgba(255,255,255,0.1) 2px, transparent 2px);
+    background-size: 20px 20px;
   }
 
-  /* Position input at bottom and full width */
+  /* WhatsApp-style message bubbles */
+  .n8n-chat .message {
+    margin: 0.5rem 0 !important;
+    max-width: 85% !important;
+    word-wrap: break-word !important;
+  }
+
+  /* User messages (right side, like sent messages) */
+  .n8n-chat .message.user {
+    margin-left: auto !important;
+    background: hsl(var(--success)) !important;
+    color: white !important;
+    border-radius: 18px 18px 4px 18px !important;
+    padding: 0.75rem 1rem !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1) !important;
+  }
+
+  /* Bot messages (left side, like received messages) */
+  .n8n-chat .message.bot,
+  .n8n-chat .message.assistant {
+    margin-right: auto !important;
+    background: white !important;
+    color: #303030 !important;
+    border-radius: 18px 18px 18px 4px !important;
+    padding: 0.75rem 1rem !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1) !important;
+  }
+
+  /* Input container at bottom - WhatsApp style */
   .n8n-chat .chat-input-container {
     position: sticky !important;
     bottom: 0 !important;
-    background: white !important;
-    border-top: 1px solid hsl(var(--border)) !important;
-    padding: 1rem !important;
+    background: #f0f2f5 !important;
+    border-top: none !important;
+    padding: 0.75rem 1rem !important;
     margin: 0 !important;
   }
 
+  /* WhatsApp-style input field */
   .n8n-chat .chat-input {
     width: 100% !important;
-    padding: 0.75rem !important;
-    border: 1px solid hsl(var(--border)) !important;
-    border-radius: 0.5rem !important;
-    font-size: 16px !important; /* Prevents zoom on iOS */
+    padding: 0.75rem 1rem !important;
+    border: 1px solid #ddd !important;
+    border-radius: 24px !important;
+    font-size: 16px !important;
     background: white !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+    outline: none !important;
+    transition: all 0.2s ease !important;
+  }
+
+  .n8n-chat .chat-input:focus {
+    border-color: hsl(var(--primary)) !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+  }
+
+  /* Send button WhatsApp style */
+  .n8n-chat .send-button {
+    background: hsl(var(--primary)) !important;
+    border: none !important;
+    border-radius: 50% !important;
+    width: 40px !important;
+    height: 40px !important;
+    margin-left: 0.5rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: white !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+  }
+
+  .n8n-chat .send-button:hover {
+    background: hsl(var(--primary-light)) !important;
+    transform: scale(1.05) !important;
   }
 
   /* Hide welcome screen elements */
   .n8n-chat .welcome-screen {
     display: none !important;
+  }
+
+  /* Typing indicator */
+  .n8n-chat .typing-indicator {
+    padding: 0.5rem 1rem !important;
+    background: white !important;
+    border-radius: 18px !important;
+    margin: 0.5rem 0 !important;
+    max-width: 60px !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1) !important;
   }
 
   /* Responsive chat adjustments */
