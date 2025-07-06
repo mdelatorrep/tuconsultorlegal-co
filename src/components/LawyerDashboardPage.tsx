@@ -20,6 +20,8 @@ interface DocumentToken {
   user_name: string | null;
   created_at: string;
   updated_at: string;
+  user_observations?: string | null;
+  user_observation_date?: string | null;
 }
 
 interface LawyerDashboardPageProps {
@@ -347,6 +349,22 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                         <DollarSign className="h-4 w-4" />
                         <span>${document.price.toLocaleString()}</span>
                       </div>
+                      
+                      {/* Show user observations if any */}
+                      {document.user_observations && (
+                        <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-800 rounded">
+                          <div className="flex items-center gap-2 mb-2">
+                            <User className="h-4 w-4 text-yellow-600" />
+                            <span className="font-medium text-yellow-800 dark:text-yellow-200">Observaciones del Cliente:</span>
+                          </div>
+                          <p className="text-sm text-yellow-700 dark:text-yellow-300">{document.user_observations}</p>
+                          {document.user_observation_date && (
+                            <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+                              Enviadas: {new Date(document.user_observation_date).toLocaleDateString('es-CO')} {new Date(document.user_observation_date).toLocaleTimeString('es-CO')}
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

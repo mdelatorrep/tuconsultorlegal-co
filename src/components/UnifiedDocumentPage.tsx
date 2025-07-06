@@ -23,6 +23,8 @@ export default function UnifiedDocumentPage({ onOpenChat }: UnifiedDocumentPageP
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
   const [searchCodeError, setSearchCodeError] = useState("");
+  const [userObservations, setUserObservations] = useState("");
+  const [isSendingObservations, setIsSendingObservations] = useState(false);
   const { toast } = useToast();
   const { openCheckout, currentOrderId } = useBoldCheckout(documentData);
 
@@ -252,6 +254,60 @@ export default function UnifiedDocumentPage({ onOpenChat }: UnifiedDocumentPageP
     
     // Generate PDF download
     generatePDFDownload(documentData);
+  };
+
+  const handleSendObservations = async () => {
+    if (!documentData || !userObservations.trim()) {
+      toast({
+        title: "Error",
+        description: "Por favor ingresa tus observaciones antes de enviar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSendingObservations(true);
+    
+    try {
+      const { error } = await supabase
+        .from('document_tokens')
+        .update({ 
+          status: 'en_revision_abogado',
+          user_observations: userObservations.trim(),
+          user_observation_date: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', documentData.id);
+
+      if (error) {
+        console.error('Error sending observations:', error);
+        toast({
+          title: "Error al enviar observaciones",
+          description: "No se pudieron enviar las observaciones. Intenta nuevamente.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Observaciones enviadas",
+        description: "Tus observaciones han sido enviadas al abogado para revisión.",
+      });
+
+      // Refresh document data
+      await handleSearch();
+      setUserObservations(""); // Clear the observations field
+      
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: "Ocurrió un error al enviar las observaciones.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingObservations(false);
+    }
   };
 
   const updateDocumentStatus = async (status: 'solicitado' | 'en_revision_abogado' | 'revision_usuario' | 'pagado' | 'descargado') => {
@@ -492,6 +548,42 @@ export default function UnifiedDocumentPage({ onOpenChat }: UnifiedDocumentPageP
                 {/* Payment Section for revision_usuario status */}
                 {documentData.status === 'revision_usuario' && !paymentCompleted && (
                   <>
+                    {/* User Observations Section */}
+                    <div className="space-y-4 mb-6 p-4 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <User className="h-4 w-4 text-primary" />
+                        <h4 className="font-semibold">Revisión del Documento</h4>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Revisa cuidadosamente el documento. Si está correcto, procede al pago. 
+                        Si necesitas cambios, envía tus observaciones al abogado.
+                      </p>
+                      
+                      {/* Show existing observations if any */}
+                      {documentData.user_observations && (
+                        <div className="p-3 bg-background rounded border">
+                          <Label className="text-sm font-medium text-muted-foreground">Observaciones Anteriores:</Label>
+                          <p className="text-sm mt-1">{documentData.user_observations}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Enviadas el: {new Date(documentData.user_observation_date).toLocaleDateString('es-CO')}
+                          </p>
+                        </div>
+                      )}
+                      
+                      <div>
+                        <Label htmlFor="observations">Observaciones o Cambios Requeridos (Opcional)</Label>
+                        <Textarea
+                          id="observations"
+                          placeholder="Escribe aquí cualquier cambio o corrección que necesites en el documento..."
+                          value={userObservations}
+                          onChange={(e) => setUserObservations(e.target.value)}
+                          rows={4}
+                          className="mt-2"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Pricing Details */}
                     <div className="space-y-4">
                       <div className="flex justify-between items-center">
                         <span className="font-medium">{documentData.document_type}</span>
@@ -512,25 +604,50 @@ export default function UnifiedDocumentPage({ onOpenChat }: UnifiedDocumentPageP
                       </div>
                     </div>
 
-                    <Button
-                      onClick={handlePayment}
-                      disabled={isProcessingPayment}
-                      className="w-full"
-                      size="lg"
-                      variant="success"
-                    >
-                      {isProcessingPayment ? (
-                        <>
-                          <div className="animate-spin h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full" />
-                          Procesando Pago...
-                        </>
-                      ) : (
-                        <>
-                          <Shield className="h-4 w-4 mr-2" />
-                          Pagar ${documentData.price.toLocaleString()} COP
-                        </>
-                      )}
-                    </Button>
+                    {/* Action Buttons */}
+                    <div className="space-y-3">
+                      {/* Send Observations Button */}
+                      <Button
+                        onClick={handleSendObservations}
+                        disabled={isSendingObservations || !userObservations.trim()}
+                        variant="outline"
+                        className="w-full"
+                        size="lg"
+                      >
+                        {isSendingObservations ? (
+                          <>
+                            <div className="animate-spin h-4 w-4 mr-2 border-2 border-current border-t-transparent rounded-full" />
+                            Enviando Observaciones...
+                          </>
+                        ) : (
+                          <>
+                            <User className="h-4 w-4 mr-2" />
+                            Enviar Observaciones al Abogado
+                          </>
+                        )}
+                      </Button>
+
+                      {/* Payment Button */}
+                      <Button
+                        onClick={handlePayment}
+                        disabled={isProcessingPayment}
+                        className="w-full"
+                        size="lg"
+                        variant="success"
+                      >
+                        {isProcessingPayment ? (
+                          <>
+                            <div className="animate-spin h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full" />
+                            Procesando Pago...
+                          </>
+                        ) : (
+                          <>
+                            <Shield className="h-4 w-4 mr-2" />
+                            Aprobar y Pagar ${documentData.price.toLocaleString()} COP
+                          </>
+                        )}
+                      </Button>
+                    </div>
 
                     <div className="text-center text-sm text-muted-foreground">
                       <p className="flex items-center justify-center gap-2">

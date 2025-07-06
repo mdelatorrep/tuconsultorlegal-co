@@ -21,6 +21,8 @@ export type Database = {
           updated_at: string
           user_email: string | null
           user_name: string | null
+          user_observation_date: string | null
+          user_observations: string | null
         }
         Insert: {
           created_at?: string
@@ -33,6 +35,8 @@ export type Database = {
           updated_at?: string
           user_email?: string | null
           user_name?: string | null
+          user_observation_date?: string | null
+          user_observations?: string | null
         }
         Update: {
           created_at?: string
@@ -45,6 +49,8 @@ export type Database = {
           updated_at?: string
           user_email?: string | null
           user_name?: string | null
+          user_observation_date?: string | null
+          user_observations?: string | null
         }
         Relationships: []
       }
