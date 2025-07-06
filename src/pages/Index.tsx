@@ -24,6 +24,19 @@ export default function Index() {
       setCurrentPage(hash);
     };
 
+    // Check if coming from Bold payment gateway
+    const urlParams = new URLSearchParams(window.location.search);
+    const trackingCode = urlParams.get('code');
+    const boldTxStatus = urlParams.get('bold-tx-status');
+    const boldOrderId = urlParams.get('bold-order-id');
+    
+    // If Bold payment parameters are present, redirect to document page
+    if (trackingCode && (boldTxStatus || boldOrderId)) {
+      setCurrentPage("documento");
+      window.history.replaceState(null, "", `#documento${window.location.search}`);
+      return;
+    }
+
     // Set initial page from URL
     const initialHash = window.location.hash.replace("#", "") || "home";
     setCurrentPage(initialHash);
