@@ -5,8 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { FileText, User, Calendar, DollarSign, Save, CheckCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Lock } from "lucide-react";
 
 interface DocumentToken {
   id: string;
@@ -31,11 +32,34 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const [editedContent, setEditedContent] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchPendingDocuments();
-  }, []);
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsAuthenticating(true);
+
+    // Simple hardcoded credentials - in production should use proper auth
+    if (email === "abogado@consultorjalegal.com" && password === "abogados2024") {
+      setIsAuthenticated(true);
+      toast({
+        title: "Acceso autorizado",
+        description: "Bienvenido al panel de abogados.",
+      });
+      fetchPendingDocuments();
+    } else {
+      toast({
+        title: "Acceso denegado",
+        description: "Credenciales incorrectas.",
+        variant: "destructive",
+      });
+    }
+    
+    setIsAuthenticating(false);
+  };
 
   const fetchPendingDocuments = async () => {
     setIsLoading(true);
@@ -117,7 +141,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
         .from('document_tokens')
         .update({ 
           document_content: editedContent,
-          status: 'revisado',
+          status: 'revision_usuario',
           updated_at: new Date().toISOString()
         })
         .eq('id', selectedDocument.id);
@@ -155,10 +179,66 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
         return <Badge variant="default">En Revisión</Badge>;
       case 'revisado':
         return <Badge variant="outline">Revisado</Badge>;
+      case 'revision_usuario':
+        return <Badge variant="outline">Revisión Usuario</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
   };
+
+  // Show login form if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="container mx-auto px-6 py-20">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Card className="w-full max-w-md">
+            <CardHeader className="text-center">
+              <div className="flex justify-center mb-4">
+                <Lock className="h-12 w-12 text-primary" />
+              </div>
+              <CardTitle className="text-2xl">Panel de Abogados</CardTitle>
+              <CardDescription>
+                Acceso restringido - Ingresa tus credenciales
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Correo electrónico</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="abogado@consultorjalegal.com"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Contraseña</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                  />
+                </div>
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={isAuthenticating}
+                >
+                  {isAuthenticating ? "Verificando..." : "Ingresar"}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
