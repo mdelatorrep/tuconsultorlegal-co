@@ -9,6 +9,13 @@ import { CheckCircle, Download, Eye, FileText, Shield, Search, AlertCircle } fro
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+// Declare Bold Checkout types
+declare global {
+  interface Window {
+    BoldCheckout: any;
+  }
+}
+
 interface DocumentPaymentPageProps {
   onOpenChat: (message: string) => void;
 }
@@ -20,7 +27,65 @@ export default function DocumentPaymentPage({ onOpenChat }: DocumentPaymentPageP
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
   const [trackingCodeError, setTrackingCodeError] = useState("");
+  const [boldCheckoutInstance, setBoldCheckoutInstance] = useState<any>(null);
   const { toast } = useToast();
+
+  // Initialize Bold Checkout script
+  const initBoldCheckout = () => {
+    if (document.querySelector('script[src="https://checkout.bold.co/library/boldPaymentButton.js"]')) {
+      console.warn('Bold Checkout script is already loaded.');
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.onload = () => {
+      window.dispatchEvent(new Event('boldCheckoutLoaded'));
+    };
+    script.onerror = () => {
+      window.dispatchEvent(new Event('boldCheckoutLoadFailed'));
+    };
+    script.src = 'https://checkout.bold.co/library/boldPaymentButton.js';
+    document.head.appendChild(script);
+  };
+
+  // Create Bold Checkout instance when document is loaded
+  useEffect(() => {
+    if (documentData && !boldCheckoutInstance) {
+      initBoldCheckout();
+
+      const handleBoldLoaded = () => {
+        if (window.BoldCheckout) {
+          const orderId = `DOC-${documentData.id}-${Date.now()}`;
+          const checkout = new window.BoldCheckout({
+            orderId: orderId,
+            currency: 'COP',
+            amount: documentData.price.toString(),
+            apiKey: 'LLAVE_DE_IDENTIDAD', // This should be configured with actual Bold API key
+            integritySignature: 'HASH_DE_INTEGRIDAD', // This should be generated on backend
+            description: `Pago documento: ${documentData.document_type}`,
+            redirectionUrl: `${window.location.origin}/?code=${documentData.token}&payment=success`,
+          });
+          setBoldCheckoutInstance(checkout);
+        }
+      };
+
+      const handleBoldFailed = () => {
+        toast({
+          title: "Error cargando pasarela de pago",
+          description: "No se pudo cargar el sistema de pagos. Intenta nuevamente.",
+          variant: "destructive",
+        });
+      };
+
+      window.addEventListener('boldCheckoutLoaded', handleBoldLoaded);
+      window.addEventListener('boldCheckoutLoadFailed', handleBoldFailed);
+
+      return () => {
+        window.removeEventListener('boldCheckoutLoaded', handleBoldLoaded);
+        window.removeEventListener('boldCheckoutLoadFailed', handleBoldFailed);
+      };
+    }
+  }, [documentData, boldCheckoutInstance, toast]);
 
   // Check for tracking code in URL params on load
   useEffect(() => {
@@ -122,37 +187,31 @@ export default function DocumentPaymentPage({ onOpenChat }: DocumentPaymentPageP
   };
 
   const handlePayment = async () => {
-    if (!documentData) return;
+    if (!documentData || !boldCheckoutInstance) {
+      toast({
+        title: "Error",
+        description: "El sistema de pagos no está listo. Intenta nuevamente.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsProcessingPayment(true);
     
     try {
-      // Simulate payment processing
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      // Update document status to 'pagado'
-      const { error } = await supabase
-        .from('document_tokens')
-        .update({ status: 'pagado' })
-        .eq('id', documentData.id);
-
-      if (error) {
-        throw error;
-      }
-
-      setPaymentCompleted(true);
-      setDocumentData(prev => ({ ...prev, status: 'pagado' }));
+      // Open Bold checkout
+      boldCheckoutInstance.open();
       
       toast({
-        title: "¡Pago exitoso!",
-        description: "Tu documento está listo para descargar.",
+        title: "Redirigiendo a la pasarela de pago",
+        description: "Serás redirigido a la plataforma de pagos de Bold.",
       });
 
     } catch (error) {
-      console.error('Error procesando pago:', error);
+      console.error('Error abriendo pasarela de pago:', error);
       toast({
         title: "Error en el pago",
-        description: "Ocurrió un error al procesar el pago. Intenta nuevamente.",
+        description: "Ocurrió un error al abrir la pasarela de pago. Intenta nuevamente.",
         variant: "destructive",
       });
     } finally {
