@@ -29,6 +29,7 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [connectionError, setConnectionError] = useState(false);
+  const [hasProcessedInitialMessage, setHasProcessedInitialMessage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto scroll to bottom when new messages arrive
@@ -40,32 +41,44 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
     scrollToBottom();
   }, [messages]);
 
-  // Handle sending message
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputValue.trim() || isLoading) return;
+  // Process initial message when chat opens
+  useEffect(() => {
+    if (isOpen && initialMessage && !hasProcessedInitialMessage) {
+      const userMessage: ChatMessage = {
+        id: Date.now().toString(),
+        content: initialMessage,
+        sender: 'user',
+        timestamp: new Date()
+      };
 
-    const userMessage: ChatMessage = {
-      id: Date.now().toString(),
-      content: inputValue.trim(),
-      sender: 'user',
-      timestamp: new Date()
-    };
+      setMessages(prev => [...prev, userMessage]);
+      setHasProcessedInitialMessage(true);
+      
+      // Send the initial message automatically
+      sendMessage(initialMessage);
+    }
+  }, [isOpen, initialMessage, hasProcessedInitialMessage]);
 
-    setMessages(prev => [...prev, userMessage]);
-    setInputValue('');
+  // Reset processed flag when chat closes
+  useEffect(() => {
+    if (!isOpen) {
+      setHasProcessedInitialMessage(false);
+    }
+  }, [isOpen]);
+
+  // Send message to n8n webhook
+  const sendMessage = async (messageContent: string) => {
     setIsLoading(true);
     setConnectionError(false);
 
     try {
-      // Send to n8n webhook
       const response = await fetch('https://buildera.app.n8n.cloud/webhook/a9c21cdd-8709-416a-a9c1-3b615b7e9f6b/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          chatInput: userMessage.content,
+          chatInput: messageContent,
           sessionId: generateSessionId(),
         }),
       });
@@ -99,6 +112,24 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Handle sending message from user input
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputValue.trim() || isLoading) return;
+
+    const userMessage: ChatMessage = {
+      id: Date.now().toString(),
+      content: inputValue.trim(),
+      sender: 'user',
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInputValue('');
+    
+    await sendMessage(userMessage.content);
   };
 
   // Generate or retrieve session ID
