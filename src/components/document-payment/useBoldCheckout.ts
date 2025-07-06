@@ -40,14 +40,15 @@ export const useBoldCheckout = (documentData: any) => {
           const orderId = `DOC-${documentData.id}-${Date.now()}`;
           
           // Generate proper integrity signature (SHA256 hash)
-          const signatureString = `${documentData.price}${documentData.price}COPvR1YCM5cT4H0GKebSgmDOg`;
+          // Format: {orderId}{amount}{currency}{secretKey}
+          const signatureString = `${orderId}${documentData.price}COPvR1YCM5cT4H0GKebSgmDOg`;
           const integritySignature = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(signatureString))
             .then(buffer => Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join(''));
 
           const checkout = new window.BoldCheckout({
             orderId: orderId,
             currency: 'COP',
-            amount: documentData.price,
+            amount: documentData.price.toString(),
             apiKey: 'OUmoGBT-j4MEwEkhbt_hqJA22_0NdK8RVAkuCdkdMiQ',
             integritySignature: integritySignature,
             merchantId: 'XMS1CF62IB',
