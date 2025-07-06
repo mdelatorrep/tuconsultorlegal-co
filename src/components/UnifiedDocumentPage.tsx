@@ -71,54 +71,62 @@ export default function UnifiedDocumentPage({ onOpenChat }: UnifiedDocumentPageP
     const urlParams = new URLSearchParams(window.location.search);
     const urlTrackingCode = urlParams.get('code');
     const paymentStatus = urlParams.get('payment');
+    const boldOrderId = urlParams.get('bold-order-id');
+    const boldTxStatus = urlParams.get('bold-tx-status');
     
     if (urlTrackingCode) {
       setSearchCode(urlTrackingCode);
-      handleSearch(urlTrackingCode);
       
-      // Check if coming back from successful payment
-      if (paymentStatus === 'success') {
-        // Set up polling to check payment status
-        let attempts = 0;
-        const maxAttempts = 20; // 2 minutes total
+      // If Bold confirms payment is approved, directly update the document status
+      if (boldTxStatus === 'approved' && boldOrderId) {
+        handleDirectPaymentApproval(urlTrackingCode);
+      } else {
+        handleSearch(urlTrackingCode);
         
-        const pollPaymentStatus = async () => {
-          attempts++;
-          console.log(`Checking payment status, attempt ${attempts}`);
+        // Check if coming back from successful payment (fallback)
+        if (paymentStatus === 'success') {
+          // Set up polling to check payment status
+          let attempts = 0;
+          const maxAttempts = 20; // 2 minutes total
           
-          await handleSearch(urlTrackingCode);
-          
-          // Check if document status is now 'pagado'
-          const { data } = await supabase
-            .from('document_tokens')
-            .select('status')
-            .eq('token', urlTrackingCode.trim().toUpperCase())
-            .maybeSingle();
+          const pollPaymentStatus = async () => {
+            attempts++;
+            console.log(`Checking payment status, attempt ${attempts}`);
             
-          if (data?.status === 'pagado') {
-            setPaymentCompleted(true);
-            toast({
-              title: "¡Pago confirmado!",
-              description: "Tu pago ha sido procesado exitosamente. Ya puedes descargar tu documento.",
-            });
-            return true; // Stop polling
-          }
+            await handleSearch(urlTrackingCode);
+            
+            // Check if document status is now 'pagado'
+            const { data } = await supabase
+              .from('document_tokens')
+              .select('status')
+              .eq('token', urlTrackingCode.trim().toUpperCase())
+              .maybeSingle();
+              
+            if (data?.status === 'pagado') {
+              setPaymentCompleted(true);
+              toast({
+                title: "¡Pago confirmado!",
+                description: "Tu pago ha sido procesado exitosamente. Ya puedes descargar tu documento.",
+              });
+              return true; // Stop polling
+            }
+            
+            return false; // Continue polling
+          };
           
-          return false; // Continue polling
-        };
-        
-        const intervalId = setInterval(async () => {
-          const paymentConfirmed = await pollPaymentStatus();
+          const intervalId = setInterval(async () => {
+            const paymentConfirmed = await pollPaymentStatus();
+            
+            if (attempts >= maxAttempts || paymentConfirmed) {
+              clearInterval(intervalId);
+            }
+          }, 6000); // Check every 6 seconds
           
-          if (attempts >= maxAttempts || paymentConfirmed) {
+          // Clean up interval after 2 minutes
+          setTimeout(() => {
             clearInterval(intervalId);
-          }
-        }, 6000); // Check every 6 seconds
-        
-        // Clean up interval after 2 minutes
-        setTimeout(() => {
-          clearInterval(intervalId);
-        }, 120000);
+          }, 120000);
+        }
       }
     }
   }, []);
@@ -173,6 +181,57 @@ export default function UnifiedDocumentPage({ onOpenChat }: UnifiedDocumentPageP
         description: "Ocurrió un error al buscar el documento. Intenta nuevamente.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDirectPaymentApproval = async (codeToVerify: string) => {
+    setIsLoading(true);
+    
+    try {
+      // First get document data
+      const { data, error } = await supabase
+        .from('document_tokens')
+        .select('*')
+        .eq('token', codeToVerify.trim().toUpperCase())
+        .maybeSingle();
+
+      if (error || !data) {
+        setSearchCodeError("Código no encontrado. Verifica que sea correcto.");
+        setDocumentData(null);
+        return;
+      }
+
+      // Update document status to paid
+      const { error: updateError } = await supabase
+        .from('document_tokens')
+        .update({ 
+          status: 'pagado',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', data.id);
+
+      if (updateError) {
+        console.error('Error updating document status:', updateError);
+        // Fallback to normal verification if update fails
+        await handleSearch(codeToVerify);
+        return;
+      }
+
+      // Set payment as completed
+      setPaymentCompleted(true);
+      setDocumentData({ ...data, status: 'pagado' });
+      
+      toast({
+        title: "¡Pago confirmado!",
+        description: "Tu pago ha sido procesado exitosamente. Puedes descargar el documento.",
+      });
+
+    } catch (error) {
+      console.error('Error processing direct payment approval:', error);
+      // Fallback to normal verification
+      await handleSearch(codeToVerify);
     } finally {
       setIsLoading(false);
     }
