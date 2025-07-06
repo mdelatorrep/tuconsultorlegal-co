@@ -142,10 +142,10 @@ Deno.serve(async (req) => {
         newStatus = 'pagado'
         break
       case 'SALE_REJECTED':
-        newStatus = 'revisado' // Reset to reviewed state if payment failed
+        newStatus = 'revision_usuario' // Reset to user review state if payment failed
         break
       case 'VOID_APPROVED':
-        newStatus = 'revisado' // Reset if payment was voided
+        newStatus = 'revision_usuario' // Reset if payment was voided
         break
       case 'VOID_REJECTED':
         // Void rejection doesn't change the paid status

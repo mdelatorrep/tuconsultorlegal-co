@@ -64,7 +64,7 @@ export default function UnifiedDocumentPage({ onOpenChat }: UnifiedDocumentPageP
     }
   };
 
-  // Check for URL parameters on load
+  // Check for URL parameters on load and setup auto-refresh
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const urlTrackingCode = urlParams.get('code');
@@ -76,9 +76,47 @@ export default function UnifiedDocumentPage({ onOpenChat }: UnifiedDocumentPageP
       
       // Check if coming back from successful payment
       if (paymentStatus === 'success') {
+        // Set up polling to check payment status
+        let attempts = 0;
+        const maxAttempts = 20; // 2 minutes total
+        
+        const pollPaymentStatus = async () => {
+          attempts++;
+          console.log(`Checking payment status, attempt ${attempts}`);
+          
+          await handleSearch(urlTrackingCode);
+          
+          // Check if document status is now 'pagado'
+          const { data } = await supabase
+            .from('document_tokens')
+            .select('status')
+            .eq('token', urlTrackingCode.trim().toUpperCase())
+            .maybeSingle();
+            
+          if (data?.status === 'pagado') {
+            setPaymentCompleted(true);
+            toast({
+              title: "¡Pago confirmado!",
+              description: "Tu pago ha sido procesado exitosamente. Ya puedes descargar tu documento.",
+            });
+            return true; // Stop polling
+          }
+          
+          return false; // Continue polling
+        };
+        
+        const intervalId = setInterval(async () => {
+          const paymentConfirmed = await pollPaymentStatus();
+          
+          if (attempts >= maxAttempts || paymentConfirmed) {
+            clearInterval(intervalId);
+          }
+        }, 6000); // Check every 6 seconds
+        
+        // Clean up interval after 2 minutes
         setTimeout(() => {
-          handleSearch(urlTrackingCode);
-        }, 2000);
+          clearInterval(intervalId);
+        }, 120000);
       }
     }
   }, []);
