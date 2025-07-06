@@ -34,9 +34,9 @@ export default function DocumentStatusPage({ onOpenChat }: DocumentStatusPagePro
       color: "bg-brand-orange/10 text-brand-orange border-brand-orange",
       step: 2
     },
-    revisado: {
-      label: "Revisado",
-      description: "Documento completado y listo para pago",
+    revision_usuario: {
+      label: "Listo para Revisión",
+      description: "Documento revisado por abogado, listo para tu aprobación y pago",
       icon: <CheckCircle className="h-5 w-5" />,
       color: "bg-primary/10 text-primary border-primary",
       step: 3
@@ -300,7 +300,7 @@ export default function DocumentStatusPage({ onOpenChat }: DocumentStatusPagePro
 
                 {/* Action Buttons */}
                 <div className="pt-6 space-y-3">
-                  {documentData.status === 'revisado' && (
+                  {documentData.status === 'revision_usuario' && (
                     <Button variant="success" className="w-full" size="lg">
                       Proceder al Pago
                     </Button>

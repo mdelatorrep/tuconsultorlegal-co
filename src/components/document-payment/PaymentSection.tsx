@@ -61,7 +61,7 @@ export default function PaymentSection({
             {/* Payment Button */}
             <Button
               onClick={onPayment}
-              disabled={isProcessingPayment || documentData.status !== 'revisado'}
+              disabled={isProcessingPayment || documentData.status !== 'revision_usuario'}
               className="w-full"
               size="lg"
               variant="success"
@@ -71,7 +71,7 @@ export default function PaymentSection({
                   <div className="animate-spin h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full" />
                   Procesando Pago...
                 </>
-              ) : documentData.status !== 'revisado' ? (
+              ) : documentData.status !== 'revision_usuario' ? (
                 `Documento en estado: ${documentData.status}`
               ) : (
                 <>

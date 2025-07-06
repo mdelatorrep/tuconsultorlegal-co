@@ -136,7 +136,7 @@ export const useDocumentPayment = () => {
     }, 120000); // 2 minutes timeout
   };
 
-  const updateDocumentStatus = async (status: 'solicitado' | 'en_revision_abogado' | 'revisado' | 'pagado' | 'descargado') => {
+  const updateDocumentStatus = async (status: 'solicitado' | 'en_revision_abogado' | 'revision_usuario' | 'pagado' | 'descargado') => {
     if (!documentData) return;
 
     try {
