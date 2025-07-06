@@ -9,6 +9,7 @@ import DocumentStatusPage from "@/components/DocumentStatusPage";
 import EmptyPage from "@/components/EmptyPage";
 import BlogPage from "@/components/BlogPage";
 import BlogArticlePage from "@/components/BlogArticlePage";
+import PrivacyPolicyPage from "@/components/PrivacyPolicyPage";
 
 export default function Index() {
   const [currentPage, setCurrentPage] = useState("home");
@@ -93,7 +94,7 @@ export default function Index() {
       case "terminos":
         return <EmptyPage title="Términos y Condiciones" />;
       case "privacidad":
-        return <EmptyPage title="Política de Privacidad" />;
+        return <PrivacyPolicyPage onOpenChat={handleOpenChat} />;
       default:
         return <HomePage onOpenChat={handleOpenChat} />;
     }
