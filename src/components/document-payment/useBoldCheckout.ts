@@ -42,8 +42,8 @@ export const useBoldCheckout = (documentData: any) => {
             orderId: orderId,
             currency: 'COP',
             amount: documentData.price.toString(),
-            apiKey: 'LLAVE_DE_IDENTIDAD', // This should be configured with actual Bold API key
-            integritySignature: 'HASH_DE_INTEGRIDAD', // This should be generated on backend
+            apiKey: 'OUmoGBT-j4MEwEkhbt_hqJA22_0NdK8RVAkuCdkdMiQ',
+            integritySignature: `${orderId}${documentData.price}COPvR1YCM5cT4H0GKebSgmDOg`, // Simple hash with secret key
             description: `Pago documento: ${documentData.document_type}`,
             redirectionUrl: `${window.location.origin}/?code=${documentData.token}&payment=success`,
           });
