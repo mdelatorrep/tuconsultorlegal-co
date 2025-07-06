@@ -17,6 +17,10 @@ export const useBoldCheckout = (documentData: any) => {
   const initBoldCheckout = () => {
     if (document.querySelector('script[src="https://checkout.bold.co/library/boldPaymentButton.js"]')) {
       console.warn('Bold Checkout script is already loaded.');
+      // If script exists but BoldCheckout is not available, wait for it
+      if (!window.BoldCheckout) {
+        window.dispatchEvent(new Event('boldCheckoutLoaded'));
+      }
       return;
     }
 
