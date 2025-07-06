@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -196,7 +197,41 @@ All colors MUST be HSL.
   }
   
   /* Ensure our custom chat has highest priority */
-  .fixed.bottom-6.right-6 {
+  .fixed.bottom-6.right-6,
+  .fixed.bottom-4.right-4 {
     z-index: 10000 !important;
+  }
+
+  /* Custom n8n chat styling for mobile-first design */
+  .n8n-chat {
+    font-family: 'Montserrat', sans-serif !important;
+  }
+
+  .n8n-chat * {
+    font-family: inherit !important;
+  }
+
+  /* Responsive chat adjustments */
+  @media (max-width: 768px) {
+    .n8n-chat {
+      font-size: 14px !important;
+    }
+    
+    .n8n-chat .chat-message {
+      padding: 0.75rem !important;
+      margin: 0.5rem 0 !important;
+    }
+    
+    .n8n-chat .chat-input {
+      padding: 0.75rem !important;
+      font-size: 16px !important; /* Prevents zoom on iOS */
+    }
+  }
+
+  /* Ensure chat content is properly contained */
+  .n8n-chat-container {
+    height: 100% !important;
+    overflow: hidden !important;
+    border-radius: 0 0 0.75rem 0.75rem !important;
   }
 }

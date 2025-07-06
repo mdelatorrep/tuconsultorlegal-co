@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useRef } from "react";
 import { Button } from "./ui/button";
 import { MessageCircle, X, AlertCircle } from "lucide-react";
+import { createChat } from '@n8n/chat';
 
 interface ChatWidgetProps {
   isOpen: boolean;
@@ -11,19 +13,101 @@ interface ChatWidgetProps {
 export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWidgetProps) {
   const [iframeError, setIframeError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const iframeSrc = "https://buildera.app.n8n.cloud/webhook/a9c21cdd-8709-416a-a9c1-3b615b7e9f6b/chat";
+  const chatContainer = useRef<HTMLDivElement>(null);
+  const chatInstance = useRef<any>(null);
 
-  const handleIframeLoad = () => {
-    setIsLoading(false);
-    setIframeError(false);
-  };
+  // Initialize n8n chat when component mounts and chat opens
+  useEffect(() => {
+    if (isOpen && chatContainer.current && !chatInstance.current) {
+      try {
+        setIsLoading(true);
+        
+        chatInstance.current = createChat({
+          webhookUrl: 'https://buildera.app.n8n.cloud/webhook/a9c21cdd-8709-416a-a9c1-3b615b7e9f6b/chat',
+          webhookConfig: {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          },
+          target: chatContainer.current,
+          
+          // Modo de visualización del chat. 'window' es la ventana flotante.
+          mode: 'window',
 
-  const handleIframeError = () => {
-    setIsLoading(false);
-    setIframeError(true);
-  };
+          // Claves que se enviarán al webhook.
+          chatInputKey: 'chatInput',
+          chatSessionKey: 'sessionId',
 
-  // Reset loading state when chat opens
+          // Permite que los usuarios continúen su conversación si recargan la página.
+          loadPreviousSession: true,
+          
+          metadata: {},
+
+          // Inicia directamente en la conversación, sin pantalla de bienvenida.
+          showWelcomeScreen: false,
+
+          // Establece el idioma por defecto a español.
+          defaultLanguage: 'es',
+
+          // Mensajes iniciales que Lexi dirá al abrir el chat.
+          initialMessages: [
+            '👋 ¡Hola! Bienvenido(a) a tuconsultorlegal.co. Soy Lexi, tu asistente legal con Inteligencia Artificial.',
+            '¿Cómo te puedo ayudar hoy?\n\n1️⃣ Crear un documento legal\n2️⃣ Resolver una duda legal'
+          ],
+
+          // Textos de la interfaz del chat en español.
+          i18n: {
+            es: {
+              title: 'Lexi, tu Asistente Legal ⚖️',
+              subtitle: 'Resuelve tus dudas o crea documentos legales al instante.',
+              footer: 'Con tecnología de tuconsultorlegal.co',
+              getStarted: 'Nueva Conversación',
+              inputPlaceholder: 'Escribe tu consulta aquí...',
+            },
+          },
+
+          // Estilos personalizados para que coincida con la web
+          theme: {
+            '--chat--color-primary': 'hsl(233 49% 46%)', // Azul principal del sitio
+            '--chat--color-secondary': 'hsl(13 87% 58%)', // Orange del sitio
+            '--chat--header--background': 'linear-gradient(135deg, hsl(233 49% 46%) 0%, hsl(233 60% 60%) 100%)',
+            '--chat--message--user--background': 'hsl(13 87% 58%)',
+            '--chat--font-family': "'Montserrat', sans-serif",
+            '--chat--border-radius': '0.75rem',
+            '--chat--spacing': '1rem',
+          }
+        });
+
+        // Handle successful initialization
+        setTimeout(() => {
+          setIsLoading(false);
+          setIframeError(false);
+        }, 1000);
+
+      } catch (error) {
+        console.error('Error initializing n8n chat:', error);
+        setIsLoading(false);
+        setIframeError(true);
+      }
+    }
+  }, [isOpen]);
+
+  // Cleanup chat instance when component unmounts or closes
+  useEffect(() => {
+    if (!isOpen && chatInstance.current) {
+      try {
+        if (chatInstance.current.destroy) {
+          chatInstance.current.destroy();
+        }
+        chatInstance.current = null;
+      } catch (error) {
+        console.error('Error cleaning up chat:', error);
+      }
+    }
+  }, [isOpen]);
+
+  // Reset states when chat opens
   useEffect(() => {
     if (isOpen) {
       setIsLoading(true);
@@ -31,43 +115,51 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
     }
   }, [isOpen]);
 
-  // Timeout para detectar si el iframe no carga en 10 segundos
-  useEffect(() => {
-    if (isOpen && isLoading) {
-      const timeout = setTimeout(() => {
-        if (isLoading) {
-          setIsLoading(false);
-          setIframeError(true);
-        }
-      }, 10000);
-      
-      return () => clearTimeout(timeout);
-    }
-  }, [isOpen, isLoading]);
-
   if (!isOpen) {
     return (
       <button
         onClick={onToggle}
-        className="fixed bottom-6 right-6 w-16 h-16 bg-primary hover:bg-primary-light text-primary-foreground rounded-full shadow-hero flex items-center justify-center transition-bounce z-[9999]"
+        className="fixed bottom-6 right-6 w-16 h-16 bg-primary hover:bg-primary-light text-primary-foreground rounded-full shadow-hero flex items-center justify-center transition-bounce z-[9999] md:w-20 md:h-20"
+        aria-label="Abrir chat de asistencia legal"
       >
-        <MessageCircle size={28} />
+        <MessageCircle size={28} className="md:w-8 md:h-8" />
       </button>
     );
   }
 
   return (
     <div
-      className="fixed bottom-6 right-6 w-full max-w-md h-96 max-h-[80vh] bg-card rounded-lg shadow-hero flex flex-col z-[9999] border"
+      className="fixed bottom-4 right-4 left-4 md:left-auto md:right-6 md:bottom-6 w-auto md:w-96 h-[calc(100vh-2rem)] md:h-[500px] max-h-[80vh] bg-card rounded-lg shadow-hero flex flex-col z-[9999] border"
       style={{ zIndex: 9999 }}
     >
-    {/* Iframe con el chat embebido */}
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-primary to-primary-light text-primary-foreground rounded-t-lg">
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+            ⚖️
+          </div>
+          <div>
+            <h3 className="font-semibold text-sm md:text-base">Lexi, tu Asistente Legal</h3>
+            <p className="text-xs opacity-90">tuconsultorlegal.co</p>
+          </div>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onToggle}
+          className="text-primary-foreground hover:bg-white/20 p-1 h-8 w-8"
+        >
+          <X size={16} />
+        </Button>
+      </div>
+
+      {/* Chat Content */}
       <div className="flex-1 overflow-hidden">
         {iframeError ? (
           <div className="flex flex-col items-center justify-center h-full p-6 text-center">
             <AlertCircle className="w-12 h-12 text-destructive mb-4" />
             <h4 className="font-semibold text-lg mb-2">Servicio no disponible</h4>
-            <p className="text-muted-foreground mb-4">
+            <p className="text-muted-foreground mb-4 text-sm">
               El chat no está disponible en este momento. Por favor, inténtalo más tarde.
             </p>
             <Button 
@@ -75,6 +167,7 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
               onClick={() => {
                 setIframeError(false);
                 setIsLoading(true);
+                chatInstance.current = null;
               }}
               className="text-sm"
             >
@@ -84,24 +177,18 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
         ) : (
           <>
             {isLoading && (
-              <div className="flex items-center justify-center h-full">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <div className="flex flex-col items-center justify-center h-full p-6">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
+                <p className="text-sm text-muted-foreground">Conectando con Lexi...</p>
               </div>
             )}
-            <iframe
-              src={iframeSrc}
-              title="LexiLegal Chat"
+            <div 
+              ref={chatContainer}
               className="w-full h-full"
               style={{ 
-                border: "none", 
-                borderRadius: "0 0 0.5rem 0.5rem",
-                display: isLoading ? "none" : "block"
+                display: isLoading ? "none" : "block",
+                borderRadius: "0 0 0.75rem 0.75rem"
               }}
-              onLoad={handleIframeLoad}
-              onError={handleIframeError}
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation-by-user-activation"
-              referrerPolicy="no-referrer-when-downgrade"
-              allow="microphone; camera; geolocation; payment; fullscreen"
             />
           </>
         )}
