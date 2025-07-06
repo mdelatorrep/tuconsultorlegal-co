@@ -27,9 +27,9 @@ export default function ChatWidget({ isOpen, onToggle }: ChatWidgetProps) {
             inputPlaceholder: "Escribe tu consulta...",
             getStarted: "Iniciar Conversación",
             footer: "",
+            closeButtonTooltip: "Cerrar chat",
           },
         },
-        poweredBy: false,
       });
     }
   }, [isOpen]);
