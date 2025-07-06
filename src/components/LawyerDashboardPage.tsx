@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Lock } from "lucide-react";
+import bcrypt from "bcryptjs";
 
 interface DocumentToken {
   id: string;
@@ -42,18 +43,50 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
     e.preventDefault();
     setIsAuthenticating(true);
 
-    // Simple hardcoded credentials - in production should use proper auth
-    if (email === "abogado@consultorjalegal.com" && password === "abogados2024") {
+    try {
+      // Query the lawyer_accounts table
+      const { data: lawyerData, error } = await supabase
+        .from('lawyer_accounts')
+        .select('*')
+        .eq('email', email)
+        .eq('active', true)
+        .maybeSingle();
+
+      if (error || !lawyerData) {
+        toast({
+          title: "Acceso denegado",
+          description: "Credenciales incorrectas.",
+          variant: "destructive",
+        });
+        setIsAuthenticating(false);
+        return;
+      }
+
+      // Verify password using bcrypt
+      const isPasswordValid = await bcrypt.compare(password, lawyerData.password_hash);
+      
+      if (!isPasswordValid) {
+        toast({
+          title: "Acceso denegado",
+          description: "Credenciales incorrectas.",
+          variant: "destructive",
+        });
+        setIsAuthenticating(false);
+        return;
+      }
+
+      // Successful login
       setIsAuthenticated(true);
       toast({
         title: "Acceso autorizado",
-        description: "Bienvenido al panel de abogados.",
+        description: `Bienvenido ${lawyerData.full_name}.`,
       });
       fetchPendingDocuments();
-    } else {
+    } catch (error) {
+      console.error('Error during login:', error);
       toast({
-        title: "Acceso denegado",
-        description: "Credenciales incorrectas.",
+        title: "Error de conexión",
+        description: "No se pudo verificar las credenciales.",
         variant: "destructive",
       });
     }
