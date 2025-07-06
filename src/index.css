@@ -172,4 +172,26 @@ All colors MUST be HSL.
     transform: translateY(0);
     transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
   }
+  
+  /* Hide Lovable chat widget to prevent conflicts */
+  [data-lovable-chat],
+  .lovable-chat,
+  .gptengineer-chat,
+  iframe[src*="lovable"],
+  iframe[src*="gptengineer"],
+  div[id*="lovable-chat"],
+  div[class*="lovable-chat"],
+  .react-chatbot-kit-chat-container,
+  .chatbot-container {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    z-index: -1 !important;
+  }
+  
+  /* Ensure our custom chat has highest priority */
+  .fixed.bottom-6.right-6 {
+    z-index: 10000 !important;
+  }
 }
