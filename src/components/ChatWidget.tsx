@@ -1,8 +1,15 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Button } from "./ui/button";
-import { Scale, X, AlertCircle } from "lucide-react";
-import { createChat } from '@n8n/chat';
+import { Input } from "./ui/input";
+import { Scale, X, Send, AlertCircle } from "lucide-react";
+
+interface ChatMessage {
+  id: string;
+  content: string;
+  sender: 'user' | 'assistant';
+  timestamp: Date;
+}
 
 interface ChatWidgetProps {
   isOpen: boolean;
@@ -11,109 +18,105 @@ interface ChatWidgetProps {
 }
 
 export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWidgetProps) {
-  const [iframeError, setIframeError] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const chatContainer = useRef<HTMLDivElement>(null);
-  const chatInstance = useRef<any>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      id: '1',
+      content: '¡Hola! Soy Lexi, tu asistente legal. ¿En qué puedo ayudarte hoy?',
+      sender: 'assistant',
+      timestamp: new Date()
+    }
+  ]);
+  const [inputValue, setInputValue] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [connectionError, setConnectionError] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Initialize n8n chat when component mounts and chat opens
+  // Auto scroll to bottom when new messages arrive
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
   useEffect(() => {
-    if (isOpen && chatContainer.current && !chatInstance.current) {
-      try {
-        setIsLoading(true);
-        
-        chatInstance.current = createChat({
-          webhookUrl: 'https://buildera.app.n8n.cloud/webhook/a9c21cdd-8709-416a-a9c1-3b615b7e9f6b/chat',
-          webhookConfig: {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          },
-          target: chatContainer.current,
-          
-          // Modo fullscreen sin elementos adicionales
-          mode: 'fullscreen',
+    scrollToBottom();
+  }, [messages]);
 
-          // Claves que se enviarán al webhook.
-          chatInputKey: 'chatInput',
-          chatSessionKey: 'sessionId',
+  // Handle sending message
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputValue.trim() || isLoading) return;
 
-          // Permite que los usuarios continúen su conversación si recargan la página.
-          loadPreviousSession: true,
-          
-          metadata: {},
+    const userMessage: ChatMessage = {
+      id: Date.now().toString(),
+      content: inputValue.trim(),
+      sender: 'user',
+      timestamp: new Date()
+    };
 
-          // Ocultar pantalla de bienvenida para evitar duplicados
-          showWelcomeScreen: false,
+    setMessages(prev => [...prev, userMessage]);
+    setInputValue('');
+    setIsLoading(true);
+    setConnectionError(false);
 
-          // Establece el idioma por defecto a español.
-          defaultLanguage: 'en',
+    try {
+      // Send to n8n webhook
+      const response = await fetch('https://buildera.app.n8n.cloud/webhook/a9c21cdd-8709-416a-a9c1-3b615b7e9f6b/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          chatInput: userMessage.content,
+          sessionId: generateSessionId(),
+        }),
+      });
 
-          // Sin mensajes iniciales para evitar duplicación
-          initialMessages: [],
-
-          // Textos de la interfaz del chat en español.
-          i18n: {
-            en: {
-              title: 'Lexi, tu Asistente Legal ⚖️',
-              subtitle: 'Resuelve tus dudas o crea documentos legales al instante.',
-              footer: 'Con tecnología de tuconsultorlegal.co',
-              getStarted: 'Nueva Conversación',
-              inputPlaceholder: 'Escribe tu consulta legal aquí...',
-              closeButtonTooltip: 'Cerrar chat',
-            },
-          },
-
-          // Estilos personalizados para que coincida con la web
-          theme: {
-            '--chat--color-primary': 'hsl(233 49% 46%)',
-            '--chat--color-secondary': 'hsl(13 87% 58%)',
-            '--chat--header--background': 'linear-gradient(135deg, hsl(233 49% 46%) 0%, hsl(233 60% 60%) 100%)',
-            '--chat--message--user--background': 'hsl(13 87% 58%)',
-            '--chat--font-family': "'Montserrat', sans-serif",
-            '--chat--border-radius': '0.75rem',
-            '--chat--spacing': '1rem',
-            '--chat--input--background': 'hsl(0 0% 100%)',
-            '--chat--input--border': 'hsl(0 0% 85%)',
-          }
-        });
-
-        // Handle successful initialization
-        setTimeout(() => {
-          setIsLoading(false);
-          setIframeError(false);
-        }, 1000);
-
-      } catch (error) {
-        console.error('Error initializing n8n chat:', error);
-        setIsLoading(false);
-        setIframeError(true);
+      if (!response.ok) {
+        throw new Error('Error en la conexión');
       }
-    }
-  }, [isOpen]);
 
-  // Cleanup chat instance when component unmounts or closes
-  useEffect(() => {
-    if (!isOpen && chatInstance.current) {
-      try {
-        if (chatInstance.current.destroy) {
-          chatInstance.current.destroy();
-        }
-        chatInstance.current = null;
-      } catch (error) {
-        console.error('Error cleaning up chat:', error);
-      }
-    }
-  }, [isOpen]);
+      const data = await response.json();
+      
+      const assistantMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        content: data.output || 'Lo siento, ha ocurrido un error. Por favor, inténtalo de nuevo.',
+        sender: 'assistant',
+        timestamp: new Date()
+      };
 
-  // Reset states when chat opens
-  useEffect(() => {
-    if (isOpen) {
-      setIsLoading(true);
-      setIframeError(false);
+      setMessages(prev => [...prev, assistantMessage]);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      setConnectionError(true);
+      
+      const errorMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        content: 'Lo siento, no pude procesar tu mensaje. Por favor, inténtalo de nuevo más tarde.',
+        sender: 'assistant',
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
     }
-  }, [isOpen]);
+  };
+
+  // Generate or retrieve session ID
+  const generateSessionId = () => {
+    const sessionId = sessionStorage.getItem('chat-session-id');
+    if (sessionId) return sessionId;
+    
+    const newSessionId = Date.now().toString();
+    sessionStorage.setItem('chat-session-id', newSessionId);
+    return newSessionId;
+  };
+
+  // Reset connection error when user types
+  useEffect(() => {
+    if (inputValue && connectionError) {
+      setConnectionError(false);
+    }
+  }, [inputValue, connectionError]);
 
   if (!isOpen) {
     return (
@@ -153,45 +156,77 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
         </Button>
       </div>
 
-      {/* Chat Content */}
-      <div className="flex-1 overflow-hidden">
-        {iframeError ? (
-          <div className="flex flex-col items-center justify-center h-full p-6 text-center">
-            <AlertCircle className="w-12 h-12 text-destructive mb-4" />
-            <h4 className="font-semibold text-lg mb-2">Servicio no disponible</h4>
-            <p className="text-muted-foreground mb-4 text-sm">
-              El chat no está disponible en este momento. Por favor, inténtalo más tarde.
-            </p>
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                setIframeError(false);
-                setIsLoading(true);
-                chatInstance.current = null;
-              }}
-              className="text-sm"
+      {/* Chat Messages */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/20">
+        {messages.map((message) => (
+          <div
+            key={message.id}
+            className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+          >
+            <div
+              className={`max-w-[85%] rounded-2xl px-4 py-2 ${
+                message.sender === 'user'
+                  ? 'bg-success text-success-foreground rounded-br-sm'
+                  : 'bg-card text-card-foreground border shadow-soft rounded-bl-sm'
+              }`}
             >
-              Reintentar
-            </Button>
+              <p className="text-sm leading-relaxed">{message.content}</p>
+              <p className={`text-xs mt-1 opacity-70 ${
+                message.sender === 'user' ? 'text-success-foreground' : 'text-muted-foreground'
+              }`}>
+                {message.timestamp.toLocaleTimeString('es-ES', { 
+                  hour: '2-digit', 
+                  minute: '2-digit' 
+                })}
+              </p>
+            </div>
           </div>
-        ) : (
-          <>
-            {isLoading && (
-              <div className="flex flex-col items-center justify-center h-full p-6">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
-                <p className="text-sm text-muted-foreground">Conectando con Lexi...</p>
+        ))}
+        
+        {isLoading && (
+          <div className="flex justify-start">
+            <div className="bg-card border shadow-soft rounded-2xl rounded-bl-sm px-4 py-3">
+              <div className="flex space-x-1">
+                <div className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                <div className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
               </div>
-            )}
-            <div 
-              ref={chatContainer}
-              className="w-full h-full"
-              style={{ 
-                display: isLoading ? "none" : "block",
-                borderRadius: "0 0 0.75rem 0.75rem"
-              }}
-            />
-          </>
+            </div>
+          </div>
         )}
+        
+        {connectionError && (
+          <div className="flex justify-center">
+            <div className="flex items-center space-x-2 text-xs text-destructive bg-destructive/10 px-3 py-2 rounded-full">
+              <AlertCircle size={14} />
+              <span>Error de conexión. Inténtalo de nuevo.</span>
+            </div>
+          </div>
+        )}
+        
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Chat Input */}
+      <div className="border-t bg-card p-4">
+        <form onSubmit={handleSendMessage} className="flex space-x-2">
+          <Input
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            placeholder="Escribe tu consulta legal aquí..."
+            disabled={isLoading}
+            className="flex-1 rounded-full bg-background border-border focus:border-primary transition-smooth"
+            autoComplete="off"
+          />
+          <Button
+            type="submit"
+            size="sm"
+            disabled={!inputValue.trim() || isLoading}
+            className="rounded-full w-10 h-10 p-0 bg-primary hover:bg-primary-light transition-smooth"
+          >
+            <Send size={16} />
+          </Button>
+        </form>
       </div>
     </div>
   );
