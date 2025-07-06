@@ -4,6 +4,7 @@ import Footer from "@/components/Footer";
 import ChatWidget from "@/components/ChatWidget";
 import HomePage from "@/components/HomePage";
 import PersonasPage from "@/components/PersonasPage";
+import DocumentPaymentPage from "@/components/DocumentPaymentPage";
 import EmptyPage from "@/components/EmptyPage";
 
 export default function Index() {
@@ -52,7 +53,7 @@ export default function Index() {
       case "home":
         return <HomePage onOpenChat={handleOpenChat} />;
       case "personas":
-        return <PersonasPage onOpenChat={handleOpenChat} />;
+        return <PersonasPage onOpenChat={handleOpenChat} onNavigate={handleNavigate} />;
       case "empresas":
         return (
           <EmptyPage
@@ -81,6 +82,8 @@ export default function Index() {
             subtitle="¿Tienes preguntas sobre nuestros servicios o necesitas soporte? Estamos aquí para ayudarte."
           />
         );
+      case "documento-pago":
+        return <DocumentPaymentPage onOpenChat={handleOpenChat} />;
       case "terminos":
         return <EmptyPage title="Términos y Condiciones" />;
       case "privacidad":

@@ -3,9 +3,27 @@ import { Home, FileText, Briefcase, Car, Eye, Shield, Check } from "lucide-react
 
 interface PersonasPageProps {
   onOpenChat: (message: string) => void;
+  onNavigate?: (page: string) => void;
 }
 
-export default function PersonasPage({ onOpenChat }: PersonasPageProps) {
+export default function PersonasPage({ onOpenChat, onNavigate }: PersonasPageProps) {
+  
+  const handleDocumentAction = (service: any) => {
+    // Para servicios pagos, simular que se va directo a la página de pago
+    if (service.price !== "Gratis" && onNavigate) {
+      const price = service.price.replace(/[^\d]/g, ''); // Extract only numbers
+      const params = new URLSearchParams({
+        document: service.title,
+        price: price,
+        description: service.description
+      });
+      window.history.pushState(null, "", `#documento-pago?${params.toString()}`);
+      onNavigate('documento-pago');
+    } else {
+      // Para servicios gratuitos, abrir chat normal
+      onOpenChat(service.message);
+    }
+  };
   const services = [
     {
       category: "Vivienda y Arriendos",
@@ -130,7 +148,7 @@ export default function PersonasPage({ onOpenChat }: PersonasPageProps) {
                   <Button
                     variant="success"
                     className="w-full"
-                    onClick={() => onOpenChat(service.message)}
+                    onClick={() => handleDocumentAction(service)}
                   >
                     {service.buttonText}
                   </Button>
