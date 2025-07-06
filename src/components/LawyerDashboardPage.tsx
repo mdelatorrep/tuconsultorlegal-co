@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Lock } from "lucide-react";
-import bcrypt from "bcryptjs";
 
 interface DocumentToken {
   id: string;
@@ -35,7 +34,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const [isSaving, setIsSaving] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [token, setToken] = useState("");
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const { toast } = useToast();
 
@@ -62,10 +61,8 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
         return;
       }
 
-      // Verify password using bcrypt
-      const isPasswordValid = await bcrypt.compare(password, lawyerData.password_hash);
-      
-      if (!isPasswordValid) {
+      // Verify token directly
+      if (token !== lawyerData.access_token) {
         toast({
           title: "Acceso denegado",
           description: "Credenciales incorrectas.",
@@ -248,13 +245,13 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="password">Contraseña</Label>
+                  <Label htmlFor="token">Token de Acceso</Label>
                   <Input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
+                    id="token"
+                    type="text"
+                    value={token}
+                    onChange={(e) => setToken(e.target.value)}
+                    placeholder="ABOGADO2024"
                     required
                   />
                 </div>

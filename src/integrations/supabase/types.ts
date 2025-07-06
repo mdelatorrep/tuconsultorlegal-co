@@ -50,30 +50,30 @@ export type Database = {
       }
       lawyer_accounts: {
         Row: {
+          access_token: string
           active: boolean
           created_at: string
           email: string
           full_name: string
           id: string
-          password_hash: string
           updated_at: string
         }
         Insert: {
+          access_token: string
           active?: boolean
           created_at?: string
           email: string
           full_name: string
           id?: string
-          password_hash: string
           updated_at?: string
         }
         Update: {
+          access_token?: string
           active?: boolean
           created_at?: string
           email?: string
           full_name?: string
           id?: string
-          password_hash?: string
           updated_at?: string
         }
         Relationships: []
