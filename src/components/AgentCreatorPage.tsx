@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { Sparkles, ArrowLeft, ArrowRight, CheckCircle, Loader2, Copy, Wand2 } from "lucide-react";
 
@@ -37,6 +38,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
   const [aiProcessingSuccess, setAiProcessingSuccess] = useState(false);
 
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   const steps = [
     { id: 1, title: "Info Básica", description: "Información del documento" },
@@ -304,20 +306,44 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
 
           <CardContent>
             {/* Steps Indicator */}
-            <div className="flex border-b border-border mb-8">
-              {steps.map((step) => (
-                <button
-                  key={step.id}
-                  className={`flex-1 text-center py-4 font-semibold border-b-4 transition-colors ${
-                    currentStep === step.id
-                      ? 'border-primary text-primary'
-                      : 'border-transparent text-muted-foreground'
-                  }`}
-                >
-                  Paso {step.id}: {step.title}
-                </button>
-              ))}
-            </div>
+            {isMobile ? (
+              // Mobile stepper - current step indicator
+              <div className="mb-8">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-sm text-muted-foreground">
+                    Paso {currentStep} de {steps.length}
+                  </div>
+                  <div className="text-sm font-medium">
+                    {steps[currentStep - 1]?.title}
+                  </div>
+                </div>
+                <div className="w-full bg-muted rounded-full h-2">
+                  <div 
+                    className="bg-primary h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${(currentStep / steps.length) * 100}%` }}
+                  />
+                </div>
+                <div className="text-xs text-muted-foreground mt-2">
+                  {steps[currentStep - 1]?.description}
+                </div>
+              </div>
+            ) : (
+              // Desktop stepper - horizontal tabs
+              <div className="flex border-b border-border mb-8">
+                {steps.map((step) => (
+                  <button
+                    key={step.id}
+                    className={`flex-1 text-center py-4 font-semibold border-b-4 transition-colors ${
+                      currentStep === step.id
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-muted-foreground'
+                    }`}
+                  >
+                    Paso {step.id}: {step.title}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Step 1: Basic Info */}
             {currentStep === 1 && (

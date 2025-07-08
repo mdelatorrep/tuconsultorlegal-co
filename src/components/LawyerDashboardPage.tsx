@@ -229,7 +229,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                     size={isMobile ? "default" : "lg"}
                   >
                     <Settings className="h-5 w-5" />
-                    {isMobile ? "Gestionar" : "Gestionar Agentes"}
+                    {isMobile ? "Gestionar Agentes" : "Gestionar Agentes"}
                   </Button>
                   <Button
                     onClick={() => setCurrentView('agent-creator')}
@@ -238,7 +238,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                   >
                     <Bot className="h-5 w-5" />
                     <Plus className="h-4 w-4" />
-                    {isMobile ? "Crear" : "Crear Agente"}
+                    {isMobile ? "Crear Agentes" : "Crear Agente"}
                   </Button>
                 </>
               )}
