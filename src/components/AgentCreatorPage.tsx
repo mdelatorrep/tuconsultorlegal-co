@@ -295,15 +295,77 @@ Al terminar, proporciona al usuario el ID del documento y confirma que el proces
             {currentStep === 3 && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold mb-6">Prompt Inicial para el Agente de IA</h2>
+                
+                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
+                  <h3 className="text-lg font-semibold mb-3 text-blue-800 dark:text-blue-200">📋 Guía para el Prompt</h3>
+                  <div className="space-y-2 text-sm text-blue-700 dark:text-blue-300">
+                    <p><strong>✅ Incluye:</strong></p>
+                    <ul className="list-disc list-inside ml-4 space-y-1">
+                      <li>Rol específico del agente (ej: "asistente legal especializado en...")</li>
+                      <li>Objetivo claro del documento</li>
+                      <li>Información que debe recopilar del usuario</li>
+                      <li>Tono de conversación (profesional, amigable, etc.)</li>
+                      <li>Validaciones especiales (si aplica)</li>
+                    </ul>
+                    <p className="pt-2"><strong>❌ Evita:</strong></p>
+                    <ul className="list-disc list-inside ml-4 space-y-1">
+                      <li>Instrucciones técnicas complejas</li>
+                      <li>Referencias a herramientas específicas</li>
+                      <li>Detalles de formato del documento final</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6">
+                  <h3 className="text-lg font-semibold mb-3">💡 Ejemplo de Prompt Efectivo</h3>
+                  <div className="bg-white dark:bg-gray-800 border rounded p-4 text-sm">
+                    <pre className="whitespace-pre-wrap font-mono text-gray-700 dark:text-gray-300">
+{`Eres un asistente legal especializado en contratos de arrendamiento residencial en Colombia.
+
+TU OBJETIVO: Ayudar a propietarios e inquilinos a crear un contrato de arrendamiento completo y legalmente válido.
+
+INFORMACIÓN A RECOPILAR:
+1. Datos del arrendador (nombre, cédula, dirección)
+2. Datos del arrendatario (nombre, cédula, teléfono, ocupación)
+3. Información del inmueble (dirección completa, estrato, área)
+4. Condiciones económicas (canon, depósito, incrementos)
+5. Duración del contrato y fecha de inicio
+6. Servicios incluidos/excluidos
+7. Condiciones especiales (mascotas, huéspedes, etc.)
+
+ESTILO DE CONVERSACIÓN:
+- Mantén un tono profesional pero cercano
+- Explica brevemente por qué necesitas cada dato
+- Confirma información importante antes de continuar
+- Haz una pregunta a la vez para no abrumar
+
+VALIDACIONES:
+- Asegúrate de que las cédulas tengan formato válido
+- Confirma que las fechas sean coherentes
+- Verifica que los montos estén en pesos colombianos`}
+                    </pre>
+                  </div>
+                </div>
+
                 <p className="text-muted-foreground mb-4">
-                  Describe en tus palabras las instrucciones básicas que el agente debe seguir para recopilar la información. Nuestra IA lo mejorará automáticamente.
+                  <strong>Instrucción:</strong> Escribe tu prompt inicial siguiendo la guía anterior. Nuestra IA lo optimizará automáticamente con estructura profesional y mejores prácticas.
                 </p>
+                
                 <Textarea
                   value={formData.initialPrompt}
                   onChange={(e) => handleInputChange('initialPrompt', e.target.value)}
-                  placeholder="Ej: Eres un asistente que ayuda a crear una promesa de compraventa. Debes pedir los datos del vendedor, del comprador, la información del inmueble como dirección y matrícula, y el precio de venta."
-                  rows={10}
+                  placeholder="Escribe aquí tu prompt inicial siguiendo la guía anterior..."
+                  rows={12}
+                  className="text-sm"
                 />
+                
+                <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                  <p className="text-sm text-amber-700 dark:text-amber-300">
+                    <strong>💡 Tip:</strong> Un buen prompt inicial puede ahorrar tiempo en ajustes posteriores. 
+                    La IA mejorará tu prompt pero una base sólida produce mejores resultados.
+                  </p>
+                </div>
+
                 <div className="flex justify-between">
                   <Button variant="outline" onClick={handlePrev}>
                     <ArrowLeft className="h-4 w-4 mr-2" /> Anterior
