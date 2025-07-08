@@ -13,5 +13,22 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
+  },
+  global: {
+    headers: {
+      get authorization() {
+        // Get the lawyer token from localStorage
+        const lawyerData = localStorage.getItem('lawyerData');
+        if (lawyerData) {
+          try {
+            const parsed = JSON.parse(lawyerData);
+            return parsed.accessToken || '';
+          } catch {
+            return '';
+          }
+        }
+        return '';
+      }
+    }
   }
 });
