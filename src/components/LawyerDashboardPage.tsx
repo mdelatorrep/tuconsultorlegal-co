@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -39,6 +40,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const [currentView, setCurrentView] = useState<'dashboard' | 'agent-creator' | 'agent-manager'>('dashboard');
   const { toast } = useToast();
   const { isAuthenticated, isLoading: authLoading, user, logout } = useAdminAuth();
+  const isMobile = useIsMobile();
 
   // Fetch documents when authenticated
   useEffect(() => {
@@ -206,37 +208,37 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex justify-between items-start">
+          <div className={`${isMobile ? 'space-y-4' : 'flex justify-between items-start'}`}>
             <div>
-              <h1 className="text-4xl font-bold text-primary mb-2">
+              <h1 className={`${isMobile ? 'text-2xl' : 'text-4xl'} font-bold text-primary mb-2`}>
                 Panel de Abogados
               </h1>
-              <p className="text-lg text-muted-foreground">
+              <p className={`${isMobile ? 'text-base' : 'text-lg'} text-muted-foreground`}>
                 Revisa y ajusta los documentos pendientes
               </p>
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex items-center gap-3'}`}>
               {/* Agent Creator Access - Only show if lawyer has permission */}
               {user?.can_create_agents && (
                 <>
                   <Button
                     onClick={() => setCurrentView('agent-manager')}
                     variant="outline"
-                    className="flex items-center gap-2"
-                    size="lg"
+                    className="flex items-center gap-2 justify-center"
+                    size={isMobile ? "default" : "lg"}
                   >
                     <Settings className="h-5 w-5" />
-                    Gestionar Agentes
+                    {isMobile ? "Gestionar" : "Gestionar Agentes"}
                   </Button>
                   <Button
                     onClick={() => setCurrentView('agent-creator')}
-                    className="flex items-center gap-2"
-                    size="lg"
+                    className="flex items-center gap-2 justify-center"
+                    size={isMobile ? "default" : "lg"}
                   >
                     <Bot className="h-5 w-5" />
                     <Plus className="h-4 w-4" />
-                    Crear Agente
+                    {isMobile ? "Crear" : "Crear Agente"}
                   </Button>
                 </>
               )}
@@ -245,11 +247,11 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
               <Button
                 onClick={logout}
                 variant="outline"
-                className="flex items-center gap-2"
-                size="lg"
+                className="flex items-center gap-2 justify-center"
+                size={isMobile ? "default" : "lg"}
               >
                 <LogOut className="h-5 w-5" />
-                Cerrar Sesión
+                {isMobile ? "Salir" : "Cerrar Sesión"}
               </Button>
             </div>
           </div>
