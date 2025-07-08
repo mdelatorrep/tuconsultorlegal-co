@@ -59,7 +59,7 @@ REGLAS IMPORTANTES:
 7. Conserva todas las cláusulas importantes existentes
 8. RESPONDE ÚNICAMENTE CON LA PLANTILLA MEJORADA EN TEXTO PLANO
 9. NO incluyas explicaciones, comentarios, ni texto adicional
-10. NO uses caracteres especiales de markdown como **, _, `, etc.
+10. NO uses caracteres especiales de markdown como **, _, \`, etc.
 11. NO incluyas encabezados, títulos o secciones explicativas
 
 OBJETIVO: Devolver únicamente la plantilla del documento mejorada en texto plano, sin formato adicional.`
