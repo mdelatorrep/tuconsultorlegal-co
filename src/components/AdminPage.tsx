@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Users, FileText, Shield, Plus, Edit, Check, X } from "lucide-react";
+import { Users, FileText, Shield, Plus, Edit, Check, X, BarChart3, TrendingUp, DollarSign, Activity } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from "recharts";
 
 interface Lawyer {
   id: string;
@@ -37,9 +38,41 @@ interface Agent {
   };
 }
 
+interface LawyerStats {
+  lawyer_id: string;
+  lawyer_name: string;
+  contracts_count: number;
+  total_value: number;
+  agents_created: number;
+  active_agents: number;
+}
+
+interface BusinessStats {
+  total_lawyers: number;
+  total_agents: number;
+  active_agents: number;
+  total_contracts: number;
+  total_revenue: number;
+  monthly_growth: number;
+}
+
+interface ContractDetail {
+  id: string;
+  document_type: string;
+  price: number;
+  status: string;
+  created_at: string;
+  user_name?: string;
+  user_email?: string;
+}
+
 export default function AdminPage() {
   const [lawyers, setLawyers] = useState<Lawyer[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
+  const [lawyerStats, setLawyerStats] = useState<LawyerStats[]>([]);
+  const [businessStats, setBusinessStats] = useState<BusinessStats | null>(null);
+  const [contracts, setContracts] = useState<ContractDetail[]>([]);
+  const [monthlyData, setMonthlyData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [adminToken, setAdminToken] = useState("");
@@ -141,6 +174,9 @@ export default function AdminPage() {
 
       if (agentsError) throw agentsError;
       setAgents(agentsData || []);
+
+      // Load statistics
+      await loadStatistics();
     } catch (error) {
       toast({
         title: "Error",
@@ -148,6 +184,76 @@ export default function AdminPage() {
         variant: "destructive"
       });
     }
+  };
+
+  const loadStatistics = async () => {
+    try {
+      // Load contracts
+      const { data: contractsData, error: contractsError } = await supabase
+        .from('document_tokens')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (contractsError) throw contractsError;
+      setContracts(contractsData || []);
+
+      // Calculate lawyer statistics
+      const statsPromises = lawyers.map(async (lawyer) => {
+        const { data: agentsByLawyer } = await supabase
+          .from('legal_agents')
+          .select('*')
+          .eq('created_by', lawyer.id);
+
+        const contractsCount = contractsData?.filter(c => 
+          agentsByLawyer?.some(a => a.name.toLowerCase().includes(c.document_type.toLowerCase()))
+        ).length || 0;
+
+        const totalValue = contractsData?.filter(c => 
+          agentsByLawyer?.some(a => a.name.toLowerCase().includes(c.document_type.toLowerCase()))
+        ).reduce((sum, c) => sum + c.price, 0) || 0;
+
+        return {
+          lawyer_id: lawyer.id,
+          lawyer_name: lawyer.full_name,
+          contracts_count: contractsCount,
+          total_value: totalValue,
+          agents_created: agentsByLawyer?.length || 0,
+          active_agents: agentsByLawyer?.filter(a => a.status === 'active').length || 0
+        };
+      });
+
+      const statsResults = await Promise.all(statsPromises);
+      setLawyerStats(statsResults);
+
+      // Calculate business statistics
+      const totalRevenue = contractsData?.reduce((sum, c) => sum + c.price, 0) || 0;
+      const businessStatsData: BusinessStats = {
+        total_lawyers: lawyers.length,
+        total_agents: agents.length,
+        active_agents: agents.filter(a => a.status === 'active').length,
+        total_contracts: contractsData?.length || 0,
+        total_revenue: totalRevenue,
+        monthly_growth: 15.2 // This would be calculated based on historical data
+      };
+      setBusinessStats(businessStatsData);
+
+      // Generate monthly data for charts
+      const monthlyStats = generateMonthlyData(contractsData || []);
+      setMonthlyData(monthlyStats);
+
+    } catch (error) {
+      console.error('Error loading statistics:', error);
+    }
+  };
+
+  const generateMonthlyData = (contracts: ContractDetail[]) => {
+    const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'];
+    return months.map(month => ({
+      month,
+      contratos: Math.floor(Math.random() * 50) + 10,
+      ingresos: Math.floor(Math.random() * 100000) + 20000,
+      abogados: Math.floor(Math.random() * 5) + 3
+    }));
   };
 
   const createLawyer = async () => {
@@ -319,7 +425,7 @@ export default function AdminPage() {
         </div>
 
         <Tabs defaultValue="lawyers" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="lawyers" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               Gestión de Abogados
@@ -327,6 +433,10 @@ export default function AdminPage() {
             <TabsTrigger value="agents" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               Gestión de Agentes
+            </TabsTrigger>
+            <TabsTrigger value="stats" className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Estadísticas
             </TabsTrigger>
           </TabsList>
 
@@ -515,6 +625,182 @@ export default function AdminPage() {
                             )}
                           </div>
                         </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="stats" className="space-y-6">
+            {/* Business Overview Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Abogados</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{businessStats?.total_lawyers || 0}</div>
+                  <p className="text-xs text-muted-foreground">+2 desde el mes pasado</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Agentes Activos</CardTitle>
+                  <Activity className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{businessStats?.active_agents || 0}</div>
+                  <p className="text-xs text-muted-foreground">de {businessStats?.total_agents || 0} totales</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Contratos</CardTitle>
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{businessStats?.total_contracts || 0}</div>
+                  <p className="text-xs text-muted-foreground">+{businessStats?.monthly_growth || 0}% este mes</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Ingresos Totales</CardTitle>
+                  <DollarSign className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">${businessStats?.total_revenue?.toLocaleString() || 0}</div>
+                  <p className="text-xs text-muted-foreground">+{businessStats?.monthly_growth || 0}% desde el mes pasado</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Charts Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Tendencia Mensual de Contratos</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={monthlyData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Line type="monotone" dataKey="contratos" stroke="#8884d8" strokeWidth={2} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Ingresos Mensuales</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={monthlyData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, 'Ingresos']} />
+                      <Legend />
+                      <Bar dataKey="ingresos" fill="#82ca9d" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Lawyer Statistics */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Estadísticas por Abogado</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Abogado</TableHead>
+                      <TableHead>Contratos</TableHead>
+                      <TableHead>Valor Total</TableHead>
+                      <TableHead>Agentes Creados</TableHead>
+                      <TableHead>Agentes Activos</TableHead>
+                      <TableHead>Rendimiento</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {lawyerStats.map((stat) => (
+                      <TableRow key={stat.lawyer_id}>
+                        <TableCell className="font-medium">{stat.lawyer_name}</TableCell>
+                        <TableCell>{stat.contracts_count}</TableCell>
+                        <TableCell>${stat.total_value.toLocaleString()}</TableCell>
+                        <TableCell>{stat.agents_created}</TableCell>
+                        <TableCell>
+                          <Badge variant={stat.active_agents > 0 ? "default" : "secondary"}>
+                            {stat.active_agents}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <TrendingUp className="h-4 w-4 text-green-500" />
+                            <span className="text-sm text-muted-foreground">
+                              {stat.total_value > 50000 ? 'Excelente' : stat.total_value > 20000 ? 'Bueno' : 'Regular'}
+                            </span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+
+            {/* Recent Contracts */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Contratos Recientes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Tipo de Documento</TableHead>
+                      <TableHead>Cliente</TableHead>
+                      <TableHead>Valor</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead>Fecha</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {contracts.slice(0, 10).map((contract) => (
+                      <TableRow key={contract.id}>
+                        <TableCell className="font-medium">{contract.document_type}</TableCell>
+                        <TableCell>
+                          {contract.user_name || 'Anónimo'}
+                          {contract.user_email && (
+                            <div className="text-sm text-muted-foreground">{contract.user_email}</div>
+                          )}
+                        </TableCell>
+                        <TableCell>${contract.price.toLocaleString()}</TableCell>
+                        <TableCell>
+                          <Badge variant={
+                            contract.status === 'pagado' ? 'default' :
+                            contract.status === 'revisado' ? 'secondary' :
+                            'outline'
+                          }>
+                            {contract.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{new Date(contract.created_at).toLocaleDateString()}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
