@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, ArrowLeft, ArrowRight, CheckCircle, Loader2, Copy } from "lucide-react";
+import { Sparkles, ArrowLeft, ArrowRight, CheckCircle, Loader2, Copy, Wand2 } from "lucide-react";
 
 interface AgentCreatorPageProps {
   onBack: () => void;
@@ -18,6 +18,7 @@ interface AgentCreatorPageProps {
 export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPageProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isImprovingTemplate, setIsImprovingTemplate] = useState(false);
   const [formData, setFormData] = useState({
     docName: "",
     docDesc: "",
@@ -149,6 +150,71 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       toast({
         title: "Error al copiar",
         description: "No se pudo copiar la plantilla. Intenta seleccionar y copiar manualmente.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const improveTemplateWithAI = async () => {
+    if (!formData.docTemplate.trim()) {
+      toast({
+        title: "Plantilla requerida",
+        description: "Debes escribir una plantilla antes de mejorarla con IA.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsImprovingTemplate(true);
+    
+    try {
+      console.log('Improving template with AI...', {
+        templateLength: formData.docTemplate.length,
+        docName: formData.docName,
+        docCategory: formData.docCat
+      });
+
+      const { data, error } = await supabase.functions.invoke('improve-template-ai', {
+        body: {
+          templateContent: formData.docTemplate,
+          docName: formData.docName,
+          docCategory: formData.docCat,
+          docDescription: formData.docDesc
+        }
+      });
+
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw new Error(error.message || 'Error al mejorar la plantilla con IA');
+      }
+
+      if (!data?.success) {
+        console.error('AI template improvement failed:', data);
+        throw new Error(data?.error || 'Error en la mejora de la plantilla');
+      }
+
+      console.log('Template improvement successful:', {
+        originalLength: data.originalLength,
+        improvedLength: data.improvedLength
+      });
+
+      // Update the template with the improved version
+      setFormData(prev => ({ ...prev, docTemplate: data.improvedTemplate }));
+
+      setIsImprovingTemplate(false);
+
+      toast({
+        title: "Plantilla mejorada exitosamente",
+        description: `Se mejoró la plantilla de ${data.originalLength} a ${data.improvedLength} caracteres.`,
+      });
+
+    } catch (error) {
+      console.error('Error improving template with AI:', error);
+      setIsImprovingTemplate(false);
+      
+      toast({
+        title: "Error al mejorar plantilla",
+        description: error instanceof Error ? error.message : "No se pudo mejorar la plantilla con IA. Intenta nuevamente.",
         variant: "destructive",
       });
     }
@@ -311,18 +377,44 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
                   <p className="text-muted-foreground">
                     Pega el texto completo de tu plantilla. Usa placeholders como `{"{{nombre_del_campo}}"}` para las variables.
                   </p>
-                  {formData.docTemplate && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={copyTemplate}
-                      className="ml-4"
-                    >
-                      <Copy className="h-4 w-4 mr-2" />
-                      Copiar Plantilla
-                    </Button>
-                  )}
+                  <div className="flex gap-2">
+                    {formData.docTemplate && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={copyTemplate}
+                      >
+                        <Copy className="h-4 w-4 mr-2" />
+                        Copiar Plantilla
+                      </Button>
+                    )}
+                    {formData.docTemplate && formData.docName && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={improveTemplateWithAI}
+                        disabled={isImprovingTemplate}
+                        className="bg-purple-50 hover:bg-purple-100 border-purple-200 text-purple-700"
+                      >
+                        {isImprovingTemplate ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Wand2 className="h-4 w-4 mr-2" />
+                        )}
+                        {isImprovingTemplate ? 'Mejorando...' : 'Mejorar con IA'}
+                      </Button>
+                    )}
+                  </div>
                 </div>
+                
+                {formData.docTemplate && formData.docName && (
+                  <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4 mb-4">
+                    <p className="text-sm text-purple-700 dark:text-purple-300">
+                      <strong>💡 Mejora con IA:</strong> Usa el botón "Mejorar con IA" para que OpenAI optimice tu plantilla, agregue cláusulas legales importantes y mejore la redacción manteniendo todos los placeholders existentes.
+                    </p>
+                  </div>
+                )}
+
                 <Textarea
                   value={formData.docTemplate}
                   onChange={(e) => handleInputChange('docTemplate', e.target.value)}
