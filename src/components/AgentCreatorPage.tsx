@@ -32,6 +32,8 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
     suggestedPrice: "",
     priceJustification: "",
   });
+  
+  const [aiProcessingSuccess, setAiProcessingSuccess] = useState(false);
 
   const { toast } = useToast();
 
@@ -112,6 +114,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         priceJustification: data.priceJustification || 'Precio estimado basado en complejidad del documento.'
       });
 
+      setAiProcessingSuccess(true);
       setIsProcessing(false);
 
       toast({
@@ -122,6 +125,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
     } catch (error) {
       console.error('Error processing with AI:', error);
       setIsProcessing(false);
+      setAiProcessingSuccess(false);
       
       toast({
         title: "Error en el procesamiento",
@@ -129,39 +133,8 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         variant: "destructive",
       });
 
-      // Set fallback data so user can continue
-      setAiResults({
-        enhancedPrompt: `PROMPT MEJORADO (Modo Fallback):
-
-## ROL Y OBJETIVO
-Eres un asistente legal experto en la elaboración de ${formData.docName} en Colombia. Tu objetivo es recopilar toda la información necesaria del usuario de manera clara y profesional para generar un documento completo y legalmente válido.
-
-## PROCESO DE RECOPILACIÓN
-Debes solicitar la información de forma secuencial, validando cada respuesta antes de continuar. Mantén un tono profesional pero amigable, y explica brevemente por qué necesitas cada dato.
-
-## CAMPOS A RECOPILAR
-[Basado en el análisis de la plantilla proporcionada]
-
-## ESTILO DE CONVERSACIÓN
-- Tono profesional pero amigable
-- Haz una pregunta a la vez
-- Valida las respuestas antes de continuar
-- Explica la importancia de cada dato cuando sea relevante
-
-## PROCESO DE REDACCIÓN
-Una vez confirmados todos los datos, redacta el documento completo desde cero usando la plantilla como guía, reemplazando todos los placeholders con la información proporcionada.
-
-## FINALIZACIÓN
-Al terminar, confirma que el documento se ha generado correctamente y está listo para su descarga.
-
-Instrucción inicial del abogado:
-${formData.initialPrompt}`,
-        extractedPlaceholders: [
-          { placeholder: "{{campo_ejemplo}}", pregunta: "Información de ejemplo - revisar plantilla manualmente" }
-        ],
-        suggestedPrice: "$ 75,000 COP",
-        priceJustification: "Precio estimado basado en la categoría del documento y complejidad general."
-      });
+      // Return to step 3 to try again
+      setCurrentStep(3);
     }
   };
 
@@ -469,48 +442,64 @@ VALIDACIONES:
                     <p className="text-lg">Procesando con IA...</p>
                     <p className="text-muted-foreground">Esto puede tomar unos segundos</p>
                   </div>
-                ) : (
-                  <div className="space-y-8">
-                    {/* Enhanced Prompt */}
-                    <div>
-                      <h3 className="text-xl font-bold mb-2">1. Prompt del Agente (Mejorado)</h3>
-                      <div className="p-4 bg-muted rounded-md border text-sm whitespace-pre-wrap font-mono">
-                        {aiResults.enhancedPrompt}
-                      </div>
-                    </div>
+                 ) : aiProcessingSuccess ? (
+                   <div className="space-y-8">
+                     {/* Enhanced Prompt */}
+                     <div>
+                       <h3 className="text-xl font-bold mb-2">1. Prompt del Agente (Mejorado)</h3>
+                       <div className="p-4 bg-muted rounded-md border text-sm whitespace-pre-wrap font-mono">
+                         {aiResults.enhancedPrompt}
+                       </div>
+                     </div>
 
-                    {/* Extracted Placeholders */}
-                    <div>
-                      <h3 className="text-xl font-bold mb-2">2. Variables Identificadas en la Plantilla</h3>
-                      <div className="p-4 bg-muted rounded-md border">
-                        <div className="flex flex-wrap gap-2">
-                          {aiResults.extractedPlaceholders.map((item, index) => (
-                            <Badge key={index} variant="secondary">
-                              {item.placeholder}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
+                     {/* Extracted Placeholders */}
+                     <div>
+                       <h3 className="text-xl font-bold mb-2">2. Variables Identificadas en la Plantilla</h3>
+                       <div className="p-4 bg-muted rounded-md border">
+                         <div className="flex flex-wrap gap-2">
+                           {aiResults.extractedPlaceholders.map((item, index) => (
+                             <Badge key={index} variant="secondary">
+                               {item.placeholder}
+                             </Badge>
+                           ))}
+                         </div>
+                       </div>
+                     </div>
 
-                    {/* Price Suggestion */}
-                    <div>
-                      <h3 className="text-xl font-bold mb-2">3. Precio Sugerido (Basado en el Mercado)</h3>
-                      <div className="p-4 bg-success/10 rounded-md border border-success/20">
-                        <p className="text-3xl font-bold text-success">{aiResults.suggestedPrice}</p>
-                        <p className="text-sm text-success/80 mt-1">{aiResults.priceJustification}</p>
-                      </div>
-                    </div>
+                     {/* Price Suggestion */}
+                     <div>
+                       <h3 className="text-xl font-bold mb-2">3. Precio Sugerido (Basado en el Mercado)</h3>
+                       <div className="p-4 bg-success/10 rounded-md border border-success/20">
+                         <p className="text-3xl font-bold text-success">{aiResults.suggestedPrice}</p>
+                         <p className="text-sm text-success/80 mt-1">{aiResults.priceJustification}</p>
+                       </div>
+                     </div>
 
-                    <div className="flex justify-between">
-                      <Button variant="outline" onClick={handlePrev}>
-                        <ArrowLeft className="h-4 w-4 mr-2" /> Anterior
-                      </Button>
-                      <Button onClick={handleNext}>
-                        Siguiente <ArrowRight className="h-4 w-4 ml-2" />
-                      </Button>
-                    </div>
-                  </div>
+                     <div className="flex justify-between">
+                       <Button variant="outline" onClick={handlePrev}>
+                         <ArrowLeft className="h-4 w-4 mr-2" /> Anterior
+                       </Button>
+                       <Button onClick={handleNext}>
+                         Siguiente <ArrowRight className="h-4 w-4 ml-2" />
+                       </Button>
+                     </div>
+                   </div>
+                 ) : (
+                   <div className="text-center py-12">
+                     <div className="mb-6">
+                       <div className="h-16 w-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                         <span className="text-2xl">⚠️</span>
+                       </div>
+                       <h3 className="text-xl font-bold mb-2">Error en el Procesamiento</h3>
+                       <p className="text-muted-foreground mb-6">
+                         No se pudo procesar la información con IA. Regresa al paso anterior e intenta nuevamente.
+                       </p>
+                       <Button onClick={() => setCurrentStep(3)} variant="outline">
+                         <ArrowLeft className="h-4 w-4 mr-2" />
+                         Volver a Intentar
+                       </Button>
+                     </div>
+                   </div>
                 )}
               </div>
             )}
