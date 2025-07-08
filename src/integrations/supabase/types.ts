@@ -92,6 +92,62 @@ export type Database = {
         }
         Relationships: []
       }
+      legal_agents: {
+        Row: {
+          ai_prompt: string
+          category: string
+          created_at: string
+          created_by: string
+          description: string
+          id: string
+          name: string
+          placeholder_fields: Json
+          price_justification: string | null
+          status: string
+          suggested_price: number
+          template_content: string
+          updated_at: string
+        }
+        Insert: {
+          ai_prompt: string
+          category: string
+          created_at?: string
+          created_by: string
+          description: string
+          id?: string
+          name: string
+          placeholder_fields?: Json
+          price_justification?: string | null
+          status?: string
+          suggested_price: number
+          template_content: string
+          updated_at?: string
+        }
+        Update: {
+          ai_prompt?: string
+          category?: string
+          created_at?: string
+          created_by?: string
+          description?: string
+          id?: string
+          name?: string
+          placeholder_fields?: Json
+          price_justification?: string | null
+          status?: string
+          suggested_price?: number
+          template_content?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_agents_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "lawyer_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       maturity_diagnoses: {
         Row: {
           answers: Json

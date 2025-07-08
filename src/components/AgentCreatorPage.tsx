@@ -7,13 +7,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { Sparkles, ArrowLeft, ArrowRight, CheckCircle, Loader2 } from "lucide-react";
 
 interface AgentCreatorPageProps {
   onBack: () => void;
+  lawyerData: any;
 }
 
-export default function AgentCreatorPage({ onBack }: AgentCreatorPageProps) {
+export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPageProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [formData, setFormData] = useState({
@@ -117,10 +119,41 @@ Al terminar, proporciona al usuario el ID del documento y confirma que el proces
 
   const handlePublish = async () => {
     try {
+      // Convert suggested price to integer (remove $ and commas)
+      const priceValue = parseInt(aiResults.suggestedPrice.replace(/[^0-9]/g, ''));
+      
+      const { data, error } = await supabase
+        .from('legal_agents')
+        .insert({
+          name: formData.docName,
+          description: formData.docDesc,
+          category: formData.docCat,
+          template_content: formData.docTemplate,
+          ai_prompt: aiResults.enhancedPrompt,
+          placeholder_fields: aiResults.extractedPlaceholders,
+          suggested_price: priceValue,
+          price_justification: aiResults.priceJustification,
+          status: 'active',
+          created_by: lawyerData.id
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating agent:', error);
+        toast({
+          title: "Error al publicar",
+          description: "No se pudo crear el agente. Intenta nuevamente.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       toast({
-        title: "Agente publicado",
-        description: `El agente para "${formData.docName}" ha sido creado exitosamente.`,
+        title: "Agente publicado exitosamente",
+        description: `El agente "${formData.docName}" está ahora disponible para los clientes.`,
       });
+
       // Reset form and go back
       setFormData({
         docName: "",
@@ -128,6 +161,12 @@ Al terminar, proporciona al usuario el ID del documento y confirma que el proces
         docCat: "",
         docTemplate: "",
         initialPrompt: "",
+      });
+      setAiResults({
+        enhancedPrompt: "",
+        extractedPlaceholders: [],
+        suggestedPrice: "",
+        priceJustification: "",
       });
       setCurrentStep(1);
       onBack();

@@ -7,8 +7,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Lock, Bot, Plus } from "lucide-react";
+import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Lock, Bot, Plus, Settings } from "lucide-react";
 import AgentCreatorPage from "./AgentCreatorPage";
+import AgentManagerPage from "./AgentManagerPage";
 
 interface DocumentToken {
   id: string;
@@ -39,7 +40,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const [email, setEmail] = useState("");
   const [token, setToken] = useState("");
   const [isAuthenticating, setIsAuthenticating] = useState(false);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'agent-creator'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'agent-creator' | 'agent-manager'>('dashboard');
   const [lawyerData, setLawyerData] = useState<any>(null);
   const { toast } = useToast();
 
@@ -291,7 +292,12 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
 
   // Show Agent Creator if selected
   if (currentView === 'agent-creator') {
-    return <AgentCreatorPage onBack={() => setCurrentView('dashboard')} />;
+    return <AgentCreatorPage onBack={() => setCurrentView('dashboard')} lawyerData={lawyerData} />;
+  }
+
+  // Show Agent Manager if selected
+  if (currentView === 'agent-manager') {
+    return <AgentManagerPage onBack={() => setCurrentView('dashboard')} lawyerData={lawyerData} />;
   }
 
   return (
@@ -311,15 +317,26 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
             
             {/* Agent Creator Access - Only show if lawyer has permission */}
             {lawyerData?.can_create_agents && (
-              <Button
-                onClick={() => setCurrentView('agent-creator')}
-                className="flex items-center gap-2"
-                size="lg"
-              >
-                <Bot className="h-5 w-5" />
-                <Plus className="h-4 w-4" />
-                Crear Agente
-              </Button>
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => setCurrentView('agent-manager')}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                  size="lg"
+                >
+                  <Settings className="h-5 w-5" />
+                  Gestionar Agentes
+                </Button>
+                <Button
+                  onClick={() => setCurrentView('agent-creator')}
+                  className="flex items-center gap-2"
+                  size="lg"
+                >
+                  <Bot className="h-5 w-5" />
+                  <Plus className="h-4 w-4" />
+                  Crear Agente
+                </Button>
+              </div>
             )}
           </div>
         </div>
