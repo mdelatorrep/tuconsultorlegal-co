@@ -490,12 +490,14 @@ export default function AdminPage() {
     );
   }
 
-  console.log('AdminPage render - isAuthenticated:', isAuthenticated, 'isLoading:', isLoading);
+  console.log('AdminPage render - isAuthenticated:', isAuthenticated, 'isLoading:', isLoading, 'user:', user);
   
   if (!isAuthenticated) {
     console.log('Not authenticated, showing login page');
-    return <AdminLogin onLoginSuccess={() => {}} />;
+    return <AdminLogin onLoginSuccess={() => console.log('Login success callback called')} />;
   }
+
+  console.log('User is authenticated! Showing admin panel');
 
   return (
     <div className="min-h-screen bg-background p-6">
