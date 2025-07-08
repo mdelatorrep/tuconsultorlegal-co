@@ -110,46 +110,61 @@ export type Database = {
       legal_agents: {
         Row: {
           ai_prompt: string
+          button_cta: string | null
           category: string
           created_at: string
           created_by: string
           description: string
+          document_description: string | null
+          document_name: string | null
+          frontend_icon: string | null
           id: string
           name: string
           placeholder_fields: Json
           price_justification: string | null
           status: string
           suggested_price: number
+          target_audience: string | null
           template_content: string
           updated_at: string
         }
         Insert: {
           ai_prompt: string
+          button_cta?: string | null
           category: string
           created_at?: string
           created_by: string
           description: string
+          document_description?: string | null
+          document_name?: string | null
+          frontend_icon?: string | null
           id?: string
           name: string
           placeholder_fields?: Json
           price_justification?: string | null
           status?: string
           suggested_price: number
+          target_audience?: string | null
           template_content: string
           updated_at?: string
         }
         Update: {
           ai_prompt?: string
+          button_cta?: string | null
           category?: string
           created_at?: string
           created_by?: string
           description?: string
+          document_description?: string | null
+          document_name?: string | null
+          frontend_icon?: string | null
           id?: string
           name?: string
           placeholder_fields?: Json
           price_justification?: string | null
           status?: string
           suggested_price?: number
+          target_audience?: string | null
           template_content?: string
           updated_at?: string
         }

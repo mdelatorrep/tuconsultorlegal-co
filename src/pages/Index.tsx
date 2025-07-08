@@ -4,6 +4,7 @@ import Footer from "@/components/Footer";
 import ChatWidget from "@/components/ChatWidget";
 import HomePage from "@/components/HomePage";
 import PersonasPage from "@/components/PersonasPage";
+import EmpresasPage from "@/components/EmpresasPage";
 import UnifiedDocumentPage from "@/components/UnifiedDocumentPage";
 import LawyerDashboardPage from "@/components/LawyerDashboardPage";
 import EmptyPage from "@/components/EmptyPage";
@@ -73,12 +74,7 @@ export default function Index() {
       case "personas":
         return <PersonasPage onOpenChat={handleOpenChat} onNavigate={handleNavigate} />;
       case "empresas":
-        return (
-          <EmptyPage
-            title="Impulso Legal para tu Empresa"
-            subtitle="Soluciones legales diseñadas para PyMEs, startups y emprendedores. Formaliza, protege y haz crecer tu negocio con seguridad jurídica."
-          />
-        );
+        return <EmpresasPage onOpenChat={handleOpenChat} onNavigate={handleNavigate} />;
       case "precios":
         return (
           <EmptyPage

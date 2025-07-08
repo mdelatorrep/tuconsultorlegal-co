@@ -87,6 +87,20 @@ export default function AdminPage() {
     is_admin: false
   });
 
+  // New agent form state
+  const [newAgent, setNewAgent] = useState({
+    name: "",
+    description: "",
+    category: "",
+    ai_prompt: "",
+    suggested_price: 0,
+    frontend_icon: "FileText",
+    document_name: "",
+    document_description: "",
+    button_cta: "Generar Documento",
+    target_audience: "personas"
+  });
+
   useEffect(() => {
     if (isAuthenticated) {
       loadData();
