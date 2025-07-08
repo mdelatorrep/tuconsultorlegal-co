@@ -106,9 +106,13 @@ export const useAdminAuth = () => {
       // Store token securely in sessionStorage (more secure than localStorage)
       sessionStorage.setItem('admin_token', data.token);
       
-      console.log('Setting authentication state to true');
+      console.log('Login successful - setting authentication state');
+      console.log('Current isAuthenticated state:', isAuthenticated);
+      
       setIsAuthenticated(true);
       setUser(data.user);
+      
+      console.log('After setState calls - isAuthenticated should be:', true);
       
       toast({
         title: "Sesión iniciada",

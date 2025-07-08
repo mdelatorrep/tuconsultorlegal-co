@@ -80,7 +80,7 @@ export default function AdminPage() {
   const [contracts, setContracts] = useState<ContractDetail[]>([]);
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
   const { toast } = useToast();
-  const { isAuthenticated, isLoading, user, logout, getAuthHeaders } = useAdminAuth();
+  const { isAuthenticated, isLoading, user, logout, getAuthHeaders, checkAuthStatus } = useAdminAuth();
 
   // New lawyer form state with input validation
   const [newLawyer, setNewLawyer] = useState({
@@ -108,24 +108,23 @@ export default function AdminPage() {
   });
 
   useEffect(() => {
-    console.log('AdminPage useEffect - isAuthenticated:', isAuthenticated);
+    console.log('AdminPage useEffect triggered - isAuthenticated:', isAuthenticated, 'isLoading:', isLoading);
     if (isAuthenticated) {
       console.log('User authenticated, loading data...');
       loadData();
+    } else {
+      console.log('User NOT authenticated');
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, isLoading]);
 
   const sanitizeInput = (input: string): string => {
     return DOMPurify.sanitize(input.trim());
   };
 
-  const handleLoginSuccess = () => {
-    console.log('handleLoginSuccess called');
-    // Force re-check of authentication status
-    setTimeout(() => {
-      console.log('Loading data after login success...');
-      loadData();
-    }, 100);
+  const handleLoginSuccess = async () => {
+    console.log('handleLoginSuccess called - forcing state refresh');
+    // Force immediate re-check of authentication status
+    await checkAuthStatus();
   };
 
   const loadData = async () => {
@@ -495,7 +494,7 @@ export default function AdminPage() {
   
   if (!isAuthenticated) {
     console.log('Not authenticated, showing login page');
-    return <AdminLogin onLoginSuccess={handleLoginSuccess} />;
+    return <AdminLogin onLoginSuccess={() => {}} />;
   }
 
   return (
