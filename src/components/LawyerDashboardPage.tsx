@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Lock, Bot, Plus, Settings } from "lucide-react";
+import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Bot, Plus, Settings } from "lucide-react";
+import AdminLogin from "./AdminLogin";
 import AgentCreatorPage from "./AgentCreatorPage";
 import AgentManagerPage from "./AgentManagerPage";
 
@@ -36,67 +36,16 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const [editedContent, setEditedContent] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [email, setEmail] = useState("");
-  const [token, setToken] = useState("");
-  const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [currentView, setCurrentView] = useState<'dashboard' | 'agent-creator' | 'agent-manager'>('dashboard');
-  const [lawyerData, setLawyerData] = useState<any>(null);
   const { toast } = useToast();
+  const { isAuthenticated, isLoading: authLoading, user } = useAdminAuth();
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsAuthenticating(true);
-
-    try {
-      // Query the lawyer_accounts table
-      const { data: lawyerData, error } = await supabase
-        .from('lawyer_accounts')
-        .select('*')
-        .eq('email', email)
-        .eq('active', true)
-        .maybeSingle();
-
-      if (error || !lawyerData) {
-        toast({
-          title: "Acceso denegado",
-          description: "Credenciales incorrectas.",
-          variant: "destructive",
-        });
-        setIsAuthenticating(false);
-        return;
-      }
-
-      // Verify token directly
-      if (token !== lawyerData.access_token) {
-        toast({
-          title: "Acceso denegado",
-          description: "Credenciales incorrectas.",
-          variant: "destructive",
-        });
-        setIsAuthenticating(false);
-        return;
-      }
-
-      // Successful login
-      setIsAuthenticated(true);
-      setLawyerData(lawyerData);
-      toast({
-        title: "Acceso autorizado",
-        description: `Bienvenido ${lawyerData.full_name}.`,
-      });
+  // Fetch documents when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
       fetchPendingDocuments();
-    } catch (error) {
-      console.error('Error during login:', error);
-      toast({
-        title: "Error de conexión",
-        description: "No se pudo verificar las credenciales.",
-        variant: "destructive",
-      });
     }
-    
-    setIsAuthenticating(false);
-  };
+  }, [isAuthenticated]);
 
   const fetchPendingDocuments = async () => {
     setIsLoading(true);
@@ -225,65 +174,17 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
 
   // Show login form if not authenticated
   if (!isAuthenticated) {
-    return (
-      <div className="container mx-auto px-6 py-20">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <Card className="w-full max-w-md">
-            <CardHeader className="text-center">
-              <div className="flex justify-center mb-4">
-                <Lock className="h-12 w-12 text-primary" />
-              </div>
-              <CardTitle className="text-2xl">Panel de Abogados</CardTitle>
-              <CardDescription>
-                Acceso restringido - Ingresa tus credenciales
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Correo electrónico</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="abogado@consultorjalegal.com"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="token">Token de Acceso</Label>
-                  <Input
-                    id="token"
-                    type="text"
-                    value={token}
-                    onChange={(e) => setToken(e.target.value)}
-                    placeholder="ABOGADO2024"
-                    required
-                  />
-                </div>
-                <Button 
-                  type="submit" 
-                  className="w-full" 
-                  disabled={isAuthenticating}
-                >
-                  {isAuthenticating ? "Verificando..." : "Ingresar"}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
+    return <AdminLogin onLoginSuccess={() => {}} />;
   }
 
-  if (isLoading) {
+  // Show loading if auth is still loading or documents are loading
+  if (authLoading || isLoading) {
     return (
       <div className="container mx-auto px-6 py-20">
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Cargando documentos...</p>
+            <p className="text-muted-foreground">Cargando...</p>
           </div>
         </div>
       </div>
@@ -292,12 +193,12 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
 
   // Show Agent Creator if selected
   if (currentView === 'agent-creator') {
-    return <AgentCreatorPage onBack={() => setCurrentView('dashboard')} lawyerData={lawyerData} />;
+    return <AgentCreatorPage onBack={() => setCurrentView('dashboard')} lawyerData={user} />;
   }
 
   // Show Agent Manager if selected
   if (currentView === 'agent-manager') {
-    return <AgentManagerPage onBack={() => setCurrentView('dashboard')} lawyerData={lawyerData} />;
+    return <AgentManagerPage onBack={() => setCurrentView('dashboard')} lawyerData={user} />;
   }
 
   return (
@@ -316,7 +217,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
             </div>
             
             {/* Agent Creator Access - Only show if lawyer has permission */}
-            {lawyerData?.can_create_agents && (
+            {user?.can_create_agents && (
               <div className="flex gap-3">
                 <Button
                   onClick={() => setCurrentView('agent-manager')}

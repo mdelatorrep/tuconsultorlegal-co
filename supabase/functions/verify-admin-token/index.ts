@@ -77,7 +77,8 @@ Deno.serve(async (req) => {
         id: lawyer.id,
         email: lawyer.email,
         name: lawyer.full_name,
-        isAdmin: lawyer.is_admin
+        isAdmin: lawyer.is_admin,
+        can_create_agents: lawyer.can_create_agents
       },
       expiresAt: lawyer.token_expires_at
     }), {

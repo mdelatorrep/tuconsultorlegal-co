@@ -7,6 +7,7 @@ interface AdminUser {
   email: string;
   name: string;
   isAdmin: boolean;
+  can_create_agents?: boolean;
 }
 
 interface LoginResponse {
