@@ -15,24 +15,43 @@ export const useBoldCheckout = (documentData: any) => {
 
   // Initialize Bold Checkout script
   const initBoldCheckout = () => {
-    if (document.querySelector('script[src="https://checkout.bold.co/library/boldPaymentButton.js"]')) {
-      console.warn('Bold Checkout script is already loaded.');
+    console.log('initBoldCheckout called');
+    
+    const existingScript = document.querySelector('script[src="https://checkout.bold.co/library/boldPaymentButton.js"]');
+    if (existingScript) {
+      console.log('Bold Checkout script already exists, BoldCheckout available:', !!window.BoldCheckout);
       // If script exists but BoldCheckout is not available, wait for it
-      if (!window.BoldCheckout) {
+      if (window.BoldCheckout) {
+        console.log('BoldCheckout is available, dispatching loaded event');
         window.dispatchEvent(new Event('boldCheckoutLoaded'));
+      } else {
+        console.log('BoldCheckout not available yet, waiting...');
+        // Wait a bit and check again
+        setTimeout(() => {
+          if (window.BoldCheckout) {
+            console.log('BoldCheckout became available, dispatching loaded event');
+            window.dispatchEvent(new Event('boldCheckoutLoaded'));
+          } else {
+            console.error('BoldCheckout still not available after wait');
+          }
+        }, 1000);
       }
       return;
     }
 
+    console.log('Creating new Bold Checkout script');
     const script = document.createElement('script');
     script.onload = () => {
+      console.log('Bold Checkout script loaded successfully');
       window.dispatchEvent(new Event('boldCheckoutLoaded'));
     };
-    script.onerror = () => {
+    script.onerror = (error) => {
+      console.error('Failed to load Bold Checkout script:', error);
       window.dispatchEvent(new Event('boldCheckoutLoadFailed'));
     };
     script.src = 'https://checkout.bold.co/library/boldPaymentButton.js';
     document.head.appendChild(script);
+    console.log('Bold Checkout script added to document head');
   };
 
   // Create Bold Checkout instance when document is loaded
