@@ -44,10 +44,13 @@ export default function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
 
     try {
       const success = await login(sanitizedEmail, sanitizedPassword);
+      console.log('Login result:', success);
       if (success) {
+        console.log('Login successful, calling onLoginSuccess');
         onLoginSuccess();
       }
     } catch (error) {
+      console.error('Login error:', error);
       setErrorMessage('Error de conexión. Intenta nuevamente.');
     } finally {
       setIsLoggingIn(false);

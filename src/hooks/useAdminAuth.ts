@@ -106,6 +106,7 @@ export const useAdminAuth = () => {
       // Store token securely in sessionStorage (more secure than localStorage)
       sessionStorage.setItem('admin_token', data.token);
       
+      console.log('Setting authentication state to true');
       setIsAuthenticated(true);
       setUser(data.user);
       

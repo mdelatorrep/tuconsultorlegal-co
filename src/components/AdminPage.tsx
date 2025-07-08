@@ -103,7 +103,9 @@ export default function AdminPage() {
   });
 
   useEffect(() => {
+    console.log('AdminPage useEffect - isAuthenticated:', isAuthenticated);
     if (isAuthenticated) {
+      console.log('User authenticated, loading data...');
       loadData();
     }
   }, [isAuthenticated]);
@@ -113,7 +115,12 @@ export default function AdminPage() {
   };
 
   const handleLoginSuccess = () => {
-    loadData();
+    console.log('handleLoginSuccess called');
+    // Force re-check of authentication status
+    setTimeout(() => {
+      console.log('Loading data after login success...');
+      loadData();
+    }, 100);
   };
 
   const loadData = async () => {
@@ -433,7 +440,10 @@ export default function AdminPage() {
     );
   }
 
+  console.log('AdminPage render - isAuthenticated:', isAuthenticated, 'isLoading:', isLoading);
+  
   if (!isAuthenticated) {
+    console.log('Not authenticated, showing login page');
     return <AdminLogin onLoginSuccess={handleLoginSuccess} />;
   }
 
