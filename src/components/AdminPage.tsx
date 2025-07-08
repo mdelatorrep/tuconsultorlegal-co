@@ -32,6 +32,7 @@ interface Agent {
   category: string;
   status: string;
   suggested_price: number;
+  final_price: number | null;
   created_by: string;
   created_at: string;
   lawyer_accounts?: {
@@ -134,7 +135,7 @@ export default function AdminPage() {
         .from('legal_agents')
         .select(`
           *,
-          lawyer_accounts:created_by (
+          lawyer_accounts!created_by (
             full_name,
             email
           )
@@ -381,6 +382,34 @@ export default function AdminPage() {
     }
   };
 
+  const updateAgentFinalPrice = async (agentId: string, finalPrice: number) => {
+    try {
+      const { error } = await supabase
+        .from('legal_agents')
+        .update({ 
+          final_price: finalPrice,
+          price_approved_by: user?.id,
+          price_approved_at: new Date().toISOString()
+        })
+        .eq('id', agentId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Éxito",
+        description: "Precio final actualizado exitosamente",
+      });
+
+      await loadData();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Error al actualizar el precio final",
+        variant: "destructive"
+      });
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       draft: { label: "Borrador", variant: "secondary" as const },
@@ -585,7 +614,35 @@ export default function AdminPage() {
                           </span>
                         </TableCell>
                         <TableCell>{getStatusBadge(agent.status)}</TableCell>
-                        <TableCell>${agent.suggested_price.toLocaleString()}</TableCell>
+                        <TableCell>
+                          <div className="space-y-2">
+                            <div className="text-sm text-muted-foreground">
+                              Sugerido: ${agent.suggested_price.toLocaleString()}
+                            </div>
+                            {agent.final_price ? (
+                              <div className="font-medium text-success">
+                                Final: ${agent.final_price.toLocaleString()}
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  type="number"
+                                  placeholder="Precio final"
+                                  className="w-24 h-8"
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      const value = parseInt((e.target as HTMLInputElement).value);
+                                      if (value > 0) {
+                                        updateAgentFinalPrice(agent.id, value);
+                                      }
+                                    }
+                                  }}
+                                />
+                                <span className="text-xs text-muted-foreground">Enter</span>
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>{new Date(agent.created_at).toLocaleDateString()}</TableCell>
                         <TableCell>
                           <div className="flex gap-2">

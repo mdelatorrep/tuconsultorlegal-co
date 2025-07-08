@@ -13,6 +13,7 @@ interface AgentService {
   document_name: string;
   document_description: string;
   suggested_price: number;
+  final_price: number | null;
   button_cta: string;
   frontend_icon: string;
   category: string;
@@ -135,7 +136,7 @@ export default function PersonasPage({ onOpenChat, onNavigate }: PersonasPagePro
                 </div>
                 <div className="p-8 pt-0">
                   <p className="text-xl font-bold text-success mb-6">
-                    {service.suggested_price > 0 ? `Desde $${service.suggested_price.toLocaleString()} COP` : 'Gratis'}
+                    {(service.final_price || service.suggested_price) > 0 ? `Desde $${(service.final_price || service.suggested_price).toLocaleString()} COP` : 'Gratis'}
                   </p>
                   <Button
                     variant="success"

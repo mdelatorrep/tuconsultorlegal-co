@@ -117,10 +117,13 @@ export type Database = {
           description: string
           document_description: string | null
           document_name: string | null
+          final_price: number | null
           frontend_icon: string | null
           id: string
           name: string
           placeholder_fields: Json
+          price_approved_at: string | null
+          price_approved_by: string | null
           price_justification: string | null
           status: string
           suggested_price: number
@@ -137,10 +140,13 @@ export type Database = {
           description: string
           document_description?: string | null
           document_name?: string | null
+          final_price?: number | null
           frontend_icon?: string | null
           id?: string
           name: string
           placeholder_fields?: Json
+          price_approved_at?: string | null
+          price_approved_by?: string | null
           price_justification?: string | null
           status?: string
           suggested_price: number
@@ -157,10 +163,13 @@ export type Database = {
           description?: string
           document_description?: string | null
           document_name?: string | null
+          final_price?: number | null
           frontend_icon?: string | null
           id?: string
           name?: string
           placeholder_fields?: Json
+          price_approved_at?: string | null
+          price_approved_by?: string | null
           price_justification?: string | null
           status?: string
           suggested_price?: number
@@ -169,6 +178,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_price_approved_by"
+            columns: ["price_approved_by"]
+            isOneToOne: false
+            referencedRelation: "lawyer_accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "legal_agents_created_by_fkey"
             columns: ["created_by"]
@@ -321,6 +337,10 @@ export type Database = {
       }
       is_admin_user: {
         Args: { auth_token?: string }
+        Returns: boolean
+      }
+      is_current_user_admin: {
+        Args: Record<PropertyKey, never>
         Returns: boolean
       }
       log_security_event: {
