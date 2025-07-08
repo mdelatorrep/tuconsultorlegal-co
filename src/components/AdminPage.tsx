@@ -225,20 +225,22 @@ export default function AdminPage() {
       const statsResults = await Promise.all(statsPromises);
       setLawyerStats(statsResults);
 
-      // Calculate business statistics
+      // Calculate business statistics with real monthly growth
       const totalRevenue = contractsData?.reduce((sum, c) => sum + c.price, 0) || 0;
+      const monthlyGrowth = calculateMonthlyGrowth(contractsData || []);
+      
       const businessStatsData: BusinessStats = {
         total_lawyers: lawyers.length,
         total_agents: agents.length,
         active_agents: agents.filter(a => a.status === 'active').length,
         total_contracts: contractsData?.length || 0,
         total_revenue: totalRevenue,
-        monthly_growth: 15.2 // This would be calculated based on historical data
+        monthly_growth: monthlyGrowth
       };
       setBusinessStats(businessStatsData);
 
-      // Generate monthly data for charts
-      const monthlyStats = generateMonthlyData(contractsData || []);
+      // Generate monthly data for charts using real data
+      const monthlyStats = generateMonthlyDataFromContracts(contractsData || []);
       setMonthlyData(monthlyStats);
 
     } catch (error) {
@@ -246,14 +248,54 @@ export default function AdminPage() {
     }
   };
 
-  const generateMonthlyData = (contracts: ContractDetail[]) => {
-    const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'];
-    return months.map(month => ({
-      month,
-      contratos: Math.floor(Math.random() * 50) + 10,
-      ingresos: Math.floor(Math.random() * 100000) + 20000,
-      abogados: Math.floor(Math.random() * 5) + 3
-    }));
+  const calculateMonthlyGrowth = (contracts: ContractDetail[]) => {
+    if (contracts.length === 0) return 0;
+    
+    const now = new Date();
+    const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    
+    const currentMonthContracts = contracts.filter(c => 
+      new Date(c.created_at) >= currentMonth
+    );
+    
+    const lastMonthContracts = contracts.filter(c => {
+      const contractDate = new Date(c.created_at);
+      return contractDate >= lastMonth && contractDate < currentMonth;
+    });
+    
+    if (lastMonthContracts.length === 0) return 100;
+    
+    const growth = ((currentMonthContracts.length - lastMonthContracts.length) / lastMonthContracts.length) * 100;
+    return Math.round(growth * 10) / 10; // Round to 1 decimal
+  };
+
+  const generateMonthlyDataFromContracts = (contracts: ContractDetail[]) => {
+    const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const currentDate = new Date();
+    const last6Months = [];
+    
+    // Generate last 6 months
+    for (let i = 5; i >= 0; i--) {
+      const monthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+      const nextMonthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i + 1, 1);
+      
+      const monthContracts = contracts.filter(c => {
+        const contractDate = new Date(c.created_at);
+        return contractDate >= monthDate && contractDate < nextMonthDate;
+      });
+      
+      const monthRevenue = monthContracts.reduce((sum, c) => sum + c.price, 0);
+      
+      last6Months.push({
+        month: monthNames[monthDate.getMonth()],
+        contratos: monthContracts.length,
+        ingresos: monthRevenue,
+        abogados: lawyers.length // This could be calculated based on lawyer creation dates
+      });
+    }
+    
+    return last6Months;
   };
 
   const createLawyer = async () => {
