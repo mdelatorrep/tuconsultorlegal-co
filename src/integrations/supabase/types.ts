@@ -258,7 +258,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin_user: {
+        Args: { auth_token?: string }
+        Returns: boolean
+      }
     }
     Enums: {
       document_status:
