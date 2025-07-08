@@ -54,7 +54,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
     { id: 2, title: "Plantilla", description: "Texto del documento" },
     { id: 3, title: "Prompt", description: "Instrucciones iniciales" },
     { id: 4, title: "Magia IA", description: "Procesamiento automático" },
-    { id: 5, title: "Publicar", description: "Revisión final" },
+    { id: 5, title: "Revisar", description: "Envío a revisión" },
   ];
 
   const categories = [
@@ -345,7 +345,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
           placeholder_fields: aiResults.extractedPlaceholders,
           suggested_price: priceValue,
           price_justification: aiResults.priceJustification,
-          status: 'active',
+          status: 'pending_review',
           created_by: lawyerData.id
         })
         .select()
@@ -354,7 +354,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       if (error) {
         console.error('Error creating agent:', error);
         toast({
-          title: "Error al publicar",
+          title: "Error al enviar a revisión",
           description: "No se pudo crear el agente. Intenta nuevamente.",
           variant: "destructive",
         });
@@ -362,8 +362,8 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       }
 
       toast({
-        title: "Agente publicado exitosamente",
-        description: `El agente "${formData.docName}" está ahora disponible para los clientes.`,
+        title: "Agente enviado a revisión exitosamente",
+        description: `El agente "${formData.docName}" ha sido enviado para revisión del administrador.`,
       });
 
       // Reset form and go back
@@ -385,8 +385,8 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
     } catch (error) {
       console.error('Error publishing agent:', error);
       toast({
-        title: "Error al publicar",
-        description: "No se pudo publicar el agente. Intenta nuevamente.",
+        title: "Error al enviar a revisión",
+        description: "No se pudo enviar el agente a revisión. Intenta nuevamente.",
         variant: "destructive",
       });
     }
@@ -770,13 +770,17 @@ VALIDACIONES:
                   </div>
                  ) : aiProcessingSuccess ? (
                    <div className="space-y-8">
-                     {/* Enhanced Prompt */}
-                     <div>
-                       <h3 className="text-xl font-bold mb-2">1. Prompt del Agente (Mejorado)</h3>
-                       <div className="p-4 bg-muted rounded-md border text-sm whitespace-pre-wrap font-mono">
-                         {aiResults.enhancedPrompt}
-                       </div>
-                     </div>
+                      {/* Enhanced Prompt */}
+                      <div>
+                        <h3 className="text-xl font-bold mb-2">1. Prompt del Agente (Mejorado)</h3>
+                        <Textarea
+                          value={aiResults.enhancedPrompt}
+                          onChange={(e) => setAiResults(prev => ({ ...prev, enhancedPrompt: e.target.value }))}
+                          rows={15}
+                          className="text-sm"
+                          placeholder="Prompt del agente mejorado por IA..."
+                        />
+                      </div>
 
                      {/* Extracted Placeholders */}
                      <div>
@@ -835,13 +839,13 @@ VALIDACIONES:
               <div className="text-center py-12">
                 <CheckCircle className="mx-auto h-24 w-24 text-success mb-6" />
                 <h2 className="text-3xl font-bold mb-4">¡Todo Listo!</h2>
-                <p className="text-muted-foreground mb-8 max-w-lg mx-auto">
-                  El nuevo agente para el documento <strong>"{formData.docName}"</strong> está configurado y listo para ser publicado. 
-                  Una vez publicado, estará disponible para todos los clientes en el sitio web.
-                </p>
-                <Button onClick={handlePublish} size={isMobile ? "default" : "lg"} className={`${isMobile ? "w-full text-base px-6 py-3" : "text-xl px-10 py-4"}`}>
-                  Publicar Nuevo Servicio
-                </Button>
+                 <p className="text-muted-foreground mb-8 max-w-lg mx-auto">
+                   El nuevo agente para el documento <strong>"{formData.docName}"</strong> está configurado y listo para ser enviado a revisión. 
+                   Una vez aprobado por el administrador, estará disponible para todos los clientes en el sitio web.
+                 </p>
+                 <Button onClick={handlePublish} size={isMobile ? "default" : "lg"} className={`${isMobile ? "w-full text-base px-6 py-3" : "text-xl px-10 py-4"}`}>
+                   Enviar a Revisión
+                 </Button>
               </div>
             )}
           </CardContent>

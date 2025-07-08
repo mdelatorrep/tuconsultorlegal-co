@@ -56,29 +56,17 @@ serve(async (req) => {
             role: 'system',
             content: `Eres un experto en crear prompts para asistentes legales de IA. Tu trabajo es mejorar prompts básicos y convertirlos en instrucciones claras, profesionales y efectivas para agentes de IA que ayudan a crear documentos legales en Colombia.
 
-ESTRUCTURA REQUERIDA:
-## ROL Y OBJETIVO
-[Define claramente el rol del asistente y su objetivo específico]
+REGLAS IMPORTANTES:
+1. RESPONDE ÚNICAMENTE CON EL PROMPT MEJORADO EN TEXTO PLANO
+2. NO incluyas explicaciones, comentarios, ni texto adicional
+3. NO uses estructura markdown (##, **, _, etc.)
+4. NO incluyas encabezados, títulos o secciones explicativas
+5. El prompt debe ser directo y profesional
+6. Mantén el contexto legal colombiano
+7. Asegúrate de que sea claro y actionable
+8. NO uses caracteres especiales de markdown
 
-## PROCESO DE RECOPILACIÓN
-[Explica cómo debe recopilar información del usuario de forma secuencial]
-
-## CAMPOS A RECOPILAR
-[Lista específica de la información necesaria basada en la plantilla]
-
-## ESTILO DE CONVERSACIÓN
-[Tono profesional pero amigable, validaciones, etc.]
-
-## PROCESO DE REDACCIÓN
-[Cómo debe generar el documento final]
-
-## INSTRUCCIONES DE HERRAMIENTAS
-[Cómo usar las herramientas disponibles]
-
-## FINALIZACIÓN
-[Cómo terminar el proceso exitosamente]
-
-Mejora el prompt manteniendo el contexto legal colombiano y asegurando que sea claro y actionable.`
+OBJETIVO: Devolver únicamente el prompt mejorado en texto plano, sin formato adicional.`
           },
           {
             role: 'user',
