@@ -7,7 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Lock } from "lucide-react";
+import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Lock, Bot, Plus } from "lucide-react";
+import AgentCreatorPage from "./AgentCreatorPage";
 
 interface DocumentToken {
   id: string;
@@ -38,6 +39,8 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const [email, setEmail] = useState("");
   const [token, setToken] = useState("");
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [currentView, setCurrentView] = useState<'dashboard' | 'agent-creator'>('dashboard');
+  const [lawyerData, setLawyerData] = useState<any>(null);
   const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -76,6 +79,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
 
       // Successful login
       setIsAuthenticated(true);
+      setLawyerData(lawyerData);
       toast({
         title: "Acceso autorizado",
         description: `Bienvenido ${lawyerData.full_name}.`,
@@ -285,17 +289,39 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
     );
   }
 
+  // Show Agent Creator if selected
+  if (currentView === 'agent-creator') {
+    return <AgentCreatorPage onBack={() => setCurrentView('dashboard')} />;
+  }
+
   return (
     <div className="container mx-auto px-6 py-20">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-primary mb-2">
-            Panel de Abogados
-          </h1>
-          <p className="text-lg text-muted-foreground">
-            Revisa y ajusta los documentos pendientes
-          </p>
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-4xl font-bold text-primary mb-2">
+                Panel de Abogados
+              </h1>
+              <p className="text-lg text-muted-foreground">
+                Revisa y ajusta los documentos pendientes
+              </p>
+            </div>
+            
+            {/* Agent Creator Access - Only show if lawyer has permission */}
+            {lawyerData?.can_create_agents && (
+              <Button
+                onClick={() => setCurrentView('agent-creator')}
+                className="flex items-center gap-2"
+                size="lg"
+              >
+                <Bot className="h-5 w-5" />
+                <Plus className="h-4 w-4" />
+                Crear Agente
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-8">

@@ -63,6 +63,7 @@ export type Database = {
         Row: {
           access_token: string
           active: boolean
+          can_create_agents: boolean
           created_at: string
           email: string
           full_name: string
@@ -72,6 +73,7 @@ export type Database = {
         Insert: {
           access_token: string
           active?: boolean
+          can_create_agents?: boolean
           created_at?: string
           email: string
           full_name: string
@@ -81,6 +83,7 @@ export type Database = {
         Update: {
           access_token?: string
           active?: boolean
+          can_create_agents?: boolean
           created_at?: string
           email?: string
           full_name?: string
