@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Bot, Plus, Settings } from "lucide-react";
+import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Bot, Plus, Settings, LogOut } from "lucide-react";
 import AdminLogin from "./AdminLogin";
 import AgentCreatorPage from "./AgentCreatorPage";
 import AgentManagerPage from "./AgentManagerPage";
@@ -38,7 +38,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const [isSaving, setIsSaving] = useState(false);
   const [currentView, setCurrentView] = useState<'dashboard' | 'agent-creator' | 'agent-manager'>('dashboard');
   const { toast } = useToast();
-  const { isAuthenticated, isLoading: authLoading, user } = useAdminAuth();
+  const { isAuthenticated, isLoading: authLoading, user, logout } = useAdminAuth();
 
   // Fetch documents when authenticated
   useEffect(() => {
@@ -216,29 +216,42 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
               </p>
             </div>
             
-            {/* Agent Creator Access - Only show if lawyer has permission */}
-            {user?.can_create_agents && (
-              <div className="flex gap-3">
-                <Button
-                  onClick={() => setCurrentView('agent-manager')}
-                  variant="outline"
-                  className="flex items-center gap-2"
-                  size="lg"
-                >
-                  <Settings className="h-5 w-5" />
-                  Gestionar Agentes
-                </Button>
-                <Button
-                  onClick={() => setCurrentView('agent-creator')}
-                  className="flex items-center gap-2"
-                  size="lg"
-                >
-                  <Bot className="h-5 w-5" />
-                  <Plus className="h-4 w-4" />
-                  Crear Agente
-                </Button>
-              </div>
-            )}
+            <div className="flex items-center gap-3">
+              {/* Agent Creator Access - Only show if lawyer has permission */}
+              {user?.can_create_agents && (
+                <>
+                  <Button
+                    onClick={() => setCurrentView('agent-manager')}
+                    variant="outline"
+                    className="flex items-center gap-2"
+                    size="lg"
+                  >
+                    <Settings className="h-5 w-5" />
+                    Gestionar Agentes
+                  </Button>
+                  <Button
+                    onClick={() => setCurrentView('agent-creator')}
+                    className="flex items-center gap-2"
+                    size="lg"
+                  >
+                    <Bot className="h-5 w-5" />
+                    <Plus className="h-4 w-4" />
+                    Crear Agente
+                  </Button>
+                </>
+              )}
+              
+              {/* Logout Button */}
+              <Button
+                onClick={logout}
+                variant="outline"
+                className="flex items-center gap-2"
+                size="lg"
+              >
+                <LogOut className="h-5 w-5" />
+                Cerrar Sesión
+              </Button>
+            </div>
           </div>
         </div>
 
