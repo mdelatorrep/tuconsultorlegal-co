@@ -14,6 +14,8 @@ import AdminLogin from "./AdminLogin";
 import { Users, FileText, Shield, Plus, Check, X, BarChart3, TrendingUp, DollarSign, Activity, LogOut, Unlock, AlertTriangle } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from "recharts";
 import DOMPurify from 'dompurify';
+import PhoneInput from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
 
 interface Lawyer {
   id: string;
@@ -87,6 +89,7 @@ export default function AdminPage() {
     email: "",
     full_name: "",
     password: "",
+    phone_number: "",
     can_create_agents: false,
     is_admin: false
   });
@@ -310,6 +313,7 @@ export default function AdminPage() {
           full_name: sanitizedName,
           password_hash: sanitizedPassword, // Will be automatically hashed by trigger
           access_token: crypto.randomUUID(), // Generate secure session token
+          phone_number: newLawyer.phone_number,
           can_create_agents: newLawyer.can_create_agents,
           is_admin: newLawyer.is_admin
         }]);
@@ -325,6 +329,7 @@ export default function AdminPage() {
         email: "",
         full_name: "",
         password: "",
+        phone_number: "",
         can_create_agents: false,
         is_admin: false
       });
@@ -570,25 +575,36 @@ export default function AdminPage() {
                       onChange={(e) => setNewLawyer({ ...newLawyer, password: e.target.value })}
                       placeholder="Contraseña segura"
                     />
-                  </div>
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        id="canCreateAgents"
-                        checked={newLawyer.can_create_agents}
-                        onCheckedChange={(checked) => setNewLawyer({ ...newLawyer, can_create_agents: checked })}
-                      />
-                      <Label htmlFor="canCreateAgents">Puede crear agentes</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        id="isAdmin"
-                        checked={newLawyer.is_admin}
-                        onCheckedChange={(checked) => setNewLawyer({ ...newLawyer, is_admin: checked })}
-                      />
-                      <Label htmlFor="isAdmin">Es administrador</Label>
-                    </div>
-                  </div>
+                   </div>
+                   <div className="space-y-2">
+                     <Label htmlFor="phoneNumber">Número de Teléfono</Label>
+                     <PhoneInput
+                       placeholder="Introduce número de teléfono"
+                       value={newLawyer.phone_number}
+                       onChange={(value) => setNewLawyer({ ...newLawyer, phone_number: value || "" })}
+                       defaultCountry="CO"
+                       international
+                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                     />
+                   </div>
+                   <div className="space-y-4">
+                     <div className="flex items-center space-x-2">
+                       <Switch
+                         id="canCreateAgents"
+                         checked={newLawyer.can_create_agents}
+                         onCheckedChange={(checked) => setNewLawyer({ ...newLawyer, can_create_agents: checked })}
+                       />
+                       <Label htmlFor="canCreateAgents">Puede crear agentes</Label>
+                     </div>
+                     <div className="flex items-center space-x-2">
+                       <Switch
+                         id="isAdmin"
+                         checked={newLawyer.is_admin}
+                         onCheckedChange={(checked) => setNewLawyer({ ...newLawyer, is_admin: checked })}
+                       />
+                       <Label htmlFor="isAdmin">Es administrador</Label>
+                     </div>
+                   </div>
                 </div>
                 <Button onClick={createLawyer} className="w-full md:w-auto">
                   <Plus className="h-4 w-4 mr-2" />

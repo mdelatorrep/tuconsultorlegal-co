@@ -106,6 +106,7 @@ export type Database = {
           last_login_at: string | null
           locked_until: string | null
           password_hash: string
+          phone_number: string | null
           token_expires_at: string | null
           updated_at: string
         }
@@ -122,6 +123,7 @@ export type Database = {
           last_login_at?: string | null
           locked_until?: string | null
           password_hash: string
+          phone_number?: string | null
           token_expires_at?: string | null
           updated_at?: string
         }
@@ -138,6 +140,7 @@ export type Database = {
           last_login_at?: string | null
           locked_until?: string | null
           password_hash?: string
+          phone_number?: string | null
           token_expires_at?: string | null
           updated_at?: string
         }
