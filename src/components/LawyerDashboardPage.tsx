@@ -257,10 +257,10 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-8">
+        <div className={`${isMobile ? 'space-y-8' : 'grid lg:grid-cols-2 gap-8'}`}>
           {/* Documents List */}
           <div className="space-y-4">
-            <h2 className="text-2xl font-semibold mb-4">Documentos Pendientes</h2>
+            <h2 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-semibold mb-4`}>Documentos Pendientes</h2>
             
             {documents.length === 0 ? (
               <Card>
@@ -335,13 +335,14 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
           <div className="space-y-4">
             {selectedDocument ? (
               <>
-                <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-semibold">Editor de Documento</h2>
-                  <div className="flex gap-2">
+                <div className={`${isMobile ? 'space-y-4' : 'flex items-center justify-between'}`}>
+                  <h2 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-semibold`}>Editor de Documento</h2>
+                  <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex gap-2'}`}>
                     <Button 
                       onClick={handleSaveDocument}
                       disabled={isSaving}
                       variant="outline"
+                      className={isMobile ? "w-full" : ""}
                     >
                       <Save className="h-4 w-4 mr-2" />
                       Guardar
@@ -349,6 +350,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                     <Button 
                       onClick={handleApproveDocument}
                       disabled={isSaving}
+                      className={isMobile ? "w-full" : ""}
                     >
                       <CheckCircle className="h-4 w-4 mr-2" />
                       Aprobar

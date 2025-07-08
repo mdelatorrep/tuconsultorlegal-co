@@ -34,10 +34,15 @@ interface LegalAgent {
   ai_prompt: string;
   placeholder_fields: any; // JSONB field from database
   suggested_price: number;
+  final_price: number | null;
   price_justification: string;
-  status: 'active' | 'suspended' | 'draft';
+  status: 'active' | 'suspended' | 'draft' | 'pending_review';
   created_at: string;
   updated_at: string;
+  document_name: string;
+  document_description: string;
+  target_audience: string;
+  created_by: string;
 }
 
 interface AgentManagerPageProps {
@@ -58,11 +63,18 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
   const fetchAgents = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      // Si es admin, ver todos los agentes, si no, solo los propios
+      const query = supabase
         .from('legal_agents')
         .select('*')
-        .eq('created_by', lawyerData.id)
         .order('created_at', { ascending: false });
+
+      // Solo filtrar por created_by si no es admin
+      if (!lawyerData.is_admin) {
+        query.eq('created_by', lawyerData.id);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching agents:', error);
@@ -113,6 +125,46 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
     }
   };
 
+  const handleApproveAgent = async (agentId: string) => {
+    try {
+      const { error } = await supabase
+        .from('legal_agents')
+        .update({ 
+          status: 'active',
+          price_approved_by: lawyerData.id,
+          price_approved_at: new Date().toISOString()
+        })
+        .eq('id', agentId);
+
+      if (error) {
+        console.error('Error approving agent:', error);
+        toast({
+          title: "Error al aprobar",
+          description: "No se pudo aprobar el agente.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Agente aprobado",
+        description: "El agente ha sido aprobado y está activo.",
+      });
+
+      // Update local state
+      setAgents(agents.map(agent => 
+        agent.id === agentId ? { 
+          ...agent, 
+          status: 'active',
+          price_approved_by: lawyerData.id,
+          price_approved_at: new Date().toISOString()
+        } : agent
+      ));
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'active':
@@ -121,6 +173,8 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
         return <Badge variant="secondary">Suspendido</Badge>;
       case 'draft':
         return <Badge variant="outline">Borrador</Badge>;
+      case 'pending_review':
+        return <Badge variant="destructive">Pendiente Revisión</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
@@ -281,7 +335,20 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                       </DialogContent>
                     </Dialog>
 
-                    {/* Status Toggle */}
+                    {/* Admin Actions */}
+                    {lawyerData.is_admin && agent.status === 'pending_review' && (
+                      <Button 
+                        variant="default" 
+                        size="sm"
+                        onClick={() => handleApproveAgent(agent.id)}
+                        className="bg-success hover:bg-success/90"
+                      >
+                        <Play className="h-4 w-4 mr-1" />
+                        Aprobar
+                      </Button>
+                    )}
+
+                    {/* Status Toggle for Active/Suspended */}
                     {agent.status === 'active' ? (
                       <Button 
                         variant="outline" 
@@ -291,7 +358,7 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                         <Pause className="h-4 w-4 mr-1" />
                         Suspender
                       </Button>
-                    ) : (
+                    ) : agent.status === 'suspended' ? (
                       <Button 
                         variant="outline" 
                         size="sm"
@@ -300,7 +367,7 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                         <Play className="h-4 w-4 mr-1" />
                         Activar
                       </Button>
-                    )}
+                    ) : null}
 
                     {/* Edit (Future implementation) */}
                     <Button 
