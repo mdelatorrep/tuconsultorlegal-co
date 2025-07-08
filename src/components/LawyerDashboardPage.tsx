@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Bot, Plus, Settings, LogOut } from "lucide-react";
-import AdminLogin from "./AdminLogin";
+import LawyerLogin from "./LawyerLogin";
 import AgentCreatorPage from "./AgentCreatorPage";
 import AgentManagerPage from "./AgentManagerPage";
 
@@ -176,7 +176,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
 
   // Show login form if not authenticated
   if (!isAuthenticated) {
-    return <AdminLogin onLoginSuccess={() => window.location.reload()} />;
+    return <LawyerLogin onLoginSuccess={() => window.location.reload()} />;
   }
 
   // Show loading if auth is still loading or documents are loading

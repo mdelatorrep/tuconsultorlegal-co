@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
-import AdminLogin from "./AdminLogin";
+import SuperAdminLogin from "./SuperAdminLogin";
 import { Users, FileText, Shield, Plus, Check, X, BarChart3, TrendingUp, DollarSign, Activity, LogOut, Unlock, AlertTriangle } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from "recharts";
 import DOMPurify from 'dompurify';
@@ -528,7 +528,7 @@ export default function AdminPage() {
   
   if (!isAuthenticated) {
     console.log('Not authenticated, showing login page');
-    return <AdminLogin onLoginSuccess={handleLoginSuccess} />;
+    return <SuperAdminLogin onLoginSuccess={handleLoginSuccess} />;
   }
 
   console.log('User is authenticated! Showing admin panel');
