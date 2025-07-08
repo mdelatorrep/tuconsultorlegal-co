@@ -103,11 +103,24 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
   };
 
   const handleStatusChange = async (agentId: string, newStatus: 'active' | 'suspended') => {
+    // Verificar que el usuario sea admin
+    if (!lawyerData.is_admin) {
+      toast({
+        title: "Sin permisos",
+        description: "Solo los administradores pueden cambiar el estado de los agentes.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
+      // Configurar headers con el token de autenticación
       const { error } = await supabase
         .from('legal_agents')
         .update({ status: newStatus })
-        .eq('id', agentId);
+        .eq('id', agentId)
+        .select()
+        .single();
 
       if (error) {
         console.error('Error updating agent status:', error);
@@ -130,10 +143,25 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
       ));
     } catch (error) {
       console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: "Ocurrió un error inesperado al actualizar el agente.",
+        variant: "destructive",
+      });
     }
   };
 
   const handleApproveAgent = async (agentId: string) => {
+    // Verificar que el usuario sea admin
+    if (!lawyerData.is_admin) {
+      toast({
+        title: "Sin permisos",
+        description: "Solo los administradores pueden aprobar agentes.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('legal_agents')
@@ -142,7 +170,9 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
           price_approved_by: lawyerData.id,
           price_approved_at: new Date().toISOString()
         })
-        .eq('id', agentId);
+        .eq('id', agentId)
+        .select()
+        .single();
 
       if (error) {
         console.error('Error approving agent:', error);
@@ -170,6 +200,11 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
       ));
     } catch (error) {
       console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: "Ocurrió un error inesperado al aprobar el agente.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -180,6 +215,16 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
 
   const handleSaveAgent = async () => {
     if (!editingAgent) return;
+
+    // Verificar permisos
+    if (!lawyerData.is_admin && editingAgent.created_by !== lawyerData.id) {
+      toast({
+        title: "Sin permisos",
+        description: "Solo puedes editar tus propios agentes.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       const { error } = await supabase
@@ -198,7 +243,9 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
           ai_prompt: editingAgent.ai_prompt,
           updated_at: new Date().toISOString()
         })
-        .eq('id', editingAgent.id);
+        .eq('id', editingAgent.id)
+        .select()
+        .single();
 
       if (error) {
         console.error('Error updating agent:', error);
@@ -224,6 +271,11 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
       setEditingAgent(null);
     } catch (error) {
       console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: "Ocurrió un error inesperado al actualizar el agente.",
+        variant: "destructive",
+      });
     }
   };
 
