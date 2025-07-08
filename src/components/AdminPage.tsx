@@ -346,20 +346,49 @@ export default function AdminPage() {
 
   const updateLawyerPermissions = async (lawyerId: string, field: string, value: boolean) => {
     try {
-      const { error } = await supabase
+      // Verificar que el usuario actual es admin
+      if (!user?.isAdmin) {
+        toast({
+          title: "Sin permisos",
+          description: "Solo los administradores pueden modificar permisos de abogados.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Evitar que un admin se quite sus propios permisos de admin
+      if (field === 'is_admin' && !value && lawyerId === user?.id) {
+        toast({
+          title: "Acción no permitida",
+          description: "No puedes quitarte tus propios permisos de administrador.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const { data, error } = await supabase
         .from('lawyer_accounts')
         .update({ [field]: value })
-        .eq('id', lawyerId);
+        .eq('id', lawyerId)
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating lawyer permissions:', error);
+        throw error;
+      }
 
       toast({
         title: "Éxito",
         description: "Permisos actualizados exitosamente",
       });
 
-      await loadData();
+      // Update local state
+      setLawyers(lawyers.map(lawyer => 
+        lawyer.id === lawyerId ? { ...lawyer, [field]: value } : lawyer
+      ));
     } catch (error: any) {
+      console.error('Error in updateLawyerPermissions:', error);
       toast({
         title: "Error",
         description: error.message || "Error al actualizar permisos",
