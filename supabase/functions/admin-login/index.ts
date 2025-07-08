@@ -29,9 +29,46 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Get client IP for logging
+    // Input validation and sanitization
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      return new Response(JSON.stringify({ error: 'Invalid email format' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    if (password.length < 8 || password.length > 128) {
+      return new Response(JSON.stringify({ error: 'Invalid password length' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    // Get client IP for logging and rate limiting
     const clientIP = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown'
     const userAgent = req.headers.get('user-agent') || 'unknown'
+
+    // Check rate limiting
+    const { data: rateLimitOk } = await supabase.rpc('check_rate_limit', {
+      identifier_param: clientIP,
+      attempt_type_param: 'admin_login',
+      max_attempts: 5,
+      window_minutes: 15,
+      block_minutes: 30
+    })
+
+    if (!rateLimitOk) {
+      await supabase.rpc('log_security_event', {
+        event_type: 'admin_login_rate_limited',
+        details: { email, ip: clientIP, user_agent: userAgent }
+      })
+
+      return new Response(JSON.stringify({ error: 'Too many attempts. Please try again later.' }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
 
     // Find lawyer account
     const { data: lawyer, error: fetchError } = await supabase
@@ -68,10 +105,10 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Verify password (comparing with stored hashed access_token)
-    const { data: isValidPassword } = await supabase.rpc('verify_admin_token', {
-      token: password,
-      hash: lawyer.access_token
+    // Verify password using new secure password verification
+    const { data: isValidPassword } = await supabase.rpc('verify_admin_password', {
+      password: password,
+      email_param: email
     })
 
     if (!isValidPassword) {
@@ -107,8 +144,10 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Generate secure session token (24 hour expiry)
-    const sessionToken = crypto.randomUUID() + '-' + Date.now()
+    // Generate cryptographically secure session token (24 hour expiry)
+    const tokenBytes = new Uint8Array(32)
+    crypto.getRandomValues(tokenBytes)
+    const sessionToken = Array.from(tokenBytes, byte => byte.toString(16).padStart(2, '0')).join('')
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
 
     // Update lawyer account with session info
@@ -123,12 +162,31 @@ Deno.serve(async (req) => {
       })
       .eq('id', lawyer.id)
 
+    // Reset rate limits on successful login
+    await supabase.rpc('reset_rate_limit', {
+      identifier_param: clientIP,
+      attempt_type_param: 'admin_login'
+    })
+
     // Log successful login
     await supabase.rpc('log_security_event', {
       event_type: 'admin_login_success',
       user_id: lawyer.id,
       details: { email, ip: clientIP, user_agent: userAgent }
     })
+
+    // Enhanced security headers
+    const securityHeaders = {
+      ...corsHeaders,
+      'Content-Type': 'application/json',
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'X-XSS-Protection': '1; mode=block',
+      'Referrer-Policy': 'strict-origin-when-cross-origin',
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    }
 
     return new Response(JSON.stringify({
       success: true,
@@ -141,7 +199,7 @@ Deno.serve(async (req) => {
         isAdmin: lawyer.is_admin
       }
     }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: securityHeaders
     })
 
   } catch (error) {

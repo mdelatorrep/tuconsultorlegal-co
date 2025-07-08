@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      auth_rate_limits: {
+        Row: {
+          attempt_type: string
+          attempts: number | null
+          blocked_until: string | null
+          created_at: string | null
+          id: string
+          identifier: string
+          updated_at: string | null
+          window_start: string | null
+        }
+        Insert: {
+          attempt_type: string
+          attempts?: number | null
+          blocked_until?: string | null
+          created_at?: string | null
+          id?: string
+          identifier: string
+          updated_at?: string | null
+          window_start?: string | null
+        }
+        Update: {
+          attempt_type?: string
+          attempts?: number | null
+          blocked_until?: string | null
+          created_at?: string | null
+          id?: string
+          identifier?: string
+          updated_at?: string | null
+          window_start?: string | null
+        }
+        Relationships: []
+      }
       document_tokens: {
         Row: {
           created_at: string
@@ -72,6 +105,7 @@ export type Database = {
           is_admin: boolean
           last_login_at: string | null
           locked_until: string | null
+          password_hash: string
           token_expires_at: string | null
           updated_at: string
         }
@@ -87,6 +121,7 @@ export type Database = {
           is_admin?: boolean
           last_login_at?: string | null
           locked_until?: string | null
+          password_hash: string
           token_expires_at?: string | null
           updated_at?: string
         }
@@ -102,6 +137,7 @@ export type Database = {
           is_admin?: boolean
           last_login_at?: string | null
           locked_until?: string | null
+          password_hash?: string
           token_expires_at?: string | null
           updated_at?: string
         }
@@ -331,8 +367,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_rate_limit: {
+        Args: {
+          identifier_param: string
+          attempt_type_param: string
+          max_attempts?: number
+          window_minutes?: number
+          block_minutes?: number
+        }
+        Returns: boolean
+      }
       hash_admin_token: {
         Args: { token: string }
+        Returns: string
+      }
+      hash_password: {
+        Args: { password: string }
         Returns: string
       }
       is_admin_user: {
@@ -353,8 +403,20 @@ export type Database = {
         }
         Returns: undefined
       }
+      reset_rate_limit: {
+        Args: { identifier_param: string; attempt_type_param: string }
+        Returns: undefined
+      }
+      verify_admin_password: {
+        Args: { password: string; email_param: string }
+        Returns: boolean
+      }
       verify_admin_token: {
         Args: { token: string; hash: string }
+        Returns: boolean
+      }
+      verify_password: {
+        Args: { password: string; hash: string }
         Returns: boolean
       }
     }

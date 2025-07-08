@@ -59,6 +59,19 @@ Deno.serve(async (req) => {
       })
     }
 
+    // Enhanced security headers
+    const securityHeaders = {
+      ...corsHeaders,
+      'Content-Type': 'application/json',
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'X-XSS-Protection': '1; mode=block',
+      'Referrer-Policy': 'strict-origin-when-cross-origin',
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    }
+
     return new Response(JSON.stringify({
       valid: true,
       user: {
@@ -69,7 +82,7 @@ Deno.serve(async (req) => {
       },
       expiresAt: lawyer.token_expires_at
     }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: securityHeaders
     })
 
   } catch (error) {
