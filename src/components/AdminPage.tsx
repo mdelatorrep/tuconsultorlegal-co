@@ -494,7 +494,7 @@ export default function AdminPage() {
   
   if (!isAuthenticated) {
     console.log('Not authenticated, showing login page');
-    return <AdminLogin onLoginSuccess={() => console.log('Login success callback called')} />;
+    return <AdminLogin onLoginSuccess={handleLoginSuccess} />;
   }
 
   console.log('User is authenticated! Showing admin panel');
