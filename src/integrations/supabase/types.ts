@@ -66,9 +66,13 @@ export type Database = {
           can_create_agents: boolean
           created_at: string
           email: string
+          failed_login_attempts: number | null
           full_name: string
           id: string
           is_admin: boolean
+          last_login_at: string | null
+          locked_until: string | null
+          token_expires_at: string | null
           updated_at: string
         }
         Insert: {
@@ -77,9 +81,13 @@ export type Database = {
           can_create_agents?: boolean
           created_at?: string
           email: string
+          failed_login_attempts?: number | null
           full_name: string
           id?: string
           is_admin?: boolean
+          last_login_at?: string | null
+          locked_until?: string | null
+          token_expires_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -88,9 +96,13 @@ export type Database = {
           can_create_agents?: boolean
           created_at?: string
           email?: string
+          failed_login_attempts?: number | null
           full_name?: string
           id?: string
           is_admin?: boolean
+          last_login_at?: string | null
+          locked_until?: string | null
+          token_expires_at?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -211,6 +223,36 @@ export type Database = {
         }
         Relationships: []
       }
+      security_events: {
+        Row: {
+          created_at: string | null
+          details: Json | null
+          event_type: string
+          id: string
+          ip_address: unknown | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          details?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          details?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       webhook_logs: {
         Row: {
           amount: number | null
@@ -258,8 +300,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      hash_admin_token: {
+        Args: { token: string }
+        Returns: string
+      }
       is_admin_user: {
         Args: { auth_token?: string }
+        Returns: boolean
+      }
+      log_security_event: {
+        Args: {
+          event_type: string
+          user_id?: string
+          ip_address?: unknown
+          user_agent?: string
+          details?: Json
+        }
+        Returns: undefined
+      }
+      verify_admin_token: {
+        Args: { token: string; hash: string }
         Returns: boolean
       }
     }

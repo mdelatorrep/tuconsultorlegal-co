@@ -3,15 +3,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Users, FileText, Shield, Plus, Edit, Check, X, BarChart3, TrendingUp, DollarSign, Activity } from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from "recharts";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
+import AdminLogin from "./AdminLogin";
+import { Users, FileText, Shield, Plus, Check, X, BarChart3, TrendingUp, DollarSign, Activity, LogOut } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from "recharts";
+import DOMPurify from 'dompurify';
 
 interface Lawyer {
   id: string;
@@ -73,84 +75,37 @@ export default function AdminPage() {
   const [businessStats, setBusinessStats] = useState<BusinessStats | null>(null);
   const [contracts, setContracts] = useState<ContractDetail[]>([]);
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [adminToken, setAdminToken] = useState("");
   const { toast } = useToast();
+  const { isAuthenticated, isLoading, user, logout, getAuthHeaders } = useAdminAuth();
 
-  // New lawyer form state
+  // New lawyer form state with input validation
   const [newLawyer, setNewLawyer] = useState({
     email: "",
     full_name: "",
-    access_token: "",
+    password: "",
     can_create_agents: false,
     is_admin: false
   });
 
   useEffect(() => {
-    checkAuthentication();
-  }, []);
-
-  const checkAuthentication = async () => {
-    const token = localStorage.getItem('admin_token');
-    if (token) {
-      setAdminToken(token);
-      await verifyAdminAccess(token);
-    }
-    setLoading(false);
-  };
-
-  const verifyAdminAccess = async (token: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('lawyer_accounts')
-        .select('*')
-        .eq('access_token', token)
-        .eq('is_admin', true)
-        .single();
-
-      if (error || !data) {
-        setIsAuthenticated(false);
-        localStorage.removeItem('admin_token');
-        return;
-      }
-
-      setIsAuthenticated(true);
-      await loadData();
-    } catch (error) {
-      setIsAuthenticated(false);
-      localStorage.removeItem('admin_token');
-    }
-  };
-
-  const handleLogin = async () => {
-    if (!adminToken.trim()) {
-      toast({
-        title: "Error",
-        description: "Por favor ingresa el token de administrador",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    await verifyAdminAccess(adminToken);
     if (isAuthenticated) {
-      localStorage.setItem('admin_token', adminToken);
-      toast({
-        title: "Éxito",
-        description: "Acceso administrativo verificado",
-      });
-    } else {
-      toast({
-        title: "Error",
-        description: "Token de administrador inválido",
-        variant: "destructive"
-      });
+      loadData();
     }
+  }, [isAuthenticated]);
+
+  const sanitizeInput = (input: string): string => {
+    return DOMPurify.sanitize(input.trim());
+  };
+
+  const handleLoginSuccess = () => {
+    loadData();
   };
 
   const loadData = async () => {
     try {
+      // Load data with proper authentication headers
+      const authHeaders = getAuthHeaders();
+      
       // Load lawyers
       const { data: lawyersData, error: lawyersError } = await supabase
         .from('lawyer_accounts')
@@ -176,8 +131,9 @@ export default function AdminPage() {
       setAgents(agentsData || []);
 
       // Load statistics
-      await loadStatistics();
+      await loadStatistics(lawyersData || [], agentsData || []);
     } catch (error) {
+      console.error('Error loading data:', error);
       toast({
         title: "Error",
         description: "Error al cargar los datos",
@@ -186,7 +142,7 @@ export default function AdminPage() {
     }
   };
 
-  const loadStatistics = async () => {
+  const loadStatistics = async (lawyersData: Lawyer[], agentsData: Agent[]) => {
     try {
       // Load contracts
       const { data: contractsData, error: contractsError } = await supabase
@@ -197,13 +153,28 @@ export default function AdminPage() {
       if (contractsError) throw contractsError;
       setContracts(contractsData || []);
 
-      // Calculate lawyer statistics
-      const statsPromises = lawyers.map(async (lawyer) => {
-        const { data: agentsByLawyer } = await supabase
-          .from('legal_agents')
-          .select('*')
-          .eq('created_by', lawyer.id);
+      // Calculate business statistics
+      const totalRevenue = contractsData?.reduce((sum, c) => sum + c.price, 0) || 0;
+      const monthlyGrowth = calculateMonthlyGrowth(contractsData || []);
+      
+      const businessStatsData: BusinessStats = {
+        total_lawyers: lawyersData.length,
+        total_agents: agentsData.length,
+        active_agents: agentsData.filter(a => a.status === 'active').length,
+        total_contracts: contractsData?.length || 0,
+        total_revenue: totalRevenue,
+        monthly_growth: monthlyGrowth
+      };
+      setBusinessStats(businessStatsData);
 
+      // Generate monthly data for charts
+      const monthlyStats = generateMonthlyDataFromContracts(contractsData || [], lawyersData);
+      setMonthlyData(monthlyStats);
+
+      // Calculate lawyer statistics
+      const statsPromises = lawyersData.map(async (lawyer) => {
+        const agentsByLawyer = agentsData.filter(a => a.created_by === lawyer.id);
+        
         const contractsCount = contractsData?.filter(c => 
           agentsByLawyer?.some(a => a.name.toLowerCase().includes(c.document_type.toLowerCase()))
         ).length || 0;
@@ -224,24 +195,6 @@ export default function AdminPage() {
 
       const statsResults = await Promise.all(statsPromises);
       setLawyerStats(statsResults);
-
-      // Calculate business statistics with real monthly growth
-      const totalRevenue = contractsData?.reduce((sum, c) => sum + c.price, 0) || 0;
-      const monthlyGrowth = calculateMonthlyGrowth(contractsData || []);
-      
-      const businessStatsData: BusinessStats = {
-        total_lawyers: lawyers.length,
-        total_agents: agents.length,
-        active_agents: agents.filter(a => a.status === 'active').length,
-        total_contracts: contractsData?.length || 0,
-        total_revenue: totalRevenue,
-        monthly_growth: monthlyGrowth
-      };
-      setBusinessStats(businessStatsData);
-
-      // Generate monthly data for charts using real data
-      const monthlyStats = generateMonthlyDataFromContracts(contractsData || []);
-      setMonthlyData(monthlyStats);
 
     } catch (error) {
       console.error('Error loading statistics:', error);
@@ -267,15 +220,14 @@ export default function AdminPage() {
     if (lastMonthContracts.length === 0) return 100;
     
     const growth = ((currentMonthContracts.length - lastMonthContracts.length) / lastMonthContracts.length) * 100;
-    return Math.round(growth * 10) / 10; // Round to 1 decimal
+    return Math.round(growth * 10) / 10;
   };
 
-  const generateMonthlyDataFromContracts = (contracts: ContractDetail[]) => {
+  const generateMonthlyDataFromContracts = (contracts: ContractDetail[], lawyersData: Lawyer[]) => {
     const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dec'];
     const currentDate = new Date();
     const last6Months = [];
     
-    // Generate last 6 months
     for (let i = 5; i >= 0; i--) {
       const monthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
       const nextMonthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i + 1, 1);
@@ -291,7 +243,7 @@ export default function AdminPage() {
         month: monthNames[monthDate.getMonth()],
         contratos: monthContracts.length,
         ingresos: monthRevenue,
-        abogados: lawyers.length // This could be calculated based on lawyer creation dates
+        abogados: lawyersData.length
       });
     }
     
@@ -299,7 +251,12 @@ export default function AdminPage() {
   };
 
   const createLawyer = async () => {
-    if (!newLawyer.email || !newLawyer.full_name || !newLawyer.access_token) {
+    // Input validation and sanitization
+    const sanitizedEmail = sanitizeInput(newLawyer.email).toLowerCase();
+    const sanitizedName = sanitizeInput(newLawyer.full_name);
+    const sanitizedPassword = sanitizeInput(newLawyer.password);
+
+    if (!sanitizedEmail || !sanitizedName || !sanitizedPassword) {
       toast({
         title: "Error",
         description: "Todos los campos son requeridos",
@@ -308,13 +265,31 @@ export default function AdminPage() {
       return;
     }
 
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(sanitizedEmail)) {
+      toast({
+        title: "Error",
+        description: "Formato de email inválido",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
+      // Hash password securely on backend
+      const { data: hashedPassword, error: hashError } = await supabase.rpc('hash_admin_token', {
+        token: sanitizedPassword
+      });
+
+      if (hashError) throw hashError;
+
       const { error } = await supabase
         .from('lawyer_accounts')
         .insert([{
-          email: newLawyer.email,
-          full_name: newLawyer.full_name,
-          access_token: newLawyer.access_token,
+          email: sanitizedEmail,
+          full_name: sanitizedName,
+          access_token: hashedPassword,
           can_create_agents: newLawyer.can_create_agents,
           is_admin: newLawyer.is_admin
         }]);
@@ -329,7 +304,7 @@ export default function AdminPage() {
       setNewLawyer({
         email: "",
         full_name: "",
-        access_token: "",
+        password: "",
         can_create_agents: false,
         is_admin: false
       });
@@ -404,7 +379,7 @@ export default function AdminPage() {
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -416,34 +391,7 @@ export default function AdminPage() {
   }
 
   if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle className="flex items-center gap-2 justify-center">
-              <Shield className="h-6 w-6 text-primary" />
-              Administración
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="token">Token de Administrador</Label>
-              <Input
-                id="token"
-                type="password"
-                value={adminToken}
-                onChange={(e) => setAdminToken(e.target.value)}
-                placeholder="Ingresa tu token de administrador"
-                onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
-              />
-            </div>
-            <Button onClick={handleLogin} className="w-full">
-              Acceder
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <AdminLogin onLoginSuccess={handleLoginSuccess} />;
   }
 
   return (
@@ -452,16 +400,13 @@ export default function AdminPage() {
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
             <Shield className="h-8 w-8 text-primary" />
-            <h1 className="text-3xl font-bold">Panel de Administración</h1>
+            <div>
+              <h1 className="text-3xl font-bold">Panel de Administración</h1>
+              <p className="text-muted-foreground">Bienvenido, {user?.name}</p>
+            </div>
           </div>
-          <Button 
-            variant="outline" 
-            onClick={() => {
-              setIsAuthenticated(false);
-              localStorage.removeItem('admin_token');
-              setAdminToken("");
-            }}
-          >
+          <Button variant="outline" onClick={logout}>
+            <LogOut className="h-4 w-4 mr-2" />
             Cerrar Sesión
           </Button>
         </div>
@@ -512,12 +457,13 @@ export default function AdminPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="accessToken">Token de Acceso</Label>
+                    <Label htmlFor="password">Contraseña</Label>
                     <Input
-                      id="accessToken"
-                      value={newLawyer.access_token}
-                      onChange={(e) => setNewLawyer({ ...newLawyer, access_token: e.target.value })}
-                      placeholder="TOKEN_UNICO"
+                      id="password"
+                      type="password"
+                      value={newLawyer.password}
+                      onChange={(e) => setNewLawyer({ ...newLawyer, password: e.target.value })}
+                      placeholder="Contraseña segura"
                     />
                   </div>
                   <div className="space-y-4">
@@ -615,8 +561,8 @@ export default function AdminPage() {
                   <TableBody>
                     {agents.map((agent) => (
                       <TableRow key={agent.id}>
-                        <TableCell className="font-medium">{agent.name}</TableCell>
-                        <TableCell>{agent.category}</TableCell>
+                        <TableCell className="font-medium">{sanitizeInput(agent.name)}</TableCell>
+                        <TableCell>{sanitizeInput(agent.category)}</TableCell>
                         <TableCell>
                           {agent.lawyer_accounts?.full_name || 'N/A'}
                           <br />
@@ -685,7 +631,7 @@ export default function AdminPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{businessStats?.total_lawyers || 0}</div>
-                  <p className="text-xs text-muted-foreground">+2 desde el mes pasado</p>
+                  <p className="text-xs text-muted-foreground">Registro total</p>
                 </CardContent>
               </Card>
 
@@ -718,7 +664,7 @@ export default function AdminPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">${businessStats?.total_revenue?.toLocaleString() || 0}</div>
-                  <p className="text-xs text-muted-foreground">+{businessStats?.monthly_growth || 0}% desde el mes pasado</p>
+                  <p className="text-xs text-muted-foreground">Total acumulado</p>
                 </CardContent>
               </Card>
             </div>
@@ -825,11 +771,11 @@ export default function AdminPage() {
                   <TableBody>
                     {contracts.slice(0, 10).map((contract) => (
                       <TableRow key={contract.id}>
-                        <TableCell className="font-medium">{contract.document_type}</TableCell>
+                        <TableCell className="font-medium">{sanitizeInput(contract.document_type)}</TableCell>
                         <TableCell>
-                          {contract.user_name || 'Anónimo'}
+                          {contract.user_name ? sanitizeInput(contract.user_name) : 'Anónimo'}
                           {contract.user_email && (
-                            <div className="text-sm text-muted-foreground">{contract.user_email}</div>
+                            <div className="text-sm text-muted-foreground">{sanitizeInput(contract.user_email)}</div>
                           )}
                         </TableCell>
                         <TableCell>${contract.price.toLocaleString()}</TableCell>
