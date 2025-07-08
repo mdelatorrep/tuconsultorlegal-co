@@ -57,21 +57,20 @@ REGLAS IMPORTANTES:
 5. Asegúrate de que el documento sea válido bajo la ley colombiana
 6. Mantén el formato profesional y la estructura lógica
 7. Conserva todas las cláusulas importantes existentes
+8. RESPONDE ÚNICAMENTE CON LA PLANTILLA MEJORADA EN TEXTO PLANO
+9. NO incluyas explicaciones, comentarios, ni texto adicional
+10. NO uses caracteres especiales de markdown como **, _, `, etc.
+11. NO incluyas encabezados, títulos o secciones explicativas
 
-OBJETIVO: Mejorar la calidad, completitud y precisión legal del documento sin perder la funcionalidad de los placeholders.`
+OBJETIVO: Devolver únicamente la plantilla del documento mejorada en texto plano, sin formato adicional.`
           },
           {
             role: 'user',
-            content: `Mejora esta plantilla de documento legal:
+            content: `Documento: ${docName} - Categoría: ${docCategory}
 
-**Tipo de Documento:** ${docName}
-**Categoría:** ${docCategory}
-**Descripción:** ${docDescription}
-
-**Plantilla Original:**
 ${templateContent}
 
-Mejora la plantilla manteniendo TODOS los placeholders existentes y agregando las cláusulas legales necesarias para que sea un documento completo y profesional bajo la ley colombiana.`
+Mejora esta plantilla manteniendo todos los placeholders {{variable}} existentes.`
           }
         ],
         temperature: 0.3,
