@@ -399,28 +399,29 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
             {currentStep === 2 && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold mb-6">Plantilla del Documento</h2>
-                <div className="flex items-center justify-between mb-4">
+                <div className={`${isMobile ? 'space-y-4' : 'flex items-center justify-between'} mb-4`}>
                   <p className="text-muted-foreground">
                     Pega el texto completo de tu plantilla. Usa placeholders como `{"{{nombre_del_campo}}"}` para las variables.
                   </p>
-                  <div className="flex gap-2">
+                  <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex gap-2'}`}>
                     {formData.docTemplate && (
                       <Button 
                         variant="outline" 
-                        size="sm" 
+                        size={isMobile ? "default" : "sm"}
                         onClick={copyTemplate}
+                        className={isMobile ? "w-full justify-center" : ""}
                       >
                         <Copy className="h-4 w-4 mr-2" />
-                        Copiar Plantilla
+                        {isMobile ? "Copiar Plantilla" : "Copiar Plantilla"}
                       </Button>
                     )}
                     {formData.docTemplate && formData.docName && (
                       <Button 
                         variant="outline" 
-                        size="sm" 
+                        size={isMobile ? "default" : "sm"}
                         onClick={improveTemplateWithAI}
                         disabled={isImprovingTemplate}
-                        className="bg-purple-50 hover:bg-purple-100 border-purple-200 text-purple-700"
+                        className={`bg-purple-50 hover:bg-purple-100 border-purple-200 text-purple-700 ${isMobile ? "w-full justify-center" : ""}`}
                       >
                         {isImprovingTemplate ? (
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
