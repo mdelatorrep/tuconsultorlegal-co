@@ -17,17 +17,9 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   global: {
     headers: {
       get authorization() {
-        // Get the lawyer token from localStorage
-        const lawyerData = localStorage.getItem('lawyerData');
-        if (lawyerData) {
-          try {
-            const parsed = JSON.parse(lawyerData);
-            return parsed.accessToken || '';
-          } catch {
-            return '';
-          }
-        }
-        return '';
+        // Get the admin token from sessionStorage (used by useAdminAuth)
+        const token = sessionStorage.getItem('admin_token');
+        return token ? `Bearer ${token}` : '';
       }
     }
   }
