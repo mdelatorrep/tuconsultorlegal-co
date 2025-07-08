@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, ArrowLeft, ArrowRight, CheckCircle, Loader2 } from "lucide-react";
+import { Sparkles, ArrowLeft, ArrowRight, CheckCircle, Loader2, Copy } from "lucide-react";
 
 interface AgentCreatorPageProps {
   onBack: () => void;
@@ -161,6 +161,22 @@ ${formData.initialPrompt}`,
         ],
         suggestedPrice: "$ 75,000 COP",
         priceJustification: "Precio estimado basado en la categoría del documento y complejidad general."
+      });
+    }
+  };
+
+  const copyTemplate = async () => {
+    try {
+      await navigator.clipboard.writeText(formData.docTemplate);
+      toast({
+        title: "Plantilla copiada",
+        description: "El contenido de la plantilla se ha copiado al portapapeles.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error al copiar",
+        description: "No se pudo copiar la plantilla. Intenta seleccionar y copiar manualmente.",
+        variant: "destructive",
       });
     }
   };
@@ -318,9 +334,22 @@ ${formData.initialPrompt}`,
             {currentStep === 2 && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold mb-6">Plantilla del Documento</h2>
-                <p className="text-muted-foreground mb-4">
-                  Pega el texto completo de tu plantilla. Usa placeholders como `{"{{nombre_del_campo}}"}` para las variables.
-                </p>
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-muted-foreground">
+                    Pega el texto completo de tu plantilla. Usa placeholders como `{"{{nombre_del_campo}}"}` para las variables.
+                  </p>
+                  {formData.docTemplate && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={copyTemplate}
+                      className="ml-4"
+                    >
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copiar Plantilla
+                    </Button>
+                  )}
+                </div>
                 <Textarea
                   value={formData.docTemplate}
                   onChange={(e) => handleInputChange('docTemplate', e.target.value)}
