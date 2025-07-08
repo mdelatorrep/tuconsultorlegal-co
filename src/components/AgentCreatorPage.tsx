@@ -399,20 +399,20 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
             {currentStep === 2 && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold mb-6">Plantilla del Documento</h2>
-                <div className={`${isMobile ? 'space-y-4' : 'flex items-center justify-between'} mb-4`}>
-                  <p className="text-muted-foreground">
+                <div className={`${isMobile ? 'space-y-4' : 'flex items-start justify-between'} mb-4`}>
+                  <p className={`text-muted-foreground ${isMobile ? 'mb-2' : 'max-w-md'}`}>
                     Pega el texto completo de tu plantilla. Usa placeholders como `{"{{nombre_del_campo}}"}` para las variables.
                   </p>
-                  <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex gap-2'}`}>
+                  <div className={`${isMobile ? 'flex flex-col space-y-3' : 'flex gap-3 flex-shrink-0'}`}>
                     {formData.docTemplate && (
                       <Button 
                         variant="outline" 
                         size={isMobile ? "default" : "sm"}
                         onClick={copyTemplate}
-                        className={isMobile ? "w-full justify-center" : ""}
+                        className={isMobile ? "w-full justify-center" : "min-w-[140px]"}
                       >
                         <Copy className="h-4 w-4 mr-2" />
-                        {isMobile ? "Copiar Plantilla" : "Copiar Plantilla"}
+                        Copiar
                       </Button>
                     )}
                     {formData.docTemplate && formData.docName && (
@@ -421,14 +421,14 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
                         size={isMobile ? "default" : "sm"}
                         onClick={improveTemplateWithAI}
                         disabled={isImprovingTemplate}
-                        className={`bg-purple-50 hover:bg-purple-100 border-purple-200 text-purple-700 ${isMobile ? "w-full justify-center" : ""}`}
+                        className={`bg-purple-50 hover:bg-purple-100 border-purple-200 text-purple-700 dark:bg-purple-950/50 dark:hover:bg-purple-950/70 dark:border-purple-800 dark:text-purple-300 ${isMobile ? "w-full justify-center" : "min-w-[140px]"}`}
                       >
                         {isImprovingTemplate ? (
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                         ) : (
                           <Wand2 className="h-4 w-4 mr-2" />
                         )}
-                        {isImprovingTemplate ? 'Mejorando...' : 'Mejorar con IA'}
+                        {isImprovingTemplate ? (isMobile ? 'Mejorando...' : 'Mejorando...') : (isMobile ? 'Mejorar IA' : 'Mejorar IA')}
                       </Button>
                     )}
                   </div>
@@ -449,11 +449,11 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
                   rows={15}
                   className="font-mono text-sm"
                 />
-                <div className="flex justify-between">
-                  <Button variant="outline" onClick={handlePrev}>
+                <div className={`${isMobile ? 'flex flex-col space-y-3' : 'flex justify-between'}`}>
+                  <Button variant="outline" onClick={handlePrev} className={isMobile ? "w-full" : ""}>
                     <ArrowLeft className="h-4 w-4 mr-2" /> Anterior
                   </Button>
-                  <Button onClick={handleNext}>
+                  <Button onClick={handleNext} className={isMobile ? "w-full" : ""}>
                     Siguiente <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 </div>
@@ -535,11 +535,11 @@ VALIDACIONES:
                   </p>
                 </div>
 
-                <div className="flex justify-between">
-                  <Button variant="outline" onClick={handlePrev}>
+                <div className={`${isMobile ? 'flex flex-col space-y-3' : 'flex justify-between'}`}>
+                  <Button variant="outline" onClick={handlePrev} className={isMobile ? "w-full" : ""}>
                     <ArrowLeft className="h-4 w-4 mr-2" /> Anterior
                   </Button>
-                  <Button onClick={processWithAI} className="bg-emerald-600 hover:bg-emerald-700">
+                  <Button onClick={processWithAI} className={`bg-emerald-600 hover:bg-emerald-700 ${isMobile ? "w-full" : ""}`}>
                     <Sparkles className="h-4 w-4 mr-2" />
                     Procesar con IA
                   </Button>
@@ -594,14 +594,14 @@ VALIDACIONES:
                        </div>
                      </div>
 
-                     <div className="flex justify-between">
-                       <Button variant="outline" onClick={handlePrev}>
-                         <ArrowLeft className="h-4 w-4 mr-2" /> Anterior
-                       </Button>
-                       <Button onClick={handleNext}>
-                         Siguiente <ArrowRight className="h-4 w-4 ml-2" />
-                       </Button>
-                     </div>
+                      <div className={`${isMobile ? 'flex flex-col space-y-3' : 'flex justify-between'}`}>
+                        <Button variant="outline" onClick={handlePrev} className={isMobile ? "w-full" : ""}>
+                          <ArrowLeft className="h-4 w-4 mr-2" /> Anterior
+                        </Button>
+                        <Button onClick={handleNext} className={isMobile ? "w-full" : ""}>
+                          Siguiente <ArrowRight className="h-4 w-4 ml-2" />
+                        </Button>
+                      </div>
                    </div>
                  ) : (
                    <div className="text-center py-12">
@@ -632,7 +632,7 @@ VALIDACIONES:
                   El nuevo agente para el documento <strong>"{formData.docName}"</strong> está configurado y listo para ser publicado. 
                   Una vez publicado, estará disponible para todos los clientes en el sitio web.
                 </p>
-                <Button onClick={handlePublish} size="lg" className="text-xl px-10 py-4">
+                <Button onClick={handlePublish} size={isMobile ? "default" : "lg"} className={`${isMobile ? "w-full text-base px-6 py-3" : "text-xl px-10 py-4"}`}>
                   Publicar Nuevo Servicio
                 </Button>
               </div>
