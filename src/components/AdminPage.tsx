@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import AdminLogin from "./AdminLogin";
-import { Users, FileText, Shield, Plus, Check, X, BarChart3, TrendingUp, DollarSign, Activity, LogOut } from "lucide-react";
+import { Users, FileText, Shield, Plus, Check, X, BarChart3, TrendingUp, DollarSign, Activity, LogOut, Unlock, AlertTriangle } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from "recharts";
 import DOMPurify from 'dompurify';
 
@@ -23,6 +23,9 @@ interface Lawyer {
   can_create_agents: boolean;
   is_admin: boolean;
   created_at: string;
+  failed_login_attempts?: number;
+  locked_until?: string;
+  last_login_at?: string;
 }
 
 interface Agent {
@@ -365,6 +368,58 @@ export default function AdminPage() {
     }
   };
 
+  const unlockLawyerAccount = async (lawyerId: string) => {
+    try {
+      const { error } = await supabase
+        .from('lawyer_accounts')
+        .update({ 
+          failed_login_attempts: 0,
+          locked_until: null 
+        })
+        .eq('id', lawyerId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Éxito",
+        description: "Cuenta desbloqueada exitosamente",
+      });
+
+      await loadData();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Error al desbloquear la cuenta",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const isAccountLocked = (lawyer: Lawyer): boolean => {
+    if (!lawyer.locked_until) return false;
+    return new Date(lawyer.locked_until) > new Date();
+  };
+
+  const getLockStatusBadge = (lawyer: Lawyer) => {
+    if (isAccountLocked(lawyer)) {
+      return (
+        <Badge variant="destructive" className="flex items-center gap-1">
+          <AlertTriangle className="h-3 w-3" />
+          Bloqueada
+        </Badge>
+      );
+    }
+    if (lawyer.failed_login_attempts && lawyer.failed_login_attempts > 0) {
+      return (
+        <Badge variant="outline" className="flex items-center gap-1">
+          <AlertTriangle className="h-3 w-3" />
+          {lawyer.failed_login_attempts} intentos
+        </Badge>
+      );
+    }
+    return <Badge variant="secondary">Normal</Badge>;
+  };
+
   const updateAgentStatus = async (agentId: string, status: string) => {
     try {
       const { error } = await supabase
@@ -556,9 +611,11 @@ export default function AdminPage() {
                       <TableHead>Nombre</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Estado</TableHead>
+                      <TableHead>Seguridad</TableHead>
                       <TableHead>Crear Agentes</TableHead>
                       <TableHead>Admin</TableHead>
-                      <TableHead>Fecha Registro</TableHead>
+                      <TableHead>Último Login</TableHead>
+                      <TableHead>Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -573,6 +630,9 @@ export default function AdminPage() {
                           />
                         </TableCell>
                         <TableCell>
+                          {getLockStatusBadge(lawyer)}
+                        </TableCell>
+                        <TableCell>
                           <Switch
                             checked={lawyer.can_create_agents}
                             onCheckedChange={(checked) => updateLawyerPermissions(lawyer.id, 'can_create_agents', checked)}
@@ -584,7 +644,25 @@ export default function AdminPage() {
                             onCheckedChange={(checked) => updateLawyerPermissions(lawyer.id, 'is_admin', checked)}
                           />
                         </TableCell>
-                        <TableCell>{new Date(lawyer.created_at).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          {lawyer.last_login_at 
+                            ? new Date(lawyer.last_login_at).toLocaleDateString()
+                            : 'Nunca'
+                          }
+                        </TableCell>
+                        <TableCell>
+                          {isAccountLocked(lawyer) && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => unlockLawyerAccount(lawyer.id)}
+                              className="flex items-center gap-1"
+                            >
+                              <Unlock className="h-3 w-3" />
+                              Desbloquear
+                            </Button>
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
