@@ -5,13 +5,25 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const securityHeaders = {
+  ...corsHeaders,
+  'Content-Type': 'application/json',
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'X-XSS-Protection': '1; mode=block',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+  'Pragma': 'no-cache',
+  'Expires': '0'
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405, headers: corsHeaders })
+    return new Response('Method not allowed', { status: 405, headers: securityHeaders })
   }
 
   try {
@@ -25,7 +37,7 @@ Deno.serve(async (req) => {
     if (!authToken) {
       return new Response(JSON.stringify({ error: 'No token provided' }), {
         status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: securityHeaders
       })
     }
 
@@ -40,7 +52,7 @@ Deno.serve(async (req) => {
     if (error || !lawyer) {
       return new Response(JSON.stringify({ error: 'Invalid token' }), {
         status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: securityHeaders
       })
     }
 
@@ -55,21 +67,8 @@ Deno.serve(async (req) => {
 
       return new Response(JSON.stringify({ error: 'Token expired' }), {
         status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: securityHeaders
       })
-    }
-
-    // Enhanced security headers
-    const securityHeaders = {
-      ...corsHeaders,
-      'Content-Type': 'application/json',
-      'X-Content-Type-Options': 'nosniff',
-      'X-Frame-Options': 'DENY',
-      'X-XSS-Protection': '1; mode=block',
-      'Referrer-Policy': 'strict-origin-when-cross-origin',
-      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0'
     }
 
     return new Response(JSON.stringify({
@@ -89,7 +88,7 @@ Deno.serve(async (req) => {
     console.error('Token verification error:', error)
     return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: securityHeaders
     })
   }
 })

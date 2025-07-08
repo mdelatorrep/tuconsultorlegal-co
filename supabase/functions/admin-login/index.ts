@@ -5,6 +5,18 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const securityHeaders = {
+  ...corsHeaders,
+  'Content-Type': 'application/json',
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'X-XSS-Protection': '1; mode=block',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+  'Pragma': 'no-cache',
+  'Expires': '0'
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -25,7 +37,7 @@ Deno.serve(async (req) => {
     if (!email || !password) {
       return new Response(JSON.stringify({ error: 'Email and password required' }), {
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: securityHeaders
       })
     }
 
@@ -34,14 +46,14 @@ Deno.serve(async (req) => {
     if (!emailRegex.test(email)) {
       return new Response(JSON.stringify({ error: 'Invalid email format' }), {
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: securityHeaders
       })
     }
 
     if (password.length < 8 || password.length > 128) {
       return new Response(JSON.stringify({ error: 'Invalid password length' }), {
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: securityHeaders
       })
     }
 
@@ -66,7 +78,7 @@ Deno.serve(async (req) => {
 
       return new Response(JSON.stringify({ error: 'Too many attempts. Please try again later.' }), {
         status: 429,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: securityHeaders
       })
     }
 
@@ -87,7 +99,7 @@ Deno.serve(async (req) => {
 
       return new Response(JSON.stringify({ error: 'Invalid credentials' }), {
         status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: securityHeaders
       })
     }
 
@@ -101,7 +113,7 @@ Deno.serve(async (req) => {
 
       return new Response(JSON.stringify({ error: 'Account temporarily locked' }), {
         status: 423,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: securityHeaders
       })
     }
 
@@ -140,7 +152,7 @@ Deno.serve(async (req) => {
 
       return new Response(JSON.stringify({ error: 'Invalid credentials' }), {
         status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: securityHeaders
       })
     }
 
@@ -175,19 +187,6 @@ Deno.serve(async (req) => {
       details: { email, ip: clientIP, user_agent: userAgent }
     })
 
-    // Enhanced security headers
-    const securityHeaders = {
-      ...corsHeaders,
-      'Content-Type': 'application/json',
-      'X-Content-Type-Options': 'nosniff',
-      'X-Frame-Options': 'DENY',
-      'X-XSS-Protection': '1; mode=block',
-      'Referrer-Policy': 'strict-origin-when-cross-origin',
-      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0'
-    }
-
     return new Response(JSON.stringify({
       success: true,
       token: sessionToken,
@@ -206,7 +205,7 @@ Deno.serve(async (req) => {
     console.error('Admin login error:', error)
     return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: securityHeaders
     })
   }
 })

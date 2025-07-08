@@ -91,6 +91,8 @@ export default function AdminPage() {
     is_admin: false
   });
 
+  const [showAddLawyer, setShowAddLawyer] = useState(false);
+
   // New agent form state
   const [newAgent, setNewAgent] = useState({
     name: "",
@@ -302,19 +304,12 @@ export default function AdminPage() {
     }
 
     try {
-      // Hash password securely on backend
-      const { data: hashedPassword, error: hashError } = await supabase.rpc('hash_password', {
-        password: sanitizedPassword
-      });
-
-      if (hashError) throw hashError;
-
       const { error } = await supabase
         .from('lawyer_accounts')
         .insert([{
           email: sanitizedEmail,
           full_name: sanitizedName,
-          password_hash: hashedPassword,
+          password_hash: sanitizedPassword, // Will be automatically hashed by trigger
           access_token: crypto.randomUUID(), // Generate secure session token
           can_create_agents: newLawyer.can_create_agents,
           is_admin: newLawyer.is_admin
