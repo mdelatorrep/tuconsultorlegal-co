@@ -38,31 +38,50 @@ export const useBoldCheckout = (documentData: any) => {
   // Create Bold Checkout instance when document is loaded
   useEffect(() => {
     if (documentData && !boldCheckoutInstance) {
+      console.log('Initializing Bold Checkout for document:', documentData.id);
       initBoldCheckout();
 
       const handleBoldLoaded = async () => {
+        console.log('Bold Checkout script loaded, window.BoldCheckout:', !!window.BoldCheckout);
         if (window.BoldCheckout) {
-          const orderId = `DOC-${documentData.id}-${Date.now()}`;
-          
-          // Generate proper integrity signature (SHA256 hash)
-          // Format: {orderId}{amount}{currency}{secretKey}
-          const signatureString = `${orderId}${documentData.price}COPvR1YCM5cT4H0GKebSgmDOg`;
-          const integritySignature = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(signatureString))
-            .then(buffer => Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join(''));
+          try {
+            const orderId = `DOC-${documentData.id}-${Date.now()}`;
+            
+            // Generate proper integrity signature (SHA256 hash)
+            // Format: {orderId}{amount}{currency}{secretKey}
+            const signatureString = `${orderId}${documentData.price}COPvR1YCM5cT4H0GKebSgmDOg`;
+            const integritySignature = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(signatureString))
+              .then(buffer => Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join(''));
 
-          const checkout = new window.BoldCheckout({
-            orderId: orderId,
-            currency: 'COP',
-            amount: documentData.price.toString(),
-            apiKey: 'OUmoGBT-j4MEwEkhbt_hqJA22_0NdK8RVAkuCdkdMiQ',
-            integritySignature: integritySignature,
-            merchantId: 'XMS1CF62IB',
-            description: `Pago documento: ${documentData.document_type}`,
-            redirectionUrl: `${window.location.origin}/?code=${documentData.token}&payment=success`,
-            renderMode: 'embedded', // Embedded Checkout - abre en modal sin salir de la página
-          });
-          setBoldCheckoutInstance(checkout);
-          setCurrentOrderId(orderId);
+            console.log('Creating Bold Checkout instance with orderId:', orderId);
+            const checkout = new window.BoldCheckout({
+              orderId: orderId,
+              currency: 'COP',
+              amount: documentData.price.toString(),
+              apiKey: 'OUmoGBT-j4MEwEkhbt_hqJA22_0NdK8RVAkuCdkdMiQ',
+              integritySignature: integritySignature,
+              merchantId: 'XMS1CF62IB',
+              description: `Pago documento: ${documentData.document_type}`,
+              redirectionUrl: `${window.location.origin}/?code=${documentData.token}&payment=success`,
+              renderMode: 'embedded', // Embedded Checkout - abre en modal sin salir de la página
+            });
+            
+            console.log('Bold Checkout instance created successfully:', !!checkout);
+            setBoldCheckoutInstance(checkout);
+            setCurrentOrderId(orderId);
+            
+            toast({
+              title: "Sistema de pagos listo",
+              description: "La pasarela de pagos se ha inicializado correctamente.",
+            });
+          } catch (error) {
+            console.error('Error creating Bold Checkout instance:', error);
+            toast({
+              title: "Error en sistema de pagos",
+              description: "No se pudo inicializar la pasarela de pagos. Intenta recargar la página.",
+              variant: "destructive",
+            });
+          }
         }
       };
 
