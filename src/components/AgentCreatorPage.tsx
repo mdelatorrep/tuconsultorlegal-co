@@ -71,11 +71,67 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
     setCurrentStep(4);
     
     try {
-      // Simulate AI processing for now
-      // In real implementation, this would call your n8n workflow
-      setTimeout(() => {
-        setAiResults({
-          enhancedPrompt: `PROMPT MEJORADO POR IA:
+      console.log('Processing with AI...', {
+        docName: formData.docName,
+        docDesc: formData.docDesc,
+        docCat: formData.docCat,
+        templateLength: formData.docTemplate.length,
+        promptLength: formData.initialPrompt.length
+      });
+
+      const { data, error } = await supabase.functions.invoke('process-agent-ai', {
+        body: {
+          docName: formData.docName,
+          docDesc: formData.docDesc,
+          docCat: formData.docCat,
+          docTemplate: formData.docTemplate,
+          initialPrompt: formData.initialPrompt
+        }
+      });
+
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw new Error(error.message || 'Error al procesar con IA');
+      }
+
+      if (!data?.success) {
+        console.error('AI processing failed:', data);
+        throw new Error(data?.error || 'Error en el procesamiento de IA');
+      }
+
+      console.log('AI processing successful:', {
+        enhancedPromptLength: data.enhancedPrompt?.length,
+        placeholdersCount: data.extractedPlaceholders?.length,
+        suggestedPrice: data.suggestedPrice
+      });
+
+      setAiResults({
+        enhancedPrompt: data.enhancedPrompt || '',
+        extractedPlaceholders: data.extractedPlaceholders || [],
+        suggestedPrice: data.suggestedPrice || '$ 50,000 COP',
+        priceJustification: data.priceJustification || 'Precio estimado basado en complejidad del documento.'
+      });
+
+      setIsProcessing(false);
+
+      toast({
+        title: "Procesamiento completado",
+        description: `Se generó un prompt mejorado y se identificaron ${data.extractedPlaceholders?.length || 0} variables.`,
+      });
+
+    } catch (error) {
+      console.error('Error processing with AI:', error);
+      setIsProcessing(false);
+      
+      toast({
+        title: "Error en el procesamiento",
+        description: error instanceof Error ? error.message : "No se pudo procesar con IA. Intenta nuevamente.",
+        variant: "destructive",
+      });
+
+      // Set fallback data so user can continue
+      setAiResults({
+        enhancedPrompt: `PROMPT MEJORADO (Modo Fallback):
 
 ## ROL Y OBJETIVO
 Eres un asistente legal experto en la elaboración de ${formData.docName} en Colombia. Tu objetivo es recopilar toda la información necesaria del usuario de manera clara y profesional para generar un documento completo y legalmente válido.
@@ -84,36 +140,28 @@ Eres un asistente legal experto en la elaboración de ${formData.docName} en Col
 Debes solicitar la información de forma secuencial, validando cada respuesta antes de continuar. Mantén un tono profesional pero amigable, y explica brevemente por qué necesitas cada dato.
 
 ## CAMPOS A RECOPILAR
-[Los campos se extraerán automáticamente de la plantilla]
+[Basado en el análisis de la plantilla proporcionada]
+
+## ESTILO DE CONVERSACIÓN
+- Tono profesional pero amigable
+- Haz una pregunta a la vez
+- Valida las respuestas antes de continuar
+- Explica la importancia de cada dato cuando sea relevante
 
 ## PROCESO DE REDACCIÓN
 Una vez confirmados todos los datos, redacta el documento completo desde cero usando la plantilla como guía, reemplazando todos los placeholders con la información proporcionada.
 
-## INSTRUCCIONES DE HERRAMIENTAS
-Pasa el texto redactado final a la herramienta 'Google Docs - Crear Documento' para generar el archivo.
-
 ## FINALIZACIÓN
-Al terminar, proporciona al usuario el ID del documento y confirma que el proceso se ha completado exitosamente.`,
-          extractedPlaceholders: [
-            { placeholder: "{{nombre_promitente_vendedor}}", pregunta: "¿Cuál es el nombre completo del vendedor?" },
-            { placeholder: "{{cedula_promitente_vendedor}}", pregunta: "¿Cuál es el número de cédula del vendedor?" },
-            { placeholder: "{{nombre_promitente_comprador}}", pregunta: "¿Cuál es el nombre completo del comprador?" },
-            { placeholder: "{{direccion_inmueble}}", pregunta: "¿Cuál es la dirección completa del inmueble?" },
-            { placeholder: "{{precio_venta}}", pregunta: "¿Cuál es el precio de venta acordado?" }
-          ],
-          suggestedPrice: "$ 95.000 COP",
-          priceJustification: "Basado en la complejidad de 5 variables principales y el precio promedio de mercado para documentos similares."
-        });
-        setIsProcessing(false);
-      }, 3000);
-    } catch (error) {
-      console.error('Error processing with AI:', error);
-      toast({
-        title: "Error en el procesamiento",
-        description: "No se pudo procesar con IA. Intenta nuevamente.",
-        variant: "destructive",
+Al terminar, confirma que el documento se ha generado correctamente y está listo para su descarga.
+
+Instrucción inicial del abogado:
+${formData.initialPrompt}`,
+        extractedPlaceholders: [
+          { placeholder: "{{campo_ejemplo}}", pregunta: "Información de ejemplo - revisar plantilla manualmente" }
+        ],
+        suggestedPrice: "$ 75,000 COP",
+        priceJustification: "Precio estimado basado en la categoría del documento y complejidad general."
       });
-      setIsProcessing(false);
     }
   };
 
