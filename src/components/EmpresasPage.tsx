@@ -58,7 +58,7 @@ export default function EmpresasPage({ onOpenChat, onNavigate }: EmpresasPagePro
   };
 
   const handleDocumentAction = (service: AgentService) => {
-    const message = `Quiero generar para mi empresa: ${service.document_name}. ${service.ai_prompt}`;
+    const message = `Generar ${service.document_name}`;
     onOpenChat(message);
   };
 

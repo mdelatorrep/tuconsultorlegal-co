@@ -59,7 +59,7 @@ export default function PersonasPage({ onOpenChat, onNavigate }: PersonasPagePro
   };
 
   const handleDocumentAction = (service: AgentService) => {
-    const message = `Quiero generar: ${service.document_name}. ${service.ai_prompt}`;
+    const message = `Generar ${service.document_name}`;
     onOpenChat(message);
   };
 
