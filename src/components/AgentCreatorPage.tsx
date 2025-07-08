@@ -20,6 +20,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
   const [currentStep, setCurrentStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isImprovingTemplate, setIsImprovingTemplate] = useState(false);
+  const [isImprovingDocInfo, setIsImprovingDocInfo] = useState(false);
   const [formData, setFormData] = useState({
     docName: "",
     docDesc: "",
@@ -33,6 +34,14 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
     extractedPlaceholders: [] as Array<{ placeholder: string; pregunta: string }>,
     suggestedPrice: "",
     priceJustification: "",
+  });
+  
+  const [docInfoImprovement, setDocInfoImprovement] = useState({
+    improvedName: "",
+    improvedDescription: "",
+    originalName: "",
+    originalDescription: "",
+    showImprovement: false,
   });
   
   const [aiProcessingSuccess, setAiProcessingSuccess] = useState(false);
@@ -60,7 +69,10 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
   };
 
   const handleNext = () => {
-    if (currentStep < 5) {
+    if (currentStep === 1) {
+      // For step 1, improve document info with AI first
+      improveDocumentInfo();
+    } else if (currentStep < 5) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -222,6 +234,101 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
     }
   };
 
+  const improveDocumentInfo = async () => {
+    if (!formData.docName.trim() || !formData.docDesc.trim() || !formData.docCat) {
+      toast({
+        title: "Campos requeridos",
+        description: "Por favor completa el nombre, descripción y categoría del documento.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsImprovingDocInfo(true);
+    
+    try {
+      console.log('Improving document info with AI...', {
+        docName: formData.docName,
+        docDesc: formData.docDesc,
+        docCategory: formData.docCat
+      });
+
+      const { data, error } = await supabase.functions.invoke('improve-document-info', {
+        body: {
+          docName: formData.docName,
+          docDesc: formData.docDesc,
+          docCategory: formData.docCat
+        }
+      });
+
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw new Error(error.message || 'Error al mejorar la información del documento');
+      }
+
+      if (!data?.success) {
+        console.error('AI document info improvement failed:', data);
+        throw new Error(data?.error || 'Error en la mejora de información del documento');
+      }
+
+      console.log('Document info improvement successful:', {
+        improvedName: data.improvedName,
+        improvedDescription: data.improvedDescription
+      });
+
+      // Show the improvement to the user
+      setDocInfoImprovement({
+        improvedName: data.improvedName,
+        improvedDescription: data.improvedDescription,
+        originalName: data.originalName,
+        originalDescription: data.originalDescription,
+        showImprovement: true,
+      });
+
+      setIsImprovingDocInfo(false);
+
+      toast({
+        title: "Mejoras sugeridas por IA",
+        description: "Revisa las mejoras sugeridas para el nombre y descripción del documento.",
+      });
+
+    } catch (error) {
+      console.error('Error improving document info with AI:', error);
+      setIsImprovingDocInfo(false);
+      
+      toast({
+        title: "Error al mejorar información",
+        description: error instanceof Error ? error.message : "No se pudo mejorar la información con IA. Intenta nuevamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const acceptDocumentInfo = () => {
+    setFormData(prev => ({
+      ...prev,
+      docName: docInfoImprovement.improvedName,
+      docDesc: docInfoImprovement.improvedDescription,
+    }));
+    setDocInfoImprovement(prev => ({ ...prev, showImprovement: false }));
+    setCurrentStep(2);
+    
+    toast({
+      title: "Mejoras aplicadas",
+      description: "Se actualizó el nombre y descripción del documento.",
+    });
+  };
+
+  const rejectDocumentInfo = () => {
+    setDocInfoImprovement(prev => ({ ...prev, showImprovement: false }));
+    setCurrentStep(2);
+    
+    toast({
+      title: "Mejoras rechazadas",
+      description: "Se mantuvieron los valores originales.",
+    });
+  };
+
   const handlePublish = async () => {
     try {
       // Convert suggested price to integer (remove $ and commas)
@@ -349,49 +456,149 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
             {currentStep === 1 && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold mb-6">Información Básica del Documento</h2>
-                <div className="space-y-6">
-                  <div>
-                    <Label htmlFor="docName">Nombre del Documento (para clientes)</Label>
-                    <Input
-                      id="docName"
-                      value={formData.docName}
-                      onChange={(e) => handleInputChange('docName', e.target.value)}
-                      placeholder="Ej: Contrato de Promesa de Compraventa"
-                      className="mt-1"
-                    />
+                
+                {/* Loading state while improving with AI */}
+                {isImprovingDocInfo && (
+                  <div className="text-center py-12">
+                    <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
+                    <p className="text-lg">Mejorando información con IA...</p>
+                    <p className="text-muted-foreground">Esto puede tomar unos segundos</p>
                   </div>
-                  <div>
-                    <Label htmlFor="docDesc">Descripción Corta (para clientes)</Label>
-                    <Textarea
-                      id="docDesc"
-                      value={formData.docDesc}
-                      onChange={(e) => handleInputChange('docDesc', e.target.value)}
-                      placeholder="Ej: Asegura la compra de un inmueble mientras se completan los trámites."
-                      rows={3}
-                      className="mt-1"
-                    />
+                )}
+                
+                {/* Show AI improvements */}
+                {docInfoImprovement.showImprovement && (
+                  <div className="space-y-6">
+                    <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-6">
+                      <h3 className="text-lg font-semibold mb-4 text-green-800 dark:text-green-200">
+                        ✨ Mejoras Sugeridas por IA
+                      </h3>
+                      
+                      <div className="space-y-6">
+                        {/* Name comparison */}
+                        <div>
+                          <Label className="text-sm font-medium mb-2 block">Nombre del Documento</Label>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Original:</p>
+                              <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded border text-sm">
+                                {docInfoImprovement.originalName}
+                              </div>
+                            </div>
+                            <div>
+                              <p className="text-xs text-emerald-600 dark:text-emerald-400 mb-1">Mejorado:</p>
+                              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/50 rounded border border-emerald-200 dark:border-emerald-800 text-sm">
+                                {docInfoImprovement.improvedName}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Description comparison */}
+                        <div>
+                          <Label className="text-sm font-medium mb-2 block">Descripción</Label>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Original:</p>
+                              <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded border text-sm">
+                                {docInfoImprovement.originalDescription}
+                              </div>
+                            </div>
+                            <div>
+                              <p className="text-xs text-emerald-600 dark:text-emerald-400 mb-1">Mejorado:</p>
+                              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/50 rounded border border-emerald-200 dark:border-emerald-800 text-sm">
+                                {docInfoImprovement.improvedDescription}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className={`${isMobile ? 'flex flex-col space-y-3' : 'flex justify-end gap-3'} mt-6`}>
+                        <Button 
+                          variant="outline" 
+                          onClick={rejectDocumentInfo}
+                          className={isMobile ? "w-full" : ""}
+                        >
+                          Mantener Original
+                        </Button>
+                        <Button 
+                          onClick={acceptDocumentInfo}
+                          className={`bg-emerald-600 hover:bg-emerald-700 ${isMobile ? "w-full" : ""}`}
+                        >
+                          Aplicar Mejoras
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="docCat">Categoría</Label>
-                    <Select value={formData.docCat} onValueChange={(value) => handleInputChange('docCat', value)}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Selecciona una categoría" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((category) => (
-                          <SelectItem key={category} value={category}>
-                            {category}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                )}
+                
+                {/* Regular form fields */}
+                {!isImprovingDocInfo && !docInfoImprovement.showImprovement && (
+                  <div className="space-y-6">
+                    <div>
+                      <Label htmlFor="docName">Nombre del Documento (para clientes)</Label>
+                      <Input
+                        id="docName"
+                        value={formData.docName}
+                        onChange={(e) => handleInputChange('docName', e.target.value)}
+                        placeholder="Ej: Contrato de Promesa de Compraventa"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="docDesc">Descripción Corta (para clientes)</Label>
+                      <Textarea
+                        id="docDesc"
+                        value={formData.docDesc}
+                        onChange={(e) => handleInputChange('docDesc', e.target.value)}
+                        placeholder="Ej: Asegura la compra de un inmueble mientras se completan los trámites."
+                        rows={3}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="docCat">Categoría</Label>
+                      <Select value={formData.docCat} onValueChange={(value) => handleInputChange('docCat', value)}>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="Selecciona una categoría" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categories.map((category) => (
+                            <SelectItem key={category} value={category}>
+                              {category}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                      <p className="text-sm text-blue-700 dark:text-blue-300">
+                        <strong>💡 Mejora automática:</strong> Al hacer clic en "Siguiente", nuestra IA optimizará automáticamente el nombre y descripción para que sean más atractivos y comprensibles para los usuarios finales.
+                      </p>
+                    </div>
+                    
+                    <div className="text-right">
+                      <Button 
+                        onClick={handleNext}
+                        disabled={isImprovingDocInfo}
+                        className={`${isImprovingDocInfo ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        {isImprovingDocInfo ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Mejorando con IA...
+                          </>
+                        ) : (
+                          <>
+                            Siguiente <ArrowRight className="h-4 w-4 ml-2" />
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </div>
-                </div>
-                <div className="text-right">
-                  <Button onClick={handleNext}>
-                    Siguiente <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </div>
+                )}
               </div>
             )}
 
