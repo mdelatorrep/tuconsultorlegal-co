@@ -95,8 +95,16 @@ Deno.serve(async (req) => {
     
     console.log('Received webhook:', { body, signature })
 
-    // Verify signature (use empty string for test mode)
-    const secretKey = 'vR1YCM5cT4H0GKebSgmDOg' // Your Bold secret key
+    // Verify signature using environment variable
+    const secretKey = Deno.env.get('BOLD_SECRET_KEY')
+    
+    if (!secretKey) {
+      console.error('Bold secret key not configured')
+      return new Response('Payment system not configured', { 
+        status: 500, 
+        headers: corsHeaders 
+      })
+    }
     const isValidSignature = await verifyBoldSignature(body, signature, secretKey)
     
     if (!isValidSignature) {

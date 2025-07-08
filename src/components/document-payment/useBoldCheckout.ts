@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 // Declare Bold Checkout types
 declare global {
@@ -66,24 +67,25 @@ export const useBoldCheckout = (documentData: any) => {
           try {
             const orderId = `DOC-${documentData.id}-${Date.now()}`;
             
-            // Generate proper integrity signature (SHA256 hash)
-            // Format: {orderId}{amount}{currency}{secretKey}
-            const signatureString = `${orderId}${documentData.price}COPvR1YCM5cT4H0GKebSgmDOg`;
-            const integritySignature = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(signatureString))
-              .then(buffer => Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join(''));
-
+            // Generate payment configuration securely through backend
             console.log('Creating Bold Checkout instance with orderId:', orderId);
-            const checkout = new window.BoldCheckout({
-              orderId: orderId,
-              currency: 'COP',
-              amount: documentData.price.toString(),
-              apiKey: 'OUmoGBT-j4MEwEkhbt_hqJA22_0NdK8RVAkuCdkdMiQ',
-              integritySignature: integritySignature,
-              merchantId: 'XMS1CF62IB',
-              description: `Pago documento: ${documentData.document_type}`,
-              redirectionUrl: `${window.location.origin}/?code=${documentData.token}&payment=success`,
-              renderMode: 'embedded', // Embedded Checkout - abre en modal sin salir de la página
+            
+            // Get secure payment configuration from backend
+            const { data: paymentConfig, error: configError } = await supabase.functions.invoke('create-payment-config', {
+              body: { 
+                orderId,
+                amount: documentData.price,
+                documentType: documentData.document_type,
+                token: documentData.token
+              }
             });
+            
+            if (configError || !paymentConfig) {
+              console.error('Error getting payment configuration:', configError);
+              throw new Error('Failed to initialize payment system');
+            }
+            
+            const checkout = new window.BoldCheckout(paymentConfig);
             
             console.log('Bold Checkout instance created successfully:', !!checkout);
             setBoldCheckoutInstance(checkout);

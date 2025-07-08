@@ -36,7 +36,15 @@ Deno.serve(async (req) => {
     console.log('Checking payment status for order:', orderId)
 
     // Call Bold's fallback service to get payment notification
-    const boldApiKey = 'OUmoGBT-j4MEwEkhbt_hqJA22_0NdK8RVAkuCdkdMiQ'
+    const boldApiKey = Deno.env.get('BOLD_API_KEY')
+    
+    if (!boldApiKey) {
+      console.error('Bold API key not configured')
+      return new Response(JSON.stringify({ error: 'Payment system not configured' }), { 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
     
     try {
       const response = await fetch(
