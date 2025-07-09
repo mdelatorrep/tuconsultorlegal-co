@@ -133,6 +133,10 @@ export default function AdminPage() {
 
   const loadData = async () => {
     try {
+      console.log('Loading data with auth headers...');
+      const headers = getAuthHeaders();
+      console.log('Auth headers:', headers);
+
       // Load lawyers - only admins can see all lawyers due to RLS
       const { data: lawyersData, error: lawyersError } = await supabase
         .from('lawyer_accounts')
@@ -141,8 +145,15 @@ export default function AdminPage() {
 
       if (lawyersError) {
         console.error('Error loading lawyers:', lawyersError);
-        throw lawyersError;
+        toast({
+          title: "Error",
+          description: `Error al cargar abogados: ${lawyersError.message}`,
+          variant: "destructive"
+        });
+        return;
       }
+      
+      console.log('Lawyers loaded:', lawyersData?.length || 0);
       setLawyers(lawyersData || []);
 
       // Load agents with lawyer info - only admins can see all agents due to RLS
@@ -159,12 +170,20 @@ export default function AdminPage() {
 
       if (agentsError) {
         console.error('Error loading agents:', agentsError);
-        throw agentsError;
+        toast({
+          title: "Error",
+          description: `Error al cargar agentes: ${agentsError.message}`,
+          variant: "destructive"
+        });
+        return;
       }
+      
+      console.log('Agents loaded:', agentsData?.length || 0);
       setAgents(agentsData || []);
 
       // Load statistics
       await loadStatistics(lawyersData || [], agentsData || []);
+      console.log('Data loading completed successfully');
     } catch (error) {
       console.error('Error loading data:', error);
       toast({
