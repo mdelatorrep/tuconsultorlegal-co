@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import SuperAdminLogin from "./SuperAdminLogin";
-import { Users, FileText, Shield, Plus, Check, X, BarChart3, TrendingUp, DollarSign, Activity, LogOut, Unlock, AlertTriangle } from "lucide-react";
+import { Users, FileText, Shield, Plus, Check, X, BarChart3, TrendingUp, DollarSign, Activity, LogOut, Unlock, AlertTriangle, Eye, EyeOff } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from "recharts";
 import DOMPurify from 'dompurify';
 import PhoneInput from 'react-phone-number-input';
@@ -81,6 +81,7 @@ export default function AdminPage() {
   const [businessStats, setBusinessStats] = useState<BusinessStats | null>(null);
   const [contracts, setContracts] = useState<ContractDetail[]>([]);
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const { toast } = useToast();
   const { isAuthenticated, isLoading, user, logout, getAuthHeaders, checkAuthStatus } = useAdminAuth();
 
@@ -597,13 +598,28 @@ export default function AdminPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="password">Contraseña</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      value={newLawyer.password}
-                      onChange={(e) => setNewLawyer({ ...newLawyer, password: e.target.value })}
-                      placeholder="Contraseña segura"
-                    />
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showNewPassword ? "text" : "password"}
+                        value={newLawyer.password}
+                        onChange={(e) => setNewLawyer({ ...newLawyer, password: e.target.value })}
+                        placeholder="Contraseña segura"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                      >
+                        {showNewPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
                    </div>
                    <div className="space-y-2">
                      <Label htmlFor="phoneNumber">Número de Teléfono</Label>
