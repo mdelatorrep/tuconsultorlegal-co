@@ -194,7 +194,7 @@ export const useAdminAuth = () => {
 
   const getAuthHeaders = () => {
     const token = sessionStorage.getItem('admin_token');
-    return token ? { 'Authorization': `Bearer ${token}` } : {};
+    return token ? { 'authorization': token } : {};
   };
 
   return {

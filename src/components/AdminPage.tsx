@@ -133,15 +133,28 @@ export default function AdminPage() {
 
   const loadData = async () => {
     try {
-      console.log('Loading data with auth headers...');
-      const headers = getAuthHeaders();
-      console.log('Auth headers:', headers);
+      console.log('Loading data...');
+      const authToken = sessionStorage.getItem('admin_token');
+      
+      if (!authToken) {
+        console.error('No admin token found');
+        toast({
+          title: "Error de autenticación",
+          description: "Token de administrador no encontrado. Por favor, inicia sesión nuevamente.",
+          variant: "destructive"
+        });
+        return;
+      }
 
-      // Load lawyers - only admins can see all lawyers due to RLS
-      const { data: lawyersData, error: lawyersError } = await supabase
-        .from('lawyer_accounts')
-        .select('*')
-        .order('created_at', { ascending: false });
+      console.log('Using auth token for queries:', !!authToken);
+
+      // Load lawyers using admin function
+      console.log('Attempting to load lawyers via admin function...');
+      const { data: lawyersData, error: lawyersError } = await supabase.functions.invoke('get-lawyers-admin', {
+        headers: {
+          'authorization': authToken
+        }
+      });
 
       if (lawyersError) {
         console.error('Error loading lawyers:', lawyersError);
