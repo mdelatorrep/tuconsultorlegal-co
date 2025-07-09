@@ -370,12 +370,11 @@ export default function AdminPage() {
         return;
       }
 
-      const { data, error } = await supabase
-        .from('lawyer_accounts')
-        .update({ [field]: value })
-        .eq('id', lawyerId)
-        .select()
-        .single();
+    const { data, error } = await supabase
+      .from('lawyer_accounts')
+      .update({ [field]: value })
+      .eq('id', lawyerId)
+      .select();
 
       if (error) {
         console.error('Error updating lawyer permissions:', error);
