@@ -307,7 +307,33 @@ export default function AdminPage() {
     }
 
     try {
-      const { error } = await supabase
+      // Get the current admin token
+      const token = sessionStorage.getItem('admin_token');
+      
+      if (!token) {
+        toast({
+          title: "Error de autenticación",
+          description: "Token de sesión no encontrado. Por favor, inicia sesión nuevamente.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Create a new supabase client instance with the admin token
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabaseWithAuth = createClient(
+        'https://tkaezookvtpulfpaffes.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRrYWV6b29rdnRwdWxmcGFmZmVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3NzEwNzUsImV4cCI6MjA2NzM0NzA3NX0.j7fSfaXMqwmytVuXIU4_miAbn-v65b5x0ncRr0K-CNE',
+        {
+          global: {
+            headers: {
+              Authorization: token
+            }
+          }
+        }
+      );
+      
+      const { error } = await supabaseWithAuth
         .from('lawyer_accounts')
         .insert([{
           email: sanitizedEmail,
