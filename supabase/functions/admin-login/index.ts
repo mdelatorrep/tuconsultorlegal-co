@@ -88,9 +88,17 @@ Deno.serve(async (req) => {
       .select('*')
       .eq('email', email)
       .eq('active', true)
-      .single()
+      .maybeSingle()
 
-    if (fetchError || !lawyer) {
+    if (fetchError) {
+      console.error('Database error during login:', fetchError)
+      return new Response(JSON.stringify({ error: 'Database error occurred' }), {
+        status: 500,
+        headers: securityHeaders
+      })
+    }
+
+    if (!lawyer) {
       // Log failed login attempt
       await supabase.rpc('log_security_event', {
         event_type: 'admin_login_failed',
