@@ -1,4 +1,7 @@
 project_id = "tkaezookvtpulfpaffes"
 
+[functions.admin-login]
+verify_jwt = false
+
 [functions.bold-webhook]
 verify_jwt = false
