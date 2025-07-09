@@ -133,19 +133,19 @@ export default function AdminPage() {
 
   const loadData = async () => {
     try {
-      // Load data with proper authentication headers
-      const authHeaders = getAuthHeaders();
-      
-      // Load lawyers
+      // Load lawyers - only admins can see all lawyers due to RLS
       const { data: lawyersData, error: lawyersError } = await supabase
         .from('lawyer_accounts')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (lawyersError) throw lawyersError;
+      if (lawyersError) {
+        console.error('Error loading lawyers:', lawyersError);
+        throw lawyersError;
+      }
       setLawyers(lawyersData || []);
 
-      // Load agents with lawyer info
+      // Load agents with lawyer info - only admins can see all agents due to RLS
       const { data: agentsData, error: agentsError } = await supabase
         .from('legal_agents')
         .select(`
@@ -157,7 +157,10 @@ export default function AdminPage() {
         `)
         .order('created_at', { ascending: false });
 
-      if (agentsError) throw agentsError;
+      if (agentsError) {
+        console.error('Error loading agents:', agentsError);
+        throw agentsError;
+      }
       setAgents(agentsData || []);
 
       // Load statistics
