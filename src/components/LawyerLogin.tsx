@@ -113,7 +113,20 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
             </Button>
           </form>
           
-          <div className="mt-6 text-center text-sm text-muted-foreground">
+          <div className="mt-6 text-center">
+            <p className="text-sm text-muted-foreground mb-3">
+              ¿No tienes un token de acceso?
+            </p>
+            <Button 
+              variant="link" 
+              onClick={() => window.location.href = '/?view=request-token'}
+              className="text-primary"
+            >
+              Solicita acceso aquí
+            </Button>
+          </div>
+          
+          <div className="mt-4 text-center text-sm text-muted-foreground">
             <p className="flex items-center justify-center gap-2">
               <Lock className="h-4 w-4" />
               Plataforma segura para profesionales del derecho
