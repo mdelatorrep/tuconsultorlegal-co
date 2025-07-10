@@ -171,12 +171,17 @@ export default function AdminPage() {
       console.log('Lawyers loaded:', lawyersData?.length || 0);
       setLawyers(lawyersData || []);
 
-      // Load agents via admin function to ensure proper authentication
-      const { data: agentsResponse, error: agentsError } = await supabase.functions.invoke('get-agents-admin', {
-        headers: {
-          'authorization': authToken
-        }
-      });
+      // Load agents directly with RLS - admins can see all agents
+      const { data: agentsData, error: agentsError } = await supabase
+        .from('legal_agents')
+        .select(`
+          *,
+          lawyer_accounts!created_by (
+            full_name,
+            email
+          )
+        `)
+        .order('created_at', { ascending: false });
 
       if (agentsError) {
         console.error('Error loading agents:', agentsError);
@@ -188,11 +193,11 @@ export default function AdminPage() {
         return;
       }
       
-      console.log('Agents loaded:', agentsResponse?.length || 0);
-      setAgents(agentsResponse || []);
+      console.log('Agents loaded:', agentsData?.length || 0);
+      setAgents(agentsData || []);
 
       // Load statistics
-      await loadStatistics(lawyersData || [], agentsResponse || []);
+      await loadStatistics(lawyersData || [], agentsData || []);
       console.log('Data loading completed successfully');
     } catch (error) {
       console.error('Error loading data:', error);
