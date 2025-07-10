@@ -171,38 +171,31 @@ export default function AdminPage() {
       console.log('Lawyers loaded:', lawyersData?.length || 0);
       setLawyers(lawyersData || []);
 
-      // Usar edge function para cargar agentes (maneja autenticación admin correctamente)
-      console.log('Loading agents via admin function...');
-      try {
-        const { data: agentsData, error: agentsError } = await supabase.functions.invoke('get-agents-admin', {
-          headers: {
-            'authorization': authToken
-          }
-        });
+      // Usar consulta directa para agentes (más simple y confiable)
+      console.log('Loading agents directly from database...');
+      const { data: agentsData, error: agentsError } = await supabase
+        .from('legal_agents')
+        .select(`
+          *,
+          lawyer_accounts!created_by (
+            full_name,
+            email
+          )
+        `)
+        .order('created_at', { ascending: false });
 
-        if (agentsError) {
-          console.error('Error loading agents via function:', agentsError);
-          // Fallback: intentar consulta directa sin RLS
-          console.log('Trying direct query as fallback...');
-          const { data: fallbackData, error: fallbackError } = await supabase
-            .from('legal_agents')
-            .select('*')
-            .order('created_at', { ascending: false });
-          
-          if (fallbackError) {
-            throw fallbackError;
-          }
-          
-          setAgents(fallbackData || []);
-          console.log('Agents loaded via fallback:', fallbackData?.length || 0);
-        } else {
-          setAgents(agentsData || []);
-          console.log('Agents loaded via function:', agentsData?.length || 0);
-        }
-      } catch (error) {
-        console.error('Both methods failed, showing error:', error);
-        throw error;
+      if (agentsError) {
+        console.error('Error loading agents:', agentsError);
+        toast({
+          title: "Error",
+          description: `Error al cargar agentes: ${agentsError.message}`,
+          variant: "destructive"
+        });
+        return;
       }
+      
+      console.log('Agents loaded:', agentsData?.length || 0);
+      setAgents(agentsData || []);
 
       // Load statistics
       await loadStatistics(lawyersData || [], agents || []);

@@ -43,9 +43,9 @@ Deno.serve(async (req) => {
       ? authHeader.substring(7) 
       : authHeader
 
-    console.log('Verifying admin token for delete operation...')
+    console.log('Verifying admin token...')
 
-    // Verify token against admin_accounts table (for admin users only)
+    // Verify token against admin_accounts table
     const { data: admin, error: tokenError } = await supabase
       .from('admin_accounts')
       .select('*')
@@ -70,6 +70,8 @@ Deno.serve(async (req) => {
       })
     }
 
+    console.log('Admin verified successfully')
+
     const requestBody = await req.json()
     console.log('Request body received:', Object.keys(requestBody))
 
@@ -83,31 +85,31 @@ Deno.serve(async (req) => {
       })
     }
 
-    console.log('Validations passed, deleting lawyer account')
+    console.log('Attempting to delete lawyer with ID:', lawyer_id)
 
-    // First, get lawyer info for logging
-    const { data: lawyerInfo, error: fetchError } = await supabase
+    // Check if lawyer exists
+    const { data: existingLawyer, error: fetchError } = await supabase
       .from('lawyer_accounts')
-      .select('email, full_name')
+      .select('id, full_name, email')
       .eq('id', lawyer_id)
       .maybeSingle()
 
     if (fetchError) {
-      console.error('Error fetching lawyer info:', fetchError)
-      return new Response(JSON.stringify({ error: 'Database error fetching lawyer info' }), {
+      console.error('Error fetching lawyer:', fetchError)
+      return new Response(JSON.stringify({ error: 'Error fetching lawyer data' }), {
         status: 500,
         headers: securityHeaders
       })
     }
 
-    if (!lawyerInfo) {
+    if (!existingLawyer) {
       return new Response(JSON.stringify({ error: 'Lawyer not found' }), {
         status: 404,
         headers: securityHeaders
       })
     }
 
-    console.log('Lawyer found, proceeding with deletion:', lawyerInfo.email)
+    console.log('Found lawyer to delete:', existingLawyer.full_name)
 
     // Delete the lawyer account
     const { error: deleteError } = await supabase
@@ -117,10 +119,7 @@ Deno.serve(async (req) => {
 
     if (deleteError) {
       console.error('Error deleting lawyer:', deleteError)
-      return new Response(JSON.stringify({ 
-        error: `Database error: ${deleteError.message}`,
-        details: deleteError.details || 'No additional details'
-      }), {
+      return new Response(JSON.stringify({ error: 'Error deleting lawyer account' }), {
         status: 500,
         headers: securityHeaders
       })
@@ -128,33 +127,28 @@ Deno.serve(async (req) => {
 
     console.log('Lawyer deleted successfully')
 
-    // Log the deletion for security
-    try {
-      await supabase.rpc('log_security_event', {
-        event_type: 'lawyer_account_deleted',
-        details: { 
-          deleted_email: lawyerInfo.email,
-          deleted_name: lawyerInfo.full_name,
-          deleted_id: lawyer_id
-        }
-      })
-    } catch (logError) {
-      console.log('Logging error (non-critical):', logError)
-    }
+    // Log the deletion event
+    await supabase.rpc('log_security_event', {
+      event_type: 'lawyer_deleted',
+      user_id: admin.id,
+      details: { 
+        deleted_lawyer_id: lawyer_id,
+        deleted_lawyer_name: existingLawyer.full_name,
+        deleted_lawyer_email: existingLawyer.email,
+        admin_email: admin.email
+      }
+    })
 
     return new Response(JSON.stringify({
       success: true,
-      message: `Abogado ${lawyerInfo.full_name} eliminado exitosamente`
+      message: `Abogado ${existingLawyer.full_name} eliminado exitosamente`
     }), {
       headers: securityHeaders
     })
 
   } catch (error) {
-    console.error('Delete lawyer error:', error)
-    return new Response(JSON.stringify({ 
-      error: 'Internal server error',
-      message: error.message || 'Unknown error'
-    }), {
+    console.error('Error in delete-lawyer function:', error)
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
       headers: securityHeaders
     })
