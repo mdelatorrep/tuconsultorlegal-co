@@ -61,8 +61,8 @@ Deno.serve(async (req) => {
       full_name, 
       password, 
       phone_number, 
-      can_create_agents, 
-      is_admin 
+      can_create_agents
+      // REMOVIDO: is_admin - los abogados NO pueden ser administradores
     } = requestBody
 
     // Input validation
@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
     // Generate a random UUID for access_token
     const accessToken = crypto.randomUUID()
 
-    // Create lawyer account
+    // Create lawyer account (sin permisos de administrador)
     const { data, error } = await supabase
       .from('lawyer_accounts')
       .insert([{
@@ -120,8 +120,8 @@ Deno.serve(async (req) => {
         password_hash: password, // Will be automatically hashed by trigger
         access_token: accessToken,
         phone_number: phone_number || null,
-        can_create_agents: can_create_agents || false,
-        is_admin: is_admin || false
+        can_create_agents: can_create_agents || false
+        // REMOVIDO: is_admin - los abogados no son administradores
       }])
       .select()
 

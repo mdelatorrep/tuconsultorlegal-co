@@ -575,6 +575,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      is_current_user_system_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       is_valid_lawyer_token: {
         Args: { token: string }
         Returns: boolean

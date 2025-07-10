@@ -23,11 +23,11 @@ interface Lawyer {
   full_name: string;
   active: boolean;
   can_create_agents: boolean;
-  is_admin: boolean;
   created_at: string;
   failed_login_attempts?: number;
   locked_until?: string;
   last_login_at?: string;
+  // NOTA: Los abogados NO tienen campo is_admin - no son administradores
 }
 
 interface Agent {
@@ -85,14 +85,14 @@ export default function AdminPage() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading, user, logout, getAuthHeaders, checkAuthStatus } = useAdminAuth();
 
-  // New lawyer form state with input validation
+  // New lawyer form state - Los abogados NO pueden ser administradores
   const [newLawyer, setNewLawyer] = useState({
     email: "",
     full_name: "",
     password: "",
     phone_number: "",
-    can_create_agents: false,
-    is_admin: false
+    can_create_agents: false
+    // REMOVIDO: is_admin - los abogados no son administradores
   });
 
   const [showAddLawyer, setShowAddLawyer] = useState(false);
@@ -361,8 +361,8 @@ export default function AdminPage() {
           full_name: sanitizedName,
           password: sanitizedPassword,
           phone_number: newLawyer.phone_number,
-          can_create_agents: newLawyer.can_create_agents,
-          is_admin: newLawyer.is_admin
+          can_create_agents: newLawyer.can_create_agents
+          // REMOVIDO: is_admin
         },
         headers: {
           'authorization': authToken,
@@ -384,8 +384,8 @@ export default function AdminPage() {
         full_name: "",
         password: "",
         phone_number: "",
-        can_create_agents: false,
-        is_admin: false
+        can_create_agents: false
+        // REMOVIDO: is_admin
       });
 
       await loadData();
@@ -400,21 +400,21 @@ export default function AdminPage() {
 
   const updateLawyerPermissions = async (lawyerId: string, field: string, value: boolean) => {
     try {
-      // Verificar que el usuario actual es admin
-      if (!user?.isAdmin) {
+      // Solo permitir actualizar campos específicos de abogados (NO is_admin)
+      if (field !== 'active' && field !== 'can_create_agents') {
         toast({
-          title: "Sin permisos",
-          description: "Solo los administradores pueden modificar permisos de abogados.",
+          title: "Campo no válido",
+          description: "Solo se pueden modificar los campos 'active' y 'can_create_agents' para abogados.",
           variant: "destructive"
         });
         return;
       }
 
-      // Evitar que un admin se quite sus propios permisos de admin
-      if (field === 'is_admin' && !value && lawyerId === user?.id) {
+      // Verificar que el usuario actual es admin del sistema
+      if (!user?.isAdmin) {
         toast({
-          title: "Acción no permitida",
-          description: "No puedes quitarte tus propios permisos de administrador.",
+          title: "Sin permisos",
+          description: "Solo los administradores del sistema pueden modificar permisos de abogados.",
           variant: "destructive"
         });
         return;
@@ -723,16 +723,7 @@ export default function AdminPage() {
                       onCheckedChange={(checked) => setNewLawyer({ ...newLawyer, can_create_agents: checked })}
                     />
                   </div>
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
-                    <Label htmlFor="isAdmin" className="text-sm font-medium">
-                      Es administrador
-                    </Label>
-                    <Switch
-                      id="isAdmin"
-                      checked={newLawyer.is_admin}
-                      onCheckedChange={(checked) => setNewLawyer({ ...newLawyer, is_admin: checked })}
-                    />
-                  </div>
+                  {/* REMOVIDO: Switch de is_admin - los abogados NO son administradores */}
                 </div>
                 
                 <Button 
@@ -761,7 +752,6 @@ export default function AdminPage() {
                         <TableHead>Estado</TableHead>
                         <TableHead>Seguridad</TableHead>
                         <TableHead>Crear Agentes</TableHead>
-                        <TableHead>Admin</TableHead>
                         <TableHead>Último Login</TableHead>
                         <TableHead>Acciones</TableHead>
                       </TableRow>
@@ -787,13 +777,7 @@ export default function AdminPage() {
                             />
                           </TableCell>
                           <TableCell>
-                            <Switch
-                              checked={lawyer.is_admin}
-                              onCheckedChange={(checked) => updateLawyerPermissions(lawyer.id, 'is_admin', checked)}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            {lawyer.last_login_at 
+                            {lawyer.last_login_at
                               ? new Date(lawyer.last_login_at).toLocaleDateString()
                               : 'Nunca'
                             }
@@ -837,13 +821,6 @@ export default function AdminPage() {
                               <Switch
                                 checked={lawyer.active}
                                 onCheckedChange={(checked) => updateLawyerPermissions(lawyer.id, 'active', checked)}
-                              />
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span>Admin:</span>
-                              <Switch
-                                checked={lawyer.is_admin}
-                                onCheckedChange={(checked) => updateLawyerPermissions(lawyer.id, 'is_admin', checked)}
                               />
                             </div>
                             <div className="flex items-center justify-between col-span-2">
