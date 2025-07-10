@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_accounts: {
+        Row: {
+          active: boolean
+          created_at: string
+          email: string
+          failed_login_attempts: number | null
+          full_name: string
+          id: string
+          is_super_admin: boolean
+          last_login_at: string | null
+          locked_until: string | null
+          password_hash: string
+          password_reset_expires_at: string | null
+          password_reset_token: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          email: string
+          failed_login_attempts?: number | null
+          full_name: string
+          id?: string
+          is_super_admin?: boolean
+          last_login_at?: string | null
+          locked_until?: string | null
+          password_hash: string
+          password_reset_expires_at?: string | null
+          password_reset_token?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          email?: string
+          failed_login_attempts?: number | null
+          full_name?: string
+          id?: string
+          is_super_admin?: boolean
+          last_login_at?: string | null
+          locked_until?: string | null
+          password_hash?: string
+          password_reset_expires_at?: string | null
+          password_reset_token?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       auth_rate_limits: {
         Row: {
           attempt_type: string
@@ -145,6 +193,131 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      lawyer_token_requests: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          law_firm: string | null
+          phone_number: string | null
+          reason_for_request: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          specialization: string | null
+          status: string
+          updated_at: string
+          years_of_experience: number | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          law_firm?: string | null
+          phone_number?: string | null
+          reason_for_request?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          specialization?: string | null
+          status?: string
+          updated_at?: string
+          years_of_experience?: number | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          law_firm?: string | null
+          phone_number?: string | null
+          reason_for_request?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          specialization?: string | null
+          status?: string
+          updated_at?: string
+          years_of_experience?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lawyer_token_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "admin_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lawyer_tokens: {
+        Row: {
+          access_token: string
+          active: boolean
+          can_create_agents: boolean
+          created_at: string
+          created_by: string | null
+          email: string
+          full_name: string
+          id: string
+          last_used_at: string | null
+          lawyer_id: string
+          phone_number: string | null
+          request_id: string | null
+          token_expires_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          active?: boolean
+          can_create_agents?: boolean
+          created_at?: string
+          created_by?: string | null
+          email: string
+          full_name: string
+          id?: string
+          last_used_at?: string | null
+          lawyer_id: string
+          phone_number?: string | null
+          request_id?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          active?: boolean
+          can_create_agents?: boolean
+          created_at?: string
+          created_by?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          last_used_at?: string | null
+          lawyer_id?: string
+          phone_number?: string | null
+          request_id?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lawyer_tokens_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lawyer_tokens_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "lawyer_token_requests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       legal_agents: {
         Row: {
@@ -380,6 +553,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      get_lawyer_by_token: {
+        Args: { token: string }
+        Returns: {
+          id: string
+          full_name: string
+          email: string
+          can_create_agents: boolean
+        }[]
+      }
       hash_admin_token: {
         Args: { token: string }
         Returns: string
@@ -394,6 +576,10 @@ export type Database = {
       }
       is_current_user_admin: {
         Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_valid_lawyer_token: {
+        Args: { token: string }
         Returns: boolean
       }
       log_security_event: {
