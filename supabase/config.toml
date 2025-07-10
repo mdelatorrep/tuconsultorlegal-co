@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.create-lawyer]
 verify_jwt = false
+
+[functions.get-lawyers-admin]
+verify_jwt = false
