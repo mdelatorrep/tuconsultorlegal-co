@@ -113,11 +113,13 @@ export default function AdminPage() {
 
   useEffect(() => {
     console.log('AdminPage useEffect triggered - isAuthenticated:', isAuthenticated, 'isLoading:', isLoading);
-    if (isAuthenticated) {
-      console.log('User authenticated, loading data...');
-      loadData();
-    } else {
-      console.log('User NOT authenticated');
+    if (!isLoading) {
+      if (isAuthenticated) {
+        console.log('User authenticated, loading data...');
+        loadData();
+      } else {
+        console.log('User NOT authenticated');
+      }
     }
   }, [isAuthenticated, isLoading]);
 
