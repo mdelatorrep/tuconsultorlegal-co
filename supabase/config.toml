@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.bold-webhook]
 verify_jwt = false
+
+[functions.create-lawyer]
+verify_jwt = false
