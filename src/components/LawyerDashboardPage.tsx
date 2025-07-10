@@ -7,7 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Bot, Plus, Settings, LogOut } from "lucide-react";
+import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Bot, Plus, Settings, LogOut, Scale, Users, TrendingUp, BarChart3 } from "lucide-react";
+import LawyerStatsSection from "./LawyerStatsSection";
 import LawyerLogin from "./LawyerLogin";
 import AgentCreatorPage from "./AgentCreatorPage";
 import AgentManagerPage from "./AgentManagerPage";
@@ -37,7 +38,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const [editedContent, setEditedContent] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'agent-creator' | 'agent-manager'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'stats' | 'agent-creator' | 'agent-manager'>('dashboard');
   const { toast } = useToast();
   const { isAuthenticated, isLoading: authLoading, user, logout } = useLawyerAuth();
   const isMobile = useIsMobile();
@@ -203,6 +204,34 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
     return <AgentManagerPage onBack={() => setCurrentView('dashboard')} lawyerData={user} />;
   }
 
+  // Show Stats if selected
+  if (currentView === 'stats') {
+    return (
+      <div className="container mx-auto px-6 py-20">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-6 flex items-center justify-between">
+            <Button
+              onClick={() => setCurrentView('dashboard')}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              ← Volver al Dashboard
+            </Button>
+            <Button
+              onClick={logout}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <LogOut className="h-4 w-4" />
+              Salir
+            </Button>
+          </div>
+          <LawyerStatsSection />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-6 py-20">
       <div className="max-w-7xl mx-auto">
@@ -219,6 +248,17 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
             </div>
             
             <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex items-center gap-3'}`}>
+              {/* Stats Button */}
+              <Button
+                onClick={() => setCurrentView('stats')}
+                variant="outline"
+                className="flex items-center gap-2 justify-center"
+                size={isMobile ? "default" : "lg"}
+              >
+                <BarChart3 className="h-4 w-4" />
+                {!isMobile && "Estadísticas"}
+              </Button>
+
               {/* Agent Creator Access - Only show if lawyer has permission */}
               {user?.canCreateAgents && (
                 <>
