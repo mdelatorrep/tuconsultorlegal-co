@@ -344,19 +344,35 @@ export default function AdminPage() {
     }
 
     try {
-      const { error } = await supabase
-        .from('lawyer_accounts')
-        .insert([{
+      const authToken = sessionStorage.getItem('admin_token');
+      
+      if (!authToken) {
+        toast({
+          title: "Error",
+          description: "Token de administrador no encontrado. Por favor, inicia sesión nuevamente.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('create-lawyer', {
+        body: {
           email: sanitizedEmail,
           full_name: sanitizedName,
-          password_hash: sanitizedPassword, // Will be automatically hashed by trigger
-          access_token: crypto.randomUUID(), // Generate secure session token
+          password: sanitizedPassword,
           phone_number: newLawyer.phone_number,
           can_create_agents: newLawyer.can_create_agents,
           is_admin: newLawyer.is_admin
-        }]);
+        },
+        headers: {
+          'authorization': authToken,
+          'Content-Type': 'application/json'
+        }
+      });
 
-      if (error) throw error;
+      if (error || !data?.success) {
+        throw new Error(data?.error || error?.message || 'Error al crear el abogado');
+      }
 
       toast({
         title: "Éxito",
