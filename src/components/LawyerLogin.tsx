@@ -119,7 +119,7 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
             </p>
             <Button 
               variant="link" 
-              onClick={() => window.location.href = '/?view=request-token'}
+              onClick={() => window.location.assign('/?view=request-token')}
               className="text-primary"
             >
               Solicita acceso aquí

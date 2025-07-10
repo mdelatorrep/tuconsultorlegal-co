@@ -12,6 +12,7 @@ import BlogPage from "@/components/BlogPage";
 import BlogArticlePage from "@/components/BlogArticlePage";
 import PrivacyPolicyPage from "@/components/PrivacyPolicyPage";
 import TermsAndConditionsPage from "@/components/TermsAndConditionsPage";
+import LawyerTokenRequestForm from "@/components/LawyerTokenRequestForm";
 
 export default function Index() {
   const [currentPage, setCurrentPage] = useState("home");
@@ -25,11 +26,18 @@ export default function Index() {
       setCurrentPage(hash);
     };
 
-    // Check if coming from Bold payment gateway
+    // Check URL parameters for special views
     const urlParams = new URLSearchParams(window.location.search);
+    const view = urlParams.get('view');
     const trackingCode = urlParams.get('code');
     const boldTxStatus = urlParams.get('bold-tx-status');
     const boldOrderId = urlParams.get('bold-order-id');
+    
+    // If requesting token view, show the request form
+    if (view === 'request-token') {
+      setCurrentPage("request-token");
+      return;
+    }
     
     // If Bold payment parameters are present, redirect to document page
     if (trackingCode && (boldTxStatus || boldOrderId)) {
@@ -103,6 +111,8 @@ export default function Index() {
         return <UnifiedDocumentPage onOpenChat={handleOpenChat} />;
       case "abogados":
         return <LawyerDashboardPage onOpenChat={handleOpenChat} />;
+      case "request-token":
+        return <LawyerTokenRequestForm />;
       case "terminos":
         return <TermsAndConditionsPage onOpenChat={handleOpenChat} />;
       case "privacidad":
