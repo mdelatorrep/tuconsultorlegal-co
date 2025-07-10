@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useAdminAuth } from "@/hooks/useAdminAuth";
+import { useLawyerAuth } from "@/hooks/useLawyerAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,7 +39,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const [isSaving, setIsSaving] = useState(false);
   const [currentView, setCurrentView] = useState<'dashboard' | 'agent-creator' | 'agent-manager'>('dashboard');
   const { toast } = useToast();
-  const { isAuthenticated, isLoading: authLoading, user, logout } = useAdminAuth();
+  const { isAuthenticated, isLoading: authLoading, user, logout } = useLawyerAuth();
   const isMobile = useIsMobile();
 
   // Fetch documents when authenticated
@@ -220,7 +220,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
             
             <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex items-center gap-3'}`}>
               {/* Agent Creator Access - Only show if lawyer has permission */}
-              {user?.can_create_agents && (
+              {user?.canCreateAgents && (
                 <>
                   <Button
                     onClick={() => setCurrentView('agent-manager')}

@@ -7,7 +7,7 @@ interface AdminUser {
   email: string;
   name: string;
   isAdmin: boolean;
-  can_create_agents?: boolean;
+  isSuperAdmin: boolean;
 }
 
 interface LoginResponse {
@@ -60,8 +60,9 @@ export const useAdminAuth = () => {
     // Verify token with server
     try {
       const { data, error } = await supabase.functions.invoke('verify-admin-token', {
+        body: { token },
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         }
       });
 

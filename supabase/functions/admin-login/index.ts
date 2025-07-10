@@ -82,23 +82,23 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Find lawyer account
-    const { data: lawyer, error: fetchError } = await supabase
-      .from('lawyer_accounts')
+    // Find admin account
+    const { data: admin, error: fetchError } = await supabase
+      .from('admin_accounts')
       .select('*')
       .eq('email', email)
       .eq('active', true)
       .maybeSingle()
 
     if (fetchError) {
-      console.error('Database error during login:', fetchError)
+      console.error('Database error during admin login:', fetchError)
       return new Response(JSON.stringify({ error: 'Database error occurred' }), {
         status: 500,
         headers: securityHeaders
       })
     }
 
-    if (!lawyer) {
+    if (!admin) {
       // Log failed login attempt
       await supabase.rpc('log_security_event', {
         event_type: 'admin_login_failed',
@@ -112,10 +112,10 @@ Deno.serve(async (req) => {
     }
 
     // Check if account is locked
-    if (lawyer.locked_until && new Date(lawyer.locked_until) > new Date()) {
+    if (admin.locked_until && new Date(admin.locked_until) > new Date()) {
       await supabase.rpc('log_security_event', {
         event_type: 'admin_login_blocked',
-        user_id: lawyer.id,
+        user_id: admin.id,
         details: { email, reason: 'account_locked', ip: clientIP, user_agent: userAgent }
       })
 
@@ -125,15 +125,15 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Verify password using new secure password verification
-    const { data: isValidPassword } = await supabase.rpc('verify_admin_password', {
+    // Verify password using bcrypt comparison
+    const { data: isValidPassword } = await supabase.rpc('verify_password', {
       password: password,
-      email_param: email
+      hash: admin.password_hash
     })
 
     if (!isValidPassword) {
       // Increment failed attempts
-      const newFailedAttempts = (lawyer.failed_login_attempts || 0) + 1
+      const newFailedAttempts = (admin.failed_login_attempts || 0) + 1
       let updateData: any = { failed_login_attempts: newFailedAttempts }
       
       // Lock account after 5 failed attempts for 30 minutes
@@ -142,13 +142,13 @@ Deno.serve(async (req) => {
       }
 
       await supabase
-        .from('lawyer_accounts')
+        .from('admin_accounts')
         .update(updateData)
-        .eq('id', lawyer.id)
+        .eq('id', admin.id)
 
       await supabase.rpc('log_security_event', {
         event_type: 'admin_login_failed',
-        user_id: lawyer.id,
+        user_id: admin.id,
         details: { 
           email, 
           reason: 'invalid_password', 
@@ -170,17 +170,32 @@ Deno.serve(async (req) => {
     const sessionToken = Array.from(tokenBytes, byte => byte.toString(16).padStart(2, '0')).join('')
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
 
-    // Update lawyer account with session info
+    // Update admin account with session info
     await supabase
-      .from('lawyer_accounts')
+      .from('admin_accounts')
       .update({
-        access_token: sessionToken,
-        token_expires_at: expiresAt,
         last_login_at: new Date().toISOString(),
         failed_login_attempts: 0,
         locked_until: null
       })
-      .eq('id', lawyer.id)
+      .eq('id', admin.id)
+
+    // Store session in auth.users metadata (for auth.uid() access)
+    const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
+      email: `session-${admin.id}@admin.internal`,
+      password: sessionToken,
+      email_confirm: true,
+      user_metadata: {
+        admin_id: admin.id,
+        session_token: sessionToken,
+        expires_at: expiresAt,
+        is_admin_session: true
+      }
+    })
+
+    if (authError) {
+      console.error('Error creating admin session:', authError)
+    }
 
     // Reset rate limits on successful login
     await supabase.rpc('reset_rate_limit', {
@@ -191,7 +206,7 @@ Deno.serve(async (req) => {
     // Log successful login
     await supabase.rpc('log_security_event', {
       event_type: 'admin_login_success',
-      user_id: lawyer.id,
+      user_id: admin.id,
       details: { email, ip: clientIP, user_agent: userAgent }
     })
 
@@ -200,11 +215,11 @@ Deno.serve(async (req) => {
       token: sessionToken,
       expiresAt,
       user: {
-        id: lawyer.id,
-        email: lawyer.email,
-        name: lawyer.full_name,
-        isAdmin: lawyer.is_admin,
-        can_create_agents: lawyer.can_create_agents
+        id: admin.id,
+        email: admin.email,
+        name: admin.full_name,
+        isAdmin: true,
+        isSuperAdmin: admin.is_super_admin
       }
     }), {
       headers: securityHeaders

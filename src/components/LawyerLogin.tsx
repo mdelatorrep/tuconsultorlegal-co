@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useAdminAuth } from '@/hooks/useAdminAuth';
-import { Scale, Lock, FileText, Eye, EyeOff } from 'lucide-react';
+import { useLawyerAuth } from '@/hooks/useLawyerAuth';
+import { Scale, Lock, Key } from 'lucide-react';
 import DOMPurify from 'dompurify';
 
 interface LawyerLoginProps {
@@ -13,30 +13,25 @@ interface LawyerLoginProps {
 }
 
 export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [token, setToken] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   
-  const { login } = useAdminAuth();
+  const { loginWithToken } = useLawyerAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Input validation and sanitization
-    const sanitizedEmail = DOMPurify.sanitize(email.trim().toLowerCase());
-    const sanitizedPassword = DOMPurify.sanitize(password);
+    const sanitizedToken = DOMPurify.sanitize(token.trim());
     
-    if (!sanitizedEmail || !sanitizedPassword) {
-      setErrorMessage('Por favor completa todos los campos');
+    if (!sanitizedToken) {
+      setErrorMessage('Por favor ingresa tu token de acceso');
       return;
     }
 
-    // Email format validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(sanitizedEmail)) {
-      setErrorMessage('Por favor ingresa un email válido');
+    if (sanitizedToken.length < 32) {
+      setErrorMessage('El token debe tener al menos 32 caracteres');
       return;
     }
 
@@ -44,11 +39,13 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
     setErrorMessage('');
 
     try {
-      const success = await login(sanitizedEmail, sanitizedPassword);
+      const success = await loginWithToken(sanitizedToken);
       console.log('Lawyer login result:', success);
       if (success) {
         console.log('Lawyer login successful, calling onLoginSuccess');
         onLoginSuccess();
+      } else {
+        setErrorMessage('Token inválido o expirado. Contacta al administrador.');
       }
     } catch (error) {
       console.error('Lawyer login error:', error);
@@ -67,7 +64,7 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
           </div>
           <CardTitle className="text-2xl">Portal del Abogado</CardTitle>
           <CardDescription>
-            Accede a tu panel de trabajo para revisar y gestionar documentos legales pendientes de tus clientes.
+            Ingresa tu token de acceso para gestionar documentos legales y agentes.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -80,47 +77,20 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
             )}
             
             <div className="space-y-2">
-              <Label htmlFor="email">Email Profesional</Label>
+              <Label htmlFor="token">Token de Acceso</Label>
               <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="tu.email@bufete.com"
+                id="token"
+                type="text"
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+                placeholder="Ingresa tu token proporcionado por el administrador"
                 required
                 disabled={isLoggingIn}
-                autoComplete="email"
+                className="font-mono text-sm"
               />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="password">Contraseña</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  disabled={isLoggingIn}
-                  autoComplete="current-password"
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                  onClick={() => setShowPassword(!showPassword)}
-                  disabled={isLoggingIn}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
+              <p className="text-xs text-muted-foreground">
+                Si no tienes un token, contacta al administrador del sistema para solicitar acceso.
+              </p>
             </div>
             
             <Button 
@@ -136,8 +106,8 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
                 </>
               ) : (
                 <>
-                  <FileText className="h-4 w-4 mr-2" />
-                  Acceder al Portal
+                  <Key className="h-4 w-4 mr-2" />
+                  Acceder con Token
                 </>
               )}
             </Button>
