@@ -43,17 +43,26 @@ Deno.serve(async (req) => {
 
     console.log('Verifying admin token for agents query...')
 
-    // Verify admin token using verify-admin-token function
-    const { data: verifyResponse, error: verifyError } = await supabase.functions.invoke('verify-admin-token', {
-      body: {},
-      headers: {
-        'authorization': authToken
-      }
-    })
+    // Verify token directly against lawyer_accounts table
+    const { data: lawyer, error: tokenError } = await supabase
+      .from('lawyer_accounts')
+      .select('*')
+      .eq('access_token', authToken)
+      .eq('active', true)
+      .maybeSingle()
 
-    if (verifyError || !verifyResponse?.valid) {
-      console.error('Token verification failed:', verifyError)
-      return new Response(JSON.stringify({ error: 'Invalid or expired token' }), {
+    if (tokenError || !lawyer) {
+      console.error('Token verification failed:', tokenError)
+      return new Response(JSON.stringify({ error: 'Invalid token' }), {
+        status: 401,
+        headers: securityHeaders
+      })
+    }
+
+    // Check token expiration
+    if (lawyer.token_expires_at && new Date(lawyer.token_expires_at) < new Date()) {
+      console.error('Token expired')
+      return new Response(JSON.stringify({ error: 'Token expired' }), {
         status: 401,
         headers: securityHeaders
       })
