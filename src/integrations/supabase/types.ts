@@ -150,7 +150,6 @@ export type Database = {
           failed_login_attempts: number | null
           full_name: string
           id: string
-          is_admin: boolean
           last_login_at: string | null
           locked_until: string | null
           password_hash: string
@@ -167,7 +166,6 @@ export type Database = {
           failed_login_attempts?: number | null
           full_name: string
           id?: string
-          is_admin?: boolean
           last_login_at?: string | null
           locked_until?: string | null
           password_hash: string
@@ -184,7 +182,6 @@ export type Database = {
           failed_login_attempts?: number | null
           full_name?: string
           id?: string
-          is_admin?: boolean
           last_login_at?: string | null
           locked_until?: string | null
           password_hash?: string
