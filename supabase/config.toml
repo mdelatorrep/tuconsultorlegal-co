@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.get-lawyers-admin]
 verify_jwt = false
+
+[functions.delete-lawyer]
+verify_jwt = false

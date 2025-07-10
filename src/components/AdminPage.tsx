@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import SuperAdminLogin from "./SuperAdminLogin";
-import { Users, FileText, Shield, Plus, Check, X, BarChart3, TrendingUp, DollarSign, Activity, LogOut, Unlock, AlertTriangle, Eye, EyeOff } from "lucide-react";
+import { Users, FileText, Shield, Plus, Check, X, BarChart3, TrendingUp, DollarSign, Activity, LogOut, Unlock, AlertTriangle, Eye, EyeOff, Trash2 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from "recharts";
 import DOMPurify from 'dompurify';
 import PhoneInput from 'react-phone-number-input';
@@ -502,6 +502,55 @@ export default function AdminPage() {
     return <Badge variant="secondary">Normal</Badge>;
   };
 
+  const deleteLawyer = async (lawyerId: string, lawyerName: string) => {
+    // Confirmación antes de eliminar
+    const confirmed = window.confirm(`¿Estás seguro de que quieres eliminar al abogado "${lawyerName}"? Esta acción no se puede deshacer.`);
+    
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const authToken = sessionStorage.getItem('admin_token');
+      
+      if (!authToken) {
+        toast({
+          title: "Error",
+          description: "Token de administrador no encontrado. Por favor, inicia sesión nuevamente.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('delete-lawyer', {
+        body: {
+          lawyer_id: lawyerId
+        },
+        headers: {
+          'authorization': authToken,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (error || !data?.success) {
+        throw new Error(data?.error || error?.message || 'Error al eliminar el abogado');
+      }
+
+      toast({
+        title: "Éxito",
+        description: data.message || "Abogado eliminado exitosamente",
+      });
+
+      await loadData();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Error al eliminar el abogado",
+        variant: "destructive"
+      });
+    }
+  };
+
   const updateAgentStatus = async (agentId: string, status: string) => {
     try {
       const { error } = await supabase
@@ -783,17 +832,24 @@ export default function AdminPage() {
                             }
                           </TableCell>
                           <TableCell>
-                            {isAccountLocked(lawyer) && (
-                              <Button
+                            <div className="flex gap-2">
+                              {isAccountLocked(lawyer) && (
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => unlockLawyerAccount(lawyer.id)}
+                                >
+                                  <Unlock className="h-4 w-4" />
+                                </Button>
+                              )}
+                              <Button 
+                                variant="destructive" 
                                 size="sm"
-                                variant="outline"
-                                onClick={() => unlockLawyerAccount(lawyer.id)}
-                                className="flex items-center gap-1"
+                                onClick={() => deleteLawyer(lawyer.id, lawyer.full_name)}
                               >
-                                <Unlock className="h-3 w-3" />
-                                Desbloquear
+                                <Trash2 className="h-4 w-4" />
                               </Button>
-                            )}
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -839,17 +895,28 @@ export default function AdminPage() {
                                 : 'Nunca'
                               }
                             </span>
-                            {isAccountLocked(lawyer) && (
-                              <Button
+                            <div className="flex gap-2 mt-4">
+                              {isAccountLocked(lawyer) && (
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => unlockLawyerAccount(lawyer.id)}
+                                  className="flex-1"
+                                >
+                                  <Unlock className="h-4 w-4 mr-2" />
+                                  Desbloquear
+                                </Button>
+                              )}
+                              <Button 
+                                variant="destructive" 
                                 size="sm"
-                                variant="outline"
-                                onClick={() => unlockLawyerAccount(lawyer.id)}
-                                className="flex items-center gap-1"
+                                onClick={() => deleteLawyer(lawyer.id, lawyer.full_name)}
+                                className="flex-1"
                               >
-                                <Unlock className="h-3 w-3" />
-                                Desbloquear
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Eliminar
                               </Button>
-                            )}
+                            </div>
                           </div>
                         </div>
                       </CardContent>
