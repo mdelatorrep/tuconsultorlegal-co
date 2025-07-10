@@ -174,28 +174,13 @@ Deno.serve(async (req) => {
     await supabase
       .from('admin_accounts')
       .update({
+        session_token: sessionToken,
+        token_expires_at: expiresAt,
         last_login_at: new Date().toISOString(),
         failed_login_attempts: 0,
         locked_until: null
       })
       .eq('id', admin.id)
-
-    // Store session in auth.users metadata (for auth.uid() access)
-    const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
-      email: `session-${admin.id}@admin.internal`,
-      password: sessionToken,
-      email_confirm: true,
-      user_metadata: {
-        admin_id: admin.id,
-        session_token: sessionToken,
-        expires_at: expiresAt,
-        is_admin_session: true
-      }
-    })
-
-    if (authError) {
-      console.error('Error creating admin session:', authError)
-    }
 
     // Reset rate limits on successful login
     await supabase.rpc('reset_rate_limit', {

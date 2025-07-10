@@ -41,15 +41,15 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Verify token and check expiration
-    const { data: lawyer, error } = await supabase
-      .from('lawyer_accounts')
+    // Verify token against admin_accounts table (not lawyer_accounts)
+    const { data: admin, error } = await supabase
+      .from('admin_accounts')
       .select('*')
-      .eq('access_token', authToken)
+      .eq('session_token', authToken)
       .eq('active', true)
-      .single()
+      .maybeSingle()
 
-    if (error || !lawyer) {
+    if (error || !admin) {
       return new Response(JSON.stringify({ error: 'Invalid token' }), {
         status: 401,
         headers: securityHeaders
@@ -57,12 +57,12 @@ Deno.serve(async (req) => {
     }
 
     // Check token expiration
-    if (lawyer.token_expires_at && new Date(lawyer.token_expires_at) < new Date()) {
+    if (admin.token_expires_at && new Date(admin.token_expires_at) < new Date()) {
       // Log token expiration
       await supabase.rpc('log_security_event', {
         event_type: 'admin_token_expired',
-        user_id: lawyer.id,
-        details: { email: lawyer.email }
+        user_id: admin.id,
+        details: { email: admin.email }
       })
 
       return new Response(JSON.stringify({ error: 'Token expired' }), {
@@ -74,13 +74,13 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({
       valid: true,
       user: {
-        id: lawyer.id,
-        email: lawyer.email,
-        name: lawyer.full_name,
-        isAdmin: lawyer.is_admin,
-        can_create_agents: lawyer.can_create_agents
+        id: admin.id,
+        email: admin.email,
+        name: admin.full_name,
+        isAdmin: true,
+        isSuperAdmin: admin.is_super_admin
       },
-      expiresAt: lawyer.token_expires_at
+      expiresAt: admin.token_expires_at
     }), {
       headers: securityHeaders
     })

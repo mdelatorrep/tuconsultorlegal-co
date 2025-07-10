@@ -28,6 +28,8 @@ export type Database = {
           password_hash: string
           password_reset_expires_at: string | null
           password_reset_token: string | null
+          session_token: string | null
+          token_expires_at: string | null
           updated_at: string
         }
         Insert: {
@@ -43,6 +45,8 @@ export type Database = {
           password_hash: string
           password_reset_expires_at?: string | null
           password_reset_token?: string | null
+          session_token?: string | null
+          token_expires_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -58,6 +62,8 @@ export type Database = {
           password_hash?: string
           password_reset_expires_at?: string | null
           password_reset_token?: string | null
+          session_token?: string | null
+          token_expires_at?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -572,6 +578,10 @@ export type Database = {
         Returns: boolean
       }
       is_current_user_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_current_user_admin_by_session: {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
