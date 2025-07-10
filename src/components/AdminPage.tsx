@@ -569,48 +569,68 @@ export default function AdminPage() {
   console.log('User is authenticated! Showing admin panel');
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <div className="min-h-screen bg-background p-3 sm:p-6">
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
+        {/* Mobile First Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
           <div className="flex items-center gap-3">
-            <Shield className="h-8 w-8 text-primary" />
+            <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
             <div>
-              <h1 className="text-3xl font-bold">Panel de Administración</h1>
-              <p className="text-muted-foreground">Bienvenido, {user?.name}</p>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Panel de Administración</h1>
+              <p className="text-sm sm:text-base text-muted-foreground">Bienvenido, {user?.name}</p>
             </div>
           </div>
-          <Button variant="outline" onClick={logout}>
+          <Button 
+            variant="outline" 
+            onClick={logout}
+            size="sm"
+            className="self-start sm:self-center"
+          >
             <LogOut className="h-4 w-4 mr-2" />
-            Cerrar Sesión
+            <span className="hidden sm:inline">Cerrar Sesión</span>
+            <span className="sm:hidden">Salir</span>
           </Button>
         </div>
 
-        <Tabs defaultValue="lawyers" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="lawyers" className="flex items-center gap-2">
+        <Tabs defaultValue="lawyers" className="space-y-4 sm:space-y-6">
+          {/* Mobile First Tab Navigation */}
+          <TabsList className="grid w-full grid-cols-3 h-auto p-1">
+            <TabsTrigger 
+              value="lawyers" 
+              className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm"
+            >
               <Users className="h-4 w-4" />
-              Gestión de Abogados
+              <span className="hidden sm:inline">Gestión de Abogados</span>
+              <span className="sm:hidden">Abogados</span>
             </TabsTrigger>
-            <TabsTrigger value="agents" className="flex items-center gap-2">
+            <TabsTrigger 
+              value="agents" 
+              className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm"
+            >
               <FileText className="h-4 w-4" />
-              Gestión de Agentes
+              <span className="hidden sm:inline">Gestión de Agentes</span>
+              <span className="sm:hidden">Agentes</span>
             </TabsTrigger>
-            <TabsTrigger value="stats" className="flex items-center gap-2">
+            <TabsTrigger 
+              value="stats" 
+              className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm"
+            >
               <BarChart3 className="h-4 w-4" />
-              Estadísticas
+              <span className="hidden sm:inline">Estadísticas</span>
+              <span className="sm:hidden">Stats</span>
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="lawyers" className="space-y-6">
+          <TabsContent value="lawyers" className="space-y-4 sm:space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-lg">
                   <Plus className="h-5 w-5" />
                   Crear Nuevo Abogado
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <Input
@@ -619,6 +639,7 @@ export default function AdminPage() {
                       value={newLawyer.email}
                       onChange={(e) => setNewLawyer({ ...newLawyer, email: e.target.value })}
                       placeholder="email@ejemplo.com"
+                      className="w-full"
                     />
                   </div>
                   <div className="space-y-2">
@@ -628,6 +649,7 @@ export default function AdminPage() {
                       value={newLawyer.full_name}
                       onChange={(e) => setNewLawyer({ ...newLawyer, full_name: e.target.value })}
                       placeholder="Juan Pérez"
+                      className="w-full"
                     />
                   </div>
                   <div className="space-y-2">
@@ -639,6 +661,7 @@ export default function AdminPage() {
                         value={newLawyer.password}
                         onChange={(e) => setNewLawyer({ ...newLawyer, password: e.target.value })}
                         placeholder="Contraseña segura"
+                        className="w-full pr-10"
                       />
                       <Button
                         type="button"
@@ -657,35 +680,48 @@ export default function AdminPage() {
                    </div>
                    <div className="space-y-2">
                      <Label htmlFor="phoneNumber">Número de Teléfono</Label>
-                     <PhoneInput
-                       placeholder="Introduce número de teléfono"
-                       value={newLawyer.phone_number}
-                       onChange={(value) => setNewLawyer({ ...newLawyer, phone_number: value || "" })}
-                       defaultCountry="CO"
-                       international
-                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                     />
-                   </div>
-                   <div className="space-y-4">
-                     <div className="flex items-center space-x-2">
-                       <Switch
-                         id="canCreateAgents"
-                         checked={newLawyer.can_create_agents}
-                         onCheckedChange={(checked) => setNewLawyer({ ...newLawyer, can_create_agents: checked })}
+                     <div className="phone-input-container">
+                       <PhoneInput
+                         placeholder="Introduce número de teléfono"
+                         value={newLawyer.phone_number}
+                         onChange={(value) => setNewLawyer({ ...newLawyer, phone_number: value || "" })}
+                         defaultCountry="CO"
+                         international
+                         className="w-full"
                        />
-                       <Label htmlFor="canCreateAgents">Puede crear agentes</Label>
-                     </div>
-                     <div className="flex items-center space-x-2">
-                       <Switch
-                         id="isAdmin"
-                         checked={newLawyer.is_admin}
-                         onCheckedChange={(checked) => setNewLawyer({ ...newLawyer, is_admin: checked })}
-                       />
-                       <Label htmlFor="isAdmin">Es administrador</Label>
                      </div>
                    </div>
                 </div>
-                <Button onClick={createLawyer} className="w-full md:w-auto">
+                
+                {/* Mobile First Permission Switches */}
+                <div className="space-y-4 pt-4 border-t">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
+                    <Label htmlFor="canCreateAgents" className="text-sm font-medium">
+                      Puede crear agentes
+                    </Label>
+                    <Switch
+                      id="canCreateAgents"
+                      checked={newLawyer.can_create_agents}
+                      onCheckedChange={(checked) => setNewLawyer({ ...newLawyer, can_create_agents: checked })}
+                    />
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
+                    <Label htmlFor="isAdmin" className="text-sm font-medium">
+                      Es administrador
+                    </Label>
+                    <Switch
+                      id="isAdmin"
+                      checked={newLawyer.is_admin}
+                      onCheckedChange={(checked) => setNewLawyer({ ...newLawyer, is_admin: checked })}
+                    />
+                  </div>
+                </div>
+                
+                <Button 
+                  onClick={createLawyer} 
+                  className="w-full sm:w-auto"
+                  size="default"
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   Crear Abogado
                 </Button>
@@ -694,71 +730,137 @@ export default function AdminPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Abogados Registrados</CardTitle>
+                <CardTitle className="text-lg">Abogados Registrados</CardTitle>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nombre</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Estado</TableHead>
-                      <TableHead>Seguridad</TableHead>
-                      <TableHead>Crear Agentes</TableHead>
-                      <TableHead>Admin</TableHead>
-                      <TableHead>Último Login</TableHead>
-                      <TableHead>Acciones</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {lawyers.map((lawyer) => (
-                      <TableRow key={lawyer.id}>
-                        <TableCell className="font-medium">{lawyer.full_name}</TableCell>
-                        <TableCell>{lawyer.email}</TableCell>
-                        <TableCell>
-                          <Switch
-                            checked={lawyer.active}
-                            onCheckedChange={(checked) => updateLawyerPermissions(lawyer.id, 'active', checked)}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          {getLockStatusBadge(lawyer)}
-                        </TableCell>
-                        <TableCell>
-                          <Switch
-                            checked={lawyer.can_create_agents}
-                            onCheckedChange={(checked) => updateLawyerPermissions(lawyer.id, 'can_create_agents', checked)}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Switch
-                            checked={lawyer.is_admin}
-                            onCheckedChange={(checked) => updateLawyerPermissions(lawyer.id, 'is_admin', checked)}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          {lawyer.last_login_at 
-                            ? new Date(lawyer.last_login_at).toLocaleDateString()
-                            : 'Nunca'
-                          }
-                        </TableCell>
-                        <TableCell>
-                          {isAccountLocked(lawyer) && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => unlockLawyerAccount(lawyer.id)}
-                              className="flex items-center gap-1"
-                            >
-                              <Unlock className="h-3 w-3" />
-                              Desbloquear
-                            </Button>
-                          )}
-                        </TableCell>
+                {/* Mobile First Table - Stack on mobile */}
+                <div className="hidden lg:block">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Nombre</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Estado</TableHead>
+                        <TableHead>Seguridad</TableHead>
+                        <TableHead>Crear Agentes</TableHead>
+                        <TableHead>Admin</TableHead>
+                        <TableHead>Último Login</TableHead>
+                        <TableHead>Acciones</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {lawyers.map((lawyer) => (
+                        <TableRow key={lawyer.id}>
+                          <TableCell className="font-medium">{lawyer.full_name}</TableCell>
+                          <TableCell>{lawyer.email}</TableCell>
+                          <TableCell>
+                            <Switch
+                              checked={lawyer.active}
+                              onCheckedChange={(checked) => updateLawyerPermissions(lawyer.id, 'active', checked)}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            {getLockStatusBadge(lawyer)}
+                          </TableCell>
+                          <TableCell>
+                            <Switch
+                              checked={lawyer.can_create_agents}
+                              onCheckedChange={(checked) => updateLawyerPermissions(lawyer.id, 'can_create_agents', checked)}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Switch
+                              checked={lawyer.is_admin}
+                              onCheckedChange={(checked) => updateLawyerPermissions(lawyer.id, 'is_admin', checked)}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            {lawyer.last_login_at 
+                              ? new Date(lawyer.last_login_at).toLocaleDateString()
+                              : 'Nunca'
+                            }
+                          </TableCell>
+                          <TableCell>
+                            {isAccountLocked(lawyer) && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => unlockLawyerAccount(lawyer.id)}
+                                className="flex items-center gap-1"
+                              >
+                                <Unlock className="h-3 w-3" />
+                                Desbloquear
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                
+                {/* Mobile Cards Layout */}
+                <div className="lg:hidden space-y-4">
+                  {lawyers.map((lawyer) => (
+                    <Card key={lawyer.id}>
+                      <CardContent className="p-4">
+                        <div className="space-y-3">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <h3 className="font-medium">{lawyer.full_name}</h3>
+                              <p className="text-sm text-muted-foreground">{lawyer.email}</p>
+                            </div>
+                            {getLockStatusBadge(lawyer)}
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div className="flex items-center justify-between">
+                              <span>Activo:</span>
+                              <Switch
+                                checked={lawyer.active}
+                                onCheckedChange={(checked) => updateLawyerPermissions(lawyer.id, 'active', checked)}
+                              />
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span>Admin:</span>
+                              <Switch
+                                checked={lawyer.is_admin}
+                                onCheckedChange={(checked) => updateLawyerPermissions(lawyer.id, 'is_admin', checked)}
+                              />
+                            </div>
+                            <div className="flex items-center justify-between col-span-2">
+                              <span>Crear Agentes:</span>
+                              <Switch
+                                checked={lawyer.can_create_agents}
+                                onCheckedChange={(checked) => updateLawyerPermissions(lawyer.id, 'can_create_agents', checked)}
+                              />
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center justify-between pt-2 border-t">
+                            <span className="text-xs text-muted-foreground">
+                              Último login: {lawyer.last_login_at 
+                                ? new Date(lawyer.last_login_at).toLocaleDateString()
+                                : 'Nunca'
+                              }
+                            </span>
+                            {isAccountLocked(lawyer) && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => unlockLawyerAccount(lawyer.id)}
+                                className="flex items-center gap-1"
+                              >
+                                <Unlock className="h-3 w-3" />
+                                Desbloquear
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -872,27 +974,27 @@ export default function AdminPage() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="stats" className="space-y-6">
-            {/* Business Overview Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <TabsContent value="stats" className="space-y-4 sm:space-y-6">
+            {/* Mobile First Business Overview Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Abogados</CardTitle>
+                  <CardTitle className="text-xs sm:text-sm font-medium">Total Abogados</CardTitle>
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{businessStats?.total_lawyers || 0}</div>
+                  <div className="text-lg sm:text-2xl font-bold">{businessStats?.total_lawyers || 0}</div>
                   <p className="text-xs text-muted-foreground">Registro total</p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Agentes Activos</CardTitle>
+                  <CardTitle className="text-xs sm:text-sm font-medium">Agentes Activos</CardTitle>
                   <Activity className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{businessStats?.active_agents || 0}</div>
+                  <div className="text-lg sm:text-2xl font-bold">{businessStats?.active_agents || 0}</div>
                   <p className="text-xs text-muted-foreground">de {businessStats?.total_agents || 0} totales</p>
                 </CardContent>
               </Card>
