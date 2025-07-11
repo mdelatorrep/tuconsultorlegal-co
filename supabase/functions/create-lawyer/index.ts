@@ -100,15 +100,13 @@ Deno.serve(async (req) => {
     const { 
       email, 
       full_name, 
-      password, 
       phone_number, 
       can_create_agents
-      // REMOVIDO: is_admin - los abogados NO pueden ser administradores
     } = requestBody
 
     // Input validation
-    if (!email || !full_name || !password) {
-      return new Response(JSON.stringify({ error: 'Email, full name, and password are required' }), {
+    if (!email || !full_name) {
+      return new Response(JSON.stringify({ error: 'Email and full name are required' }), {
         status: 400,
         headers: securityHeaders
       })
@@ -125,22 +123,23 @@ Deno.serve(async (req) => {
 
     console.log('Validations passed, creating lawyer account')
 
-    // Check if email already exists
-    const { data: existingLawyer, error: checkError } = await supabase
-      .from('lawyer_accounts')
+    // Check if email already exists in lawyer_tokens
+    const { data: existingToken, error: checkError } = await supabase
+      .from('lawyer_tokens')
       .select('email')
       .eq('email', email.toLowerCase())
+      .eq('active', true)
       .maybeSingle()
 
     if (checkError) {
-      console.error('Error checking existing lawyer:', checkError)
+      console.error('Error checking existing lawyer token:', checkError)
       return new Response(JSON.stringify({ error: 'Database error checking existing account' }), {
         status: 500,
         headers: securityHeaders
       })
     }
 
-    if (existingLawyer) {
+    if (existingToken) {
       return new Response(JSON.stringify({ error: 'Email already exists' }), {
         status: 409,
         headers: securityHeaders
