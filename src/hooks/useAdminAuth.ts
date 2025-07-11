@@ -122,12 +122,26 @@ export const useAdminAuth = () => {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
+      console.log('Attempting login with:', { email });
       const { data, error } = await supabase.functions.invoke('admin-login', {
         body: { email, password }
       });
 
-      if (error || !data?.success) {
+      console.log('Edge function response:', { data, error });
+
+      if (error) {
+        console.error('Edge function error:', error);
+        toast({
+          title: "Error de conexión",
+          description: "No se pudo conectar con el servidor de autenticación",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      if (!data?.success) {
         const errorMessage = data?.error || 'Error al iniciar sesión';
+        console.log('Login failed:', errorMessage);
         toast({
           title: "Error de autenticación",
           description: errorMessage,
