@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    console.log('Create lawyer function called')
+    console.log('Create lawyer function called - START OF FUNCTION')
 
     // Get admin token from headers
     const authHeader = req.headers.get('authorization')
@@ -154,9 +154,10 @@ Deno.serve(async (req) => {
     console.log('Creating lawyer with access token:', accessToken.substring(0, 8) + '***')
 
     // Create lawyer token (this is the main authentication mechanism)
+    // Using service role to bypass RLS restrictions
     const { data: tokenData, error: tokenError } = await supabase
       .from('lawyer_tokens')
-      .insert([{
+      .insert({
         access_token: accessToken,
         email: email.toLowerCase(),
         full_name: full_name,
@@ -164,7 +165,7 @@ Deno.serve(async (req) => {
         can_create_agents: can_create_agents || false,
         lawyer_id: crypto.randomUUID(), // Generate unique lawyer_id
         created_by: admin.id
-      }])
+      })
       .select()
       .single()
 
