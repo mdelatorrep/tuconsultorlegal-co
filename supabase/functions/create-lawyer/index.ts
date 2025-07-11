@@ -152,6 +152,13 @@ Deno.serve(async (req) => {
     // Generate a random UUID for access_token
     const accessToken = crypto.randomUUID()
 
+    console.log('Attempting to insert lawyer with data:', {
+      email: email.toLowerCase(),
+      full_name: full_name,
+      phone_number: phone_number || null,
+      can_create_agents: can_create_agents || false
+    })
+
     // Create lawyer account (sin permisos de administrador)
     const { data, error } = await supabase
       .from('lawyer_accounts')
@@ -165,6 +172,7 @@ Deno.serve(async (req) => {
         // REMOVIDO: is_admin - los abogados no son administradores
       }])
       .select()
+      .single()
 
     if (error) {
       console.error('Error creating lawyer:', error)
@@ -181,7 +189,7 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify({
       success: true,
-      lawyer: data?.[0] || null
+      lawyer: data || null
     }), {
       headers: securityHeaders
     })
