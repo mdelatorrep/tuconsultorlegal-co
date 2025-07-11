@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { Shield, Lock, Settings, Eye, EyeOff } from 'lucide-react';
 import DOMPurify from 'dompurify';
+import AdminUnlockDialog from './AdminUnlockDialog';
 
 interface SuperAdminLoginProps {
   onLoginSuccess: () => void;
@@ -18,6 +19,7 @@ export default function SuperAdminLogin({ onLoginSuccess }: SuperAdminLoginProps
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showUnlockDialog, setShowUnlockDialog] = useState(false);
   
   const { login } = useAdminAuth();
 
@@ -55,7 +57,8 @@ export default function SuperAdminLogin({ onLoginSuccess }: SuperAdminLoginProps
       
       // Handle specific error messages
       if (error?.message?.includes('Account temporarily locked')) {
-        setErrorMessage('Cuenta temporalmente bloqueada. Contacta al administrador del sistema.');
+        setErrorMessage('Cuenta temporalmente bloqueada. Usa el desbloqueo de emergencia.');
+        setShowUnlockDialog(true);
       } else if (error?.message?.includes('Too many attempts')) {
         setErrorMessage('Demasiados intentos de login. Espera unos minutos antes de intentar nuevamente.');
       } else if (error?.message?.includes('Invalid credentials')) {
@@ -158,20 +161,31 @@ export default function SuperAdminLogin({ onLoginSuccess }: SuperAdminLoginProps
             <div className="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
               <p className="text-sm text-yellow-800 dark:text-yellow-200 text-center">
                 <strong>¿Cuenta bloqueada?</strong><br />
-                Contacta al administrador del sistema o usa la clave de emergencia para desbloquear.
+                Usa la función de desbloqueo de emergencia con la clave del sistema.
               </p>
               <div className="mt-3 text-center">
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => setErrorMessage('Para desbloquear, contacta al administrador del sistema con la clave: UNLOCK_ADMIN_2025_SECURE_KEY')}
+                  onClick={() => setShowUnlockDialog(true)}
                   className="text-yellow-800 dark:text-yellow-200 border-yellow-300 dark:border-yellow-700"
                 >
-                  Mostrar clave de emergencia
+                  <Lock className="h-4 w-4 mr-2" />
+                  Desbloqueo de Emergencia
                 </Button>
               </div>
             </div>
           )}
+
+          <AdminUnlockDialog
+            open={showUnlockDialog}
+            onOpenChange={setShowUnlockDialog}
+            email={email}
+            onSuccess={() => {
+              setErrorMessage('');
+              setShowUnlockDialog(false);
+            }}
+          />
           
           <div className="mt-6 text-center text-sm text-muted-foreground">
             <p className="flex items-center justify-center gap-2">
