@@ -43,15 +43,34 @@ Deno.serve(async (req) => {
       ? authHeader.substring(7) 
       : authHeader
 
-    console.log('Admin token length:', adminToken.length)
+    console.log('Verifying admin token...')
 
-    // Basic token validation
-    if (!adminToken || adminToken.length < 32) {
-      return new Response(JSON.stringify({ error: 'Invalid admin token format' }), {
+    // Verify token against admin_accounts table
+    const { data: admin, error: tokenError } = await supabase
+      .from('admin_accounts')
+      .select('*')
+      .eq('session_token', adminToken)
+      .eq('active', true)
+      .maybeSingle()
+
+    if (tokenError || !admin) {
+      console.error('Admin token verification failed:', tokenError)
+      return new Response(JSON.stringify({ error: 'Invalid admin token' }), {
         status: 401,
         headers: securityHeaders
       })
     }
+
+    // Check token expiration
+    if (admin.token_expires_at && new Date(admin.token_expires_at) < new Date()) {
+      console.error('Admin token expired')
+      return new Response(JSON.stringify({ error: 'Admin token expired' }), {
+        status: 401,
+        headers: securityHeaders
+      })
+    }
+
+    console.log('Admin verified successfully')
 
     let requestBody
     try {

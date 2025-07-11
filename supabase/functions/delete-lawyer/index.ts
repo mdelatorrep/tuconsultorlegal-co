@@ -72,8 +72,30 @@ Deno.serve(async (req) => {
 
     console.log('Admin verified successfully')
 
-    const requestBody = await req.json()
-    console.log('Request body received:', Object.keys(requestBody))
+    let requestBody
+    try {
+      const bodyText = await req.text()
+      console.log('Raw request body:', bodyText.substring(0, 200))
+      
+      if (!bodyText.trim()) {
+        return new Response(JSON.stringify({ error: 'Empty request body' }), {
+          status: 400,
+          headers: securityHeaders
+        })
+      }
+      
+      requestBody = JSON.parse(bodyText)
+      console.log('Request body parsed successfully, keys:', Object.keys(requestBody))
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError)
+      return new Response(JSON.stringify({ 
+        error: 'Invalid JSON in request body',
+        message: parseError.message 
+      }), {
+        status: 400,
+        headers: securityHeaders
+      })
+    }
 
     const { lawyer_id } = requestBody
 

@@ -513,30 +513,38 @@ export default function AdminPage() {
     }
 
     try {
-      console.log('Attempting to delete lawyer via admin auth:', { lawyerId, lawyerName });
+      const authToken = sessionStorage.getItem('admin_token');
+      
+      if (!authToken) {
+        toast({
+          title: "Error",
+          description: "Token de administrador no encontrado. Por favor, inicia sesión nuevamente.",
+          variant: "destructive"
+        });
+        return;
+      }
 
-      // Usar el cliente de Supabase con los headers de admin auth
-      const authHeaders = getAuthHeaders();
-      console.log('Using auth headers:', Object.keys(authHeaders));
+      console.log('Attempting to delete lawyer via edge function:', { lawyerId, lawyerName });
 
-      // Crear un cliente temporal con los headers de autenticación de admin
-      const { data, error } = await supabase
-        .from('lawyer_accounts')
-        .delete()
-        .eq('id', lawyerId);
+      const { data, error } = await supabase.functions.invoke('delete-lawyer', {
+        body: JSON.stringify({
+          lawyer_id: lawyerId
+        }),
+        headers: {
+          'authorization': authToken,
+          'Content-Type': 'application/json'
+        }
+      });
 
-      console.log('Delete result:', { data, error });
-
-      if (error) {
-        console.error('Delete error details:', error);
-        throw new Error(`Error al eliminar: ${error.message}`);
+      if (error || !data?.success) {
+        throw new Error(data?.error || error?.message || 'Error al eliminar el abogado');
       }
 
       console.log('Lawyer deleted successfully');
 
       toast({
         title: "Éxito",
-        description: `Abogado ${lawyerName} eliminado exitosamente`,
+        description: data.message || `Abogado ${lawyerName} eliminado exitosamente`,
       });
 
       await loadData();
