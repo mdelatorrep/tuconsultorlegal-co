@@ -399,18 +399,27 @@ export default function AdminPage() {
         return;
       }
 
+      console.log('Creating lawyer with data:', {
+        email: sanitizedEmail,
+        full_name: sanitizedName,
+        phone_number: newLawyer.phone_number,
+        can_create_agents: newLawyer.can_create_agents
+      });
+
       const { data, error } = await supabase.functions.invoke('create-lawyer', {
-        body: JSON.stringify({
+        body: {
           email: sanitizedEmail,
           full_name: sanitizedName,
           phone_number: newLawyer.phone_number,
           can_create_agents: newLawyer.can_create_agents
-        }),
+        },
         headers: {
           'authorization': authToken,
           'Content-Type': 'application/json'
         }
       });
+
+      console.log('Edge function response:', { data, error });
 
       if (error || !data?.success) {
         throw new Error(data?.error || error?.message || 'Error al crear el abogado');
