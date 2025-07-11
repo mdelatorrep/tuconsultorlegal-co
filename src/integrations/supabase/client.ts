@@ -19,7 +19,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
       get authorization() {
         // Get the admin token from sessionStorage (used by useAdminAuth)
         const token = sessionStorage.getItem('admin_token');
-        return token ? `Bearer ${token}` : '';
+        return token || '';
       }
     }
   }
