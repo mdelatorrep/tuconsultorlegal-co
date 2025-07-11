@@ -50,9 +50,19 @@ export default function SuperAdminLogin({ onLoginSuccess }: SuperAdminLoginProps
         console.log('SuperAdmin login successful, calling onLoginSuccess');
         onLoginSuccess();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('SuperAdmin login error:', error);
-      setErrorMessage('Error de conexión. Intenta nuevamente.');
+      
+      // Handle specific error messages
+      if (error?.message?.includes('Account temporarily locked')) {
+        setErrorMessage('Cuenta temporalmente bloqueada. Contacta al administrador del sistema.');
+      } else if (error?.message?.includes('Too many attempts')) {
+        setErrorMessage('Demasiados intentos de login. Espera unos minutos antes de intentar nuevamente.');
+      } else if (error?.message?.includes('Invalid credentials')) {
+        setErrorMessage('Credenciales inválidas. Verifica tu email y contraseña.');
+      } else {
+        setErrorMessage('Error de conexión. Intenta nuevamente en unos momentos.');
+      }
     } finally {
       setIsLoggingIn(false);
     }
@@ -142,6 +152,26 @@ export default function SuperAdminLogin({ onLoginSuccess }: SuperAdminLoginProps
               )}
             </Button>
           </form>
+          
+          {/* Emergency unlock section */}
+          {errorMessage.includes('bloqueada') && (
+            <div className="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+              <p className="text-sm text-yellow-800 dark:text-yellow-200 text-center">
+                <strong>¿Cuenta bloqueada?</strong><br />
+                Contacta al administrador del sistema o usa la clave de emergencia para desbloquear.
+              </p>
+              <div className="mt-3 text-center">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setErrorMessage('Para desbloquear, contacta al administrador del sistema con la clave: UNLOCK_ADMIN_2025_SECURE_KEY')}
+                  className="text-yellow-800 dark:text-yellow-200 border-yellow-300 dark:border-yellow-700"
+                >
+                  Mostrar clave de emergencia
+                </Button>
+              </div>
+            </div>
+          )}
           
           <div className="mt-6 text-center text-sm text-muted-foreground">
             <p className="flex items-center justify-center gap-2">

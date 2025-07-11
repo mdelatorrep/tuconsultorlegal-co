@@ -130,7 +130,37 @@ export const useAdminAuth = () => {
       console.log('Edge function response:', { data, error });
 
       if (error) {
-        console.error('Edge function error:', error);
+        console.log('Edge function error:', error);
+        
+        // Handle specific error cases
+        if (error.message?.includes('Account temporarily locked')) {
+          toast({
+            title: "Cuenta bloqueada",
+            description: "Cuenta temporalmente bloqueada debido a intentos fallidos. Contacta al administrador del sistema para desbloquearla.",
+            variant: "destructive",
+          });
+          return false;
+        }
+        
+        if (error.message?.includes('Too many attempts')) {
+          toast({
+            title: "Demasiados intentos",
+            description: "Demasiados intentos de login. Espera unos minutos antes de intentar nuevamente.",
+            variant: "destructive",
+          });
+          return false;
+        }
+        
+        if (error.message?.includes('Invalid credentials')) {
+          toast({
+            title: "Credenciales inválidas", 
+            description: "Email o contraseña incorrectos. Verifica tus datos.",
+            variant: "destructive",
+          });
+          return false;
+        }
+        
+        // Generic error
         toast({
           title: "Error de conexión",
           description: "No se pudo conectar con el servidor de autenticación",
@@ -142,11 +172,27 @@ export const useAdminAuth = () => {
       if (!data?.success) {
         const errorMessage = data?.error || 'Error al iniciar sesión';
         console.log('Login failed:', errorMessage);
-        toast({
-          title: "Error de autenticación",
-          description: errorMessage,
-          variant: "destructive",
-        });
+        
+        // Handle specific server errors
+        if (errorMessage.includes('Account temporarily locked')) {
+          toast({
+            title: "Cuenta bloqueada",
+            description: "Cuenta temporalmente bloqueada. Contacta al administrador del sistema.",
+            variant: "destructive",
+          });
+        } else if (errorMessage.includes('Invalid credentials')) {
+          toast({
+            title: "Credenciales inválidas",
+            description: "Email o contraseña incorrectos.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Error de autenticación",
+            description: errorMessage,
+            variant: "destructive",
+          });
+        }
         return false;
       }
 
