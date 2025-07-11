@@ -89,7 +89,6 @@ export default function AdminPage() {
   const [newLawyer, setNewLawyer] = useState({
     email: "",
     full_name: "",
-    password: "",
     phone_number: "",
     can_create_agents: false
     // REMOVIDO: is_admin - los abogados no son administradores
@@ -366,12 +365,12 @@ export default function AdminPage() {
     // Input validation and sanitization
     const sanitizedEmail = sanitizeInput(newLawyer.email).toLowerCase();
     const sanitizedName = sanitizeInput(newLawyer.full_name);
-    const sanitizedPassword = sanitizeInput(newLawyer.password);
+    // No need for password validation - it will be auto-generated
 
-    if (!sanitizedEmail || !sanitizedName || !sanitizedPassword) {
+    if (!sanitizedEmail || !sanitizedName) {
       toast({
         title: "Error",
-        description: "Todos los campos son requeridos",
+        description: "Email y nombre completo son requeridos",
         variant: "destructive"
       });
       return;
@@ -404,10 +403,8 @@ export default function AdminPage() {
         body: JSON.stringify({
           email: sanitizedEmail,
           full_name: sanitizedName,
-          password: sanitizedPassword,
           phone_number: newLawyer.phone_number,
           can_create_agents: newLawyer.can_create_agents
-          // REMOVIDO: is_admin
         }),
         headers: {
           'authorization': authToken,
@@ -419,18 +416,30 @@ export default function AdminPage() {
         throw new Error(data?.error || error?.message || 'Error al crear el abogado');
       }
 
-      toast({
-        title: "Éxito",
-        description: "Abogado creado exitosamente",
-      });
+      if (data?.lawyer?.secure_password) {
+        // Show the generated token to the admin
+        toast({
+          title: "Abogado creado exitosamente",
+          description: `Token generado: ${data.lawyer.secure_password}`,
+          duration: 10000, // Show for 10 seconds
+        });
+
+        // Also show an alert dialog with the token
+        setTimeout(() => {
+          alert(`Abogado creado exitosamente.\n\nToken de acceso para ${sanitizedName}:\n${data.lawyer.secure_password}\n\nEste token es lo que el abogado debe usar para iniciar sesión en el panel de abogados.`);
+        }, 500);
+      } else {
+        toast({
+          title: "Éxito",
+          description: "Abogado creado exitosamente",
+        });
+      }
 
       setNewLawyer({
         email: "",
         full_name: "",
-        password: "",
         phone_number: "",
         can_create_agents: false
-        // REMOVIDO: is_admin
       });
 
       await loadData();
@@ -846,32 +855,23 @@ export default function AdminPage() {
                       className="w-full"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Contraseña</Label>
-                    <div className="relative">
-                      <Input
-                        id="password"
-                        type={showNewPassword ? "text" : "password"}
-                        value={newLawyer.password}
-                        onChange={(e) => setNewLawyer({ ...newLawyer, password: e.target.value })}
-                        placeholder="Contraseña segura"
-                        className="w-full pr-10"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                        onClick={() => setShowNewPassword(!showNewPassword)}
-                      >
-                        {showNewPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-                      </Button>
+                   <div className="space-y-2">
+                     <Label htmlFor="password">Token de Acceso</Label>
+                     <div className="relative">
+                       <Input
+                         id="password"
+                         type="text"
+                         value=""
+                         placeholder="Se generará automáticamente"
+                         className="w-full"
+                         disabled
+                         readOnly
+                       />
+                     </div>
+                     <p className="text-xs text-muted-foreground">
+                       El token se generará automáticamente y será lo que el abogado use para ingresar al panel.
+                     </p>
                     </div>
-                   </div>
                    <div className="space-y-2">
                      <Label htmlFor="phoneNumber">Número de Teléfono</Label>
                      <div className="phone-input-container">

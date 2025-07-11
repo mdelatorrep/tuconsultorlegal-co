@@ -149,47 +149,46 @@ Deno.serve(async (req) => {
 
     console.log('Email is unique, proceeding with creation')
 
-    // Generate a random UUID for access_token
+    // Generate a secure access token - this is what the lawyer will use to login
     const accessToken = crypto.randomUUID()
 
-    console.log('Attempting to insert lawyer with data:', {
-      email: email.toLowerCase(),
-      full_name: full_name,
-      phone_number: phone_number || null,
-      can_create_agents: can_create_agents || false
-    })
+    console.log('Creating lawyer with access token:', accessToken.substring(0, 8) + '***')
 
-    // Create lawyer account (sin permisos de administrador)
-    const { data, error } = await supabase
-      .from('lawyer_accounts')
+    // Create lawyer token (this is the main authentication mechanism)
+    const { data: tokenData, error: tokenError } = await supabase
+      .from('lawyer_tokens')
       .insert([{
+        access_token: accessToken,
         email: email.toLowerCase(),
         full_name: full_name,
-        password_hash: password, // Will be automatically hashed by trigger
-        access_token: accessToken,
         phone_number: phone_number || null,
-        can_create_agents: can_create_agents || false
-        // REMOVIDO: is_admin - los abogados no son administradores
+        can_create_agents: can_create_agents || false,
+        lawyer_id: crypto.randomUUID(), // Generate unique lawyer_id
+        created_by: admin.id
       }])
       .select()
       .single()
 
-    if (error) {
-      console.error('Error creating lawyer:', error)
+    if (tokenError) {
+      console.error('Error creating lawyer token:', tokenError)
       return new Response(JSON.stringify({ 
-        error: `Database error: ${error.message}`,
-        details: error.details || 'No additional details'
+        error: `Error al crear token de acceso: ${tokenError.message}`,
+        details: tokenError.details || 'No additional details'
       }), {
         status: 500,
         headers: securityHeaders
       })
     }
 
-    console.log('Lawyer created successfully')
+    console.log('Lawyer token created successfully')
 
     return new Response(JSON.stringify({
       success: true,
-      lawyer: data || null
+      lawyer: {
+        ...tokenData,
+        // The access_token is the secure password the admin should provide to the lawyer
+        secure_password: accessToken
+      }
     }), {
       headers: securityHeaders
     })
