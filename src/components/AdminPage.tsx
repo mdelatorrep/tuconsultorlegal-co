@@ -388,7 +388,7 @@ export default function AdminPage() {
     }
 
     try {
-      const authToken = sessionStorage.getItem('admin_token');
+      let authToken = sessionStorage.getItem('admin_token');
       
       if (!authToken) {
         toast({
@@ -398,6 +398,9 @@ export default function AdminPage() {
         });
         return;
       }
+
+      // Verify the token is valid before making the request
+      console.log('Using admin token for create-lawyer:', authToken.substring(0, 10) + '...');
 
       console.log('Creating lawyer with data:', {
         email: sanitizedEmail,
