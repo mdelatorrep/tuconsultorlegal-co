@@ -60,9 +60,9 @@ export const useAdminAuth = () => {
     // Verify token with server
     try {
       const { data, error } = await supabase.functions.invoke('verify-admin-token', {
-        body: { token },
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'authorization': `Bearer ${token}`
         }
       });
 
