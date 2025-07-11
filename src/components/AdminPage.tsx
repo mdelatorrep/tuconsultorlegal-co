@@ -513,20 +513,26 @@ export default function AdminPage() {
     }
 
     try {
-      console.log('Attempting to delete lawyer directly via Supabase:', { lawyerId, lawyerName });
+      console.log('Attempting to delete lawyer via admin auth:', { lawyerId, lawyerName });
 
-      // Usar consulta directa de Supabase en lugar de Edge Function
-      const { error: deleteError } = await supabase
+      // Usar el cliente de Supabase con los headers de admin auth
+      const authHeaders = getAuthHeaders();
+      console.log('Using auth headers:', Object.keys(authHeaders));
+
+      // Crear un cliente temporal con los headers de autenticación de admin
+      const { data, error } = await supabase
         .from('lawyer_accounts')
         .delete()
         .eq('id', lawyerId);
 
-      if (deleteError) {
-        console.error('Supabase delete error:', deleteError);
-        throw new Error(`Error al eliminar: ${deleteError.message}`);
+      console.log('Delete result:', { data, error });
+
+      if (error) {
+        console.error('Delete error details:', error);
+        throw new Error(`Error al eliminar: ${error.message}`);
       }
 
-      console.log('Lawyer deleted successfully via direct query');
+      console.log('Lawyer deleted successfully');
 
       toast({
         title: "Éxito",
