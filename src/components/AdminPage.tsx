@@ -514,6 +514,7 @@ export default function AdminPage() {
 
     try {
       const authToken = sessionStorage.getItem('admin_token');
+      console.log('Delete lawyer - Auth token exists:', !!authToken);
       
       if (!authToken) {
         toast({
@@ -523,6 +524,8 @@ export default function AdminPage() {
         });
         return;
       }
+
+      console.log('Attempting to delete lawyer:', { lawyerId, lawyerName });
 
       const { data, error } = await supabase.functions.invoke('delete-lawyer', {
         body: {
@@ -534,8 +537,16 @@ export default function AdminPage() {
         }
       });
 
-      if (error || !data?.success) {
-        throw new Error(data?.error || error?.message || 'Error al eliminar el abogado');
+      console.log('Delete lawyer response:', { data, error });
+
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error(`Error del servidor: ${error.message || 'Error desconocido'}`);
+      }
+
+      if (!data?.success) {
+        console.error('Delete failed:', data);
+        throw new Error(data?.error || 'Error al eliminar el abogado');
       }
 
       toast({
