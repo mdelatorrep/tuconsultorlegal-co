@@ -358,14 +358,14 @@ export default function AdminPage() {
       }
 
       const { data, error } = await supabase.functions.invoke('create-lawyer', {
-        body: {
+        body: JSON.stringify({
           email: sanitizedEmail,
           full_name: sanitizedName,
           password: sanitizedPassword,
           phone_number: newLawyer.phone_number,
           can_create_agents: newLawyer.can_create_agents
           // REMOVIDO: is_admin
-        },
+        }),
         headers: {
           'authorization': authToken,
           'Content-Type': 'application/json'
