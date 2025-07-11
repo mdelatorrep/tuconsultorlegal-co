@@ -114,38 +114,48 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
     }
 
     try {
-      // Configurar headers con el token de autenticación
-      const { error } = await supabase
-        .from('legal_agents')
-        .update({ status: newStatus })
-        .eq('id', agentId)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error updating agent status:', error);
+      const authToken = sessionStorage.getItem('lawyer_token');
+      
+      if (!authToken) {
         toast({
-          title: "Error al actualizar",
-          description: "No se pudo cambiar el estado del agente.",
-          variant: "destructive",
+          title: "Error",
+          description: "Token de autenticación no encontrado. Por favor, inicia sesión nuevamente.",
+          variant: "destructive"
         });
         return;
       }
 
+      const { data, error } = await supabase.functions.invoke('update-agent', {
+        body: JSON.stringify({
+          agent_id: agentId,
+          user_id: lawyerData.id,
+          is_admin: lawyerData.is_admin,
+          status: newStatus
+        }),
+        headers: {
+          'authorization': authToken,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (error || !data?.success) {
+        throw new Error(data?.error || error?.message || 'Error al actualizar el estado del agente');
+      }
+
       toast({
         title: "Estado actualizado",
-        description: `El agente ha sido ${newStatus === 'active' ? 'activado' : 'suspendido'}.`,
+        description: data.message || `El agente ha sido ${newStatus === 'active' ? 'activado' : 'suspendido'}.`,
       });
 
       // Update local state
       setAgents(agents.map(agent => 
         agent.id === agentId ? { ...agent, status: newStatus } : agent
       ));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error:', error);
       toast({
         title: "Error",
-        description: "Ocurrió un error inesperado al actualizar el agente.",
+        description: error.message || "Ocurrió un error inesperado al actualizar el agente.",
         variant: "destructive",
       });
     }
@@ -163,30 +173,37 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
     }
 
     try {
-      const { error } = await supabase
-        .from('legal_agents')
-        .update({ 
-          status: 'active',
-          price_approved_by: lawyerData.id,
-          price_approved_at: new Date().toISOString()
-        })
-        .eq('id', agentId)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error approving agent:', error);
+      const authToken = sessionStorage.getItem('lawyer_token') || sessionStorage.getItem('admin_token');
+      
+      if (!authToken) {
         toast({
-          title: "Error al aprobar",
-          description: "No se pudo aprobar el agente.",
-          variant: "destructive",
+          title: "Error",
+          description: "Token de autenticación no encontrado. Por favor, inicia sesión nuevamente.",
+          variant: "destructive"
         });
         return;
       }
 
+      const { data, error } = await supabase.functions.invoke('update-agent', {
+        body: JSON.stringify({
+          agent_id: agentId,
+          user_id: lawyerData.id,
+          is_admin: lawyerData.is_admin,
+          status: 'active'
+        }),
+        headers: {
+          'authorization': authToken,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (error || !data?.success) {
+        throw new Error(data?.error || error?.message || 'Error al aprobar el agente');
+      }
+
       toast({
         title: "Agente aprobado",
-        description: "El agente ha sido aprobado y está activo.",
+        description: data.message || "El agente ha sido aprobado y está activo.",
       });
 
       // Update local state
@@ -198,11 +215,11 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
           price_approved_at: new Date().toISOString()
         } : agent
       ));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error:', error);
       toast({
         title: "Error",
-        description: "Ocurrió un error inesperado al aprobar el agente.",
+        description: error.message || "Ocurrió un error inesperado al aprobar el agente.",
         variant: "destructive",
       });
     }
@@ -227,9 +244,22 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
     }
 
     try {
-      const { error } = await supabase
-        .from('legal_agents')
-        .update({
+      const authToken = sessionStorage.getItem('lawyer_token') || sessionStorage.getItem('admin_token');
+      
+      if (!authToken) {
+        toast({
+          title: "Error",
+          description: "Token de autenticación no encontrado. Por favor, inicia sesión nuevamente.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('update-agent', {
+        body: JSON.stringify({
+          agent_id: editingAgent.id,
+          user_id: lawyerData.id,
+          is_admin: lawyerData.is_admin,
           name: editingAgent.name,
           description: editingAgent.description,
           document_name: editingAgent.document_name,
@@ -240,26 +270,21 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
           price_justification: editingAgent.price_justification,
           target_audience: editingAgent.target_audience,
           template_content: editingAgent.template_content,
-          ai_prompt: editingAgent.ai_prompt,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', editingAgent.id)
-        .select()
-        .single();
+          ai_prompt: editingAgent.ai_prompt
+        }),
+        headers: {
+          'authorization': authToken,
+          'Content-Type': 'application/json'
+        }
+      });
 
-      if (error) {
-        console.error('Error updating agent:', error);
-        toast({
-          title: "Error al actualizar",
-          description: "No se pudo actualizar el agente.",
-          variant: "destructive",
-        });
-        return;
+      if (error || !data?.success) {
+        throw new Error(data?.error || error?.message || 'Error al actualizar el agente');
       }
 
       toast({
         title: "Agente actualizado",
-        description: "El agente ha sido actualizado correctamente.",
+        description: data.message || "El agente ha sido actualizado correctamente.",
       });
 
       // Update local state
@@ -269,11 +294,11 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
       
       setIsEditDialogOpen(false);
       setEditingAgent(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error:', error);
       toast({
         title: "Error",
-        description: "Ocurrió un error inesperado al actualizar el agente.",
+        description: error.message || "Ocurrió un error inesperado al actualizar el agente.",
         variant: "destructive",
       });
     }
@@ -296,6 +321,69 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
         return <Badge variant="destructive">Pendiente Revisión</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
+
+  const handleDeleteAgent = async (agentId: string, agentName: string) => {
+    // Solo admin puede eliminar agentes
+    if (!lawyerData.is_admin) {
+      toast({
+        title: "Sin permisos",
+        description: "Solo los administradores pueden eliminar agentes.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Confirmación antes de eliminar
+    const confirmed = window.confirm(`¿Estás seguro de que quieres eliminar el agente "${agentName}"? Esta acción no se puede deshacer.`);
+    
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const authToken = sessionStorage.getItem('admin_token');
+      
+      if (!authToken) {
+        toast({
+          title: "Error",
+          description: "Token de administrador no encontrado. Por favor, inicia sesión nuevamente.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('delete-agent', {
+        body: JSON.stringify({
+          agent_id: agentId,
+          user_id: lawyerData.id,
+          is_admin: lawyerData.is_admin
+        }),
+        headers: {
+          'authorization': authToken,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (error || !data?.success) {
+        throw new Error(data?.error || error?.message || 'Error al eliminar el agente');
+      }
+
+      toast({
+        title: "Agente eliminado",
+        description: data.message || `Agente "${agentName}" eliminado exitosamente`,
+      });
+
+      // Update local state
+      setAgents(agents.filter(agent => agent.id !== agentId));
+    } catch (error: any) {
+      console.error('Delete agent error:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Error al eliminar el agente",
+        variant: "destructive",
+      });
     }
   };
 
@@ -501,14 +589,28 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                         <Edit className="h-4 w-4 mr-1" />
                         Editar
                       </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </div>
-      </div>
+                     )}
+
+                     {/* Delete (Only for admin) */}
+                     {lawyerData.is_admin && (
+                       <Button 
+                         variant="destructive" 
+                         size="sm"
+                         onClick={() => handleDeleteAgent(agent.id, agent.name)}
+                       >
+                         <Trash2 className="h-4 w-4 mr-1" />
+                         Eliminar
+                       </Button>
+                     )}
+                   </div>
+                 </CardContent>
+               </Card>
+             ))
+           )}
+         </div>
+       </div>
+
+       {/* Edit Agent Dialog */}
 
       {/* Edit Agent Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
