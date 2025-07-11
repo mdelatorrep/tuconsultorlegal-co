@@ -513,49 +513,29 @@ export default function AdminPage() {
     }
 
     try {
-      const authToken = sessionStorage.getItem('admin_token');
-      console.log('Delete lawyer - Auth token exists:', !!authToken);
-      
-      if (!authToken) {
-        toast({
-          title: "Error",
-          description: "Token de administrador no encontrado. Por favor, inicia sesión nuevamente.",
-          variant: "destructive"
-        });
-        return;
+      console.log('Attempting to delete lawyer directly via Supabase:', { lawyerId, lawyerName });
+
+      // Usar consulta directa de Supabase en lugar de Edge Function
+      const { error: deleteError } = await supabase
+        .from('lawyer_accounts')
+        .delete()
+        .eq('id', lawyerId);
+
+      if (deleteError) {
+        console.error('Supabase delete error:', deleteError);
+        throw new Error(`Error al eliminar: ${deleteError.message}`);
       }
 
-      console.log('Attempting to delete lawyer:', { lawyerId, lawyerName });
-
-      const { data, error } = await supabase.functions.invoke('delete-lawyer', {
-        body: {
-          lawyer_id: lawyerId
-        },
-        headers: {
-          'authorization': authToken,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      console.log('Delete lawyer response:', { data, error });
-
-      if (error) {
-        console.error('Edge function error:', error);
-        throw new Error(`Error del servidor: ${error.message || 'Error desconocido'}`);
-      }
-
-      if (!data?.success) {
-        console.error('Delete failed:', data);
-        throw new Error(data?.error || 'Error al eliminar el abogado');
-      }
+      console.log('Lawyer deleted successfully via direct query');
 
       toast({
         title: "Éxito",
-        description: data.message || "Abogado eliminado exitosamente",
+        description: `Abogado ${lawyerName} eliminado exitosamente`,
       });
 
       await loadData();
     } catch (error: any) {
+      console.error('Delete lawyer error:', error);
       toast({
         title: "Error",
         description: error.message || "Error al eliminar el abogado",
