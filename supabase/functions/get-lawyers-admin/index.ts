@@ -35,28 +35,45 @@ Deno.serve(async (req) => {
       }
     );
 
-    // Verify the admin token (check admin_accounts table, not lawyer_accounts)
-    const { data: tokenVerification, error: tokenError } = await supabase
-      .from('admin_accounts')
-      .select('id, is_super_admin, active')
-      .eq('id', authHeader) // Token might be the admin ID
-      .eq('active', true)
-      .maybeSingle();
+    // Extract token from Bearer format or use directly
+    const adminToken = authHeader.startsWith('Bearer ') 
+      ? authHeader.substring(7) 
+      : authHeader
 
-    // If not found by ID, try a simple token validation
-    if (tokenError || !tokenVerification) {
-      // For now, let's just validate token format and proceed
-      if (!authHeader || authHeader.length < 32) {
-        return new Response(
-          JSON.stringify({ error: 'Invalid admin token format' }), 
-          { 
-            status: 403, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        );
-      }
-      console.log('Admin token validated by format only');
+    console.log('Verifying admin token for lawyers query...')
+
+    // Verify token against admin_accounts table
+    const { data: admin, error: tokenError } = await supabase
+      .from('admin_accounts')
+      .select('*')
+      .eq('session_token', adminToken)
+      .eq('active', true)
+      .maybeSingle()
+
+    if (tokenError || !admin) {
+      console.error('Admin token verification failed:', tokenError)
+      return new Response(
+        JSON.stringify({ error: 'Invalid admin token' }), 
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
+
+    // Check token expiration
+    if (admin.token_expires_at && new Date(admin.token_expires_at) < new Date()) {
+      console.error('Admin token expired')
+      return new Response(
+        JSON.stringify({ error: 'Admin token expired' }), 
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    console.log('Admin token verified, fetching lawyers...')
 
     // Fetch all lawyers (bypassing RLS with service role)
     const { data: lawyers, error: lawyersError } = await supabase

@@ -171,24 +171,19 @@ export default function AdminPage() {
       console.log('Lawyers loaded:', lawyersData?.length || 0);
       setLawyers(lawyersData || []);
 
-      // Usar consulta directa para agentes (más simple y confiable)
-      console.log('Loading agents directly from database...');
-      const { data: agentsData, error: agentsError } = await supabase
-        .from('legal_agents')
-        .select(`
-          *,
-          lawyer_accounts!created_by (
-            full_name,
-            email
-          )
-        `)
-        .order('created_at', { ascending: false });
+      // Load agents using admin function for consistency
+      console.log('Attempting to load agents via admin function...');
+      const { data: agentsData, error: agentsError } = await supabase.functions.invoke('get-agents-admin', {
+        headers: {
+          'authorization': authToken
+        }
+      });
 
       if (agentsError) {
         console.error('Error loading agents:', agentsError);
         toast({
           title: "Error",
-          description: `Error al cargar agentes: ${agentsError.message}`,
+          description: `Error al cargar agentes: ${agentsError.message || 'Error desconocido'}`,
           variant: "destructive"
         });
         return;
@@ -198,8 +193,7 @@ export default function AdminPage() {
       setAgents(agentsData || []);
 
       // Load statistics
-      await loadStatistics(lawyersData || [], agents || []);
-      console.log('Data loading completed successfully');
+      await loadStatistics(lawyersData || [], agentsData || []);
       console.log('Data loading completed successfully');
     } catch (error) {
       console.error('Error loading data:', error);
@@ -422,11 +416,23 @@ export default function AdminPage() {
         return;
       }
 
-    const { data, error } = await supabase
-      .from('lawyer_accounts')
-      .update({ [field]: value })
-      .eq('id', lawyerId)
-      .select();
+      const authToken = sessionStorage.getItem('admin_token');
+      
+      if (!authToken) {
+        toast({
+          title: "Error",
+          description: "Token de administrador no encontrado. Por favor, inicia sesión nuevamente.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Use direct query with admin privileges (similar to how agents are updated)
+      const { data, error } = await supabase
+        .from('lawyer_accounts')
+        .update({ [field]: value })
+        .eq('id', lawyerId)
+        .select();
 
       if (error) {
         console.error('Error updating lawyer permissions:', error);
@@ -454,6 +460,17 @@ export default function AdminPage() {
 
   const unlockLawyerAccount = async (lawyerId: string) => {
     try {
+      const authToken = sessionStorage.getItem('admin_token');
+      
+      if (!authToken) {
+        toast({
+          title: "Error",
+          description: "Token de administrador no encontrado. Por favor, inicia sesión nuevamente.",
+          variant: "destructive"
+        });
+        return;
+      }
+
       const { error } = await supabase
         .from('lawyer_accounts')
         .update({ 
@@ -560,6 +577,17 @@ export default function AdminPage() {
 
   const updateAgentStatus = async (agentId: string, status: string) => {
     try {
+      const authToken = sessionStorage.getItem('admin_token');
+      
+      if (!authToken) {
+        toast({
+          title: "Error",
+          description: "Token de administrador no encontrado. Por favor, inicia sesión nuevamente.",
+          variant: "destructive"
+        });
+        return;
+      }
+
       const { error } = await supabase
         .from('legal_agents')
         .update({ status })
@@ -584,6 +612,17 @@ export default function AdminPage() {
 
   const updateAgentFinalPrice = async (agentId: string, finalPrice: number) => {
     try {
+      const authToken = sessionStorage.getItem('admin_token');
+      
+      if (!authToken) {
+        toast({
+          title: "Error",
+          description: "Token de administrador no encontrado. Por favor, inicia sesión nuevamente.",
+          variant: "destructive"
+        });
+        return;
+      }
+
       const { error } = await supabase
         .from('legal_agents')
         .update({ 
