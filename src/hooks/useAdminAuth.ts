@@ -132,14 +132,25 @@ export const useAdminAuth = () => {
       if (error) {
         console.log('Edge function error:', error);
         
+        // Handle specific HTTP status codes from edge function
+        if (error.message?.includes('FunctionsHttpError')) {
+          // Get more context from the network logs
+          toast({
+            title: "Error del servidor",
+            description: "El servidor de autenticación devolvió un error. Revisa tu cuenta o contacta al administrador.",
+            variant: "destructive",
+          });
+          throw new Error('Account temporarily locked or server error');
+        }
+        
         // Handle specific error cases
         if (error.message?.includes('Account temporarily locked')) {
           toast({
             title: "Cuenta bloqueada",
-            description: "Cuenta temporalmente bloqueada debido a intentos fallidos. Contacta al administrador del sistema para desbloquearla.",
+            description: "Cuenta temporalmente bloqueada debido a intentos fallidos. Usa el desbloqueo de emergencia.",
             variant: "destructive",
           });
-          return false;
+          throw new Error('Account temporarily locked');
         }
         
         if (error.message?.includes('Too many attempts')) {
@@ -148,7 +159,7 @@ export const useAdminAuth = () => {
             description: "Demasiados intentos de login. Espera unos minutos antes de intentar nuevamente.",
             variant: "destructive",
           });
-          return false;
+          throw new Error('Too many attempts');
         }
         
         if (error.message?.includes('Invalid credentials')) {
@@ -157,43 +168,59 @@ export const useAdminAuth = () => {
             description: "Email o contraseña incorrectos. Verifica tus datos.",
             variant: "destructive",
           });
-          return false;
+          throw new Error('Invalid credentials');
         }
         
-        // Generic error
+        // Generic error for network/connection issues
         toast({
-          title: "Error de conexión",
-          description: "No se pudo conectar con el servidor de autenticación",
+          title: "Error de conectividad",
+          description: "No se pudo establecer conexión con el servidor. Verifica tu conexión a internet.",
           variant: "destructive",
         });
-        return false;
+        throw new Error('Connection error');
       }
 
       if (!data?.success) {
         const errorMessage = data?.error || 'Error al iniciar sesión';
         console.log('Login failed:', errorMessage);
         
-        // Handle specific server errors
+        // Handle specific server errors based on actual response
         if (errorMessage.includes('Account temporarily locked')) {
           toast({
             title: "Cuenta bloqueada",
-            description: "Cuenta temporalmente bloqueada. Contacta al administrador del sistema.",
+            description: "Tu cuenta está temporalmente bloqueada. Usa la función de desbloqueo de emergencia.",
             variant: "destructive",
           });
-        } else if (errorMessage.includes('Invalid credentials')) {
+          throw new Error('Account temporarily locked');
+        } else if (errorMessage.includes('Invalid credentials') || errorMessage.includes('Authentication failed')) {
           toast({
-            title: "Credenciales inválidas",
-            description: "Email o contraseña incorrectos.",
+            title: "Credenciales incorrectas",
+            description: "El email o contraseña no son correctos. Verifica e intenta nuevamente.",
             variant: "destructive",
           });
+          throw new Error('Invalid credentials');
+        } else if (errorMessage.includes('Account not found')) {
+          toast({
+            title: "Cuenta no encontrada",
+            description: "No existe una cuenta de administrador con este email.",
+            variant: "destructive",
+          });
+          throw new Error('Account not found');
+        } else if (errorMessage.includes('Account inactive')) {
+          toast({
+            title: "Cuenta inactiva",
+            description: "Tu cuenta de administrador está desactivada. Contacta al administrador del sistema.",
+            variant: "destructive",
+          });
+          throw new Error('Account inactive');
         } else {
           toast({
             title: "Error de autenticación",
             description: errorMessage,
             variant: "destructive",
           });
+          throw new Error(errorMessage);
         }
-        return false;
       }
 
       // Store token securely in sessionStorage (more secure than localStorage)
@@ -231,12 +258,24 @@ export const useAdminAuth = () => {
       return true;
     } catch (error) {
       console.error('Login error:', error);
+      
+      // Re-throw handled errors to maintain specific error types
+      if (error instanceof Error && 
+          (error.message.includes('Account temporarily locked') || 
+           error.message.includes('Invalid credentials') ||
+           error.message.includes('Too many attempts') ||
+           error.message.includes('Account not found') ||
+           error.message.includes('Account inactive'))) {
+        throw error;
+      }
+      
+      // Handle unexpected errors
       toast({
-        title: "Error de conexión",
-        description: "No se pudo conectar con el servidor. Intenta nuevamente.",
+        title: "Error inesperado",
+        description: "Ocurrió un error inesperado. Verifica tu conexión e intenta nuevamente.",
         variant: "destructive",
       });
-      return false;
+      throw new Error('Unexpected error');
     }
   };
 

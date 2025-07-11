@@ -160,11 +160,27 @@ export default function AdminPage() {
 
       if (lawyersError) {
         console.error('Error loading lawyers:', lawyersError);
-        toast({
-          title: "Error",
-          description: `Error al cargar abogados: ${lawyersError.message}`,
-          variant: "destructive"
-        });
+        
+        // Provide specific error messages based on the type of error
+        if (lawyersError.message?.includes('permission denied') || lawyersError.message?.includes('insufficient privileges')) {
+          toast({
+            title: "Sin permisos para cargar abogados",
+            description: "Tu sesión de administrador expiró o no tienes permisos suficientes. Inicia sesión nuevamente.",
+            variant: "destructive"
+          });
+        } else if (lawyersError.message?.includes('network') || lawyersError.message?.includes('fetch')) {
+          toast({
+            title: "Error de conectividad",
+            description: "No se pudo conectar con el servidor. Verifica tu conexión a internet.",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Error al cargar abogados",
+            description: lawyersError.message || "No se pudieron cargar los datos de abogados. Intenta nuevamente.",
+            variant: "destructive"
+          });
+        }
         return;
       }
       
@@ -181,11 +197,27 @@ export default function AdminPage() {
 
       if (agentsError) {
         console.error('Error loading agents:', agentsError);
-        toast({
-          title: "Error",
-          description: `Error al cargar agentes: ${agentsError.message || 'Error desconocido'}`,
-          variant: "destructive"
-        });
+        
+        // Provide specific error messages based on the type of error
+        if (agentsError.message?.includes('permission denied') || agentsError.message?.includes('insufficient privileges')) {
+          toast({
+            title: "Sin permisos para cargar agentes",
+            description: "Tu sesión de administrador expiró o no tienes permisos suficientes. Inicia sesión nuevamente.",
+            variant: "destructive"
+          });
+        } else if (agentsError.message?.includes('network') || agentsError.message?.includes('fetch')) {
+          toast({
+            title: "Error de conectividad",
+            description: "No se pudo conectar con el servidor. Verifica tu conexión a internet.",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Error al cargar agentes",
+            description: agentsError.message || "No se pudieron cargar los datos de agentes. Intenta nuevamente.",
+            variant: "destructive"
+          });
+        }
         return;
       }
       
@@ -195,13 +227,30 @@ export default function AdminPage() {
       // Load statistics
       await loadStatistics(lawyersData || [], agentsData || []);
       console.log('Data loading completed successfully');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading data:', error);
-      toast({
-        title: "Error",
-        description: "Error al cargar los datos",
-        variant: "destructive"
-      });
+      
+      // Provide more specific error handling
+      if (error.message?.includes('session') || error.message?.includes('token')) {
+        toast({
+          title: "Sesión expirada",
+          description: "Tu sesión ha expirado. Serás redirigido al login.",
+          variant: "destructive"
+        });
+        logout(); // Force logout on session errors
+      } else if (error.message?.includes('network') || error.message?.includes('connectivity')) {
+        toast({
+          title: "Error de conexión",
+          description: "Problema de conectividad. Verifica tu conexión a internet e intenta nuevamente.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error al cargar datos",
+          description: error.message || "Error inesperado al cargar los datos del panel de administración.",
+          variant: "destructive"
+        });
+      }
     }
   };
 
@@ -450,11 +499,27 @@ export default function AdminPage() {
       ));
     } catch (error: any) {
       console.error('Error in updateLawyerPermissions:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Error al actualizar permisos",
-        variant: "destructive"
-      });
+      
+      // Provide more specific error messages
+      if (error.message?.includes('permission denied') || error.message?.includes('insufficient privileges')) {
+        toast({
+          title: "Sin permisos suficientes",
+          description: "No tienes permisos para realizar esta acción. Verifica tu sesión de administrador.",
+          variant: "destructive"
+        });
+      } else if (error.message?.includes('not found')) {
+        toast({
+          title: "Abogado no encontrado",
+          description: "El abogado que intentas modificar no existe o fue eliminado.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error al actualizar permisos",
+          description: error.message || "No se pudieron actualizar los permisos. Intenta nuevamente.",
+          variant: "destructive"
+        });
+      }
     }
   };
 
@@ -488,11 +553,27 @@ export default function AdminPage() {
 
       await loadData();
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Error al desbloquear la cuenta",
-        variant: "destructive"
-      });
+      console.error('Error in unlockLawyerAccount:', error);
+      
+      if (error.message?.includes('permission denied')) {
+        toast({
+          title: "Sin permisos",
+          description: "No tienes permisos para desbloquear cuentas. Verifica tu sesión de administrador.",
+          variant: "destructive"
+        });
+      } else if (error.message?.includes('not found')) {
+        toast({
+          title: "Cuenta no encontrada",
+          description: "La cuenta del abogado no existe o fue eliminada.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error al desbloquear",
+          description: error.message || "No se pudo desbloquear la cuenta. Intenta nuevamente.",
+          variant: "destructive"
+        });
+      }
     }
   };
 

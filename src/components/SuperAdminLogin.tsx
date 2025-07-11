@@ -55,16 +55,22 @@ export default function SuperAdminLogin({ onLoginSuccess }: SuperAdminLoginProps
     } catch (error: any) {
       console.error('SuperAdmin login error:', error);
       
-      // Handle specific error messages
+      // Handle specific error messages based on the actual error from useAdminAuth
       if (error?.message?.includes('Account temporarily locked')) {
-        setErrorMessage('Cuenta temporalmente bloqueada. Usa el desbloqueo de emergencia.');
+        setErrorMessage('Cuenta temporalmente bloqueada');
         setShowUnlockDialog(true);
       } else if (error?.message?.includes('Too many attempts')) {
-        setErrorMessage('Demasiados intentos de login. Espera unos minutos antes de intentar nuevamente.');
+        setErrorMessage('Demasiados intentos de acceso. Espera antes de intentar nuevamente.');
       } else if (error?.message?.includes('Invalid credentials')) {
-        setErrorMessage('Credenciales inválidas. Verifica tu email y contraseña.');
+        setErrorMessage('Credenciales incorrectas. Verifica tu email y contraseña.');
+      } else if (error?.message?.includes('Account not found')) {
+        setErrorMessage('No existe una cuenta de administrador con este email.');
+      } else if (error?.message?.includes('Account inactive')) {
+        setErrorMessage('Cuenta de administrador desactivada. Contacta al administrador del sistema.');
+      } else if (error?.message?.includes('Connection error')) {
+        setErrorMessage('Error de conectividad. Verifica tu conexión a internet.');
       } else {
-        setErrorMessage('Error de conexión. Intenta nuevamente en unos momentos.');
+        setErrorMessage('Error de autenticación. Intenta nuevamente.');
       }
     } finally {
       setIsLoggingIn(false);
