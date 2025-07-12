@@ -5,7 +5,7 @@ interface LawyerAuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   user: any;
-  loginWithToken: (token: string) => Promise<boolean>;
+  loginWithEmailAndToken: (email: string, token: string) => Promise<boolean>;
   logout: () => void;
   checkAuthStatus: () => Promise<void>;
   getAuthHeaders: () => Record<string, string>;
