@@ -406,23 +406,23 @@ export default function AdminPage() {
 
       console.log('=== CREATING LAWYER ===');
       console.log('Admin user:', user.email);
-      console.log('Request data:', {
+      const requestPayload = {
         email: sanitizedEmail,
         full_name: sanitizedName,
         phone_number: newLawyer.phone_number,
         can_create_agents: newLawyer.can_create_agents
+      };
+      console.log('Request data:', requestPayload);
+
+      const response = await supabase.functions.invoke('create-lawyer', {
+        body: JSON.stringify(requestPayload),
+        headers: {
+          'Authorization': authHeaders.authorization,
+          'Content-Type': 'application/json'
+        }
       });
 
-      const { data, error } = await supabase.functions.invoke('create-lawyer', {
-        body: {
-          email: sanitizedEmail,
-          full_name: sanitizedName,
-          phone_number: newLawyer.phone_number,
-          can_create_agents: newLawyer.can_create_agents
-        },
-        headers: authHeaders
-      });
-
+      const { data, error } = response;
       console.log('Edge function response:', { data, error });
 
       if (error) {
