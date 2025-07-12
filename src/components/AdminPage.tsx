@@ -404,30 +404,40 @@ export default function AdminPage() {
         return;
       }
 
-      console.log('=== CREATING LAWYER ===');
-      console.log('Admin user:', user.email);
-
-      const requestPayload = {
-        email: sanitizedEmail,
-        full_name: sanitizedName,
+     console.log('=== CREATING LAWYER ===', {
+       sanitizedEmail,
+       sanitizedName,
         phone_number: newLawyer.phone_number,
-        can_create_agents: newLawyer.can_create_agents
-      };
-      console.log('Request data:', requestPayload);
+        can_create_agents: newLawyer.can_create_agents,
+    });
 
-      const { data, error } = await supabase.functions.invoke('create-lawyer', {
-        body: requestPayload
-      });
+    const { data, error } = await supabase.functions.invoke('create-lawyer', {
+    // Serializa el body explicitamente como JSON
+    body: JSON.stringify({
+      email: sanitizedEmail,
+      full_name: sanitizedName,
+      phone_number: newLawyer.phone_number,
+      can_create_agents: newLawyer.can_create_agents
+    }),
+    headers: {
+      // Incluye autorización y tipo de contenido
+      'Authorization': authHeaders.authorization,
+      'Content-Type': 'application/json'
+    }
+    });
 
-      if (error) {
-        console.error('Edge function error:', error);
-        throw new Error(error.message || 'Error en la función del servidor');
-      }
+    console.log('create-lawyer response:', { data, error });
 
-      if (!data?.success) {
-        console.error('Business logic error:', data?.error);
-        throw new Error(data?.error || 'Error al crear el abogado');
-      }
+  if (error) {
+    console.error('Edge function error:', error);
+    throw new Error(error.message || 'Error en la función del servidor');
+  }
+
+  if (!data?.success) {
+    console.error('Business logic error:', data?.error);
+    throw new Error(data?.error || 'Error al crear el abogado');
+  }
+
 
       // Success - show the generated token
       const lawyerToken = data.lawyer?.secure_password;
