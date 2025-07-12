@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
       .eq('access_token', token)
       .eq('email', email)
       .eq('active', true)
-      .single()
+      .maybeSingle()
 
     if (tokenError) {
       console.error('Database error:', tokenError)
@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
     }
 
     if (!lawyerToken) {
-      console.log('No matching lawyer token found')
+      console.log('No matching lawyer token found for email:', email)
       return new Response(JSON.stringify({ 
         success: false, 
         error: 'Credenciales inválidas' 
