@@ -27,6 +27,7 @@ interface Lawyer {
   failed_login_attempts?: number;
   locked_until?: string;
   last_login_at?: string;
+  access_token?: string;
   // NOTA: Los abogados NO tienen campo is_admin - no son administradores
 }
 
@@ -885,6 +886,14 @@ if (!response.ok) {
     });
   };
 
+  const copyLawyerToken = (token: string) => {
+    navigator.clipboard.writeText(token);
+    toast({
+      title: "Token copiado",
+      description: "El token del abogado ha sido copiado al portapapeles",
+    });
+  };
+
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       draft: { label: "Borrador", variant: "secondary" as const },
@@ -1082,23 +1091,43 @@ if (!response.ok) {
               <CardContent>
                 {/* Mobile First Table - Stack on mobile */}
                 <div className="hidden lg:block">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Nombre</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Estado</TableHead>
-                        <TableHead>Seguridad</TableHead>
-                        <TableHead>Crear Agentes</TableHead>
-                        <TableHead>Último Login</TableHead>
-                        <TableHead>Acciones</TableHead>
-                      </TableRow>
-                    </TableHeader>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Nombre</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Token</TableHead>
+                          <TableHead>Estado</TableHead>
+                          <TableHead>Seguridad</TableHead>
+                          <TableHead>Crear Agentes</TableHead>
+                          <TableHead>Último Login</TableHead>
+                          <TableHead>Acciones</TableHead>
+                        </TableRow>
+                      </TableHeader>
                     <TableBody>
                       {lawyers.map((lawyer) => (
                         <TableRow key={lawyer.id}>
                           <TableCell className="font-medium">{lawyer.full_name}</TableCell>
                           <TableCell>{lawyer.email}</TableCell>
+                          <TableCell>
+                            {lawyer.access_token ? (
+                              <div className="flex items-center gap-2">
+                                <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
+                                  {lawyer.access_token}
+                                </code>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => copyLawyerToken(lawyer.access_token!)}
+                                  className="h-6 w-6 p-0"
+                                >
+                                  <Copy className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground text-xs">No disponible</span>
+                            )}
+                          </TableCell>
                           <TableCell>
                             <Switch
                               checked={lawyer.active}
@@ -1156,6 +1185,21 @@ if (!response.ok) {
                             <div>
                               <h3 className="font-medium">{lawyer.full_name}</h3>
                               <p className="text-sm text-muted-foreground">{lawyer.email}</p>
+                              {lawyer.access_token && (
+                                <div className="flex items-center gap-2 mt-2">
+                                  <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
+                                    {lawyer.access_token}
+                                  </code>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => copyLawyerToken(lawyer.access_token!)}
+                                    className="h-6 w-6 p-0"
+                                  >
+                                    <Copy className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              )}
                             </div>
                             {getLockStatusBadge(lawyer)}
                           </div>
