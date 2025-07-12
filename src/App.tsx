@@ -6,10 +6,13 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AdminPage from "./components/AdminPage";
+import { useAuthManager } from "@/hooks/useAuthManager";
 
 const queryClient = new QueryClient();
 
 const AppContent = () => {
+  // Inicializar el gestor de autenticación para limpieza automática
+  useAuthManager();
   
   return (
     <>

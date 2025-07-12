@@ -1,206 +1,430 @@
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, BarChart3, Settings, Plus, Users } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useLawyerAuth } from "@/hooks/useLawyerAuth";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Bot, Plus, Settings, LogOut, Scale, Users, TrendingUp, BarChart3 } from "lucide-react";
+import LawyerStatsSection from "./LawyerStatsSection";
+import LawyerLogin from "./LawyerLogin";
+import AgentCreatorPage from "./AgentCreatorPage";
 import AgentManagerPage from "./AgentManagerPage";
 
-// Data Types
-interface Agent {
+interface DocumentToken {
   id: string;
-  name: string;
-  description: string;
-  category: string;
+  token: string;
+  document_type: string;
+  document_content: string;
+  price: number;
   status: string;
-  suggested_price: number;
-  final_price: number | null;
+  user_email: string | null;
+  user_name: string | null;
   created_at: string;
+  updated_at: string;
+  user_observations?: string | null;
+  user_observation_date?: string | null;
 }
 
 interface LawyerDashboardPageProps {
-  onNavigate: (page: string) => void;
-  onOpenChat?: (message?: string) => void;
+  onOpenChat: (message: string) => void;
 }
 
-export default function LawyerDashboardPage({ onNavigate }: LawyerDashboardPageProps) {
-  const [agents, setAgents] = useState<Agent[]>([]);
+export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageProps) {
+  const [documents, setDocuments] = useState<DocumentToken[]>([]);
+  const [selectedDocument, setSelectedDocument] = useState<DocumentToken | null>(null);
+  const [editedContent, setEditedContent] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [showAgentManager, setShowAgentManager] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [currentView, setCurrentView] = useState<'dashboard' | 'stats' | 'agent-creator' | 'agent-manager'>('dashboard');
   const { toast } = useToast();
+  const { isAuthenticated, isLoading: authLoading, user, logout } = useLawyerAuth();
+  const isMobile = useIsMobile();
 
+  // Fetch documents when authenticated
   useEffect(() => {
-    loadAgents();
-  }, []);
+    if (isAuthenticated) {
+      fetchPendingDocuments();
+    }
+  }, [isAuthenticated]);
 
-  const loadAgents = async () => {
+  const fetchPendingDocuments = async () => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      
-      // Load agents data from Supabase
-      const { data: agentsData, error: agentsError } = await supabase
-        .from('legal_agents')
+      const { data, error } = await supabase
+        .from('document_tokens')
         .select('*')
-        .order('created_at', { ascending: false });
+        .in('status', ['solicitado', 'en_revision_abogado'])
+        .order('created_at', { ascending: true });
 
-      if (agentsError) {
-        console.error('Error loading agents:', agentsError);
+      if (error) {
+        console.error('Error fetching documents:', error);
         toast({
-          title: "Error al cargar agentes",
-          description: agentsError.message,
-          variant: "destructive"
+          title: "Error al cargar documentos",
+          description: "No se pudieron cargar los documentos pendientes.",
+          variant: "destructive",
         });
         return;
       }
 
-      setAgents(agentsData || []);
-      
-    } catch (error: any) {
-      console.error('Error loading data:', error);
-      toast({
-        title: "Error",
-        description: "Error inesperado al cargar los datos",
-        variant: "destructive"
-      });
+      setDocuments(data || []);
+    } catch (error) {
+      console.error('Error:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Show Agent Manager when clicked
-  if (showAgentManager) {
+  const handleSelectDocument = (document: DocumentToken) => {
+    setSelectedDocument(document);
+    setEditedContent(document.document_content);
+  };
+
+  const handleSaveDocument = async () => {
+    if (!selectedDocument) return;
+
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('document_tokens')
+        .update({ 
+          document_content: editedContent,
+          status: 'en_revision_abogado',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', selectedDocument.id);
+
+      if (error) {
+        console.error('Error updating document:', error);
+        toast({
+          title: "Error al guardar",
+          description: "No se pudo guardar el documento.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Documento guardado",
+        description: "Los cambios han sido guardados exitosamente.",
+      });
+
+      // Update local state
+      setSelectedDocument({ ...selectedDocument, document_content: editedContent });
+      await fetchPendingDocuments();
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleApproveDocument = async () => {
+    if (!selectedDocument) return;
+
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('document_tokens')
+        .update({ 
+          document_content: editedContent,
+          status: 'revision_usuario',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', selectedDocument.id);
+
+      if (error) {
+        console.error('Error approving document:', error);
+        toast({
+          title: "Error al aprobar",
+          description: "No se pudo aprobar el documento.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Documento aprobado",
+        description: "El documento ha sido revisado y aprobado.",
+      });
+
+      setSelectedDocument(null);
+      setEditedContent("");
+      await fetchPendingDocuments();
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'solicitado':
+        return <Badge variant="secondary">Solicitado</Badge>;
+      case 'en_revision_abogado':
+        return <Badge variant="default">En Revisión</Badge>;
+      case 'revisado':
+        return <Badge variant="outline">Revisado</Badge>;
+      case 'revision_usuario':
+        return <Badge variant="outline">Revisión Usuario</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
+
+  // Show login form if not authenticated
+  if (!isAuthenticated) {
+    return <LawyerLogin onLoginSuccess={() => window.location.reload()} />;
+  }
+
+  // Show loading if auth is still loading or documents are loading
+  if (authLoading || isLoading) {
     return (
-      <AgentManagerPage 
-        onBack={() => setShowAgentManager(false)}
-      />
+      <div className="container mx-auto px-6 py-20">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Cargando...</p>
+          </div>
+        </div>
+      </div>
     );
   }
 
-  // Loading state
-  if (isLoading) {
+  // Show Agent Creator if selected
+  if (currentView === 'agent-creator') {
+    return <AgentCreatorPage onBack={() => setCurrentView('dashboard')} lawyerData={user} />;
+  }
+
+  // Show Agent Manager if selected
+  if (currentView === 'agent-manager') {
+    return <AgentManagerPage onBack={() => setCurrentView('dashboard')} lawyerData={user} />;
+  }
+
+  // Show Stats if selected
+  if (currentView === 'stats') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="text-muted-foreground">Cargando dashboard del abogado...</p>
+      <div className="container mx-auto px-6 py-20">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-6 flex items-center justify-between">
+            <Button
+              onClick={() => setCurrentView('dashboard')}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              ← Volver al Dashboard
+            </Button>
+            <Button
+              onClick={logout}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <LogOut className="h-4 w-4" />
+              Salir
+            </Button>
+          </div>
+          <LawyerStatsSection />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <div className="container mx-auto px-6 py-12">
-        {/* Header Section */}
-        <div className="max-w-4xl mx-auto">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-12">
-            <div className="flex flex-col md:flex-row md:items-center gap-4">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => onNavigate('home')}
-                className="self-start hover:bg-muted/80 transition-colors"
+    <div className="container mx-auto px-6 py-20">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <div className={`${isMobile ? 'space-y-4' : 'flex justify-between items-start'}`}>
+            <div>
+              <h1 className={`${isMobile ? 'text-2xl' : 'text-4xl'} font-bold text-primary mb-2`}>
+                Panel de Abogados
+              </h1>
+              <p className={`${isMobile ? 'text-base' : 'text-lg'} text-muted-foreground`}>
+                Revisa y ajusta los documentos pendientes
+              </p>
+            </div>
+            
+            <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex items-center gap-3'}`}>
+              {/* Stats Button */}
+              <Button
+                onClick={() => setCurrentView('stats')}
+                variant="outline"
+                className="flex items-center gap-2 justify-center"
+                size={isMobile ? "default" : "lg"}
               >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Volver al Inicio
+                <BarChart3 className="h-4 w-4" />
+                {!isMobile && "Estadísticas"}
               </Button>
+
+              {/* Agent Creator Access - Only show if lawyer has permission */}
+              {user?.canCreateAgents && (
+                <>
+                  <Button
+                    onClick={() => setCurrentView('agent-manager')}
+                    variant="outline"
+                    className="flex items-center gap-2 justify-center"
+                    size={isMobile ? "default" : "lg"}
+                  >
+                    <Settings className="h-5 w-5" />
+                    {isMobile ? "Gestionar Agentes" : "Gestionar Agentes"}
+                  </Button>
+                  <Button
+                    onClick={() => setCurrentView('agent-creator')}
+                    className="flex items-center gap-2 justify-center"
+                    size={isMobile ? "default" : "lg"}
+                  >
+                    <Bot className="h-5 w-5" />
+                    <Plus className="h-4 w-4" />
+                    {isMobile ? "Crear Agentes" : "Crear Agente"}
+                  </Button>
+                </>
+              )}
               
-              <div className="space-y-2">
-                <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                  Dashboard del Abogado
-                </h1>
-                <p className="text-lg text-muted-foreground">
-                  Gestiona y supervisa todos los agentes legales del sistema
-                </p>
-              </div>
+              {/* Logout Button */}
+              <Button
+                onClick={logout}
+                variant="outline"
+                className="flex items-center gap-2 justify-center"
+                size={isMobile ? "default" : "lg"}
+              >
+                <LogOut className="h-5 w-5" />
+                {isMobile ? "Salir" : "Cerrar Sesión"}
+              </Button>
             </div>
           </div>
+        </div>
 
-          {/* Dashboard Cards */}
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {/* Manage Agents Card */}
-            <Card 
-              className="group cursor-pointer border-2 hover:border-primary/50 hover:shadow-lg transition-all duration-300 bg-card/50 backdrop-blur-sm"
-              onClick={() => setShowAgentManager(true)}
-            >
-              <CardHeader className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="p-3 rounded-full bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
-                    <Settings className="h-6 w-6" />
-                  </div>
-                  <div className="text-2xl font-bold text-muted-foreground">
-                    {agents.length}
-                  </div>
-                </div>
-                <CardTitle className="text-xl group-hover:text-primary transition-colors">
-                  Gestionar Agentes
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground leading-relaxed">
-                  Administra, edita y supervisa todos los agentes legales disponibles en la plataforma.
-                </p>
-                <div className="mt-4 text-sm text-primary font-medium group-hover:underline">
-                  Ver todos los agentes →
-                </div>
-              </CardContent>
-            </Card>
+        <div className={`${isMobile ? 'space-y-8' : 'grid lg:grid-cols-2 gap-8'}`}>
+          {/* Documents List */}
+          <div className="space-y-4">
+            <h2 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-semibold mb-4`}>Documentos Pendientes</h2>
+            
+            {documents.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No hay documentos pendientes de revisión</p>
+                </CardContent>
+              </Card>
+            ) : (
+              documents.map((document) => (
+                <Card 
+                  key={document.id} 
+                  className={`cursor-pointer transition-all hover:shadow-md ${
+                    selectedDocument?.id === document.id ? 'ring-2 ring-primary' : ''
+                  }`}
+                  onClick={() => handleSelectDocument(document)}
+                >
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-lg">{document.document_type}</CardTitle>
+                      {getStatusBadge(document.status)}
+                    </div>
+                    <CardDescription>
+                      Código: {document.token}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2 text-sm">
+                      {document.user_name && (
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4" />
+                          <span>{document.user_name}</span>
+                        </div>
+                      )}
+                      {document.user_email && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-muted-foreground">{document.user_email}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4" />
+                        <span>{new Date(document.created_at).toLocaleDateString()}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="h-4 w-4" />
+                        <span>${document.price.toLocaleString()}</span>
+                      </div>
+                      
+                      {/* Show user observations if any */}
+                      {document.user_observations && (
+                        <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-800 rounded">
+                          <div className="flex items-center gap-2 mb-2">
+                            <User className="h-4 w-4 text-yellow-600" />
+                            <span className="font-medium text-yellow-800 dark:text-yellow-200">Observaciones del Cliente:</span>
+                          </div>
+                          <p className="text-sm text-yellow-700 dark:text-yellow-300">{document.user_observations}</p>
+                          {document.user_observation_date && (
+                            <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+                              Enviadas: {new Date(document.user_observation_date).toLocaleDateString('es-CO')} {new Date(document.user_observation_date).toLocaleTimeString('es-CO')}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
 
-            {/* Create New Agent Card */}
-            <Card 
-              className="group cursor-pointer border-2 hover:border-primary/50 hover:shadow-lg transition-all duration-300 bg-card/50 backdrop-blur-sm"
-              onClick={() => onNavigate('agent-creator')}
-            >
-              <CardHeader className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="p-3 rounded-full bg-green-500/10 text-green-600 group-hover:bg-green-500/20 transition-colors">
-                    <Plus className="h-6 w-6" />
-                  </div>
-                  <div className="text-2xl font-bold text-muted-foreground">
-                    +
+          {/* Document Editor */}
+          <div className="space-y-4">
+            {selectedDocument ? (
+              <>
+                <div className={`${isMobile ? 'space-y-4' : 'flex items-center justify-between'}`}>
+                  <h2 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-semibold`}>Editor de Documento</h2>
+                  <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex gap-2'}`}>
+                    <Button 
+                      onClick={handleSaveDocument}
+                      disabled={isSaving}
+                      variant="outline"
+                      className={isMobile ? "w-full" : ""}
+                    >
+                      <Save className="h-4 w-4 mr-2" />
+                      Guardar
+                    </Button>
+                    <Button 
+                      onClick={handleApproveDocument}
+                      disabled={isSaving}
+                      className={isMobile ? "w-full" : ""}
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Aprobar
+                    </Button>
                   </div>
                 </div>
-                <CardTitle className="text-xl group-hover:text-primary transition-colors">
-                  Crear Nuevo Agente
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground leading-relaxed">
-                  Desarrolla y configura un nuevo agente legal especializado para casos específicos.
-                </p>
-                <div className="mt-4 text-sm text-primary font-medium group-hover:underline">
-                  Crear agente →
-                </div>
-              </CardContent>
-            </Card>
 
-            {/* Admin Panel Card */}
-            <Card 
-              className="group cursor-pointer border-2 hover:border-primary/50 hover:shadow-lg transition-all duration-300 bg-card/50 backdrop-blur-sm md:col-span-2 lg:col-span-1"
-              onClick={() => onNavigate('admin')}
-            >
-              <CardHeader className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="p-3 rounded-full bg-blue-500/10 text-blue-600 group-hover:bg-blue-500/20 transition-colors">
-                    <BarChart3 className="h-6 w-6" />
-                  </div>
-                  <div className="text-2xl font-bold text-muted-foreground">
-                    📊
-                  </div>
-                </div>
-                <CardTitle className="text-xl group-hover:text-primary transition-colors">
-                  Panel de Administración
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground leading-relaxed">
-                  Accede a métricas avanzadas, reportes y configuración del sistema.
-                </p>
-                <div className="mt-4 text-sm text-primary font-medium group-hover:underline">
-                  Ver panel →
-                </div>
-              </CardContent>
-            </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{selectedDocument.document_type}</CardTitle>
+                    <CardDescription>
+                      Código: {selectedDocument.token} | Estado: {getStatusBadge(selectedDocument.status)}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <Textarea
+                      value={editedContent}
+                      onChange={(e) => setEditedContent(e.target.value)}
+                      placeholder="Contenido del documento..."
+                      className="min-h-[400px] font-mono text-sm"
+                    />
+                  </CardContent>
+                </Card>
+              </>
+            ) : (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">
+                    Selecciona un documento de la lista para comenzar a editarlo
+                  </p>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </div>
