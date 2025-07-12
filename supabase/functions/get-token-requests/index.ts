@@ -25,10 +25,11 @@ Deno.serve(async (req) => {
 
     console.log('Fetching token requests...');
 
-    // Fetch all token requests (bypassing RLS with service role)
+    // Fetch pending and rejected token requests (hide approved ones)
     const { data: requests, error: requestsError } = await supabase
       .from('lawyer_token_requests')
       .select('*')
+      .in('status', ['pending', 'rejected'])
       .order('created_at', { ascending: false });
 
     if (requestsError) {

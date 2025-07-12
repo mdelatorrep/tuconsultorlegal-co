@@ -98,10 +98,12 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'approve') {
-      // Generate secure access token
-      const tokenBytes = new Uint8Array(32)
-      crypto.getRandomValues(tokenBytes)
-      const accessToken = Array.from(tokenBytes, byte => byte.toString(16).padStart(2, '0')).join('')
+      // Generate secure access token (10 characters: uppercase letters and numbers)
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let accessToken = '';
+      for (let i = 0; i < 10; i++) {
+        accessToken += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
 
       // Create lawyer token
       const { data: lawyerToken, error: tokenError } = await supabase
