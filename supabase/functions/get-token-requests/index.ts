@@ -11,18 +11,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get('authorization');
-    
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Authorization header required' }), 
-        { 
-          status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-
     // Create Supabase client with service role key for admin operations
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -35,10 +23,7 @@ Deno.serve(async (req) => {
       }
     );
 
-    // For now, we'll bypass the complex auth verification
-    // and just check if there's an auth header present
-    // In a production environment, you'd want proper admin verification
-    console.log('Admin auth header received, proceeding with request');
+    console.log('Fetching token requests...');
 
     // Fetch all token requests (bypassing RLS with service role)
     const { data: requests, error: requestsError } = await supabase
