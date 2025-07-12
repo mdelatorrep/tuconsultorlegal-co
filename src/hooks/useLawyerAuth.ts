@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { AuthStorage } from '@/utils/authStorage';
 
 interface LawyerUser {
   id: string;
@@ -19,10 +20,12 @@ export const useLawyerAuth = () => {
 
   const checkAuthStatus = async () => {
     try {
-      const token = sessionStorage.getItem('lawyer_token');
-      const userData = sessionStorage.getItem('lawyer_user');
+      // Limpieza automática de tokens expirados
+      AuthStorage.cleanupExpiredTokens();
+      
+      const lawyerAuth = AuthStorage.getLawyerAuth();
 
-      if (!token || !userData) {
+      if (!lawyerAuth) {
         setIsAuthenticated(false);
         setUser(null);
         setIsLoading(false);
@@ -31,7 +34,7 @@ export const useLawyerAuth = () => {
 
       // Verify token with server
       const { data, error } = await supabase.functions.invoke('verify-lawyer-token', {
-        body: { token },
+        body: { token: lawyerAuth.token },
         headers: {
           'Content-Type': 'application/json'
         }
@@ -43,8 +46,7 @@ export const useLawyerAuth = () => {
         return;
       }
 
-      const parsedUser = JSON.parse(userData);
-      setUser(parsedUser);
+      setUser(lawyerAuth.user);
       setIsAuthenticated(true);
     } catch (error) {
       console.error('Error checking lawyer auth status:', error);
@@ -71,8 +73,10 @@ export const useLawyerAuth = () => {
       }
 
       if (data.success && data.user) {
-        sessionStorage.setItem('lawyer_token', token);
-        sessionStorage.setItem('lawyer_user', JSON.stringify(data.user));
+        AuthStorage.setLawyerAuth({
+          token: token,
+          user: data.user
+        });
         
         setUser(data.user);
         setIsAuthenticated(true);
@@ -88,15 +92,14 @@ export const useLawyerAuth = () => {
   };
 
   const logout = () => {
-    sessionStorage.removeItem('lawyer_token');
-    sessionStorage.removeItem('lawyer_user');
+    AuthStorage.clearLawyerAuth();
     setIsAuthenticated(false);
     setUser(null);
   };
 
   const getAuthHeaders = () => {
-    const token = sessionStorage.getItem('lawyer_token');
-    return token ? { 'authorization': token } : {};
+    const lawyerAuth = AuthStorage.getLawyerAuth();
+    return lawyerAuth ? { 'authorization': lawyerAuth.token } : {};
   };
 
   return {

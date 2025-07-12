@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { AuthStorage } from '@/utils/authStorage';
 
 interface AdminUser {
   id: string;
@@ -30,13 +31,13 @@ export const useAdminAuth = () => {
 
   const checkAuthStatus = async () => {
     try {
-      const token = sessionStorage.getItem('admin_token');
-      const userData = sessionStorage.getItem('admin_user');
-      const expiresAt = sessionStorage.getItem('admin_expires_at');
-
-      console.log('User NOT authenticated');
+      // Limpieza automática de tokens expirados
+      AuthStorage.cleanupExpiredTokens();
       
-      if (!token || !userData || !expiresAt) {
+      const adminAuth = AuthStorage.getAdminAuth();
+      
+      if (!adminAuth) {
+        console.log('No admin auth data found');
         setIsAuthenticated(false);
         setUser(null);
         setIsLoading(false);
@@ -44,7 +45,7 @@ export const useAdminAuth = () => {
       }
 
       // Check if token is expired
-      if (new Date(expiresAt) <= new Date()) {
+      if (adminAuth.expiresAt && AuthStorage.isTokenExpired(adminAuth.expiresAt)) {
         console.log('Admin token expired');
         logout();
         return;
@@ -52,7 +53,7 @@ export const useAdminAuth = () => {
 
       // Verify token with server using the new validation function
       const { data, error } = await supabase.rpc('validate_admin_session', {
-        session_token: token
+        session_token: adminAuth.token
       });
 
       if (error || !data?.[0]?.valid) {
@@ -61,26 +62,27 @@ export const useAdminAuth = () => {
         return;
       }
 
-      const parsedUser = JSON.parse(userData);
-      setUser(parsedUser);
+      setUser(adminAuth.user);
       setIsAuthenticated(true);
 
       // Set up auto-logout before expiry
-      const expiryTime = new Date(expiresAt).getTime();
-      const currentTime = Date.now();
-      const timeUntilExpiry = expiryTime - currentTime;
-      
-      if (timeUntilExpiry > 0) {
-        const autoLogoutTime = Math.max(timeUntilExpiry - (5 * 60 * 1000), 1000);
-        setTimeout(() => {
-          console.log('Auto-logout triggered for admin');
-          toast({
-            title: "Sesión expirando",
-            description: "Tu sesión de administrador expirará pronto.",
-            variant: "destructive"
-          });
-          logout();
-        }, autoLogoutTime);
+      if (adminAuth.expiresAt) {
+        const expiryTime = new Date(adminAuth.expiresAt).getTime();
+        const currentTime = Date.now();
+        const timeUntilExpiry = expiryTime - currentTime;
+        
+        if (timeUntilExpiry > 0) {
+          const autoLogoutTime = Math.max(timeUntilExpiry - (5 * 60 * 1000), 1000);
+          setTimeout(() => {
+            console.log('Auto-logout triggered for admin');
+            toast({
+              title: "Sesión expirando",
+              description: "Tu sesión de administrador expirará pronto.",
+              variant: "destructive"
+            });
+            logout();
+          }, autoLogoutTime);
+        }
       }
 
     } catch (error) {
@@ -118,10 +120,12 @@ export const useAdminAuth = () => {
         throw new Error(data?.error || 'Login failed');
       }
 
-      // Store auth data in admin-specific keys
-      sessionStorage.setItem('admin_token', data.token);
-      sessionStorage.setItem('admin_user', JSON.stringify(data.user));
-      sessionStorage.setItem('admin_expires_at', data.expiresAt);
+      // Store auth data using centralized storage
+      AuthStorage.setAdminAuth({
+        token: data.token,
+        user: data.user,
+        expiresAt: data.expiresAt
+      });
 
       setUser(data.user);
       setIsAuthenticated(true);
@@ -189,17 +193,15 @@ export const useAdminAuth = () => {
   };
 
   const logout = () => {
-    // Clear admin-specific session data only
-    sessionStorage.removeItem('admin_token');
-    sessionStorage.removeItem('admin_user');
-    sessionStorage.removeItem('admin_expires_at');
+    // Clear admin-specific session data using centralized storage
+    AuthStorage.clearAdminAuth();
     setIsAuthenticated(false);
     setUser(null);
   };
 
   const getAuthHeaders = () => {
-    const token = sessionStorage.getItem('admin_token');
-    return token ? { 'authorization': token } : {};
+    const adminAuth = AuthStorage.getAdminAuth();
+    return adminAuth ? { 'authorization': adminAuth.token } : {};
   };
 
   return {

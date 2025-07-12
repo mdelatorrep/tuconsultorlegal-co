@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuthManager } from "@/hooks/useAuthManager";
 import { 
   ArrowLeft, 
   Edit, 
@@ -63,6 +64,7 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
   const [editingAgent, setEditingAgent] = useState<LegalAgent | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { toast } = useToast();
+  const { getAuthHeaders } = useAuthManager();
 
   useEffect(() => {
     fetchAgents();
@@ -114,9 +116,9 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
     }
 
     try {
-      const authToken = sessionStorage.getItem('lawyer_token');
+      const authHeaders = getAuthHeaders('lawyer');
       
-      if (!authToken) {
+      if (!authHeaders.authorization) {
         toast({
           title: "Error",
           description: "Token de autenticación no encontrado. Por favor, inicia sesión nuevamente.",
@@ -133,8 +135,8 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
           status: newStatus
         }),
         headers: {
-          'authorization': authToken,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          ...authHeaders
         }
       });
 
@@ -173,9 +175,12 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
     }
 
     try {
-      const authToken = sessionStorage.getItem('lawyer_token') || sessionStorage.getItem('admin_token');
+      // Intentar ambos tipos de autenticación
+      const lawyerHeaders = getAuthHeaders('lawyer');
+      const adminHeaders = getAuthHeaders('admin');
+      const authHeaders = lawyerHeaders.authorization ? lawyerHeaders : adminHeaders;
       
-      if (!authToken) {
+      if (!authHeaders.authorization) {
         toast({
           title: "Error",
           description: "Token de autenticación no encontrado. Por favor, inicia sesión nuevamente.",
@@ -192,8 +197,8 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
           status: 'active'
         }),
         headers: {
-          'authorization': authToken,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          ...authHeaders
         }
       });
 
@@ -244,9 +249,12 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
     }
 
     try {
-      const authToken = sessionStorage.getItem('lawyer_token') || sessionStorage.getItem('admin_token');
+      // Intentar ambos tipos de autenticación
+      const lawyerHeaders = getAuthHeaders('lawyer');
+      const adminHeaders = getAuthHeaders('admin');
+      const authHeaders = lawyerHeaders.authorization ? lawyerHeaders : adminHeaders;
       
-      if (!authToken) {
+      if (!authHeaders.authorization) {
         toast({
           title: "Error",
           description: "Token de autenticación no encontrado. Por favor, inicia sesión nuevamente.",
@@ -273,8 +281,8 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
           ai_prompt: editingAgent.ai_prompt
         }),
         headers: {
-          'authorization': authToken,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          ...authHeaders
         }
       });
 
@@ -343,9 +351,9 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
     }
 
     try {
-      const authToken = sessionStorage.getItem('admin_token');
+      const authHeaders = getAuthHeaders('admin');
       
-      if (!authToken) {
+      if (!authHeaders.authorization) {
         toast({
           title: "Error",
           description: "Token de administrador no encontrado. Por favor, inicia sesión nuevamente.",
@@ -361,8 +369,8 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
           is_admin: lawyerData.is_admin
         }),
         headers: {
-          'authorization': authToken,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          ...authHeaders
         }
       });
 
