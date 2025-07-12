@@ -38,39 +38,41 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Extract token from Bearer format or use directly
+    // Extract token from Bearer format
     const adminToken = authHeader.startsWith('Bearer ') 
       ? authHeader.substring(7) 
       : authHeader
 
-    console.log('Verifying admin token...')
+    console.log('Verifying admin token using Supabase Auth...')
 
-    // Verify token against admin_accounts table
-    const { data: admin, error: tokenError } = await supabase
-      .from('admin_accounts')
-      .select('*')
-      .eq('session_token', adminToken)
-      .eq('active', true)
-      .maybeSingle()
+    // Verify token using Supabase Auth and check admin profile
+    const { data: { user }, error: userError } = await supabase.auth.getUser(adminToken)
 
-    if (tokenError || !admin) {
-      console.error('Admin token verification failed:', tokenError)
+    if (userError || !user) {
+      console.error('Admin token verification failed:', userError)
       return new Response(JSON.stringify({ error: 'Invalid admin token' }), {
         status: 401,
         headers: securityHeaders
       })
     }
 
-    // Check token expiration
-    if (admin.token_expires_at && new Date(admin.token_expires_at) < new Date()) {
-      console.error('Admin token expired')
-      return new Response(JSON.stringify({ error: 'Admin token expired' }), {
-        status: 401,
+    // Check if user has admin profile
+    const { data: adminProfile, error: profileError } = await supabase
+      .from('admin_profiles')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('active', true)
+      .maybeSingle()
+
+    if (profileError || !adminProfile) {
+      console.error('Admin profile verification failed:', profileError)
+      return new Response(JSON.stringify({ error: 'User is not an admin' }), {
+        status: 403,
         headers: securityHeaders
       })
     }
 
-    console.log('Admin verified successfully')
+    console.log('Admin verified successfully:', user.email)
 
     let requestBody
     try {
@@ -164,7 +166,7 @@ Deno.serve(async (req) => {
         phone_number: phone_number || null,
         can_create_agents: can_create_agents || false,
         lawyer_id: crypto.randomUUID(), // Generate unique lawyer_id
-        created_by: admin.id
+        created_by: adminProfile.id
       })
       .select()
       .single()
