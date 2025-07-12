@@ -5,48 +5,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const securityHeaders = {
-  ...corsHeaders,
-  'Content-Type': 'application/json',
-}
-
-interface AdminLoginRequest {
-  email: string;
-  password: string;
-}
-
-interface AdminAccount {
-  id: string;
-  email: string;
-  full_name: string;
-  password_hash: string;
-  active: boolean;
-  is_super_admin: boolean;
-  locked_until: string | null;
-  failed_login_attempts: number | null;
-}
-
-// Generate secure session token
-function generateSessionToken(): string {
-  const array = new Uint8Array(32);
-  crypto.getRandomValues(array);
-  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
-}
-
-// Validate email format
-function isValidEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-}
-
-// Calculate account lock time
-function calculateLockTime(attempts: number): string | null {
-  if (attempts >= 5) {
-    return new Date(Date.now() + 30 * 60 * 1000).toISOString(); // 30 minutes
-  }
-  return null;
-}
-
 Deno.serve(async (req) => {
   console.log(`[${new Date().toISOString()}] Admin login request received`);
   
@@ -58,44 +16,56 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), { 
       status: 405, 
-      headers: securityHeaders 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
 
   try {
-    // Initialize Supabase client
+    // Environment variables
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
     if (!supabaseUrl || !supabaseServiceKey) {
-      console.error('Missing Supabase environment variables');
+      console.error('Missing environment variables');
       return new Response(JSON.stringify({ error: 'Server configuration error' }), {
         status: 500,
-        headers: securityHeaders
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Parse and validate request
-    const body: AdminLoginRequest = await req.json();
+    // Parse request body
+    let body;
+    try {
+      body = await req.json();
+    } catch (e) {
+      console.error('Invalid JSON in request body:', e);
+      return new Response(JSON.stringify({ error: 'Invalid JSON' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     const { email, password } = body;
 
     if (!email || !password) {
       return new Response(JSON.stringify({ error: 'Email and password required' }), {
         status: 400,
-        headers: securityHeaders
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    if (!isValidEmail(email)) {
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
       return new Response(JSON.stringify({ error: 'Invalid email format' }), {
         status: 400,
-        headers: securityHeaders
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    console.log(`Attempting login for email: ${email}`);
+    console.log(`Attempting login for: ${email}`);
 
     // Query admin account
     const { data: admin, error: fetchError } = await supabase
@@ -106,63 +76,59 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (fetchError) {
-      console.error('Database query error:', fetchError);
+      console.error('Database error:', fetchError);
       return new Response(JSON.stringify({ error: 'Database error' }), {
         status: 500,
-        headers: securityHeaders
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
     if (!admin) {
-      console.log(`No admin account found for email: ${email}`);
+      console.log('No admin found');
       return new Response(JSON.stringify({ error: 'Invalid credentials' }), {
         status: 401,
-        headers: securityHeaders
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    // Check if account is locked
+    // Check if locked
     if (admin.locked_until && new Date(admin.locked_until) > new Date()) {
-      console.log(`Account locked until: ${admin.locked_until}`);
+      console.log('Account locked');
       return new Response(JSON.stringify({ error: 'Account temporarily locked' }), {
         status: 423,
-        headers: securityHeaders
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    // Verify password (simple comparison for now - should use bcrypt in production)
-    const isValidPassword = admin.password_hash === password;
-
-    if (!isValidPassword) {
-      console.log('Invalid password provided');
+    // Verify password (simple comparison)
+    if (admin.password_hash !== password) {
+      console.log('Invalid password');
       
       // Update failed attempts
-      const newFailedAttempts = (admin.failed_login_attempts || 0) + 1;
-      const lockUntil = calculateLockTime(newFailedAttempts);
+      const newAttempts = (admin.failed_login_attempts || 0) + 1;
+      const lockUntil = newAttempts >= 5 ? new Date(Date.now() + 30 * 60 * 1000).toISOString() : null;
       
-      const { error: updateError } = await supabase
+      await supabase
         .from('admin_accounts')
         .update({
-          failed_login_attempts: newFailedAttempts,
+          failed_login_attempts: newAttempts,
           locked_until: lockUntil
         })
         .eq('id', admin.id);
 
-      if (updateError) {
-        console.error('Failed to update failed attempts:', updateError);
-      }
-
       return new Response(JSON.stringify({ error: 'Invalid credentials' }), {
         status: 401,
-        headers: securityHeaders
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    // Generate session
-    const sessionToken = generateSessionToken();
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours
+    // Generate session token
+    const tokenBytes = new Uint8Array(32);
+    crypto.getRandomValues(tokenBytes);
+    const sessionToken = Array.from(tokenBytes, byte => byte.toString(16).padStart(2, '0')).join('');
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
-    // Update admin account with session info
+    // Update admin with session
     const { error: sessionError } = await supabase
       .from('admin_accounts')
       .update({
@@ -175,16 +141,15 @@ Deno.serve(async (req) => {
       .eq('id', admin.id);
 
     if (sessionError) {
-      console.error('Failed to create session:', sessionError);
+      console.error('Session creation error:', sessionError);
       return new Response(JSON.stringify({ error: 'Session creation failed' }), {
         status: 500,
-        headers: securityHeaders
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    console.log(`Login successful for admin: ${admin.email}`);
+    console.log('Login successful');
 
-    // Return success response
     return new Response(JSON.stringify({
       success: true,
       token: sessionToken,
@@ -197,14 +162,14 @@ Deno.serve(async (req) => {
         isSuperAdmin: admin.is_super_admin
       }
     }), {
-      headers: securityHeaders
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
   } catch (error) {
     console.error('Admin login error:', error);
     return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
-      headers: securityHeaders
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
 });
