@@ -556,6 +556,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      cleanup_expired_admin_sessions: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       get_lawyer_by_token: {
         Args: { token: string }
         Returns: {
@@ -610,6 +614,14 @@ export type Database = {
       reset_rate_limit: {
         Args: { identifier_param: string; attempt_type_param: string }
         Returns: undefined
+      }
+      validate_admin_session: {
+        Args: { session_token: string }
+        Returns: {
+          valid: boolean
+          user_id: string
+          expires_at: string
+        }[]
       }
       verify_admin_password: {
         Args: { password: string; email_param: string }

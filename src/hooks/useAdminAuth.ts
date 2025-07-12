@@ -15,6 +15,7 @@ interface LoginResponse {
   token: string;
   expiresAt: string;
   user: AdminUser;
+  error?: string;
 }
 
 export const useAdminAuth = () => {
@@ -23,280 +24,177 @@ export const useAdminAuth = () => {
   const [user, setUser] = useState<AdminUser | null>(null);
   const { toast } = useToast();
 
-  // Check for existing session on mount
   useEffect(() => {
     checkAuthStatus();
   }, []);
 
   const checkAuthStatus = async () => {
-    setIsLoading(true);
-    
-    const token = sessionStorage.getItem('admin_token');
-    const userStr = sessionStorage.getItem('admin_user');
-    const expires = sessionStorage.getItem('admin_expires');
-    
-    if (!token) {
-      setIsAuthenticated(false);
-      setUser(null);
-      setIsLoading(false);
-      return;
-    }
+    try {
+      const token = sessionStorage.getItem('admin_token');
+      const userData = sessionStorage.getItem('admin_user');
+      const expiresAt = sessionStorage.getItem('admin_expires_at');
 
-    // Check if we have cached user data and token hasn't expired
-    if (userStr && expires) {
-      const expiresAt = new Date(expires);
-      const now = new Date();
+      console.log('User NOT authenticated');
       
-      if (expiresAt > now) {
-        // Token still valid, use cached data
-        const userData = JSON.parse(userStr);
-        setIsAuthenticated(true);
-        setUser(userData);
+      if (!token || !userData || !expiresAt) {
+        setIsAuthenticated(false);
+        setUser(null);
         setIsLoading(false);
         return;
       }
-    }
 
-    // Verify token with server
-    try {
-      const { data, error } = await supabase.functions.invoke('verify-admin-token', {
-        headers: {
-          'Content-Type': 'application/json',
-          'authorization': `Bearer ${token}`
-        }
+      // Check if token is expired
+      if (new Date(expiresAt) <= new Date()) {
+        console.log('Admin token expired');
+        logout();
+        return;
+      }
+
+      // Verify token with server using the new validation function
+      const { data, error } = await supabase.rpc('validate_admin_session', {
+        session_token: token
       });
 
-      if (error || !data?.valid) {
-        // Token invalid or expired
-        sessionStorage.removeItem('admin_token');
-        sessionStorage.removeItem('admin_user');
-        sessionStorage.removeItem('admin_expires');
-        setIsAuthenticated(false);
-        setUser(null);
-        
-        if (data?.error === 'Token expired') {
-          toast({
-            title: "Sesión expirada",
-            description: "Tu sesión ha expirado. Por favor, inicia sesión nuevamente.",
-            variant: "destructive",
-          });
-        }
-      } else {
-        setIsAuthenticated(true);
-        setUser(data.user);
-        
-        // Update cached data
-        sessionStorage.setItem('admin_user', JSON.stringify(data.user));
-        if (data.expiresAt) {
-          sessionStorage.setItem('admin_expires', data.expiresAt);
-        }
-        
-        // Set up automatic logout before token expires
-        if (data.expiresAt) {
-          const expiresAt = new Date(data.expiresAt);
-          const timeUntilExpiry = expiresAt.getTime() - Date.now();
-          
-          if (timeUntilExpiry > 0) {
-            setTimeout(() => {
-              logout();
-              toast({
-                title: "Sesión expirada",
-                description: "Tu sesión ha expirado automáticamente.",
-                variant: "destructive",
-              });
-            }, timeUntilExpiry);
-          }
-        }
+      if (error || !data?.[0]?.valid) {
+        console.log('Admin token validation failed:', error);
+        logout();
+        return;
       }
+
+      const parsedUser = JSON.parse(userData);
+      setUser(parsedUser);
+      setIsAuthenticated(true);
+
+      // Set up auto-logout before expiry
+      const expiryTime = new Date(expiresAt).getTime();
+      const currentTime = Date.now();
+      const timeUntilExpiry = expiryTime - currentTime;
+      
+      if (timeUntilExpiry > 0) {
+        const autoLogoutTime = Math.max(timeUntilExpiry - (5 * 60 * 1000), 1000);
+        setTimeout(() => {
+          console.log('Auto-logout triggered for admin');
+          toast({
+            title: "Sesión expirando",
+            description: "Tu sesión de administrador expirará pronto.",
+            variant: "destructive"
+          });
+          logout();
+        }, autoLogoutTime);
+      }
+
     } catch (error) {
-      console.error('Auth check error:', error);
-      sessionStorage.removeItem('admin_token');
-      sessionStorage.removeItem('admin_user');
-      sessionStorage.removeItem('admin_expires');
-      setIsAuthenticated(false);
-      setUser(null);
+      console.error('Error checking admin auth status:', error);
+      logout();
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
   const login = async (email: string, password: string): Promise<boolean> => {
+    setIsLoading(true);
     try {
       console.log('Attempting admin login with:', { email });
       
       const { data, error } = await supabase.functions.invoke('admin-login', {
         body: { 
-          email: email.trim().toLowerCase(), 
-          password: password 
+          email: email.trim(),
+          password: password.trim()
         },
         headers: {
           'Content-Type': 'application/json'
         }
       });
 
-      console.log('Admin login edge function response:', { data, error, status: error?.status });
+      console.log('Admin login edge function response:', { data, error });
 
       if (error) {
-        console.log('Edge function error:', error);
-        
-        // Handle specific HTTP status codes from edge function
-        if (error.message?.includes('FunctionsHttpError')) {
-          // Get more context from the network logs
-          toast({
-            title: "Error del servidor",
-            description: "El servidor de autenticación devolvió un error. Revisa tu cuenta o contacta al administrador.",
-            variant: "destructive",
-          });
-          throw new Error('Account temporarily locked or server error');
-        }
-        
-        // Handle specific error cases
-        if (error.message?.includes('Account temporarily locked')) {
-          toast({
-            title: "Cuenta bloqueada",
-            description: "Cuenta temporalmente bloqueada debido a intentos fallidos. Usa el desbloqueo de emergencia.",
-            variant: "destructive",
-          });
-          throw new Error('Account temporarily locked');
-        }
-        
-        if (error.message?.includes('Too many attempts')) {
-          toast({
-            title: "Demasiados intentos",
-            description: "Demasiados intentos de login. Espera unos minutos antes de intentar nuevamente.",
-            variant: "destructive",
-          });
-          throw new Error('Too many attempts');
-        }
-        
-        if (error.message?.includes('Invalid credentials')) {
-          toast({
-            title: "Credenciales inválidas", 
-            description: "Email o contraseña incorrectos. Verifica tus datos.",
-            variant: "destructive",
-          });
-          throw new Error('Invalid credentials');
-        }
-        
-        // Generic error for network/connection issues
-        toast({
-          title: "Error de conectividad",
-          description: "No se pudo establecer conexión con el servidor. Verifica tu conexión a internet.",
-          variant: "destructive",
-        });
+        console.error('Edge function error:', error);
         throw new Error('Connection error');
       }
 
       if (!data?.success) {
-        const errorMessage = data?.error || 'Error al iniciar sesión';
-        console.log('Login failed:', errorMessage);
-        
-        // Handle specific server errors based on actual response
-        if (errorMessage.includes('Account temporarily locked')) {
-          toast({
-            title: "Cuenta bloqueada",
-            description: "Tu cuenta está temporalmente bloqueada. Usa la función de desbloqueo de emergencia.",
-            variant: "destructive",
-          });
-          throw new Error('Account temporarily locked');
-        } else if (errorMessage.includes('Invalid credentials') || errorMessage.includes('Authentication failed')) {
-          toast({
-            title: "Credenciales incorrectas",
-            description: "El email o contraseña no son correctos. Verifica e intenta nuevamente.",
-            variant: "destructive",
-          });
-          throw new Error('Invalid credentials');
-        } else if (errorMessage.includes('Account not found')) {
-          toast({
-            title: "Cuenta no encontrada",
-            description: "No existe una cuenta de administrador con este email.",
-            variant: "destructive",
-          });
-          throw new Error('Account not found');
-        } else if (errorMessage.includes('Account inactive')) {
-          toast({
-            title: "Cuenta inactiva",
-            description: "Tu cuenta de administrador está desactivada. Contacta al administrador del sistema.",
-            variant: "destructive",
-          });
-          throw new Error('Account inactive');
-        } else {
-          toast({
-            title: "Error de autenticación",
-            description: errorMessage,
-            variant: "destructive",
-          });
-          throw new Error(errorMessage);
-        }
+        console.log('Login failed - response:', data);
+        throw new Error(data?.error || 'Login failed');
       }
 
-      // Store token securely in sessionStorage (more secure than localStorage)
+      // Store auth data in admin-specific keys
       sessionStorage.setItem('admin_token', data.token);
       sessionStorage.setItem('admin_user', JSON.stringify(data.user));
-      sessionStorage.setItem('admin_expires', data.expiresAt);
-      
-      console.log('Login successful - setting authentication state');
-      
-      // Force immediate state update
-      setIsAuthenticated(true);
+      sessionStorage.setItem('admin_expires_at', data.expiresAt);
+
       setUser(data.user);
-      setIsLoading(false);
+      setIsAuthenticated(true);
+
+      // Set up auto-logout before expiry
+      const expiryTime = new Date(data.expiresAt).getTime();
+      const currentTime = Date.now();
+      const timeUntilExpiry = expiryTime - currentTime;
       
+      if (timeUntilExpiry > 0) {
+        const autoLogoutTime = Math.max(timeUntilExpiry - (5 * 60 * 1000), 1000);
+        setTimeout(() => {
+          console.log('Auto-logout triggered');
+          toast({
+            title: "Sesión expirando",
+            description: "Tu sesión expirará pronto. Por favor, vuelve a iniciar sesión.",
+            variant: "destructive"
+          });
+          logout();
+        }, autoLogoutTime);
+      }
+
+      console.log('Admin login successful:', data.user);
       toast({
-        title: "Sesión iniciada",
+        title: "Acceso concedido",
         description: `Bienvenido, ${data.user.name}`,
       });
 
-      // Set up automatic logout before token expires
-      const expiresAt = new Date(data.expiresAt);
-      const timeUntilExpiry = expiresAt.getTime() - Date.now();
-      
-      if (timeUntilExpiry > 0) {
-        setTimeout(() => {
-          logout();
-          toast({
-            title: "Sesión expirada",
-            description: "Tu sesión ha expirado automáticamente.",
-            variant: "destructive",
-          });
-        }, timeUntilExpiry);
-      }
-
       return true;
-    } catch (error) {
+
+    } catch (error: any) {
       console.error('Login error:', error);
       
-      // Re-throw handled errors to maintain specific error types
-      if (error instanceof Error && 
-          (error.message.includes('Account temporarily locked') || 
-           error.message.includes('Invalid credentials') ||
-           error.message.includes('Too many attempts') ||
-           error.message.includes('Account not found') ||
-           error.message.includes('Account inactive'))) {
-        throw error;
+      // Handle specific error types with user-friendly messages
+      if (error.message === 'Invalid credentials') {
+        toast({
+          title: "Credenciales inválidas",
+          description: "Email o contraseña incorrectos.",
+          variant: "destructive"
+        });
+      } else if (error.message === 'Account temporarily locked') {
+        toast({
+          title: "Cuenta bloqueada",
+          description: "Tu cuenta está temporalmente bloqueada debido a múltiples intentos fallidos.",
+          variant: "destructive"
+        });
+      } else if (error.message === 'Connection error') {
+        toast({
+          title: "Error de conexión",
+          description: "No se pudo conectar con el servidor. Intenta nuevamente.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error inesperado",
+          description: "Ocurrió un error inesperado. Intenta nuevamente.",
+          variant: "destructive"
+        });
       }
-      
-      // Handle unexpected errors
-      toast({
-        title: "Error inesperado",
-        description: "Ocurrió un error inesperado. Verifica tu conexión e intenta nuevamente.",
-        variant: "destructive",
-      });
-      throw new Error('Unexpected error');
+
+      return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const logout = () => {
+    // Clear admin-specific session data only
     sessionStorage.removeItem('admin_token');
     sessionStorage.removeItem('admin_user');
-    sessionStorage.removeItem('admin_expires');
+    sessionStorage.removeItem('admin_expires_at');
     setIsAuthenticated(false);
     setUser(null);
-    
-    toast({
-      title: "Sesión cerrada",
-      description: "Has cerrado sesión correctamente.",
-    });
   };
 
   const getAuthHeaders = () => {
