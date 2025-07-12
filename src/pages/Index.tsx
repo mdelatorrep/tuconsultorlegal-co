@@ -110,7 +110,7 @@ export default function Index() {
       case "estado-documento":
         return <UnifiedDocumentPage onOpenChat={handleOpenChat} />;
       case "abogados":
-        return <LawyerDashboardPage onOpenChat={handleOpenChat} />;
+        return <LawyerDashboardPage onNavigate={handleNavigate} onOpenChat={handleOpenChat} />;
       case "request-token":
         return <LawyerTokenRequestForm />;
       case "terminos":
