@@ -135,9 +135,9 @@ export default function AdminPage() {
   const loadData = async () => {
     try {
       console.log('Loading data...');
-      const authToken = sessionStorage.getItem('admin_token');
+      const authHeaders = getAuthHeaders();
       
-      if (!authToken) {
+      if (!authHeaders.authorization) {
         console.error('No admin token found');
         toast({
           title: "Error de autenticación",
@@ -147,14 +147,12 @@ export default function AdminPage() {
         return;
       }
 
-      console.log('Using auth token for queries:', !!authToken);
+      console.log('Using auth token for queries:', !!authHeaders.authorization);
 
       // Load lawyers using admin function
       console.log('Attempting to load lawyers via admin function...');
       const { data: lawyersData, error: lawyersError } = await supabase.functions.invoke('get-lawyers-admin', {
-        headers: {
-          'authorization': authToken
-        }
+        headers: authHeaders
       });
 
       if (lawyersError) {
@@ -189,9 +187,7 @@ export default function AdminPage() {
       // Load agents using admin function for consistency
       console.log('Attempting to load agents via admin function...');
       const { data: agentsData, error: agentsError } = await supabase.functions.invoke('get-agents-admin', {
-        headers: {
-          'authorization': authToken
-        }
+        headers: authHeaders
       });
 
       if (agentsError) {
@@ -423,7 +419,8 @@ export default function AdminPage() {
           full_name: sanitizedName,
           phone_number: newLawyer.phone_number,
           can_create_agents: newLawyer.can_create_agents
-        }
+        },
+        headers: authHeaders
       });
 
       console.log('Edge function response:', { data, error });
