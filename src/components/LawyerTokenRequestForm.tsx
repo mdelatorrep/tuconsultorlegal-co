@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -52,6 +53,8 @@ export default function LawyerTokenRequestForm() {
     setErrorMessage('');
 
     try {
+      console.log('Submitting lawyer token request...', formData);
+      
       const { data, error } = await supabase.functions.invoke('request-lawyer-token', {
         body: {
           fullName: DOMPurify.sanitize(formData.fullName.trim()),
@@ -61,15 +64,14 @@ export default function LawyerTokenRequestForm() {
           specialization: DOMPurify.sanitize(formData.specialization.trim()),
           yearsOfExperience: formData.yearsOfExperience ? parseInt(formData.yearsOfExperience) : null,
           reasonForRequest: DOMPurify.sanitize(formData.reasonForRequest.trim())
-        },
-        headers: {
-          'Content-Type': 'application/json'
         }
       });
 
+      console.log('Response from edge function:', { data, error });
+
       if (error) {
-        console.error('Error submitting request:', error);
-        setErrorMessage('Error de conexión. Intenta nuevamente.');
+        console.error('Edge function error:', error);
+        setErrorMessage('Error de conexión con el servidor. Intenta nuevamente en unos momentos.');
         return;
       }
 
@@ -77,14 +79,15 @@ export default function LawyerTokenRequestForm() {
         setSubmitted(true);
         toast({
           title: "Solicitud enviada",
-          description: data.message,
+          description: data.message || "Tu solicitud ha sido enviada exitosamente.",
         });
       } else {
-        setErrorMessage(data?.error || 'Error al enviar la solicitud');
+        console.error('Unexpected response:', data);
+        setErrorMessage(data?.error || 'Error inesperado. Intenta nuevamente.');
       }
     } catch (error) {
       console.error('Request submission error:', error);
-      setErrorMessage('Error de conexión. Intenta nuevamente.');
+      setErrorMessage('Error de conexión. Verifica tu conexión a internet e intenta nuevamente.');
     } finally {
       setIsSubmitting(false);
     }
