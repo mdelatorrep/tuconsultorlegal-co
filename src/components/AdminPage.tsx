@@ -416,10 +416,7 @@ export default function AdminPage() {
       console.log('Request data:', requestPayload);
 
       const { data, error } = await supabase.functions.invoke('create-lawyer', {
-          body: requestPayload,       // ← Aquí haces stringify
-          headers: {
-            Authorization: authHeaders.authorization,  // Asegúrate de que incluya “Bearer …
-          }
+        body: requestPayload
       });
 
       if (error) {
