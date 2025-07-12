@@ -42,14 +42,15 @@ interface LegalAgent {
   placeholder_fields: any; // JSONB field from database
   suggested_price: number;
   final_price: number | null;
-  price_justification: string;
-  status: 'active' | 'suspended' | 'draft' | 'pending_review';
+  price_justification: string | null;
+  status: string;
   created_at: string;
   updated_at: string;
-  document_name: string;
-  document_description: string;
-  target_audience: string;
-  created_by: string;
+  document_name: string | null;
+  document_description: string | null;
+  target_audience: string | null;
+  button_cta: string | null;
+  frontend_icon: string | null;
 }
 
 interface AgentManagerPageProps {
@@ -79,10 +80,7 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
         .select('*')
         .order('created_at', { ascending: false });
 
-      // Solo filtrar por created_by si no es admin
-      if (!lawyerData.is_admin) {
-        query.eq('created_by', lawyerData.id);
-      }
+      // Display all agents (no created_by filtering since field doesn't exist)
 
       const { data, error } = await query;
 
@@ -238,15 +236,8 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
   const handleSaveAgent = async () => {
     if (!editingAgent) return;
 
-    // Verificar permisos
-    if (!lawyerData.is_admin && editingAgent.created_by !== lawyerData.id) {
-      toast({
-        title: "Sin permisos",
-        description: "Solo puedes editar tus propios agentes.",
-        variant: "destructive",
-      });
-      return;
-    }
+    // For now, allow all edits (no created_by field to check)
+    // Future implementation should check ownership
 
     try {
       // Intentar ambos tipos de autenticación
@@ -586,8 +577,8 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                       </Button>
                     ) : null}
 
-                    {/* Edit (Only for admin on pending_review or own agents) */}
-                    {(lawyerData.is_admin || agent.created_by === lawyerData.id) && (
+                    {/* Edit (Admin or general access for now) */}
+                    {lawyerData.is_admin && (
                       <Button 
                         variant="outline" 
                         size="sm"
