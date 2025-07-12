@@ -411,20 +411,29 @@ export default function AdminPage() {
         can_create_agents: newLawyer.can_create_agents,
     });
 
-    const { data, error } = await supabase.functions.invoke('create-lawyer', {
-    // Serializa el body explicitamente como JSON
-    body: JSON.stringify({
-      email: sanitizedEmail,
-      full_name: sanitizedName,
-      phone_number: newLawyer.phone_number,
-      can_create_agents: newLawyer.can_create_agents
-    }),
-    headers: {
-      // Incluye autorización y tipo de contenido
-      'Authorization': authHeaders.authorization,
-      'Content-Type': 'application/json'
-    }
-    });
+    const url = "https://tkaezookvtpulfpaffes.supabase.co/functions/v1/create-lawyer";
+const response = await fetch(url, {
+  method: "POST",
+  headers: {
+    Authorization: authHeaders.authorization,      // Bearer <token>
+    "Content-Type": "application/json",
+    apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY  // si tu función lo requiere
+  },
+  body: JSON.stringify({
+    email: sanitizedEmail,
+    full_name: sanitizedName,
+    phone_number: newLawyer.phone_number,
+    can_create_agents: newLawyer.can_create_agents
+  }),
+});
+
+console.log("HTTP status create-lawyer:", response.status);
+const payload = await response.json();
+console.log("Payload create-lawyer:", payload);
+
+if (!response.ok) {
+  throw new Error(payload.error || `HTTP ${response.status}`);
+}
 
     console.log('create-lawyer response:', { data, error });
 
