@@ -64,12 +64,23 @@ export const useNativeAdminAuth = () => {
   const loadAdminProfile = async (authUser: User) => {
     try {
       console.log('Loading admin profile for user:', authUser.id);
-      const { data: profile, error } = await supabase
-        .from('admin_profiles')
-        .select('*')
-        .eq('user_id', authUser.id)
-        .eq('active', true)
-        .maybeSingle();
+      
+      // Get current session to extract access token
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      
+      if (!currentSession?.access_token) {
+        console.error('No access token available');
+        setIsAuthenticated(false);
+        setUser(null);
+        return;
+      }
+      
+      // Use edge function to verify admin profile (bypasses RLS issues)
+      const { data, error } = await supabase.functions.invoke('verify-admin-profile', {
+        headers: {
+          Authorization: `Bearer ${currentSession.access_token}`,
+        },
+      });
 
       if (error) {
         console.error('Error loading admin profile:', error);
@@ -78,17 +89,17 @@ export const useNativeAdminAuth = () => {
         return;
       }
 
-      if (!profile) {
+      if (!data?.user?.profile) {
         console.log('No admin profile found for user');
         setIsAuthenticated(false);
         setUser(null);
         return;
       }
 
-      console.log('Admin profile loaded successfully:', profile);
+      console.log('Admin profile loaded successfully:', data.user.profile);
       const adminUser: AdminUser = {
         ...authUser,
-        profile
+        profile: data.user.profile
       };
 
       setUser(adminUser);
