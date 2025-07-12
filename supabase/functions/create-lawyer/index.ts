@@ -1,5 +1,16 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3'
+import { z } from 'https://esm.sh/zod@3.22.4'
 
+// Configuration and client initialization
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
+const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_SERVICE_ROLE_KEY) {
+  throw new Error('Missing required environment variables')
+}
+
+// Headers
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -8,6 +19,56 @@ const corsHeaders = {
 const securityHeaders = {
   ...corsHeaders,
   'Content-Type': 'application/json',
+}
+
+// Validation schema
+const CreateLawyerSchema = z.object({
+  email: z.string().email('Invalid email format'),
+  full_name: z.string().min(2, 'Full name must be at least 2 characters'),
+  phone_number: z.string().optional(),
+  can_create_agents: z.boolean().default(false),
+})
+
+// Response utilities
+const createSuccessResponse = (data: any, status = 200) => {
+  return new Response(JSON.stringify({ success: true, data }), {
+    status,
+    headers: securityHeaders
+  })
+}
+
+const createErrorResponse = (error: string, status = 500, details?: string) => {
+  return new Response(JSON.stringify({ 
+    success: false,
+    error,
+    ...(details && { details })
+  }), {
+    status,
+    headers: securityHeaders
+  })
+}
+
+// Structured logger
+const logger = {
+  info: (message: string, data?: any) => {
+    console.log(JSON.stringify({ level: 'info', message, timestamp: new Date().toISOString(), ...data }))
+  },
+  error: (message: string, error?: any) => {
+    console.error(JSON.stringify({ level: 'error', message, timestamp: new Date().toISOString(), error: error?.message || error }))
+  },
+  warn: (message: string, data?: any) => {
+    console.warn(JSON.stringify({ level: 'warn', message, timestamp: new Date().toISOString(), ...data }))
+  }
+}
+
+// Cryptographically secure token generation
+const generateSecureToken = (nameSlug: string): string => {
+  const randomBytes = new Uint8Array(6)
+  crypto.getRandomValues(randomBytes)
+  const randomSuffix = Array.from(randomBytes, byte => 
+    byte.toString(36).toUpperCase()
+  ).join('').substring(0, 8)
+  return `${nameSlug}${randomSuffix}`.toUpperCase()
 }
 
 Deno.serve(async (req) => {
@@ -21,56 +82,32 @@ Deno.serve(async (req) => {
   }
 
   try {
-    console.log('=== CREATE LAWYER FUNCTION START ===')
+    logger.info('Create lawyer function started')
     
     // Get authorization header
     const authHeader = req.headers.get('authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.error('No authorization header found')
-      return new Response(JSON.stringify({ error: 'Authorization header required' }), {
-        status: 401,
-        headers: securityHeaders
-      })
+      logger.error('No authorization header found')
+      return createErrorResponse('Authorization header required', 401)
     }
 
-    console.log('Authorization header found')
+    // Create clients
+    const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: authHeader } }
+    })
+    const serviceClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-    // Create client with the user's JWT for auth verification
-    const userClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: {
-            Authorization: authHeader
-          }
-        }
-      }
-    )
-
-    // Verify the user is authenticated
+    // Verify user authentication
     const { data: { user }, error: userError } = await userClient.auth.getUser()
     
     if (userError || !user) {
-      console.error('User authentication failed:', userError)
-      return new Response(JSON.stringify({ 
-        error: 'Authentication failed',
-        details: userError?.message 
-      }), {
-        status: 401,
-        headers: securityHeaders
-      })
+      logger.error('User authentication failed', userError)
+      return createErrorResponse('Authentication failed', 401, userError?.message)
     }
 
-    console.log('User authenticated successfully:', user.email)
+    logger.info('User authenticated successfully', { email: user.email })
 
-    // Create service role client for admin operations
-    const serviceClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
-
-    // Verify user has admin privileges
+    // Verify admin privileges
     const { data: adminProfile, error: adminError } = await serviceClient
       .from('admin_profiles')
       .select('*')
@@ -79,78 +116,46 @@ Deno.serve(async (req) => {
       .maybeSingle()
 
     if (adminError) {
-      console.error('Admin verification error:', adminError)
-      return new Response(JSON.stringify({ 
-        error: 'Admin verification failed',
-        details: adminError.message 
-      }), {
-        status: 500,
-        headers: securityHeaders
-      })
+      logger.error('Admin verification error', adminError)
+      return createErrorResponse('Admin verification failed', 500, adminError.message)
     }
 
     if (!adminProfile) {
-      console.error('User is not an admin:', user.email)
-      return new Response(JSON.stringify({ error: 'Admin privileges required' }), {
-        status: 403,
-        headers: securityHeaders
-      })
+      logger.warn('User is not an admin', { email: user.email })
+      return createErrorResponse('Admin privileges required', 403)
     }
 
-    console.log('Admin privileges verified for:', user.email)
+    logger.info('Admin privileges verified', { email: user.email })
 
+    // Parse and validate request body
     let requestBody
     try {
       const bodyText = await req.text()
-      console.log('Raw request body:', bodyText.substring(0, 200))
-      
       if (!bodyText.trim()) {
-        return new Response(JSON.stringify({ error: 'Empty request body' }), {
-          status: 400,
-          headers: securityHeaders
-        })
+        return createErrorResponse('Empty request body', 400)
       }
-      
       requestBody = JSON.parse(bodyText)
-      console.log('Request body parsed successfully, keys:', Object.keys(requestBody))
     } catch (parseError) {
-      console.error('JSON parse error:', parseError)
-      return new Response(JSON.stringify({ 
-        error: 'Invalid JSON in request body',
-        message: parseError.message 
-      }), {
-        status: 400,
-        headers: securityHeaders
-      })
+      logger.error('JSON parse error', parseError)
+      return createErrorResponse('Invalid JSON in request body', 400, parseError.message)
     }
 
-    const { 
-      email, 
-      full_name, 
-      phone_number, 
-      can_create_agents
-    } = requestBody
-
-    // Input validation
-    if (!email || !full_name) {
-      return new Response(JSON.stringify({ error: 'Email and full name are required' }), {
-        status: 400,
-        headers: securityHeaders
-      })
+    // Validate input with Zod schema
+    const validationResult = CreateLawyerSchema.safeParse(requestBody)
+    if (!validationResult.success) {
+      logger.error('Input validation failed', validationResult.error)
+      return createErrorResponse(
+        'Invalid input data', 
+        400, 
+        validationResult.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')
+      )
     }
 
-    // Email format validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
-      return new Response(JSON.stringify({ error: 'Invalid email format' }), {
-        status: 400,
-        headers: securityHeaders
-      })
-    }
+    const { email, full_name, phone_number, can_create_agents } = validationResult.data
 
-    console.log('Validations passed, creating lawyer account')
+    logger.info('Input validation passed, creating lawyer account')
 
-    // Check if email already exists in lawyer_tokens
+    // Check if email already exists
     const { data: existingToken, error: checkError } = await serviceClient
       .from('lawyer_tokens')
       .select('email')
@@ -159,83 +164,62 @@ Deno.serve(async (req) => {
       .maybeSingle()
 
     if (checkError) {
-      console.error('Error checking existing lawyer token:', checkError)
-      return new Response(JSON.stringify({ error: 'Database error checking existing account' }), {
-        status: 500,
-        headers: securityHeaders
-      })
+      logger.error('Error checking existing lawyer token', checkError)
+      return createErrorResponse('Database error checking existing account', 500)
     }
 
     if (existingToken) {
-      return new Response(JSON.stringify({ error: 'Email already exists' }), {
-        status: 409,
-        headers: securityHeaders
-      })
+      logger.warn('Email already exists', { email })
+      return createErrorResponse('Email already exists', 409)
     }
 
-    console.log('Email is unique, proceeding with creation')
-
-    // Generate a readable access token based on the lawyer's name
+    // Generate secure access token
     const nameSlug = full_name
       .toLowerCase()
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '') // Remove accents
-      .replace(/[^a-z0-9]/g, '') // Keep only letters and numbers
-      .substring(0, 12) // Limit length
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]/g, '')
+      .substring(0, 12)
     
-    const randomSuffix = Math.random().toString(36).substring(2, 8) // 6 random characters
-    const accessToken = `${nameSlug}${randomSuffix}`.toUpperCase()
+    const accessToken = generateSecureToken(nameSlug)
 
-    console.log('Creating lawyer with access token:', accessToken)
+    logger.info('Creating lawyer token', { tokenLength: accessToken.length })
 
-    // Create lawyer token (this is the main authentication mechanism)
-    // Using service role to bypass RLS restrictions
+    // Create lawyer token
     const { data: tokenData, error: tokenError } = await serviceClient
       .from('lawyer_tokens')
       .insert({
         access_token: accessToken,
         email: email.toLowerCase(),
-        full_name: full_name,
+        full_name,
         phone_number: phone_number || null,
-        can_create_agents: can_create_agents || false,
-        lawyer_id: crypto.randomUUID(), // Generate unique lawyer_id
+        can_create_agents,
+        lawyer_id: crypto.randomUUID(),
         created_by: adminProfile.id
       })
       .select()
       .single()
 
     if (tokenError) {
-      console.error('Error creating lawyer token:', tokenError)
-      return new Response(JSON.stringify({ 
-        error: `Error al crear token de acceso: ${tokenError.message}`,
-        details: tokenError.details || 'No additional details'
-      }), {
-        status: 500,
-        headers: securityHeaders
-      })
+      logger.error('Error creating lawyer token', tokenError)
+      return createErrorResponse(
+        'Error al crear token de acceso', 
+        500, 
+        tokenError.message
+      )
     }
 
-    console.log('Lawyer token created successfully')
+    logger.info('Lawyer token created successfully', { email })
 
-    return new Response(JSON.stringify({
-      success: true,
+    return createSuccessResponse({
       lawyer: {
         ...tokenData,
-        // The access_token is the secure password the admin should provide to the lawyer
         secure_password: accessToken
       }
-    }), {
-      headers: securityHeaders
-    })
+    }, 201)
 
   } catch (error) {
-    console.error('Create lawyer error:', error)
-    return new Response(JSON.stringify({ 
-      error: 'Internal server error',
-      message: error.message || 'Unknown error'
-    }), {
-      status: 500,
-      headers: securityHeaders
-    })
+    logger.error('Unexpected error in create lawyer function', error)
+    return createErrorResponse('Internal server error', 500, error?.message)
   }
 })
