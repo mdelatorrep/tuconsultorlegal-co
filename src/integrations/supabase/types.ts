@@ -28,8 +28,6 @@ export type Database = {
           password_hash: string
           password_reset_expires_at: string | null
           password_reset_token: string | null
-          session_token: string | null
-          token_expires_at: string | null
           updated_at: string
           user_id: string | null
         }
@@ -46,8 +44,6 @@ export type Database = {
           password_hash: string
           password_reset_expires_at?: string | null
           password_reset_token?: string | null
-          session_token?: string | null
-          token_expires_at?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -64,8 +60,6 @@ export type Database = {
           password_hash?: string
           password_reset_expires_at?: string | null
           password_reset_token?: string | null
-          session_token?: string | null
-          token_expires_at?: string | null
           updated_at?: string
           user_id?: string | null
         }
