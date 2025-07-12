@@ -63,6 +63,7 @@ export const useNativeAdminAuth = () => {
 
   const loadAdminProfile = async (authUser: User) => {
     try {
+      console.log('Loading admin profile for user:', authUser.id);
       const { data: profile, error } = await supabase
         .from('admin_profiles')
         .select('*')
@@ -84,6 +85,7 @@ export const useNativeAdminAuth = () => {
         return;
       }
 
+      console.log('Admin profile loaded successfully:', profile);
       const adminUser: AdminUser = {
         ...authUser,
         profile
@@ -91,6 +93,7 @@ export const useNativeAdminAuth = () => {
 
       setUser(adminUser);
       setIsAuthenticated(true);
+      console.log('Admin authentication state updated: authenticated =', true);
     } catch (error) {
       console.error('Error in loadAdminProfile:', error);
       setIsAuthenticated(false);
