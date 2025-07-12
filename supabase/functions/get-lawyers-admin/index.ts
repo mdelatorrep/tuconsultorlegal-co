@@ -25,12 +25,39 @@ Deno.serve(async (req) => {
 
     console.log('Fetching lawyers data...');
 
-    // Return empty array since there's no actual lawyers table 
-    // This is a mock response for the current system
-    const mockLawyers = [];
+    // Fetch all approved lawyer tokens (these are the registered lawyers)
+    const { data: lawyers, error: lawyersError } = await supabase
+      .from('lawyer_tokens')
+      .select('*')
+      .eq('active', true)
+      .order('created_at', { ascending: false });
+
+    if (lawyersError) {
+      console.error('Error fetching lawyers:', lawyersError);
+      return new Response(
+        JSON.stringify({ error: lawyersError.message }), 
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Transform the lawyer_tokens data to match the expected lawyer format
+    const transformedLawyers = (lawyers || []).map(lawyer => ({
+      id: lawyer.lawyer_id,
+      email: lawyer.email,
+      full_name: lawyer.full_name,
+      phone_number: lawyer.phone_number,
+      active: lawyer.active,
+      can_create_agents: lawyer.can_create_agents,
+      created_at: lawyer.created_at,
+      last_login_at: lawyer.last_login_at,
+      access_token: lawyer.access_token // For display purposes only
+    }));
 
     return new Response(
-      JSON.stringify(mockLawyers), 
+      JSON.stringify(transformedLawyers), 
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
