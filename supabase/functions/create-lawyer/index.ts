@@ -116,18 +116,18 @@ Deno.serve(async (req) => {
 
     logger.info('User authenticated successfully', { email: user.email })
 
-    // Verify admin privileges using user_id
+    // Verify admin privileges using email
     const { data: adminAccount, error: adminAccountError } = await serviceClient
       .from('admin_accounts')
       .select('id, full_name, is_super_admin')
-      .eq('user_id', user.id)
+      .eq('email', user.email)
       .eq('active', true)
       .maybeSingle()
 
     logger.info('Admin verification results', {
       hasAdminAccount: !!adminAccount,
       accountError: adminAccountError?.message,
-      userId: user.id
+      userEmail: user.email
     })
 
     if (adminAccountError) {
