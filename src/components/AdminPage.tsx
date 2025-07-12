@@ -435,21 +435,15 @@ if (!response.ok) {
   throw new Error(payload.error || `HTTP ${response.status}`);
 }
 
-    console.log('create-lawyer response:', { data, error });
+    console.log('create-lawyer response:', payload);
 
-  if (error) {
-    console.error('Edge function error:', error);
-    throw new Error(error.message || 'Error en la función del servidor');
+  if (!payload?.success) {
+    console.error('Business logic error:', payload?.error);
+    throw new Error(payload?.error || 'Error al crear el abogado');
   }
-
-  if (!data?.success) {
-    console.error('Business logic error:', data?.error);
-    throw new Error(data?.error || 'Error al crear el abogado');
-  }
-
 
       // Success - show the generated token
-      const lawyerToken = data.lawyer?.secure_password;
+      const lawyerToken = payload.lawyer?.secure_password;
       if (lawyerToken) {
         toast({
           title: "✅ Abogado creado exitosamente",
