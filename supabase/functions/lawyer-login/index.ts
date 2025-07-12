@@ -24,11 +24,29 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { token, email } = await req.json()
-    console.log('Login attempt for email:', email, 'with token:', token?.substring(0, 8) + '***')
+    // Log raw request body
+    const rawBody = await req.text()
+    console.log('Raw request body:', rawBody)
+    
+    let parsedBody
+    try {
+      parsedBody = JSON.parse(rawBody)
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError)
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Formato JSON inválido' 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    const { token, email } = parsedBody
+    console.log('Parsed request - email:', email, 'token length:', token?.length, 'token starts with:', token?.substring(0, 4))
 
     if (!token || !email) {
-      console.log('Missing token or email')
+      console.log('Missing token or email - token exists:', !!token, 'email exists:', !!email)
       return new Response(JSON.stringify({ 
         success: false, 
         error: 'Token y email son requeridos' 
