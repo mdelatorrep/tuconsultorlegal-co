@@ -59,15 +59,10 @@ Deno.serve(async (req) => {
     }
 
     if (!lawyerToken) {
-      // Log failed login attempt
-      await supabase.rpc('log_security_event', {
-        event_type: 'lawyer_login_failed',
-        details: { 
-          reason: 'invalid_token', 
-          token: token.substring(0, 8) + '***',
-          ip: clientIP, 
-          user_agent: userAgent 
-        }
+      console.log('Invalid token attempt:', {
+        token: token.substring(0, 8) + '***',
+        ip: clientIP,
+        user_agent: userAgent
       })
 
       return new Response(JSON.stringify({ success: false, error: 'Invalid token' }), {
@@ -76,41 +71,17 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Check if token is expired
-    if (lawyerToken.token_expires_at && new Date(lawyerToken.token_expires_at) <= new Date()) {
-      // Log expired token attempt
-      await supabase.rpc('log_security_event', {
-        event_type: 'lawyer_login_failed',
-        user_id: lawyerToken.lawyer_id,
-        details: { 
-          reason: 'token_expired', 
-          email: lawyerToken.email,
-          ip: clientIP, 
-          user_agent: userAgent 
-        }
-      })
-
-      return new Response(JSON.stringify({ success: false, error: 'Token expired' }), {
-        status: 401,
-        headers: securityHeaders
-      })
-    }
-
-    // Update last used timestamp
+    // Update last login timestamp
     await supabase
       .from('lawyer_tokens')
-      .update({ last_used_at: new Date().toISOString() })
+      .update({ last_login_at: new Date().toISOString() })
       .eq('id', lawyerToken.id)
 
     // Log successful login
-    await supabase.rpc('log_security_event', {
-      event_type: 'lawyer_login_success',
-      user_id: lawyerToken.lawyer_id,
-      details: { 
-        email: lawyerToken.email,
-        ip: clientIP, 
-        user_agent: userAgent 
-      }
+    console.log('Successful lawyer login:', {
+      email: lawyerToken.email,
+      ip: clientIP,
+      user_agent: userAgent
     })
 
     return new Response(JSON.stringify({
