@@ -116,34 +116,26 @@ Deno.serve(async (req) => {
 
     logger.info('User authenticated successfully', { email: user.email })
 
-    // Verify admin privileges - check both admin_accounts and admin_profiles
+    // Verify admin privileges using user_id
     const { data: adminAccount, error: adminAccountError } = await serviceClient
       .from('admin_accounts')
-      .select('*')
-      .eq('id', user.id)
-      .eq('active', true)
-      .maybeSingle()
-
-    const { data: adminProfile, error: adminProfileError } = await serviceClient
-      .from('admin_profiles')
-      .select('*')
+      .select('id, full_name, is_super_admin')
       .eq('user_id', user.id)
       .eq('active', true)
       .maybeSingle()
 
     logger.info('Admin verification results', {
       hasAdminAccount: !!adminAccount,
-      hasAdminProfile: !!adminProfile,
       accountError: adminAccountError?.message,
-      profileError: adminProfileError?.message
+      userId: user.id
     })
 
-    if (adminAccountError || adminProfileError) {
-      logger.error('Admin verification error', { adminAccountError, adminProfileError })
-      return createErrorResponse('Admin verification failed', 500, adminAccountError?.message || adminProfileError?.message)
+    if (adminAccountError) {
+      logger.error('Admin verification error', { adminAccountError })
+      return createErrorResponse('Admin verification failed', 500, adminAccountError.message)
     }
 
-    if (!adminAccount && !adminProfile) {
+    if (!adminAccount) {
       logger.warn('User is not an admin', { email: user.email, userId: user.id })
       return createErrorResponse('Admin privileges required', 403)
     }
@@ -218,7 +210,7 @@ Deno.serve(async (req) => {
         phone_number: phone_number || null,
         can_create_agents,
         lawyer_id: crypto.randomUUID(),
-        created_by: adminAccount?.id || adminProfile?.id
+        created_by: adminAccount.id
       })
       .select()
       .single()

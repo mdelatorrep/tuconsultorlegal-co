@@ -31,6 +31,7 @@ export type Database = {
           session_token: string | null
           token_expires_at: string | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           active?: boolean
@@ -48,6 +49,7 @@ export type Database = {
           session_token?: string | null
           token_expires_at?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           active?: boolean
@@ -65,6 +67,7 @@ export type Database = {
           session_token?: string | null
           token_expires_at?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -438,39 +441,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      maturity_diagnoses: {
-        Row: {
-          answers: Json
-          created_at: string
-          id: string
-          overall_level: string
-          overall_score: number
-          pillar_scores: Json
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          answers: Json
-          created_at?: string
-          id?: string
-          overall_level: string
-          overall_score: number
-          pillar_scores: Json
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          answers?: Json
-          created_at?: string
-          id?: string
-          overall_level?: string
-          overall_score?: number
-          pillar_scores?: Json
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
       }
       profiles: {
         Row: {
