@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,7 +7,6 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useLawyerAuth } from '@/hooks/useLawyerAuth';
 import { Scale, Lock, Key } from 'lucide-react';
-import DOMPurify from 'dompurify';
 
 interface LawyerLoginProps {
   onLoginSuccess: () => void;
@@ -23,29 +23,22 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Input validation and sanitization
-    const sanitizedEmail = DOMPurify.sanitize(email.trim()).toLowerCase();
-    const sanitizedToken = DOMPurify.sanitize(token.trim());
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanToken = token.trim();
     
-    if (!sanitizedEmail) {
+    if (!cleanEmail) {
       setErrorMessage('Por favor ingresa tu email');
       return;
     }
 
-    if (!sanitizedToken) {
+    if (!cleanToken) {
       setErrorMessage('Por favor ingresa tu token de acceso');
       return;
     }
 
-    // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(sanitizedEmail)) {
+    if (!emailRegex.test(cleanEmail)) {
       setErrorMessage('Por favor ingresa un email válido');
-      return;
-    }
-
-    if (sanitizedToken.length < 10) {
-      setErrorMessage('El token debe tener al menos 10 caracteres');
       return;
     }
 
@@ -53,16 +46,17 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
     setErrorMessage('');
 
     try {
-      const success = await loginWithEmailAndToken(sanitizedEmail, sanitizedToken);
-      console.log('Lawyer login result:', success);
+      console.log('Submitting login form');
+      const success = await loginWithEmailAndToken(cleanEmail, cleanToken);
+      
       if (success) {
-        console.log('Lawyer login successful, calling onLoginSuccess');
+        console.log('Login successful, calling onLoginSuccess');
         onLoginSuccess();
       } else {
-        setErrorMessage('Token inválido o expirado. Contacta al administrador.');
+        setErrorMessage('Credenciales inválidas. Verifica tu email y token.');
       }
     } catch (error) {
-      console.error('Lawyer login error:', error);
+      console.error('Login form error:', error);
       setErrorMessage('Error de conexión. Intenta nuevamente.');
     } finally {
       setIsLoggingIn(false);
@@ -78,7 +72,7 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
           </div>
           <CardTitle className="text-2xl">Portal del Abogado</CardTitle>
           <CardDescription>
-            Ingresa tu email y token de acceso para gestionar documentos legales y agentes.
+            Ingresa tu email y token de acceso para gestionar documentos legales.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -110,14 +104,11 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
                 type="text"
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
-                placeholder="Ingresa tu token proporcionado por el administrador"
+                placeholder="Ingresa tu token"
                 required
                 disabled={isLoggingIn}
                 className="font-mono text-sm"
               />
-              <p className="text-xs text-muted-foreground">
-                Si no tienes un token, contacta al administrador del sistema para solicitar acceso.
-              </p>
             </div>
             
             <Button 
@@ -134,31 +125,11 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
               ) : (
                 <>
                   <Key className="h-4 w-4 mr-2" />
-                  Acceder con Email y Token
+                  Iniciar Sesión
                 </>
               )}
             </Button>
           </form>
-          
-          <div className="mt-6 text-center">
-            <p className="text-sm text-muted-foreground mb-3">
-              ¿No tienes un token de acceso?
-            </p>
-            <Button 
-              variant="link" 
-              onClick={() => window.location.assign('/?view=request-token')}
-              className="text-primary"
-            >
-              Solicita acceso aquí
-            </Button>
-          </div>
-          
-          <div className="mt-4 text-center text-sm text-muted-foreground">
-            <p className="flex items-center justify-center gap-2">
-              <Lock className="h-4 w-4" />
-              Plataforma segura para profesionales del derecho
-            </p>
-          </div>
         </CardContent>
       </Card>
     </div>

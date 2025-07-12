@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { AuthStorage } from '@/utils/authStorage';
@@ -20,32 +21,20 @@ export const useLawyerAuth = () => {
 
   const checkAuthStatus = async () => {
     try {
-      // Limpieza automática de tokens expirados
+      console.log('Checking lawyer auth status');
       AuthStorage.cleanupExpiredTokens();
       
       const lawyerAuth = AuthStorage.getLawyerAuth();
 
       if (!lawyerAuth) {
+        console.log('No lawyer auth found in storage');
         setIsAuthenticated(false);
         setUser(null);
         setIsLoading(false);
         return;
       }
 
-      // Verify token with server
-      const { data, error } = await supabase.functions.invoke('verify-lawyer-token', {
-        body: { token: lawyerAuth.token },
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (error || !data?.valid) {
-        console.log('Lawyer token verification failed:', error);
-        logout();
-        return;
-      }
-
+      console.log('Found lawyer auth in storage');
       setUser(lawyerAuth.user);
       setIsAuthenticated(true);
     } catch (error) {
@@ -53,41 +42,6 @@ export const useLawyerAuth = () => {
       logout();
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const loginWithToken = async (token: string): Promise<boolean> => {
-    try {
-      console.log('Attempting lawyer login with token');
-      
-      const { data, error } = await supabase.functions.invoke('lawyer-login', {
-        body: { token },
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (error) {
-        console.error('Lawyer login error:', error);
-        return false;
-      }
-
-      if (data.success && data.user) {
-        AuthStorage.setLawyerAuth({
-          token: token,
-          user: data.user
-        });
-        
-        setUser(data.user);
-        setIsAuthenticated(true);
-        
-        return true;
-      }
-      
-      return false;
-    } catch (error) {
-      console.error('Lawyer login exception:', error);
-      return false;
     }
   };
 
@@ -107,7 +61,10 @@ export const useLawyerAuth = () => {
         return false;
       }
 
+      console.log('Login response:', data);
+
       if (data.success && data.user) {
+        console.log('Login successful, storing auth data');
         AuthStorage.setLawyerAuth({
           token: token,
           user: data.user
@@ -119,6 +76,7 @@ export const useLawyerAuth = () => {
         return true;
       }
       
+      console.log('Login failed:', data.error);
       return false;
     } catch (error) {
       console.error('Lawyer login exception:', error);
@@ -127,6 +85,7 @@ export const useLawyerAuth = () => {
   };
 
   const logout = () => {
+    console.log('Logging out lawyer');
     AuthStorage.clearLawyerAuth();
     setIsAuthenticated(false);
     setUser(null);
@@ -141,7 +100,6 @@ export const useLawyerAuth = () => {
     isAuthenticated,
     isLoading,
     user,
-    loginWithToken,
     loginWithEmailAndToken,
     logout,
     checkAuthStatus,

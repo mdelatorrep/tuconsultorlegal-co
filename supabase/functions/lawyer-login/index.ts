@@ -1,3 +1,4 @@
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -5,16 +6,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const securityHeaders = {
-  ...corsHeaders,
-  'Content-Type': 'application/json',
-  'X-Content-Type-Options': 'nosniff',
-  'X-Frame-Options': 'DENY',
-  'X-XSS-Protection': '1; mode=block',
-  'Referrer-Policy': 'strict-origin-when-cross-origin',
-}
-
 Deno.serve(async (req) => {
+  // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -24,73 +17,70 @@ Deno.serve(async (req) => {
   }
 
   try {
+    console.log('Starting lawyer login process')
+    
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
     const { token, email } = await req.json()
+    console.log('Login attempt for email:', email, 'with token:', token?.substring(0, 8) + '***')
 
-    if (!token) {
-      return new Response(JSON.stringify({ success: false, error: 'Token required' }), {
+    if (!token || !email) {
+      console.log('Missing token or email')
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Token y email son requeridos' 
+      }), {
         status: 400,
-        headers: securityHeaders
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
-    // Get client IP for logging
-    const clientIP = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown'
-    const userAgent = req.headers.get('user-agent') || 'unknown'
-
-    // Find and validate lawyer token
-    let query = supabase
+    // Simple query to find lawyer token
+    console.log('Searching for lawyer token in database')
+    const { data: lawyerToken, error: tokenError } = await supabase
       .from('lawyer_tokens')
       .select('*')
       .eq('access_token', token)
+      .eq('email', email)
       .eq('active', true)
-
-    // If email is provided, also validate it matches
-    if (email) {
-      query = query.eq('email', email)
-    }
-
-    const { data: lawyerToken, error: tokenError } = await query.maybeSingle()
+      .single()
 
     if (tokenError) {
-      console.error('Error checking lawyer token:', tokenError)
-      return new Response(JSON.stringify({ success: false, error: 'Database error' }), {
+      console.error('Database error:', tokenError)
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Error de base de datos' 
+      }), {
         status: 500,
-        headers: securityHeaders
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
     if (!lawyerToken) {
-      console.log('Invalid token attempt:', {
-        token: token.substring(0, 8) + '***',
-        email: email || 'not provided',
-        ip: clientIP,
-        user_agent: userAgent
-      })
-
-      return new Response(JSON.stringify({ success: false, error: 'Invalid credentials' }), {
+      console.log('No matching lawyer token found')
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Credenciales inválidas' 
+      }), {
         status: 401,
-        headers: securityHeaders
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
-    // Update last login timestamp
+    console.log('Lawyer token found, updating last login')
+    
+    // Update last login
     await supabase
       .from('lawyer_tokens')
       .update({ last_login_at: new Date().toISOString() })
       .eq('id', lawyerToken.id)
 
-    // Log successful login
-    console.log('Successful lawyer login:', {
-      email: lawyerToken.email,
-      ip: clientIP,
-      user_agent: userAgent
-    })
+    console.log('Login successful for:', email)
 
+    // Return success with user data
     return new Response(JSON.stringify({
       success: true,
       user: {
@@ -100,14 +90,17 @@ Deno.serve(async (req) => {
         canCreateAgents: lawyerToken.can_create_agents
       }
     }), {
-      headers: securityHeaders
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
 
   } catch (error) {
-    console.error('Lawyer login error:', error)
-    return new Response(JSON.stringify({ success: false, error: 'Internal server error' }), {
+    console.error('Unexpected error in lawyer login:', error)
+    return new Response(JSON.stringify({ 
+      success: false, 
+      error: 'Error interno del servidor' 
+    }), {
       status: 500,
-      headers: securityHeaders
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   }
 })
