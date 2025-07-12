@@ -365,7 +365,6 @@ export default function AdminPage() {
     // Input validation and sanitization
     const sanitizedEmail = sanitizeInput(newLawyer.email).toLowerCase();
     const sanitizedName = sanitizeInput(newLawyer.full_name);
-    // No need for password validation - it will be auto-generated
 
     if (!sanitizedEmail || !sanitizedName) {
       toast({
@@ -387,23 +386,31 @@ export default function AdminPage() {
       return;
     }
 
+    // Verify user is authenticated
+    if (!isAuthenticated || !user) {
+      toast({
+        title: "Error",
+        description: "Sesión no válida. Por favor, inicia sesión nuevamente.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       const authHeaders = getAuthHeaders();
-      const authToken = authHeaders.authorization;
       
-      if (!authToken) {
+      if (!authHeaders.authorization) {
         toast({
           title: "Error",
-          description: "Token de administrador no encontrado. Por favor, inicia sesión nuevamente.",
+          description: "Token de autenticación no encontrado. Por favor, inicia sesión nuevamente.",
           variant: "destructive"
         });
         return;
       }
 
-      // Verify the token is valid before making the request
-      console.log('Using admin token for create-lawyer:', authToken.substring(0, 20) + '...');
-
-      console.log('Creating lawyer with data:', {
+      console.log('=== CREATING LAWYER ===');
+      console.log('Admin user:', user.email);
+      console.log('Request data:', {
         email: sanitizedEmail,
         full_name: sanitizedName,
         phone_number: newLawyer.phone_number,
@@ -416,38 +423,42 @@ export default function AdminPage() {
           full_name: sanitizedName,
           phone_number: newLawyer.phone_number,
           can_create_agents: newLawyer.can_create_agents
-        },
-        headers: {
-          'authorization': authToken,
-          'Content-Type': 'application/json'
         }
       });
 
       console.log('Edge function response:', { data, error });
 
-      if (error || !data?.success) {
-        throw new Error(data?.error || error?.message || 'Error al crear el abogado');
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error(error.message || 'Error en la función del servidor');
       }
 
-      if (data?.lawyer?.secure_password) {
-        // Show the generated token to the admin
+      if (!data?.success) {
+        console.error('Business logic error:', data?.error);
+        throw new Error(data?.error || 'Error al crear el abogado');
+      }
+
+      // Success - show the generated token
+      const lawyerToken = data.lawyer?.secure_password;
+      if (lawyerToken) {
         toast({
-          title: "Abogado creado exitosamente",
-          description: `Token generado: ${data.lawyer.secure_password}`,
-          duration: 10000, // Show for 10 seconds
+          title: "✅ Abogado creado exitosamente",
+          description: `Token de acceso: ${lawyerToken}`,
+          duration: 15000,
         });
 
-        // Also show an alert dialog with the token
+        // Show detailed alert with token
         setTimeout(() => {
-          alert(`Abogado creado exitosamente.\n\nToken de acceso para ${sanitizedName}:\n${data.lawyer.secure_password}\n\nEste token es lo que el abogado debe usar para iniciar sesión en el panel de abogados.`);
+          alert(`🎉 Abogado creado exitosamente!\n\n👤 Nombre: ${sanitizedName}\n📧 Email: ${sanitizedEmail}\n🔑 Token de acceso: ${lawyerToken}\n\n⚠️ IMPORTANTE: Comparte este token con el abogado para que pueda acceder al sistema.`);
         }, 500);
       } else {
         toast({
-          title: "Éxito",
-          description: "Abogado creado exitosamente",
+          title: "✅ Abogado creado",
+          description: "El abogado ha sido creado exitosamente",
         });
       }
 
+      // Reset form
       setNewLawyer({
         email: "",
         full_name: "",
@@ -455,11 +466,29 @@ export default function AdminPage() {
         can_create_agents: false
       });
 
+      // Refresh data
       await loadData();
+      
     } catch (error: any) {
+      console.error('Create lawyer error:', error);
+      
+      let errorMessage = "Error desconocido al crear el abogado";
+      
+      if (error.message?.includes('Authentication failed')) {
+        errorMessage = "Error de autenticación. Por favor, inicia sesión nuevamente.";
+      } else if (error.message?.includes('Admin privileges required')) {
+        errorMessage = "No tienes permisos de administrador para realizar esta acción.";
+      } else if (error.message?.includes('Email already exists')) {
+        errorMessage = "Ya existe un abogado registrado con este email.";
+      } else if (error.message?.includes('Invalid email format')) {
+        errorMessage = "El formato del email no es válido.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
-        title: "Error",
-        description: error.message || "Error al crear el abogado",
+        title: "❌ Error al crear abogado",
+        description: errorMessage,
         variant: "destructive"
       });
     }

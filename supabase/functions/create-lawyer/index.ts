@@ -11,6 +11,7 @@ const securityHeaders = {
 }
 
 Deno.serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -20,29 +21,22 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Create Supabase client for admin operations
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
-
-    console.log('Create lawyer function called - START OF FUNCTION')
-
-    // Get the authenticated user from the JWT (automatically verified by Supabase)
-    const authHeader = req.headers.get('authorization')
+    console.log('=== CREATE LAWYER FUNCTION START ===')
     
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Authorization required' }), {
+    // Get authorization header
+    const authHeader = req.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.error('No authorization header found')
+      return new Response(JSON.stringify({ error: 'Authorization header required' }), {
         status: 401,
         headers: securityHeaders
       })
     }
 
-    // Extract JWT token
-    const jwt = authHeader.replace('Bearer ', '')
-    
-    // Create a client with the user's JWT to get user info
-    const userSupabase = createClient(
+    console.log('Authorization header found')
+
+    // Create client with the user's JWT for auth verification
+    const userClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
@@ -54,38 +48,56 @@ Deno.serve(async (req) => {
       }
     )
 
-    console.log('Getting authenticated user...')
+    // Verify the user is authenticated
+    const { data: { user }, error: userError } = await userClient.auth.getUser()
     
-    // Get the authenticated user
-    const { data: { user }, error: userError } = await userSupabase.auth.getUser()
-
     if (userError || !user) {
       console.error('User authentication failed:', userError)
-      return new Response(JSON.stringify({ error: 'Authentication failed' }), {
+      return new Response(JSON.stringify({ 
+        error: 'Authentication failed',
+        details: userError?.message 
+      }), {
         status: 401,
         headers: securityHeaders
       })
     }
 
-    console.log('User authenticated:', user.email)
+    console.log('User authenticated successfully:', user.email)
 
-    // Check if user has admin profile using service role
-    const { data: adminProfile, error: profileError } = await supabase
+    // Create service role client for admin operations
+    const serviceClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
+    // Verify user has admin privileges
+    const { data: adminProfile, error: adminError } = await serviceClient
       .from('admin_profiles')
       .select('*')
       .eq('user_id', user.id)
       .eq('active', true)
       .maybeSingle()
 
-    if (profileError || !adminProfile) {
-      console.error('Admin profile verification failed:', profileError)
+    if (adminError) {
+      console.error('Admin verification error:', adminError)
+      return new Response(JSON.stringify({ 
+        error: 'Admin verification failed',
+        details: adminError.message 
+      }), {
+        status: 500,
+        headers: securityHeaders
+      })
+    }
+
+    if (!adminProfile) {
+      console.error('User is not an admin:', user.email)
       return new Response(JSON.stringify({ error: 'Admin privileges required' }), {
         status: 403,
         headers: securityHeaders
       })
     }
 
-    console.log('Admin verified successfully:', user.email)
+    console.log('Admin privileges verified for:', user.email)
 
     let requestBody
     try {
@@ -139,7 +151,7 @@ Deno.serve(async (req) => {
     console.log('Validations passed, creating lawyer account')
 
     // Check if email already exists in lawyer_tokens
-    const { data: existingToken, error: checkError } = await supabase
+    const { data: existingToken, error: checkError } = await serviceClient
       .from('lawyer_tokens')
       .select('email')
       .eq('email', email.toLowerCase())
@@ -178,7 +190,7 @@ Deno.serve(async (req) => {
 
     // Create lawyer token (this is the main authentication mechanism)
     // Using service role to bypass RLS restrictions
-    const { data: tokenData, error: tokenError } = await supabase
+    const { data: tokenData, error: tokenError } = await serviceClient
       .from('lawyer_tokens')
       .insert({
         access_token: accessToken,
