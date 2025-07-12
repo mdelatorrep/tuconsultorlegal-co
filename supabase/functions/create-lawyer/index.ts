@@ -20,6 +20,7 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Create Supabase client for admin operations
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -27,36 +28,48 @@ Deno.serve(async (req) => {
 
     console.log('Create lawyer function called - START OF FUNCTION')
 
-    // Get admin token from headers
+    // Get the authenticated user from the JWT (automatically verified by Supabase)
     const authHeader = req.headers.get('authorization')
-    console.log('Auth header received:', !!authHeader)
     
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Admin token required' }), {
+      return new Response(JSON.stringify({ error: 'Authorization required' }), {
         status: 401,
         headers: securityHeaders
       })
     }
 
-    // Extract token from Bearer format
-    const adminToken = authHeader.startsWith('Bearer ') 
-      ? authHeader.substring(7) 
-      : authHeader
+    // Extract JWT token
+    const jwt = authHeader.replace('Bearer ', '')
+    
+    // Create a client with the user's JWT to get user info
+    const userSupabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: {
+            Authorization: authHeader
+          }
+        }
+      }
+    )
 
-    console.log('Verifying admin token using Supabase Auth...')
-
-    // Verify token using Supabase Auth and check admin profile
-    const { data: { user }, error: userError } = await supabase.auth.getUser(adminToken)
+    console.log('Getting authenticated user...')
+    
+    // Get the authenticated user
+    const { data: { user }, error: userError } = await userSupabase.auth.getUser()
 
     if (userError || !user) {
-      console.error('Admin token verification failed:', userError)
-      return new Response(JSON.stringify({ error: 'Invalid admin token' }), {
+      console.error('User authentication failed:', userError)
+      return new Response(JSON.stringify({ error: 'Authentication failed' }), {
         status: 401,
         headers: securityHeaders
       })
     }
 
-    // Check if user has admin profile
+    console.log('User authenticated:', user.email)
+
+    // Check if user has admin profile using service role
     const { data: adminProfile, error: profileError } = await supabase
       .from('admin_profiles')
       .select('*')
@@ -66,7 +79,7 @@ Deno.serve(async (req) => {
 
     if (profileError || !adminProfile) {
       console.error('Admin profile verification failed:', profileError)
-      return new Response(JSON.stringify({ error: 'User is not an admin' }), {
+      return new Response(JSON.stringify({ error: 'Admin privileges required' }), {
         status: 403,
         headers: securityHeaders
       })
