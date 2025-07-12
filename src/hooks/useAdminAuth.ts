@@ -122,12 +122,19 @@ export const useAdminAuth = () => {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      console.log('Attempting login with:', { email });
+      console.log('Attempting admin login with:', { email });
+      
       const { data, error } = await supabase.functions.invoke('admin-login', {
-        body: { email, password }
+        body: { 
+          email: email.trim().toLowerCase(), 
+          password: password 
+        },
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
 
-      console.log('Edge function response:', { data, error });
+      console.log('Admin login edge function response:', { data, error, status: error?.status });
 
       if (error) {
         console.log('Edge function error:', error);
