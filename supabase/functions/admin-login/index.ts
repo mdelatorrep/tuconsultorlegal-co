@@ -18,6 +18,8 @@ const securityHeaders = {
 }
 
 Deno.serve(async (req) => {
+  console.log('Admin login function called:', req.method);
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -27,14 +29,21 @@ Deno.serve(async (req) => {
   }
 
   try {
+    console.log('Creating Supabase client...');
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
+    console.log('Supabase client created successfully');
 
-    const { email, password } = await req.json()
+    console.log('Parsing request body...');
+    const requestBody = await req.json()
+    console.log('Request body parsed:', { email: requestBody.email, passwordLength: requestBody.password?.length });
+    
+    const { email, password } = requestBody
 
     if (!email || !password) {
+      console.log('Missing email or password');
       return new Response(JSON.stringify({ error: 'Email and password required' }), {
         status: 400,
         headers: securityHeaders
