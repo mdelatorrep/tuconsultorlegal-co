@@ -150,10 +150,18 @@ Deno.serve(async (req) => {
 
     console.log('Email is unique, proceeding with creation')
 
-    // Generate a secure access token - this is what the lawyer will use to login
-    const accessToken = crypto.randomUUID()
+    // Generate a readable access token based on the lawyer's name
+    const nameSlug = full_name
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remove accents
+      .replace(/[^a-z0-9]/g, '') // Keep only letters and numbers
+      .substring(0, 12) // Limit length
+    
+    const randomSuffix = Math.random().toString(36).substring(2, 8) // 6 random characters
+    const accessToken = `${nameSlug}${randomSuffix}`.toUpperCase()
 
-    console.log('Creating lawyer with access token:', accessToken.substring(0, 8) + '***')
+    console.log('Creating lawyer with access token:', accessToken)
 
     // Create lawyer token (this is the main authentication mechanism)
     // Using service role to bypass RLS restrictions
