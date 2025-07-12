@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_accounts: {
+        Row: {
+          active: boolean
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          is_super_admin: boolean
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          is_super_admin?: boolean
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          is_super_admin?: boolean
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       document_tokens: {
         Row: {
           created_at: string
@@ -58,6 +91,120 @@ export type Database = {
           user_observations?: string | null
         }
         Relationships: []
+      }
+      lawyer_token_requests: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          law_firm: string | null
+          phone_number: string | null
+          reason_for_request: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          specialization: string | null
+          status: string
+          updated_at: string
+          years_of_experience: number | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          law_firm?: string | null
+          phone_number?: string | null
+          reason_for_request?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          specialization?: string | null
+          status?: string
+          updated_at?: string
+          years_of_experience?: number | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          law_firm?: string | null
+          phone_number?: string | null
+          reason_for_request?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          specialization?: string | null
+          status?: string
+          updated_at?: string
+          years_of_experience?: number | null
+        }
+        Relationships: []
+      }
+      lawyer_tokens: {
+        Row: {
+          access_token: string
+          active: boolean
+          can_create_agents: boolean
+          created_at: string
+          created_by: string | null
+          email: string
+          full_name: string
+          id: string
+          last_login_at: string | null
+          lawyer_id: string
+          phone_number: string | null
+          request_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          active?: boolean
+          can_create_agents?: boolean
+          created_at?: string
+          created_by?: string | null
+          email: string
+          full_name: string
+          id?: string
+          last_login_at?: string | null
+          lawyer_id: string
+          phone_number?: string | null
+          request_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          active?: boolean
+          can_create_agents?: boolean
+          created_at?: string
+          created_by?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          last_login_at?: string | null
+          lawyer_id?: string
+          phone_number?: string | null
+          request_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lawyer_tokens_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lawyer_tokens_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "lawyer_token_requests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       legal_agents: {
         Row: {

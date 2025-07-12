@@ -81,6 +81,7 @@ export default function AdminPage() {
   const [businessStats, setBusinessStats] = useState<BusinessStats | null>(null);
   const [contracts, setContracts] = useState<ContractDetail[]>([]);
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
+  const [tokenRequests, setTokenRequests] = useState<any[]>([]);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const { toast } = useToast();
   const { isAuthenticated, isLoading, user, logout, getAuthHeaders, checkAuthStatus } = useNativeAdminAuth();
@@ -218,6 +219,24 @@ export default function AdminPage() {
       
       console.log('Agents loaded:', agentsData?.length || 0);
       setAgents(agentsData || []);
+
+      // Load token requests
+      console.log('Loading token requests...');
+      const { data: tokenRequestsData, error: tokenRequestsError } = await supabase.functions.invoke('get-token-requests', {
+        headers: authHeaders
+      });
+
+      if (tokenRequestsError) {
+        console.error('Error loading token requests:', tokenRequestsError);
+        toast({
+          title: "Error al cargar solicitudes",
+          description: "No se pudieron cargar las solicitudes de token de abogados.",
+          variant: "destructive"
+        });
+      } else {
+        console.log('Token requests loaded:', tokenRequestsData?.length || 0);
+        setTokenRequests(tokenRequestsData || []);
+      }
 
       // Load statistics
       await loadStatistics(lawyersData || [], agentsData || []);
@@ -779,6 +798,54 @@ if (!response.ok) {
     }
   };
 
+  const handleTokenRequest = async (requestId: string, action: 'approve' | 'reject', rejectionReason?: string, canCreateAgents?: boolean) => {
+    try {
+      const authHeaders = getAuthHeaders();
+      
+      if (!authHeaders.authorization) {
+        toast({
+          title: "Error",
+          description: "Token de administrador no encontrado. Por favor, inicia sesión nuevamente.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('manage-token-request', {
+        body: {
+          requestId,
+          action,
+          rejectionReason,
+          canCreateAgents
+        },
+        headers: authHeaders
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (!data?.success) {
+        throw new Error(data?.error || 'Error al procesar la solicitud');
+      }
+
+      toast({
+        title: "Éxito",
+        description: action === 'approve' ? 'Solicitud aprobada exitosamente' : 'Solicitud rechazada',
+      });
+
+      // Reload data to refresh the token requests
+      await loadData();
+    } catch (error: any) {
+      console.error('Error managing token request:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Error al procesar la solicitud",
+        variant: "destructive"
+      });
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       draft: { label: "Borrador", variant: "secondary" as const },
@@ -837,7 +904,7 @@ if (!response.ok) {
 
         <Tabs defaultValue="lawyers" className="space-y-4 sm:space-y-6">
           {/* Mobile First Tab Navigation */}
-          <TabsList className="grid w-full grid-cols-3 h-auto p-1">
+          <TabsList className="grid w-full grid-cols-4 h-auto p-1">
             <TabsTrigger 
               value="lawyers" 
               className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm"
@@ -845,6 +912,19 @@ if (!response.ok) {
               <Users className="h-4 w-4" />
               <span className="hidden sm:inline">Gestión de Abogados</span>
               <span className="sm:hidden">Abogados</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="token-requests" 
+              className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm relative"
+            >
+              <Shield className="h-4 w-4" />
+              {tokenRequests.filter(req => req.status === 'pending').length > 0 && (
+                <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs">
+                  {tokenRequests.filter(req => req.status === 'pending').length}
+                </Badge>
+              )}
+              <span className="hidden sm:inline">Solicitudes Token</span>
+              <span className="sm:hidden">Tokens</span>
             </TabsTrigger>
             <TabsTrigger 
               value="agents" 
@@ -1090,6 +1170,104 @@ if (!response.ok) {
                     </Card>
                   ))}
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="token-requests" className="space-y-4 sm:space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Shield className="h-5 w-5" />
+                  Solicitudes de Token de Abogados
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Gestiona las solicitudes de acceso de nuevos abogados al sistema
+                </p>
+              </CardHeader>
+              <CardContent>
+                {tokenRequests.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Shield className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground">No hay solicitudes de token pendientes</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {tokenRequests.map((request) => (
+                      <Card key={request.id} className="border">
+                        <CardContent className="p-4">
+                          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                            <div className="space-y-2">
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                                <h3 className="font-semibold text-lg">{request.full_name}</h3>
+                                <Badge variant={
+                                  request.status === 'pending' ? 'default' :
+                                  request.status === 'approved' ? 'secondary' :
+                                  'destructive'
+                                }>
+                                  {request.status === 'pending' ? 'Pendiente' :
+                                   request.status === 'approved' ? 'Aprobado' :
+                                   'Rechazado'}
+                                </Badge>
+                              </div>
+                              <div className="text-sm text-muted-foreground space-y-1">
+                                <p><strong>Email:</strong> {request.email}</p>
+                                {request.phone_number && (
+                                  <p><strong>Teléfono:</strong> {request.phone_number}</p>
+                                )}
+                                {request.law_firm && (
+                                  <p><strong>Firma Legal:</strong> {request.law_firm}</p>
+                                )}
+                                {request.specialization && (
+                                  <p><strong>Especialización:</strong> {request.specialization}</p>
+                                )}
+                                {request.years_of_experience && (
+                                  <p><strong>Años de experiencia:</strong> {request.years_of_experience}</p>
+                                )}
+                                {request.reason_for_request && (
+                                  <p><strong>Razón de solicitud:</strong> {request.reason_for_request}</p>
+                                )}
+                                <p><strong>Solicitado:</strong> {new Date(request.created_at).toLocaleString()}</p>
+                                {request.reviewed_at && (
+                                  <p><strong>Revisado:</strong> {new Date(request.reviewed_at).toLocaleString()}</p>
+                                )}
+                                {request.rejection_reason && (
+                                  <p className="text-destructive"><strong>Razón de rechazo:</strong> {request.rejection_reason}</p>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {request.status === 'pending' && (
+                              <div className="flex flex-col sm:flex-row gap-2">
+                                <Button
+                                  onClick={() => handleTokenRequest(request.id, 'approve', undefined, true)}
+                                  size="sm"
+                                  className="bg-green-600 hover:bg-green-700"
+                                >
+                                  <Check className="h-4 w-4 mr-2" />
+                                  Aprobar
+                                </Button>
+                                <Button
+                                  onClick={() => {
+                                    const reason = prompt('Razón del rechazo (opcional):');
+                                    if (reason !== null) {
+                                      handleTokenRequest(request.id, 'reject', reason);
+                                    }
+                                  }}
+                                  variant="destructive"
+                                  size="sm"
+                                >
+                                  <X className="h-4 w-4 mr-2" />
+                                  Rechazar
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
