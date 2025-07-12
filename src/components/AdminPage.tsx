@@ -9,8 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { useAdminAuth } from "@/hooks/useAdminAuth";
-import SuperAdminLogin from "./SuperAdminLogin";
+import { useNativeAdminAuth } from "@/hooks/useNativeAdminAuth";
+import NativeAdminLogin from "./NativeAdminLogin";
 import { Users, FileText, Shield, Plus, Check, X, BarChart3, TrendingUp, DollarSign, Activity, LogOut, Unlock, AlertTriangle, Eye, EyeOff, Trash2 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from "recharts";
 import DOMPurify from 'dompurify';
@@ -83,7 +83,7 @@ export default function AdminPage() {
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const { toast } = useToast();
-  const { isAuthenticated, isLoading, user, logout, getAuthHeaders, checkAuthStatus } = useAdminAuth();
+  const { isAuthenticated, isLoading, user, logout, getAuthHeaders, checkAuthStatus } = useNativeAdminAuth();
 
   // New lawyer form state - Los abogados NO pueden ser administradores
   const [newLawyer, setNewLawyer] = useState({
@@ -477,7 +477,7 @@ export default function AdminPage() {
       }
 
       // Verificar que el usuario actual es admin del sistema
-      if (!user?.isAdmin) {
+      if (!user?.profile) {
         toast({
           title: "Sin permisos",
           description: "Solo los administradores del sistema pueden modificar permisos de abogados.",
@@ -777,8 +777,8 @@ export default function AdminPage() {
   console.log('AdminPage render - isAuthenticated:', isAuthenticated, 'isLoading:', isLoading, 'user:', user);
   
   if (!isAuthenticated) {
-    console.log('Not authenticated, showing login page');
-    return <SuperAdminLogin onLoginSuccess={handleLoginSuccess} />;
+    console.log('Not authenticated, showing native login page');
+    return <NativeAdminLogin onLoginSuccess={handleLoginSuccess} />;
   }
 
   console.log('User is authenticated! Showing admin panel');
@@ -792,7 +792,7 @@ export default function AdminPage() {
             <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
             <div>
               <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Panel de Administración</h1>
-              <p className="text-sm sm:text-base text-muted-foreground">Bienvenido, {user?.name}</p>
+              <p className="text-sm sm:text-base text-muted-foreground">Bienvenido, {user?.profile?.full_name || user?.email}</p>
             </div>
           </div>
           <Button 
