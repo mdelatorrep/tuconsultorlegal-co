@@ -41,11 +41,21 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Verify token against admin_accounts table (not lawyer_accounts)
+    // Verify JWT token and get user
+    const { data: { user }, error: userError } = await supabase.auth.getUser(authToken)
+    
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: 'Invalid token' }), {
+        status: 401,
+        headers: securityHeaders
+      })
+    }
+
+    // Check if user has admin profile
     const { data: admin, error } = await supabase
-      .from('admin_accounts')
+      .from('admin_profiles')
       .select('*')
-      .eq('session_token', authToken)
+      .eq('user_id', user.id)
       .eq('active', true)
       .maybeSingle()
 
@@ -56,31 +66,21 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Check token expiration
-    if (admin.token_expires_at && new Date(admin.token_expires_at) < new Date()) {
-      // Log token expiration
-      await supabase.rpc('log_security_event', {
-        event_type: 'admin_token_expired',
-        user_id: admin.id,
-        details: { email: admin.email }
-      })
-
-      return new Response(JSON.stringify({ error: 'Token expired' }), {
-        status: 401,
-        headers: securityHeaders
-      })
-    }
+    // Log successful admin access
+    await supabase.rpc('log_admin_action', {
+      action_type: 'token_verified',
+      details: { email: user.email }
+    })
 
     return new Response(JSON.stringify({
       valid: true,
       user: {
         id: admin.id,
-        email: admin.email,
+        email: user.email,
         name: admin.full_name,
         isAdmin: true,
-        isSuperAdmin: admin.is_super_admin
-      },
-      expiresAt: admin.token_expires_at
+        isSuperAdmin: admin.is_super_admin || false
+      }
     }), {
       headers: securityHeaders
     })

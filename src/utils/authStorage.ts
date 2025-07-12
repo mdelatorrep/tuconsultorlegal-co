@@ -15,7 +15,7 @@ export class AuthStorage {
     CHAT_SESSION: 'chat-session-id'
   } as const;
 
-  // Métodos para administradores
+  // Métodos para administradores - Using secure storage with validation
   static getAdminAuth(): AuthStorageData | null {
     try {
       const token = sessionStorage.getItem(this.KEYS.ADMIN_TOKEN);
@@ -24,26 +24,64 @@ export class AuthStorage {
 
       if (!token || !userData) return null;
 
+      // Validate token format (JWT should have 3 parts separated by dots)
+      if (!token.includes('.') || token.split('.').length !== 3) {
+        console.warn('Invalid token format found, clearing admin auth');
+        this.clearAdminAuth();
+        return null;
+      }
+
+      // Parse and validate user data
+      let user;
+      try {
+        user = JSON.parse(userData);
+        if (!user.id || !user.email) {
+          console.warn('Invalid user data found, clearing admin auth');
+          this.clearAdminAuth();
+          return null;
+        }
+      } catch (parseError) {
+        console.warn('Failed to parse user data, clearing admin auth');
+        this.clearAdminAuth();
+        return null;
+      }
+
       return {
         token,
-        user: JSON.parse(userData),
+        user,
         expiresAt: expiresAt || undefined
       };
     } catch (error) {
       console.error('Error getting admin auth from storage:', error);
+      this.clearAdminAuth();
       return null;
     }
   }
 
   static setAdminAuth(data: AuthStorageData): void {
     try {
+      // Validate input data before storing
+      if (!data.token || !data.user || !data.user.id || !data.user.email) {
+        throw new Error('Invalid auth data provided');
+      }
+
+      // Validate token format
+      if (!data.token.includes('.') || data.token.split('.').length !== 3) {
+        throw new Error('Invalid token format');
+      }
+
       sessionStorage.setItem(this.KEYS.ADMIN_TOKEN, data.token);
       sessionStorage.setItem(this.KEYS.ADMIN_USER, JSON.stringify(data.user));
       if (data.expiresAt) {
         sessionStorage.setItem(this.KEYS.ADMIN_EXPIRES, data.expiresAt);
       }
+
+      console.log('Admin auth stored securely');
     } catch (error) {
       console.error('Error setting admin auth in storage:', error);
+      // Clear any partial data that might have been stored
+      this.clearAdminAuth();
+      throw error;
     }
   }
 

@@ -51,12 +51,14 @@ export const useAdminAuth = () => {
         return;
       }
 
-      // Verify token with server using the new validation function
-      const { data, error } = await supabase.rpc('validate_admin_session', {
-        session_token: adminAuth.token
+      // Use verify-admin-token edge function instead
+      const { data: validationResult, error } = await supabase.functions.invoke('verify-admin-token', {
+        headers: {
+          authorization: `Bearer ${adminAuth.token}`
+        }
       });
 
-      if (error || !data?.[0]?.valid) {
+      if (error || !validationResult?.valid) {
         console.log('Admin token validation failed:', error);
         logout();
         return;
@@ -98,27 +100,43 @@ export const useAdminAuth = () => {
     try {
       console.log('Attempting admin login with:', { email });
       
-      const { data, error } = await supabase.functions.invoke('admin-login', {
-        body: { 
-          email: email.trim(),
-          password: password.trim()
-        },
-        headers: {
-          'Content-Type': 'application/json'
-        }
+      // Use native Supabase Auth for admin login
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: password.trim()
       });
 
-      console.log('Admin login edge function response:', { data, error });
-
-      if (error) {
-        console.error('Edge function error:', error);
-        throw new Error('Connection error');
+      if (authError || !authData.user) {
+        throw new Error('Invalid credentials');
       }
 
-      if (!data?.success) {
-        console.log('Login failed - response:', data);
-        throw new Error(data?.error || 'Login failed');
+      // Check if user is an admin by verifying admin profile
+      const { data: adminProfile, error: profileError } = await supabase
+        .from('admin_profiles')
+        .select('*')
+        .eq('user_id', authData.user.id)
+        .eq('active', true)
+        .maybeSingle();
+
+      if (profileError || !adminProfile) {
+        await supabase.auth.signOut();
+        throw new Error('Account not found');
       }
+
+      const data = {
+        success: true,
+        token: authData.session.access_token,
+        expiresAt: new Date(authData.session.expires_at * 1000).toISOString(),
+        user: {
+          id: adminProfile.id,
+          email: authData.user.email || '',
+          name: adminProfile.full_name,
+          isAdmin: true,
+          isSuperAdmin: adminProfile.is_super_admin || false
+        }
+      };
+
+      console.log('Admin login successful:', data);
 
       // Store auth data using centralized storage
       AuthStorage.setAdminAuth({

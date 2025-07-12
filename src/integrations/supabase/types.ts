@@ -550,6 +550,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      generate_secure_lawyer_token: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_lawyer_by_token: {
         Args: { token: string }
         Returns: {
@@ -591,9 +595,17 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      is_valid_email: {
+        Args: { email_input: string }
+        Returns: boolean
+      }
       is_valid_lawyer_token: {
         Args: { token: string }
         Returns: boolean
+      }
+      log_admin_action: {
+        Args: { action_type: string; details?: Json }
+        Returns: undefined
       }
       log_security_event: {
         Args: {

@@ -61,14 +61,13 @@ const logger = {
   }
 }
 
-// Cryptographically secure token generation
-const generateSecureToken = (nameSlug: string): string => {
-  const randomBytes = new Uint8Array(6)
-  crypto.getRandomValues(randomBytes)
-  const randomSuffix = Array.from(randomBytes, byte => 
-    byte.toString(36).toUpperCase()
-  ).join('').substring(0, 8)
-  return `${nameSlug}${randomSuffix}`.toUpperCase()
+// Use the new database function for secure token generation
+const generateSecureToken = async (serviceClient: any): Promise<string> => {
+  const { data: token, error } = await serviceClient.rpc('generate_secure_lawyer_token');
+  if (error) {
+    throw new Error(`Token generation failed: ${error.message}`);
+  }
+  return token;
 }
 
 Deno.serve(async (req) => {
@@ -188,15 +187,8 @@ Deno.serve(async (req) => {
       return createErrorResponse('Email already exists', 409)
     }
 
-    // Generate secure access token
-    const nameSlug = full_name
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]/g, '')
-      .substring(0, 12)
-    
-    const accessToken = generateSecureToken(nameSlug)
+    // Generate secure access token using database function
+    const accessToken = await generateSecureToken(serviceClient)
 
     logger.info('Creating lawyer token', { tokenLength: accessToken.length })
 
