@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useNativeAdminAuth } from "@/hooks/useNativeAdminAuth";
 import NativeAdminLogin from "./NativeAdminLogin";
-import { Users, FileText, Shield, Plus, Check, X, BarChart3, TrendingUp, DollarSign, Activity, LogOut, Unlock, AlertTriangle, Eye, EyeOff, Trash2 } from "lucide-react";
+import { Users, FileText, Shield, Plus, Check, X, BarChart3, TrendingUp, DollarSign, Activity, LogOut, Unlock, AlertTriangle, Eye, EyeOff, Trash2, Copy } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from "recharts";
 import DOMPurify from 'dompurify';
 import PhoneInput from 'react-phone-number-input';
@@ -82,6 +82,11 @@ export default function AdminPage() {
   const [contracts, setContracts] = useState<ContractDetail[]>([]);
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
   const [tokenRequests, setTokenRequests] = useState<any[]>([]);
+  const [showApprovalDialog, setShowApprovalDialog] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<any>(null);
+  const [canCreateAgents, setCanCreateAgents] = useState(false);
+  const [generatedToken, setGeneratedToken] = useState('');
+  const [showTokenDialog, setShowTokenDialog] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const { toast } = useToast();
   const { isAuthenticated, isLoading, user, logout, getAuthHeaders, checkAuthStatus } = useNativeAdminAuth();
@@ -798,7 +803,27 @@ if (!response.ok) {
     }
   };
 
-  const handleTokenRequest = async (requestId: string, action: 'approve' | 'reject', rejectionReason?: string, canCreateAgents?: boolean) => {
+  const handleApproveRequest = (request: any) => {
+    setSelectedRequest(request);
+    setCanCreateAgents(false);
+    setShowApprovalDialog(true);
+  };
+
+  const handleRejectRequest = async (requestId: string) => {
+    const reason = prompt('Razón del rechazo (opcional):');
+    if (reason !== null) {
+      await processTokenRequest(requestId, 'reject', reason);
+    }
+  };
+
+  const processApproval = async () => {
+    if (!selectedRequest) return;
+    
+    await processTokenRequest(selectedRequest.id, 'approve', undefined, canCreateAgents);
+    setShowApprovalDialog(false);
+  };
+
+  const processTokenRequest = async (requestId: string, action: 'approve' | 'reject', rejectionReason?: string, canCreateAgents?: boolean) => {
     try {
       const authHeaders = getAuthHeaders();
       
@@ -829,6 +854,12 @@ if (!response.ok) {
         throw new Error(data?.error || 'Error al procesar la solicitud');
       }
 
+      if (action === 'approve' && data.token) {
+        // Mostrar el token generado
+        setGeneratedToken(data.token);
+        setShowTokenDialog(true);
+      }
+
       toast({
         title: "Éxito",
         description: action === 'approve' ? 'Solicitud aprobada exitosamente' : 'Solicitud rechazada',
@@ -844,6 +875,14 @@ if (!response.ok) {
         variant: "destructive"
       });
     }
+  };
+
+  const copyTokenToClipboard = () => {
+    navigator.clipboard.writeText(generatedToken);
+    toast({
+      title: "Token copiado",
+      description: "El token ha sido copiado al portapapeles",
+    });
   };
 
   const getStatusBadge = (status: string) => {
@@ -1243,7 +1282,7 @@ if (!response.ok) {
                             {request.status === 'pending' && (
                               <div className="flex flex-col sm:flex-row gap-2">
                                 <Button
-                                  onClick={() => handleTokenRequest(request.id, 'approve', undefined, true)}
+                                  onClick={() => handleApproveRequest(request)}
                                   size="sm"
                                   className="bg-green-600 hover:bg-green-700"
                                 >
@@ -1251,12 +1290,7 @@ if (!response.ok) {
                                   Aprobar
                                 </Button>
                                 <Button
-                                  onClick={() => {
-                                    const reason = prompt('Razón del rechazo (opcional):');
-                                    if (reason !== null) {
-                                      handleTokenRequest(request.id, 'reject', reason);
-                                    }
-                                  }}
+                                  onClick={() => handleRejectRequest(request.id)}
                                   variant="destructive"
                                   size="sm"
                                 >
@@ -1560,6 +1594,71 @@ if (!response.ok) {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Dialog para configurar aprobación */}
+        {showApprovalDialog && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-background p-6 rounded-lg max-w-md w-full mx-4">
+              <h3 className="text-lg font-semibold mb-4">Configurar Aprobación</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Configurando acceso para: <strong>{selectedRequest?.full_name}</strong>
+              </p>
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="canCreateAgents"
+                    checked={canCreateAgents}
+                    onChange={(e) => setCanCreateAgents(e.target.checked)}
+                    className="rounded border-gray-300"
+                  />
+                  <Label htmlFor="canCreateAgents" className="text-sm">
+                    Permitir crear agentes legales
+                  </Label>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Si está marcado, el abogado podrá crear y gestionar sus propios agentes legales.
+                </p>
+              </div>
+              <div className="flex gap-2 mt-6">
+                <Button onClick={processApproval} className="bg-green-600 hover:bg-green-700">
+                  <Check className="h-4 w-4 mr-2" />
+                  Aprobar Solicitud
+                </Button>
+                <Button variant="outline" onClick={() => setShowApprovalDialog(false)}>
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Dialog para mostrar token generado */}
+        {showTokenDialog && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-background p-6 rounded-lg max-w-lg w-full mx-4">
+              <h3 className="text-lg font-semibold mb-4 text-green-600">¡Solicitud Aprobada!</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Token de acceso generado para <strong>{selectedRequest?.full_name}</strong>:
+              </p>
+              <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg mb-4">
+                <code className="text-sm break-all font-mono">{generatedToken}</code>
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={copyTokenToClipboard} className="flex-1">
+                  <Copy className="h-4 w-4 mr-2" />
+                  Copiar Token
+                </Button>
+                <Button variant="outline" onClick={() => setShowTokenDialog(false)}>
+                  Cerrar
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-4">
+                📧 Envía este token al abogado por email. Lo necesitará para acceder al sistema.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
