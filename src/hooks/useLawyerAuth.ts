@@ -91,6 +91,41 @@ export const useLawyerAuth = () => {
     }
   };
 
+  const loginWithEmailAndToken = async (email: string, token: string): Promise<boolean> => {
+    try {
+      console.log('Attempting lawyer login with email and token');
+      
+      const { data, error } = await supabase.functions.invoke('lawyer-login', {
+        body: { email, token },
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (error) {
+        console.error('Lawyer login error:', error);
+        return false;
+      }
+
+      if (data.success && data.user) {
+        AuthStorage.setLawyerAuth({
+          token: token,
+          user: data.user
+        });
+        
+        setUser(data.user);
+        setIsAuthenticated(true);
+        
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Lawyer login exception:', error);
+      return false;
+    }
+  };
+
   const logout = () => {
     AuthStorage.clearLawyerAuth();
     setIsAuthenticated(false);
@@ -107,6 +142,7 @@ export const useLawyerAuth = () => {
     isLoading,
     user,
     loginWithToken,
+    loginWithEmailAndToken,
     logout,
     checkAuthStatus,
     getAuthHeaders

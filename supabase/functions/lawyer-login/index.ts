@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { token } = await req.json()
+    const { token, email } = await req.json()
 
     if (!token) {
       return new Response(JSON.stringify({ success: false, error: 'Token required' }), {
@@ -43,12 +43,18 @@ Deno.serve(async (req) => {
     const userAgent = req.headers.get('user-agent') || 'unknown'
 
     // Find and validate lawyer token
-    const { data: lawyerToken, error: tokenError } = await supabase
+    let query = supabase
       .from('lawyer_tokens')
       .select('*')
       .eq('access_token', token)
       .eq('active', true)
-      .maybeSingle()
+
+    // If email is provided, also validate it matches
+    if (email) {
+      query = query.eq('email', email)
+    }
+
+    const { data: lawyerToken, error: tokenError } = await query.maybeSingle()
 
     if (tokenError) {
       console.error('Error checking lawyer token:', tokenError)
@@ -61,11 +67,12 @@ Deno.serve(async (req) => {
     if (!lawyerToken) {
       console.log('Invalid token attempt:', {
         token: token.substring(0, 8) + '***',
+        email: email || 'not provided',
         ip: clientIP,
         user_agent: userAgent
       })
 
-      return new Response(JSON.stringify({ success: false, error: 'Invalid token' }), {
+      return new Response(JSON.stringify({ success: false, error: 'Invalid credentials' }), {
         status: 401,
         headers: securityHeaders
       })

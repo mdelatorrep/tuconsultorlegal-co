@@ -13,25 +13,39 @@ interface LawyerLoginProps {
 }
 
 export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
+  const [email, setEmail] = useState('');
   const [token, setToken] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   
-  const { loginWithToken } = useLawyerAuth();
+  const { loginWithEmailAndToken } = useLawyerAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Input validation and sanitization
+    const sanitizedEmail = DOMPurify.sanitize(email.trim()).toLowerCase();
     const sanitizedToken = DOMPurify.sanitize(token.trim());
     
+    if (!sanitizedEmail) {
+      setErrorMessage('Por favor ingresa tu email');
+      return;
+    }
+
     if (!sanitizedToken) {
       setErrorMessage('Por favor ingresa tu token de acceso');
       return;
     }
 
-    if (sanitizedToken.length < 32) {
-      setErrorMessage('El token debe tener al menos 32 caracteres');
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(sanitizedEmail)) {
+      setErrorMessage('Por favor ingresa un email válido');
+      return;
+    }
+
+    if (sanitizedToken.length < 10) {
+      setErrorMessage('El token debe tener al menos 10 caracteres');
       return;
     }
 
@@ -39,7 +53,7 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
     setErrorMessage('');
 
     try {
-      const success = await loginWithToken(sanitizedToken);
+      const success = await loginWithEmailAndToken(sanitizedEmail, sanitizedToken);
       console.log('Lawyer login result:', success);
       if (success) {
         console.log('Lawyer login successful, calling onLoginSuccess');
@@ -64,7 +78,7 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
           </div>
           <CardTitle className="text-2xl">Portal del Abogado</CardTitle>
           <CardDescription>
-            Ingresa tu token de acceso para gestionar documentos legales y agentes.
+            Ingresa tu email y token de acceso para gestionar documentos legales y agentes.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -76,6 +90,19 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
               </Alert>
             )}
             
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="tu.email@ejemplo.com"
+                required
+                disabled={isLoggingIn}
+              />
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="token">Token de Acceso</Label>
               <Input
@@ -107,7 +134,7 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
               ) : (
                 <>
                   <Key className="h-4 w-4 mr-2" />
-                  Acceder con Token
+                  Acceder con Email y Token
                 </>
               )}
             </Button>
