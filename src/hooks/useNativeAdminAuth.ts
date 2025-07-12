@@ -64,42 +64,43 @@ export const useNativeAdminAuth = () => {
   const loadAdminProfile = async (authUser: User) => {
     try {
       console.log('Loading admin profile for user:', authUser.id);
+      console.log('Auth user details:', { id: authUser.id, email: authUser.email });
       
-      // Get current session to extract access token
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      
-      if (!currentSession?.access_token) {
-        console.error('No access token available');
-        setIsAuthenticated(false);
-        setUser(null);
-        return;
-      }
-      
-      // Use edge function to verify admin profile (bypasses RLS issues)
-      const { data, error } = await supabase.functions.invoke('verify-admin-profile', {
-        headers: {
-          Authorization: `Bearer ${currentSession.access_token}`,
-        },
-      });
+      // Directly query with the authenticated user context
+      const { data: profile, error } = await supabase
+        .from('admin_profiles')
+        .select('*')
+        .eq('user_id', authUser.id)
+        .eq('active', true)
+        .single();
+
+      console.log('Query result:', { profile, error });
 
       if (error) {
         console.error('Error loading admin profile:', error);
+        // If it's a PGRST116 error (row not found), treat as no admin profile
+        if (error.code === 'PGRST116') {
+          console.log('No admin profile found (PGRST116)');
+          setIsAuthenticated(false);
+          setUser(null);
+          return;
+        }
         setIsAuthenticated(false);
         setUser(null);
         return;
       }
 
-      if (!data?.user?.profile) {
+      if (!profile) {
         console.log('No admin profile found for user');
         setIsAuthenticated(false);
         setUser(null);
         return;
       }
 
-      console.log('Admin profile loaded successfully:', data.user.profile);
+      console.log('Admin profile loaded successfully:', profile);
       const adminUser: AdminUser = {
         ...authUser,
-        profile: data.user.profile
+        profile
       };
 
       setUser(adminUser);
