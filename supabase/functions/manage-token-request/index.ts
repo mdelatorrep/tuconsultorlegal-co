@@ -24,18 +24,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get('authorization');
-    
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Authorization header required' }), 
-        { 
-          status: 401, 
-          headers: securityHeaders
-        }
-      );
-    }
-
     const { requestId, action, rejectionReason, canCreateAgents } = await req.json()
 
     if (!requestId || !action || !['approve', 'reject'].includes(action)) {
@@ -60,52 +48,7 @@ Deno.serve(async (req) => {
       }
     );
 
-    // Verify the admin token using auth.users metadata
-    const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers()
-    
-    if (authError) {
-      console.error('Error checking auth users:', authError)
-      return new Response(
-        JSON.stringify({ error: 'Authentication error' }), 
-        { 
-          status: 500, 
-          headers: securityHeaders
-        }
-      )
-    }
-
-    const adminSession = authUsers.users.find(user => 
-      user.user_metadata?.is_admin_session && 
-      user.user_metadata?.session_token === authHeader
-    )
-
-    if (!adminSession) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid admin token' }), 
-        { 
-          status: 403, 
-          headers: securityHeaders
-        }
-      );
-    }
-
-    // Get admin account
-    const { data: admin, error: adminError } = await supabase
-      .from('admin_accounts')
-      .select('id, full_name, active')
-      .eq('id', adminSession.user_metadata?.admin_id)
-      .eq('active', true)
-      .maybeSingle()
-
-    if (adminError || !admin) {
-      return new Response(
-        JSON.stringify({ error: 'Admin account not found' }), 
-        { 
-          status: 403, 
-          headers: securityHeaders
-        }
-      );
-    }
+    console.log(`Processing token request: ${action} for ${requestId}`);
 
     // Get the token request
     const { data: request, error: requestError } = await supabase
@@ -116,6 +59,7 @@ Deno.serve(async (req) => {
       .maybeSingle()
 
     if (requestError || !request) {
+      console.error('Request error:', requestError);
       return new Response(
         JSON.stringify({ error: 'Token request not found or already processed' }), 
         { 
@@ -131,13 +75,13 @@ Deno.serve(async (req) => {
         .from('lawyer_token_requests')
         .update({
           status: 'rejected',
-          reviewed_by: admin.id,
           reviewed_at: new Date().toISOString(),
           rejection_reason: rejectionReason || 'No reason provided'
         })
         .eq('id', requestId)
 
       if (updateError) {
+        console.error('Update error:', updateError);
         return new Response(
           JSON.stringify({ error: 'Failed to update request' }), 
           { 
@@ -146,18 +90,6 @@ Deno.serve(async (req) => {
           }
         );
       }
-
-      // Log the action
-      await supabase.rpc('log_security_event', {
-        event_type: 'lawyer_token_request_rejected',
-        user_id: admin.id,
-        details: { 
-          request_id: requestId,
-          lawyer_email: request.email,
-          reason: rejectionReason || 'No reason provided',
-          reviewed_by: admin.full_name
-        }
-      })
 
       return new Response(
         JSON.stringify({ success: true, message: 'Request rejected successfully' }), 
@@ -181,13 +113,13 @@ Deno.serve(async (req) => {
           phone_number: request.phone_number,
           access_token: accessToken,
           can_create_agents: canCreateAgents || false,
-          request_id: requestId,
-          created_by: admin.id
+          request_id: requestId
         })
         .select()
         .single()
 
       if (tokenError) {
+        console.error('Token creation error:', tokenError);
         return new Response(
           JSON.stringify({ error: 'Failed to create lawyer token: ' + tokenError.message }), 
           { 
@@ -202,12 +134,12 @@ Deno.serve(async (req) => {
         .from('lawyer_token_requests')
         .update({
           status: 'approved',
-          reviewed_by: admin.id,
           reviewed_at: new Date().toISOString()
         })
         .eq('id', requestId)
 
       if (updateError) {
+        console.error('Update error:', updateError);
         return new Response(
           JSON.stringify({ error: 'Failed to update request status' }), 
           { 
@@ -216,19 +148,6 @@ Deno.serve(async (req) => {
           }
         );
       }
-
-      // Log the action
-      await supabase.rpc('log_security_event', {
-        event_type: 'lawyer_token_request_approved',
-        user_id: admin.id,
-        details: { 
-          request_id: requestId,
-          lawyer_email: request.email,
-          lawyer_id: lawyerToken.lawyer_id,
-          can_create_agents: canCreateAgents || false,
-          reviewed_by: admin.full_name
-        }
-      })
 
       return new Response(
         JSON.stringify({ 
