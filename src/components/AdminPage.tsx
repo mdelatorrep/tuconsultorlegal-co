@@ -406,6 +406,7 @@ export default function AdminPage() {
 
       console.log('=== CREATING LAWYER ===');
       console.log('Admin user:', user.email);
+
       const requestPayload = {
         email: sanitizedEmail,
         full_name: sanitizedName,
@@ -415,15 +416,12 @@ export default function AdminPage() {
       console.log('Request data:', requestPayload);
 
       const response = await supabase.functions.invoke('create-lawyer', {
-        body: JSON.stringify(requestPayload),
-        headers: {
-          'Authorization': authHeaders.authorization,
-          'Content-Type': 'application/json'
-        }
+          body: JSON.stringify(requestPayload),       // ← Aquí haces stringify
+          headers: {
+            Authorization: authHeaders.authorization,  // Asegúrate de que incluya “Bearer …”
+            'Content-Type': 'application/json'        // Y el Content-Type correcto
+          }
       });
-
-      const { data, error } = response;
-      console.log('Edge function response:', { data, error });
 
       if (error) {
         console.error('Edge function error:', error);
