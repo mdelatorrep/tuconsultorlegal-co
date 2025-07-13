@@ -357,7 +357,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                 size={isMobile ? "default" : "lg"}
               >
                 <BarChart3 className="h-4 w-4" />
-                {!isMobile && "Estadísticas"}
+                <span className={isMobile ? "text-sm" : ""}>{isMobile ? "Stats" : "Estadísticas"}</span>
               </Button>
 
               {/* Training Button - Available for all lawyers */}
@@ -368,7 +368,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                 size={isMobile ? "default" : "lg"}
               >
                 <Brain className="h-4 w-4" />
-                {!isMobile && "Formación IA"}
+                <span className={isMobile ? "text-sm" : ""}>{isMobile ? "Formación" : "Formación IA"}</span>
               </Button>
 
               {/* Agent Creator Access - Only show if lawyer has permission */}
@@ -381,7 +381,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                     size={isMobile ? "default" : "lg"}
                   >
                     <Settings className="h-5 w-5" />
-                    {isMobile ? "Gestionar Agentes" : "Gestionar Agentes"}
+                    <span className={isMobile ? "text-sm" : ""}>{isMobile ? "Gestionar" : "Gestionar Agentes"}</span>
                   </Button>
                   <Button
                     onClick={() => setCurrentView('agent-creator')}
@@ -390,7 +390,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                   >
                     <Bot className="h-5 w-5" />
                     <Plus className="h-4 w-4" />
-                    {isMobile ? "Crear Agentes" : "Crear Agente"}
+                    <span className={isMobile ? "text-sm" : ""}>{isMobile ? "Crear" : "Crear Agente"}</span>
                   </Button>
                 </>
               )}
@@ -403,7 +403,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                 size={isMobile ? "default" : "lg"}
               >
                 <LogOut className="h-5 w-5" />
-                {isMobile ? "Salir" : "Cerrar Sesión"}
+                <span className={isMobile ? "text-sm" : ""}>{isMobile ? "Salir" : "Cerrar Sesión"}</span>
               </Button>
             </div>
           </div>
