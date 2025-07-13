@@ -651,7 +651,49 @@ function AdminPage() {
       return;
     }
 
-  }; // End of createLawyer function
+    try {
+      const { data, error } = await supabase.functions.invoke('create-lawyer', {
+        body: JSON.stringify({
+          email: sanitizedEmail,
+          full_name: sanitizedName,
+          phone_number: newLawyer.phone_number || null,
+          can_create_agents: newLawyer.can_create_agents
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.id}`
+        }
+      });
+
+      if (error || !data?.success) {
+        throw new Error(data?.error || error?.message || 'Error al crear abogado');
+      }
+
+      toast({
+        title: "Abogado creado",
+        description: `El abogado ${sanitizedName} ha sido creado exitosamente.`,
+      });
+
+      // Reset form
+      setNewLawyer({
+        email: '',
+        full_name: '',
+        phone_number: '',
+        can_create_agents: false
+      });
+
+      // Refresh lawyers list
+      loadData();
+
+    } catch (error: any) {
+      console.error('Error creating lawyer:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Error al crear el abogado",
+        variant: "destructive",
+      });
+    }
+  };
 
   const updateLawyerPermissions = async (lawyerId: string, field: string, value: boolean) => {
     try {
