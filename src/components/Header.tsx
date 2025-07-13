@@ -60,7 +60,7 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
           variant="success"
           size="lg"
           className="hidden md:block"
-          onClick={() => onOpenChat("Hola, quiero iniciar una asesoría.")}
+          onClick={() => onOpenChat("Quiero una consultoría legal")}
         >
           Asesoría Gratuita
         </Button>
@@ -95,7 +95,7 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
             size="lg"
             className="mt-4 w-full"
             onClick={() => {
-              onOpenChat("Hola, quiero iniciar una asesoría.");
+              onOpenChat("Quiero una consultoría legal");
               setMobileMenuOpen(false);
             }}
           >
