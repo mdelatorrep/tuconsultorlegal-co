@@ -45,7 +45,6 @@ export default function EmpresasPage({ onOpenChat, onNavigate }: EmpresasPagePro
         .select('*')
         .eq('status', 'active')
         .in('target_audience', ['empresas', 'ambos'])
-        .not('price_approved_by', 'is', null) // Solo agentes aprobados por admin
         .order('category', { ascending: true });
 
       if (error) throw error;
