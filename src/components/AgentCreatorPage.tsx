@@ -534,10 +534,36 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
 
   const handlePublish = async () => {
     try {
-      // Convert lawyer suggested price to integer (remove $ and commas)
-      const lawyerPriceValue = parseInt(formData.lawyerSuggestedPrice.replace(/[^0-9]/g, ''));
-      // Convert calculated price to integer (for admin review)
-      const calculatedPriceValue = parseInt(aiResults.calculatedPrice.replace(/[^0-9]/g, ''));
+      // Validate required fields
+      if (!formData.docName || !formData.docDesc || !formData.docCat || !formData.docTemplate) {
+        toast({
+          title: "Campos incompletos",
+          description: "Por favor completa todos los campos requeridos antes de enviar a revisión.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!aiResults.enhancedPrompt || aiResults.extractedPlaceholders.length === 0) {
+        toast({
+          title: "Procesamiento IA incompleto",
+          description: "Debes completar el procesamiento de IA en el paso 4 antes de enviar a revisión.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Convert lawyer suggested price to integer (remove $ and commas), default to 0 if invalid
+      const lawyerPriceValue = parseInt(formData.lawyerSuggestedPrice.replace(/[^0-9]/g, '')) || 0;
+      // Convert calculated price to integer (for admin review), default to 0 if invalid
+      const calculatedPriceValue = parseInt(aiResults.calculatedPrice.replace(/[^0-9]/g, '')) || 0;
+      
+      console.log('Publishing agent with data:', {
+        name: formData.docName,
+        created_by: lawyerData.tokenId || lawyerData.id,
+        lawyerPriceValue,
+        calculatedPriceValue
+      });
       
       const { data, error } = await supabase
         .from('legal_agents')
@@ -552,7 +578,8 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
           final_price: calculatedPriceValue, // AI calculated price for admin review
           price_justification: aiResults.priceJustification,
           status: 'pending_review',
-          created_by: lawyerData.id,
+          created_by: lawyerData.tokenId || lawyerData.id, // Usar tokenId correcto con fallback
+          target_audience: formData.targetAudience,
           sla_hours: formData.slaEnabled ? formData.slaHours : null,
           sla_enabled: formData.slaEnabled
         })
@@ -561,9 +588,21 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
 
       if (error) {
         console.error('Error creating agent:', error);
+        
+        let errorMessage = "No se pudo crear el agente. Intenta nuevamente.";
+        
+        // Provide specific error messages for common issues
+        if (error.message?.includes('foreign key')) {
+          errorMessage = "Error de permisos. Por favor cierra sesión e inicia sesión nuevamente.";
+        } else if (error.message?.includes('duplicate')) {
+          errorMessage = "Ya existe un agente con este nombre. Usa un nombre diferente.";
+        } else if (error.message?.includes('violates check')) {
+          errorMessage = "Los datos del agente no son válidos. Revisa todos los campos.";
+        }
+        
         toast({
           title: "Error al enviar a revisión",
-          description: "No se pudo crear el agente. Intenta nuevamente.",
+          description: errorMessage,
           variant: "destructive",
         });
         return;
@@ -573,6 +612,22 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         title: "Agente enviado a revisión exitosamente",
         description: `El agente "${formData.docName}" ha sido enviado para revisión del administrador.`,
       });
+
+      // Delete the current draft since it's now published
+      if (currentDraftId) {
+        try {
+          await supabase.functions.invoke('delete-agent-draft', {
+            body: {
+              draftId: currentDraftId,
+              lawyerId: lawyerData.tokenId || lawyerData.id
+            }
+          });
+          console.log('Draft deleted after successful publish');
+        } catch (draftError) {
+          console.warn('Could not delete draft after publish:', draftError);
+          // Non-critical error, don't show to user
+        }
+      }
 
       // Reset form and go back
       setFormData({
@@ -591,6 +646,14 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         extractedPlaceholders: [],
         calculatedPrice: "",
         priceJustification: "",
+      });
+      setCurrentDraftId(null); // Reset draft ID
+      setDocInfoImprovement({
+        improvedName: "",
+        improvedDescription: "",
+        originalName: "",
+        originalDescription: "",
+        showImprovement: false,
       });
       setCurrentStep(1);
       onBack();
