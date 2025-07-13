@@ -116,9 +116,9 @@ Deno.serve(async (req) => {
 
     logger.info('User authenticated successfully', { email: user.email })
 
-    // Verify admin privileges using admin_profiles
+    // Verify admin privileges using admin_accounts
     const { data: adminProfile, error: adminProfileError } = await serviceClient
-      .from('admin_profiles')
+      .from('admin_accounts')
       .select('id, full_name, is_super_admin')
       .eq('user_id', user.id)
       .eq('active', true)
