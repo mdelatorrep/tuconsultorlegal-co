@@ -74,12 +74,12 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
   const fetchAgents = async () => {
     setIsLoading(true);
     try {
-      // Mostrar agentes operativos y pendientes de revisión creados por el abogado actual
+      // Mostrar agentes en todos los estados: activos, pendientes y suspendidos
       const { data, error } = await supabase
         .from('legal_agents')
         .select('*')
         .eq('created_by', lawyerData.tokenId || lawyerData.id) // Usar tokenId para filtrar por abogado que los creó
-        .in('status', ['active', 'pending_review']) // Solo mostrar operativos y pendientes de revisión
+        .in('status', ['active', 'pending_review', 'suspended']) // Incluir también suspendidos
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -730,9 +730,130 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
               </div>
             )}
 
+            {/* Sección de Agentes Suspendidos */}
+            {agents.filter(agent => agent.status === 'suspended').length > 0 && (
+              <div>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="bg-red-100 dark:bg-red-900 p-2 rounded-lg">
+                    <Pause className="h-5 w-5 text-red-600 dark:text-red-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-foreground">
+                      Agentes Suspendidos
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                      Agentes temporalmente suspendidos por el administrador
+                    </p>
+                  </div>
+                  <Badge variant="destructive" className="ml-auto">
+                    {agents.filter(agent => agent.status === 'suspended').length}
+                  </Badge>
+                </div>
+                
+                <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                  {agents.filter(agent => agent.status === 'suspended').map((agent) => (
+                    <Card key={agent.id} className="relative border-red-200 dark:border-red-800 opacity-75">
+                      <CardHeader className="pb-3">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <CardTitle className="text-lg mb-2 line-clamp-2">{agent.name}</CardTitle>
+                            <CardDescription className="text-sm mb-3 line-clamp-3">
+                              {agent.description}
+                            </CardDescription>
+                          </div>
+                          <div className="flex-shrink-0">
+                            {getStatusBadge(agent.status)}
+                          </div>
+                        </div>
+                      </CardHeader>
+                      
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2 text-sm">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <FileText className="h-4 w-4 flex-shrink-0" />
+                            <span className="text-muted-foreground">Categoría:</span>
+                            <span className="truncate">{agent.category}</span>
+                          </div>
+                          
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <DollarSign className="h-4 w-4 flex-shrink-0" />
+                            <span className="text-muted-foreground">Precio:</span>
+                            <span className="font-medium">${agent.suggested_price.toLocaleString()} COP</span>
+                          </div>
+                          
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Calendar className="h-4 w-4 flex-shrink-0" />
+                            <span className="text-muted-foreground">Creado:</span>
+                            <span>{new Date(agent.created_at).toLocaleDateString()}</span>
+                          </div>
+                          
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <User className="h-4 w-4 flex-shrink-0" />
+                            <span className="text-muted-foreground">Variables:</span>
+                            <span>{agent.placeholder_fields.length} campos</span>
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex flex-wrap gap-2 pt-4 border-t">
+                          {/* View Details */}
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => setSelectedAgent(agent)}
+                              >
+                                <Eye className="h-4 w-4 mr-1" />
+                                Ver
+                              </Button>
+                            </DialogTrigger>
+                          </Dialog>
+
+                          {/* Edit */}
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleEditAgent(agent)}
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Editar
+                          </Button>
+
+                          {/* Reactivate (solo para admin) */}
+                          {lawyerData.is_admin && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleStatusChange(agent.id, 'active')}
+                            >
+                              <Play className="h-4 w-4 mr-1" />
+                              Reactivar
+                            </Button>
+                          )}
+
+                          {/* Delete */}
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleDeleteAgent(agent.id, agent.name)}
+                            className="text-destructive hover:text-destructive-foreground"
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Eliminar
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Mensaje cuando no hay agentes en ninguna categoría */}
             {agents.filter(agent => agent.status === 'pending_review').length === 0 && 
-             agents.filter(agent => agent.status === 'active').length === 0 && (
+             agents.filter(agent => agent.status === 'active').length === 0 && 
+             agents.filter(agent => agent.status === 'suspended').length === 0 && (
               <Card>
                 <CardContent className="p-8 text-center">
                   <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
