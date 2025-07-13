@@ -34,7 +34,7 @@ import {
   Pie
 } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
-import { useLawyerAuthContext } from './LawyerAuthProvider';
+import { useLawyerAuth } from '@/hooks/useLawyerAuth';
 
 interface RealStats {
   totalRequests: number;
@@ -78,7 +78,7 @@ export default function LawyerStatsSection() {
   const [documentTypes, setDocumentTypes] = useState<DocumentTypeData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  const { user } = useLawyerAuthContext();
+  const { user } = useLawyerAuth();
 
   useEffect(() => {
     if (user) {
