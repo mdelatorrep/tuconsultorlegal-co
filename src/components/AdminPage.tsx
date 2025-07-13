@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
+import { AuthStorage } from "@/utils/authStorage";
 import AdminLogin from "./AdminLogin";
 import LawyerStatsAdmin from "./LawyerStatsAdmin";
 import { Users, FileText, Shield, Plus, Check, X, BarChart3, TrendingUp, DollarSign, Activity, LogOut, Unlock, AlertTriangle, Eye, EyeOff, Trash2, Copy, ChartPie, Settings, RefreshCw, Save } from "lucide-react";
@@ -798,12 +799,23 @@ function AdminPage() {
         return;
       }
 
-      console.log('Updating agent status:', { agentId, status });
+      // Get the admin auth data to extract user ID
+      const adminAuth = AuthStorage.getAdminAuth();
+      if (!adminAuth || !adminAuth.user) {
+        toast({
+          title: "Error",
+          description: "Datos de administrador no encontrados. Por favor, inicia sesión nuevamente.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      console.log('Updating agent status:', { agentId, status, userId: adminAuth.user.id });
 
       const { data, error } = await supabase.functions.invoke('update-agent', {
         body: {
           agent_id: agentId,
-          user_id: user?.id,
+          user_id: adminAuth.user.id,
           is_admin: true,
           status: status
         },
