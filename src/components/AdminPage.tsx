@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -13,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useNativeAdminAuth } from "@/hooks/useNativeAdminAuth";
 import NativeAdminLogin from "./NativeAdminLogin";
 import LawyerStatsAdmin from "./LawyerStatsAdmin";
-import { Users, FileText, Shield, Plus, Check, X, BarChart3, TrendingUp, DollarSign, Activity, LogOut, Unlock, AlertTriangle, Eye, EyeOff, Trash2, Copy, ChartPie, Settings, RefreshCw } from "lucide-react";
+import { Users, FileText, Shield, Plus, Check, X, BarChart3, TrendingUp, DollarSign, Activity, LogOut, Unlock, AlertTriangle, Eye, EyeOff, Trash2, Copy, ChartPie, Settings, RefreshCw, Save } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from "recharts";
 import DOMPurify from 'dompurify';
 import PhoneInput from 'react-phone-number-input';
@@ -86,6 +87,8 @@ export default function AdminPage() {
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
   const [tokenRequests, setTokenRequests] = useState<any[]>([]);
   const [pendingAgentsCount, setPendingAgentsCount] = useState(0);
+  const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
+  const [showAgentDetails, setShowAgentDetails] = useState(false);
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [canCreateAgents, setCanCreateAgents] = useState(false);
@@ -1517,7 +1520,17 @@ if (!response.ok) {
                   <TableBody>
                     {agents.map((agent) => (
                       <TableRow key={agent.id}>
-                        <TableCell className="font-medium">{sanitizeInput(agent.name)}</TableCell>
+                        <TableCell className="font-medium">
+                          <button 
+                            onClick={() => {
+                              setSelectedAgent(agent);
+                              setShowAgentDetails(true);
+                            }}
+                            className="text-primary hover:text-primary/80 underline cursor-pointer transition-colors"
+                          >
+                            {sanitizeInput(agent.name)}
+                          </button>
+                        </TableCell>
                         <TableCell>{sanitizeInput(agent.category)}</TableCell>
                         <TableCell>
                           {agent.lawyer_accounts?.full_name || 'N/A'}
@@ -1801,6 +1814,284 @@ if (!response.ok) {
               <p className="text-xs text-muted-foreground mt-4">
                 📧 Envía este token al abogado por email. Lo necesitará para acceder al sistema.
               </p>
+            </div>
+          </div>
+        )}
+
+        {/* Dialog para ver y editar detalles del agente */}
+        {showAgentDetails && selectedAgent && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-background rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6 border-b">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-semibold">Detalles del Agente</h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setShowAgentDetails(false);
+                      setSelectedAgent(null);
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="p-6 space-y-6">
+                {/* Información básica */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="agent-name">Nombre del Agente</Label>
+                    <Input
+                      id="agent-name"
+                      value={selectedAgent.name}
+                      onChange={(e) => {
+                        setSelectedAgent({
+                          ...selectedAgent,
+                          name: e.target.value
+                        });
+                      }}
+                      className="mt-1"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="agent-category">Categoría</Label>
+                    <Select
+                      value={selectedAgent.category}
+                      onValueChange={(value) => {
+                        setSelectedAgent({
+                          ...selectedAgent,
+                          category: value
+                        });
+                      }}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="contratos">Contratos</SelectItem>
+                        <SelectItem value="inmobiliario">Inmobiliario</SelectItem>
+                        <SelectItem value="laboral">Laboral</SelectItem>
+                        <SelectItem value="comercial">Comercial</SelectItem>
+                        <SelectItem value="civil">Civil</SelectItem>
+                        <SelectItem value="administrativo">Administrativo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="md:col-span-2">
+                    <Label htmlFor="agent-description">Descripción</Label>
+                    <Textarea
+                      id="agent-description"
+                      value={selectedAgent.description}
+                      onChange={(e) => {
+                        setSelectedAgent({
+                          ...selectedAgent,
+                          description: e.target.value
+                        });
+                      }}
+                      className="mt-1"
+                      rows={3}
+                    />
+                  </div>
+                </div>
+
+                {/* Pricing */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="suggested-price">Precio Sugerido</Label>
+                    <Input
+                      id="suggested-price"
+                      type="number"
+                      value={selectedAgent.suggested_price}
+                      onChange={(e) => {
+                        setSelectedAgent({
+                          ...selectedAgent,
+                          suggested_price: parseInt(e.target.value) || 0
+                        });
+                      }}
+                      className="mt-1"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="final-price">Precio Final</Label>
+                    <Input
+                      id="final-price"
+                      type="number"
+                      value={selectedAgent.final_price || ""}
+                      onChange={(e) => {
+                        setSelectedAgent({
+                          ...selectedAgent,
+                          final_price: parseInt(e.target.value) || null
+                        });
+                      }}
+                      className="mt-1"
+                      placeholder="Establecer precio final"
+                    />
+                  </div>
+                </div>
+
+                {/* Estado y acciones de administrador */}
+                <div className="bg-muted/50 p-4 rounded-lg">
+                  <h4 className="font-medium mb-3">Gestión Administrativa</h4>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <Label>Estado actual:</Label>
+                      {getStatusBadge(selectedAgent.status)}
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      {selectedAgent.status === 'pending_review' && (
+                        <>
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              updateAgentStatus(selectedAgent.id, 'active');
+                              setSelectedAgent({
+                                ...selectedAgent,
+                                status: 'active'
+                              });
+                            }}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            <Check className="h-4 w-4 mr-2" />
+                            Aprobar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => {
+                              updateAgentStatus(selectedAgent.id, 'suspended');
+                              setSelectedAgent({
+                                ...selectedAgent,
+                                status: 'suspended'
+                              });
+                            }}
+                          >
+                            <X className="h-4 w-4 mr-2" />
+                            Rechazar
+                          </Button>
+                        </>
+                      )}
+                      
+                      {selectedAgent.status === 'active' && (
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => {
+                            updateAgentStatus(selectedAgent.id, 'suspended');
+                            setSelectedAgent({
+                              ...selectedAgent,
+                              status: 'suspended'
+                            });
+                          }}
+                        >
+                          Suspender
+                        </Button>
+                      )}
+                      
+                      {selectedAgent.status === 'suspended' && (
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            updateAgentStatus(selectedAgent.id, 'active');
+                            setSelectedAgent({
+                              ...selectedAgent,
+                              status: 'active'
+                            });
+                          }}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          Reactivar
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Información del creador */}
+                <div className="bg-muted/30 p-4 rounded-lg">
+                  <h4 className="font-medium mb-2">Información del Creador</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Abogado:</span>
+                      <p className="font-medium">{selectedAgent.lawyer_accounts?.full_name || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Email:</span>
+                      <p>{selectedAgent.lawyer_accounts?.email || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Fecha de creación:</span>
+                      <p>{new Date(selectedAgent.created_at).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-6 border-t bg-muted/20">
+                <div className="flex gap-3 justify-end">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowAgentDetails(false);
+                      setSelectedAgent(null);
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={async () => {
+                      try {
+                        const authHeaders = getAuthHeaders();
+                        const { data, error } = await supabase.functions.invoke('update-agent', {
+                          headers: authHeaders,
+                          body: {
+                            agentId: selectedAgent.id,
+                            name: selectedAgent.name,
+                            description: selectedAgent.description,
+                            category: selectedAgent.category,
+                            suggested_price: selectedAgent.suggested_price,
+                            final_price: selectedAgent.final_price
+                          }
+                        });
+
+                        if (error) {
+                          toast({
+                            title: "Error",
+                            description: "No se pudo actualizar el agente.",
+                            variant: "destructive"
+                          });
+                          return;
+                        }
+
+                        toast({
+                          title: "Agente actualizado",
+                          description: "Los cambios se guardaron correctamente.",
+                        });
+
+                        // Reload data and close dialog
+                        await loadData();
+                        setShowAgentDetails(false);
+                        setSelectedAgent(null);
+                      } catch (error) {
+                        console.error('Error updating agent:', error);
+                        toast({
+                          title: "Error",
+                          description: "Error inesperado al actualizar el agente.",
+                          variant: "destructive"
+                        });
+                      }
+                    }}
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    Guardar Cambios
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         )}
