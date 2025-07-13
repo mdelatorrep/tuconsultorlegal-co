@@ -266,7 +266,13 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
 
   // Show login form if not authenticated
   if (!isAuthenticated) {
-    return <LawyerLogin onLoginSuccess={() => {}} />;
+    return <LawyerLogin onLoginSuccess={() => {
+      console.log('Login success callback triggered');
+      // Forzar re-verificación del estado de autenticación
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+    }} />;
   }
 
   // Show loading if auth is still loading or documents are loading

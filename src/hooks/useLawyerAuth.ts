@@ -75,7 +75,7 @@ export const useLawyerAuth = () => {
         // Forzar una verificación del estado para asegurar consistencia
         setTimeout(() => {
           checkAuthStatus();
-        }, 100);
+        }, 200);
         
         return true;
       }
