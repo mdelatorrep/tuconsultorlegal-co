@@ -134,25 +134,34 @@ Deno.serve(async (req) => {
 
     // Admin can always update
     if (is_admin) {
-      let adminToken = authHeader
-      if (authHeader.startsWith('Bearer ')) {
-        adminToken = authHeader.substring(7)
-      }
+      // Get user from JWT token
+      const token = authHeader.replace('Bearer ', '');
+      
+      try {
+        // Decode JWT to get user info
+        const { data: userData, error: userError } = await supabase.auth.getUser(token);
+        
+        if (userError || !userData.user) {
+          console.log('Invalid JWT token or user not found');
+        } else {
+          // Check if user is in admin_accounts table
+          const { data: admin, error: adminError } = await supabase
+            .from('admin_accounts')
+            .select('*')
+            .eq('user_id', userData.user.id)
+            .eq('active', true)
+            .maybeSingle();
 
-      const { data: admin, error: tokenError } = await supabase
-        .from('admin_accounts')
-        .select('*')
-        .eq('session_token', adminToken)
-        .eq('active', true)
-        .maybeSingle()
-
-      if (!tokenError && admin) {
-        // Check token expiration
-        if (!admin.token_expires_at || new Date(admin.token_expires_at) > new Date()) {
-          canUpdate = true
-          adminVerified = true
-          console.log('Admin verified successfully')
+          if (!adminError && admin) {
+            canUpdate = true;
+            adminVerified = true;
+            console.log('Admin verified successfully via JWT');
+          } else {
+            console.log('User not found in admin_accounts or not active');
+          }
         }
+      } catch (jwtError) {
+        console.error('JWT validation error:', jwtError);
       }
     }
     
