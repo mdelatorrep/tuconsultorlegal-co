@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -33,40 +33,224 @@ import {
   ResponsiveContainer,
   Pie
 } from 'recharts';
+import { supabase } from '@/integrations/supabase/client';
+import { useLawyerAuthContext } from './LawyerAuthProvider';
 
-// Mock data - Replace with real data from API
-const mockStats = {
-  totalRequests: 127,
-  managedRequests: 89,
-  returnedRequests: 24,
-  activeAgents: 5,
-  completionRate: 94,
-  avgProcessingTime: 2.3,
-  requestsThisMonth: 24,
-  processingImprovement: 12.5
-};
+interface RealStats {
+  totalRequests: number;
+  managedRequests: number;
+  returnedRequests: number;
+  activeAgents: number;
+  completionRate: number;
+  avgProcessingTime: number;
+  requestsThisMonth: number;
+  processingImprovement: number;
+}
 
-const mockMonthlyData = [
-  { month: 'Ene', gestionadas: 45, devueltas: 8, completadas: 37 },
-  { month: 'Feb', gestionadas: 52, devueltas: 12, completadas: 40 },
-  { month: 'Mar', gestionadas: 48, devueltas: 10, completadas: 38 },
-  { month: 'Abr', gestionadas: 61, devueltas: 15, completadas: 46 },
-  { month: 'May', gestionadas: 55, devueltas: 11, completadas: 44 },
-  { month: 'Jun', gestionadas: 67, devueltas: 14, completadas: 53 }
-];
+interface MonthlyData {
+  month: string;
+  gestionadas: number;
+  devueltas: number;
+  completadas: number;
+}
 
-const mockDocumentTypes = [
-  { name: 'Contratos', value: 35, color: '#3b82f6' },
-  { name: 'Demandas', value: 25, color: '#ef4444' },
-  { name: 'Testamentos', value: 20, color: '#10b981' },
-  { name: 'Poderes', value: 12, color: '#f59e0b' },
-  { name: 'Otros', value: 8, color: '#8b5cf6' }
-];
+interface DocumentTypeData {
+  name: string;
+  value: number;
+  color: string;
+}
 
 const COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'];
 
 export default function LawyerStatsSection() {
   const [activeChart, setActiveChart] = useState<'managed' | 'returned' | 'completed'>('managed');
+  const [stats, setStats] = useState<RealStats>({
+    totalRequests: 0,
+    managedRequests: 0,
+    returnedRequests: 0,
+    activeAgents: 0,
+    completionRate: 0,
+    avgProcessingTime: 0,
+    requestsThisMonth: 0,
+    processingImprovement: 0
+  });
+  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
+  const [documentTypes, setDocumentTypes] = useState<DocumentTypeData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  const { user } = useLawyerAuthContext();
+
+  useEffect(() => {
+    if (user) {
+      fetchRealStats();
+    }
+  }, [user]);
+
+  const fetchRealStats = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Fetch document stats
+      const { data: documents, error: docError } = await supabase
+        .from('document_tokens')
+        .select('status, document_type, created_at, updated_at');
+
+      if (docError) {
+        console.error('Error fetching documents:', docError);
+        return;
+      }
+
+      // Fetch active agents
+      const { data: agents, error: agentError } = await supabase
+        .from('legal_agents')
+        .select('status')
+        .eq('status', 'active');
+
+      if (agentError) {
+        console.error('Error fetching agents:', agentError);
+      }
+
+      // Process document stats
+      const totalRequests = documents?.length || 0;
+      const managedRequests = documents?.filter(doc => 
+        doc.status === 'revisado' || doc.status === 'pagado' || doc.status === 'descargado'
+      ).length || 0;
+      const returnedRequests = documents?.filter(doc => 
+        doc.status === 'revision_usuario'
+      ).length || 0;
+      const activeAgents = agents?.length || 0;
+
+      // Calculate completion rate
+      const completionRate = totalRequests > 0 ? Math.round((managedRequests / totalRequests) * 100) : 0;
+
+      // Calculate monthly data for last 6 months
+      const monthlyStats = calculateMonthlyStats(documents || []);
+      
+      // Calculate document types distribution
+      const typeDistribution = calculateDocumentTypes(documents || []);
+
+      // Get current month requests
+      const currentMonth = new Date().getMonth();
+      const requestsThisMonth = documents?.filter(doc => {
+        const docMonth = new Date(doc.created_at).getMonth();
+        return docMonth === currentMonth;
+      }).length || 0;
+
+      // Calculate average processing time (simplified)
+      const avgProcessingTime = calculateAvgProcessingTime(documents || []);
+
+      setStats({
+        totalRequests,
+        managedRequests,
+        returnedRequests,
+        activeAgents,
+        completionRate,
+        avgProcessingTime,
+        requestsThisMonth,
+        processingImprovement: 12.5 // This would need historical data to calculate properly
+      });
+
+      setMonthlyData(monthlyStats);
+      setDocumentTypes(typeDistribution);
+
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const calculateMonthlyStats = (documents: any[]): MonthlyData[] => {
+    const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'];
+    const currentMonth = new Date().getMonth();
+    const last6Months = [];
+
+    for (let i = 5; i >= 0; i--) {
+      const monthIndex = (currentMonth - i + 12) % 12;
+      const monthName = months[monthIndex];
+      
+      const monthDocs = documents.filter(doc => {
+        const docMonth = new Date(doc.created_at).getMonth();
+        return docMonth === monthIndex;
+      });
+
+      const gestionadas = monthDocs.filter(doc => 
+        doc.status === 'revisado' || doc.status === 'pagado' || doc.status === 'descargado'
+      ).length;
+
+      const devueltas = monthDocs.filter(doc => 
+        doc.status === 'revision_usuario'
+      ).length;
+
+      const completadas = monthDocs.filter(doc => 
+        doc.status === 'pagado' || doc.status === 'descargado'
+      ).length;
+
+      last6Months.push({
+        month: monthName,
+        gestionadas,
+        devueltas,
+        completadas
+      });
+    }
+
+    return last6Months;
+  };
+
+  const calculateDocumentTypes = (documents: any[]): DocumentTypeData[] => {
+    const typeCounts: Record<string, number> = {};
+    
+    documents.forEach(doc => {
+      const type = doc.document_type || 'Otros';
+      typeCounts[type] = (typeCounts[type] || 0) + 1;
+    });
+
+    const total = documents.length;
+    if (total === 0) {
+      return [
+        { name: 'Sin datos', value: 100, color: '#8b5cf6' }
+      ];
+    }
+
+    return Object.entries(typeCounts)
+      .map(([name, count], index) => ({
+        name,
+        value: Math.round((count / total) * 100),
+        color: COLORS[index % COLORS.length]
+      }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5); // Top 5 types
+  };
+
+  const calculateAvgProcessingTime = (documents: any[]): number => {
+    const processedDocs = documents.filter(doc => 
+      doc.status === 'revisado' && doc.updated_at && doc.created_at
+    );
+
+    if (processedDocs.length === 0) return 0;
+
+    const totalTime = processedDocs.reduce((sum, doc) => {
+      const created = new Date(doc.created_at);
+      const updated = new Date(doc.updated_at);
+      const hours = (updated.getTime() - created.getTime()) / (1000 * 60 * 60);
+      return sum + hours;
+    }, 0);
+
+    return Math.round((totalTime / processedDocs.length) * 10) / 10; // Round to 1 decimal
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Cargando estadísticas...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const StatCard = ({ 
     title, 
@@ -148,7 +332,7 @@ export default function LawyerStatsSection() {
   );
 
   const renderChart = () => {
-    const data = mockMonthlyData.map(item => ({
+    const data = monthlyData.map(item => ({
       ...item,
       value: activeChart === 'managed' ? item.gestionadas : 
              activeChart === 'returned' ? item.devueltas : 
@@ -211,7 +395,7 @@ export default function LawyerStatsSection() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard
           title="Solicitudes Gestionadas"
-          value={mockStats.managedRequests}
+          value={stats.managedRequests}
           description="Total procesadas"
           icon={CheckCircle}
           trend="up"
@@ -220,7 +404,7 @@ export default function LawyerStatsSection() {
         />
         <StatCard
           title="Solicitudes Devueltas"
-          value={mockStats.returnedRequests}
+          value={stats.returnedRequests}
           description="Requieren revisión"
           icon={RefreshCw}
           trend="down"
@@ -229,7 +413,7 @@ export default function LawyerStatsSection() {
         />
         <StatCard
           title="Total Solicitudes"
-          value={mockStats.totalRequests}
+          value={stats.totalRequests}
           description="Total recibidas"
           icon={FileText}
           trend="up"
@@ -238,7 +422,7 @@ export default function LawyerStatsSection() {
         />
         <StatCard
           title="Agentes IA"
-          value={mockStats.activeAgents}
+          value={stats.activeAgents}
           description="Agentes habilitados"
           icon={Bot}
           color="purple"
@@ -254,7 +438,7 @@ export default function LawyerStatsSection() {
                 <CheckCircle className="h-5 w-5 text-green-600" />
               </div>
               <div>
-                <p className="text-sm font-medium">{mockStats.completionRate}%</p>
+                <p className="text-sm font-medium">{stats.completionRate}%</p>
                 <p className="text-xs text-muted-foreground">Tasa de éxito</p>
               </div>
             </div>
@@ -268,7 +452,7 @@ export default function LawyerStatsSection() {
                 <Clock className="h-5 w-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-sm font-medium">{mockStats.avgProcessingTime}h</p>
+                <p className="text-sm font-medium">{stats.avgProcessingTime}h</p>
                 <p className="text-xs text-muted-foreground">Tiempo procesamiento</p>
               </div>
             </div>
@@ -282,7 +466,7 @@ export default function LawyerStatsSection() {
                 <TrendingUp className="h-5 w-5 text-orange-600" />
               </div>
               <div>
-                <p className="text-sm font-medium">{mockStats.requestsThisMonth}</p>
+                <p className="text-sm font-medium">{stats.requestsThisMonth}</p>
                 <p className="text-xs text-muted-foreground">Este mes</p>
               </div>
             </div>
@@ -318,7 +502,7 @@ export default function LawyerStatsSection() {
             <ResponsiveContainer width="100%" height={200}>
               <RechartsPieChart>
                 <Pie
-                  data={mockDocumentTypes}
+                  data={documentTypes}
                   cx="50%"
                   cy="50%"
                   innerRadius={40}
@@ -326,7 +510,7 @@ export default function LawyerStatsSection() {
                   paddingAngle={2}
                   dataKey="value"
                 >
-                  {mockDocumentTypes.map((entry, index) => (
+                  {documentTypes.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
@@ -334,7 +518,7 @@ export default function LawyerStatsSection() {
               </RechartsPieChart>
             </ResponsiveContainer>
             <div className="mt-4 space-y-2">
-              {mockDocumentTypes.map((type, index) => (
+              {documentTypes.map((type, index) => (
                 <div key={type.name} className="flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2">
                     <div 
@@ -363,22 +547,26 @@ export default function LawyerStatsSection() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="text-center p-3 bg-green-50 rounded-lg">
               <CheckCircle className="h-6 w-6 text-green-600 mx-auto mb-2" />
-              <p className="text-lg font-bold text-green-600">{((mockStats.managedRequests / mockStats.totalRequests) * 100).toFixed(0)}%</p>
+              <p className="text-lg font-bold text-green-600">
+                {stats.totalRequests > 0 ? ((stats.managedRequests / stats.totalRequests) * 100).toFixed(0) : 0}%
+              </p>
               <p className="text-xs text-green-600">Éxito de gestión</p>
             </div>
             <div className="text-center p-3 bg-orange-50 rounded-lg">
               <RefreshCw className="h-6 w-6 text-orange-600 mx-auto mb-2" />
-              <p className="text-lg font-bold text-orange-600">{((mockStats.returnedRequests / mockStats.totalRequests) * 100).toFixed(0)}%</p>
+              <p className="text-lg font-bold text-orange-600">
+                {stats.totalRequests > 0 ? ((stats.returnedRequests / stats.totalRequests) * 100).toFixed(0) : 0}%
+              </p>
               <p className="text-xs text-orange-600">Tasa de devolución</p>
             </div>
             <div className="text-center p-3 bg-purple-50 rounded-lg">
               <Bot className="h-6 w-6 text-purple-600 mx-auto mb-2" />
-              <p className="text-lg font-bold text-purple-600">{mockStats.activeAgents}</p>
+              <p className="text-lg font-bold text-purple-600">{stats.activeAgents}</p>
               <p className="text-xs text-purple-600">Agentes activos</p>
             </div>
             <div className="text-center p-3 bg-blue-50 rounded-lg">
               <Clock className="h-6 w-6 text-blue-600 mx-auto mb-2" />
-              <p className="text-lg font-bold text-blue-600">{mockStats.avgProcessingTime}h</p>
+              <p className="text-lg font-bold text-blue-600">{stats.avgProcessingTime}h</p>
               <p className="text-xs text-blue-600">Tiempo promedio</p>
             </div>
           </div>
