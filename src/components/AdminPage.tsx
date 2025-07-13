@@ -11,7 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useNativeAdminAuth } from "@/hooks/useNativeAdminAuth";
 import NativeAdminLogin from "./NativeAdminLogin";
-import { Users, FileText, Shield, Plus, Check, X, BarChart3, TrendingUp, DollarSign, Activity, LogOut, Unlock, AlertTriangle, Eye, EyeOff, Trash2, Copy } from "lucide-react";
+import LawyerStatsAdmin from "./LawyerStatsAdmin";
+import { Users, FileText, Shield, Plus, Check, X, BarChart3, TrendingUp, DollarSign, Activity, LogOut, Unlock, AlertTriangle, Eye, EyeOff, Trash2, Copy, ChartPie } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from "recharts";
 import DOMPurify from 'dompurify';
 import PhoneInput from 'react-phone-number-input';
@@ -989,9 +990,9 @@ if (!response.ok) {
               value="stats" 
               className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm"
             >
-              <BarChart3 className="h-4 w-4" />
-              <span className="hidden sm:inline">Estadísticas</span>
-              <span className="sm:hidden">Stats</span>
+              <ChartPie className="h-4 w-4" />
+              <span className="hidden sm:inline">Performance Legal</span>
+              <span className="sm:hidden">Performance</span>
             </TabsTrigger>
           </TabsList>
 
@@ -1463,10 +1464,11 @@ if (!response.ok) {
           </TabsContent>
 
           <TabsContent value="stats" className="space-y-4 sm:space-y-6">
-            {/* Mobile First Business Overview Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <LawyerStatsAdmin 
+              authHeaders={getAuthHeaders()} 
+              viewMode="global"
+            />
+          </TabsContent>
                   <CardTitle className="text-xs sm:text-sm font-medium">Total Abogados</CardTitle>
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
