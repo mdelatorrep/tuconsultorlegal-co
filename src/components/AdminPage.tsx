@@ -6,21 +6,379 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
-import { AuthStorage } from "@/utils/authStorage";
 import AdminLogin from "./AdminLogin";
 import LawyerStatsAdmin from "./LawyerStatsAdmin";
-import { Users, FileText, Shield, Plus, Check, X, BarChart3, TrendingUp, DollarSign, Activity, LogOut, Unlock, AlertTriangle, Eye, EyeOff, Trash2, Copy, ChartPie, Settings, RefreshCw, Save, BookOpen, Calendar, Tags, Globe } from "lucide-react";
-import * as LucideIcons from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from "recharts";
-import DOMPurify from 'dompurify';
+import { Users, FileText, Shield, Plus, Check, X, BarChart3, LogOut, RefreshCw, Trash2, Copy, EyeOff, Settings, BookOpen, AlertTriangle } from "lucide-react";
 import PhoneInput from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
+
+interface Lawyer {
+  id: string;
+  email: string;
+  full_name: string;
+  active: boolean;
+  can_create_agents: boolean;
+  created_at: string;
+  failed_login_attempts?: number;
+  locked_until?: string;
+  last_login_at?: string;
+  access_token?: string;
+  phone_number?: string;
+}
+
+interface TokenRequest {
+  id: string;
+  email: string;
+  full_name: string;
+  phone_number?: string;
+  law_firm?: string;
+  specialization?: string;
+  years_of_experience?: number;
+  reason_for_request?: string;
+  status: string;
+  created_at: string;
+  reviewed_at?: string;
+  rejection_reason?: string;
+}
+
+const AdminPage = () => {
+  const { toast } = useToast();
+  const { isAuthenticated, isLoading, user, logout, getAuthHeaders, checkAuthStatus } = useAdminAuth();
+  
+  // Estados principales
+  const [lawyers, setLawyers] = useState<Lawyer[]>([]);
+  const [tokenRequests, setTokenRequests] = useState<TokenRequest[]>([]);
+  const [generatedToken, setGeneratedToken] = useState("");
+  const [showTokenDialog, setShowTokenDialog] = useState(false);
+  
+  // Nuevo abogado form
+  const [newLawyer, setNewLawyer] = useState({
+    email: "",
+    full_name: "",
+    phone_number: "",
+    can_create_agents: false
+  });
+
+  // Cargar datos
+  const loadData = async () => {
+    try {
+      const authHeaders = getAuthHeaders();
+      if (!authHeaders.authorization) return;
+
+      // Cargar abogados
+      const { data: lawyersData } = await supabase.functions.invoke('get-lawyers-admin', {
+        headers: authHeaders
+      });
+      setLawyers(lawyersData || []);
+
+      // Cargar solicitudes de tokens
+      const { data: requestsData } = await supabase.functions.invoke('get-token-requests', {
+        headers: authHeaders
+      });
+      setTokenRequests(requestsData || []);
+    } catch (error) {
+      console.error('Error loading data:', error);
+    }
+  };
+
+  // Crear abogado
+  const createLawyer = async () => {
+    if (!newLawyer.email || !newLawyer.full_name) {
+      toast({
+        title: "Error",
+        description: "Por favor completa todos los campos requeridos",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const authHeaders = getAuthHeaders();
+      const { data, error } = await supabase.functions.invoke('create-lawyer', {
+        body: JSON.stringify(newLawyer),
+        headers: authHeaders
+      });
+
+      if (error || !data?.success) {
+        throw new Error(data?.error || error?.message || 'Error al crear el abogado');
+      }
+
+      toast({
+        title: "Éxito",
+        description: `Abogado ${newLawyer.full_name} creado exitosamente`,
+      });
+
+      setNewLawyer({ email: "", full_name: "", phone_number: "", can_create_agents: false });
+      await loadData();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Error al crear el abogado",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Eliminar abogado
+  const deleteLawyer = async (lawyerId: string, lawyerName: string) => {
+    if (!confirm(`¿Estás seguro de que quieres eliminar a ${lawyerName}?`)) return;
+
+    try {
+      const authHeaders = getAuthHeaders();
+      const { data, error } = await supabase.functions.invoke('delete-lawyer', {
+        body: JSON.stringify({ lawyer_id: lawyerId }),
+        headers: { ...authHeaders, 'Content-Type': 'application/json' }
+      });
+
+      if (error || !data?.success) {
+        throw new Error(data?.error || error?.message || 'Error al eliminar el abogado');
+      }
+
+      toast({
+        title: "Éxito",
+        description: data.message || `Abogado ${lawyerName} eliminado exitosamente`,
+      });
+      await loadData();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Error al eliminar el abogado",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Badge de estado de seguridad
+  const getLockStatusBadge = (lawyer: Lawyer) => {
+    const isLocked = lawyer.locked_until && new Date(lawyer.locked_until) > new Date();
+    
+    if (isLocked) {
+      return (
+        <Badge variant="destructive" className="flex items-center gap-1">
+          <AlertTriangle className="h-3 w-3" />
+          Bloqueada
+        </Badge>
+      );
+    }
+    if (lawyer.failed_login_attempts && lawyer.failed_login_attempts > 0) {
+      return (
+        <Badge variant="outline" className="flex items-center gap-1">
+          <AlertTriangle className="h-3 w-3" />
+          {lawyer.failed_login_attempts} intentos
+        </Badge>
+      );
+    }
+    return <Badge variant="secondary">Normal</Badge>;
+  };
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      loadData();
+    }
+  }, [isAuthenticated, isLoading]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <AdminLogin onLoginSuccess={() => {}} />;
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
+      {/* Mobile Sticky Header */}
+      <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b shadow-sm">
+        <div className="flex items-center justify-between p-3 sm:p-4">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
+            <div className="min-w-0 flex-1">
+              <h1 className="text-base sm:text-lg font-bold text-gray-900 truncate">
+                Admin Panel
+              </h1>
+              <p className="text-xs sm:text-sm text-gray-600 truncate">
+                {user?.name || user?.email}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+            <Button variant="ghost" size="sm" onClick={checkAuthStatus} className="p-2">
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={logout} className="p-2 text-red-600 hover:bg-red-50">
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="container mx-auto px-3 sm:px-4 py-4 max-w-7xl">
+        <Tabs defaultValue="lawyers" className="space-y-3 sm:space-y-6">
+          {/* Mobile-Optimized Tab Navigation */}
+          <div className="bg-white rounded-lg border shadow-sm p-2">
+            <TabsList className="grid w-full grid-cols-3 sm:grid-cols-4 gap-1 h-auto bg-slate-50 p-1 rounded-md">
+              <TabsTrigger value="lawyers" className="flex flex-col items-center gap-1 p-3 text-xs sm:text-sm rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                <Users className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span className="font-medium">Abogados</span>
+              </TabsTrigger>
+              <TabsTrigger value="token-requests" className="flex flex-col items-center gap-1 p-3 text-xs sm:text-sm rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm relative">
+                <Shield className="h-4 w-4 sm:h-5 sm:w-5" />
+                {tokenRequests.filter(req => req.status === 'pending').length > 0 && (
+                  <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
+                    {tokenRequests.filter(req => req.status === 'pending').length}
+                  </Badge>
+                )}
+                <span className="font-medium">Tokens</span>
+              </TabsTrigger>
+              <TabsTrigger value="stats" className="flex flex-col items-center gap-1 p-3 text-xs sm:text-sm rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span className="font-medium">Stats</span>
+              </TabsTrigger>
+              <TabsTrigger value="config" className="flex flex-col items-center gap-1 p-3 text-xs sm:text-sm rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span className="font-medium">Config</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
+
+          {/* Gestión de Abogados */}
+          <TabsContent value="lawyers" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Plus className="h-5 w-5" />
+                  Crear Nuevo Abogado
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label>Email</Label>
+                    <Input
+                      type="email"
+                      value={newLawyer.email}
+                      onChange={(e) => setNewLawyer({ ...newLawyer, email: e.target.value })}
+                      placeholder="email@ejemplo.com"
+                    />
+                  </div>
+                  <div>
+                    <Label>Nombre Completo</Label>
+                    <Input
+                      value={newLawyer.full_name}
+                      onChange={(e) => setNewLawyer({ ...newLawyer, full_name: e.target.value })}
+                      placeholder="Juan Pérez"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label>Teléfono</Label>
+                    <PhoneInput
+                      value={newLawyer.phone_number}
+                      onChange={(value) => setNewLawyer({ ...newLawyer, phone_number: value || "" })}
+                      defaultCountry="CO"
+                      international
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between pt-4 border-t">
+                  <Label>Puede crear agentes</Label>
+                  <Switch
+                    checked={newLawyer.can_create_agents}
+                    onCheckedChange={(checked) => setNewLawyer({ ...newLawyer, can_create_agents: checked })}
+                  />
+                </div>
+                <Button onClick={createLawyer} className="w-full sm:w-auto">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Crear Abogado
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Lista de Abogados Mobile-First */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Abogados Registrados</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="lg:hidden space-y-3">
+                  {lawyers.map((lawyer) => (
+                    <Card key={lawyer.id} className="border-l-4 border-l-primary">
+                      <CardContent className="p-4 space-y-3">
+                        <div className="flex justify-between items-start">
+                          <div className="min-w-0 flex-1">
+                            <h3 className="font-semibold truncate">{lawyer.full_name}</h3>
+                            <p className="text-xs text-muted-foreground truncate">{lawyer.email}</p>
+                          </div>
+                          <Badge variant={lawyer.active ? "default" : "secondary"}>
+                            {lawyer.active ? "Activo" : "Inactivo"}
+                          </Badge>
+                        </div>
+                        <div className="flex gap-2">
+                          {getLockStatusBadge(lawyer)}
+                          <Badge variant={lawyer.can_create_agents ? "default" : "outline"}>
+                            {lawyer.can_create_agents ? "Crea Agentes" : "Sin Agentes"}
+                          </Badge>
+                        </div>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => deleteLawyer(lawyer.id, lawyer.full_name)}
+                          className="w-full"
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Eliminar
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="token-requests" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Solicitudes de Token</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">Gestión de solicitudes disponible próximamente.</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="stats" className="space-y-4">
+            <LawyerStatsAdmin authHeaders={getAuthHeaders()} viewMode="global" />
+          </TabsContent>
+
+          <TabsContent value="config" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Configuración</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">Funciones de configuración disponibles próximamente.</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  );
+};
+
+export default AdminPage;
 
 interface Lawyer {
   id: string;
@@ -1477,97 +1835,110 @@ function AdminPage() {
   console.log('User is authenticated! Showing admin panel');
 
   return (
-    <div className="min-h-screen bg-background p-3 sm:p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Mobile First Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
-          <div className="flex items-center gap-3">
-            <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
-            <div>
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Panel de Administración</h1>
-              <p className="text-sm sm:text-base text-muted-foreground">Bienvenido, {user?.name || user?.email}</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
+      {/* Mobile Sticky Header */}
+      <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b shadow-sm">
+        <div className="flex items-center justify-between p-3 sm:p-4">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
+            <div className="min-w-0 flex-1">
+              <h1 className="text-base sm:text-lg font-bold text-gray-900 truncate">
+                Admin Panel
+              </h1>
+              <p className="text-xs sm:text-sm text-gray-600 truncate">
+                {user?.name || user?.email}
+              </p>
             </div>
           </div>
-          <Button 
-            variant="outline" 
-            onClick={logout}
-            size="sm"
-            className="self-start sm:self-center"
-          >
-            <LogOut className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">Cerrar Sesión</span>
-            <span className="sm:hidden">Salir</span>
-          </Button>
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={checkAuthStatus}
+              className="p-2 hover:bg-gray-100"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={logout}
+              className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
+      </div>
 
-        <Tabs defaultValue="lawyers" className="space-y-4 sm:space-y-6">
-          {/* Mobile First Tab Navigation */}
-          <TabsList className="grid w-full grid-cols-6 h-auto p-1">
-            <TabsTrigger 
-              value="lawyers" 
-              className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm"
-            >
-              <Users className="h-4 w-4" />
-              <span className="hidden sm:inline">Gestión de Abogados</span>
-              <span className="sm:hidden">Abogados</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="token-requests" 
-              className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm relative"
-            >
-              <Shield className="h-4 w-4" />
-              {tokenRequests.filter(req => req.status === 'pending').length > 0 && (
-                <Badge 
-                  variant="destructive" 
-                  className="absolute -top-1 -right-1 h-6 w-6 p-0 text-xs font-bold rounded-full flex items-center justify-center animate-pulse shadow-lg border-2 border-background"
-                >
-                  {tokenRequests.filter(req => req.status === 'pending').length}
-                </Badge>
-              )}
-              <span className="hidden sm:inline">Solicitudes Token</span>
-              <span className="sm:hidden">Tokens</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="agents" 
-              className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm relative"
-            >
-              <FileText className="h-4 w-4" />
-              {pendingAgentsCount > 0 && (
-                <Badge 
-                  variant="destructive" 
-                  className="absolute -top-1 -right-1 h-6 w-6 p-0 text-xs font-bold rounded-full flex items-center justify-center animate-pulse shadow-lg border-2 border-background"
-                >
-                  {pendingAgentsCount}
-                </Badge>
-              )}
-              <span className="hidden sm:inline">Gestión de Agentes</span>
-              <span className="sm:hidden">Agentes</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="stats" 
-              className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm"
-            >
-              <ChartPie className="h-4 w-4" />
-              <span className="hidden sm:inline">Performance Legal</span>
-              <span className="sm:hidden">Performance</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="blogs" 
-              className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm"
-            >
-              <BookOpen className="h-4 w-4" />
-              <span className="hidden sm:inline">Gestión de Blog</span>
-              <span className="sm:hidden">Blog</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="config" 
-              className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm"
-            >
-              <Settings className="h-4 w-4" />
-              <span className="hidden sm:inline">Configuración</span>
-              <span className="sm:hidden">Config</span>
-            </TabsTrigger>
-          </TabsList>
+      {/* Main Content Container */}
+      <div className="container mx-auto px-3 sm:px-4 py-4 max-w-7xl">
+
+        <Tabs defaultValue="lawyers" className="space-y-3 sm:space-y-6">
+          {/* Mobile-Optimized Tab Navigation */}
+          <div className="bg-white rounded-lg border shadow-sm p-2">
+            <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 gap-1 h-auto bg-slate-50 p-1 rounded-md">
+              <TabsTrigger 
+                value="lawyers" 
+                className="flex flex-col items-center gap-1 p-3 text-xs sm:text-sm rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all"
+              >
+                <Users className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span className="font-medium">Abogados</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="token-requests" 
+                className="flex flex-col items-center gap-1 p-3 text-xs sm:text-sm rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all relative"
+              >
+                <Shield className="h-4 w-4 sm:h-5 sm:w-5" />
+                {tokenRequests.filter(req => req.status === 'pending').length > 0 && (
+                  <Badge 
+                    variant="destructive" 
+                    className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs font-bold rounded-full flex items-center justify-center animate-pulse"
+                  >
+                    {tokenRequests.filter(req => req.status === 'pending').length}
+                  </Badge>
+                )}
+                <span className="font-medium">Tokens</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="agents" 
+                className="flex flex-col items-center gap-1 p-3 text-xs sm:text-sm rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all relative"
+              >
+                <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
+                {pendingAgentsCount > 0 && (
+                  <Badge 
+                    variant="destructive" 
+                    className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs font-bold rounded-full flex items-center justify-center animate-pulse"
+                  >
+                    {pendingAgentsCount}
+                  </Badge>
+                )}
+                <span className="font-medium">Agentes</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="stats" 
+                className="flex flex-col items-center gap-1 p-3 text-xs sm:text-sm rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all"
+              >
+                <ChartPie className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span className="font-medium hidden sm:inline">Performance</span>
+                <span className="font-medium sm:hidden">Stats</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="blogs" 
+                className="flex flex-col items-center gap-1 p-3 text-xs sm:text-sm rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all"
+              >
+                <BookOpen className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span className="font-medium">Blog</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="config" 
+                className="flex flex-col items-center gap-1 p-3 text-xs sm:text-sm rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all"
+              >
+                <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span className="font-medium">Config</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="lawyers" className="space-y-4 sm:space-y-6">
             <Card>
@@ -1663,21 +2034,115 @@ function AdminPage() {
                 <CardTitle className="text-lg">Abogados Registrados</CardTitle>
               </CardHeader>
               <CardContent>
-                {/* Mobile First Table - Stack on mobile */}
+                {/* Mobile First: Cards for mobile, Table for desktop */}
+                
+                {/* Mobile Cards View */}
+                <div className="lg:hidden space-y-3">
+                  {lawyers.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No hay abogados registrados</p>
+                    </div>
+                  ) : (
+                    lawyers.map((lawyer) => (
+                      <Card key={lawyer.id} className="border-l-4 border-l-primary">
+                        <CardContent className="p-4">
+                          <div className="space-y-3">
+                            {/* Header Row */}
+                            <div className="flex items-start justify-between">
+                              <div className="min-w-0 flex-1">
+                                <h3 className="font-semibold text-sm truncate">{lawyer.full_name}</h3>
+                                <p className="text-xs text-muted-foreground truncate">{lawyer.email}</p>
+                              </div>
+                              <Badge variant={lawyer.active ? "default" : "secondary"} className="ml-2 flex-shrink-0">
+                                {lawyer.active ? "Activo" : "Inactivo"}
+                              </Badge>
+                            </div>
+                            
+                            {/* Status Badges */}
+                            <div className="flex flex-wrap gap-2">
+                              {getLockStatusBadge(lawyer)}
+                              <Badge variant={lawyer.can_create_agents ? "default" : "outline"} className="text-xs">
+                                {lawyer.can_create_agents ? "Crea Agentes" : "Sin Agentes"}
+                              </Badge>
+                            </div>
+                            
+                            {/* Token Info */}
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <span>Token:</span>
+                              {lawyer.access_token ? (
+                                <div className="flex items-center gap-1">
+                                  <EyeOff className="h-3 w-3" />
+                                  <span className="font-mono">***...{lawyer.access_token.slice(-4)}</span>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => navigator.clipboard.writeText(lawyer.access_token!).then(() => toast({ title: "Token copiado al portapapeles" }))}
+                                    className="h-5 w-5 p-0"
+                                  >
+                                    <Copy className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <span className="text-red-500">Sin token</span>
+                              )}
+                            </div>
+                            
+                            {/* Last Login */}
+                            {lawyer.last_login_at && (
+                              <div className="text-xs text-muted-foreground">
+                                Último acceso: {new Date(lawyer.last_login_at).toLocaleDateString('es-ES')}
+                              </div>
+                            )}
+                            
+                            {/* Actions */}
+                            <div className="flex gap-2 pt-2 border-t">
+                              <Button
+                                variant={lawyer.active ? "outline" : "default"}
+                                size="sm"
+                                onClick={() => {
+                                  // Toggle lawyer active status - esta funcionalidad necesita implementarse
+                                  toast({ 
+                                    title: "Función pendiente", 
+                                    description: "La activación/desactivación de abogados estará disponible pronto" 
+                                  });
+                                }}
+                                className="flex-1"
+                              >
+                                {lawyer.active ? "Desactivar" : "Activar"}
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => deleteLawyer(lawyer.id, lawyer.full_name)}
+                                className="flex-1"
+                              >
+                                <Trash2 className="h-4 w-4 mr-1" />
+                                Eliminar
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
+                </div>
+
+                {/* Desktop Table View */}
                 <div className="hidden lg:block">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Nombre</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Token</TableHead>
-                          <TableHead>Estado</TableHead>
-                          <TableHead>Seguridad</TableHead>
-                          <TableHead>Crear Agentes</TableHead>
-                          <TableHead>Último Login</TableHead>
-                          <TableHead>Acciones</TableHead>
-                        </TableRow>
-                      </TableHeader>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Nombre</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Token</TableHead>
+                        <TableHead>Estado</TableHead>
+                        <TableHead>Seguridad</TableHead>
+                        <TableHead>Crear Agentes</TableHead>
+                        <TableHead>Último Login</TableHead>
+                        <TableHead>Acciones</TableHead>
+                      </TableRow>
+                    </TableHeader>
                     <TableBody>
                       {lawyers.map((lawyer) => (
                         <TableRow key={lawyer.id}>
@@ -3191,6 +3656,8 @@ function AdminPage() {
             </div>
           </div>
         )}
+        
+        </Tabs>
       </div>
     </div>
   );
