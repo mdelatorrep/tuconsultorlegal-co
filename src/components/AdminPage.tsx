@@ -574,14 +574,6 @@ function AdminPage() {
         return;
       }
 
-     console.log('=== CREATING LAWYER ===', {
-       sanitizedEmail,
-       sanitizedName,
-        phone_number: newLawyer.phone_number,
-        can_create_agents: newLawyer.can_create_agents,
-    });
-
-
   const updateLawyerPermissions = async (lawyerId: string, field: string, value: boolean) => {
     try {
       // Solo permitir actualizar campos específicos de abogados (NO is_admin)
