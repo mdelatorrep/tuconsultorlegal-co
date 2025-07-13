@@ -652,16 +652,24 @@ function AdminPage() {
     }
 
     try {
+      const authHeaders = getAuthHeaders();
+      
+      if (!authHeaders.authorization) {
+        toast({
+          title: "Error",
+          description: "No se encontró token de autorización",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('create-lawyer', {
-        body: JSON.stringify({
+        headers: authHeaders,
+        body: {
           email: sanitizedEmail,
           full_name: sanitizedName,
           phone_number: newLawyer.phone_number || null,
           can_create_agents: newLawyer.can_create_agents
-        }),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user.id}`
         }
       });
 
