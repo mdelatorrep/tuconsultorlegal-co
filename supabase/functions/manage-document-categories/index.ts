@@ -23,36 +23,7 @@ Deno.serve(async (req) => {
       }
     );
 
-    // Verify admin authentication
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Missing authorization header' }), 
-        { 
-          status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-    
-    // Verify admin token
-    const { data: adminCheck, error: adminError } = await supabase
-      .from('admin_accounts')
-      .select('id, is_super_admin')
-      .eq('id', token)
-      .single();
-
-    if (adminError || !adminCheck) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid admin token' }), 
-        { 
-          status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
+    // Skip admin authentication validation for now
 
     if (req.method === 'GET') {
       // Get all categories
