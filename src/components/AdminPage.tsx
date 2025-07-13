@@ -15,7 +15,7 @@ import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { AuthStorage } from "@/utils/authStorage";
 import AdminLogin from "./AdminLogin";
 import LawyerStatsAdmin from "./LawyerStatsAdmin";
-import { Users, FileText, Shield, Plus, Check, X, BarChart3, TrendingUp, DollarSign, Activity, LogOut, Unlock, AlertTriangle, Eye, EyeOff, Trash2, Copy, ChartPie, Settings, RefreshCw, Save } from "lucide-react";
+import { Users, FileText, Shield, Plus, Check, X, BarChart3, TrendingUp, DollarSign, Activity, LogOut, Unlock, AlertTriangle, Eye, EyeOff, Trash2, Copy, ChartPie, Settings, RefreshCw, Save, BookOpen, Calendar, Tags, Globe } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from "recharts";
 import DOMPurify from 'dompurify';
@@ -92,17 +92,43 @@ interface ContractDetail {
   user_email?: string;
 }
 
+interface BlogPost {
+  id: string;
+  title: string;
+  slug: string;
+  content: string;
+  excerpt?: string;
+  featured_image?: string;
+  status: 'draft' | 'published' | 'archived';
+  author_id: string;
+  published_at?: string;
+  created_at: string;
+  updated_at: string;
+  meta_title?: string;
+  meta_description?: string;
+  tags?: string[];
+  reading_time?: number;
+  views_count: number;
+  author?: {
+    full_name: string;
+    email: string;
+  };
+}
+
 function AdminPage() {
   const [lawyers, setLawyers] = useState<Lawyer[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [lawyerStats, setLawyerStats] = useState<LawyerStats[]>([]);
   const [businessStats, setBusinessStats] = useState<BusinessStats | null>(null);
   const [contracts, setContracts] = useState<ContractDetail[]>([]);
+  const [blogs, setBlogs] = useState<BlogPost[]>([]);
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
   const [tokenRequests, setTokenRequests] = useState<any[]>([]);
   const [pendingAgentsCount, setPendingAgentsCount] = useState(0);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
+  const [selectedBlog, setSelectedBlog] = useState<BlogPost | null>(null);
   const [showAgentDetails, setShowAgentDetails] = useState(false);
+  const [showBlogEditor, setShowBlogEditor] = useState(false);
   const [selectedLawyerForStats, setSelectedLawyerForStats] = useState<any>(null);
   const [showLawyerStatsDialog, setShowLawyerStatsDialog] = useState(false);
   const [documentCategories, setDocumentCategories] = useState<any[]>([]);
@@ -151,6 +177,19 @@ function AdminPage() {
     document_description: "",
     button_cta: "Generar Documento",
     target_audience: "personas"
+  });
+
+  // Blog form state
+  const [blogForm, setBlogForm] = useState({
+    title: "",
+    slug: "",
+    content: "",
+    excerpt: "",
+    featured_image: "",
+    status: "draft" as "draft" | "published" | "archived",
+    meta_title: "",
+    meta_description: "",
+    tags: [] as string[],
   });
 
   useEffect(() => {
@@ -300,6 +339,9 @@ function AdminPage() {
       // Load service status
       await loadServiceStatus();
 
+      // Load blogs
+      await loadBlogs();
+
       // Load statistics
       await loadStatistics(lawyersData || [], agentsData || []);
       console.log('Data loading completed successfully');
@@ -327,6 +369,38 @@ function AdminPage() {
           variant: "destructive"
         });
       }
+    }
+  };
+
+  const loadBlogs = async () => {
+    try {
+      const authHeaders = getAuthHeaders();
+      const { data: blogsData, error: blogsError } = await supabase.functions.invoke('manage-blog-posts?action=list', {
+        headers: authHeaders,
+        method: 'GET'
+      });
+
+      if (blogsError) {
+        console.error('Error loading blogs:', blogsError);
+        toast({
+          title: "Error al cargar blogs",
+          description: "No se pudieron cargar los artículos del blog.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (blogsData?.success) {
+        setBlogs(blogsData.blogs || []);
+        console.log('Blogs loaded:', blogsData.blogs?.length || 0);
+      }
+    } catch (error) {
+      console.error('Error loading blogs:', error);
+      toast({
+        title: "Error al cargar blogs",
+        description: "Error inesperado al cargar los artículos del blog.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -887,6 +961,174 @@ function AdminPage() {
     }
   };
 
+  // Blog management functions
+  const createBlog = async () => {
+    try {
+      const authHeaders = getAuthHeaders();
+      const adminAuth = AuthStorage.getAdminAuth();
+      
+      if (!adminAuth?.user?.id) {
+        toast({
+          title: "Error",
+          description: "No se pudo identificar al autor del blog.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('manage-blog-posts', {
+        headers: authHeaders,
+        method: 'POST',
+        body: JSON.stringify({
+          ...blogForm,
+          author_id: adminAuth.user.id
+        })
+      });
+
+      if (error) {
+        console.error('Error creating blog:', error);
+        throw new Error(error.message || 'Error al crear el blog');
+      }
+
+      if (!data?.success) {
+        throw new Error(data?.error || 'Error al crear el blog');
+      }
+
+      toast({
+        title: "Éxito",
+        description: "Blog creado exitosamente",
+      });
+
+      // Reset form and reload data
+      setBlogForm({
+        title: "",
+        slug: "",
+        content: "",
+        excerpt: "",
+        featured_image: "",
+        status: "draft",
+        meta_title: "",
+        meta_description: "",
+        tags: [],
+      });
+      setShowBlogEditor(false);
+      await loadBlogs();
+    } catch (error: any) {
+      console.error('Error creating blog:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Error al crear el blog",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const updateBlog = async () => {
+    if (!selectedBlog) return;
+
+    try {
+      const authHeaders = getAuthHeaders();
+      const { data, error } = await supabase.functions.invoke(`manage-blog-posts?id=${selectedBlog.id}`, {
+        headers: authHeaders,
+        method: 'PUT',
+        body: JSON.stringify(blogForm)
+      });
+
+      if (error) {
+        console.error('Error updating blog:', error);
+        throw new Error(error.message || 'Error al actualizar el blog');
+      }
+
+      if (!data?.success) {
+        throw new Error(data?.error || 'Error al actualizar el blog');
+      }
+
+      toast({
+        title: "Éxito",
+        description: "Blog actualizado exitosamente",
+      });
+
+      setShowBlogEditor(false);
+      setSelectedBlog(null);
+      await loadBlogs();
+    } catch (error: any) {
+      console.error('Error updating blog:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Error al actualizar el blog",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const deleteBlog = async (blogId: string) => {
+    if (!confirm('¿Estás seguro de que deseas eliminar este blog?')) {
+      return;
+    }
+
+    try {
+      const authHeaders = getAuthHeaders();
+      const { data, error } = await supabase.functions.invoke(`manage-blog-posts?id=${blogId}`, {
+        headers: authHeaders,
+        method: 'DELETE'
+      });
+
+      if (error) {
+        console.error('Error deleting blog:', error);
+        throw new Error(error.message || 'Error al eliminar el blog');
+      }
+
+      if (!data?.success) {
+        throw new Error(data?.error || 'Error al eliminar el blog');
+      }
+
+      toast({
+        title: "Éxito",
+        description: "Blog eliminado exitosamente",
+      });
+
+      await loadBlogs();
+    } catch (error: any) {
+      console.error('Error deleting blog:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Error al eliminar el blog",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const openBlogEditor = (blog?: BlogPost) => {
+    if (blog) {
+      setSelectedBlog(blog);
+      setBlogForm({
+        title: blog.title,
+        slug: blog.slug,
+        content: blog.content,
+        excerpt: blog.excerpt || "",
+        featured_image: blog.featured_image || "",
+        status: blog.status,
+        meta_title: blog.meta_title || "",
+        meta_description: blog.meta_description || "",
+        tags: blog.tags || [],
+      });
+    } else {
+      setSelectedBlog(null);
+      setBlogForm({
+        title: "",
+        slug: "",
+        content: "",
+        excerpt: "",
+        featured_image: "",
+        status: "draft",
+        meta_title: "",
+        meta_description: "",
+        tags: [],
+      });
+    }
+    setShowBlogEditor(true);
+  };
+
   const handleApproveRequest = (request: any) => {
     setSelectedRequest(request);
     setCanCreateAgents(false);
@@ -1222,7 +1464,7 @@ function AdminPage() {
 
         <Tabs defaultValue="lawyers" className="space-y-4 sm:space-y-6">
           {/* Mobile First Tab Navigation */}
-          <TabsList className="grid w-full grid-cols-5 h-auto p-1">
+          <TabsList className="grid w-full grid-cols-6 h-auto p-1">
             <TabsTrigger 
               value="lawyers" 
               className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm"
@@ -1270,6 +1512,14 @@ function AdminPage() {
               <ChartPie className="h-4 w-4" />
               <span className="hidden sm:inline">Performance Legal</span>
               <span className="sm:hidden">Performance</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="blogs" 
+              className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm"
+            >
+              <BookOpen className="h-4 w-4" />
+              <span className="hidden sm:inline">Gestión de Blog</span>
+              <span className="sm:hidden">Blog</span>
             </TabsTrigger>
             <TabsTrigger 
               value="config" 
@@ -1776,6 +2026,85 @@ function AdminPage() {
               authHeaders={getAuthHeaders()} 
               viewMode="global"
             />
+          </TabsContent>
+
+          <TabsContent value="blogs" className="space-y-4 sm:space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold">Gestión de Blog</h2>
+              <Button onClick={() => openBlogEditor()}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nuevo Artículo
+              </Button>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BookOpen className="h-5 w-5" />
+                  Artículos del Blog
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Título</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead>Autor</TableHead>
+                      <TableHead>Fecha Creación</TableHead>
+                      <TableHead>Fecha Publicación</TableHead>
+                      <TableHead>Vistas</TableHead>
+                      <TableHead>Acciones</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {blogs.map((blog) => (
+                      <TableRow key={blog.id}>
+                        <TableCell className="font-medium">
+                          <div>
+                            <div className="font-semibold">{blog.title}</div>
+                            <div className="text-sm text-muted-foreground">{blog.slug}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={
+                            blog.status === 'published' ? 'default' : 
+                            blog.status === 'draft' ? 'secondary' : 'destructive'
+                          }>
+                            {blog.status === 'published' ? 'Publicado' : 
+                             blog.status === 'draft' ? 'Borrador' : 'Archivado'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{blog.author?.full_name || 'Desconocido'}</TableCell>
+                        <TableCell>{new Date(blog.created_at).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          {blog.published_at ? new Date(blog.published_at).toLocaleDateString() : '-'}
+                        </TableCell>
+                        <TableCell>{blog.views_count}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openBlogEditor(blog)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => deleteBlog(blog.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="config" className="space-y-4 sm:space-y-6">
