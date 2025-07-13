@@ -72,6 +72,11 @@ export const useLawyerAuth = () => {
         setUser(data.user);
         setIsAuthenticated(true);
         
+        // Forzar una verificación del estado para asegurar consistencia
+        setTimeout(() => {
+          checkAuthStatus();
+        }, 100);
+        
         return true;
       }
       
