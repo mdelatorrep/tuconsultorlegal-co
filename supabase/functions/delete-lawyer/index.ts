@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
 
     // Check if lawyer exists
     const { data: existingLawyer, error: fetchError } = await supabase
-      .from('lawyer_accounts')
+      .from('lawyer_tokens')
       .select('id, full_name, email')
       .eq('id', lawyer_id)
       .maybeSingle()
@@ -135,7 +135,7 @@ Deno.serve(async (req) => {
 
     // Delete the lawyer account
     const { error: deleteError } = await supabase
-      .from('lawyer_accounts')
+      .from('lawyer_tokens')
       .delete()
       .eq('id', lawyer_id)
 
