@@ -61,16 +61,6 @@ export default function ContactPage({ onOpenChat, onNavigate }: ContactPageProps
             <div>
               <h2 className="text-2xl font-bold mb-6">Información de Contacto</h2>
               <div className="space-y-6">
-                <div className="flex items-start gap-4">
-                  <div className="p-3 bg-primary/10 rounded-full">
-                    <Phone className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold mb-1">Teléfono</h3>
-                    <p className="text-muted-foreground">+57 (1) 800-LEGAL</p>
-                    <p className="text-sm text-muted-foreground">Línea nacional gratuita</p>
-                  </div>
-                </div>
 
                 <div className="flex items-start gap-4">
                   <div className="p-3 bg-primary/10 rounded-full">
