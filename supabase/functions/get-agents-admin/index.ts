@@ -58,7 +58,14 @@ Deno.serve(async (req) => {
 
     let query = supabase
       .from('legal_agents')
-      .select('*')
+      .select(`
+        *,
+        created_by_lawyer:lawyer_tokens!legal_agents_created_by_fkey(
+          id,
+          full_name,
+          email
+        )
+      `)
       .order('created_at', { ascending: false });
 
     // If not admin, filter by created_by
