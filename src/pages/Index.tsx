@@ -13,6 +13,7 @@ import BlogArticlePage from "@/components/BlogArticlePage";
 import PrivacyPolicyPage from "@/components/PrivacyPolicyPage";
 import TermsAndConditionsPage from "@/components/TermsAndConditionsPage";
 import LawyerTokenRequestForm from "@/components/LawyerTokenRequestForm";
+import PricingPage from "@/components/PricingPage";
 
 export default function Index() {
   const [currentPage, setCurrentPage] = useState("home");
@@ -84,12 +85,7 @@ export default function Index() {
       case "empresas":
         return <EmpresasPage onOpenChat={handleOpenChat} onNavigate={handleNavigate} />;
       case "precios":
-        return (
-          <EmptyPage
-            title="Planes y Precios Flexibles"
-            subtitle="Elige el plan que mejor se adapte a tus necesidades. Sin contratos a largo plazo, sin costos ocultos."
-          />
-        );
+        return <PricingPage onOpenChat={handleOpenChat} onNavigate={handleNavigate} />;
       case "blog":
         return <BlogPage onOpenChat={handleOpenChat} onNavigate={handleNavigate} />;
       case "blog-articulo-arriendo":
