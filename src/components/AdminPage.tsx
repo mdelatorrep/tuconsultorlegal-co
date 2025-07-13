@@ -15,6 +15,7 @@ import { useNativeAdminAuth } from "@/hooks/useNativeAdminAuth";
 import NativeAdminLogin from "./NativeAdminLogin";
 import LawyerStatsAdmin from "./LawyerStatsAdmin";
 import { Users, FileText, Shield, Plus, Check, X, BarChart3, TrendingUp, DollarSign, Activity, LogOut, Unlock, AlertTriangle, Eye, EyeOff, Trash2, Copy, ChartPie, Settings, RefreshCw, Save } from "lucide-react";
+import * as LucideIcons from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from "recharts";
 import DOMPurify from 'dompurify';
 import PhoneInput from 'react-phone-number-input';
@@ -1725,7 +1726,7 @@ function AdminPage() {
                             <div className="flex items-center gap-3 flex-1">
                               <div className="p-2 bg-primary/10 rounded-lg">
                                 {category.icon && React.createElement(
-                                  require('lucide-react')[category.icon] || FileText,
+                                  (LucideIcons as any)[category.icon] || FileText,
                                   { className: "h-4 w-4 text-primary" }
                                 )}
                               </div>
