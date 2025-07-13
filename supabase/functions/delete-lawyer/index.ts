@@ -56,6 +56,7 @@ Deno.serve(async (req) => {
 
     // Input validation
     if (!lawyer_id) {
+      console.error('Missing lawyer_id in request')
       return new Response(JSON.stringify({ error: 'Lawyer ID is required' }), {
         status: 400,
         headers: securityHeaders
