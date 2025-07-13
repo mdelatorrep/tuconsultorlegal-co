@@ -6,45 +6,36 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const securityHeaders = {
-  ...corsHeaders,
-  'Content-Type': 'application/json',
-  'X-Content-Type-Options': 'nosniff',
-  'X-Frame-Options': 'DENY',
-  'X-XSS-Protection': '1; mode=block',
-  'Referrer-Policy': 'strict-origin-when-cross-origin',
-  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-  'Pragma': 'no-cache',
-  'Expires': '0'
-};
-
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   if (req.method !== 'GET') {
-    return new Response('Method not allowed', { status: 405, headers: securityHeaders });
+    return new Response('Method not allowed', { 
+      status: 405, 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
   }
 
   try {
-    console.log('=== GET OPENAI MODELS START ===');
+    console.log('Fetching OpenAI models...');
 
-    // Get OpenAI API key
+    // Get OpenAI API key from environment
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
-      console.error('OpenAI API key not configured');
+      console.error('OPENAI_API_KEY not found in environment');
       return new Response(JSON.stringify({ 
         success: false,
-        error: 'OpenAI API key no configurada' 
+        error: 'OpenAI API key no configurada en el servidor' 
       }), {
         status: 500,
-        headers: securityHeaders
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    console.log('Fetching available OpenAI models...');
-
+    // Fetch models from OpenAI API
     const response = await fetch('https://api.openai.com/v1/models', {
       method: 'GET',
       headers: {
@@ -53,76 +44,70 @@ serve(async (req) => {
       },
     });
 
-    console.log('OpenAI API response status:', response.status);
-
     if (!response.ok) {
-      const errorData = await response.text();
-      console.error('OpenAI API error:', response.status, errorData);
+      const errorText = await response.text();
+      console.error(`OpenAI API error: ${response.status} - ${errorText}`);
       return new Response(JSON.stringify({ 
         success: false,
         error: `Error de OpenAI API: ${response.status}`,
-        details: errorData 
+        details: errorText 
       }), {
-        status: response.status,
-        headers: securityHeaders
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
     const data = await response.json();
-    console.log('Raw models count:', data?.data?.length || 0);
     
-    if (!data.data || !Array.isArray(data.data)) {
-      console.error('Invalid OpenAI models response structure:', data);
+    if (!data || !data.data || !Array.isArray(data.data)) {
+      console.error('Invalid response structure from OpenAI API');
       return new Response(JSON.stringify({ 
         success: false,
-        error: 'Respuesta inválida de OpenAI' 
+        error: 'Respuesta inválida de OpenAI API' 
       }), {
         status: 500,
-        headers: securityHeaders
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    // Filter for text generation models that are commonly used
-    const allModels = data.data.map((model: any) => ({
-      id: model.id,
-      object: model.object,
-      created: model.created,
-      owned_by: model.owned_by
-    }));
+    // Filter for GPT models only (text generation)
+    const gptModels = data.data
+      .filter((model: any) => 
+        model.id && 
+        model.id.includes('gpt') && 
+        !model.id.includes('embedding') &&
+        !model.id.includes('whisper') &&
+        !model.id.includes('tts') &&
+        !model.id.includes('davinci-002') &&
+        !model.id.includes('babbage-002')
+      )
+      .map((model: any) => ({
+        id: model.id,
+        object: model.object || 'model',
+        created: model.created || 0,
+        owned_by: model.owned_by || 'openai'
+      }))
+      .sort((a: any, b: any) => a.id.localeCompare(b.id));
 
-    // Filter for GPT models only
-    const gptModels = allModels.filter((model: any) => 
-      model.id.includes('gpt') && 
-      !model.id.includes('instruct') && 
-      !model.id.includes('edit') &&
-      !model.id.includes('embedding') &&
-      !model.id.includes('whisper') &&
-      !model.id.includes('tts') &&
-      !model.id.includes('davinci-002') &&
-      !model.id.includes('babbage-002')
-    );
-
-    console.log(`Found ${allModels.length} total models, filtered to ${gptModels.length} GPT models`);
-    console.log('=== GET OPENAI MODELS SUCCESS ===');
+    console.log(`Successfully fetched ${gptModels.length} GPT models from ${data.data.length} total models`);
 
     return new Response(JSON.stringify({
       success: true,
       models: gptModels,
-      total_models: allModels.length
+      total_available: data.data.length
     }), {
-      headers: securityHeaders
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
   } catch (error) {
-    console.error('=== GET OPENAI MODELS ERROR ===');
-    console.error('Error fetching OpenAI models:', error);
+    console.error('Unexpected error fetching OpenAI models:', error);
     return new Response(JSON.stringify({ 
       success: false,
-      error: 'Error interno obteniendo modelos de OpenAI',
-      details: error instanceof Error ? error.message : 'Error desconocido'
+      error: 'Error interno del servidor',
+      details: error instanceof Error ? error.message : String(error)
     }), {
       status: 500,
-      headers: securityHeaders
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
 });
