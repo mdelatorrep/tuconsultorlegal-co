@@ -27,25 +27,26 @@ Deno.serve(async (req) => {
 
     console.log('Delete lawyer function called')
 
+    // Parse request body
     let requestBody
     try {
       const bodyText = await req.text()
-      console.log('Raw request body:', bodyText.substring(0, 200))
+      console.log('Raw request body:', bodyText)
       
-      if (!bodyText.trim()) {
-        return new Response(JSON.stringify({ error: 'Empty request body' }), {
+      if (!bodyText || !bodyText.trim()) {
+        console.error('Empty request body received')
+        return new Response(JSON.stringify({ error: 'Request body is required' }), {
           status: 400,
           headers: securityHeaders
         })
       }
       
       requestBody = JSON.parse(bodyText)
-      console.log('Request body parsed successfully, keys:', Object.keys(requestBody))
+      console.log('Parsed request body:', requestBody)
     } catch (parseError) {
       console.error('JSON parse error:', parseError)
       return new Response(JSON.stringify({ 
-        error: 'Invalid JSON in request body',
-        message: parseError.message 
+        error: 'Invalid JSON in request body' 
       }), {
         status: 400,
         headers: securityHeaders
@@ -54,16 +55,16 @@ Deno.serve(async (req) => {
 
     const { lawyer_id } = requestBody
 
-    // Input validation
+    // Validate required fields
     if (!lawyer_id) {
       console.error('Missing lawyer_id in request')
-      return new Response(JSON.stringify({ error: 'Lawyer ID is required' }), {
+      return new Response(JSON.stringify({ error: 'lawyer_id is required' }), {
         status: 400,
         headers: securityHeaders
       })
     }
 
-    console.log('Attempting to delete lawyer with ID:', lawyer_id)
+    console.log('Processing deletion for lawyer ID:', lawyer_id)
 
     // Check if lawyer exists
     const { data: existingLawyer, error: fetchError } = await supabase
@@ -81,6 +82,7 @@ Deno.serve(async (req) => {
     }
 
     if (!existingLawyer) {
+      console.log('Lawyer not found with ID:', lawyer_id)
       return new Response(JSON.stringify({ error: 'Lawyer not found' }), {
         status: 404,
         headers: securityHeaders
@@ -103,22 +105,7 @@ Deno.serve(async (req) => {
       })
     }
 
-    console.log('Lawyer deleted successfully')
-
-    // Note: log_security_event RPC function doesn't exist yet
-    // TODO: Implement security event logging
-    /*
-    await supabase.rpc('log_security_event', {
-      event_type: 'lawyer_deleted',
-      user_id: admin.id,
-      details: { 
-        deleted_lawyer_id: lawyer_id,
-        deleted_lawyer_name: existingLawyer.full_name,
-        deleted_lawyer_email: existingLawyer.email,
-        admin_email: admin.email
-      }
-    })
-    */
+    console.log('Lawyer deleted successfully:', existingLawyer.full_name)
 
     return new Response(JSON.stringify({
       success: true,
