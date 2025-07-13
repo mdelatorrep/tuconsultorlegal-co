@@ -68,12 +68,31 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
     { id: 5, title: "Revisar", description: "Envío a revisión" },
   ];
 
-  const categories = [
-    "Vivienda y Arriendos",
-    "Trabajo y Empleo", 
-    "Finanzas y Acuerdos Personales",
-    "Comercial y Societario"
-  ];
+  const [categories, setCategories] = useState<string[]>([]);
+
+  // Load categories from database
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  const loadCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('document_categories')
+        .select('name')
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) {
+        console.error('Error loading categories:', error);
+        return;
+      }
+
+      setCategories(data?.map(cat => cat.name) || []);
+    } catch (error) {
+      console.error('Error loading categories:', error);
+    }
+  };
 
   const handleInputChange = (field: string, value: string) => {
     if (field === 'slaEnabled') {

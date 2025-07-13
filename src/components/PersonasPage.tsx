@@ -72,27 +72,25 @@ export default function PersonasPage({ onOpenChat, onNavigate }: PersonasPagePro
   }, {} as { [key: string]: AgentService[] });
 
   const getCategoryColor = (category: string) => {
-    const colors = {
-      'Vivienda y Arriendos': 'border-legal-blue',
-      'Trabajo y Empleo': 'border-success',
-      'Finanzas y Acuerdos Personales': 'border-rose-500',
-      'Familia': 'border-purple-500',
-      'Civil': 'border-blue-500',
-      'Comercial': 'border-green-500'
-    };
-    return colors[category as keyof typeof colors] || 'border-primary';
+    // Generate consistent colors based on category name hash
+    const colors = [
+      'border-legal-blue', 'border-success', 'border-rose-500', 'border-purple-500',
+      'border-blue-500', 'border-green-500', 'border-orange-500', 'border-pink-500',
+      'border-indigo-500', 'border-cyan-500'
+    ];
+    const hash = category.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a; }, 0);
+    return colors[Math.abs(hash) % colors.length];
   };
 
   const getServiceColor = (category: string) => {
-    const colors = {
-      'Vivienda y Arriendos': 'text-legal-blue',
-      'Trabajo y Empleo': 'text-success',
-      'Finanzas y Acuerdos Personales': 'text-rose-600',
-      'Familia': 'text-purple-600',
-      'Civil': 'text-blue-600',
-      'Comercial': 'text-green-600'
-    };
-    return colors[category as keyof typeof colors] || 'text-primary';
+    // Generate consistent colors based on category name hash
+    const colors = [
+      'text-legal-blue', 'text-success', 'text-rose-600', 'text-purple-600',
+      'text-blue-600', 'text-green-600', 'text-orange-600', 'text-pink-600',
+      'text-indigo-600', 'text-cyan-600'
+    ];
+    const hash = category.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a; }, 0);
+    return colors[Math.abs(hash) % colors.length];
   };
 
   if (loading) {

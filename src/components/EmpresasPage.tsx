@@ -71,27 +71,25 @@ export default function EmpresasPage({ onOpenChat, onNavigate }: EmpresasPagePro
   }, {} as { [key: string]: AgentService[] });
 
   const getCategoryColor = (category: string) => {
-    const colors = {
-      'Comercial': 'border-primary',
-      'Laboral Empresarial': 'border-blue-500',
-      'Societario': 'border-green-500',
-      'Contractual': 'border-purple-500',
-      'Fiscal y Tributario': 'border-orange-500',
-      'Propiedad Intelectual': 'border-pink-500'
-    };
-    return colors[category as keyof typeof colors] || 'border-primary';
+    // Generate consistent colors based on category name hash
+    const colors = [
+      'border-primary', 'border-blue-500', 'border-green-500', 'border-purple-500',
+      'border-orange-500', 'border-pink-500', 'border-indigo-500', 'border-cyan-500',
+      'border-red-500', 'border-yellow-500'
+    ];
+    const hash = category.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a; }, 0);
+    return colors[Math.abs(hash) % colors.length];
   };
 
   const getServiceColor = (category: string) => {
-    const colors = {
-      'Comercial': 'text-primary',
-      'Laboral Empresarial': 'text-blue-600',
-      'Societario': 'text-green-600',
-      'Contractual': 'text-purple-600',
-      'Fiscal y Tributario': 'text-orange-600',
-      'Propiedad Intelectual': 'text-pink-600'
-    };
-    return colors[category as keyof typeof colors] || 'text-primary';
+    // Generate consistent colors based on category name hash
+    const colors = [
+      'text-primary', 'text-blue-600', 'text-green-600', 'text-purple-600',
+      'text-orange-600', 'text-pink-600', 'text-indigo-600', 'text-cyan-600',
+      'text-red-600', 'text-yellow-600'
+    ];
+    const hash = category.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a; }, 0);
+    return colors[Math.abs(hash) % colors.length];
   };
 
   if (loading) {
