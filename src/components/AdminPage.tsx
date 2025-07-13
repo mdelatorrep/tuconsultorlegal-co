@@ -372,9 +372,11 @@ export default function AdminPage() {
 
   const loadOpenAIModels = async () => {
     try {
-      const authHeaders = getAuthHeaders();
       const { data: modelsData, error: modelsError } = await supabase.functions.invoke('get-openai-models', {
-        headers: authHeaders
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
 
       if (modelsError) {
@@ -389,9 +391,18 @@ export default function AdminPage() {
 
       if (modelsData?.success) {
         setAvailableModels(modelsData.models || []);
+        toast({
+          title: "Modelos cargados",
+          description: `Se cargaron ${modelsData.models?.length || 0} modelos disponibles.`,
+        });
       }
     } catch (error) {
       console.error('Error loading OpenAI models:', error);
+      toast({
+        title: "Error al cargar modelos",
+        description: "Error inesperado al cargar los modelos.",
+        variant: "destructive"
+      });
     }
   };
 
