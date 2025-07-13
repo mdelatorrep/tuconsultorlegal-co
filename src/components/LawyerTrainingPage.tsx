@@ -30,6 +30,7 @@ interface LawyerTrainingPageProps {
 export default function LawyerTrainingPage({ onBack, lawyerData }: LawyerTrainingPageProps) {
   const [completedModules, setCompletedModules] = useState<string[]>([]);
   const [currentProgress, setCurrentProgress] = useState(0);
+  const [selectedModule, setSelectedModule] = useState<string | null>(null);
 
   const markModuleComplete = (moduleId: string) => {
     if (!completedModules.includes(moduleId)) {
@@ -86,6 +87,283 @@ export default function LawyerTrainingPage({ onBack, lawyerData }: LawyerTrainin
       explanation: "Incluye detalles específicos del inmueble, términos financieros y marco legal aplicable."
     }
   ];
+
+  // Contenido detallado de cada módulo
+  const moduleContents = {
+    "ia-basics": {
+      title: "Fundamentos de Inteligencia Artificial",
+      sections: [
+        {
+          title: "¿Qué es la Inteligencia Artificial?",
+          content: [
+            "La Inteligencia Artificial (IA) es la capacidad de las máquinas para simular procesos de inteligencia humana, incluyendo aprendizaje, razonamiento y autocorrección.",
+            "En el contexto legal, la IA puede procesar grandes volúmenes de información legal, identificar patrones en jurisprudencia, y asistir en la redacción de documentos."
+          ]
+        },
+        {
+          title: "Tipos de IA Relevantes para Abogados",
+          content: [
+            "**IA Generativa:** Crea contenido nuevo como textos legales, contratos y análisis.",
+            "**Procesamiento de Lenguaje Natural (NLP):** Comprende y genera texto en lenguaje humano.",
+            "**Modelos de Lenguaje:** Como GPT, que pueden entender contexto legal y generar documentos coherentes."
+          ]
+        },
+        {
+          title: "Aplicaciones en el Derecho",
+          content: [
+            "• **Redacción de documentos:** Contratos, demandas, escritos legales",
+            "• **Investigación jurídica:** Búsqueda y análisis de precedentes",
+            "• **Revisión de contratos:** Identificación de cláusulas problemáticas",
+            "• **Automatización de procesos:** Generación de formularios y plantillas"
+          ]
+        },
+        {
+          title: "Consideraciones Éticas y Legales",
+          content: [
+            "⚖️ **Responsabilidad profesional:** El abogado siempre debe revisar y validar el contenido generado",
+            "🔒 **Confidencialidad:** Nunca incluir información sensible en prompts públicos",
+            "📋 **Precisión:** La IA debe ser una herramienta de apoyo, no un reemplazo del criterio legal"
+          ]
+        }
+      ]
+    },
+    "prompt-engineering": {
+      title: "Ingeniería de Prompts",
+      sections: [
+        {
+          title: "Fundamentos del Prompt Engineering",
+          content: [
+            "El prompt engineering es el arte y ciencia de diseñar instrucciones efectivas para que la IA genere resultados precisos y útiles.",
+            "Un buen prompt debe ser claro, específico, contextual y estructurado para obtener la respuesta deseada."
+          ]
+        },
+        {
+          title: "Anatomía de un Prompt Efectivo",
+          content: [
+            "**1. Contexto:** Define el rol y la situación",
+            "**2. Tarea:** Especifica qué debe hacer exactamente",
+            "**3. Formato:** Indica cómo debe estructurar la respuesta",
+            "**4. Restricciones:** Establece límites y consideraciones",
+            "**5. Ejemplos:** Proporciona referencias cuando sea útil"
+          ]
+        },
+        {
+          title: "Técnicas Avanzadas",
+          content: [
+            "🎯 **Prompting por pasos:** Divide tareas complejas en pasos simples",
+            "🔄 **Prompting iterativo:** Refina el resultado mediante múltiples interacciones",
+            "📝 **Few-shot prompting:** Proporciona ejemplos para guiar el comportamiento",
+            "🧠 **Chain of thought:** Solicita que muestre el razonamiento paso a paso"
+          ]
+        },
+        {
+          title: "Errores Comunes y Cómo Evitarlos",
+          content: [
+            "❌ **Prompts vagos:** 'Redacta un contrato' → ✅ 'Redacta un contrato de compraventa de inmueble con [variables específicas]'",
+            "❌ **Falta de contexto legal:** No mencionar normatividad aplicable",
+            "❌ **Variables mal definidas:** Usar [NOMBRE] en lugar de [NOMBRE_COMPRADOR]",
+            "❌ **Sin estructura:** No especificar formato de salida deseado"
+          ]
+        }
+      ]
+    },
+    "legal-agents": {
+      title: "Creación de Agentes Legales",
+      sections: [
+        {
+          title: "¿Qué es un Agente Legal?",
+          content: [
+            "Un agente legal es un sistema de IA especializado en una tarea jurídica específica, diseñado para generar documentos consistentes y de alta calidad.",
+            "Cada agente combina un prompt maestro, plantillas de documentos y variables personalizables para crear soluciones automatizadas."
+          ]
+        },
+        {
+          title: "Planificación del Agente",
+          content: [
+            "**1. Identificación del problema:** ¿Qué documento o proceso se va a automatizar?",
+            "**2. Análisis de audiencia:** ¿Para personas naturales, empresas o ambos?",
+            "**3. Definición de variables:** ¿Qué información específica se necesita?",
+            "**4. Marco legal:** ¿Qué leyes, códigos o normativas aplican?",
+            "**5. Casos de uso:** ¿En qué situaciones se utilizará?"
+          ]
+        },
+        {
+          title: "Desarrollo del Prompt Maestro",
+          content: [
+            "El prompt maestro es el cerebro del agente. Debe incluir:",
+            "• **Rol profesional:** 'Actúa como un abogado especialista en...'",
+            "• **Contexto normativo:** Referencias a leyes colombianas específicas",
+            "• **Instrucciones detalladas:** Qué debe generar y cómo",
+            "• **Estilo y tono:** Formal, técnico, acorde al documento",
+            "• **Validaciones:** Qué verificar antes de entregar el resultado"
+          ]
+        },
+        {
+          title: "Diseño de Variables Inteligentes",
+          content: [
+            "📋 **Nombres descriptivos:** [CEDULA_ARRENDADOR] vs [CEDULA]",
+            "📅 **Tipos de datos:** [FECHA_NACIMIENTO] (DD/MM/AAAA)",
+            "💰 **Formatos específicos:** [VALOR_CANON] (solo número, sin puntos ni comas)",
+            "📍 **Datos compuestos:** [DIRECCION_COMPLETA] incluye calle, número, ciudad",
+            "⚡ **Variables opcionales:** [CLAUSULA_ESPECIAL] (opcional)"
+          ]
+        },
+        {
+          title: "Pruebas y Optimización",
+          content: [
+            "🧪 **Casos de prueba:** Diferentes escenarios reales",
+            "🔍 **Revisión legal:** Verificar cumplimiento normativo",
+            "📊 **Métricas de calidad:** Consistencia, precisión, completitud",
+            "🔄 **Iteración:** Refinar basándose en retroalimentación",
+            "📚 **Documentación:** Mantener registro de cambios y mejoras"
+          ]
+        }
+      ]
+    },
+    "document-templates": {
+      title: "Plantillas de Documentos Inteligentes",
+      sections: [
+        {
+          title: "Arquitectura de Plantillas",
+          content: [
+            "Una plantilla inteligente combina estructura legal fija con campos dinámicos que se adaptan al contexto específico.",
+            "Debe mantener la solidez jurídica mientras permite personalización automática."
+          ]
+        },
+        {
+          title: "Elementos de una Plantilla Efectiva",
+          content: [
+            "**📜 Encabezado:** Identificación del tipo de documento y partes",
+            "**⚖️ Considerandos:** Marco legal y justificación",
+            "**📋 Clausulado:** Obligaciones, derechos y condiciones",
+            "**📝 Variables dinámicas:** Campos que se completan automáticamente",
+            "**🔒 Cláusulas de cierre:** Firmas, fechas y formalidades"
+          ]
+        },
+        {
+          title: "Diseño de Variables Complejas",
+          content: [
+            "**Variables condicionales:** Si [TIPO_PERSONA] = 'natural' entonces incluir cédula, si 'jurídica' entonces NIT",
+            "**Variables calculadas:** [VALOR_INCREMENTO] = [CANON_ACTUAL] * [PORCENTAJE_IPC]",
+            "**Variables de lista:** [OBLIGACIONES_ARRENDADOR] puede incluir múltiples elementos",
+            "**Variables anidadas:** [DATOS_REPRESENTANTE] solo si [TIPO_CONTRATANTE] = 'empresa'"
+          ]
+        },
+        {
+          title: "Estructura Legal Colombiana",
+          content: [
+            "🏛️ **Jerarquía normativa:** Constitución → Leyes → Decretos → Resoluciones",
+            "📚 **Códigos aplicables:** Civil, Comercial, Laboral, Penal según el documento",
+            "⚖️ **Jurisprudencia:** Considerar precedentes de Corte Constitucional y Suprema",
+            "🏢 **Entidades reguladoras:** SuperSociedades, SuperFinanciera, MinTrabajo",
+            "📋 **Formalidades:** Requisitos específicos por tipo de documento"
+          ]
+        },
+        {
+          title: "Control de Calidad",
+          content: [
+            "✅ **Revisión jurídica:** Verificar cumplimiento de requisitos legales",
+            "🔍 **Consistencia interna:** Variables coherentes en todo el documento",
+            "📏 **Estándares de formato:** Numeración, espaciado, fuentes",
+            "🧪 **Pruebas de estrés:** Valores extremos y casos límite",
+            "📊 **Métricas de éxito:** Tiempo de generación, precisión, satisfacción del usuario"
+          ]
+        },
+        {
+          title: "Mantenimiento y Actualización",
+          content: [
+            "📅 **Revisión periódica:** Cambios en normatividad",
+            "🔄 **Versionado:** Control de cambios en plantillas",
+            "📈 **Análisis de uso:** Qué variables se usan más",
+            "💡 **Mejora continua:** Feedback de usuarios finales",
+            "🚀 **Actualizaciones automáticas:** Notificar cambios importantes"
+          ]
+        }
+      ]
+    }
+  };
+
+  // Si hay un módulo seleccionado, mostrar su contenido
+  if (selectedModule && moduleContents[selectedModule as keyof typeof moduleContents]) {
+    const module = moduleContents[selectedModule as keyof typeof moduleContents];
+    return (
+      <div className="container mx-auto px-6 py-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center gap-4 mb-8">
+            <Button variant="ghost" onClick={() => setSelectedModule(null)}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Volver a Módulos
+            </Button>
+          </div>
+
+          <div className="mb-8">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="bg-primary/10 p-3 rounded-lg">
+                <Brain className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-foreground">
+                  {module.title}
+                </h1>
+                <p className="text-lg text-muted-foreground">
+                  Contenido del módulo de formación
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-8">
+            {module.sections.map((section, index) => (
+              <Card key={index}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <span className="bg-primary text-primary-foreground text-sm px-2 py-1 rounded">
+                      {index + 1}
+                    </span>
+                    {section.title}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {section.content.map((paragraph, pIndex) => (
+                    <div key={pIndex} className="prose prose-sm max-w-none">
+                      {paragraph.includes('**') ? (
+                        <div dangerouslySetInnerHTML={{
+                          __html: paragraph
+                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                            .replace(/• /g, '<br/>• ')
+                            .replace(/\n/g, '<br/>')
+                        }} />
+                      ) : (
+                        <p className="text-muted-foreground leading-relaxed">
+                          {paragraph}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <div className="mt-8 flex justify-between">
+            <Button variant="outline" onClick={() => setSelectedModule(null)}>
+              Volver a Módulos
+            </Button>
+            <Button 
+              onClick={() => {
+                markModuleComplete(selectedModule);
+                setSelectedModule(null);
+              }}
+              className="bg-success hover:bg-success/90"
+            >
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Marcar como Completado
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-6 py-8">
@@ -180,7 +458,7 @@ export default function LawyerTrainingPage({ onBack, lawyerData }: LawyerTrainin
                     <Button 
                       className="w-full"
                       variant={completedModules.includes(module.id) ? "outline" : "default"}
-                      onClick={() => markModuleComplete(module.id)}
+                      onClick={() => setSelectedModule(module.id)}
                     >
                       <PlayCircle className="h-4 w-4 mr-2" />
                       {completedModules.includes(module.id) ? "Revisar Módulo" : "Iniciar Módulo"}
