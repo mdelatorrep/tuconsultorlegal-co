@@ -944,11 +944,10 @@ function AdminPage() {
   // Load document categories
   const loadDocumentCategories = async () => {
     try {
-      const authHeaders = getAuthHeaders();
-      const { data, error } = await supabase.functions.invoke('manage-document-categories', {
-        headers: authHeaders,
-        method: 'GET'
-      });
+      const { data, error } = await supabase
+        .from('document_categories')
+        .select('*')
+        .order('name');
 
       if (error) {
         console.error('Error loading categories:', error);
@@ -960,12 +959,7 @@ function AdminPage() {
         return;
       }
 
-      if (Array.isArray(data)) {
-        setDocumentCategories(data);
-      } else {
-        console.error('Unexpected response format:', data);
-        setDocumentCategories([]);
-      }
+      setDocumentCategories(data || []);
     } catch (error) {
       console.error('Error loading categories:', error);
       toast({
