@@ -14,6 +14,63 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Función para realizar el llamado a OpenAI con reintentos
+  async function callOpenAIWithRetry(requestBody: any, maxRetries = 3) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`OpenAI attempt ${attempt}/${maxRetries}`);
+        
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openAIApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.text();
+          console.error(`OpenAI API error (attempt ${attempt}):`, response.status, errorData);
+          
+          // Si es el último intento o un error permanente, lanzar error
+          if (attempt === maxRetries || response.status === 400 || response.status === 401) {
+            throw new Error(`Error de OpenAI: ${response.status} ${response.statusText}`);
+          }
+          
+          // Esperar antes del siguiente intento (backoff exponencial)
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+          continue;
+        }
+
+        const data = await response.json();
+        
+        if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+          console.error(`Invalid OpenAI response (attempt ${attempt}):`, data);
+          
+          if (attempt === maxRetries) {
+            throw new Error('Respuesta inválida de OpenAI');
+          }
+          
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+          continue;
+        }
+
+        return data;
+        
+      } catch (error) {
+        console.error(`OpenAI call failed (attempt ${attempt}):`, error);
+        
+        if (attempt === maxRetries) {
+          throw error;
+        }
+        
+        // Esperar antes del siguiente intento
+        await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+      }
+    }
+  }
+
   try {
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
@@ -67,18 +124,12 @@ serve(async (req) => {
       );
     }
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: selectedModel,
-        messages: [
-          {
-            role: 'system',
-            content: `Eres un experto en marketing legal y comunicación con usuarios finales en Colombia. Tu tarea es mejorar el nombre y descripción de servicios legales para que sean más atractivos y comprensibles para el usuario final.
+    const requestBody = {
+      model: selectedModel,
+      messages: [
+        {
+          role: 'system',
+          content: `Eres un experto en marketing legal y comunicación con usuarios finales en Colombia. Tu tarea es mejorar el nombre y descripción de servicios legales para que sean más atractivos y comprensibles para el usuario final.
 
 PÚBLICO OBJETIVO: ${targetAudience === 'empresas' ? 'Empresas y clientes corporativos' : 'Personas (clientes individuales)'}
 
@@ -94,29 +145,23 @@ REGLAS IMPORTANTES:
 9. ${targetAudience === 'empresas' ? 'Usa terminología corporativa apropiada y enfócate en aspectos empresariales' : 'Usa lenguaje amigable para personas naturales y enfócate en beneficios personales'}
 
 OBJETIVO: Mejorar el nombre y descripción para que sean más atractivos y comprensibles para ${targetAudience === 'empresas' ? 'empresas' : 'personas naturales'}.`
-          },
-          {
-            role: 'user',
-            content: `Categoría: ${docCategory}
+        },
+        {
+          role: 'user',
+          content: `Categoría: ${docCategory}
 Público objetivo: ${targetAudience === 'empresas' ? 'Empresas' : 'Personas'}
 Nombre actual: ${docName}
 Descripción actual: ${docDesc}
 
 Mejora el nombre y descripción para que sean más atractivos y comprensibles para ${targetAudience === 'empresas' ? 'clientes corporativos' : 'usuarios finales individuales'}.`
-          }
-        ],
-        temperature: 0.3,
-        max_tokens: 1000,
-      }),
-    });
+        }
+      ],
+      temperature: 0.3,
+      max_tokens: 1000,
+    };
 
-    if (!response.ok) {
-      const errorData = await response.text();
-      console.error('OpenAI API error:', errorData);
-      throw new Error(`Error de OpenAI: ${response.status} ${response.statusText}`);
-    }
+    const data = await callOpenAIWithRetry(requestBody);
 
-    const data = await response.json();
     
     if (!data.choices || !data.choices[0] || !data.choices[0].message) {
       console.error('Invalid OpenAI response:', data);

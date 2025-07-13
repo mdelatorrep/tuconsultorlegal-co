@@ -266,7 +266,10 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
 
   // Show login form if not authenticated
   if (!isAuthenticated) {
-    return <LawyerLogin onLoginSuccess={() => window.location.reload()} />;
+    return <LawyerLogin onLoginSuccess={() => {
+      // No hacer reload, solo refrescar los datos
+      fetchPendingDocuments();
+    }} />;
   }
 
   // Show loading if auth is still loading or documents are loading

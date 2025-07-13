@@ -89,13 +89,16 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
     loadDrafts();
   }, []);
 
-  // Auto-save draft when form data changes
+  // Auto-save draft when form data changes (excluding initial load)
   useEffect(() => {
+    // Evitar auto-save en la carga inicial
+    if (!formData.docName && !formData.docDesc && !formData.docTemplate && !formData.initialPrompt) {
+      return;
+    }
+
     const timer = setTimeout(() => {
-      if (formData.docName || formData.docDesc || formData.docTemplate || formData.initialPrompt) {
-        saveDraft();
-      }
-    }, 2000); // Auto-save after 2 seconds of inactivity
+      saveDraft();
+    }, 3000); // Auto-save after 3 seconds of inactivity
 
     return () => clearTimeout(timer);
   }, [formData, currentStep, aiResults]);
