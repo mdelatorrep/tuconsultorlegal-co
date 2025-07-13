@@ -7,12 +7,13 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { useNativeAdminAuth } from "@/hooks/useNativeAdminAuth";
 import NativeAdminLogin from "./NativeAdminLogin";
 import LawyerStatsAdmin from "./LawyerStatsAdmin";
-import { Users, FileText, Shield, Plus, Check, X, BarChart3, TrendingUp, DollarSign, Activity, LogOut, Unlock, AlertTriangle, Eye, EyeOff, Trash2, Copy, ChartPie } from "lucide-react";
+import { Users, FileText, Shield, Plus, Check, X, BarChart3, TrendingUp, DollarSign, Activity, LogOut, Unlock, AlertTriangle, Eye, EyeOff, Trash2, Copy, ChartPie, Settings, RefreshCw } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from "recharts";
 import DOMPurify from 'dompurify';
 import PhoneInput from 'react-phone-number-input';
@@ -90,6 +91,9 @@ export default function AdminPage() {
   const [generatedToken, setGeneratedToken] = useState('');
   const [showTokenDialog, setShowTokenDialog] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [availableModels, setAvailableModels] = useState<any[]>([]);
+  const [selectedModel, setSelectedModel] = useState('gpt-4.1-2025-04-14');
+  const [systemConfig, setSystemConfig] = useState<any>({});
   const { toast } = useToast();
   const { isAuthenticated, isLoading, user, logout, getAuthHeaders, checkAuthStatus } = useNativeAdminAuth();
 
@@ -245,6 +249,9 @@ export default function AdminPage() {
         setTokenRequests(tokenRequestsData || []);
       }
 
+      // Load system configuration
+      await loadSystemConfig();
+
       // Load statistics
       await loadStatistics(lawyersData || [], agentsData || []);
       console.log('Data loading completed successfully');
@@ -332,6 +339,109 @@ export default function AdminPage() {
     } catch (error) {
       console.error('Error loading statistics:', error);
     }
+  };
+
+  const loadSystemConfig = async () => {
+    try {
+      const { data: configData, error: configError } = await supabase
+        .from('system_config')
+        .select('*');
+
+      if (configError) {
+        console.error('Error loading system config:', configError);
+        return;
+      }
+
+      // Convert array to object for easier access
+      const configObj: { [key: string]: string } = configData?.reduce((acc, item) => {
+        acc[item.config_key] = item.config_value;
+        return acc;
+      }, {} as { [key: string]: string }) || {};
+
+      setSystemConfig(configObj);
+      
+      // Set selected model from config
+      if (configObj['openai_model']) {
+        setSelectedModel(configObj['openai_model']);
+      }
+
+    } catch (error) {
+      console.error('Error loading system config:', error);
+    }
+  };
+
+  const loadOpenAIModels = async () => {
+    try {
+      const authHeaders = getAuthHeaders();
+      const { data: modelsData, error: modelsError } = await supabase.functions.invoke('get-openai-models', {
+        headers: authHeaders
+      });
+
+      if (modelsError) {
+        console.error('Error loading OpenAI models:', modelsError);
+        toast({
+          title: "Error al cargar modelos",
+          description: "No se pudieron cargar los modelos disponibles de OpenAI.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (modelsData?.success) {
+        setAvailableModels(modelsData.models || []);
+      }
+    } catch (error) {
+      console.error('Error loading OpenAI models:', error);
+    }
+  };
+
+  const updateSystemConfig = async (key: string, value: string, description?: string) => {
+    try {
+      const authHeaders = getAuthHeaders();
+      const { data: updateData, error: updateError } = await supabase.functions.invoke('update-system-config', {
+        headers: authHeaders,
+        body: {
+          config_key: key,
+          config_value: value,
+          description: description || `Configuración de ${key}`
+        }
+      });
+
+      if (updateError) {
+        console.error('Error updating system config:', updateError);
+        toast({
+          title: "Error al actualizar configuración",
+          description: "No se pudo actualizar la configuración del sistema.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (updateData?.success) {
+        // Update local state
+        setSystemConfig(prev => ({
+          ...prev,
+          [key]: value
+        }));
+        
+        toast({
+          title: "Configuración actualizada",
+          description: `${description || key} actualizado correctamente.`,
+        });
+      }
+    } catch (error) {
+      console.error('Error updating system config:', error);
+      toast({
+        title: "Error",
+        description: "Error inesperado al actualizar la configuración.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleModelChange = async (modelId: string) => {
+    setSelectedModel(modelId);
+    await updateSystemConfig('openai_model', modelId, 'Modelo de OpenAI para procesamiento de IA');
   };
 
   const calculateMonthlyGrowth = (contracts: ContractDetail[]) => {
@@ -953,7 +1063,7 @@ if (!response.ok) {
 
         <Tabs defaultValue="lawyers" className="space-y-4 sm:space-y-6">
           {/* Mobile First Tab Navigation */}
-          <TabsList className="grid w-full grid-cols-4 h-auto p-1">
+          <TabsList className="grid w-full grid-cols-5 h-auto p-1">
             <TabsTrigger 
               value="lawyers" 
               className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm"
@@ -993,6 +1103,14 @@ if (!response.ok) {
               <ChartPie className="h-4 w-4" />
               <span className="hidden sm:inline">Performance Legal</span>
               <span className="sm:hidden">Performance</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="config" 
+              className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm"
+            >
+              <Settings className="h-4 w-4" />
+              <span className="hidden sm:inline">Configuración</span>
+              <span className="sm:hidden">Config</span>
             </TabsTrigger>
           </TabsList>
 
@@ -1468,6 +1586,133 @@ if (!response.ok) {
               authHeaders={getAuthHeaders()} 
               viewMode="global"
             />
+          </TabsContent>
+
+          <TabsContent value="config" className="space-y-4 sm:space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Settings className="h-5 w-5" />
+                  Configuración del Sistema
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* OpenAI Model Configuration */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold">Modelo de OpenAI</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Selecciona el modelo de IA que se usará para el procesamiento de documentos.
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={loadOpenAIModels}
+                      className="flex items-center gap-2"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                      Actualizar
+                    </Button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="openai-model">Modelo Actual</Label>
+                      <Select value={selectedModel} onValueChange={handleModelChange}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar modelo..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableModels.length > 0 ? (
+                            availableModels.map((model) => (
+                              <SelectItem key={model.id} value={model.id}>
+                                <div className="flex flex-col">
+                                  <span className="font-medium">{model.id}</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {model.owned_by} • {new Date(model.created * 1000).toLocaleDateString()}
+                                  </span>
+                                </div>
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <>
+                              <SelectItem value="gpt-4.1-2025-04-14">gpt-4.1-2025-04-14 (Recomendado)</SelectItem>
+                              <SelectItem value="gpt-4o-mini">gpt-4o-mini (Rápido)</SelectItem>
+                              <SelectItem value="gpt-4o">gpt-4o (Potente)</SelectItem>
+                            </>
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>Estado</Label>
+                      <div className="flex items-center gap-2 p-3 border rounded-md">
+                        <Badge variant={systemConfig['openai_model'] === selectedModel ? "default" : "secondary"}>
+                          {systemConfig['openai_model'] === selectedModel ? "Configurado" : "Sin configurar"}
+                        </Badge>
+                        <span className="text-sm text-muted-foreground">
+                          Modelo: {systemConfig['openai_model'] || 'Por defecto'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                    <h4 className="text-sm font-semibold mb-2">ℹ️ Información sobre Modelos</h4>
+                    <ul className="text-sm text-muted-foreground space-y-1">
+                      <li>• <strong>gpt-4.1-2025-04-14:</strong> Modelo más reciente y estable (Recomendado)</li>
+                      <li>• <strong>gpt-4o-mini:</strong> Modelo rápido y económico para tareas simples</li>
+                      <li>• <strong>gpt-4o:</strong> Modelo potente para análisis complejos</li>
+                    </ul>
+                  </div>
+                </div>
+
+                {/* System Status */}
+                <div className="border-t pt-6">
+                  <h3 className="text-lg font-semibold mb-4">Estado del Sistema</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium">OpenAI API</p>
+                            <Badge variant="default" className="mt-1">Conectado</Badge>
+                          </div>
+                          <Activity className="h-8 w-8 text-green-500" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium">Base de Datos</p>
+                            <Badge variant="default" className="mt-1">Operativa</Badge>
+                          </div>
+                          <Shield className="h-8 w-8 text-green-500" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium">Edge Functions</p>
+                            <Badge variant="default" className="mt-1">Activas</Badge>
+                          </div>
+                          <FileText className="h-8 w-8 text-green-500" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
 
