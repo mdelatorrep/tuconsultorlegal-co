@@ -947,7 +947,7 @@ function AdminPage() {
       const authHeaders = getAuthHeaders();
       const { data, error } = await supabase.functions.invoke('manage-document-categories', {
         headers: authHeaders,
-        body: { action: 'get' }
+        method: 'GET'
       });
 
       if (error) {
@@ -960,10 +960,10 @@ function AdminPage() {
         return;
       }
 
-      if (data?.success && data?.categories) {
-        setDocumentCategories(data.categories);
+      if (Array.isArray(data)) {
+        setDocumentCategories(data);
       } else {
-        console.error('Error in response:', data);
+        console.error('Unexpected response format:', data);
         setDocumentCategories([]);
       }
     } catch (error) {
