@@ -168,11 +168,13 @@ FACTORES A CONSIDERAR:
 - Valor de mercado en Colombia
 - Categoría del documento
 
-RANGOS DE PRECIOS TÍPICOS EN COLOMBIA:
-- Documentos simples (1-5 variables): $25,000 - $50,000 COP
-- Documentos moderados (6-15 variables): $50,000 - $120,000 COP  
-- Documentos complejos (16+ variables): $120,000 - $300,000 COP
-- Documentos muy complejos (societarios, etc.): $300,000+ COP
+RANGOS DE PRECIOS CONSERVADORES PARA ELABORACIÓN:
+- Documentos simples (1-5 variables): $15,000 - $30,000 COP
+- Documentos moderados (6-15 variables): $30,000 - $70,000 COP  
+- Documentos complejos (16+ variables): $70,000 - $150,000 COP
+- Documentos muy complejos (societarios, etc.): $150,000 - $250,000 COP
+
+NOTA: Estos son precios conservadores para la elaboración del documento, no el precio final al cliente.
 
 FORMATO DE RESPUESTA:
 {
@@ -205,11 +207,11 @@ ${docTemplate.substring(0, 1000)}${docTemplate.length > 1000 ? '...' : ''}`
       priceAnalysis = JSON.parse(priceData.choices[0].message.content);
     } catch (error) {
       console.error('Error parsing price analysis:', error);
-      // Fallback pricing logic
-      const basePrice = Math.min(Math.max(extractedPlaceholders.length * 8000, 25000), 300000);
+      // Fallback pricing logic - more conservative
+      const basePrice = Math.min(Math.max(extractedPlaceholders.length * 5000, 15000), 250000);
       priceAnalysis = {
         precio_sugerido: `$ ${basePrice.toLocaleString()} COP`,
-        justificacion: `Precio basado en ${extractedPlaceholders.length} variables identificadas y complejidad del documento.`
+        justificacion: `Precio conservador de elaboración basado en ${extractedPlaceholders.length} variables identificadas y complejidad del documento.`
       };
     }
 

@@ -29,12 +29,13 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
     initialPrompt: "",
     slaHours: 4,
     slaEnabled: true,
+    lawyerSuggestedPrice: "",
   });
   
   const [aiResults, setAiResults] = useState({
     enhancedPrompt: "",
     extractedPlaceholders: [] as Array<{ placeholder: string; pregunta: string }>,
-    suggestedPrice: "",
+    calculatedPrice: "", // Price calculated by AI for admin review only
     priceJustification: "",
   });
   
@@ -133,7 +134,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       setAiResults({
         enhancedPrompt: data.enhancedPrompt || '',
         extractedPlaceholders: data.extractedPlaceholders || [],
-        suggestedPrice: data.suggestedPrice || '$ 50,000 COP',
+        calculatedPrice: data.suggestedPrice || '$ 50,000 COP',
         priceJustification: data.priceJustification || 'Precio estimado basado en complejidad del documento.'
       });
 
@@ -339,8 +340,10 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
 
   const handlePublish = async () => {
     try {
-      // Convert suggested price to integer (remove $ and commas)
-      const priceValue = parseInt(aiResults.suggestedPrice.replace(/[^0-9]/g, ''));
+      // Convert lawyer suggested price to integer (remove $ and commas)
+      const lawyerPriceValue = parseInt(formData.lawyerSuggestedPrice.replace(/[^0-9]/g, ''));
+      // Convert calculated price to integer (for admin review)
+      const calculatedPriceValue = parseInt(aiResults.calculatedPrice.replace(/[^0-9]/g, ''));
       
       const { data, error } = await supabase
         .from('legal_agents')
@@ -351,7 +354,8 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
           template_content: formData.docTemplate,
           ai_prompt: aiResults.enhancedPrompt,
           placeholder_fields: aiResults.extractedPlaceholders,
-          suggested_price: priceValue,
+          suggested_price: lawyerPriceValue, // Lawyer's suggested price for client
+          final_price: calculatedPriceValue, // AI calculated price for admin review
           price_justification: aiResults.priceJustification,
           status: 'pending_review',
           created_by: lawyerData.id,
@@ -385,11 +389,12 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         initialPrompt: "",
         slaHours: 4,
         slaEnabled: true,
+        lawyerSuggestedPrice: "",
       });
       setAiResults({
         enhancedPrompt: "",
         extractedPlaceholders: [],
-        suggestedPrice: "",
+        calculatedPrice: "",
         priceJustification: "",
       });
       setCurrentStep(1);
@@ -1012,14 +1017,30 @@ VALIDACIONES:
                        </div>
                      </div>
 
-                     {/* Price Suggestion */}
-                     <div>
-                       <h3 className="text-xl font-bold mb-2">3. Precio Sugerido (Basado en el Mercado)</h3>
-                       <div className="p-4 bg-success/10 rounded-md border border-success/20">
-                         <p className="text-3xl font-bold text-success">{aiResults.suggestedPrice}</p>
-                         <p className="text-sm text-success/80 mt-1">{aiResults.priceJustification}</p>
-                       </div>
-                     </div>
+                      {/* Lawyer Price Input */}
+                      <div>
+                        <h3 className="text-xl font-bold mb-2">3. Precio para el Cliente Final</h3>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          Ingresa el precio que consideras justo para cobrar al cliente final por este documento.
+                        </p>
+                        <div className="space-y-2">
+                          <Label htmlFor="lawyerPrice">Precio Sugerido (COP)</Label>
+                          <Input
+                            id="lawyerPrice"
+                            type="text"
+                            placeholder="Ej: $ 80,000 COP"
+                            value={formData.lawyerSuggestedPrice}
+                            onChange={(e) => handleInputChange('lawyerSuggestedPrice', e.target.value)}
+                            className="text-lg font-semibold"
+                          />
+                        </div>
+                        <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-md">
+                          <p className="text-sm text-blue-700 dark:text-blue-300">
+                            💡 <strong>Sugerencia del sistema:</strong> {aiResults.calculatedPrice}<br/>
+                            <span className="text-xs">{aiResults.priceJustification}</span>
+                          </p>
+                        </div>
+                      </div>
 
                       <div className={`${isMobile ? 'flex flex-col space-y-3' : 'flex justify-between'}`}>
                         <Button variant="outline" onClick={handlePrev} className={isMobile ? "w-full" : ""}>
