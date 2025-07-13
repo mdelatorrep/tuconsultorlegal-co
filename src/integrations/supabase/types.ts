@@ -417,6 +417,39 @@ export type Database = {
         }
         Relationships: []
       }
+      service_status: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          id: string
+          last_checked: string | null
+          response_time_ms: number | null
+          service_name: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          last_checked?: string | null
+          response_time_ms?: number | null
+          service_name: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          last_checked?: string | null
+          response_time_ms?: number | null
+          service_name?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       system_config: {
         Row: {
           config_key: string
