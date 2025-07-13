@@ -117,6 +117,12 @@ function AdminPage() {
   const [showAddCategoryDialog, setShowAddCategoryDialog] = useState(false);
   const [showEditCategoryDialog, setShowEditCategoryDialog] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<any>(null);
+  const [editCategoryForm, setEditCategoryForm] = useState({
+    name: '',
+    description: '',
+    icon: 'FileText',
+    is_active: true
+  });
   const { toast } = useToast();
   const { isAuthenticated, isLoading, user, logout, getAuthHeaders, checkAuthStatus } = useNativeAdminAuth();
 
@@ -1004,6 +1010,47 @@ function AdminPage() {
     }
   };
 
+  // Update category with full details
+  const updateCategory = async () => {
+    if (!selectedCategory) return;
+
+    try {
+      const authHeaders = getAuthHeaders();
+      const { data, error } = await supabase.functions.invoke('manage-document-categories', {
+        headers: authHeaders,
+        body: {
+          action: 'update',
+          id: selectedCategory.id,
+          name: sanitizeInput(editCategoryForm.name),
+          description: sanitizeInput(editCategoryForm.description),
+          icon: editCategoryForm.icon,
+          is_active: editCategoryForm.is_active
+        }
+      });
+
+      if (error || !data?.success) {
+        throw new Error(data?.error || error?.message || 'Error al actualizar categoría');
+      }
+
+      toast({
+        title: "Categoría actualizada",
+        description: "La categoría ha sido actualizada correctamente.",
+      });
+
+      // Close dialog and reload categories
+      setShowEditCategoryDialog(false);
+      setSelectedCategory(null);
+      await loadDocumentCategories();
+    } catch (error: any) {
+      console.error('Error updating category:', error);
+      toast({
+        title: "Error al actualizar categoría",
+        description: error.message || "Error al actualizar la categoría",
+        variant: "destructive"
+      });
+    }
+  };
+
   const copyLawyerToken = (token: string) => {
     navigator.clipboard.writeText(token);
     toast({
@@ -1759,6 +1806,12 @@ function AdminPage() {
                                 size="sm"
                                 onClick={() => {
                                   setSelectedCategory(category);
+                                  setEditCategoryForm({
+                                    name: category.name,
+                                    description: category.description || '',
+                                    icon: category.icon || 'FileText',
+                                    is_active: category.is_active
+                                  });
                                   setShowEditCategoryDialog(true);
                                 }}
                                 className="h-8 w-8 p-0"
@@ -2485,7 +2538,8 @@ function AdminPage() {
                     <Label htmlFor="edit-category-name">Nombre de la Categoría</Label>
                     <Input
                       id="edit-category-name"
-                      defaultValue={selectedCategory.name}
+                      value={editCategoryForm.name}
+                      onChange={(e) => setEditCategoryForm(prev => ({ ...prev, name: e.target.value }))}
                       className="mt-1"
                     />
                   </div>
@@ -2494,7 +2548,8 @@ function AdminPage() {
                     <Label htmlFor="edit-category-description">Descripción</Label>
                     <Textarea
                       id="edit-category-description"
-                      defaultValue={selectedCategory.description}
+                      value={editCategoryForm.description}
+                      onChange={(e) => setEditCategoryForm(prev => ({ ...prev, description: e.target.value }))}
                       className="mt-1"
                       rows={3}
                     />
@@ -2502,7 +2557,10 @@ function AdminPage() {
                   
                   <div>
                     <Label htmlFor="edit-category-icon">Icono</Label>
-                    <Select defaultValue={selectedCategory.icon}>
+                    <Select 
+                      value={editCategoryForm.icon} 
+                      onValueChange={(value) => setEditCategoryForm(prev => ({ ...prev, icon: value }))}
+                    >
                       <SelectTrigger className="mt-1">
                         <SelectValue />
                       </SelectTrigger>
@@ -2523,7 +2581,8 @@ function AdminPage() {
                     <input
                       type="checkbox"
                       id="edit-category-active"
-                      defaultChecked={selectedCategory.is_active}
+                      checked={editCategoryForm.is_active}
+                      onChange={(e) => setEditCategoryForm(prev => ({ ...prev, is_active: e.target.checked }))}
                       className="rounded border-gray-300"
                     />
                     <Label htmlFor="edit-category-active" className="text-sm">
@@ -2533,7 +2592,10 @@ function AdminPage() {
                 </div>
                 
                 <div className="flex gap-2 mt-6">
-                  <Button className="flex-1">
+                  <Button 
+                    className="flex-1"
+                    onClick={updateCategory}
+                  >
                     <Save className="h-4 w-4 mr-2" />
                     Guardar Cambios
                   </Button>
