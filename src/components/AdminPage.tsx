@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -113,6 +113,9 @@ function AdminPage() {
   const [availableModels, setAvailableModels] = useState<any[]>([]);
   const [selectedModel, setSelectedModel] = useState('gpt-4.1-2025-04-14');
   const [systemConfig, setSystemConfig] = useState<any>({});
+  const [showAddCategoryDialog, setShowAddCategoryDialog] = useState(false);
+  const [showEditCategoryDialog, setShowEditCategoryDialog] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<any>(null);
   const { toast } = useToast();
   const { isAuthenticated, isLoading, user, logout, getAuthHeaders, checkAuthStatus } = useNativeAdminAuth();
 
@@ -943,7 +946,6 @@ function AdminPage() {
       const { data, error } = await supabase
         .from('document_categories')
         .select('*')
-        .eq('is_active', true)
         .order('name');
 
       if (error) {
@@ -954,6 +956,40 @@ function AdminPage() {
       setDocumentCategories(data || []);
     } catch (error) {
       console.error('Error loading categories:', error);
+    }
+  };
+
+  // Toggle category status (active/inactive)
+  const toggleCategoryStatus = async (categoryId: string, isActive: boolean) => {
+    try {
+      const authHeaders = getAuthHeaders();
+      const { data, error } = await supabase.functions.invoke('manage-document-categories', {
+        headers: authHeaders,
+        body: {
+          action: 'update',
+          categoryId,
+          is_active: isActive
+        }
+      });
+
+      if (error || !data?.success) {
+        throw new Error(data?.error || error?.message || 'Error al actualizar categoría');
+      }
+
+      toast({
+        title: "Categoría actualizada",
+        description: `La categoría ha sido ${isActive ? 'activada' : 'desactivada'} correctamente.`,
+      });
+
+      // Reload categories
+      await loadDocumentCategories();
+    } catch (error: any) {
+      console.error('Error updating category:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Error al actualizar la categoría",
+        variant: "destructive"
+      });
     }
   };
 
@@ -1661,6 +1697,91 @@ function AdminPage() {
                   </div>
                 </div>
 
+                {/* Document Categories Management */}
+                <div className="border-t pt-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-semibold">Categorías de Documentos</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Gestiona las categorías disponibles para la clasificación de agentes legales.
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowAddCategoryDialog(true)}
+                      className="flex items-center gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Agregar Categoría
+                    </Button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {documentCategories.map((category) => (
+                      <Card key={category.id} className="relative">
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-3 flex-1">
+                              <div className="p-2 bg-primary/10 rounded-lg">
+                                {category.icon && React.createElement(
+                                  require('lucide-react')[category.icon] || FileText,
+                                  { className: "h-4 w-4 text-primary" }
+                                )}
+                              </div>
+                              <div className="flex-1">
+                                <h4 className="font-medium">{category.name}</h4>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {category.description}
+                                </p>
+                                <Badge 
+                                  variant={category.is_active ? "default" : "secondary"} 
+                                  className="mt-2 text-xs"
+                                >
+                                  {category.is_active ? "Activa" : "Inactiva"}
+                                </Badge>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1 ml-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedCategory(category);
+                                  setShowEditCategoryDialog(true);
+                                }}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Settings className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => toggleCategoryStatus(category.id, !category.is_active)}
+                                className="h-8 w-8 p-0"
+                              >
+                                {category.is_active ? (
+                                  <EyeOff className="h-3 w-3" />
+                                ) : (
+                                  <Eye className="h-3 w-3" />
+                                )}
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                  
+                  {documentCategories.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No hay categorías configuradas</p>
+                      <p className="text-sm">Agrega la primera categoría para comenzar.</p>
+                    </div>
+                  )}
+                </div>
+
                 {/* System Status */}
                 <div className="border-t pt-6">
                   <h3 className="text-lg font-semibold mb-4">Estado del Sistema</h3>
@@ -2247,6 +2368,174 @@ function AdminPage() {
                 >
                   Cerrar
                 </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Dialog para agregar categoría */}
+        {showAddCategoryDialog && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-background rounded-lg max-w-md w-full">
+              <div className="p-6 border-b">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Agregar Nueva Categoría</h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowAddCategoryDialog(false)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="p-6">
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="category-name">Nombre de la Categoría</Label>
+                    <Input
+                      id="category-name"
+                      placeholder="Ej: Derecho Laboral"
+                      className="mt-1"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="category-description">Descripción</Label>
+                    <Textarea
+                      id="category-description"
+                      placeholder="Descripción de la categoría..."
+                      className="mt-1"
+                      rows={3}
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="category-icon">Icono (opcional)</Label>
+                    <Select>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Seleccionar icono..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="FileText">FileText</SelectItem>
+                        <SelectItem value="Scale">Scale</SelectItem>
+                        <SelectItem value="Building">Building</SelectItem>
+                        <SelectItem value="Users">Users</SelectItem>
+                        <SelectItem value="Home">Home</SelectItem>
+                        <SelectItem value="Shield">Shield</SelectItem>
+                        <SelectItem value="Heart">Heart</SelectItem>
+                        <SelectItem value="Calculator">Calculator</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="flex gap-2 mt-6">
+                  <Button className="flex-1">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Crear Categoría
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowAddCategoryDialog(false)}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Dialog para editar categoría */}
+        {showEditCategoryDialog && selectedCategory && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-background rounded-lg max-w-md w-full">
+              <div className="p-6 border-b">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Editar Categoría</h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setShowEditCategoryDialog(false);
+                      setSelectedCategory(null);
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="p-6">
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="edit-category-name">Nombre de la Categoría</Label>
+                    <Input
+                      id="edit-category-name"
+                      defaultValue={selectedCategory.name}
+                      className="mt-1"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="edit-category-description">Descripción</Label>
+                    <Textarea
+                      id="edit-category-description"
+                      defaultValue={selectedCategory.description}
+                      className="mt-1"
+                      rows={3}
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="edit-category-icon">Icono</Label>
+                    <Select defaultValue={selectedCategory.icon}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="FileText">FileText</SelectItem>
+                        <SelectItem value="Scale">Scale</SelectItem>
+                        <SelectItem value="Building">Building</SelectItem>
+                        <SelectItem value="Users">Users</SelectItem>
+                        <SelectItem value="Home">Home</SelectItem>
+                        <SelectItem value="Shield">Shield</SelectItem>
+                        <SelectItem value="Heart">Heart</SelectItem>
+                        <SelectItem value="Calculator">Calculator</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="edit-category-active"
+                      defaultChecked={selectedCategory.is_active}
+                      className="rounded border-gray-300"
+                    />
+                    <Label htmlFor="edit-category-active" className="text-sm">
+                      Categoría activa
+                    </Label>
+                  </div>
+                </div>
+                
+                <div className="flex gap-2 mt-6">
+                  <Button className="flex-1">
+                    <Save className="h-4 w-4 mr-2" />
+                    Guardar Cambios
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setShowEditCategoryDialog(false);
+                      setSelectedCategory(null);
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
