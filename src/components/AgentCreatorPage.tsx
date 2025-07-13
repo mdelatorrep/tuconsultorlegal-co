@@ -107,7 +107,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
     setIsLoadingDrafts(true);
     try {
       const { data, error } = await supabase.functions.invoke('get-agent-drafts', {
-        body: { lawyerId: lawyerData.id }
+        body: { lawyerId: lawyerData.tokenId } // Usar el ID del token del abogado
       });
 
       if (error) {
@@ -134,7 +134,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       
       const { data, error } = await supabase.functions.invoke('save-agent-draft', {
         body: {
-          lawyerId: lawyerData.id,
+          lawyerId: lawyerData.tokenId, // Usar el ID del token del abogado, no el lawyer_id
           draftId: currentDraftId,
           draftName,
           stepCompleted: currentStep,
@@ -203,7 +203,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       const { data, error } = await supabase.functions.invoke('delete-agent-draft', {
         body: {
           draftId,
-          lawyerId: lawyerData.id
+          lawyerId: lawyerData.tokenId // Usar el ID del token del abogado
         }
       });
 

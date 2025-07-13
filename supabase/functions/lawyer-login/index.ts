@@ -92,6 +92,7 @@ Deno.serve(async (req) => {
       success: true,
       user: {
         id: lawyerToken.lawyer_id,
+        tokenId: lawyerToken.id, // Agregar el ID del token para las referencias FK
         email: lawyerToken.email,
         name: lawyerToken.full_name,
         canCreateAgents: lawyerToken.can_create_agents
