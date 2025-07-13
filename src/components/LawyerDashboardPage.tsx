@@ -53,11 +53,30 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const fetchPendingDocuments = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('document_tokens')
-        .select('*')
-        .in('status', ['solicitado', 'en_revision_abogado'])
-        .order('created_at', { ascending: true });
+      if (!user) {
+        console.error('No user data available');
+        return;
+      }
+
+      // Get the lawyer token from storage
+      const authData = sessionStorage.getItem('lawyer_token');
+      if (!authData) {
+        console.error('No lawyer token found');
+        toast({
+          title: "Error de autenticación",
+          description: "Token de abogado no encontrado. Por favor, inicia sesión nuevamente.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Use the new edge function to get filtered documents
+      const { data, error } = await supabase.functions.invoke('get-lawyer-documents', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authData}`
+        }
+      });
 
       if (error) {
         console.error('Error fetching documents:', error);
@@ -72,6 +91,11 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
       setDocuments(data || []);
     } catch (error) {
       console.error('Error:', error);
+      toast({
+        title: "Error al cargar documentos",
+        description: "Ocurrió un error inesperado al cargar los documentos.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
