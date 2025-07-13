@@ -751,7 +751,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
                 {formData.docTemplate && formData.docName && (
                   <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4 mb-4">
                     <p className="text-sm text-purple-700 dark:text-purple-300">
-                      <strong>💡 Mejora con IA:</strong> Usa el botón "Mejorar con IA" para que OpenAI optimice tu plantilla, agregue cláusulas legales importantes y mejore la redacción manteniendo todos los placeholders existentes.
+                      <strong>💡 Mejora con IA:</strong> Usa el botón "Mejorar con IA" para que nuestra IA optimice tu plantilla, agregue cláusulas legales importantes y mejore la redacción manteniendo todos los placeholders existentes.
                     </p>
                   </div>
                 )}
