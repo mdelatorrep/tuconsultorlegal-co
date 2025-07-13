@@ -562,73 +562,7 @@ function AdminPage() {
       return;
     }
 
-    try {
-      const authHeaders = getAuthHeaders();
-      
-      if (!authHeaders.authorization) {
-        toast({
-          title: "Error",
-          description: "Token de autenticación no encontrado. Por favor, inicia sesión nuevamente.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-  const updateLawyerPermissions = async (lawyerId: string, field: string, value: boolean) => {
-    try {
-      // Solo permitir actualizar campos específicos de abogados (NO is_admin)
-      if (field !== 'active' && field !== 'can_create_agents') {
-        toast({
-          title: "Campo no válido",
-          description: "Solo se pueden modificar los campos 'active' y 'can_create_agents' para abogados.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      const authHeaders = getAuthHeaders();
-      
-      const { data, error } = await supabase.functions.invoke('update-lawyer-permissions', {
-        headers: authHeaders,
-        body: {
-          lawyer_id: lawyerId,
-          field,
-          value
-        }
-      });
-
-      if (error || !data?.success) {
-        throw new Error(data?.error || error?.message || 'Error al actualizar permisos');
-      }
-
-      // Update local state
-      setLawyers(prev => prev.map(lawyer => 
-        lawyer.id === lawyerId 
-          ? { ...lawyer, [field]: value }
-          : lawyer
-      ));
-
-      toast({
-        title: "Permisos actualizados",
-        description: `Permiso ${field} actualizado correctamente`,
-      });
-    } catch (error: any) {
-      console.error('Update lawyer permissions error:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Error al actualizar permisos del abogado",
-        variant: "destructive"
-      });
-    }
-  };
-      
-      toast({
-        title: "❌ Error al crear abogado",
-        description: errorMessage,
-        variant: "destructive"
-      });
-    }
-  };
+  }; // End of createLawyer function
 
   const updateLawyerPermissions = async (lawyerId: string, field: string, value: boolean) => {
     try {
@@ -993,7 +927,6 @@ function AdminPage() {
     });
   };
 
-  };
 
   // Function to show lawyer performance
   const showLawyerPerformance = (lawyer: any) => {
