@@ -1178,7 +1178,7 @@ function AdminPage() {
   console.log('AdminPage render - isAuthenticated:', isAuthenticated, 'isLoading:', isLoading, 'user:', user);
   
   if (!isAuthenticated) {
-    console.log('Not authenticated, showing native login page');
+    console.log('Not authenticated, showing admin login page');
     return <AdminLogin onLoginSuccess={handleLoginSuccess} />;
   }
 
