@@ -1825,14 +1825,6 @@ function AdminPage() {
                     </div>
                   </div>
 
-                  <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                    <h4 className="text-sm font-semibold mb-2">ℹ️ Información sobre Modelos</h4>
-                    <ul className="text-sm text-muted-foreground space-y-1">
-                      <li>• <strong>gpt-4.1-2025-04-14:</strong> Modelo más reciente y estable (Recomendado)</li>
-                      <li>• <strong>gpt-4o-mini:</strong> Modelo rápido y económico para tareas simples</li>
-                      <li>• <strong>gpt-4o:</strong> Modelo potente para análisis complejos</li>
-                    </ul>
-                  </div>
                 </div>
 
                 {/* Document Categories Management */}
