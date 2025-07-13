@@ -199,11 +199,8 @@ Deno.serve(async (req) => {
       if (final_price !== undefined) updateData.final_price = final_price
       if (status !== undefined) updateData.status = status
       
-      // If approving, set approval fields
-      if (status === 'active' && existingAgent.status === 'pending_review') {
-        updateData.price_approved_by = user_id
-        updateData.price_approved_at = new Date().toISOString()
-      }
+      // Note: price_approved_by and price_approved_at fields don't exist in legal_agents table
+      // If needed in the future, they would need to be added via database migration
     }
 
     console.log('Update data prepared:', Object.keys(updateData))
