@@ -1178,8 +1178,7 @@ function AdminPage() {
   console.log('AdminPage render - isAuthenticated:', isAuthenticated, 'isLoading:', isLoading, 'user:', user);
   
   if (!isAuthenticated) {
-    console.log('Not authenticated, showing SimpleAdminLogin component');
-    console.log('SimpleAdminLogin component available:', typeof SimpleAdminLogin);
+    console.log('Not authenticated, showing native login page');
     return <SimpleAdminLogin onLoginSuccess={handleLoginSuccess} />;
   }
 
