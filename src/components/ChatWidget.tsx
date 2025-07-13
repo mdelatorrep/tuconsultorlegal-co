@@ -153,10 +153,10 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
     return (
       <button
         onClick={onToggle}
-        className="fixed bottom-6 right-6 w-16 h-16 bg-orange-500 hover:bg-orange-400 text-white rounded-full shadow-hero flex items-center justify-center z-[9999] md:w-20 md:h-20 animate-pulse hover:animate-none hover-scale transition-all duration-300"
+        className="fixed bottom-6 right-6 w-16 h-16 bg-orange-500 hover:bg-orange-400 text-white rounded-full shadow-hero flex items-center justify-center z-[9999] md:w-20 md:h-20 hover-scale transition-all duration-500 animate-[pulse_3s_ease-in-out_infinite] hover:animate-none hover:shadow-2xl hover:shadow-orange-500/50"
         aria-label="Abrir chat de asistencia legal"
       >
-        <Scale size={28} className="md:w-8 md:h-8 animate-bounce" />
+        <Scale size={28} className="md:w-8 md:h-8 transition-transform duration-300" />
       </button>
     );
   }
