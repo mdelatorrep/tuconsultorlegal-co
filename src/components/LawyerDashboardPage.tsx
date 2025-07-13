@@ -7,11 +7,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Bot, Plus, Settings, LogOut, Scale, Users, TrendingUp, BarChart3 } from "lucide-react";
+import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Bot, Plus, Settings, LogOut, Scale, Users, TrendingUp, BarChart3, Brain } from "lucide-react";
 import LawyerStatsSection from "./LawyerStatsSection";
 import LawyerLogin from "./LawyerLogin";
 import AgentCreatorPage from "./AgentCreatorPage";
 import AgentManagerPage from "./AgentManagerPage";
+import LawyerTrainingPage from "./LawyerTrainingPage";
 
 interface DocumentToken {
   id: string;
@@ -42,7 +43,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const [editedContent, setEditedContent] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'stats' | 'agent-creator' | 'agent-manager'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training'>('dashboard');
   const { toast } = useToast();
   const { isAuthenticated, isLoading: authLoading, user, logout } = useLawyerAuth();
   const isMobile = useIsMobile();
@@ -299,6 +300,11 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
     return <AgentManagerPage onBack={() => setCurrentView('dashboard')} lawyerData={user} />;
   }
 
+  // Show Training if selected
+  if (currentView === 'training') {
+    return <LawyerTrainingPage onBack={() => setCurrentView('dashboard')} lawyerData={user} />;
+  }
+
   // Show Stats if selected
   if (currentView === 'stats') {
     return (
@@ -352,6 +358,17 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
               >
                 <BarChart3 className="h-4 w-4" />
                 {!isMobile && "Estadísticas"}
+              </Button>
+
+              {/* Training Button - Available for all lawyers */}
+              <Button
+                onClick={() => setCurrentView('training')}
+                variant="outline"
+                className="flex items-center gap-2 justify-center"
+                size={isMobile ? "default" : "lg"}
+              >
+                <Brain className="h-4 w-4" />
+                {!isMobile && "Formación IA"}
               </Button>
 
               {/* Agent Creator Access - Only show if lawyer has permission */}
