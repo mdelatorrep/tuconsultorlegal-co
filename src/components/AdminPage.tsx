@@ -1501,73 +1501,139 @@ function AdminPage() {
         </div>
 
         <Tabs defaultValue="lawyers" className="space-y-4 sm:space-y-6">
-          {/* Mobile First Tab Navigation */}
-          <TabsList className="grid w-full grid-cols-6 h-auto p-1">
-            <TabsTrigger 
-              value="lawyers" 
-              className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm"
-            >
-              <Users className="h-4 w-4" />
-              <span className="hidden sm:inline">Gestión de Abogados</span>
-              <span className="sm:hidden">Abogados</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="token-requests" 
-              className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm relative"
-            >
-              <Shield className="h-4 w-4" />
-              {tokenRequests.filter(req => req.status === 'pending').length > 0 && (
-                <Badge 
-                  variant="destructive" 
-                  className="absolute -top-1 -right-1 h-6 w-6 p-0 text-xs font-bold rounded-full flex items-center justify-center animate-pulse shadow-lg border-2 border-background"
+          {/* Mobile Menu - Scrollable horizontal tabs */}
+          <div className="block md:hidden mb-4">
+            <div className="overflow-x-auto scrollbar-hide">
+              <TabsList className="flex w-max min-w-full gap-1 p-1 bg-muted rounded-lg">
+                <TabsTrigger 
+                  value="lawyers" 
+                  className="flex-shrink-0 flex flex-col items-center py-3 px-4 text-xs whitespace-nowrap min-w-[70px] data-[state=active]:bg-background data-[state=active]:text-foreground"
                 >
-                  {tokenRequests.filter(req => req.status === 'pending').length}
-                </Badge>
-              )}
-              <span className="hidden sm:inline">Solicitudes Token</span>
-              <span className="sm:hidden">Tokens</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="agents" 
-              className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm relative"
-            >
-              <FileText className="h-4 w-4" />
-              {pendingAgentsCount > 0 && (
-                <Badge 
-                  variant="destructive" 
-                  className="absolute -top-1 -right-1 h-6 w-6 p-0 text-xs font-bold rounded-full flex items-center justify-center animate-pulse shadow-lg border-2 border-background"
+                  <Users className="h-4 w-4 mb-1" />
+                  Abogados
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="token-requests" 
+                  className="flex-shrink-0 flex flex-col items-center py-3 px-4 text-xs whitespace-nowrap min-w-[70px] relative data-[state=active]:bg-background data-[state=active]:text-foreground"
                 >
-                  {pendingAgentsCount}
-                </Badge>
-              )}
-              <span className="hidden sm:inline">Gestión de Agentes</span>
-              <span className="sm:hidden">Agentes</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="stats" 
-              className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm"
-            >
-              <ChartPie className="h-4 w-4" />
-              <span className="hidden sm:inline">Performance Legal</span>
-              <span className="sm:hidden">Performance</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="blogs" 
-              className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm"
-            >
-              <BookOpen className="h-4 w-4" />
-              <span className="hidden sm:inline">Gestión de Blog</span>
-              <span className="sm:hidden">Blog</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="config" 
-              className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm"
-            >
-              <Settings className="h-4 w-4" />
-              <span className="hidden sm:inline">Configuración</span>
-              <span className="sm:hidden">Config</span>
-            </TabsTrigger>
-          </TabsList>
+                  <div className="relative">
+                    <Shield className="h-4 w-4 mb-1" />
+                    {tokenRequests.filter(req => req.status === 'pending').length > 0 && (
+                      <Badge 
+                        variant="destructive" 
+                        className="absolute -top-2 -right-2 h-4 w-4 p-0 text-xs rounded-full flex items-center justify-center animate-pulse"
+                      >
+                        {tokenRequests.filter(req => req.status === 'pending').length}
+                      </Badge>
+                    )}
+                  </div>
+                  Tokens
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="agents" 
+                  className="flex-shrink-0 flex flex-col items-center py-3 px-4 text-xs whitespace-nowrap min-w-[70px] relative data-[state=active]:bg-background data-[state=active]:text-foreground"
+                >
+                  <div className="relative">
+                    <FileText className="h-4 w-4 mb-1" />
+                    {pendingAgentsCount > 0 && (
+                      <Badge 
+                        variant="destructive" 
+                        className="absolute -top-2 -right-2 h-4 w-4 p-0 text-xs rounded-full flex items-center justify-center animate-pulse"
+                      >
+                        {pendingAgentsCount}
+                      </Badge>
+                    )}
+                  </div>
+                  Agentes
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="stats" 
+                  className="flex-shrink-0 flex flex-col items-center py-3 px-4 text-xs whitespace-nowrap min-w-[70px] data-[state=active]:bg-background data-[state=active]:text-foreground"
+                >
+                  <ChartPie className="h-4 w-4 mb-1" />
+                  Stats
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="blogs" 
+                  className="flex-shrink-0 flex flex-col items-center py-3 px-4 text-xs whitespace-nowrap min-w-[70px] data-[state=active]:bg-background data-[state=active]:text-foreground"
+                >
+                  <BookOpen className="h-4 w-4 mb-1" />
+                  Blog
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="config" 
+                  className="flex-shrink-0 flex flex-col items-center py-3 px-4 text-xs whitespace-nowrap min-w-[70px] data-[state=active]:bg-background data-[state=active]:text-foreground"
+                >
+                  <Settings className="h-4 w-4 mb-1" />
+                  Config
+                </TabsTrigger>
+              </TabsList>
+            </div>
+          </div>
+
+          {/* Desktop Menu - Grid layout */}
+          <div className="hidden md:block">
+            <TabsList className="grid w-full grid-cols-6 h-auto p-1">
+              <TabsTrigger 
+                value="lawyers" 
+                className="flex flex-row items-center gap-2 p-3 text-sm"
+              >
+                <Users className="h-4 w-4" />
+                Gestión de Abogados
+              </TabsTrigger>
+              <TabsTrigger 
+                value="token-requests" 
+                className="flex flex-row items-center gap-2 p-3 text-sm relative"
+              >
+                <Shield className="h-4 w-4" />
+                Solicitudes Token
+                {tokenRequests.filter(req => req.status === 'pending').length > 0 && (
+                  <Badge 
+                    variant="destructive" 
+                    className="ml-1 h-5 w-5 p-0 text-xs rounded-full flex items-center justify-center animate-pulse"
+                  >
+                    {tokenRequests.filter(req => req.status === 'pending').length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger 
+                value="agents" 
+                className="flex flex-row items-center gap-2 p-3 text-sm relative"
+              >
+                <FileText className="h-4 w-4" />
+                Gestión de Agentes
+                {pendingAgentsCount > 0 && (
+                  <Badge 
+                    variant="destructive" 
+                    className="ml-1 h-5 w-5 p-0 text-xs rounded-full flex items-center justify-center animate-pulse"
+                  >
+                    {pendingAgentsCount}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger 
+                value="stats" 
+                className="flex flex-row items-center gap-2 p-3 text-sm"
+              >
+                <ChartPie className="h-4 w-4" />
+                Performance Legal
+              </TabsTrigger>
+              <TabsTrigger 
+                value="blogs" 
+                className="flex flex-row items-center gap-2 p-3 text-sm"
+              >
+                <BookOpen className="h-4 w-4" />
+                Gestión de Blog
+              </TabsTrigger>
+              <TabsTrigger 
+                value="config" 
+                className="flex flex-row items-center gap-2 p-3 text-sm"
+              >
+                <Settings className="h-4 w-4" />
+                Configuración
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="lawyers" className="space-y-4 sm:space-y-6">
             <Card>

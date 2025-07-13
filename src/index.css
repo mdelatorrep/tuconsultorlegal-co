@@ -201,4 +201,14 @@ All colors MUST be HSL.
   .fixed.bottom-4.right-4 {
     z-index: 10000 !important;
   }
+
+  /* Mobile scrollbar utilities */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari and Opera */
+  }
 }
