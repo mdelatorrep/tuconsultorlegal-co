@@ -1994,135 +1994,527 @@ function AdminPage() {
           </TabsContent>
 
           <TabsContent value="agents" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Agentes Para Revisión</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nombre</TableHead>
-                      <TableHead>Categoría</TableHead>
-                      <TableHead>Creado por</TableHead>
-                      <TableHead>Estado</TableHead>
-                      <TableHead>Precio</TableHead>
-                      <TableHead>Fecha</TableHead>
-                      <TableHead>Acciones</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {agents.map((agent) => (
-                      <TableRow key={agent.id}>
-                        <TableCell className="font-medium">
-                          <button 
-                            onClick={() => {
-                              setSelectedAgent(agent);
-                              setShowAgentDetails(true);
-                            }}
-                            className="text-primary hover:text-primary/80 underline cursor-pointer transition-colors"
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+              <h2 className="text-xl font-semibold">Gestión de Agentes</h2>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-xs">
+                  Total: {agents.length}
+                </Badge>
+                <Badge variant="destructive" className="text-xs">
+                  Pendientes: {agents.filter(a => a.status === 'pending_review').length}
+                </Badge>
+                <Badge variant="default" className="text-xs">
+                  Activos: {agents.filter(a => a.status === 'active').length}
+                </Badge>
+                <Badge variant="secondary" className="text-xs">
+                  Suspendidos: {agents.filter(a => a.status === 'suspended').length}
+                </Badge>
+              </div>
+            </div>
+
+            <Tabs defaultValue="pending" className="space-y-4">
+              {/* Mobile Agent Tabs */}
+              <div className="block md:hidden">
+                <div className="overflow-x-auto scrollbar-hide">
+                  <TabsList className="flex w-max min-w-full gap-1 p-1 bg-muted rounded-lg">
+                    <TabsTrigger 
+                      value="pending" 
+                      className="flex-shrink-0 flex flex-col items-center py-3 px-4 text-xs whitespace-nowrap min-w-[80px] relative"
+                    >
+                      <div className="relative">
+                        <AlertTriangle className="h-4 w-4 mb-1" />
+                        {agents.filter(a => a.status === 'pending_review').length > 0 && (
+                          <Badge 
+                            variant="destructive" 
+                            className="absolute -top-2 -right-2 h-4 w-4 p-0 text-xs rounded-full flex items-center justify-center"
                           >
-                            {sanitizeInput(agent.name)}
-                          </button>
-                        </TableCell>
-                        <TableCell>{sanitizeInput(agent.category)}</TableCell>
-                        <TableCell>
-                          {agent.created_by_lawyer ? (
-                            <button 
-                              onClick={() => showLawyerPerformance(agent.created_by_lawyer!)}
-                              className="text-primary hover:text-primary/80 underline cursor-pointer transition-colors"
-                            >
-                              {agent.created_by_lawyer.full_name}
-                            </button>
-                          ) : (
-                            'N/A'
-                          )}
-                          {agent.created_by_lawyer && (
-                            <>
-                              <br />
-                              <span className="text-sm text-muted-foreground">
-                                {agent.created_by_lawyer.email}
-                              </span>
-                            </>
-                          )}
-                        </TableCell>
-                        <TableCell>{getStatusBadge(agent.status)}</TableCell>
-                        <TableCell>
-                          <div className="space-y-2">
-                            <div className="text-sm text-muted-foreground">
-                              Sugerido: ${agent.suggested_price.toLocaleString()}
-                            </div>
-                            {agent.final_price ? (
-                              <div className="font-medium text-success">
-                                Final: ${agent.final_price.toLocaleString()}
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-2">
-                                <Input
-                                  type="number"
-                                  placeholder="Precio final"
-                                  className="w-24 h-8"
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      const value = parseInt((e.target as HTMLInputElement).value);
-                                      if (value > 0) {
-                                        updateAgentFinalPrice(agent.id, value);
-                                      }
-                                    }
-                                  }}
-                                />
-                                <span className="text-xs text-muted-foreground">Enter</span>
-                              </div>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>{new Date(agent.created_at).toLocaleDateString()}</TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            {agent.status === 'pending_review' && (
-                              <>
-                                <Button
-                                  size="sm"
-                                  variant="default"
-                                  onClick={() => updateAgentStatus(agent.id, 'active')}
-                                >
-                                  <Check className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  onClick={() => updateAgentStatus(agent.id, 'suspended')}
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </>
-                            )}
-                            {agent.status === 'active' && (
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => updateAgentStatus(agent.id, 'suspended')}
+                            {agents.filter(a => a.status === 'pending_review').length}
+                          </Badge>
+                        )}
+                      </div>
+                      Revisión
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="active" 
+                      className="flex-shrink-0 flex flex-col items-center py-3 px-4 text-xs whitespace-nowrap min-w-[80px]"
+                    >
+                      <Check className="h-4 w-4 mb-1" />
+                      Activos
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="suspended" 
+                      className="flex-shrink-0 flex flex-col items-center py-3 px-4 text-xs whitespace-nowrap min-w-[80px]"
+                    >
+                      <X className="h-4 w-4 mb-1" />
+                      Suspendidos
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
+              </div>
+
+              {/* Desktop Agent Tabs */}
+              <div className="hidden md:block">
+                <TabsList className="grid w-full grid-cols-3 h-auto p-1">
+                  <TabsTrigger 
+                    value="pending" 
+                    className="flex flex-row items-center gap-2 p-3 text-sm relative"
+                  >
+                    <AlertTriangle className="h-4 w-4" />
+                    Agentes para Revisión
+                    {agents.filter(a => a.status === 'pending_review').length > 0 && (
+                      <Badge 
+                        variant="destructive" 
+                        className="ml-1 h-5 w-5 p-0 text-xs rounded-full flex items-center justify-center"
+                      >
+                        {agents.filter(a => a.status === 'pending_review').length}
+                      </Badge>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="active" 
+                    className="flex flex-row items-center gap-2 p-3 text-sm"
+                  >
+                    <Check className="h-4 w-4" />
+                    Agentes Activos ({agents.filter(a => a.status === 'active').length})
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="suspended" 
+                    className="flex flex-row items-center gap-2 p-3 text-sm"
+                  >
+                    <X className="h-4 w-4" />
+                    Agentes Suspendidos ({agents.filter(a => a.status === 'suspended').length})
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+
+              {/* Agentes para Revisión */}
+              <TabsContent value="pending" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                      Agentes Pendientes de Revisión
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {agents.filter(a => a.status === 'pending_review').length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>No hay agentes pendientes de revisión</p>
+                      </div>
+                    ) : (
+                      <div className="hidden md:block">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Nombre</TableHead>
+                              <TableHead>Categoría</TableHead>
+                              <TableHead>Creado por</TableHead>
+                              <TableHead>Precio</TableHead>
+                              <TableHead>Fecha</TableHead>
+                              <TableHead>Acciones</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {agents.filter(a => a.status === 'pending_review').map((agent) => (
+                              <TableRow key={agent.id}>
+                                <TableCell className="font-medium">
+                                  <button 
+                                    onClick={() => {
+                                      setSelectedAgent(agent);
+                                      setShowAgentDetails(true);
+                                    }}
+                                    className="text-primary hover:text-primary/80 underline cursor-pointer transition-colors"
+                                  >
+                                    {sanitizeInput(agent.name)}
+                                  </button>
+                                </TableCell>
+                                <TableCell>{sanitizeInput(agent.category)}</TableCell>
+                                <TableCell>
+                                  {agent.created_by_lawyer ? (
+                                    <button 
+                                      onClick={() => showLawyerPerformance(agent.created_by_lawyer!)}
+                                      className="text-primary hover:text-primary/80 underline cursor-pointer transition-colors"
+                                    >
+                                      {agent.created_by_lawyer.full_name}
+                                    </button>
+                                  ) : (
+                                    'N/A'
+                                  )}
+                                  {agent.created_by_lawyer && (
+                                    <>
+                                      <br />
+                                      <span className="text-sm text-muted-foreground">
+                                        {agent.created_by_lawyer.email}
+                                      </span>
+                                    </>
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="space-y-2">
+                                    <div className="text-sm text-muted-foreground">
+                                      Sugerido: ${agent.suggested_price.toLocaleString()}
+                                    </div>
+                                    {agent.final_price ? (
+                                      <div className="font-medium text-success">
+                                        Final: ${agent.final_price.toLocaleString()}
+                                      </div>
+                                    ) : (
+                                      <div className="flex items-center gap-2">
+                                        <Input
+                                          type="number"
+                                          placeholder="Precio final"
+                                          className="w-24 h-8"
+                                          onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                              const value = parseInt((e.target as HTMLInputElement).value);
+                                              if (value > 0) {
+                                                updateAgentFinalPrice(agent.id, value);
+                                              }
+                                            }
+                                          }}
+                                        />
+                                        <span className="text-xs text-muted-foreground">Enter</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell>{new Date(agent.created_at).toLocaleDateString()}</TableCell>
+                                <TableCell>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="default"
+                                      onClick={() => updateAgentStatus(agent.id, 'active')}
+                                    >
+                                      <Check className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={() => updateAgentStatus(agent.id, 'suspended')}
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+
+                    {/* Mobile view for pending agents */}
+                    <div className="block md:hidden space-y-3">
+                      {agents.filter(a => a.status === 'pending_review').map((agent) => (
+                        <Card key={agent.id} className="p-4">
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-start">
+                              <button 
+                                onClick={() => {
+                                  setSelectedAgent(agent);
+                                  setShowAgentDetails(true);
+                                }}
+                                className="text-primary hover:text-primary/80 underline cursor-pointer transition-colors font-medium"
                               >
-                                Suspender
-                              </Button>
-                            )}
-                            {agent.status === 'suspended' && (
+                                {sanitizeInput(agent.name)}
+                              </button>
+                              <Badge variant="outline">{sanitizeInput(agent.category)}</Badge>
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {agent.created_by_lawyer ? (
+                                <span>Creado por: {agent.created_by_lawyer.full_name}</span>
+                              ) : (
+                                'Creador: N/A'
+                              )}
+                            </div>
+                            <div className="text-sm">
+                              <span className="text-muted-foreground">Precio sugerido: </span>
+                              <span className="font-medium">${agent.suggested_price.toLocaleString()}</span>
+                            </div>
+                            <div className="flex gap-2 pt-2">
                               <Button
                                 size="sm"
                                 variant="default"
                                 onClick={() => updateAgentStatus(agent.id, 'active')}
+                                className="flex-1"
                               >
-                                Activar
+                                <Check className="h-4 w-4 mr-1" />
+                                Aprobar
                               </Button>
-                            )}
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => updateAgentStatus(agent.id, 'suspended')}
+                                className="flex-1"
+                              >
+                                <X className="h-4 w-4 mr-1" />
+                                Rechazar
+                              </Button>
+                            </div>
                           </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+                        </Card>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Agentes Activos */}
+              <TabsContent value="active" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Check className="h-5 w-5 text-green-500" />
+                      Agentes Activos
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {agents.filter(a => a.status === 'active').length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>No hay agentes activos</p>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Desktop view */}
+                        <div className="hidden md:block">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Nombre</TableHead>
+                                <TableHead>Categoría</TableHead>
+                                <TableHead>Creado por</TableHead>
+                                <TableHead>Precio Final</TableHead>
+                                <TableHead>Fecha</TableHead>
+                                <TableHead>Acciones</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {agents.filter(a => a.status === 'active').map((agent) => (
+                                <TableRow key={agent.id}>
+                                  <TableCell className="font-medium">
+                                    <button 
+                                      onClick={() => {
+                                        setSelectedAgent(agent);
+                                        setShowAgentDetails(true);
+                                      }}
+                                      className="text-primary hover:text-primary/80 underline cursor-pointer transition-colors"
+                                    >
+                                      {sanitizeInput(agent.name)}
+                                    </button>
+                                  </TableCell>
+                                  <TableCell>{sanitizeInput(agent.category)}</TableCell>
+                                  <TableCell>
+                                    {agent.created_by_lawyer ? (
+                                      <button 
+                                        onClick={() => showLawyerPerformance(agent.created_by_lawyer!)}
+                                        className="text-primary hover:text-primary/80 underline cursor-pointer transition-colors"
+                                      >
+                                        {agent.created_by_lawyer.full_name}
+                                      </button>
+                                    ) : (
+                                      'N/A'
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="font-medium text-success">
+                                    ${agent.final_price?.toLocaleString() || agent.suggested_price.toLocaleString()}
+                                  </TableCell>
+                                  <TableCell>{new Date(agent.created_at).toLocaleDateString()}</TableCell>
+                                  <TableCell>
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={() => updateAgentStatus(agent.id, 'suspended')}
+                                    >
+                                      Suspender
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+
+                        {/* Mobile view */}
+                        <div className="block md:hidden space-y-3">
+                          {agents.filter(a => a.status === 'active').map((agent) => (
+                            <Card key={agent.id} className="p-4">
+                              <div className="space-y-3">
+                                <div className="flex justify-between items-start">
+                                  <button 
+                                    onClick={() => {
+                                      setSelectedAgent(agent);
+                                      setShowAgentDetails(true);
+                                    }}
+                                    className="text-primary hover:text-primary/80 underline cursor-pointer transition-colors font-medium"
+                                  >
+                                    {sanitizeInput(agent.name)}
+                                  </button>
+                                  <Badge variant="default">{sanitizeInput(agent.category)}</Badge>
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  {agent.created_by_lawyer ? (
+                                    <span>Creado por: {agent.created_by_lawyer.full_name}</span>
+                                  ) : (
+                                    'Creador: N/A'
+                                  )}
+                                </div>
+                                <div className="text-sm">
+                                  <span className="text-muted-foreground">Precio: </span>
+                                  <span className="font-medium text-success">
+                                    ${agent.final_price?.toLocaleString() || agent.suggested_price.toLocaleString()}
+                                  </span>
+                                </div>
+                                <div className="pt-2">
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => updateAgentStatus(agent.id, 'suspended')}
+                                    className="w-full"
+                                  >
+                                    <X className="h-4 w-4 mr-1" />
+                                    Suspender
+                                  </Button>
+                                </div>
+                              </div>
+                            </Card>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Agentes Suspendidos */}
+              <TabsContent value="suspended" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <X className="h-5 w-5 text-red-500" />
+                      Agentes Suspendidos
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {agents.filter(a => a.status === 'suspended').length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>No hay agentes suspendidos</p>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Desktop view */}
+                        <div className="hidden md:block">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Nombre</TableHead>
+                                <TableHead>Categoría</TableHead>
+                                <TableHead>Creado por</TableHead>
+                                <TableHead>Precio</TableHead>
+                                <TableHead>Fecha</TableHead>
+                                <TableHead>Acciones</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {agents.filter(a => a.status === 'suspended').map((agent) => (
+                                <TableRow key={agent.id} className="opacity-75">
+                                  <TableCell className="font-medium">
+                                    <button 
+                                      onClick={() => {
+                                        setSelectedAgent(agent);
+                                        setShowAgentDetails(true);
+                                      }}
+                                      className="text-primary hover:text-primary/80 underline cursor-pointer transition-colors"
+                                    >
+                                      {sanitizeInput(agent.name)}
+                                    </button>
+                                  </TableCell>
+                                  <TableCell>{sanitizeInput(agent.category)}</TableCell>
+                                  <TableCell>
+                                    {agent.created_by_lawyer ? (
+                                      <button 
+                                        onClick={() => showLawyerPerformance(agent.created_by_lawyer!)}
+                                        className="text-primary hover:text-primary/80 underline cursor-pointer transition-colors"
+                                      >
+                                        {agent.created_by_lawyer.full_name}
+                                      </button>
+                                    ) : (
+                                      'N/A'
+                                    )}
+                                  </TableCell>
+                                  <TableCell>
+                                    ${agent.final_price?.toLocaleString() || agent.suggested_price.toLocaleString()}
+                                  </TableCell>
+                                  <TableCell>{new Date(agent.created_at).toLocaleDateString()}</TableCell>
+                                  <TableCell>
+                                    <Button
+                                      size="sm"
+                                      variant="default"
+                                      onClick={() => updateAgentStatus(agent.id, 'active')}
+                                    >
+                                      Activar
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+
+                        {/* Mobile view */}
+                        <div className="block md:hidden space-y-3">
+                          {agents.filter(a => a.status === 'suspended').map((agent) => (
+                            <Card key={agent.id} className="p-4 opacity-75">
+                              <div className="space-y-3">
+                                <div className="flex justify-between items-start">
+                                  <button 
+                                    onClick={() => {
+                                      setSelectedAgent(agent);
+                                      setShowAgentDetails(true);
+                                    }}
+                                    className="text-primary hover:text-primary/80 underline cursor-pointer transition-colors font-medium"
+                                  >
+                                    {sanitizeInput(agent.name)}
+                                  </button>
+                                  <Badge variant="secondary">{sanitizeInput(agent.category)}</Badge>
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  {agent.created_by_lawyer ? (
+                                    <span>Creado por: {agent.created_by_lawyer.full_name}</span>
+                                  ) : (
+                                    'Creador: N/A'
+                                  )}
+                                </div>
+                                <div className="text-sm">
+                                  <span className="text-muted-foreground">Precio: </span>
+                                  <span className="font-medium">
+                                    ${agent.final_price?.toLocaleString() || agent.suggested_price.toLocaleString()}
+                                  </span>
+                                </div>
+                                <div className="pt-2">
+                                  <Button
+                                    size="sm"
+                                    variant="default"
+                                    onClick={() => updateAgentStatus(agent.id, 'active')}
+                                    className="w-full"
+                                  >
+                                    <Check className="h-4 w-4 mr-1" />
+                                    Reactivar
+                                  </Button>
+                                </div>
+                              </div>
+                            </Card>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
           </TabsContent>
 
           <TabsContent value="stats" className="space-y-4 sm:space-y-6">
