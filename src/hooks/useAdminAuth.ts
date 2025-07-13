@@ -25,8 +25,40 @@ export const useAdminAuth = () => {
   const [user, setUser] = useState<AdminUser | null>(null);
   const { toast } = useToast();
 
+  const logout = async () => {
+    // Clear admin-specific session data using centralized storage
+    AuthStorage.clearAdminAuth();
+    setIsAuthenticated(false);
+    setUser(null);
+    
+    // Also sign out from Supabase
+    await supabase.auth.signOut();
+  };
+
   useEffect(() => {
     checkAuthStatus();
+    
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log('Admin auth state change:', event);
+        if (event === 'SIGNED_OUT' || !session) {
+          logout();
+        } else if (event === 'SIGNED_IN' && session) {
+          // Update stored token if session changes
+          const adminAuth = AuthStorage.getAdminAuth();
+          if (adminAuth && adminAuth.token !== session.access_token) {
+            AuthStorage.setAdminAuth({
+              ...adminAuth,
+              token: session.access_token,
+              expiresAt: new Date(session.expires_at * 1000).toISOString()
+            });
+          }
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const checkAuthStatus = async () => {
@@ -51,15 +83,18 @@ export const useAdminAuth = () => {
         return;
       }
 
-      // Use verify-admin-token edge function instead
-      const { data: validationResult, error } = await supabase.functions.invoke('verify-admin-token', {
-        headers: {
-          authorization: `Bearer ${adminAuth.token}`
-        }
-      });
+      // Verify token with Supabase session instead of edge function
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !sessionData.session) {
+        console.log('Session validation failed or no session found:', sessionError);
+        logout();
+        return;
+      }
 
-      if (error || !validationResult?.valid) {
-        console.log('Admin token validation failed:', error);
+      // Verify the stored token matches the current session
+      if (sessionData.session.access_token !== adminAuth.token) {
+        console.log('Token mismatch, clearing auth');
         logout();
         return;
       }
@@ -199,12 +234,6 @@ export const useAdminAuth = () => {
     }
   };
 
-  const logout = () => {
-    // Clear admin-specific session data using centralized storage
-    AuthStorage.clearAdminAuth();
-    setIsAuthenticated(false);
-    setUser(null);
-  };
 
   const getAuthHeaders = () => {
     const adminAuth = AuthStorage.getAdminAuth();
