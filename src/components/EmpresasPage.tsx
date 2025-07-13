@@ -58,8 +58,7 @@ export default function EmpresasPage({ onOpenChat, onNavigate }: EmpresasPagePro
   };
 
   const handleDocumentAction = (service: AgentService) => {
-    const message = `Generar ${service.document_name}`;
-    onOpenChat(message);
+    onOpenChat(service.document_name);
   };
 
   const groupedServices = services.reduce((acc, service) => {
@@ -170,7 +169,7 @@ export default function EmpresasPage({ onOpenChat, onNavigate }: EmpresasPagePro
             <Button
               variant="default"
               size="lg"
-              onClick={() => onOpenChat("Soy empresario y necesito asesoría legal especializada.")}
+              onClick={() => onOpenChat("Quiero una consultoría")}
             >
               Consulta Empresarial
             </Button>

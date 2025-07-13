@@ -60,8 +60,7 @@ export default function PersonasPage({ onOpenChat, onNavigate }: PersonasPagePro
   };
 
   const handleDocumentAction = (service: AgentService) => {
-    const message = `Generar ${service.document_name}`;
-    onOpenChat(message);
+    onOpenChat(service.document_name);
   };
 
   const groupedServices = services.reduce((acc, service) => {
@@ -172,7 +171,7 @@ export default function PersonasPage({ onOpenChat, onNavigate }: PersonasPagePro
             <Button
               variant="success"
               size="lg"
-              onClick={() => onOpenChat("Tengo una duda legal y necesito asesoría.")}
+              onClick={() => onOpenChat("Quiero una consultoría")}
             >
               Iniciar Asesoría Gratuita
             </Button>
