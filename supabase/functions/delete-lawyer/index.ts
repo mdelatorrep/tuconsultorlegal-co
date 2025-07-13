@@ -30,27 +30,34 @@ Deno.serve(async (req) => {
     // Parse request body
     let requestBody
     try {
-      const bodyText = await req.text()
-      console.log('Raw request body:', bodyText)
-      
-      if (!bodyText || !bodyText.trim()) {
-        console.error('Empty request body received')
-        return new Response(JSON.stringify({ error: 'Request body is required' }), {
+      // Try to parse as JSON first
+      requestBody = await req.json()
+      console.log('Parsed request body:', requestBody)
+    } catch (parseError) {
+      console.error('JSON parse error, trying text:', parseError)
+      try {
+        const bodyText = await req.text()
+        console.log('Raw request body:', bodyText)
+        
+        if (!bodyText || !bodyText.trim()) {
+          console.error('Empty request body received')
+          return new Response(JSON.stringify({ error: 'Request body is required' }), {
+            status: 400,
+            headers: securityHeaders
+          })
+        }
+        
+        requestBody = JSON.parse(bodyText)
+        console.log('Parsed request body from text:', requestBody)
+      } catch (textParseError) {
+        console.error('Text parse error:', textParseError)
+        return new Response(JSON.stringify({ 
+          error: 'Invalid JSON in request body' 
+        }), {
           status: 400,
           headers: securityHeaders
         })
       }
-      
-      requestBody = JSON.parse(bodyText)
-      console.log('Parsed request body:', requestBody)
-    } catch (parseError) {
-      console.error('JSON parse error:', parseError)
-      return new Response(JSON.stringify({ 
-        error: 'Invalid JSON in request body' 
-      }), {
-        status: 400,
-        headers: securityHeaders
-      })
     }
 
     const { lawyer_id } = requestBody

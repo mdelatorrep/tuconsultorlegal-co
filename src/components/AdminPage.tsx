@@ -867,13 +867,10 @@ function AdminPage() {
       console.log('Attempting to delete lawyer via edge function:', { lawyerId, lawyerName });
 
       const { data, error } = await supabase.functions.invoke('delete-lawyer', {
-        body: JSON.stringify({
+        body: {
           lawyer_id: lawyerId
-        }),
-        headers: {
-          'authorization': authHeaders.authorization,
-          'Content-Type': 'application/json'
-        }
+        },
+        headers: authHeaders
       });
 
       if (error || !data?.success) {
