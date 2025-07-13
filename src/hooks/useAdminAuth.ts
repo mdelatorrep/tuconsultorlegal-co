@@ -237,7 +237,7 @@ export const useAdminAuth = () => {
 
   const getAuthHeaders = () => {
     const adminAuth = AuthStorage.getAdminAuth();
-    return adminAuth ? { 'authorization': adminAuth.token } : {};
+    return adminAuth ? { 'authorization': `Bearer ${adminAuth.token}` } : {};
   };
 
   return {
