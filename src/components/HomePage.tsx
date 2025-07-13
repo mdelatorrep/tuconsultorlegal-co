@@ -101,7 +101,7 @@ export default function HomePage({ onOpenChat }: HomePageProps) {
             variant="success"
             size="xl"
             className="mb-8 shadow-hero"
-            onClick={() => onOpenChat("Hola, quiero crear un documento legal.")}
+            onClick={() => onOpenChat("Quiero una consultoría legal")}
           >
             Empezar Ahora →
           </Button>
@@ -167,7 +167,7 @@ export default function HomePage({ onOpenChat }: HomePageProps) {
             variant="success"
             size="xl"
             className="shadow-hero"
-            onClick={() => onOpenChat("Hola, estoy listo para empezar.")}
+            onClick={() => onOpenChat("Quiero una consultoría legal")}
           >
             Iniciar Asesoría Ahora
           </Button>
