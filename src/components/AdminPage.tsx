@@ -944,19 +944,35 @@ function AdminPage() {
   // Load document categories
   const loadDocumentCategories = async () => {
     try {
-      const { data, error } = await supabase
-        .from('document_categories')
-        .select('*')
-        .order('name');
+      const authHeaders = getAuthHeaders();
+      const { data, error } = await supabase.functions.invoke('manage-document-categories', {
+        headers: authHeaders,
+        body: { action: 'get' }
+      });
 
       if (error) {
         console.error('Error loading categories:', error);
+        toast({
+          title: "Error al cargar categorías",
+          description: "No se pudieron cargar las categorías de documentos.",
+          variant: "destructive"
+        });
         return;
       }
 
-      setDocumentCategories(data || []);
+      if (data?.success && data?.categories) {
+        setDocumentCategories(data.categories);
+      } else {
+        console.error('Error in response:', data);
+        setDocumentCategories([]);
+      }
     } catch (error) {
       console.error('Error loading categories:', error);
+      toast({
+        title: "Error al cargar categorías",
+        description: "Error inesperado al cargar las categorías.",
+        variant: "destructive"
+      });
     }
   };
 
