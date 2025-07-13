@@ -107,7 +107,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
     setIsLoadingDrafts(true);
     try {
       const { data, error } = await supabase.functions.invoke('get-agent-drafts', {
-        body: { lawyerId: lawyerData.tokenId } // Usar el ID del token del abogado
+        body: { lawyerId: lawyerData.tokenId || lawyerData.id } // Fallback al id si tokenId no existe
       });
 
       if (error) {
@@ -132,9 +132,11 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
     try {
       const draftName = formData.docName || `Borrador ${new Date().toLocaleDateString()}`;
       
+      console.log('Attempting to save draft with lawyerId:', lawyerData.tokenId || lawyerData.id);
+      
       const { data, error } = await supabase.functions.invoke('save-agent-draft', {
         body: {
-          lawyerId: lawyerData.tokenId, // Usar el ID del token del abogado, no el lawyer_id
+          lawyerId: lawyerData.tokenId || lawyerData.id, // Fallback al id si tokenId no existe
           draftId: currentDraftId,
           draftName,
           stepCompleted: currentStep,
@@ -145,6 +147,11 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
 
       if (error) {
         console.error('Error saving draft:', error);
+        toast({
+          title: "Error al guardar borrador",
+          description: error.message || "No se pudo guardar el borrador",
+          variant: "destructive",
+        });
         return;
       }
 
@@ -203,7 +210,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       const { data, error } = await supabase.functions.invoke('delete-agent-draft', {
         body: {
           draftId,
-          lawyerId: lawyerData.tokenId // Usar el ID del token del abogado
+          lawyerId: lawyerData.tokenId || lawyerData.id // Fallback al id si tokenId no existe
         }
       });
 
