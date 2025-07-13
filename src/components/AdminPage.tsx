@@ -853,9 +853,9 @@ function AdminPage() {
     }
 
     try {
-      const authToken = sessionStorage.getItem('admin_token');
+      const authHeaders = getAuthHeaders();
       
-      if (!authToken) {
+      if (!authHeaders.authorization) {
         toast({
           title: "Error",
           description: "Token de administrador no encontrado. Por favor, inicia sesión nuevamente.",
@@ -871,7 +871,7 @@ function AdminPage() {
           lawyer_id: lawyerId
         }),
         headers: {
-          'authorization': authToken,
+          'authorization': authHeaders.authorization,
           'Content-Type': 'application/json'
         }
       });

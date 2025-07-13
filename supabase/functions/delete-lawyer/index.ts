@@ -45,32 +45,53 @@ Deno.serve(async (req) => {
 
     console.log('Verifying admin token...')
 
-    // Verify token against admin_accounts table
-    const { data: admin, error: tokenError } = await supabase
-      .from('admin_accounts')
-      .select('*')
-      .eq('session_token', adminToken)
-      .eq('active', true)
-      .maybeSingle()
-
-    if (tokenError || !admin) {
-      console.error('Admin token verification failed:', tokenError)
+    // Verify JWT token and get user
+    const { data: { user }, error: userError } = await supabase.auth.getUser(adminToken)
+    
+    if (userError || !user) {
+      console.error('JWT token verification failed:', userError)
       return new Response(JSON.stringify({ error: 'Invalid admin token' }), {
         status: 401,
         headers: securityHeaders
       })
     }
 
-    // Check token expiration
-    if (admin.token_expires_at && new Date(admin.token_expires_at) < new Date()) {
-      console.error('Admin token expired')
-      return new Response(JSON.stringify({ error: 'Admin token expired' }), {
+    // Check if user has admin profile in admin_accounts table
+    // First try by user_id, then by email as fallback
+    let admin = null;
+    let adminError = null;
+
+    const { data: adminByUserId, error: userIdError } = await supabase
+      .from('admin_accounts')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('active', true)
+      .maybeSingle()
+
+    if (adminByUserId) {
+      admin = adminByUserId;
+    } else {
+      // Fallback: check by email
+      const { data: adminByEmail, error: emailError } = await supabase
+        .from('admin_accounts')
+        .select('*')
+        .eq('email', user.email)
+        .eq('active', true)
+        .maybeSingle()
+      
+      admin = adminByEmail;
+      adminError = emailError;
+    }
+
+    if (adminError || !admin) {
+      console.error('Admin profile verification failed:', adminError)
+      return new Response(JSON.stringify({ error: 'Invalid admin credentials' }), {
         status: 401,
         headers: securityHeaders
       })
     }
 
-    console.log('Admin verified successfully')
+    console.log('Admin verified successfully:', admin.email)
 
     let requestBody
     try {
@@ -149,7 +170,9 @@ Deno.serve(async (req) => {
 
     console.log('Lawyer deleted successfully')
 
-    // Log the deletion event
+    // Note: log_security_event RPC function doesn't exist yet
+    // TODO: Implement security event logging
+    /*
     await supabase.rpc('log_security_event', {
       event_type: 'lawyer_deleted',
       user_id: admin.id,
@@ -160,6 +183,7 @@ Deno.serve(async (req) => {
         admin_email: admin.email
       }
     })
+    */
 
     return new Response(JSON.stringify({
       success: true,
