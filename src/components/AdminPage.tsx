@@ -787,31 +787,47 @@ function AdminPage() {
 
   const updateAgentStatus = async (agentId: string, status: string) => {
     try {
-      const authToken = sessionStorage.getItem('admin_token');
+      const authHeaders = getAuthHeaders();
       
-      if (!authToken) {
+      if (!authHeaders.authorization) {
         toast({
           title: "Error",
-          description: "Token de administrador no encontrado. Por favor, inicia sesión nuevamente.",
+          description: "No hay sesión de administrador activa. Por favor, inicia sesión nuevamente.",
           variant: "destructive"
         });
         return;
       }
 
-      const { error } = await supabase
-        .from('legal_agents')
-        .update({ status })
-        .eq('id', agentId);
+      console.log('Updating agent status:', { agentId, status });
 
-      if (error) throw error;
+      const { data, error } = await supabase.functions.invoke('update-agent', {
+        body: {
+          agent_id: agentId,
+          user_id: user?.id,
+          is_admin: true,
+          status: status
+        },
+        headers: authHeaders
+      });
+
+      if (error) {
+        console.error('Error updating agent status:', error);
+        throw new Error(error.message || 'Error al actualizar el estado del agente');
+      }
+
+      if (!data?.success) {
+        throw new Error(data?.error || 'Error al actualizar el estado del agente');
+      }
 
       toast({
         title: "Éxito",
         description: "Estado del agente actualizado exitosamente",
       });
 
+      // Reload all data to ensure consistency
       await loadData();
     } catch (error: any) {
+      console.error('Error updating agent status:', error);
       toast({
         title: "Error",
         description: error.message || "Error al actualizar el estado del agente",
@@ -2273,12 +2289,10 @@ function AdminPage() {
                         <>
                           <Button
                             size="sm"
-                            onClick={() => {
-                              updateAgentStatus(selectedAgent.id, 'active');
-                              setSelectedAgent({
-                                ...selectedAgent,
-                                status: 'active'
-                              });
+                            onClick={async () => {
+                              await updateAgentStatus(selectedAgent.id, 'active');
+                              // Close dialog to show updated data
+                              setSelectedAgent(null);
                             }}
                             className="bg-green-600 hover:bg-green-700"
                           >
@@ -2288,12 +2302,10 @@ function AdminPage() {
                           <Button
                             size="sm"
                             variant="destructive"
-                            onClick={() => {
-                              updateAgentStatus(selectedAgent.id, 'suspended');
-                              setSelectedAgent({
-                                ...selectedAgent,
-                                status: 'suspended'
-                              });
+                            onClick={async () => {
+                              await updateAgentStatus(selectedAgent.id, 'suspended');
+                              // Close dialog to show updated data
+                              setSelectedAgent(null);
                             }}
                           >
                             <X className="h-4 w-4 mr-2" />
@@ -2306,12 +2318,9 @@ function AdminPage() {
                         <Button
                           size="sm"
                           variant="destructive"
-                          onClick={() => {
-                            updateAgentStatus(selectedAgent.id, 'suspended');
-                            setSelectedAgent({
-                              ...selectedAgent,
-                              status: 'suspended'
-                            });
+                          onClick={async () => {
+                            await updateAgentStatus(selectedAgent.id, 'suspended');
+                            setSelectedAgent(null);
                           }}
                         >
                           Suspender
@@ -2321,12 +2330,9 @@ function AdminPage() {
                       {selectedAgent.status === 'suspended' && (
                         <Button
                           size="sm"
-                          onClick={() => {
-                            updateAgentStatus(selectedAgent.id, 'active');
-                            setSelectedAgent({
-                              ...selectedAgent,
-                              status: 'active'
-                            });
+                          onClick={async () => {
+                            await updateAgentStatus(selectedAgent.id, 'active');
+                            setSelectedAgent(null);
                           }}
                           className="bg-green-600 hover:bg-green-700"
                         >
