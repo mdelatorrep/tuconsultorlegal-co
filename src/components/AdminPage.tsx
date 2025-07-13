@@ -123,6 +123,7 @@ function AdminPage() {
     icon: 'FileText',
     is_active: true
   });
+  const [serviceStatus, setServiceStatus] = useState<any>(null);
   const { toast } = useToast();
   const { isAuthenticated, isLoading, user, logout, getAuthHeaders, checkAuthStatus } = useNativeAdminAuth();
 
@@ -287,6 +288,9 @@ function AdminPage() {
 
       // Load document categories
       await loadDocumentCategories();
+
+      // Load service status
+      await loadServiceStatus();
 
       // Load statistics
       await loadStatistics(lawyersData || [], agentsData || []);
@@ -973,6 +977,72 @@ function AdminPage() {
         description: "Error inesperado al cargar las categorías.",
         variant: "destructive"
       });
+    }
+  };
+
+  // Load service status
+  const loadServiceStatus = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('service_status')
+        .select('*')
+        .eq('service_name', 'openai')
+        .single();
+
+      if (error) {
+        console.error('Error loading service status:', error);
+        return;
+      }
+
+      setServiceStatus(data);
+    } catch (error) {
+      console.error('Error loading service status:', error);
+    }
+  };
+
+  // Trigger manual OpenAI status check
+  const checkOpenAIStatus = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('monitor-openai-status');
+      
+      if (error) {
+        console.error('Error checking OpenAI status:', error);
+        toast({
+          title: "Error al verificar estado",
+          description: "No se pudo verificar el estado de OpenAI.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Reload service status after check
+      await loadServiceStatus();
+      
+      toast({
+        title: "Estado verificado",
+        description: "Se ha actualizado el estado de OpenAI.",
+      });
+    } catch (error) {
+      console.error('Error checking OpenAI status:', error);
+      toast({
+        title: "Error al verificar estado",
+        description: "Error inesperado al verificar el estado.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Get status badge variant and color
+  const getStatusDisplay = (status: string) => {
+    switch (status) {
+      case 'operational':
+        return { variant: 'default', color: 'text-green-500', text: 'Operativo', icon: Activity };
+      case 'degraded':
+        return { variant: 'secondary', color: 'text-yellow-500', text: 'Degradado', icon: AlertTriangle };
+      case 'outage':
+        return { variant: 'destructive', color: 'text-red-500', text: 'Fuera de servicio', icon: X };
+      default:
+        return { variant: 'outline', color: 'text-gray-500', text: 'Desconocido', icon: AlertTriangle };
     }
   };
 
@@ -1848,16 +1918,53 @@ function AdminPage() {
 
                 {/* System Status */}
                 <div className="border-t pt-6">
-                  <h3 className="text-lg font-semibold mb-4">Estado del Sistema</h3>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">Estado del Sistema</h3>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={checkOpenAIStatus}
+                      className="flex items-center gap-2"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                      Verificar OpenAI
+                    </Button>
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <Card>
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
-                          <div>
+                          <div className="flex-1">
                             <p className="text-sm font-medium">OpenAI API</p>
-                            <Badge variant="default" className="mt-1">Conectado</Badge>
+                            {serviceStatus ? (
+                              <>
+                                <Badge variant={getStatusDisplay(serviceStatus.status).variant as any} className="mt-1">
+                                  {getStatusDisplay(serviceStatus.status).text}
+                                </Badge>
+                                {serviceStatus.last_checked && (
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    Última verificación: {new Date(serviceStatus.last_checked).toLocaleString()}
+                                  </p>
+                                )}
+                                {serviceStatus.response_time_ms && (
+                                  <p className="text-xs text-muted-foreground">
+                                    Tiempo de respuesta: {serviceStatus.response_time_ms}ms
+                                  </p>
+                                )}
+                                {serviceStatus.error_message && (
+                                  <p className="text-xs text-red-500 mt-1">
+                                    Error: {serviceStatus.error_message}
+                                  </p>
+                                )}
+                              </>
+                            ) : (
+                              <Badge variant="outline" className="mt-1">Cargando...</Badge>
+                            )}
                           </div>
-                          <Activity className="h-8 w-8 text-green-500" />
+                          {serviceStatus && React.createElement(
+                            getStatusDisplay(serviceStatus.status).icon,
+                            { className: `h-8 w-8 ${getStatusDisplay(serviceStatus.status).color}` }
+                          )}
                         </div>
                       </CardContent>
                     </Card>

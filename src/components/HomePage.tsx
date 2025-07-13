@@ -1,5 +1,6 @@
 import { Button } from "./ui/button";
 import { Check, Clock, Users, Shield, Zap, DollarSign, MessageCircle } from "lucide-react";
+import ServiceStatusAlert from "./ServiceStatusAlert";
 
 interface HomePageProps {
   onOpenChat: (message?: string) => void;
@@ -55,7 +56,9 @@ export default function HomePage({ onOpenChat }: HomePageProps) {
   ];
 
   return (
-    <div>
+    <>
+      <ServiceStatusAlert />
+      <div>
       {/* Hero Section */}
       <section className="hero-gradient text-primary-foreground">
         <div className="container mx-auto px-6 py-24 text-center">
@@ -144,5 +147,6 @@ export default function HomePage({ onOpenChat }: HomePageProps) {
         </div>
       </section>
     </div>
+    </>
   );
 }
