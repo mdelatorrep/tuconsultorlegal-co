@@ -1,8 +1,13 @@
+# robots.txt for tuconsultorlegal.co
+# Optimizado para SEO y crawling inteligente
+
 User-agent: Googlebot
 Allow: /
+Crawl-delay: 1
 
 User-agent: Bingbot
 Allow: /
+Crawl-delay: 1
 
 User-agent: Twitterbot
 Allow: /
@@ -10,5 +15,54 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: WhatsApp
+Allow: /
+
+# Páginas principales permitidas
 User-agent: *
 Allow: /
+Allow: /#home
+Allow: /#personas
+Allow: /#empresas
+Allow: /#precios
+Allow: /#blog
+Allow: /#contacto
+
+# Páginas de contenido
+Allow: /#blog-articulo-arriendo
+Allow: /#blog-articulo-despido
+Allow: /#blog-articulo-vehiculo
+Allow: /#terminos
+Allow: /#privacidad
+
+# Bloquear páginas administrativas y privadas
+Disallow: /#admin
+Disallow: /#abogados
+Disallow: /#request-token
+Disallow: /admin
+Disallow: /_*
+Disallow: /*?*bold-*
+Disallow: /*?*code=*
+
+# Bots agresivos con crawl-delay
+User-agent: AhrefsBot
+Crawl-delay: 10
+Allow: /
+
+User-agent: SemrushBot
+Crawl-delay: 10
+Allow: /
+
+User-agent: MJ12bot
+Crawl-delay: 10
+Allow: /
+
+User-agent: DotBot
+Crawl-delay: 10
+Allow: /
+
+# Sitemap
+Sitemap: https://tuconsultorlegal.co/sitemap.xml

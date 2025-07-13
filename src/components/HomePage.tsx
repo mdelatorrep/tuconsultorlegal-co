@@ -1,12 +1,39 @@
 import { Button } from "./ui/button";
 import { Check, Clock, Users, Shield, Zap, DollarSign, MessageCircle } from "lucide-react";
 import ServiceStatusAlert from "./ServiceStatusAlert";
+import useSEO from "@/hooks/useSEO";
 
 interface HomePageProps {
   onOpenChat: (message?: string) => void;
 }
 
 export default function HomePage({ onOpenChat }: HomePageProps) {
+  // SEO optimization for home page
+  useSEO({
+    title: "Tu Consultor Legal - Asesoría Legal con IA en Colombia | Documentos Jurídicos Inteligentes",
+    description: "Asesoría legal profesional con Inteligencia Artificial en Colombia. Genera contratos, demandas y documentos jurídicos de forma rápida, segura y económica. Consultas especializadas para personas y empresas.",
+    keywords: "asesoría legal Colombia, abogado virtual, documentos jurídicos IA, contratos inteligentes, consulta legal online, derechos laborales, derecho empresarial, servicios legales digitales, tuconsultorlegal",
+    canonical: "https://tuconsultorlegal.co/",
+    ogImage: "https://tuconsultorlegal.co/og-image.png",
+    structuredData: {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "name": "Tu Consultor Legal - Inicio",
+      "description": "Plataforma de asesoría legal con IA para Colombia",
+      "url": "https://tuconsultorlegal.co/",
+      "mainEntity": {
+        "@type": "LegalService",
+        "name": "Tu Consultor Legal",
+        "description": "Asesoría legal con Inteligencia Artificial",
+        "provider": {
+          "@type": "Organization",
+          "name": "Tu Consultor Legal",
+          "url": "https://tuconsultorlegal.co"
+        }
+      }
+    }
+  });
+
   const features = [
     {
       icon: <Zap className="w-8 h-8" />,

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import useSEO from "@/hooks/useSEO";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -152,6 +153,27 @@ const businessPlans: PricingPlan[] = [
 ];
 
 export default function PricingPage({ onOpenChat, onNavigate }: PricingPageProps) {
+  // SEO optimization for pricing page
+  useSEO({
+    title: "Planes y Precios - Servicios Legales | Tu Consultor Legal Colombia",
+    description: "Planes flexibles para personas y empresas. Desde servicios gratuitos hasta planes empresariales. Asesoría legal profesional con IA desde $0 COP.",
+    keywords: "precios servicios legales Colombia, planes asesoría legal, tarifas abogado virtual, costos documentos jurídicos, planes empresariales legales",
+    canonical: "https://tuconsultorlegal.co/#precios",
+    structuredData: {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "name": "Planes y Precios - Servicios Legales",
+      "description": "Planes y tarifas de servicios legales para personas y empresas",
+      "url": "https://tuconsultorlegal.co/#precios",
+      "offers": {
+        "@type": "AggregateOffer",
+        "lowPrice": "0",
+        "highPrice": "400000",
+        "priceCurrency": "COP"
+      }
+    }
+  });
+
   const [activeTab, setActiveTab] = useState("personal");
 
   const handlePlanClick = async (plan: PricingPlan) => {

@@ -14,6 +14,7 @@ import PrivacyPolicyPage from "@/components/PrivacyPolicyPage";
 import TermsAndConditionsPage from "@/components/TermsAndConditionsPage";
 import LawyerTokenRequestForm from "@/components/LawyerTokenRequestForm";
 import PricingPage from "@/components/PricingPage";
+import ContactPage from "@/components/ContactPage";
 
 export default function Index() {
   const [currentPage, setCurrentPage] = useState("home");
@@ -95,12 +96,7 @@ export default function Index() {
       case "blog-articulo-vehiculo":
         return <BlogArticlePage articleId="vehiculo" onOpenChat={handleOpenChat} onNavigate={handleNavigate} />;
       case "contacto":
-        return (
-          <EmptyPage
-            title="Contáctanos"
-            subtitle="¿Tienes preguntas sobre nuestros servicios o necesitas soporte? Estamos aquí para ayudarte."
-          />
-        );
+        return <ContactPage onOpenChat={handleOpenChat} onNavigate={handleNavigate} />;
       case "documento":
       case "documento-pago":
       case "estado-documento":
