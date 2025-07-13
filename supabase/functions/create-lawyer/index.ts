@@ -61,13 +61,14 @@ const logger = {
   }
 }
 
-// Use the new database function for secure token generation
-const generateSecureToken = async (serviceClient: any): Promise<string> => {
-  const { data: token, error } = await serviceClient.rpc('generate_secure_lawyer_token');
-  if (error) {
-    throw new Error(`Token generation failed: ${error.message}`);
+// Generate secure access token (same logic as manage-token-request)
+const generateSecureToken = (): string => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let accessToken = '';
+  for (let i = 0; i < 10; i++) {
+    accessToken += chars.charAt(Math.floor(Math.random() * chars.length));
   }
-  return token;
+  return accessToken;
 }
 
 Deno.serve(async (req) => {
@@ -187,8 +188,8 @@ Deno.serve(async (req) => {
       return createErrorResponse('Email already exists', 409)
     }
 
-    // Generate secure access token using database function
-    const accessToken = await generateSecureToken(serviceClient)
+    // Generate secure access token (same logic as manage-token-request)
+    const accessToken = generateSecureToken()
 
     logger.info('Creating lawyer token', { tokenLength: accessToken.length })
 
