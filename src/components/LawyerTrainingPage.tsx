@@ -343,15 +343,15 @@ export default function LawyerTrainingPage({ onBack, lawyerData }: LawyerTrainin
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="space-y-2">
-                    <p className="font-medium">Introducción a la IA Legal</p>
+                    <p className="font-medium">Introducción a la IA Legal (próximamente)</p>
                     <p className="text-sm text-muted-foreground">Conceptos fundamentales - 15 min</p>
                   </div>
                   <div className="space-y-2">
-                    <p className="font-medium">Creación de Prompts Avanzados</p>
+                    <p className="font-medium">Creación de Prompts Avanzados (próximamente)</p>
                     <p className="text-sm text-muted-foreground">Técnicas especializadas - 25 min</p>
                   </div>
                   <div className="space-y-2">
-                    <p className="font-medium">Casos de Uso Prácticos</p>
+                    <p className="font-medium">Casos de Uso Prácticos (próximamente)</p>
                     <p className="text-sm text-muted-foreground">Ejemplos reales - 30 min</p>
                   </div>
                 </CardContent>
@@ -366,15 +366,15 @@ export default function LawyerTrainingPage({ onBack, lawyerData }: LawyerTrainin
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="space-y-2">
-                    <p className="font-medium">Guía de Prompts PDF</p>
+                    <p className="font-medium">Guía de Prompts PDF (próximamente)</p>
                     <p className="text-sm text-muted-foreground">Manual completo descargable</p>
                   </div>
                   <div className="space-y-2">
-                    <p className="font-medium">Plantillas de Variables</p>
+                    <p className="font-medium">Plantillas de Variables (próximamente)</p>
                     <p className="text-sm text-muted-foreground">Formatos estandarizados</p>
                   </div>
                   <div className="space-y-2">
-                    <p className="font-medium">Checklist de Calidad</p>
+                    <p className="font-medium">Checklist de Calidad (próximamente)</p>
                     <p className="text-sm text-muted-foreground">Verificación de prompts</p>
                   </div>
                 </CardContent>
@@ -389,15 +389,15 @@ export default function LawyerTrainingPage({ onBack, lawyerData }: LawyerTrainin
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="space-y-2">
-                    <p className="font-medium">Foro de Abogados</p>
+                    <p className="font-medium">Foro de Abogados (próximamente)</p>
                     <p className="text-sm text-muted-foreground">Intercambio de experiencias</p>
                   </div>
                   <div className="space-y-2">
-                    <p className="font-medium">Sesiones Q&A</p>
+                    <p className="font-medium">Sesiones Q&A (próximamente)</p>
                     <p className="text-sm text-muted-foreground">Webinars mensuales</p>
                   </div>
                   <div className="space-y-2">
-                    <p className="font-medium">Soporte Técnico</p>
+                    <p className="font-medium">Soporte Técnico (próximamente)</p>
                     <p className="text-sm text-muted-foreground">Asistencia especializada</p>
                   </div>
                 </CardContent>
@@ -412,15 +412,15 @@ export default function LawyerTrainingPage({ onBack, lawyerData }: LawyerTrainin
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="space-y-2">
-                    <p className="font-medium">IA Legal Básico</p>
+                    <p className="font-medium">IA Legal Básico (próximamente)</p>
                     <p className="text-sm text-muted-foreground">Fundamentos certificados</p>
                   </div>
                   <div className="space-y-2">
-                    <p className="font-medium">Especialista en Prompts</p>
+                    <p className="font-medium">Especialista en Prompts (próximamente)</p>
                     <p className="text-sm text-muted-foreground">Nivel avanzado</p>
                   </div>
                   <div className="space-y-2">
-                    <p className="font-medium">Maestría en Agentes</p>
+                    <p className="font-medium">Maestría en Agentes (próximamente)</p>
                     <p className="text-sm text-muted-foreground">Experto certificado</p>
                   </div>
                 </CardContent>
