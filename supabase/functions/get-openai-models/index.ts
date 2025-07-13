@@ -1,6 +1,5 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -30,60 +29,18 @@ serve(async (req) => {
 
   try {
     console.log('=== GET OPENAI MODELS START ===');
-    
-    // Initialize Supabase client
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    
-    if (!supabaseServiceKey || !supabaseUrl) {
-      console.error('Missing Supabase configuration');
-      throw new Error('Missing Supabase configuration');
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Check admin authentication
-    const authHeader = req.headers.get('authorization');
-    console.log('Auth header present:', !!authHeader);
-    
-    if (!authHeader) {
-      console.error('No authorization header found');
-      return new Response(JSON.stringify({ 
-        error: 'No autorizado - Token de administrador requerido' 
-      }), {
-        status: 401,
-        headers: securityHeaders
-      });
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-    console.log('Extracted token length:', token.length);
-
-    // Verify admin token
-    const { data: adminData, error: adminError } = await supabase
-      .from('admin_accounts')
-      .select('id, active, is_super_admin')
-      .eq('id', token)
-      .eq('active', true)
-      .single();
-
-    if (adminError || !adminData) {
-      console.error('Admin verification failed:', adminError);
-      return new Response(JSON.stringify({ 
-        error: 'Token de administrador inválido' 
-      }), {
-        status: 403,
-        headers: securityHeaders
-      });
-    }
-
-    console.log('Admin verified:', adminData.id);
 
     // Get OpenAI API key
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
       console.error('OpenAI API key not configured');
-      throw new Error('OpenAI API key not configured');
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'OpenAI API key no configurada' 
+      }), {
+        status: 500,
+        headers: securityHeaders
+      });
     }
 
     console.log('Fetching available OpenAI models...');
@@ -100,20 +57,41 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorData = await response.text();
-      console.error('OpenAI API error:', errorData);
-      throw new Error(`Error de OpenAI: ${response.status} ${response.statusText}`);
+      console.error('OpenAI API error:', response.status, errorData);
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: `Error de OpenAI API: ${response.status}`,
+        details: errorData 
+      }), {
+        status: response.status,
+        headers: securityHeaders
+      });
     }
 
     const data = await response.json();
     console.log('Raw models count:', data?.data?.length || 0);
     
-    if (!data.data) {
-      console.error('Invalid OpenAI models response:', data);
-      throw new Error('Respuesta inválida de OpenAI');
+    if (!data.data || !Array.isArray(data.data)) {
+      console.error('Invalid OpenAI models response structure:', data);
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Respuesta inválida de OpenAI' 
+      }), {
+        status: 500,
+        headers: securityHeaders
+      });
     }
 
     // Filter for text generation models that are commonly used
-    const textModels = data.data.filter((model: any) => 
+    const allModels = data.data.map((model: any) => ({
+      id: model.id,
+      object: model.object,
+      created: model.created,
+      owned_by: model.owned_by
+    }));
+
+    // Filter for GPT models only
+    const gptModels = allModels.filter((model: any) => 
       model.id.includes('gpt') && 
       !model.id.includes('instruct') && 
       !model.id.includes('edit') &&
@@ -122,19 +100,15 @@ serve(async (req) => {
       !model.id.includes('tts') &&
       !model.id.includes('davinci-002') &&
       !model.id.includes('babbage-002')
-    ).map((model: any) => ({
-      id: model.id,
-      object: model.object,
-      created: model.created,
-      owned_by: model.owned_by
-    }));
+    );
 
-    console.log(`Filtered to ${textModels.length} text generation models`);
+    console.log(`Found ${allModels.length} total models, filtered to ${gptModels.length} GPT models`);
     console.log('=== GET OPENAI MODELS SUCCESS ===');
 
     return new Response(JSON.stringify({
       success: true,
-      models: textModels
+      models: gptModels,
+      total_models: allModels.length
     }), {
       headers: securityHeaders
     });
@@ -144,7 +118,7 @@ serve(async (req) => {
     console.error('Error fetching OpenAI models:', error);
     return new Response(JSON.stringify({ 
       success: false,
-      error: 'Error obteniendo modelos de OpenAI',
+      error: 'Error interno obteniendo modelos de OpenAI',
       details: error instanceof Error ? error.message : 'Error desconocido'
     }), {
       status: 500,
