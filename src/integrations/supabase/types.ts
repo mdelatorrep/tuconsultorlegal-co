@@ -47,6 +47,71 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_drafts: {
+        Row: {
+          ai_results: Json | null
+          created_at: string
+          doc_cat: string | null
+          doc_desc: string | null
+          doc_name: string | null
+          doc_template: string | null
+          draft_name: string
+          id: string
+          initial_prompt: string | null
+          lawyer_id: string
+          lawyer_suggested_price: string | null
+          sla_enabled: boolean | null
+          sla_hours: number | null
+          step_completed: number
+          target_audience: string | null
+          updated_at: string
+        }
+        Insert: {
+          ai_results?: Json | null
+          created_at?: string
+          doc_cat?: string | null
+          doc_desc?: string | null
+          doc_name?: string | null
+          doc_template?: string | null
+          draft_name: string
+          id?: string
+          initial_prompt?: string | null
+          lawyer_id: string
+          lawyer_suggested_price?: string | null
+          sla_enabled?: boolean | null
+          sla_hours?: number | null
+          step_completed?: number
+          target_audience?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ai_results?: Json | null
+          created_at?: string
+          doc_cat?: string | null
+          doc_desc?: string | null
+          doc_name?: string | null
+          doc_template?: string | null
+          draft_name?: string
+          id?: string
+          initial_prompt?: string | null
+          lawyer_id?: string
+          lawyer_suggested_price?: string | null
+          sla_enabled?: boolean | null
+          sla_hours?: number | null
+          step_completed?: number
+          target_audience?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_drafts_lawyer_id_fkey"
+            columns: ["lawyer_id"]
+            isOneToOne: false
+            referencedRelation: "lawyer_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_tokens: {
         Row: {
           created_at: string

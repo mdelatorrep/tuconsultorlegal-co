@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, ArrowLeft, ArrowRight, CheckCircle, Loader2, Copy, Wand2, Bold, Italic, Underline, Type, AlignLeft, AlignCenter, AlignRight } from "lucide-react";
+import { Sparkles, ArrowLeft, ArrowRight, CheckCircle, Loader2, Copy, Wand2, Bold, Italic, Underline, Type, AlignLeft, AlignCenter, AlignRight, Save, FileText, Trash2 } from "lucide-react";
 
 interface AgentCreatorPageProps {
   onBack: () => void;
@@ -21,6 +21,12 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
   const [isProcessing, setIsProcessing] = useState(false);
   const [isImprovingTemplate, setIsImprovingTemplate] = useState(false);
   const [isImprovingDocInfo, setIsImprovingDocInfo] = useState(false);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const [isLoadingDrafts, setIsLoadingDrafts] = useState(false);
+  const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
+  const [showDrafts, setShowDrafts] = useState(false);
+  const [drafts, setDrafts] = useState<any[]>([]);
+  
   const [formData, setFormData] = useState({
     docName: "",
     docDesc: "",
@@ -76,6 +82,179 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
     } else {
       setFormData(prev => ({ ...prev, [field]: value }));
     }
+  };
+
+  // Draft functionality
+  useEffect(() => {
+    loadDrafts();
+  }, []);
+
+  // Auto-save draft when form data changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (formData.docName || formData.docDesc || formData.docTemplate || formData.initialPrompt) {
+        saveDraft();
+      }
+    }, 2000); // Auto-save after 2 seconds of inactivity
+
+    return () => clearTimeout(timer);
+  }, [formData, currentStep, aiResults]);
+
+  const loadDrafts = async () => {
+    setIsLoadingDrafts(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('get-agent-drafts', {
+        body: { lawyerId: lawyerData.id }
+      });
+
+      if (error) {
+        console.error('Error loading drafts:', error);
+        return;
+      }
+
+      if (data?.success) {
+        setDrafts(data.drafts || []);
+      }
+    } catch (error) {
+      console.error('Error loading drafts:', error);
+    } finally {
+      setIsLoadingDrafts(false);
+    }
+  };
+
+  const saveDraft = async () => {
+    if (isSavingDraft) return; // Prevent multiple simultaneous saves
+    
+    setIsSavingDraft(true);
+    try {
+      const draftName = formData.docName || `Borrador ${new Date().toLocaleDateString()}`;
+      
+      const { data, error } = await supabase.functions.invoke('save-agent-draft', {
+        body: {
+          lawyerId: lawyerData.id,
+          draftId: currentDraftId,
+          draftName,
+          stepCompleted: currentStep,
+          formData,
+          aiResults
+        }
+      });
+
+      if (error) {
+        console.error('Error saving draft:', error);
+        return;
+      }
+
+      if (data?.success) {
+        if (!currentDraftId) {
+          setCurrentDraftId(data.draftId);
+        }
+        // Optional: Show subtle indication that draft was saved
+        console.log('Draft saved successfully');
+      }
+    } catch (error) {
+      console.error('Error saving draft:', error);
+    } finally {
+      setIsSavingDraft(false);
+    }
+  };
+
+  const loadDraft = async (draft: any) => {
+    try {
+      setFormData({
+        docName: draft.doc_name || "",
+        docDesc: draft.doc_desc || "",
+        docCat: draft.doc_cat || "",
+        targetAudience: draft.target_audience || "personas",
+        docTemplate: draft.doc_template || "",
+        initialPrompt: draft.initial_prompt || "",
+        slaHours: draft.sla_hours || 4,
+        slaEnabled: draft.sla_enabled !== undefined ? draft.sla_enabled : true,
+        lawyerSuggestedPrice: draft.lawyer_suggested_price || "",
+      });
+
+      if (draft.ai_results && typeof draft.ai_results === 'object') {
+        setAiResults(draft.ai_results);
+      }
+
+      setCurrentStep(draft.step_completed || 1);
+      setCurrentDraftId(draft.id);
+      setShowDrafts(false);
+
+      toast({
+        title: "Borrador cargado",
+        description: `Se cargó el borrador "${draft.draft_name}".`,
+      });
+    } catch (error) {
+      console.error('Error loading draft:', error);
+      toast({
+        title: "Error al cargar borrador",
+        description: "No se pudo cargar el borrador seleccionado.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteDraft = async (draftId: string, draftName: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('delete-agent-draft', {
+        body: {
+          draftId,
+          lawyerId: lawyerData.id
+        }
+      });
+
+      if (error) {
+        console.error('Error deleting draft:', error);
+        toast({
+          title: "Error al eliminar borrador",
+          description: "No se pudo eliminar el borrador.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (data?.success) {
+        setDrafts(prev => prev.filter(d => d.id !== draftId));
+        if (currentDraftId === draftId) {
+          setCurrentDraftId(null);
+        }
+        
+        toast({
+          title: "Borrador eliminado",
+          description: `Se eliminó el borrador "${draftName}".`,
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting draft:', error);
+      toast({
+        title: "Error al eliminar borrador",
+        description: "No se pudo eliminar el borrador.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const clearDraft = () => {
+    setFormData({
+      docName: "",
+      docDesc: "",
+      docCat: "",
+      targetAudience: "personas",
+      docTemplate: "",
+      initialPrompt: "",
+      slaHours: 4,
+      slaEnabled: true,
+      lawyerSuggestedPrice: "",
+    });
+    setAiResults({
+      enhancedPrompt: "",
+      extractedPlaceholders: [],
+      calculatedPrice: "",
+      priceJustification: "",
+    });
+    setCurrentStep(1);
+    setCurrentDraftId(null);
   };
 
   const handleNext = () => {
@@ -473,13 +652,118 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
             <ArrowLeft className="h-4 w-4 mr-2" />
             Volver al Dashboard
           </Button>
+          
+          <div className="flex gap-2 ml-auto">
+            {/* Save Draft Button */}
+            <Button 
+              variant="outline" 
+              onClick={saveDraft}
+              disabled={isSavingDraft}
+              className="flex items-center gap-2"
+            >
+              {isSavingDraft ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              {isSavingDraft ? 'Guardando...' : 'Guardar Borrador'}
+            </Button>
+            
+            {/* Drafts Button */}
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowDrafts(true);
+                loadDrafts();
+              }}
+              className="flex items-center gap-2"
+            >
+              <FileText className="h-4 w-4" />
+              Borradores ({drafts.length})
+            </Button>
+          </div>
         </div>
+
+        {/* Drafts Modal */}
+        {showDrafts && (
+          <Card className="mb-6">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Borradores Guardados</CardTitle>
+                <CardDescription>
+                  Selecciona un borrador para continuar o elimina los que ya no necesites.
+                </CardDescription>
+              </div>
+              <Button variant="ghost" onClick={() => setShowDrafts(false)}>
+                ✕
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {isLoadingDrafts ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                  <span className="ml-2">Cargando borradores...</span>
+                </div>
+              ) : drafts.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No tienes borradores guardados
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {drafts.map((draft) => (
+                    <div key={draft.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex-1">
+                        <h4 className="font-medium">{draft.draft_name}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Paso {draft.step_completed} • {new Date(draft.updated_at).toLocaleString()}
+                        </p>
+                        {draft.doc_cat && (
+                          <Badge variant="outline" className="mt-1">
+                            {draft.doc_cat}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm" 
+                          onClick={() => loadDraft(draft)}
+                          className="bg-emerald-600 hover:bg-emerald-700"
+                        >
+                          Cargar
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => deleteDraft(draft.id, draft.draft_name)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  <div className="flex justify-end pt-4">
+                    <Button variant="outline" onClick={clearDraft}>
+                      Empezar Nuevo Agente
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>
             <CardTitle className="text-3xl text-primary">Creador de Agentes Legales</CardTitle>
             <CardDescription>
               Crea un nuevo servicio de documento legal para los clientes en 5 sencillos pasos.
+              {currentDraftId && (
+                <span className="block mt-2 text-emerald-600">
+                  <Save className="h-4 w-4 inline mr-1" />
+                  Borrador guardado automáticamente
+                </span>
+              )}
             </CardDescription>
           </CardHeader>
 

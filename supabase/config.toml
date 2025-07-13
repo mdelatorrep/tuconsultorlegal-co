@@ -20,3 +20,12 @@ verify_jwt = false
 
 [functions.create-admin-user]
 verify_jwt = false
+
+[functions.save-agent-draft]
+verify_jwt = false
+
+[functions.get-agent-drafts]
+verify_jwt = false
+
+[functions.delete-agent-draft]
+verify_jwt = false
