@@ -409,372 +409,561 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
           </p>
         </div>
 
-        {/* Agents Grid */}
-        <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-          {agents.length === 0 ? (
-            <div className="col-span-full">
+        {/* Separar agentes por estado */}
+        {agents.length === 0 ? (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">
+                No has creado ningún agente aún. Ve al panel principal para crear tu primer agente.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-8">
+            {/* Sección de Agentes Pendientes de Revisión */}
+            {agents.filter(agent => agent.status === 'pending_review').length > 0 && (
+              <div>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="bg-yellow-100 dark:bg-yellow-900 p-2 rounded-lg">
+                    <FileText className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-foreground">
+                      Agentes Pendientes de Revisión
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                      Agentes enviados para aprobación del administrador
+                    </p>
+                  </div>
+                  <Badge variant="outline" className="ml-auto">
+                    {agents.filter(agent => agent.status === 'pending_review').length}
+                  </Badge>
+                </div>
+                
+                <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                  {agents.filter(agent => agent.status === 'pending_review').map((agent) => (
+                    <Card key={agent.id} className="relative border-yellow-200 dark:border-yellow-800">
+                      <CardHeader className="pb-3">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <CardTitle className="text-lg mb-2 line-clamp-2">{agent.name}</CardTitle>
+                            <CardDescription className="text-sm mb-3 line-clamp-3">
+                              {agent.description}
+                            </CardDescription>
+                          </div>
+                          <div className="flex-shrink-0">
+                            {getStatusBadge(agent.status)}
+                          </div>
+                        </div>
+                      </CardHeader>
+                      
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2 text-sm">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <FileText className="h-4 w-4 flex-shrink-0" />
+                            <span className="text-muted-foreground">Categoría:</span>
+                            <span className="truncate">{agent.category}</span>
+                          </div>
+                          
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <DollarSign className="h-4 w-4 flex-shrink-0" />
+                            <span className="text-muted-foreground">Precio:</span>
+                            <span className="font-medium">${agent.suggested_price.toLocaleString()} COP</span>
+                          </div>
+                          
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Calendar className="h-4 w-4 flex-shrink-0" />
+                            <span className="text-muted-foreground">Creado:</span>
+                            <span>{new Date(agent.created_at).toLocaleDateString()}</span>
+                          </div>
+                          
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <User className="h-4 w-4 flex-shrink-0" />
+                            <span className="text-muted-foreground">Variables:</span>
+                            <span>{agent.placeholder_fields.length} campos</span>
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex flex-wrap gap-2 pt-4 border-t">
+                          {/* View Details */}
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => setSelectedAgent(agent)}
+                              >
+                                <Eye className="h-4 w-4 mr-1" />
+                                Ver
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                              <DialogHeader>
+                                <DialogTitle>{selectedAgent?.name}</DialogTitle>
+                                <DialogDescription>
+                                  Detalles completos del agente legal
+                                </DialogDescription>
+                              </DialogHeader>
+                              
+                              {selectedAgent && (
+                                <div className="space-y-6">
+                                  <div>
+                                    <h4 className="font-semibold mb-2">Descripción</h4>
+                                    <p className="text-sm text-muted-foreground">{selectedAgent.description}</p>
+                                  </div>
+                                  
+                                  <div>
+                                    <h4 className="font-semibold mb-2">Plantilla del Documento</h4>
+                                    <div className="p-4 bg-muted rounded-md text-xs font-mono max-h-40 overflow-y-auto">
+                                      {selectedAgent.template_content}
+                                    </div>
+                                  </div>
+                                  
+                                  <div>
+                                    <h4 className="font-semibold mb-2">Prompt de IA</h4>
+                                    <div className="p-4 bg-muted rounded-md text-xs font-mono max-h-40 overflow-y-auto">
+                                      {selectedAgent.ai_prompt}
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                      <h4 className="font-semibold mb-2">Información General</h4>
+                                      <div className="space-y-2 text-sm">
+                                        <div><strong>Categoría:</strong> {selectedAgent.category}</div>
+                                        <div><strong>Precio Sugerido:</strong> ${selectedAgent.suggested_price.toLocaleString()} COP</div>
+                                        <div><strong>Estado:</strong> {selectedAgent.status}</div>
+                                        <div><strong>Creado:</strong> {new Date(selectedAgent.created_at).toLocaleDateString()}</div>
+                                      </div>
+                                    </div>
+                                    
+                                    <div>
+                                      <h4 className="font-semibold mb-2">Variables ({selectedAgent.placeholder_fields.length})</h4>
+                                      <div className="space-y-1 text-sm max-h-40 overflow-y-auto">
+                                        {selectedAgent.placeholder_fields.map((field: any, index: number) => (
+                                          <div key={index} className="p-2 bg-muted rounded">
+                                            <strong>{field.name}:</strong> {field.description}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </DialogContent>
+                          </Dialog>
+
+                          {/* Edit */}
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleEditAgent(agent)}
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Editar
+                          </Button>
+
+                          {/* Delete */}
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleDeleteAgent(agent.id, agent.name)}
+                            className="text-destructive hover:text-destructive-foreground"
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Eliminar
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Sección de Agentes Activos */}
+            {agents.filter(agent => agent.status === 'active').length > 0 && (
+              <div>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="bg-green-100 dark:bg-green-900 p-2 rounded-lg">
+                    <Play className="h-5 w-5 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-foreground">
+                      Agentes Activos
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                      Agentes aprobados y operativos en la plataforma
+                    </p>
+                  </div>
+                  <Badge variant="default" className="ml-auto bg-success text-success-foreground">
+                    {agents.filter(agent => agent.status === 'active').length}
+                  </Badge>
+                </div>
+                
+                <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                  {agents.filter(agent => agent.status === 'active').map((agent) => (
+                    <Card key={agent.id} className="relative border-green-200 dark:border-green-800">
+                      <CardHeader className="pb-3">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <CardTitle className="text-lg mb-2 line-clamp-2">{agent.name}</CardTitle>
+                            <CardDescription className="text-sm mb-3 line-clamp-3">
+                              {agent.description}
+                            </CardDescription>
+                          </div>
+                          <div className="flex-shrink-0">
+                            {getStatusBadge(agent.status)}
+                          </div>
+                        </div>
+                      </CardHeader>
+                      
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2 text-sm">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <FileText className="h-4 w-4 flex-shrink-0" />
+                            <span className="text-muted-foreground">Categoría:</span>
+                            <span className="truncate">{agent.category}</span>
+                          </div>
+                          
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <DollarSign className="h-4 w-4 flex-shrink-0" />
+                            <span className="text-muted-foreground">Precio:</span>
+                            <span className="font-medium">${agent.suggested_price.toLocaleString()} COP</span>
+                          </div>
+                          
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Calendar className="h-4 w-4 flex-shrink-0" />
+                            <span className="text-muted-foreground">Creado:</span>
+                            <span>{new Date(agent.created_at).toLocaleDateString()}</span>
+                          </div>
+                          
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <User className="h-4 w-4 flex-shrink-0" />
+                            <span className="text-muted-foreground">Variables:</span>
+                            <span>{agent.placeholder_fields.length} campos</span>
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex flex-wrap gap-2 pt-4 border-t">
+                          {/* View Details */}
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => setSelectedAgent(agent)}
+                              >
+                                <Eye className="h-4 w-4 mr-1" />
+                                Ver
+                              </Button>
+                            </DialogTrigger>
+                          </Dialog>
+
+                          {/* Edit */}
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleEditAgent(agent)}
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Editar
+                          </Button>
+
+                          {/* Suspend/Activate (solo para admin) */}
+                          {lawyerData.is_admin && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleStatusChange(agent.id, agent.status === 'active' ? 'suspended' : 'active')}
+                            >
+                              {agent.status === 'active' ? (
+                                <>
+                                  <Pause className="h-4 w-4 mr-1" />
+                                  Suspender
+                                </>
+                              ) : (
+                                <>
+                                  <Play className="h-4 w-4 mr-1" />
+                                  Activar
+                                </>
+                              )}
+                            </Button>
+                          )}
+
+                          {/* Delete */}
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleDeleteAgent(agent.id, agent.name)}
+                            className="text-destructive hover:text-destructive-foreground"
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Eliminar
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Mensaje cuando no hay agentes en ninguna categoría */}
+            {agents.filter(agent => agent.status === 'pending_review').length === 0 && 
+             agents.filter(agent => agent.status === 'active').length === 0 && (
               <Card>
                 <CardContent className="p-8 text-center">
                   <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground">
-                    No has creado ningún agente aún. Ve al panel principal para crear tu primer agente.
+                    No tienes agentes en estas categorías. Ve al panel principal para crear un agente.
                   </p>
                 </CardContent>
               </Card>
-            </div>
-          ) : (
-            agents.map((agent) => (
-              <Card key={agent.id} className="relative">
-                <CardHeader className="pb-3">
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <CardTitle className="text-lg mb-2 line-clamp-2">{agent.name}</CardTitle>
-                      <CardDescription className="text-sm mb-3 line-clamp-3">
-                        {agent.description}
-                      </CardDescription>
-                    </div>
-                    <div className="flex-shrink-0">
-                      {getStatusBadge(agent.status)}
+            )}
+          </div>
+        )}
+
+        {/* Dialog for viewing agent details */}
+        <Dialog>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{selectedAgent?.name}</DialogTitle>
+              <DialogDescription>
+                Detalles completos del agente legal
+              </DialogDescription>
+            </DialogHeader>
+            
+            {selectedAgent && (
+              <div className="space-y-6">
+                <div>
+                  <h4 className="font-semibold mb-2">Descripción</h4>
+                  <p className="text-sm text-muted-foreground">{selectedAgent.description}</p>
+                </div>
+                
+                <div>
+                  <h4 className="font-semibold mb-2">Plantilla del Documento</h4>
+                  <div className="p-4 bg-muted rounded-md text-xs font-mono max-h-40 overflow-y-auto">
+                    {selectedAgent.template_content}
+                  </div>
+                </div>
+                
+                <div>
+                  <h4 className="font-semibold mb-2">Prompt de IA</h4>
+                  <div className="p-4 bg-muted rounded-md text-xs font-mono max-h-40 overflow-y-auto">
+                    {selectedAgent.ai_prompt}
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="font-semibold mb-2">Información General</h4>
+                    <div className="space-y-2 text-sm">
+                      <div><strong>Categoría:</strong> {selectedAgent.category}</div>
+                      <div><strong>Precio Sugerido:</strong> ${selectedAgent.suggested_price.toLocaleString()} COP</div>
+                      <div><strong>Estado:</strong> {selectedAgent.status}</div>
+                      <div><strong>Creado:</strong> {new Date(selectedAgent.created_at).toLocaleDateString()}</div>
                     </div>
                   </div>
-                </CardHeader>
-                
-                <CardContent className="space-y-4">
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <FileText className="h-4 w-4 flex-shrink-0" />
-                      <span className="text-muted-foreground">Categoría:</span>
-                      <span className="truncate">{agent.category}</span>
-                    </div>
-                    
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <DollarSign className="h-4 w-4 flex-shrink-0" />
-                      <span className="text-muted-foreground">Precio:</span>
-                      <span className="font-medium">${agent.suggested_price.toLocaleString()} COP</span>
-                    </div>
-                    
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Calendar className="h-4 w-4 flex-shrink-0" />
-                      <span className="text-muted-foreground">Creado:</span>
-                      <span>{new Date(agent.created_at).toLocaleDateString()}</span>
-                    </div>
-                    
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <User className="h-4 w-4 flex-shrink-0" />
-                      <span className="text-muted-foreground">Variables:</span>
-                      <span>{agent.placeholder_fields.length} campos</span>
+                  
+                  <div>
+                    <h4 className="font-semibold mb-2">Variables ({selectedAgent.placeholder_fields.length})</h4>
+                    <div className="space-y-1 text-sm max-h-40 overflow-y-auto">
+                      {selectedAgent.placeholder_fields.map((field: any, index: number) => (
+                        <div key={index} className="p-2 bg-muted rounded">
+                          <strong>{field.name}:</strong> {field.description}
+                        </div>
+                      ))}
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+        {/* Edit Agent Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Editar Agente Legal</DialogTitle>
+              <DialogDescription>
+                Modifica la información del agente legal
+              </DialogDescription>
+            </DialogHeader>
+            
+            {editingAgent && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="name">Nombre del Agente</Label>
+                    <Input
+                      id="name"
+                      value={editingAgent.name}
+                      onChange={(e) => handleEditFieldChange('name', e.target.value)}
+                      placeholder="Nombre del agente"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="document_name">Nombre del Documento</Label>
+                    <Input
+                      id="document_name"
+                      value={editingAgent.document_name || ''}
+                      onChange={(e) => handleEditFieldChange('document_name', e.target.value)}
+                      placeholder="Nombre del documento"
+                    />
+                  </div>
+                </div>
 
-                  {/* Actions */}
-                  <div className="flex flex-wrap gap-2 pt-4 border-t">
-                    {/* View Details */}
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => setSelectedAgent(agent)}
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          Ver
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                        <DialogHeader>
-                          <DialogTitle>{selectedAgent?.name}</DialogTitle>
-                          <DialogDescription>
-                            Detalles completos del agente legal
-                          </DialogDescription>
-                        </DialogHeader>
-                        
-                        {selectedAgent && (
-                          <div className="space-y-6">
-                            <div>
-                              <h4 className="font-semibold mb-2">Descripción</h4>
-                              <p className="text-sm text-muted-foreground">{selectedAgent.description}</p>
-                            </div>
-                            
-                            <div>
-                              <h4 className="font-semibold mb-2">Plantilla del Documento</h4>
-                              <div className="p-4 bg-muted rounded-md text-xs font-mono max-h-40 overflow-y-auto">
-                                {selectedAgent.template_content}
-                              </div>
-                            </div>
-                            
-                            <div>
-                              <h4 className="font-semibold mb-2">Prompt de IA</h4>
-                              <div className="p-4 bg-muted rounded-md text-xs font-mono max-h-40 overflow-y-auto whitespace-pre-wrap">
-                                {selectedAgent.ai_prompt}
-                              </div>
-                            </div>
-                            
-                            <div>
-                              <h4 className="font-semibold mb-2">Variables del Documento</h4>
-                              <div className="grid gap-2">
-                                {selectedAgent.placeholder_fields.map((field, index) => (
-                                  <div key={index} className="flex items-center gap-3 p-2 bg-muted rounded text-sm">
-                                    <Badge variant="outline">{field.placeholder}</Badge>
-                                    <span>{field.pregunta}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                            
-                            <div>
-                              <h4 className="font-semibold mb-2">Información de Precio</h4>
-                              <div className="p-4 bg-success/10 rounded-md border border-success/20">
-                                <p className="text-2xl font-bold text-success">${selectedAgent.suggested_price.toLocaleString()} COP</p>
-                                <p className="text-sm text-success/80 mt-1">{selectedAgent.price_justification}</p>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </DialogContent>
-                    </Dialog>
+                <div>
+                  <Label htmlFor="description">Descripción</Label>
+                  <Textarea
+                    id="description"
+                    value={editingAgent.description}
+                    onChange={(e) => handleEditFieldChange('description', e.target.value)}
+                    placeholder="Descripción del agente"
+                    rows={3}
+                  />
+                </div>
 
-                    {/* Admin Actions */}
-                    {lawyerData.is_admin && agent.status === 'pending_review' && (
-                      <Button 
-                        variant="default" 
-                        size="sm"
-                        onClick={() => handleApproveAgent(agent.id)}
-                        className="bg-success hover:bg-success/90"
-                      >
-                        <Play className="h-4 w-4 mr-1" />
-                        Aprobar
-                      </Button>
-                    )}
+                <div>
+                  <Label htmlFor="document_description">Descripción del Documento</Label>
+                  <Textarea
+                    id="document_description"
+                    value={editingAgent.document_description || ''}
+                    onChange={(e) => handleEditFieldChange('document_description', e.target.value)}
+                    placeholder="Descripción del documento"
+                    rows={3}
+                  />
+                </div>
 
-                    {/* Status Toggle for Active/Suspended */}
-                    {agent.status === 'active' ? (
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleStatusChange(agent.id, 'suspended')}
-                      >
-                        <Pause className="h-4 w-4 mr-1" />
-                        Suspender
-                      </Button>
-                    ) : agent.status === 'suspended' ? (
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleStatusChange(agent.id, 'active')}
-                      >
-                        <Play className="h-4 w-4 mr-1" />
-                        Activar
-                      </Button>
-                    ) : null}
-
-                    {/* Edit - Los abogados pueden editar sus propios agentes */}
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleEditAgent(agent)}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="category">Categoría</Label>
+                    <Input
+                      id="category"
+                      value={editingAgent.category}
+                      onChange={(e) => handleEditFieldChange('category', e.target.value)}
+                      placeholder="Categoría del agente"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="target_audience">Audiencia Objetivo</Label>
+                    <Select
+                      value={editingAgent.target_audience || 'personas'}
+                      onValueChange={(value) => handleEditFieldChange('target_audience', value)}
                     >
-                      <Edit className="h-4 w-4 mr-1" />
-                      Editar
-                    </Button>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecciona audiencia" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="personas">Personas</SelectItem>
+                        <SelectItem value="empresas">Empresas</SelectItem>
+                        <SelectItem value="ambos">Ambos</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
 
-                    {/* Delete - Los abogados pueden eliminar sus propios agentes */}
-                    <Button 
-                      variant="destructive" 
-                      size="sm"
-                      onClick={() => handleDeleteAgent(agent.id, agent.name)}
-                    >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      Eliminar
-                    </Button>
-                   </div>
-                 </CardContent>
-               </Card>
-             ))
-           )}
-         </div>
-       </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="suggested_price">Precio Sugerido (COP)</Label>
+                    <Input
+                      id="suggested_price"
+                      type="number"
+                      value={editingAgent.suggested_price}
+                      onChange={(e) => handleEditFieldChange('suggested_price', parseInt(e.target.value) || 0)}
+                      placeholder="Precio sugerido"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="final_price">Precio Final (COP)</Label>
+                    <Input
+                      id="final_price"
+                      type="number"
+                      value={editingAgent.final_price || ''}
+                      onChange={(e) => handleEditFieldChange('final_price', e.target.value ? parseInt(e.target.value) : null)}
+                      placeholder="Precio final (opcional)"
+                    />
+                  </div>
+                </div>
 
-       {/* Edit Agent Dialog */}
-
-      {/* Edit Agent Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Editar Agente Legal</DialogTitle>
-            <DialogDescription>
-              Modifica la información del agente legal
-            </DialogDescription>
-          </DialogHeader>
-          
-          {editingAgent && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="name">Nombre del Agente</Label>
-                  <Input
-                    id="name"
-                    value={editingAgent.name}
-                    onChange={(e) => handleEditFieldChange('name', e.target.value)}
-                    placeholder="Nombre del agente"
+                  <Label htmlFor="price_justification">Justificación del Precio</Label>
+                  <Textarea
+                    id="price_justification"
+                    value={editingAgent.price_justification || ''}
+                    onChange={(e) => handleEditFieldChange('price_justification', e.target.value)}
+                    placeholder="Justificación del precio"
+                    rows={3}
                   />
                 </div>
-                
+
                 <div>
-                  <Label htmlFor="document_name">Nombre del Documento</Label>
-                  <Input
-                    id="document_name"
-                    value={editingAgent.document_name}
-                    onChange={(e) => handleEditFieldChange('document_name', e.target.value)}
-                    placeholder="Nombre del documento"
+                  <Label htmlFor="template_content">Contenido de la Plantilla</Label>
+                  <Textarea
+                    id="template_content"
+                    value={editingAgent.template_content}
+                    onChange={(e) => handleEditFieldChange('template_content', e.target.value)}
+                    placeholder="Contenido de la plantilla del documento"
+                    rows={6}
+                    className="font-mono text-sm"
                   />
                 </div>
-              </div>
 
-              <div>
-                <Label htmlFor="description">Descripción</Label>
-                <Textarea
-                  id="description"
-                  value={editingAgent.description}
-                  onChange={(e) => handleEditFieldChange('description', e.target.value)}
-                  placeholder="Descripción del agente"
-                  rows={3}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="document_description">Descripción del Documento</Label>
-                <Textarea
-                  id="document_description"
-                  value={editingAgent.document_description}
-                  onChange={(e) => handleEditFieldChange('document_description', e.target.value)}
-                  placeholder="Descripción del documento"
-                  rows={3}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="category">Categoría</Label>
-                  <Input
-                    id="category"
-                    value={editingAgent.category}
-                    onChange={(e) => handleEditFieldChange('category', e.target.value)}
-                    placeholder="Categoría del agente"
+                  <Label htmlFor="ai_prompt">Prompt de IA</Label>
+                  <Textarea
+                    id="ai_prompt"
+                    value={editingAgent.ai_prompt}
+                    onChange={(e) => handleEditFieldChange('ai_prompt', e.target.value)}
+                    placeholder="Prompt para la IA"
+                    rows={6}
+                    className="font-mono text-sm"
                   />
                 </div>
-                
-                <div>
-                  <Label htmlFor="target_audience">Audiencia Objetivo</Label>
-                  <Select
-                    value={editingAgent.target_audience}
-                    onValueChange={(value) => handleEditFieldChange('target_audience', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona audiencia" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="personas">Personas</SelectItem>
-                      <SelectItem value="empresas">Empresas</SelectItem>
-                      <SelectItem value="ambos">Ambos</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="suggested_price">Precio Sugerido (COP)</Label>
-                  <Input
-                    id="suggested_price"
-                    type="number"
-                    value={editingAgent.suggested_price}
-                    onChange={(e) => handleEditFieldChange('suggested_price', parseInt(e.target.value) || 0)}
-                    placeholder="Precio sugerido"
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="final_price">Precio Final (COP)</Label>
-                  <Input
-                    id="final_price"
-                    type="number"
-                    value={editingAgent.final_price || ''}
-                    onChange={(e) => handleEditFieldChange('final_price', e.target.value ? parseInt(e.target.value) : null)}
-                    placeholder="Precio final (opcional)"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="price_justification">Justificación del Precio</Label>
-                <Textarea
-                  id="price_justification"
-                  value={editingAgent.price_justification}
-                  onChange={(e) => handleEditFieldChange('price_justification', e.target.value)}
-                  placeholder="Justificación del precio"
-                  rows={3}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="template_content">Contenido de la Plantilla</Label>
-                <Textarea
-                  id="template_content"
-                  value={editingAgent.template_content}
-                  onChange={(e) => handleEditFieldChange('template_content', e.target.value)}
-                  placeholder="Contenido de la plantilla del documento"
-                  rows={6}
-                  className="font-mono text-sm"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="ai_prompt">Prompt de IA</Label>
-                <Textarea
-                  id="ai_prompt"
-                  value={editingAgent.ai_prompt}
-                  onChange={(e) => handleEditFieldChange('ai_prompt', e.target.value)}
-                  placeholder="Prompt para la IA"
-                  rows={6}
-                  className="font-mono text-sm"
-                />
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
-                <Button 
-                  onClick={handleSaveAgent}
-                  className="flex-1 sm:flex-none"
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  Guardar Cambios
-                </Button>
-                
-                {lawyerData.is_admin && editingAgent.status === 'pending_review' && (
+                <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
                   <Button 
-                    onClick={() => {
-                      handleApproveAgent(editingAgent.id);
-                      setIsEditDialogOpen(false);
-                    }}
-                    className="flex-1 sm:flex-none bg-success hover:bg-success/90"
+                    onClick={handleSaveAgent}
+                    className="flex-1 sm:flex-none"
                   >
-                    <Play className="h-4 w-4 mr-2" />
-                    Aprobar y Activar
+                    <Save className="h-4 w-4 mr-2" />
+                    Guardar Cambios
                   </Button>
-                )}
-                
-                <Button 
-                  variant="outline" 
-                  onClick={() => setIsEditDialogOpen(false)}
-                  className="flex-1 sm:flex-none"
-                >
-                  <X className="h-4 w-4 mr-2" />
-                  Cancelar
-                </Button>
+                  
+                  {lawyerData.is_admin && editingAgent.status === 'pending_review' && (
+                    <Button 
+                      onClick={() => {
+                        handleApproveAgent(editingAgent.id);
+                        setIsEditDialogOpen(false);
+                      }}
+                      className="flex-1 sm:flex-none bg-success hover:bg-success/90"
+                    >
+                      <Play className="h-4 w-4 mr-2" />
+                      Aprobar y Activar
+                    </Button>
+                  )}
+                  
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setIsEditDialogOpen(false)}
+                    className="flex-1 sm:flex-none"
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Cancelar
+                  </Button>
+                </div>
               </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 }
