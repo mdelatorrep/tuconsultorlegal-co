@@ -129,6 +129,20 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
                 </>
               )}
             </Button>
+            
+            <div className="text-center pt-4 border-t border-border">
+              <p className="text-sm text-muted-foreground mb-3">
+                ¿No tienes token de acceso?
+              </p>
+              <Button 
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => window.location.href = '/?view=request-token'}
+              >
+                Solicitar Token de Acceso
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>
