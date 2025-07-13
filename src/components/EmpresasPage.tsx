@@ -135,7 +135,7 @@ export default function EmpresasPage({ onOpenChat, onNavigate }: EmpresasPagePro
                 </div>
                 <div className="p-8 pt-0">
                   <p className="text-xl font-bold text-success mb-6">
-                    {(service.final_price || service.suggested_price) > 0 ? `Desde $${(service.final_price || service.suggested_price).toLocaleString()} COP` : 'Consultar'}
+                    {(service.final_price || service.suggested_price) > 0 ? `Desde $${(service.final_price || service.suggested_price).toLocaleString()} COP` : 'Gratis'}
                   </p>
                   <Button
                     variant="default"
