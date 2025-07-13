@@ -164,6 +164,13 @@ function AdminPage() {
     }
   }, [isAuthenticated, isLoading]);
 
+  // Auto-load OpenAI models when accessing configuration tab
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadOpenAIModels();
+    }
+  }, [isAuthenticated]);
+
   const sanitizeInput = (input: string): string => {
     return DOMPurify.sanitize(input.trim());
   };
@@ -421,28 +428,17 @@ function AdminPage() {
 
       if (modelsError) {
         console.error('Error loading OpenAI models:', modelsError);
-        toast({
-          title: "Error al cargar modelos",
-          description: "No se pudieron cargar los modelos disponibles de OpenAI.",
-          variant: "destructive"
-        });
+        // Only show error toast, not for automatic loading
         return;
       }
 
       if (modelsData?.success) {
         setAvailableModels(modelsData.models || []);
-        toast({
-          title: "Modelos cargados",
-          description: `Se cargaron ${modelsData.models?.length || 0} modelos disponibles.`,
-        });
+        console.log(`OpenAI models loaded: ${modelsData.models?.length || 0} models available`);
       }
     } catch (error) {
       console.error('Error loading OpenAI models:', error);
-      toast({
-        title: "Error al cargar modelos",
-        description: "Error inesperado al cargar los modelos.",
-        variant: "destructive"
-      });
+      // Silently fail for automatic loading
     }
   };
 
@@ -492,6 +488,7 @@ function AdminPage() {
 
   const handleModelChange = async (modelId: string) => {
     setSelectedModel(modelId);
+    // Automatically update the configuration when model changes
     await updateSystemConfig('openai_model', modelId, 'Modelo de OpenAI para procesamiento de IA');
   };
 
@@ -1764,22 +1761,11 @@ function AdminPage() {
               <CardContent className="space-y-6">
                 {/* OpenAI Model Configuration */}
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-lg font-semibold">Modelo de OpenAI</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Selecciona el modelo de IA que se usará para el procesamiento de documentos.
-                      </p>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={loadOpenAIModels}
-                      className="flex items-center gap-2"
-                    >
-                      <RefreshCw className="h-4 w-4" />
-                      Actualizar
-                    </Button>
+                  <div>
+                    <h3 className="text-lg font-semibold">Modelo de OpenAI</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Selecciona el modelo de IA que se usará para el procesamiento de documentos.
+                    </p>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
