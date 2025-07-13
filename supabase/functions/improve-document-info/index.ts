@@ -44,12 +44,13 @@ serve(async (req) => {
 
     console.log('Using OpenAI model:', selectedModel);
 
-    const { docName, docDesc, docCategory } = await req.json();
+    const { docName, docDesc, docCategory, targetAudience } = await req.json();
 
     console.log('Improving document info with AI:', {
       docName,
       docDesc,
       docCategory,
+      targetAudience,
       model: selectedModel
     });
 
@@ -79,6 +80,8 @@ serve(async (req) => {
             role: 'system',
             content: `Eres un experto en marketing legal y comunicación con usuarios finales en Colombia. Tu tarea es mejorar el nombre y descripción de servicios legales para que sean más atractivos y comprensibles para el usuario final.
 
+PÚBLICO OBJETIVO: ${targetAudience === 'empresas' ? 'Empresas y clientes corporativos' : 'Personas (clientes individuales)'}
+
 REGLAS IMPORTANTES:
 1. Usa lenguaje claro y sencillo que cualquier persona pueda entender
 2. Evita jerga legal compleja innecesaria
@@ -88,16 +91,18 @@ REGLAS IMPORTANTES:
 6. Mantén la precisión legal pero con lenguaje amigable
 7. RESPONDE ÚNICAMENTE CON UN JSON con las claves "improvedName" e "improvedDescription"
 8. NO incluyas explicaciones adicionales, solo el JSON
+9. ${targetAudience === 'empresas' ? 'Usa terminología corporativa apropiada y enfócate en aspectos empresariales' : 'Usa lenguaje amigable para personas naturales y enfócate en beneficios personales'}
 
-OBJETIVO: Mejorar el nombre y descripción para que sean más atractivos y comprensibles para usuarios finales.`
+OBJETIVO: Mejorar el nombre y descripción para que sean más atractivos y comprensibles para ${targetAudience === 'empresas' ? 'empresas' : 'personas naturales'}.`
           },
           {
             role: 'user',
             content: `Categoría: ${docCategory}
+Público objetivo: ${targetAudience === 'empresas' ? 'Empresas' : 'Personas'}
 Nombre actual: ${docName}
 Descripción actual: ${docDesc}
 
-Mejora el nombre y descripción para que sean más atractivos y comprensibles para usuarios finales.`
+Mejora el nombre y descripción para que sean más atractivos y comprensibles para ${targetAudience === 'empresas' ? 'clientes corporativos' : 'usuarios finales individuales'}.`
           }
         ],
         temperature: 0.3,

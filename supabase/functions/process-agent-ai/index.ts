@@ -57,7 +57,7 @@ serve(async (req) => {
 
     console.log('Using OpenAI model:', selectedModel);
 
-    const { docName, docDesc, docCat, docTemplate, initialPrompt } = await req.json();
+    const { docName, docDesc, docCat, docTemplate, initialPrompt, targetAudience } = await req.json();
 
     if (!docName || !docTemplate || !initialPrompt) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
@@ -65,6 +65,15 @@ serve(async (req) => {
         headers: securityHeaders
       });
     }
+
+    console.log('Processing with AI...', {
+      docName,
+      docDesc,
+      docCat,
+      templateLength: docTemplate.length,
+      promptLength: initialPrompt.length,
+      targetAudience
+    });
 
     // 1. Enhance the initial prompt
     const enhancePromptResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -80,6 +89,8 @@ serve(async (req) => {
             role: 'system',
             content: `Eres un experto en crear prompts para asistentes legales de IA. Tu trabajo es mejorar prompts básicos y convertirlos en instrucciones claras, profesionales y efectivas para agentes de IA que ayudan a crear documentos legales en Colombia.
 
+PÚBLICO OBJETIVO: ${targetAudience === 'empresas' ? 'Empresas y clientes corporativos' : 'Personas (clientes individuales)'}
+
 REGLAS IMPORTANTES:
 1. RESPONDE ÚNICAMENTE CON EL PROMPT MEJORADO EN TEXTO PLANO
 2. NO incluyas explicaciones, comentarios, ni texto adicional
@@ -89,8 +100,9 @@ REGLAS IMPORTANTES:
 6. Mantén el contexto legal colombiano
 7. Asegúrate de que sea claro y actionable
 8. NO uses caracteres especiales de markdown
+9. ${targetAudience === 'empresas' ? 'Enfócate en terminología corporativa y considera aspectos empresariales específicos' : 'Usa lenguaje claro y accesible para personas naturales'}
 
-OBJETIVO: Devolver únicamente el prompt mejorado en texto plano, sin formato adicional.`
+OBJETIVO: Devolver únicamente el prompt mejorado en texto plano, adaptado para ${targetAudience === 'empresas' ? 'empresas' : 'personas naturales'}, sin formato adicional.`
           },
           {
             role: 'user',
@@ -98,6 +110,7 @@ OBJETIVO: Devolver únicamente el prompt mejorado en texto plano, sin formato ad
 
 Categoría: ${docCat}
 Descripción: ${docDesc}
+Público objetivo: ${targetAudience === 'empresas' ? 'Empresas' : 'Personas'}
 
 Prompt inicial del abogado:
 ${initialPrompt}
@@ -128,6 +141,8 @@ ${docTemplate}`
             role: 'system',
             content: `Eres un experto en análisis de documentos legales. Tu trabajo es identificar todos los placeholders (variables) en una plantilla de documento y generar preguntas claras para recopilar esa información del usuario.
 
+PÚBLICO OBJETIVO: ${targetAudience === 'empresas' ? 'Empresas y clientes corporativos' : 'Personas (clientes individuales)'}
+
 FORMATO DE RESPUESTA:
 Responde ÚNICAMENTE con un array JSON válido de objetos con esta estructura:
 [
@@ -139,6 +154,7 @@ REGLAS:
 - Identifica TODOS los placeholders que usan {{}} o similar
 - Cada pregunta debe ser clara, específica y en español colombiano
 - Las preguntas deben ser profesionales pero amigables
+- ${targetAudience === 'empresas' ? 'Adapta las preguntas para contexto empresarial (razón social, NIT, representante legal, etc.)' : 'Usa lenguaje amigable para personas naturales (nombre completo, cédula, dirección personal, etc.)'}
 - No incluyas texto adicional, solo el array JSON`
           },
           {
@@ -146,6 +162,7 @@ REGLAS:
             content: `Analiza esta plantilla de documento legal y extrae todos los placeholders con sus preguntas correspondientes:
 
 DOCUMENTO: ${docName}
+PÚBLICO OBJETIVO: ${targetAudience === 'empresas' ? 'Empresas' : 'Personas'}
 PLANTILLA:
 ${docTemplate}`
           }
@@ -185,25 +202,35 @@ ${docTemplate}`
             role: 'system',
             content: `Eres un experto en pricing de servicios legales en Colombia. Tu trabajo es analizar la complejidad de un documento legal y sugerir un precio justo en pesos colombianos.
 
+PÚBLICO OBJETIVO: ${targetAudience === 'empresas' ? 'Empresas y clientes corporativos' : 'Personas (clientes individuales)'}
+
 FACTORES A CONSIDERAR:
 - Número de variables/campos a completar
 - Complejidad legal del documento
 - Tiempo estimado de procesamiento
-- Valor de mercado en Colombia
+- Valor de mercado en Colombia para ${targetAudience === 'empresas' ? 'servicios corporativos' : 'servicios a personas'}
 - Categoría del documento
+- ${targetAudience === 'empresas' ? 'Valor agregado empresarial y riesgo corporativo' : 'Accesibilidad para personas naturales'}
 
-RANGOS DE PRECIOS CONSERVADORES PARA ELABORACIÓN:
+RANGOS DE PRECIOS CONSERVADORES PARA ELABORACIÓN (${targetAudience === 'empresas' ? 'EMPRESAS' : 'PERSONAS'}):
+${targetAudience === 'empresas' ? `
+- Documentos simples (1-5 variables): $25,000 - $50,000 COP
+- Documentos moderados (6-15 variables): $50,000 - $120,000 COP  
+- Documentos complejos (16+ variables): $120,000 - $250,000 COP
+- Documentos muy complejos (societarios, etc.): $250,000 - $400,000 COP
+` : `
 - Documentos simples (1-5 variables): $15,000 - $30,000 COP
 - Documentos moderados (6-15 variables): $30,000 - $70,000 COP  
 - Documentos complejos (16+ variables): $70,000 - $150,000 COP
 - Documentos muy complejos (societarios, etc.): $150,000 - $250,000 COP
+`}
 
 NOTA: Estos son precios conservadores para la elaboración del documento, no el precio final al cliente.
 
 FORMATO DE RESPUESTA:
 {
   "precio_sugerido": "$ 85,000 COP",
-  "justificacion": "Explicación detallada del precio basada en los factores analizados"
+  "justificacion": "Explicación detallada del precio basada en los factores analizados para ${targetAudience === 'empresas' ? 'empresas' : 'personas'}"
 }`
           },
           {
@@ -213,6 +240,7 @@ FORMATO DE RESPUESTA:
 DOCUMENTO: ${docName}
 CATEGORÍA: ${docCat}
 DESCRIPCIÓN: ${docDesc}
+PÚBLICO OBJETIVO: ${targetAudience === 'empresas' ? 'Empresas' : 'Personas'}
 NÚMERO DE VARIABLES: ${extractedPlaceholders.length}
 
 PLANTILLA:
@@ -231,11 +259,15 @@ ${docTemplate.substring(0, 1000)}${docTemplate.length > 1000 ? '...' : ''}`
       priceAnalysis = JSON.parse(priceData.choices[0].message.content);
     } catch (error) {
       console.error('Error parsing price analysis:', error);
-      // Fallback pricing logic - more conservative
-      const basePrice = Math.min(Math.max(extractedPlaceholders.length * 5000, 15000), 250000);
+      // Fallback pricing logic - more conservative and audience-aware
+      const baseMultiplier = targetAudience === 'empresas' ? 8000 : 5000;
+      const minPrice = targetAudience === 'empresas' ? 25000 : 15000;
+      const maxPrice = targetAudience === 'empresas' ? 400000 : 250000;
+      
+      const basePrice = Math.min(Math.max(extractedPlaceholders.length * baseMultiplier, minPrice), maxPrice);
       priceAnalysis = {
         precio_sugerido: `$ ${basePrice.toLocaleString()} COP`,
-        justificacion: `Precio conservador de elaboración basado en ${extractedPlaceholders.length} variables identificadas y complejidad del documento.`
+        justificacion: `Precio conservador de elaboración basado en ${extractedPlaceholders.length} variables identificadas y complejidad del documento para ${targetAudience === 'empresas' ? 'empresas' : 'personas naturales'}.`
       };
     }
 

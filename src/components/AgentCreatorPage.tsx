@@ -25,6 +25,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
     docName: "",
     docDesc: "",
     docCat: "",
+    targetAudience: "personas", // "personas" o "empresas"
     docTemplate: "",
     initialPrompt: "",
     slaHours: 4,
@@ -111,7 +112,8 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
           docDesc: formData.docDesc,
           docCat: formData.docCat,
           docTemplate: formData.docTemplate,
-          initialPrompt: formData.initialPrompt
+          initialPrompt: formData.initialPrompt,
+          targetAudience: formData.targetAudience
         }
       });
 
@@ -202,7 +204,8 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
           templateContent: formData.docTemplate,
           docName: formData.docName,
           docCategory: formData.docCat,
-          docDescription: formData.docDesc
+          docDescription: formData.docDesc,
+          targetAudience: formData.targetAudience
         }
       });
 
@@ -259,14 +262,16 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       console.log('Improving document info with AI...', {
         docName: formData.docName,
         docDesc: formData.docDesc,
-        docCategory: formData.docCat
+        docCategory: formData.docCat,
+        targetAudience: formData.targetAudience
       });
 
       const { data, error } = await supabase.functions.invoke('improve-document-info', {
         body: {
           docName: formData.docName,
           docDesc: formData.docDesc,
-          docCategory: formData.docCat
+          docCategory: formData.docCat,
+          targetAudience: formData.targetAudience
         }
       });
 
@@ -385,6 +390,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         docName: "",
         docDesc: "",
         docCat: "",
+        targetAudience: "personas",
         docTemplate: "",
         initialPrompt: "",
         slaHours: 4,
@@ -637,8 +643,25 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
                           ))}
                         </SelectContent>
                       </Select>
-                    </div>
-                    
+                     </div>
+                     
+                     {/* Target Audience Selection */}
+                     <div>
+                       <Label htmlFor="targetAudience">Dirigido a</Label>
+                       <Select value={formData.targetAudience} onValueChange={(value) => handleInputChange('targetAudience', value)}>
+                         <SelectTrigger className="mt-1">
+                           <SelectValue placeholder="Selecciona el público objetivo" />
+                         </SelectTrigger>
+                         <SelectContent>
+                           <SelectItem value="personas">👤 Personas (Clientes individuales)</SelectItem>
+                           <SelectItem value="empresas">🏢 Empresas (Clientes corporativos)</SelectItem>
+                         </SelectContent>
+                       </Select>
+                       <p className="text-xs text-muted-foreground mt-1">
+                         Esto ayudará a la IA a personalizar el documento y las preguntas según el tipo de cliente
+                       </p>
+                     </div>
+                     
                     {/* ANS Configuration */}
                     <div className="space-y-4 p-4 border border-border rounded-lg bg-muted/50">
                       <h3 className="font-semibold text-sm">⏱️ Configuración de ANS (Acuerdo de Nivel de Servicio)</h3>

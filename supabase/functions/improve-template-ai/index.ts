@@ -42,12 +42,13 @@ serve(async (req) => {
 
     console.log('Using OpenAI model:', selectedModel);
 
-    const { templateContent, docName, docCategory, docDescription } = await req.json();
+    const { templateContent, docName, docCategory, docDescription, targetAudience } = await req.json();
 
     console.log('Improving template with AI:', {
       docName,
       docCategory,
       templateLength: templateContent?.length || 0,
+      targetAudience,
       model: selectedModel
     });
 
@@ -77,6 +78,8 @@ serve(async (req) => {
             role: 'system',
             content: `Eres un experto en redacción de documentos legales en Colombia. Tu tarea es mejorar plantillas de documentos legales para hacerlas más completas, precisas y profesionales.
 
+PÚBLICO OBJETIVO: ${targetAudience === 'empresas' ? 'Empresas y clientes corporativos' : 'Personas (clientes individuales)'}
+
 REGLAS IMPORTANTES:
 1. MANTÉN TODOS LOS PLACEHOLDERS existentes en el formato {{nombre_variable}}
 2. NO elimines ningún placeholder que ya existe
@@ -89,16 +92,19 @@ REGLAS IMPORTANTES:
 9. NO incluyas explicaciones, comentarios, ni texto adicional
 10. NO uses caracteres especiales de markdown como **, _, \`, etc.
 11. NO incluyas encabezados, títulos o secciones explicativas
+12. ${targetAudience === 'empresas' ? 'Usa terminología legal corporativa apropiada y considera aspectos empresariales específicos' : 'Usa lenguaje legal claro pero accesible para personas naturales'}
 
-OBJETIVO: Devolver únicamente la plantilla del documento mejorada en texto plano, sin formato adicional.`
+OBJETIVO: Devolver únicamente la plantilla del documento mejorada en texto plano, adaptada para ${targetAudience === 'empresas' ? 'empresas' : 'personas naturales'}, sin formato adicional.`
           },
           {
             role: 'user',
             content: `Documento: ${docName} - Categoría: ${docCategory}
+Público objetivo: ${targetAudience === 'empresas' ? 'Empresas' : 'Personas'}
+Descripción: ${docDescription}
 
 ${templateContent}
 
-Mejora esta plantilla manteniendo todos los placeholders {{variable}} existentes.`
+Mejora esta plantilla manteniendo todos los placeholders {{variable}} existentes y adaptándola para ${targetAudience === 'empresas' ? 'clientes corporativos' : 'personas naturales'}.`
           }
         ],
         temperature: 0.3,
