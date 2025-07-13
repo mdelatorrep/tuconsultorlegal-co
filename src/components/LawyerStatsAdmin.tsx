@@ -186,21 +186,24 @@ export default function LawyerStatsAdmin({ authHeaders, viewMode = 'global' }: L
       }
 
       // Fetch active agents
-      let agentsQuery = supabase
-        .from('legal_agents')
-        .select('status');
-
+      let activeAgentsCount = 0;
+      
       if (selectedLawyer !== 'all') {
         // Filter agents by specific lawyer if selected
         const { data: agentsData } = await supabase
           .from('legal_agents')
           .select('id, name')
+          .eq('status', 'active')
+          .eq('created_by', selectedLawyer);
+        
+        activeAgentsCount = agentsData?.length || 0;
+      } else {
+        const { data: agents } = await supabase
+          .from('legal_agents')
+          .select('status')
           .eq('status', 'active');
         
-        setStats(prev => ({ ...prev, activeAgents: agentsData?.length || 0 }));
-      } else {
-        const { data: agents } = await agentsQuery.eq('status', 'active');
-        setStats(prev => ({ ...prev, activeAgents: agents?.length || 0 }));
+        activeAgentsCount = agents?.length || 0;
       }
 
       // Process document stats
@@ -235,7 +238,7 @@ export default function LawyerStatsAdmin({ authHeaders, viewMode = 'global' }: L
         totalRequests,
         managedRequests,
         returnedRequests,
-        activeAgents: stats.activeAgents,
+        activeAgents: activeAgentsCount,
         completionRate,
         avgProcessingTime,
         requestsThisMonth
