@@ -12,6 +12,7 @@ interface AgentService {
   id: string;
   document_name: string;
   document_description: string;
+  description: string;
   suggested_price: number;
   final_price: number | null;
   button_cta: string;
@@ -131,7 +132,8 @@ export default function PersonasPage({ onOpenChat, onNavigate }: PersonasPagePro
                     {iconMap[service.frontend_icon] || iconMap.FileText}
                   </div>
                   <h3 className="text-2xl font-bold mb-2 text-foreground">{service.document_name}</h3>
-                  <p className="text-muted-foreground mb-4">{service.document_description}</p>
+                  <p className="text-muted-foreground mb-3">{service.document_description}</p>
+                  <p className="text-sm text-muted-foreground/80 mb-4 italic">{service.description}</p>
                 </div>
                 <div className="p-8 pt-0">
                   <p className="text-xl font-bold text-success mb-6">
