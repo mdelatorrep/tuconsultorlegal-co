@@ -23,16 +23,34 @@ export const useAdminAuth = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<AdminUser | null>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false); // Flag to prevent logout loops
   const { toast } = useToast();
 
   const logout = async () => {
-    // Clear admin-specific session data using centralized storage
-    AuthStorage.clearAdminAuth();
-    setIsAuthenticated(false);
-    setUser(null);
+    if (isLoggingOut) {
+      console.log('Logout already in progress, skipping');
+      return;
+    }
     
-    // Also sign out from Supabase
-    await supabase.auth.signOut();
+    setIsLoggingOut(true);
+    console.log('Admin logout initiated');
+    
+    try {
+      // Clear admin-specific session data using centralized storage
+      AuthStorage.clearAdminAuth();
+      setIsAuthenticated(false);
+      setUser(null);
+      
+      // Only sign out from Supabase if there's actually a session
+      // to avoid unnecessary auth state changes
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        console.log('Signing out from Supabase session');
+        await supabase.auth.signOut();
+      }
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   useEffect(() => {
@@ -42,7 +60,8 @@ export const useAdminAuth = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('Admin auth state change:', event);
-        if (event === 'SIGNED_OUT' || !session) {
+        if ((event === 'SIGNED_OUT' || !session) && !isLoggingOut) {
+          console.log('External sign out detected, triggering logout');
           logout();
         } else if (event === 'SIGNED_IN' && session) {
           // Update stored token if session changes
