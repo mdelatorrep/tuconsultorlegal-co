@@ -79,7 +79,12 @@ Deno.serve(async (req) => {
       target_audience,
       template_content,
       ai_prompt,
-      status
+      status,
+      sla_enabled,
+      sla_hours,
+      button_cta,
+      placeholder_fields,
+      frontend_icon
     } = requestBody
 
     // Input validation
@@ -198,6 +203,11 @@ Deno.serve(async (req) => {
     if (target_audience !== undefined) updateData.target_audience = target_audience
     if (template_content !== undefined) updateData.template_content = template_content
     if (ai_prompt !== undefined) updateData.ai_prompt = ai_prompt
+    if (sla_enabled !== undefined) updateData.sla_enabled = sla_enabled
+    if (sla_hours !== undefined) updateData.sla_hours = sla_hours
+    if (button_cta !== undefined) updateData.button_cta = button_cta
+    if (placeholder_fields !== undefined) updateData.placeholder_fields = placeholder_fields
+    if (frontend_icon !== undefined) updateData.frontend_icon = frontend_icon
 
     // Admin-only fields
     if (adminVerified) {

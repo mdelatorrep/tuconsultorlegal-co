@@ -52,6 +52,9 @@ interface Agent {
   document_description: string;
   button_cta: string;
   target_audience: string;
+  price_justification: string | null; // Campo faltante agregado
+  placeholder_fields?: any; // Campo faltante agregado
+  frontend_icon?: string | null; // Campo faltante agregado
   created_by_lawyer?: {
     id: string;
     full_name: string;
@@ -2089,19 +2092,43 @@ function AdminPage() {
                         const { data, error } = await supabase.functions.invoke('update-agent', {
                           headers: authHeaders,
                           body: {
-                            agentId: selectedAgent.id,
+                            agent_id: selectedAgent.id, // Corregido: usar agent_id no agentId
+                            user_id: user?.id, // Agregar user_id requerido
+                            is_admin: true, // Identificar como admin
                             name: selectedAgent.name,
                             description: selectedAgent.description,
+                            document_name: selectedAgent.document_name,
+                            document_description: selectedAgent.document_description,
                             category: selectedAgent.category,
                             suggested_price: selectedAgent.suggested_price,
-                            final_price: selectedAgent.final_price
+                            final_price: selectedAgent.final_price,
+                            price_justification: selectedAgent.price_justification,
+                            target_audience: selectedAgent.target_audience,
+                            template_content: selectedAgent.template_content,
+                            ai_prompt: selectedAgent.ai_prompt,
+                            status: selectedAgent.status,
+                            // Incluir campos de ANS que se pueden editar
+                            sla_enabled: selectedAgent.sla_enabled,
+                            sla_hours: selectedAgent.sla_hours,
+                            button_cta: selectedAgent.button_cta
                           }
                         });
 
                         if (error) {
+                          console.error('Error response:', error);
                           toast({
                             title: "Error",
                             description: "No se pudo actualizar el agente.",
+                            variant: "destructive"
+                          });
+                          return;
+                        }
+
+                        if (!data?.success) {
+                          console.error('Business logic error:', data?.error);
+                          toast({
+                            title: "Error",
+                            description: data?.error || "Error al actualizar el agente.",
                             variant: "destructive"
                           });
                           return;
