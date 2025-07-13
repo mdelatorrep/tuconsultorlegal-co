@@ -375,16 +375,27 @@ function AdminPage() {
   const loadBlogs = async () => {
     try {
       const authHeaders = getAuthHeaders();
-      const { data: blogsData, error: blogsError } = await supabase.functions.invoke('manage-blog-posts?action=list', {
-        headers: authHeaders,
-        method: 'GET'
-      });
+      
+      // Para listado usamos GET con parámetros en la URL
+      const response = await fetch(
+        `https://tkaezookvtpulfpaffes.supabase.co/functions/v1/manage-blog-posts?action=list`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': authHeaders.authorization,
+            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRrYWV6b29rdnRwdWxmcGFmZmVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3NzEwNzUsImV4cCI6MjA2NzM0NzA3NX0.j7fSfaXMqwmytVuXIU4_miAbn-v65b5x0ncRr0K-CNE',
+            'Content-Type': 'application/json'
+          }
+        }
+      );
 
-      if (blogsError) {
-        console.error('Error loading blogs:', blogsError);
+      const blogsData = await response.json();
+
+      if (!response.ok) {
+        console.error('Error loading blogs:', blogsData);
         toast({
           title: "Error al cargar blogs",
-          description: "No se pudieron cargar los artículos del blog.",
+          description: blogsData.error || "No se pudieron cargar los artículos del blog.",
           variant: "destructive"
         });
         return;
@@ -1013,11 +1024,11 @@ function AdminPage() {
 
       const { data, error } = await supabase.functions.invoke('manage-blog-posts', {
         headers: authHeaders,
-        method: 'POST',
-        body: JSON.stringify({
+        body: {
+          action: 'create',
           ...blogForm,
           author_id: adminAuth.user.id
-        })
+        }
       });
 
       if (error) {
@@ -1063,10 +1074,13 @@ function AdminPage() {
 
     try {
       const authHeaders = getAuthHeaders();
-      const { data, error } = await supabase.functions.invoke(`manage-blog-posts?id=${selectedBlog.id}`, {
+      const { data, error } = await supabase.functions.invoke('manage-blog-posts', {
         headers: authHeaders,
-        method: 'PUT',
-        body: JSON.stringify(blogForm)
+        body: {
+          action: 'update',
+          id: selectedBlog.id,
+          ...blogForm
+        }
       });
 
       if (error) {
@@ -1103,9 +1117,12 @@ function AdminPage() {
 
     try {
       const authHeaders = getAuthHeaders();
-      const { data, error } = await supabase.functions.invoke(`manage-blog-posts?id=${blogId}`, {
+      const { data, error } = await supabase.functions.invoke('manage-blog-posts', {
         headers: authHeaders,
-        method: 'DELETE'
+        body: {
+          action: 'delete',
+          id: blogId
+        }
       });
 
       if (error) {

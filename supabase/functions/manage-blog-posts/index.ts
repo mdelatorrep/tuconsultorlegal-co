@@ -29,203 +29,190 @@ Deno.serve(async (req) => {
       })
     }
 
-    const url = new URL(req.url)
-    const action = url.searchParams.get('action')
-    const blogId = url.searchParams.get('id')
+    // Handle GET requests for listing blogs
+    if (req.method === 'GET') {
+      const url = new URL(req.url)
+      const action = url.searchParams.get('action')
+      
+      if (action === 'list') {
+        console.log('Fetching blog list')
+        const { data: blogs, error } = await supabase
+          .from('blog_posts')
+          .select(`
+            *,
+            author:admin_accounts(full_name, email)
+          `)
+          .order('created_at', { ascending: false })
 
-    switch (req.method) {
-      case 'GET':
-        if (action === 'list') {
-          // Get all blog posts for admin
-          const { data: blogs, error } = await supabase
+        if (error) {
+          console.error('Error fetching blogs:', error)
+          return new Response(JSON.stringify({ error: 'Failed to fetch blogs' }), {
+            status: 500,
+            headers: securityHeaders
+          })
+        }
+
+        return new Response(JSON.stringify({ success: true, blogs }), {
+          headers: securityHeaders
+        })
+      }
+    }
+
+    // Handle POST requests for all operations
+    if (req.method === 'POST') {
+      const requestBody = await req.json()
+      const { action, id, ...data } = requestBody
+
+      console.log('Manage blog posts request:', { action, id, hasData: !!data })
+
+      switch (action) {
+        case 'create':
+          console.log('Creating new blog post')
+          
+          // Generate slug from title if not provided
+          if (!data.slug && data.title) {
+            data.slug = data.title
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, '-')
+              .replace(/^-+|-+$/g, '')
+          }
+
+          // Calculate reading time (average 200 words per minute)
+          if (data.content) {
+            const wordCount = data.content.split(/\s+/).length
+            data.reading_time = Math.ceil(wordCount / 200)
+          }
+
+          // Set published_at if status is published
+          if (data.status === 'published' && !data.published_at) {
+            data.published_at = new Date().toISOString()
+          }
+
+          const { data: newBlog, error: createError } = await supabase
             .from('blog_posts')
-            .select(`
-              *,
-              author:admin_accounts(full_name, email)
-            `)
-            .order('created_at', { ascending: false })
+            .insert([data])
+            .select()
+            .single()
 
-          if (error) {
-            console.error('Error fetching blogs:', error)
-            return new Response(JSON.stringify({ error: 'Failed to fetch blogs' }), {
+          if (createError) {
+            console.error('Error creating blog:', createError)
+            return new Response(JSON.stringify({ 
+              error: 'Failed to create blog',
+              message: createError.message 
+            }), {
               status: 500,
               headers: securityHeaders
             })
           }
 
-          return new Response(JSON.stringify({ success: true, blogs }), {
+          return new Response(JSON.stringify({ 
+            success: true, 
+            blog: newBlog,
+            message: 'Blog created successfully' 
+          }), {
             headers: securityHeaders
           })
-        }
 
-        if (blogId) {
-          // Get specific blog post
-          const { data: blog, error } = await supabase
-            .from('blog_posts')
-            .select(`
-              *,
-              author:admin_accounts(full_name, email)
-            `)
-            .eq('id', blogId)
-            .single()
-
-          if (error) {
-            console.error('Error fetching blog:', error)
-            return new Response(JSON.stringify({ error: 'Blog not found' }), {
-              status: 404,
+        case 'update':
+          if (!id) {
+            return new Response(JSON.stringify({ error: 'Blog ID required for update' }), {
+              status: 400,
               headers: securityHeaders
             })
           }
 
-          return new Response(JSON.stringify({ success: true, blog }), {
-            headers: securityHeaders
-          })
-        }
+          console.log('Updating blog post:', id)
+          
+          // Generate slug from title if not provided
+          if (!data.slug && data.title) {
+            data.slug = data.title
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, '-')
+              .replace(/^-+|-+$/g, '')
+          }
 
-        return new Response(JSON.stringify({ error: 'Invalid request' }), {
-          status: 400,
-          headers: securityHeaders
-        })
+          // Calculate reading time if content is updated
+          if (data.content) {
+            const wordCount = data.content.split(/\s+/).length
+            data.reading_time = Math.ceil(wordCount / 200)
+          }
 
-      case 'POST':
-        const createData = await req.json()
-        
-        // Generate slug from title if not provided
-        if (!createData.slug && createData.title) {
-          createData.slug = createData.title
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/^-+|-+$/g, '')
-        }
+          // Set published_at if status is changed to published
+          if (data.status === 'published' && !data.published_at) {
+            data.published_at = new Date().toISOString()
+          }
 
-        // Calculate reading time (average 200 words per minute)
-        if (createData.content) {
-          const wordCount = createData.content.split(/\s+/).length
-          createData.reading_time = Math.ceil(wordCount / 200)
-        }
+          const { data: updatedBlog, error: updateError } = await supabase
+            .from('blog_posts')
+            .update(data)
+            .eq('id', id)
+            .select()
+            .single()
 
-        // Set published_at if status is published
-        if (createData.status === 'published' && !createData.published_at) {
-          createData.published_at = new Date().toISOString()
-        }
+          if (updateError) {
+            console.error('Error updating blog:', updateError)
+            return new Response(JSON.stringify({ 
+              error: 'Failed to update blog',
+              message: updateError.message 
+            }), {
+              status: 500,
+              headers: securityHeaders
+            })
+          }
 
-        const { data: newBlog, error: createError } = await supabase
-          .from('blog_posts')
-          .insert([createData])
-          .select()
-          .single()
-
-        if (createError) {
-          console.error('Error creating blog:', createError)
           return new Response(JSON.stringify({ 
-            error: 'Failed to create blog',
-            message: createError.message 
+            success: true, 
+            blog: updatedBlog,
+            message: 'Blog updated successfully' 
           }), {
-            status: 500,
             headers: securityHeaders
           })
-        }
 
-        return new Response(JSON.stringify({ 
-          success: true, 
-          blog: newBlog,
-          message: 'Blog created successfully' 
-        }), {
-          headers: securityHeaders
-        })
+        case 'delete':
+          if (!id) {
+            return new Response(JSON.stringify({ error: 'Blog ID required for delete' }), {
+              status: 400,
+              headers: securityHeaders
+            })
+          }
 
-      case 'PUT':
-        if (!blogId) {
-          return new Response(JSON.stringify({ error: 'Blog ID required' }), {
+          console.log('Deleting blog post:', id)
+
+          const { error: deleteError } = await supabase
+            .from('blog_posts')
+            .delete()
+            .eq('id', id)
+
+          if (deleteError) {
+            console.error('Error deleting blog:', deleteError)
+            return new Response(JSON.stringify({ 
+              error: 'Failed to delete blog',
+              message: deleteError.message 
+            }), {
+              status: 500,
+              headers: securityHeaders
+            })
+          }
+
+          return new Response(JSON.stringify({ 
+            success: true,
+            message: 'Blog deleted successfully' 
+          }), {
+            headers: securityHeaders
+          })
+
+        default:
+          return new Response(JSON.stringify({ error: 'Invalid action' }), {
             status: 400,
             headers: securityHeaders
           })
-        }
-
-        const updateData = await req.json()
-        
-        // Generate slug from title if not provided
-        if (!updateData.slug && updateData.title) {
-          updateData.slug = updateData.title
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/^-+|-+$/g, '')
-        }
-
-        // Calculate reading time if content is updated
-        if (updateData.content) {
-          const wordCount = updateData.content.split(/\s+/).length
-          updateData.reading_time = Math.ceil(wordCount / 200)
-        }
-
-        // Set published_at if status is changed to published
-        if (updateData.status === 'published' && !updateData.published_at) {
-          updateData.published_at = new Date().toISOString()
-        }
-
-        const { data: updatedBlog, error: updateError } = await supabase
-          .from('blog_posts')
-          .update(updateData)
-          .eq('id', blogId)
-          .select()
-          .single()
-
-        if (updateError) {
-          console.error('Error updating blog:', updateError)
-          return new Response(JSON.stringify({ 
-            error: 'Failed to update blog',
-            message: updateError.message 
-          }), {
-            status: 500,
-            headers: securityHeaders
-          })
-        }
-
-        return new Response(JSON.stringify({ 
-          success: true, 
-          blog: updatedBlog,
-          message: 'Blog updated successfully' 
-        }), {
-          headers: securityHeaders
-        })
-
-      case 'DELETE':
-        if (!blogId) {
-          return new Response(JSON.stringify({ error: 'Blog ID required' }), {
-            status: 400,
-            headers: securityHeaders
-          })
-        }
-
-        const { error: deleteError } = await supabase
-          .from('blog_posts')
-          .delete()
-          .eq('id', blogId)
-
-        if (deleteError) {
-          console.error('Error deleting blog:', deleteError)
-          return new Response(JSON.stringify({ 
-            error: 'Failed to delete blog',
-            message: deleteError.message 
-          }), {
-            status: 500,
-            headers: securityHeaders
-          })
-        }
-
-        return new Response(JSON.stringify({ 
-          success: true,
-          message: 'Blog deleted successfully' 
-        }), {
-          headers: securityHeaders
-        })
-
-      default:
-        return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-          status: 405,
-          headers: securityHeaders
-        })
+      }
     }
+
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: securityHeaders
+    })
 
   } catch (error) {
     console.error('Error in manage-blog-posts function:', error)
