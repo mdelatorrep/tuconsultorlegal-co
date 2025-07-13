@@ -10,6 +10,8 @@ import { Scale, Send, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import DOMPurify from 'dompurify';
+import PhoneInput from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
 
 export default function LawyerTokenRequestForm() {
   const [formData, setFormData] = useState({
@@ -180,14 +182,18 @@ export default function LawyerTokenRequestForm() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="phoneNumber">Teléfono</Label>
-                <Input
-                  id="phoneNumber"
-                  value={formData.phoneNumber}
-                  onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-                  placeholder="+52 55 1234 5678"
-                  disabled={isSubmitting}
-                />
+                <Label htmlFor="phoneNumber">Número de Teléfono</Label>
+                <div className="phone-input-container">
+                  <PhoneInput
+                    placeholder="Introduce número de teléfono"
+                    value={formData.phoneNumber}
+                    onChange={(value) => handleInputChange('phoneNumber', value || "")}
+                    defaultCountry="CO"
+                    international
+                    className="w-full"
+                    disabled={isSubmitting}
+                  />
+                </div>
               </div>
               
               <div className="space-y-2">
