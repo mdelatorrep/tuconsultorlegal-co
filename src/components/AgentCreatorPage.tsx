@@ -55,6 +55,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
   });
   
   const [aiProcessingSuccess, setAiProcessingSuccess] = useState(false);
+  const [maxStepReached, setMaxStepReached] = useState(1); // Track the highest step reached
 
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -188,6 +189,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       }
 
       setCurrentStep(draft.step_completed || 1);
+      setMaxStepReached(Math.max(maxStepReached, draft.step_completed || 1)); // Update max step reached
       setCurrentDraftId(draft.id);
       setShowDrafts(false);
 
@@ -272,7 +274,9 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       // For step 1, improve document info with AI first
       improveDocumentInfo();
     } else if (currentStep < 5) {
-      setCurrentStep(currentStep + 1);
+      const nextStep = currentStep + 1;
+      setCurrentStep(nextStep);
+      setMaxStepReached(Math.max(maxStepReached, nextStep)); // Update max step reached
     }
   };
 
@@ -282,9 +286,17 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
     }
   };
 
+  // Function to navigate to a specific step (only if it's been reached before)
+  const goToStep = (stepNumber: number) => {
+    if (stepNumber <= maxStepReached && stepNumber >= 1) {
+      setCurrentStep(stepNumber);
+    }
+  };
+
   const processWithAI = async () => {
     setIsProcessing(true);
     setCurrentStep(4);
+    setMaxStepReached(Math.max(maxStepReached, 4)); // Update max step reached
     
     try {
       console.log('Processing with AI...', {
@@ -525,6 +537,8 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
   const rejectDocumentInfo = () => {
     setDocInfoImprovement(prev => ({ ...prev, showImprovement: false }));
     setCurrentStep(2);
+    setMaxStepReached(Math.max(maxStepReached, 2)); // Update max step reached
+    setMaxStepReached(Math.max(maxStepReached, 2)); // Update max step reached
     
     toast({
       title: "Mejoras rechazadas",
@@ -869,12 +883,19 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
                 {steps.map((step) => (
                   <button
                     key={step.id}
-                    className={`flex-1 text-center py-4 font-semibold border-b-4 transition-colors ${
+                    onClick={() => goToStep(step.id)}
+                    disabled={step.id > maxStepReached}
+                    className={`flex-1 text-center py-4 font-semibold border-b-4 transition-colors relative ${
                       currentStep === step.id
                         ? 'border-primary text-primary'
-                        : 'border-transparent text-muted-foreground'
+                        : step.id <= maxStepReached
+                        ? 'border-transparent text-muted-foreground hover:text-primary hover:border-primary/50 cursor-pointer'
+                        : 'border-transparent text-muted-foreground/50 cursor-not-allowed'
                     }`}
                   >
+                    {step.id < currentStep && step.id <= maxStepReached && (
+                      <CheckCircle className="h-4 w-4 text-green-600 absolute top-2 right-2" />
+                    )}
                     Paso {step.id}: {step.title}
                   </button>
                 ))}
