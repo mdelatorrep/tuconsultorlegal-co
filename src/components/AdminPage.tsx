@@ -44,7 +44,16 @@ interface Agent {
   final_price: number | null;
   created_by: string;
   created_at: string;
-  lawyer_accounts?: {
+  template_content: string;
+  ai_prompt: string;
+  sla_enabled: boolean;
+  sla_hours: number;
+  document_name: string;
+  document_description: string;
+  button_cta: string;
+  target_audience: string;
+  created_by_lawyer?: {
+    id: string;
     full_name: string;
     email: string;
   };
@@ -89,6 +98,9 @@ export default function AdminPage() {
   const [pendingAgentsCount, setPendingAgentsCount] = useState(0);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [showAgentDetails, setShowAgentDetails] = useState(false);
+  const [selectedLawyerForStats, setSelectedLawyerForStats] = useState<any>(null);
+  const [showLawyerStatsDialog, setShowLawyerStatsDialog] = useState(false);
+  const [documentCategories, setDocumentCategories] = useState<any[]>([]);
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [canCreateAgents, setCanCreateAgents] = useState(false);
@@ -259,6 +271,9 @@ export default function AdminPage() {
 
       // Load system configuration
       await loadSystemConfig();
+
+      // Load document categories
+      await loadDocumentCategories();
 
       // Load statistics
       await loadStatistics(lawyersData || [], agentsData || []);
@@ -1016,6 +1031,34 @@ if (!response.ok) {
     });
   };
 
+  };
+
+  // Function to show lawyer performance
+  const showLawyerPerformance = (lawyer: any) => {
+    setSelectedLawyerForStats(lawyer);
+    setShowLawyerStatsDialog(true);
+  };
+
+  // Load document categories
+  const loadDocumentCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('document_categories')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) {
+        console.error('Error loading categories:', error);
+        return;
+      }
+
+      setDocumentCategories(data || []);
+    } catch (error) {
+      console.error('Error loading categories:', error);
+    }
+  };
+
   const copyLawyerToken = (token: string) => {
     navigator.clipboard.writeText(token);
     toast({
@@ -1533,11 +1576,24 @@ if (!response.ok) {
                         </TableCell>
                         <TableCell>{sanitizeInput(agent.category)}</TableCell>
                         <TableCell>
-                          {agent.lawyer_accounts?.full_name || 'N/A'}
-                          <br />
-                          <span className="text-sm text-muted-foreground">
-                            {agent.lawyer_accounts?.email || 'N/A'}
-                          </span>
+                          {agent.created_by_lawyer ? (
+                            <button 
+                              onClick={() => showLawyerPerformance(agent.created_by_lawyer!)}
+                              className="text-primary hover:text-primary/80 underline cursor-pointer transition-colors"
+                            >
+                              {agent.created_by_lawyer.full_name}
+                            </button>
+                          ) : (
+                            'N/A'
+                          )}
+                          {agent.created_by_lawyer && (
+                            <>
+                              <br />
+                              <span className="text-sm text-muted-foreground">
+                                {agent.created_by_lawyer.email}
+                              </span>
+                            </>
+                          )}
                         </TableCell>
                         <TableCell>{getStatusBadge(agent.status)}</TableCell>
                         <TableCell>
@@ -1870,14 +1926,13 @@ if (!response.ok) {
                       <SelectTrigger className="mt-1">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="contratos">Contratos</SelectItem>
-                        <SelectItem value="inmobiliario">Inmobiliario</SelectItem>
-                        <SelectItem value="laboral">Laboral</SelectItem>
-                        <SelectItem value="comercial">Comercial</SelectItem>
-                        <SelectItem value="civil">Civil</SelectItem>
-                        <SelectItem value="administrativo">Administrativo</SelectItem>
-                      </SelectContent>
+                       <SelectContent>
+                         {documentCategories.map((category) => (
+                           <SelectItem key={category.id} value={category.name}>
+                             {category.name}
+                           </SelectItem>
+                         ))}
+                       </SelectContent>
                     </Select>
                   </div>
                   
@@ -1930,6 +1985,95 @@ if (!response.ok) {
                       }}
                       className="mt-1"
                       placeholder="Establecer precio final"
+                    />
+                  </div>
+                </div>
+
+                {/* Plantilla del documento */}
+                <div className="space-y-3">
+                  <Label htmlFor="template-content">Plantilla del Documento</Label>
+                  <Textarea
+                    id="template-content"
+                    value={selectedAgent.template_content || ""}
+                    onChange={(e) => {
+                      setSelectedAgent({
+                        ...selectedAgent,
+                        template_content: e.target.value
+                      });
+                    }}
+                    className="mt-1"
+                    rows={6}
+                    placeholder="Contenido de la plantilla del documento..."
+                  />
+                </div>
+
+                {/* Configuración de ANS */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedAgent.sla_enabled || false}
+                        onChange={(e) => {
+                          setSelectedAgent({
+                            ...selectedAgent,
+                            sla_enabled: e.target.checked
+                          });
+                        }}
+                      />
+                      ANS Habilitado
+                    </Label>
+                  </div>
+                  
+                  {selectedAgent.sla_enabled && (
+                    <div>
+                      <Label htmlFor="sla-hours">Horas de ANS</Label>
+                      <Input
+                        id="sla-hours"
+                        type="number"
+                        value={selectedAgent.sla_hours || ""}
+                        onChange={(e) => {
+                          setSelectedAgent({
+                            ...selectedAgent,
+                            sla_hours: parseInt(e.target.value) || 0
+                          });
+                        }}
+                        className="mt-1"
+                        placeholder="Ej: 24"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Configuración adicional */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="document-name">Nombre del Documento</Label>
+                    <Input
+                      id="document-name"
+                      value={selectedAgent.document_name || ""}
+                      onChange={(e) => {
+                        setSelectedAgent({
+                          ...selectedAgent,
+                          document_name: e.target.value
+                        });
+                      }}
+                      className="mt-1"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="button-cta">Texto del Botón</Label>
+                    <Input
+                      id="button-cta"
+                      value={selectedAgent.button_cta || ""}
+                      onChange={(e) => {
+                        setSelectedAgent({
+                          ...selectedAgent,
+                          button_cta: e.target.value
+                        });
+                      }}
+                      className="mt-1"
                     />
                   </div>
                 </div>
@@ -2013,23 +2157,23 @@ if (!response.ok) {
                 </div>
 
                 {/* Información del creador */}
-                <div className="bg-muted/30 p-4 rounded-lg">
-                  <h4 className="font-medium mb-2">Información del Creador</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-muted-foreground">Abogado:</span>
-                      <p className="font-medium">{selectedAgent.lawyer_accounts?.full_name || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Email:</span>
-                      <p>{selectedAgent.lawyer_accounts?.email || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Fecha de creación:</span>
-                      <p>{new Date(selectedAgent.created_at).toLocaleDateString()}</p>
+                  <div className="bg-muted/30 p-4 rounded-lg">
+                    <h4 className="font-medium mb-2">Información del Creador</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Abogado:</span>
+                        <p className="font-medium">{selectedAgent.created_by_lawyer?.full_name || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Email:</span>
+                        <p>{selectedAgent.created_by_lawyer?.email || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Fecha de creación:</span>
+                        <p>{new Date(selectedAgent.created_at).toLocaleDateString()}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
               </div>
               
               <div className="p-6 border-t bg-muted/20">
@@ -2091,6 +2235,96 @@ if (!response.ok) {
                     Guardar Cambios
                   </Button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Dialog para mostrar estadísticas del abogado */}
+        {showLawyerStatsDialog && selectedLawyerForStats && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-background rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6 border-b">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-semibold">Performance del Abogado</h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setShowLawyerStatsDialog(false);
+                      setSelectedLawyerForStats(null);
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="p-6">
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-medium text-lg">{selectedLawyerForStats.full_name}</h4>
+                    <p className="text-muted-foreground">{selectedLawyerForStats.email}</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-primary">
+                            {lawyerStats.find(s => s.lawyer_id === selectedLawyerForStats.id)?.agents_created || 0}
+                          </p>
+                          <p className="text-sm text-muted-foreground">Agentes Creados</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-success">
+                            {lawyerStats.find(s => s.lawyer_id === selectedLawyerForStats.id)?.active_agents || 0}
+                          </p>
+                          <p className="text-sm text-muted-foreground">Agentes Activos</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-blue-600">
+                            {lawyerStats.find(s => s.lawyer_id === selectedLawyerForStats.id)?.contracts_count || 0}
+                          </p>
+                          <p className="text-sm text-muted-foreground">Documentos Generados</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-green-600">
+                            ${(lawyerStats.find(s => s.lawyer_id === selectedLawyerForStats.id)?.total_value || 0).toLocaleString()}
+                          </p>
+                          <p className="text-sm text-muted-foreground">Valor Total</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-6 border-t">
+                <Button
+                  onClick={() => {
+                    setShowLawyerStatsDialog(false);
+                    setSelectedLawyerForStats(null);
+                  }}
+                  className="w-full"
+                >
+                  Cerrar
+                </Button>
               </div>
             </div>
           </div>
