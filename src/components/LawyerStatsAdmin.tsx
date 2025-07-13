@@ -15,7 +15,11 @@ import {
   ArrowDownRight,
   RefreshCw,
   Users,
-  Globe
+  Globe,
+  Timer,
+  AlertTriangle,
+  Shield,
+  Target
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -27,9 +31,12 @@ import {
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
-  Pie
+  Pie,
+  BarChart,
+  Bar
 } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface RealStats {
   totalRequests: number;
@@ -39,6 +46,31 @@ interface RealStats {
   completionRate: number;
   avgProcessingTime: number;
   requestsThisMonth: number;
+}
+
+interface SLAStats {
+  total_documents: number;
+  on_time_completion: number;
+  late_completion: number;
+  overdue_documents: number;
+  at_risk_documents: number;
+  on_time_documents: number;
+  completion_rate: number;
+  average_completion_time: number;
+  status_distribution: {
+    on_time: number;
+    at_risk: number;
+    overdue: number;
+    completed_on_time: number;
+    completed_late: number;
+  };
+}
+
+interface LawyerSLAStats extends SLAStats {
+  lawyer_id: string;
+  lawyer_name: string;
+  lawyer_email: string;
+  agents_count: number;
 }
 
 interface MonthlyData {
@@ -83,10 +115,15 @@ export default function LawyerStatsAdmin({ authHeaders, viewMode = 'global' }: L
   });
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   const [documentTypes, setDocumentTypes] = useState<DocumentTypeData[]>([]);
+  const [slaStats, setSlaStats] = useState<SLAStats | null>(null);
+  const [lawyerSlaStats, setLawyerSlaStats] = useState<LawyerSLAStats[]>([]);
+  const [selectedSlaView, setSelectedSlaView] = useState<'global' | 'by_lawyer'>('global');
+  const [selectedLawyerForSla, setSelectedLawyerForSla] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetchLawyers();
+    fetchSLAStats();
   }, []);
 
   useEffect(() => {
@@ -107,6 +144,30 @@ export default function LawyerStatsAdmin({ authHeaders, viewMode = 'global' }: L
       setLawyers(lawyersData || []);
     } catch (error) {
       console.error('Error fetching lawyers:', error);
+    }
+  };
+
+  const fetchSLAStats = async () => {
+    try {
+      const { data: slaData, error: slaError } = await supabase.functions.invoke('get-sla-stats-by-lawyer', {
+        headers: authHeaders
+      });
+
+      if (slaError) {
+        console.error('Error fetching SLA stats:', slaError);
+        return;
+      }
+
+      if (slaData?.global_stats) {
+        setSlaStats(slaData.global_stats);
+      }
+      
+      if (slaData?.lawyer_stats) {
+        setLawyerSlaStats(slaData.lawyer_stats);
+      }
+
+    } catch (error) {
+      console.error('Error fetching SLA stats:', error);
     }
   };
 
@@ -580,6 +641,271 @@ export default function LawyerStatsAdmin({ authHeaders, viewMode = 'global' }: L
               <p className="text-xs text-blue-600">Tiempo promedio</p>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* SLA Statistics Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                Estadísticas de Acuerdo de Nivel de Servicio (ANS)
+              </CardTitle>
+              <CardDescription>
+                Seguimiento del cumplimiento de tiempos de entrega comprometidos
+              </CardDescription>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant={selectedSlaView === 'global' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setSelectedSlaView('global')}
+                className="flex items-center gap-2"
+              >
+                <Globe className="h-3 w-3" />
+                Global
+              </Button>
+              <Button
+                variant={selectedSlaView === 'by_lawyer' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setSelectedSlaView('by_lawyer')}
+                className="flex items-center gap-2"
+              >
+                <Users className="h-3 w-3" />
+                Por Abogado
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {selectedSlaView === 'global' && slaStats && (
+            <div className="space-y-6">
+              {/* Global SLA Stats */}
+              <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+                <Card className="bg-blue-50 dark:bg-blue-950/20">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <Target className="h-8 w-8 text-blue-600" />
+                      <div>
+                        <p className="text-xl font-bold text-blue-600">{slaStats.total_documents}</p>
+                        <p className="text-xs text-blue-600">Total con ANS</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-green-50 dark:bg-green-950/20">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="h-8 w-8 text-green-600" />
+                      <div>
+                        <p className="text-xl font-bold text-green-600">{slaStats.on_time_completion}</p>
+                        <p className="text-xs text-green-600">A tiempo</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-red-50 dark:bg-red-950/20">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <AlertTriangle className="h-8 w-8 text-red-600" />
+                      <div>
+                        <p className="text-xl font-bold text-red-600">{slaStats.overdue_documents}</p>
+                        <p className="text-xs text-red-600">Vencidos</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-orange-50 dark:bg-orange-950/20">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <Timer className="h-8 w-8 text-orange-600" />
+                      <div>
+                        <p className="text-xl font-bold text-orange-600">{slaStats.at_risk_documents}</p>
+                        <p className="text-xs text-orange-600">En riesgo</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-purple-50 dark:bg-purple-950/20">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <BarChart3 className="h-8 w-8 text-purple-600" />
+                      <div>
+                        <p className="text-xl font-bold text-purple-600">{slaStats.completion_rate}%</p>
+                        <p className="text-xs text-purple-600">Tasa cumplimiento</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* SLA Status Distribution Chart */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">Estado de Documentos ANS</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <RechartsPieChart>
+                        <Pie
+                          data={[
+                            { name: 'A tiempo', value: slaStats.on_time_documents, fill: '#10b981' },
+                            { name: 'En riesgo', value: slaStats.at_risk_documents, fill: '#f59e0b' },
+                            { name: 'Vencidos', value: slaStats.overdue_documents, fill: '#ef4444' },
+                            { name: 'Completados a tiempo', value: slaStats.on_time_completion, fill: '#3b82f6' },
+                            { name: 'Completados tarde', value: slaStats.late_completion, fill: '#8b5cf6' }
+                          ].filter(item => item.value > 0)}
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={80}
+                          dataKey="value"
+                        >
+                          {[
+                            { name: 'A tiempo', value: slaStats.on_time_documents, fill: '#10b981' },
+                            { name: 'En riesgo', value: slaStats.at_risk_documents, fill: '#f59e0b' },
+                            { name: 'Vencidos', value: slaStats.overdue_documents, fill: '#ef4444' },
+                            { name: 'Completados a tiempo', value: slaStats.on_time_completion, fill: '#3b82f6' },
+                            { name: 'Completados tarde', value: slaStats.late_completion, fill: '#8b5cf6' }
+                          ].filter(item => item.value > 0).map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                      </RechartsPieChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">Tiempo Promedio de Cumplimiento</CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex items-center justify-center h-[200px]">
+                    <div className="text-center">
+                      <div className="text-4xl font-bold text-primary mb-2">
+                        {slaStats.average_completion_time}h
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Tiempo promedio de completación
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          )}
+
+          {selectedSlaView === 'by_lawyer' && (
+            <div className="space-y-4">
+              {/* Lawyer Selection */}
+              <div className="flex gap-4 items-center">
+                <Select value={selectedLawyerForSla} onValueChange={setSelectedLawyerForSla}>
+                  <SelectTrigger className="w-64">
+                    <SelectValue placeholder="Seleccionar abogado..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los abogados</SelectItem>
+                    {lawyerSlaStats.map((lawyer) => (
+                      <SelectItem key={lawyer.lawyer_id} value={lawyer.lawyer_id}>
+                        {lawyer.lawyer_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Badge variant="outline" className="ml-auto">
+                  {selectedLawyerForSla === 'all' 
+                    ? `${lawyerSlaStats.length} abogados` 
+                    : '1 abogado seleccionado'
+                  }
+                </Badge>
+              </div>
+
+              {/* Lawyer Stats Table/Cards */}
+              {selectedLawyerForSla === 'all' ? (
+                <div className="space-y-3">
+                  {lawyerSlaStats.map((lawyer) => (
+                    <Card key={lawyer.lawyer_id} className="p-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                          <h4 className="font-semibold">{lawyer.lawyer_name}</h4>
+                          <p className="text-sm text-muted-foreground">{lawyer.lawyer_email}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {lawyer.agents_count} agentes • {lawyer.total_documents} documentos con ANS
+                          </p>
+                        </div>
+                        <div className="grid grid-cols-4 gap-3 text-center">
+                          <div className="bg-green-50 dark:bg-green-950/20 p-2 rounded">
+                            <p className="text-sm font-bold text-green-600">{lawyer.completion_rate}%</p>
+                            <p className="text-xs text-green-600">Cumplimiento</p>
+                          </div>
+                          <div className="bg-blue-50 dark:bg-blue-950/20 p-2 rounded">
+                            <p className="text-sm font-bold text-blue-600">{lawyer.on_time_completion}</p>
+                            <p className="text-xs text-blue-600">A tiempo</p>
+                          </div>
+                          <div className="bg-red-50 dark:bg-red-950/20 p-2 rounded">
+                            <p className="text-sm font-bold text-red-600">{lawyer.overdue_documents}</p>
+                            <p className="text-xs text-red-600">Vencidos</p>
+                          </div>
+                          <div className="bg-orange-50 dark:bg-orange-950/20 p-2 rounded">
+                            <p className="text-sm font-bold text-orange-600">{lawyer.average_completion_time}h</p>
+                            <p className="text-xs text-orange-600">Promedio</p>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                // Single lawyer detailed view
+                (() => {
+                  const selectedLawyerData = lawyerSlaStats.find(l => l.lawyer_id === selectedLawyerForSla);
+                  if (!selectedLawyerData) return <p className="text-muted-foreground">Abogado no encontrado</p>;
+                  
+                  return (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                        <StatCard
+                          title="Documentos con ANS"
+                          value={selectedLawyerData.total_documents}
+                          description="Total gestionados"
+                          icon={Target}
+                          color="blue"
+                        />
+                        <StatCard
+                          title="Tasa de Cumplimiento"
+                          value={`${selectedLawyerData.completion_rate}%`}
+                          description="ANS cumplidos"
+                          icon={CheckCircle}
+                          color="green"
+                        />
+                        <StatCard
+                          title="Documentos Vencidos"
+                          value={selectedLawyerData.overdue_documents}
+                          description="Fuera de tiempo"
+                          icon={AlertTriangle}
+                          color="red"
+                        />
+                        <StatCard
+                          title="Tiempo Promedio"
+                          value={`${selectedLawyerData.average_completion_time}h`}
+                          description="Completación"
+                          icon={Timer}
+                          color="purple"
+                        />
+                      </div>
+                    </div>
+                  );
+                })()
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
