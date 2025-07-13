@@ -160,18 +160,15 @@ Deno.serve(async (req) => {
       }
 
       const { data: lawyer, error: lawyerError } = await supabase
-        .from('lawyer_accounts')
+        .from('lawyer_tokens')
         .select('*')
         .eq('access_token', lawyerToken)
         .eq('active', true)
         .maybeSingle()
 
       if (!lawyerError && lawyer && lawyer.id === user_id) {
-        // Check token expiration
-        if (!lawyer.token_expires_at || new Date(lawyer.token_expires_at) > new Date()) {
-          canUpdate = true
-          console.log('Lawyer verified successfully')
-        }
+        canUpdate = true
+        console.log('Lawyer verified successfully')
       }
     }
 

@@ -105,48 +105,72 @@ Deno.serve(async (req) => {
       })
     }
 
-    console.log('Found agent to delete:', existingAgent.name)
+    console.log('Found agent to delete:', existingAgent.name, 'created_by:', existingAgent.created_by)
 
-    // Check permissions - Only admin can delete agents
-    if (!is_admin) {
-      console.log('Non-admin user attempting to delete agent:', user_id)
-      return new Response(JSON.stringify({ error: 'Solo los administradores pueden eliminar agentes' }), {
+    // Check permissions - Admin can delete any agent, lawyers can only delete their own
+    let canDelete = false;
+    let isVerifiedAdmin = false;
+    let isVerifiedLawyer = false;
+    let verifiedUser = null;
+
+    if (is_admin) {
+      // Verify admin status
+      let adminToken = authHeader
+      if (authHeader.startsWith('Bearer ')) {
+        adminToken = authHeader.substring(7)
+      }
+
+      const { data: admin, error: tokenError } = await supabase
+        .from('admin_accounts')
+        .select('*')
+        .eq('session_token', adminToken)
+        .eq('active', true)
+        .maybeSingle()
+
+      if (!tokenError && admin) {
+        // Check token expiration
+        if (!admin.token_expires_at || new Date(admin.token_expires_at) >= new Date()) {
+          isVerifiedAdmin = true;
+          canDelete = true;
+          verifiedUser = admin;
+          console.log('Admin verified, can delete any agent');
+        }
+      }
+    } else {
+      // Check if lawyer can delete their own agent
+      let lawyerToken = authHeader
+      if (authHeader.startsWith('Bearer ')) {
+        lawyerToken = authHeader.substring(7)
+      }
+
+      const { data: lawyer, error: lawyerError } = await supabase
+        .from('lawyer_tokens')
+        .select('*')
+        .eq('access_token', lawyerToken)
+        .eq('active', true)
+        .maybeSingle()
+
+      if (!lawyerError && lawyer && lawyer.id === existingAgent.created_by) {
+        isVerifiedLawyer = true;
+        canDelete = true;
+        verifiedUser = lawyer;
+        console.log('Lawyer verified, can delete own agent');
+      }
+    }
+
+    if (!canDelete) {
+      console.log('User cannot delete agent - insufficient permissions');
+      return new Response(JSON.stringify({ 
+        error: is_admin 
+          ? 'Token de administrador inválido o expirado' 
+          : 'Solo puedes eliminar agentes que tú has creado'
+      }), {
         status: 403,
         headers: securityHeaders
       })
     }
 
-    // Verify admin status with proper token validation
-    let adminToken = authHeader
-    if (authHeader.startsWith('Bearer ')) {
-      adminToken = authHeader.substring(7)
-    }
-
-    const { data: admin, error: tokenError } = await supabase
-      .from('admin_accounts')
-      .select('*')
-      .eq('session_token', adminToken)
-      .eq('active', true)
-      .maybeSingle()
-
-    if (tokenError || !admin) {
-      console.error('Admin token verification failed:', tokenError)
-      return new Response(JSON.stringify({ error: 'Token de administrador inválido' }), {
-        status: 401,
-        headers: securityHeaders
-      })
-    }
-
-    // Check token expiration
-    if (admin.token_expires_at && new Date(admin.token_expires_at) < new Date()) {
-      console.error('Admin token expired')
-      return new Response(JSON.stringify({ error: 'Token de administrador expirado' }), {
-        status: 401,
-        headers: securityHeaders
-      })
-    }
-
-    console.log('Admin verified successfully, proceeding with deletion')
+    console.log('Proceeding with deletion by verified user');
 
     // Delete the agent
     const { error: deleteError } = await supabase
@@ -164,18 +188,23 @@ Deno.serve(async (req) => {
 
     console.log('Agent deleted successfully')
 
-    // Log the deletion event
-    await supabase.rpc('log_security_event', {
-      event_type: 'agent_deleted',
-      user_id: admin.id,
-      details: { 
-        deleted_agent_id: agent_id,
-        deleted_agent_name: existingAgent.name,
-        deleted_agent_status: existingAgent.status,
-        deleted_by_admin: admin.email,
-        original_creator: existingAgent.created_by
-      }
-    })
+    // Log the deletion event (conditionally if logging function exists)
+    try {
+      await supabase.rpc('log_security_event', {
+        event_type: 'agent_deleted',
+        user_id: verifiedUser.id,
+        details: { 
+          deleted_agent_id: agent_id,
+          deleted_agent_name: existingAgent.name,
+          deleted_agent_status: existingAgent.status,
+          deleted_by: verifiedUser.email || verifiedUser.full_name,
+          user_type: isVerifiedAdmin ? 'admin' : 'lawyer',
+          original_creator: existingAgent.created_by
+        }
+      })
+    } catch (logError) {
+      console.log('Warning: Could not log deletion event:', logError.message)
+    }
 
     return new Response(JSON.stringify({
       success: true,

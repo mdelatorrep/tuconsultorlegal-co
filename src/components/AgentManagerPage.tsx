@@ -74,15 +74,12 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
   const fetchAgents = async () => {
     setIsLoading(true);
     try {
-      // Si es admin, ver todos los agentes, si no, solo los propios
-      const query = supabase
+      // Solo mostrar agentes creados por el abogado actual
+      const { data, error } = await supabase
         .from('legal_agents')
         .select('*')
+        .eq('created_by', lawyerData.id) // Filtrar por abogado que los creó
         .order('created_at', { ascending: false });
-
-      // Display all agents (no created_by filtering since field doesn't exist)
-
-      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching agents:', error);
@@ -229,15 +226,13 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
   };
 
   const handleEditAgent = (agent: LegalAgent) => {
+    // Los abogados pueden editar sus propios agentes
     setEditingAgent({ ...agent });
     setIsEditDialogOpen(true);
   };
 
   const handleSaveAgent = async () => {
     if (!editingAgent) return;
-
-    // For now, allow all edits (no created_by field to check)
-    // Future implementation should check ownership
 
     try {
       // Intentar ambos tipos de autenticación
@@ -324,16 +319,7 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
   };
 
   const handleDeleteAgent = async (agentId: string, agentName: string) => {
-    // Solo admin puede eliminar agentes
-    if (!lawyerData.is_admin) {
-      toast({
-        title: "Sin permisos",
-        description: "Solo los administradores pueden eliminar agentes.",
-        variant: "destructive",
-      });
-      return;
-    }
-
+    // Los abogados pueden eliminar sus propios agentes, los admins pueden eliminar cualquiera
     // Confirmación antes de eliminar
     const confirmed = window.confirm(`¿Estás seguro de que quieres eliminar el agente "${agentName}"? Esta acción no se puede deshacer.`);
     
@@ -342,12 +328,15 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
     }
 
     try {
-      const authHeaders = getAuthHeaders('admin');
+      // Intentar ambos tipos de autenticación
+      const lawyerHeaders = getAuthHeaders('lawyer');
+      const adminHeaders = getAuthHeaders('admin');
+      const authHeaders = lawyerHeaders.authorization ? lawyerHeaders : adminHeaders;
       
       if (!authHeaders.authorization) {
         toast({
           title: "Error",
-          description: "Token de administrador no encontrado. Por favor, inicia sesión nuevamente.",
+          description: "Token de autenticación no encontrado. Por favor, inicia sesión nuevamente.",
           variant: "destructive"
         });
         return;
@@ -577,30 +566,25 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                       </Button>
                     ) : null}
 
-                    {/* Edit (Admin or general access for now) */}
-                    {lawyerData.is_admin && (
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleEditAgent(agent)}
-                        disabled={!lawyerData.is_admin && agent.status !== 'pending_review'}
-                      >
-                        <Edit className="h-4 w-4 mr-1" />
-                        Editar
-                      </Button>
-                     )}
+                    {/* Edit - Los abogados pueden editar sus propios agentes */}
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleEditAgent(agent)}
+                    >
+                      <Edit className="h-4 w-4 mr-1" />
+                      Editar
+                    </Button>
 
-                     {/* Delete (Only for admin) */}
-                     {lawyerData.is_admin && (
-                       <Button 
-                         variant="destructive" 
-                         size="sm"
-                         onClick={() => handleDeleteAgent(agent.id, agent.name)}
-                       >
-                         <Trash2 className="h-4 w-4 mr-1" />
-                         Eliminar
-                       </Button>
-                     )}
+                    {/* Delete - Los abogados pueden eliminar sus propios agentes */}
+                    <Button 
+                      variant="destructive" 
+                      size="sm"
+                      onClick={() => handleDeleteAgent(agent.id, agent.name)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Eliminar
+                    </Button>
                    </div>
                  </CardContent>
                </Card>

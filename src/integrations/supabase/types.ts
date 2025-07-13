@@ -212,6 +212,7 @@ export type Database = {
           button_cta: string | null
           category: string
           created_at: string
+          created_by: string | null
           description: string
           document_description: string | null
           document_name: string | null
@@ -232,6 +233,7 @@ export type Database = {
           button_cta?: string | null
           category: string
           created_at?: string
+          created_by?: string | null
           description: string
           document_description?: string | null
           document_name?: string | null
@@ -252,6 +254,7 @@ export type Database = {
           button_cta?: string | null
           category?: string
           created_at?: string
+          created_by?: string | null
           description?: string
           document_description?: string | null
           document_name?: string | null
@@ -267,7 +270,15 @@ export type Database = {
           template_content?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "legal_agents_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "lawyer_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
