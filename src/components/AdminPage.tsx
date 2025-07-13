@@ -1046,6 +1046,16 @@ function AdminPage() {
     }
   };
 
+  // Get status source information
+  const getStatusSource = (errorMessage: string | null) => {
+    if (!errorMessage) return 'Verificación directa de API';
+    if (errorMessage.includes('Status API')) return 'Página oficial de estado de OpenAI';
+    if (errorMessage.includes('minor') || errorMessage.includes('major') || errorMessage.includes('critical')) {
+      return 'Página oficial de estado de OpenAI';
+    }
+    return 'Verificación directa de API';
+  };
+
   // Toggle category status (active/inactive)
   const toggleCategoryStatus = async (categoryId: string, isActive: boolean) => {
     try {
@@ -1951,9 +1961,12 @@ function AdminPage() {
                                     Tiempo de respuesta: {serviceStatus.response_time_ms}ms
                                   </p>
                                 )}
+                                <p className="text-xs text-muted-foreground">
+                                  Fuente: {getStatusSource(serviceStatus.error_message)}
+                                </p>
                                 {serviceStatus.error_message && (
                                   <p className="text-xs text-red-500 mt-1">
-                                    Error: {serviceStatus.error_message}
+                                    {serviceStatus.error_message}
                                   </p>
                                 )}
                               </>

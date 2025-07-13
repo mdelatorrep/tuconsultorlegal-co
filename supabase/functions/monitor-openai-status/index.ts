@@ -31,37 +31,94 @@ Deno.serve(async (req) => {
     let responseTime = 0;
 
     try {
-      // Check OpenAI API health by making a simple request
-      const openaiKey = Deno.env.get('OPENAI_API_KEY');
-      if (!openaiKey) {
-        throw new Error('OpenAI API key not configured');
-      }
-
-      const response = await fetch('https://api.openai.com/v1/models', {
+      // Check OpenAI official status page
+      const statusResponse = await fetch('https://status.openai.com/api/v2/status.json', {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${openaiKey}`,
-          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'User-Agent': 'TuConsultorLegal-Monitor/1.0'
         },
         signal: AbortSignal.timeout(10000) // 10 second timeout
       });
 
       responseTime = Date.now() - startTime;
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data && data.data && Array.isArray(data.data)) {
-          status = 'operational';
-          console.log(`OpenAI API is operational (${responseTime}ms)`);
+      if (statusResponse.ok) {
+        const statusData = await statusResponse.json();
+        
+        if (statusData && statusData.status && statusData.status.indicator) {
+          const indicator = statusData.status.indicator;
+          
+          // Map OpenAI status indicators to our internal status
+          switch (indicator) {
+            case 'none':
+              status = 'operational';
+              break;
+            case 'minor':
+            case 'major':
+              status = 'degraded';
+              errorMessage = statusData.status.description || 'Service experiencing issues';
+              break;
+            case 'critical':
+              status = 'outage';
+              errorMessage = statusData.status.description || 'Service is experiencing a major outage';
+              break;
+            default:
+              status = 'unknown';
+              errorMessage = `Unknown status indicator: ${indicator}`;
+          }
+          
+          console.log(`OpenAI status check: ${indicator} (${status}) - ${responseTime}ms`);
+          
+          // Additional context from status page
+          if (statusData.page && statusData.page.name) {
+            console.log(`Status page: ${statusData.page.name}`);
+          }
+          
         } else {
-          status = 'degraded';
-          errorMessage = 'Unexpected API response format';
+          status = 'unknown';
+          errorMessage = 'Invalid status response format';
         }
       } else {
-        status = response.status >= 500 ? 'outage' : 'degraded';
-        errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-        console.error(`OpenAI API error: ${errorMessage}`);
+        status = 'degraded';
+        errorMessage = `Status API error: HTTP ${statusResponse.status}`;
+        console.error(`OpenAI status API error: ${errorMessage}`);
       }
+      
+      // If status page indicates issues, also verify API availability
+      if (status !== 'operational') {
+        console.log('Status page indicates issues, also checking API availability...');
+        
+        try {
+          const openaiKey = Deno.env.get('OPENAI_API_KEY');
+          if (openaiKey) {
+            const apiStartTime = Date.now();
+            const apiResponse = await fetch('https://api.openai.com/v1/models', {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${openaiKey}`,
+                'Content-Type': 'application/json',
+              },
+              signal: AbortSignal.timeout(8000) // 8 second timeout for API check
+            });
+            
+            const apiResponseTime = Date.now() - apiStartTime;
+            
+            if (apiResponse.ok) {
+              console.log(`API is still responding (${apiResponseTime}ms) despite status page issues`);
+              // Don't override status, but log additional info
+              errorMessage = `${errorMessage} (API still responding in ${apiResponseTime}ms)`;
+            } else {
+              console.log(`API also failing: HTTP ${apiResponse.status}`);
+              errorMessage = `${errorMessage} + API error: HTTP ${apiResponse.status}`;
+            }
+          }
+        } catch (apiError) {
+          console.log(`API check also failed: ${apiError.message}`);
+          errorMessage = `${errorMessage} + API unavailable`;
+        }
+      }
+      
     } catch (error) {
       responseTime = Date.now() - startTime;
       

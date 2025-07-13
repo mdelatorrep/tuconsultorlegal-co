@@ -49,22 +49,28 @@ export default function ServiceStatusAlert() {
     }
   };
 
-  const getAlertMessage = (status: string) => {
+  const getAlertMessage = (status: string, errorMessage: string | null) => {
     switch (status) {
       case 'degraded':
         return {
           title: 'Servicios de IA con intermitencias',
-          description: 'Estamos experimentando algunas intermitencias en nuestros servicios de inteligencia artificial. Los tiempos de respuesta pueden ser más lentos de lo habitual. Estamos trabajando para resolver esta situación.'
+          description: errorMessage?.includes('minor') || errorMessage?.includes('major') 
+            ? `OpenAI está reportando ${errorMessage.includes('minor') ? 'problemas menores' : 'problemas significativos'} en sus servicios. Los tiempos de respuesta pueden ser más lentos de lo habitual.`
+            : 'Estamos experimentando algunas intermitencias en nuestros servicios de inteligencia artificial. Los tiempos de respuesta pueden ser más lentos de lo habitual.'
         };
       case 'outage':
         return {
           title: 'Servicios de IA temporalmente no disponibles',
-          description: 'Nuestros servicios de inteligencia artificial están temporalmente no disponibles. Estamos trabajando activamente para restaurar el servicio lo antes posible. Le recomendamos intentar nuevamente en unos minutos.'
+          description: errorMessage?.includes('critical')
+            ? 'OpenAI está reportando una interrupción crítica del servicio. Nuestros servicios de inteligencia artificial están temporalmente no disponibles.'
+            : 'Nuestros servicios de inteligencia artificial están temporalmente no disponibles. Estamos trabajando activamente para restaurar el servicio lo antes posible.'
         };
       default:
         return {
           title: 'Problema con servicios de IA',
-          description: 'Estamos experimentando dificultades técnicas con nuestros servicios de inteligencia artificial. Nuestro equipo técnico está trabajando para resolver la situación.'
+          description: errorMessage 
+            ? `Estado del servicio: ${errorMessage}. Nuestro equipo técnico está monitoreando la situación.`
+            : 'Estamos experimentando dificultades técnicas con nuestros servicios de inteligencia artificial. Nuestro equipo técnico está trabajando para resolver la situación.'
         };
     }
   };
@@ -73,7 +79,7 @@ export default function ServiceStatusAlert() {
     return null;
   }
 
-  const alertContent = getAlertMessage(serviceStatus.status);
+  const alertContent = getAlertMessage(serviceStatus.status, serviceStatus.error_message);
 
   return (
     <div className="fixed top-0 left-0 right-0 z-50 p-4">
