@@ -74,11 +74,12 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
   const fetchAgents = async () => {
     setIsLoading(true);
     try {
-      // Solo mostrar agentes creados por el abogado actual
+      // Mostrar agentes operativos y pendientes de revisión creados por el abogado actual
       const { data, error } = await supabase
         .from('legal_agents')
         .select('*')
         .eq('created_by', lawyerData.id) // Filtrar por abogado que los creó
+        .in('status', ['active', 'pending_review']) // Solo mostrar operativos y pendientes de revisión
         .order('created_at', { ascending: false });
 
       if (error) {
