@@ -91,56 +91,10 @@ Deno.serve(async (req) => {
     
     logger.info('Create lawyer function started')
     
-    // Get authorization header
-    const authHeader = req.headers.get('authorization')
-    logger.info('Authorization header received', { hasHeader: !!authHeader, headerStart: authHeader?.substring(0, 10) })
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      logger.error('No authorization header found or invalid format')
-      return createErrorResponse('Authorization header required', 401)
-    }
-
-    // Create clients
-    const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: authHeader } }
-    })
+    // Create service client (no authentication required)
     const serviceClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
-
-    // Verify user authentication
-    const { data: { user }, error: userError } = await userClient.auth.getUser()
     
-    if (userError || !user) {
-      logger.error('User authentication failed', userError)
-      return createErrorResponse('Authentication failed', 401, userError?.message)
-    }
-
-    logger.info('User authenticated successfully', { email: user.email })
-
-    // Verify admin privileges using admin_accounts
-    const { data: adminProfile, error: adminProfileError } = await serviceClient
-      .from('admin_accounts')
-      .select('id, full_name, is_super_admin')
-      .eq('user_id', user.id)
-      .eq('active', true)
-      .maybeSingle()
-
-    logger.info('Admin verification results', {
-      hasAdminProfile: !!adminProfile,
-      profileError: adminProfileError?.message,
-      userId: user.id
-    })
-
-    if (adminProfileError) {
-      logger.error('Admin verification error', { adminProfileError })
-      return createErrorResponse('Admin verification failed', 500, adminProfileError.message)
-    }
-
-    if (!adminProfile) {
-      logger.warn('User is not an admin', { email: user.email, userId: user.id })
-      return createErrorResponse('Admin privileges required', 403)
-    }
-
-    logger.info('Admin privileges verified', { email: user.email })
+    logger.info('Service client created for lawyer creation')
 
     // Parse and validate request body
     let requestBody
@@ -203,7 +157,7 @@ Deno.serve(async (req) => {
         phone_number: phone_number || null,
         can_create_agents,
         lawyer_id: crypto.randomUUID(),
-        created_by: adminProfile.id
+        created_by: null // No admin verification required
       })
       .select()
       .single()
