@@ -4,17 +4,18 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   FileText, 
-  Users, 
+  RotateCcw,
   TrendingUp, 
   Calendar, 
-  DollarSign,
   Bot,
   Clock,
   CheckCircle,
   BarChart3,
   PieChart,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  RefreshCw,
+  AlertCircle
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -35,23 +36,23 @@ import {
 
 // Mock data - Replace with real data from API
 const mockStats = {
-  totalDocuments: 127,
-  totalClients: 89,
-  totalRevenue: 45600,
+  totalRequests: 127,
+  managedRequests: 89,
+  returnedRequests: 24,
   activeAgents: 5,
   completionRate: 94,
-  avgResponseTime: 2.3,
-  documentsThisMonth: 24,
-  revenueGrowth: 12.5
+  avgProcessingTime: 2.3,
+  requestsThisMonth: 24,
+  processingImprovement: 12.5
 };
 
 const mockMonthlyData = [
-  { month: 'Ene', documentos: 45, ingresos: 12000, clientes: 32 },
-  { month: 'Feb', documentos: 52, ingresos: 14500, clientes: 38 },
-  { month: 'Mar', documentos: 48, ingresos: 13200, clientes: 35 },
-  { month: 'Abr', documentos: 61, ingresos: 16800, clientes: 42 },
-  { month: 'May', documentos: 55, ingresos: 15300, clientes: 40 },
-  { month: 'Jun', documentos: 67, ingresos: 18900, clientes: 47 }
+  { month: 'Ene', gestionadas: 45, devueltas: 8, completadas: 37 },
+  { month: 'Feb', gestionadas: 52, devueltas: 12, completadas: 40 },
+  { month: 'Mar', gestionadas: 48, devueltas: 10, completadas: 38 },
+  { month: 'Abr', gestionadas: 61, devueltas: 15, completadas: 46 },
+  { month: 'May', gestionadas: 55, devueltas: 11, completadas: 44 },
+  { month: 'Jun', gestionadas: 67, devueltas: 14, completadas: 53 }
 ];
 
 const mockDocumentTypes = [
@@ -65,7 +66,7 @@ const mockDocumentTypes = [
 const COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'];
 
 export default function LawyerStatsSection() {
-  const [activeChart, setActiveChart] = useState<'documents' | 'revenue' | 'clients'>('documents');
+  const [activeChart, setActiveChart] = useState<'managed' | 'returned' | 'completed'>('managed');
 
   const StatCard = ({ 
     title, 
@@ -117,31 +118,31 @@ export default function LawyerStatsSection() {
   const ChartTabs = () => (
     <div className="flex flex-wrap gap-2 mb-4">
       <Button
-        variant={activeChart === 'documents' ? 'default' : 'outline'}
+        variant={activeChart === 'managed' ? 'default' : 'outline'}
         size="sm"
-        onClick={() => setActiveChart('documents')}
+        onClick={() => setActiveChart('managed')}
+        className="flex items-center gap-2 text-xs"
+      >
+        <CheckCircle className="h-3 w-3" />
+        <span className="hidden sm:inline">Gestionadas</span>
+      </Button>
+      <Button
+        variant={activeChart === 'returned' ? 'default' : 'outline'}
+        size="sm"
+        onClick={() => setActiveChart('returned')}
+        className="flex items-center gap-2 text-xs"
+      >
+        <RefreshCw className="h-3 w-3" />
+        <span className="hidden sm:inline">Devueltas</span>
+      </Button>
+      <Button
+        variant={activeChart === 'completed' ? 'default' : 'outline'}
+        size="sm"
+        onClick={() => setActiveChart('completed')}
         className="flex items-center gap-2 text-xs"
       >
         <FileText className="h-3 w-3" />
-        <span className="hidden sm:inline">Documentos</span>
-      </Button>
-      <Button
-        variant={activeChart === 'revenue' ? 'default' : 'outline'}
-        size="sm"
-        onClick={() => setActiveChart('revenue')}
-        className="flex items-center gap-2 text-xs"
-      >
-        <DollarSign className="h-3 w-3" />
-        <span className="hidden sm:inline">Ingresos</span>
-      </Button>
-      <Button
-        variant={activeChart === 'clients' ? 'default' : 'outline'}
-        size="sm"
-        onClick={() => setActiveChart('clients')}
-        className="flex items-center gap-2 text-xs"
-      >
-        <Users className="h-3 w-3" />
-        <span className="hidden sm:inline">Clientes</span>
+        <span className="hidden sm:inline">Completadas</span>
       </Button>
     </div>
   );
@@ -149,9 +150,9 @@ export default function LawyerStatsSection() {
   const renderChart = () => {
     const data = mockMonthlyData.map(item => ({
       ...item,
-      value: activeChart === 'documents' ? item.documentos : 
-             activeChart === 'revenue' ? item.ingresos : 
-             item.clientes
+      value: activeChart === 'managed' ? item.gestionadas : 
+             activeChart === 'returned' ? item.devueltas : 
+             item.completadas
     }));
 
     return (
@@ -195,9 +196,9 @@ export default function LawyerStatsSection() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-xl font-semibold text-foreground">Estadísticas</h2>
+          <h2 className="text-xl font-semibold text-foreground">Performance de Gestión Legal</h2>
           <p className="text-sm text-muted-foreground">
-            Resumen de tu actividad y rendimiento
+            Seguimiento de solicitudes y agentes de IA
           </p>
         </div>
         <Badge variant="outline" className="self-start sm:self-center">
@@ -209,42 +210,42 @@ export default function LawyerStatsSection() {
       {/* Main Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard
-          title="Documentos"
-          value={mockStats.totalDocuments}
-          description="Total generados"
-          icon={FileText}
+          title="Solicitudes Gestionadas"
+          value={mockStats.managedRequests}
+          description="Total procesadas"
+          icon={CheckCircle}
           trend="up"
           trendValue="+15%"
-          color="blue"
-        />
-        <StatCard
-          title="Clientes"
-          value={mockStats.totalClients}
-          description="Clientes activos"
-          icon={Users}
-          trend="up"
-          trendValue="+8%"
           color="green"
         />
         <StatCard
-          title="Ingresos"
-          value={`$${(mockStats.totalRevenue / 1000).toFixed(0)}k`}
-          description="Total generados"
-          icon={DollarSign}
+          title="Solicitudes Devueltas"
+          value={mockStats.returnedRequests}
+          description="Requieren revisión"
+          icon={RefreshCw}
+          trend="down"
+          trendValue="-8%"
+          color="orange"
+        />
+        <StatCard
+          title="Total Solicitudes"
+          value={mockStats.totalRequests}
+          description="Total recibidas"
+          icon={FileText}
           trend="up"
           trendValue="+12%"
-          color="emerald"
+          color="blue"
         />
         <StatCard
           title="Agentes IA"
           value={mockStats.activeAgents}
-          description="Agentes activos"
+          description="Agentes habilitados"
           icon={Bot}
           color="purple"
         />
       </div>
 
-      {/* Secondary Stats */}
+      {/* Performance Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <Card className="hover-scale">
           <CardContent className="p-4">
@@ -254,7 +255,7 @@ export default function LawyerStatsSection() {
               </div>
               <div>
                 <p className="text-sm font-medium">{mockStats.completionRate}%</p>
-                <p className="text-xs text-muted-foreground">Tasa de completación</p>
+                <p className="text-xs text-muted-foreground">Tasa de éxito</p>
               </div>
             </div>
           </CardContent>
@@ -267,8 +268,8 @@ export default function LawyerStatsSection() {
                 <Clock className="h-5 w-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-sm font-medium">{mockStats.avgResponseTime}h</p>
-                <p className="text-xs text-muted-foreground">Tiempo promedio</p>
+                <p className="text-sm font-medium">{mockStats.avgProcessingTime}h</p>
+                <p className="text-xs text-muted-foreground">Tiempo procesamiento</p>
               </div>
             </div>
           </CardContent>
@@ -281,7 +282,7 @@ export default function LawyerStatsSection() {
                 <TrendingUp className="h-5 w-5 text-orange-600" />
               </div>
               <div>
-                <p className="text-sm font-medium">{mockStats.documentsThisMonth}</p>
+                <p className="text-sm font-medium">{mockStats.requestsThisMonth}</p>
                 <p className="text-xs text-muted-foreground">Este mes</p>
               </div>
             </div>
@@ -291,11 +292,11 @@ export default function LawyerStatsSection() {
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Trend Chart */}
+        {/* Request Trends Chart */}
         <Card className="lg:col-span-2">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Tendencias</CardTitle>
+              <CardTitle className="text-base">Tendencias de Gestión</CardTitle>
               <BarChart3 className="h-4 w-4 text-muted-foreground" />
             </div>
           </CardHeader>
@@ -350,32 +351,36 @@ export default function LawyerStatsSection() {
         </Card>
       </div>
 
-      {/* Quick Actions */}
+      {/* Performance Summary */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Acciones Rápidas</CardTitle>
+          <CardTitle className="text-base">Resumen de Performance</CardTitle>
           <CardDescription>
-            Accede rápidamente a las funciones más utilizadas
+            Análisis del rendimiento en la gestión de documentos legales
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <Button variant="outline" size="sm" className="flex flex-col h-16 gap-1">
-              <FileText className="h-4 w-4" />
-              <span className="text-xs">Nuevo Doc</span>
-            </Button>
-            <Button variant="outline" size="sm" className="flex flex-col h-16 gap-1">
-              <Users className="h-4 w-4" />
-              <span className="text-xs">Clientes</span>
-            </Button>
-            <Button variant="outline" size="sm" className="flex flex-col h-16 gap-1">
-              <Bot className="h-4 w-4" />
-              <span className="text-xs">Crear Agente</span>
-            </Button>
-            <Button variant="outline" size="sm" className="flex flex-col h-16 gap-1">
-              <BarChart3 className="h-4 w-4" />
-              <span className="text-xs">Reportes</span>
-            </Button>
+            <div className="text-center p-3 bg-green-50 rounded-lg">
+              <CheckCircle className="h-6 w-6 text-green-600 mx-auto mb-2" />
+              <p className="text-lg font-bold text-green-600">{((mockStats.managedRequests / mockStats.totalRequests) * 100).toFixed(0)}%</p>
+              <p className="text-xs text-green-600">Éxito de gestión</p>
+            </div>
+            <div className="text-center p-3 bg-orange-50 rounded-lg">
+              <RefreshCw className="h-6 w-6 text-orange-600 mx-auto mb-2" />
+              <p className="text-lg font-bold text-orange-600">{((mockStats.returnedRequests / mockStats.totalRequests) * 100).toFixed(0)}%</p>
+              <p className="text-xs text-orange-600">Tasa de devolución</p>
+            </div>
+            <div className="text-center p-3 bg-purple-50 rounded-lg">
+              <Bot className="h-6 w-6 text-purple-600 mx-auto mb-2" />
+              <p className="text-lg font-bold text-purple-600">{mockStats.activeAgents}</p>
+              <p className="text-xs text-purple-600">Agentes activos</p>
+            </div>
+            <div className="text-center p-3 bg-blue-50 rounded-lg">
+              <Clock className="h-6 w-6 text-blue-600 mx-auto mb-2" />
+              <p className="text-lg font-bold text-blue-600">{mockStats.avgProcessingTime}h</p>
+              <p className="text-xs text-blue-600">Tiempo promedio</p>
+            </div>
           </div>
         </CardContent>
       </Card>
