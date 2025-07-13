@@ -1018,8 +1018,8 @@ function AdminPage() {
       const authHeaders = getAuthHeaders();
       const { data, error } = await supabase.functions.invoke('manage-document-categories', {
         headers: authHeaders,
+        method: 'PUT',
         body: {
-          action: 'update',
           id: selectedCategory.id,
           name: sanitizeInput(editCategoryForm.name),
           description: sanitizeInput(editCategoryForm.description),
