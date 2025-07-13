@@ -11,8 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { useNativeAdminAuth } from "@/hooks/useNativeAdminAuth";
-import NativeAdminLogin from "./NativeAdminLogin";
+import { useSimpleAdminAuth } from "@/hooks/useSimpleAdminAuth";
+import SimpleAdminLogin from "./SimpleAdminLogin";
 import LawyerStatsAdmin from "./LawyerStatsAdmin";
 import { Users, FileText, Shield, Plus, Check, X, BarChart3, TrendingUp, DollarSign, Activity, LogOut, Unlock, AlertTriangle, Eye, EyeOff, Trash2, Copy, ChartPie, Settings, RefreshCw, Save } from "lucide-react";
 import * as LucideIcons from "lucide-react";
@@ -125,7 +125,7 @@ function AdminPage() {
   });
   const [serviceStatus, setServiceStatus] = useState<any>(null);
   const { toast } = useToast();
-  const { isAuthenticated, isLoading, user, logout, getAuthHeaders, checkAuthStatus } = useNativeAdminAuth();
+  const { isAuthenticated, isLoading, user, logout, getAuthHeaders, checkAuthStatus } = useSimpleAdminAuth();
 
   // New lawyer form state - Los abogados NO pueden ser administradores
   const [newLawyer, setNewLawyer] = useState({
@@ -591,7 +591,7 @@ function AdminPage() {
       }
 
       // Verificar que el usuario actual es admin del sistema
-      if (!user?.profile) {
+      if (!user?.isAdmin) {
         toast({
           title: "Sin permisos",
           description: "Solo los administradores del sistema pueden modificar permisos de abogados.",
@@ -1179,7 +1179,7 @@ function AdminPage() {
   
   if (!isAuthenticated) {
     console.log('Not authenticated, showing native login page');
-    return <NativeAdminLogin onLoginSuccess={handleLoginSuccess} />;
+    return <SimpleAdminLogin onLoginSuccess={handleLoginSuccess} />;
   }
 
   console.log('User is authenticated! Showing admin panel');
@@ -1193,7 +1193,7 @@ function AdminPage() {
             <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
             <div>
               <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Panel de Administración</h1>
-              <p className="text-sm sm:text-base text-muted-foreground">Bienvenido, {user?.profile?.full_name || user?.email}</p>
+              <p className="text-sm sm:text-base text-muted-foreground">Bienvenido, {user?.email}</p>
             </div>
           </div>
           <Button 
