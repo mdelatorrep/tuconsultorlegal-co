@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, ArrowLeft, ArrowRight, CheckCircle, Loader2, Copy, Wand2 } from "lucide-react";
+import { Sparkles, ArrowLeft, ArrowRight, CheckCircle, Loader2, Copy, Wand2, Bold, Italic, Underline, Type, AlignLeft, AlignCenter, AlignRight } from "lucide-react";
 
 interface AgentCreatorPageProps {
   onBack: () => void;
@@ -404,6 +404,55 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
     }
   };
 
+  // Rich text editor functions
+  const handleTextFormat = (format: string) => {
+    const textarea = document.getElementById('docTemplate') as HTMLTextAreaElement;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = formData.docTemplate.substring(start, end);
+    let formattedText = '';
+
+    switch (format) {
+      case 'bold':
+        formattedText = `**${selectedText}**`;
+        break;
+      case 'italic':
+        formattedText = `*${selectedText}*`;
+        break;
+      case 'underline':
+        formattedText = `<u>${selectedText}</u>`;
+        break;
+      case 'h1':
+        formattedText = `# ${selectedText}`;
+        break;
+      case 'h2':
+        formattedText = `## ${selectedText}`;
+        break;
+      case 'h3':
+        formattedText = `### ${selectedText}`;
+        break;
+      case 'center':
+        formattedText = `<center>${selectedText}</center>`;
+        break;
+      case 'right':
+        formattedText = `<div align="right">${selectedText}</div>`;
+        break;
+      default:
+        formattedText = selectedText;
+    }
+
+    const newText = formData.docTemplate.substring(0, start) + formattedText + formData.docTemplate.substring(end);
+    setFormData(prev => ({ ...prev, docTemplate: newText }));
+
+    // Restore cursor position
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + formattedText.length, start + formattedText.length);
+    }, 0);
+  };
+
   return (
     <div className="container mx-auto px-6 py-8">
       <div className="max-w-4xl mx-auto">
@@ -707,13 +756,122 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
                   </div>
                 )}
 
-                <Textarea
-                  value={formData.docTemplate}
-                  onChange={(e) => handleInputChange('docTemplate', e.target.value)}
-                  placeholder="Ej: CONTRATO DE PROMESA DE COMPRAVENTA... Entre los suscritos a saber: {{nombre_promitente_vendedor}}, mayor de edad..."
-                  rows={15}
-                  className="font-mono text-sm"
-                />
+                {/* Rich Text Editor Toolbar */}
+                <div className="border border-input rounded-lg overflow-hidden">
+                  {/* Formatting Toolbar */}
+                  <div className="flex flex-wrap gap-1 p-2 bg-muted/50 border-b border-input">
+                    {/* Text Formatting */}
+                    <div className="flex gap-1 border-r border-input pr-2 mr-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleTextFormat('bold')}
+                        className="h-8 w-8 p-0"
+                        title="Negrita"
+                      >
+                        <Bold className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleTextFormat('italic')}
+                        className="h-8 w-8 p-0"
+                        title="Cursiva"
+                      >
+                        <Italic className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleTextFormat('underline')}
+                        className="h-8 w-8 p-0"
+                        title="Subrayado"
+                      >
+                        <Underline className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    
+                    {/* Headings */}
+                    <div className="flex gap-1 border-r border-input pr-2 mr-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleTextFormat('h1')}
+                        className="h-8 px-2 text-xs font-bold"
+                        title="Título 1"
+                      >
+                        H1
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleTextFormat('h2')}
+                        className="h-8 px-2 text-xs font-bold"
+                        title="Título 2"
+                      >
+                        H2
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleTextFormat('h3')}
+                        className="h-8 px-2 text-xs font-bold"
+                        title="Título 3"
+                      >
+                        H3
+                      </Button>
+                    </div>
+                    
+                    {/* Alignment */}
+                    <div className="flex gap-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleTextFormat('center')}
+                        className="h-8 w-8 p-0"
+                        title="Centrar"
+                      >
+                        <AlignCenter className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleTextFormat('right')}
+                        className="h-8 w-8 p-0"
+                        title="Alinear a la derecha"
+                      >
+                        <AlignRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {/* Text Area */}
+                  <Textarea
+                    id="docTemplate"
+                    value={formData.docTemplate}
+                    onChange={(e) => handleInputChange('docTemplate', e.target.value)}
+                    placeholder="Ej: CONTRATO DE PROMESA DE COMPRAVENTA... Entre los suscritos a saber: {{nombre_promitente_vendedor}}, mayor de edad..."
+                    rows={15}
+                    className="font-mono text-sm border-0 rounded-none resize-none focus-visible:ring-0"
+                  />
+                </div>
+                
+                {/* Help text for formatting */}
+                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                  <p className="text-xs text-blue-700 dark:text-blue-300">
+                    <strong>💡 Cómo usar el editor:</strong> Selecciona el texto que deseas formatear y luego haz clic en los botones de formato. 
+                    Los placeholders como <code>{"{{nombre_campo}}"}</code> no se verán afectados por el formateo.
+                  </p>
+                </div>
+                
                 <div className={`${isMobile ? 'flex flex-col space-y-3' : 'flex justify-between'}`}>
                   <Button variant="outline" onClick={handlePrev} className={isMobile ? "w-full" : ""}>
                     <ArrowLeft className="h-4 w-4 mr-2" /> Anterior
