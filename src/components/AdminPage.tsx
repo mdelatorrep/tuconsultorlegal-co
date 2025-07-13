@@ -85,6 +85,7 @@ export default function AdminPage() {
   const [contracts, setContracts] = useState<ContractDetail[]>([]);
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
   const [tokenRequests, setTokenRequests] = useState<any[]>([]);
+  const [pendingAgentsCount, setPendingAgentsCount] = useState(0);
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [canCreateAgents, setCanCreateAgents] = useState(false);
@@ -230,6 +231,10 @@ export default function AdminPage() {
       
       console.log('Agents loaded:', agentsData?.length || 0);
       setAgents(agentsData || []);
+      
+      // Calcular agentes pendientes por revisar
+      const pendingCount = (agentsData || []).filter(agent => agent.status === 'pending_review').length;
+      setPendingAgentsCount(pendingCount);
 
       // Load token requests
       console.log('Loading token requests...');
@@ -1101,9 +1106,17 @@ if (!response.ok) {
             </TabsTrigger>
             <TabsTrigger 
               value="agents" 
-              className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm"
+              className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm relative"
             >
               <FileText className="h-4 w-4" />
+              {pendingAgentsCount > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -top-1 -right-1 h-6 w-6 p-0 text-xs font-bold rounded-full flex items-center justify-center animate-pulse shadow-lg border-2 border-background"
+                >
+                  {pendingAgentsCount}
+                </Badge>
+              )}
               <span className="hidden sm:inline">Gestión de Agentes</span>
               <span className="sm:hidden">Agentes</span>
             </TabsTrigger>
