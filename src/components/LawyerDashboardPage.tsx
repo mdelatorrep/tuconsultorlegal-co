@@ -26,6 +26,10 @@ interface DocumentToken {
   updated_at: string;
   user_observations?: string | null;
   user_observation_date?: string | null;
+  sla_hours?: number;
+  sla_deadline?: string;
+  sla_status?: string;
+  agent_sla_hours?: number;
 }
 
 interface LawyerDashboardPageProps {
@@ -187,16 +191,77 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'solicitado':
-        return <Badge variant="secondary">Solicitado</Badge>;
+        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">Solicitado</Badge>;
       case 'en_revision_abogado':
-        return <Badge variant="default">En Revisión</Badge>;
+        return <Badge variant="secondary" className="bg-yellow-50 text-yellow-700 border-yellow-200">En Revisión</Badge>;
       case 'revisado':
-        return <Badge variant="outline">Revisado</Badge>;
+        return <Badge variant="default" className="bg-green-50 text-green-700 border-green-200">Revisado</Badge>;
       case 'revision_usuario':
-        return <Badge variant="outline">Revisión Usuario</Badge>;
+        return <Badge variant="default" className="bg-purple-50 text-purple-700 border-purple-200">Revisión Usuario</Badge>;
       default:
-        return <Badge variant="secondary">{status}</Badge>;
+        return <Badge variant="outline">{status}</Badge>;
     }
+  };
+
+  const getSLABadge = (document: DocumentToken) => {
+    if (!document.sla_hours) {
+      return null;
+    }
+
+    const slaDeadline = new Date(document.created_at);
+    slaDeadline.setHours(slaDeadline.getHours() + document.sla_hours);
+    const now = new Date();
+    const timeLeft = slaDeadline.getTime() - now.getTime();
+    const hoursLeft = Math.ceil(timeLeft / (1000 * 60 * 60));
+
+    if (timeLeft <= 0) {
+      return <Badge variant="destructive" className="ml-2">ANS Vencido</Badge>;
+    } else if (hoursLeft <= 2) {
+      return <Badge variant="outline" className="ml-2 bg-orange-50 text-orange-700 border-orange-200">
+        ANS: {hoursLeft}h restantes
+      </Badge>;
+    } else {
+      return <Badge variant="outline" className="ml-2 bg-green-50 text-green-700 border-green-200">
+        ANS: {hoursLeft}h restantes
+      </Badge>;
+    }
+  };
+
+  const getSLAProgress = (document: DocumentToken) => {
+    if (!document.sla_hours) {
+      return null;
+    }
+
+    const created = new Date(document.created_at);
+    const slaDeadline = new Date(created);
+    slaDeadline.setHours(slaDeadline.getHours() + document.sla_hours);
+    const now = new Date();
+    
+    const totalTime = slaDeadline.getTime() - created.getTime();
+    const elapsed = now.getTime() - created.getTime();
+    const progress = Math.min(100, (elapsed / totalTime) * 100);
+    
+    let progressClass = "bg-green-500";
+    if (progress > 80) {
+      progressClass = "bg-red-500";
+    } else if (progress > 60) {
+      progressClass = "bg-orange-500";
+    }
+
+    return (
+      <div className="mt-2">
+        <div className="flex justify-between items-center text-xs text-muted-foreground mb-1">
+          <span>Progreso ANS</span>
+          <span>{Math.round(progress)}%</span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2">
+          <div 
+            className={`h-2 rounded-full ${progressClass}`}
+            style={{ width: `${Math.min(100, progress)}%` }}
+          ></div>
+        </div>
+      </div>
+    );
   };
 
   // Show login form if not authenticated
@@ -345,7 +410,10 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-lg">{document.document_type}</CardTitle>
-                      {getStatusBadge(document.status)}
+                      <div className="flex items-center">
+                        {getStatusBadge(document.status)}
+                        {getSLABadge(document)}
+                      </div>
                     </div>
                     <CardDescription>
                       Código: {document.token}
@@ -388,6 +456,9 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                           )}
                         </div>
                       )}
+                      
+                      {/* ANS Progress */}
+                      {getSLAProgress(document)}
                     </div>
                   </CardContent>
                 </Card>

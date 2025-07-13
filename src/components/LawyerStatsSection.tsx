@@ -45,6 +45,10 @@ interface RealStats {
   avgProcessingTime: number;
   requestsThisMonth: number;
   processingImprovement: number;
+  slaComplianceRate: number;
+  overdueDocs: number;
+  atRiskDocs: number;
+  avgSlaTime: number;
 }
 
 interface MonthlyData {
@@ -72,7 +76,11 @@ export default function LawyerStatsSection() {
     completionRate: 0,
     avgProcessingTime: 0,
     requestsThisMonth: 0,
-    processingImprovement: 0
+    processingImprovement: 0,
+    slaComplianceRate: 0,
+    overdueDocs: 0,
+    atRiskDocs: 0,
+    avgSlaTime: 0,
   });
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   const [documentTypes, setDocumentTypes] = useState<DocumentTypeData[]>([]);
@@ -139,6 +147,9 @@ export default function LawyerStatsSection() {
       // Calculate average processing time (simplified)
       const avgProcessingTime = calculateAvgProcessingTime(documents || []);
 
+      // Fetch SLA stats
+      const slaStats = await fetchSLAStats();
+
       setStats({
         totalRequests,
         managedRequests,
@@ -147,7 +158,11 @@ export default function LawyerStatsSection() {
         completionRate,
         avgProcessingTime,
         requestsThisMonth,
-        processingImprovement: 12.5 // This would need historical data to calculate properly
+        processingImprovement: 12.5, // This would need historical data to calculate properly
+        slaComplianceRate: slaStats.completion_rate || 0,
+        overdueDocs: slaStats.overdue_documents || 0,
+        atRiskDocs: slaStats.at_risk_documents || 0,
+        avgSlaTime: slaStats.average_completion_time || 0
       });
 
       setMonthlyData(monthlyStats);
@@ -237,6 +252,34 @@ export default function LawyerStatsSection() {
     }, 0);
 
     return Math.round((totalTime / processedDocs.length) * 10) / 10; // Round to 1 decimal
+  };
+
+  const fetchSLAStats = async () => {
+    try {
+      // Get the lawyer token from storage
+      const authData = sessionStorage.getItem('lawyer_token');
+      if (!authData) {
+        console.error('No lawyer token found');
+        return { completion_rate: 0, overdue_documents: 0, at_risk_documents: 0, average_completion_time: 0 };
+      }
+
+      const { data, error } = await supabase.functions.invoke('get-sla-stats', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authData}`
+        }
+      });
+
+      if (error) {
+        console.error('Error fetching SLA stats:', error);
+        return { completion_rate: 0, overdue_documents: 0, at_risk_documents: 0, average_completion_time: 0 };
+      }
+
+      return data || { completion_rate: 0, overdue_documents: 0, at_risk_documents: 0, average_completion_time: 0 };
+    } catch (error) {
+      console.error('Error:', error);
+      return { completion_rate: 0, overdue_documents: 0, at_risk_documents: 0, average_completion_time: 0 };
+    }
   };
 
   if (isLoading) {
@@ -472,6 +515,40 @@ export default function LawyerStatsSection() {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* SLA Performance Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <StatCard
+          title="Cumplimiento ANS"
+          value={`${stats.slaComplianceRate}%`}
+          description="Documentos a tiempo"
+          icon={CheckCircle}
+          trend={stats.slaComplianceRate >= 90 ? 'up' : 'down'}
+          trendValue={stats.slaComplianceRate >= 90 ? 'Excelente' : 'Mejorar'}
+          color="green"
+        />
+        <StatCard
+          title="Documentos Vencidos"
+          value={stats.overdueDocs}
+          description="ANS excedido"
+          icon={AlertCircle}
+          color="red"
+        />
+        <StatCard
+          title="En Riesgo"
+          value={stats.atRiskDocs}
+          description="Próximos a vencer"
+          icon={Clock}
+          color="orange"
+        />
+        <StatCard
+          title="Tiempo Promedio ANS"
+          value={`${stats.avgSlaTime}h`}
+          description="Tiempo de entrega"
+          icon={TrendingUp}
+          color="blue"
+        />
       </div>
 
       {/* Charts Section */}

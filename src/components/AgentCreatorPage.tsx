@@ -27,6 +27,8 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
     docCat: "",
     docTemplate: "",
     initialPrompt: "",
+    slaHours: 4,
+    slaEnabled: true,
   });
   
   const [aiResults, setAiResults] = useState({
@@ -65,7 +67,13 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
   ];
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    if (field === 'slaEnabled') {
+      setFormData(prev => ({ ...prev, [field]: value === 'true' }));
+    } else if (field === 'slaHours') {
+      setFormData(prev => ({ ...prev, [field]: parseInt(value) }));
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value }));
+    }
   };
 
   const handleNext = () => {
@@ -346,7 +354,9 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
           suggested_price: priceValue,
           price_justification: aiResults.priceJustification,
           status: 'pending_review',
-          created_by: lawyerData.id
+          created_by: lawyerData.id,
+          sla_hours: formData.slaEnabled ? formData.slaHours : null,
+          sla_enabled: formData.slaEnabled
         })
         .select()
         .single();
@@ -373,6 +383,8 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         docCat: "",
         docTemplate: "",
         initialPrompt: "",
+        slaHours: 4,
+        slaEnabled: true,
       });
       setAiResults({
         enhancedPrompt: "",
@@ -571,6 +583,52 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
                           ))}
                         </SelectContent>
                       </Select>
+                    </div>
+                    
+                    {/* ANS Configuration */}
+                    <div className="space-y-4 p-4 border border-border rounded-lg bg-muted/50">
+                      <h3 className="font-semibold text-sm">⏱️ Configuración de ANS (Acuerdo de Nivel de Servicio)</h3>
+                      
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id="slaEnabled"
+                          checked={formData.slaEnabled}
+                          onChange={(e) => handleInputChange('slaEnabled', e.target.checked.toString())}
+                          className="rounded"
+                        />
+                        <Label htmlFor="slaEnabled" className="text-sm">
+                          Habilitar ANS para este tipo de documento
+                        </Label>
+                      </div>
+                      
+                      {formData.slaEnabled && (
+                        <div>
+                          <Label htmlFor="slaHours" className="text-sm">
+                            Tiempo límite de respuesta (horas)
+                          </Label>
+                          <Select 
+                            value={formData.slaHours.toString()} 
+                            onValueChange={(value) => handleInputChange('slaHours', value)}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue placeholder="Selecciona el tiempo límite" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="1">1 hora</SelectItem>
+                              <SelectItem value="2">2 horas</SelectItem>
+                              <SelectItem value="4">4 horas (recomendado)</SelectItem>
+                              <SelectItem value="6">6 horas</SelectItem>
+                              <SelectItem value="8">8 horas</SelectItem>
+                              <SelectItem value="12">12 horas</SelectItem>
+                              <SelectItem value="24">24 horas (máximo)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Tiempo máximo para revisar y entregar documentos de este tipo
+                          </p>
+                        </div>
+                      )}
                     </div>
                     
                     <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">

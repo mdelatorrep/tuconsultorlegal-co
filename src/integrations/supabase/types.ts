@@ -54,6 +54,9 @@ export type Database = {
           document_type: string
           id: string
           price: number
+          sla_deadline: string | null
+          sla_hours: number | null
+          sla_status: string | null
           status: Database["public"]["Enums"]["document_status"]
           token: string
           updated_at: string
@@ -68,6 +71,9 @@ export type Database = {
           document_type: string
           id?: string
           price: number
+          sla_deadline?: string | null
+          sla_hours?: number | null
+          sla_status?: string | null
           status?: Database["public"]["Enums"]["document_status"]
           token: string
           updated_at?: string
@@ -82,6 +88,9 @@ export type Database = {
           document_type?: string
           id?: string
           price?: number
+          sla_deadline?: string | null
+          sla_hours?: number | null
+          sla_status?: string | null
           status?: Database["public"]["Enums"]["document_status"]
           token?: string
           updated_at?: string
@@ -222,6 +231,8 @@ export type Database = {
           name: string
           placeholder_fields: Json
           price_justification: string | null
+          sla_enabled: boolean | null
+          sla_hours: number | null
           status: string
           suggested_price: number
           target_audience: string | null
@@ -243,6 +254,8 @@ export type Database = {
           name: string
           placeholder_fields?: Json
           price_justification?: string | null
+          sla_enabled?: boolean | null
+          sla_hours?: number | null
           status?: string
           suggested_price: number
           target_audience?: string | null
@@ -264,6 +277,8 @@ export type Database = {
           name?: string
           placeholder_fields?: Json
           price_justification?: string | null
+          sla_enabled?: boolean | null
+          sla_hours?: number | null
           status?: string
           suggested_price?: number
           target_audience?: string | null
@@ -304,6 +319,33 @@ export type Database = {
           restaurant_name?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      system_config: {
+        Row: {
+          config_key: string
+          config_value: string
+          created_at: string | null
+          description: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          config_key: string
+          config_value: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          config_key?: string
+          config_value?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          updated_at?: string | null
         }
         Relationships: []
       }

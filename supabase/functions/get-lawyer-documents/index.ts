@@ -60,10 +60,10 @@ Deno.serve(async (req) => {
 
     console.log('Lawyer verified:', lawyer.full_name)
 
-    // Get agents created by this lawyer
+    // Get agents created by this lawyer with SLA info
     const { data: agentNames, error: agentsError } = await supabase
       .from('legal_agents')
-      .select('name')
+      .select('name, sla_hours, sla_enabled')
       .eq('created_by', lawyer.id)
 
     if (agentsError) {
@@ -103,6 +103,7 @@ Deno.serve(async (req) => {
     }
 
     // Filter documents by matching document_type with agent names (flexible matching)
+    // and ensure the agent was created by this lawyer
     const filteredDocuments = documents?.filter(doc => {
       const docType = doc.document_type.toLowerCase().trim()
       return agentNamesList.some(agentName => {
@@ -115,9 +116,33 @@ Deno.serve(async (req) => {
       })
     }) || []
 
-    console.log(`Filtered ${filteredDocuments.length} documents from ${documents?.length || 0} total`)
+    // For each document, copy SLA info from the corresponding agent
+    const documentsWithSLA = filteredDocuments.map(doc => {
+      // Find the matching agent for this document type
+      const matchingAgent = agentNames.find(agent => {
+        const agentNameLower = agent.name.toLowerCase().trim()
+        const docTypeLower = doc.document_type.toLowerCase().trim()
+        return docTypeLower.includes(agentNameLower) || 
+               agentNameLower.includes(docTypeLower) ||
+               (docTypeLower.includes('arrendamiento') && agentNameLower.includes('arrendamiento'))
+      })
 
-    return new Response(JSON.stringify(filteredDocuments), {
+      if (matchingAgent && !doc.sla_hours) {
+        // Update document with SLA info from agent if not already set
+        return {
+          ...doc,
+          sla_hours: matchingAgent.sla_hours,
+          sla_enabled: matchingAgent.sla_enabled,
+          agent_sla_hours: matchingAgent.sla_hours
+        }
+      }
+      
+      return doc
+    })
+
+    console.log(`Filtered ${documentsWithSLA.length} documents from ${documents?.length || 0} total`)
+
+    return new Response(JSON.stringify(documentsWithSLA), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
 
