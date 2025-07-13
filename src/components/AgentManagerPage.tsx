@@ -304,6 +304,21 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
     setEditingAgent({ ...editingAgent, [field]: value });
   };
 
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'Activo';
+      case 'suspended':
+        return 'Suspendido';
+      case 'draft':
+        return 'Borrador';
+      case 'pending_review':
+        return 'Pendiente de Revisión';
+      default:
+        return status;
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'active':
@@ -313,9 +328,9 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
       case 'draft':
         return <Badge variant="outline">Borrador</Badge>;
       case 'pending_review':
-        return <Badge variant="destructive">Pendiente Revisión</Badge>;
+        return <Badge variant="destructive">Pendiente de Revisión</Badge>;
       default:
-        return <Badge variant="secondary">{status}</Badge>;
+        return <Badge variant="secondary">{getStatusText(status)}</Badge>;
     }
   };
 
@@ -534,7 +549,7 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                                       <div className="space-y-2 text-sm">
                                         <div><strong>Categoría:</strong> {selectedAgent.category}</div>
                                         <div><strong>Precio Sugerido:</strong> ${selectedAgent.suggested_price.toLocaleString()} COP</div>
-                                        <div><strong>Estado:</strong> {selectedAgent.status}</div>
+                                         <div><strong>Estado:</strong> {getStatusText(selectedAgent.status)}</div>
                                         <div><strong>Creado:</strong> {new Date(selectedAgent.created_at).toLocaleDateString()}</div>
                                       </div>
                                     </div>
@@ -542,11 +557,14 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                                     <div>
                                       <h4 className="font-semibold mb-2">Variables ({selectedAgent.placeholder_fields.length})</h4>
                                       <div className="space-y-1 text-sm max-h-40 overflow-y-auto">
-                                        {selectedAgent.placeholder_fields.map((field: any, index: number) => (
-                                          <div key={index} className="p-2 bg-muted rounded">
-                                            <strong>{field.name}:</strong> {field.description}
-                                          </div>
-                                        ))}
+                                         {selectedAgent.placeholder_fields.map((field: any, index: number) => (
+                                           <div key={index} className="p-2 bg-muted rounded">
+                                             <div className="flex items-center gap-2 mb-1">
+                                               <Badge variant="outline" className="text-xs">{field.placeholder || field.name}</Badge>
+                                             </div>
+                                             <p className="text-xs text-muted-foreground">{field.pregunta || field.description}</p>
+                                           </div>
+                                         ))}
                                       </div>
                                     </div>
                                   </div>
@@ -764,7 +782,7 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                     <div className="space-y-2 text-sm">
                       <div><strong>Categoría:</strong> {selectedAgent.category}</div>
                       <div><strong>Precio Sugerido:</strong> ${selectedAgent.suggested_price.toLocaleString()} COP</div>
-                      <div><strong>Estado:</strong> {selectedAgent.status}</div>
+                      <div><strong>Estado:</strong> {getStatusText(selectedAgent.status)}</div>
                       <div><strong>Creado:</strong> {new Date(selectedAgent.created_at).toLocaleDateString()}</div>
                     </div>
                   </div>
@@ -772,11 +790,14 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                   <div>
                     <h4 className="font-semibold mb-2">Variables ({selectedAgent.placeholder_fields.length})</h4>
                     <div className="space-y-1 text-sm max-h-40 overflow-y-auto">
-                      {selectedAgent.placeholder_fields.map((field: any, index: number) => (
-                        <div key={index} className="p-2 bg-muted rounded">
-                          <strong>{field.name}:</strong> {field.description}
-                        </div>
-                      ))}
+                       {selectedAgent.placeholder_fields.map((field: any, index: number) => (
+                         <div key={index} className="p-2 bg-muted rounded">
+                           <div className="flex items-center gap-2 mb-1">
+                             <Badge variant="outline" className="text-xs">{field.placeholder || field.name}</Badge>
+                           </div>
+                           <p className="text-xs text-muted-foreground">{field.pregunta || field.description}</p>
+                         </div>
+                       ))}
                     </div>
                   </div>
                 </div>
