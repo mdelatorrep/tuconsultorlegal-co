@@ -47,26 +47,25 @@ export const useLawyerAuth = () => {
 
   const loginWithEmailAndToken = async (email: string, token: string): Promise<boolean> => {
     try {
-      console.log('Attempting lawyer login with email and token');
+      console.log('=== FRONTEND LOGIN START ===');
+      console.log('Email:', email, 'Token:', token);
       
       const { data, error } = await supabase.functions.invoke('lawyer-login', {
-        body: { email, token },
-        headers: {
-          'Content-Type': 'application/json'
-        }
+        body: { email: email.trim().toLowerCase(), token: token.trim() }
       });
 
+      console.log('Supabase response:', { data, error });
+
       if (error) {
-        console.error('Lawyer login error:', error);
+        console.error('Supabase function error:', error);
         return false;
       }
 
-      console.log('Login response:', data);
-
-      if (data.success && data.user) {
-        console.log('Login successful, storing auth data');
+      if (data && data.success && data.user) {
+        console.log('Login successful! User data:', data.user);
+        
         AuthStorage.setLawyerAuth({
-          token: token,
+          token: token.trim(),
           user: data.user
         });
         
@@ -76,10 +75,11 @@ export const useLawyerAuth = () => {
         return true;
       }
       
-      console.log('Login failed:', data.error);
+      console.log('Login failed. Response:', data);
       return false;
+      
     } catch (error) {
-      console.error('Lawyer login exception:', error);
+      console.error('Frontend login error:', error);
       return false;
     }
   };
