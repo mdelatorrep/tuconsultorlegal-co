@@ -455,6 +455,39 @@ export type Database = {
           },
         ]
       }
+      pricing_analytics: {
+        Row: {
+          clicked_at: string
+          created_at: string
+          id: string
+          plan_id: string
+          plan_name: string
+          plan_type: string
+          user_agent: string | null
+          user_ip: string | null
+        }
+        Insert: {
+          clicked_at?: string
+          created_at?: string
+          id?: string
+          plan_id: string
+          plan_name: string
+          plan_type: string
+          user_agent?: string | null
+          user_ip?: string | null
+        }
+        Update: {
+          clicked_at?: string
+          created_at?: string
+          id?: string
+          plan_id?: string
+          plan_name?: string
+          plan_type?: string
+          user_agent?: string | null
+          user_ip?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string

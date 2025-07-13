@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -153,13 +154,18 @@ const businessPlans: PricingPlan[] = [
 export default function PricingPage({ onOpenChat, onNavigate }: PricingPageProps) {
   const [activeTab, setActiveTab] = useState("personal");
 
-  const handlePlanSelect = (plan: PricingPlan) => {
-    if (plan.id === "business-enterprise") {
-      onOpenChat(`Hola, estoy interesado en el plan Enterprise. Me gustaría conocer más detalles sobre precios personalizados y funcionalidades empresariales.`);
-    } else if (plan.price === 0 && plan.id !== "business-enterprise") {
-      onOpenChat(`Hola, me gustaría comenzar con el plan ${plan.name} gratuito. ¿Cómo puedo empezar?`);
-    } else {
-      onOpenChat(`Hola, estoy interesado en el plan ${plan.name} de $${plan.price.toLocaleString()} COP. ¿Pueden ayudarme con la contratación?`);
+  const handlePlanClick = async (plan: PricingPlan) => {
+    // Track the click in analytics
+    try {
+      await supabase.functions.invoke('track-pricing-click', {
+        body: {
+          planId: plan.id,
+          planName: plan.name,
+          planType: activeTab
+        }
+      });
+    } catch (error) {
+      console.error('Error tracking pricing click:', error);
     }
   };
 
@@ -230,11 +236,11 @@ export default function PricingPage({ onOpenChat, onNavigate }: PricingPageProps
 
         <Button 
           className="w-full mt-auto"
-          variant={plan.popular ? "default" : "outline"}
-          onClick={() => handlePlanSelect(plan)}
+          variant="outline"
+          onClick={() => handlePlanClick(plan)}
+          disabled
         >
-          {plan.id === "business-enterprise" ? "Contactar Ventas" : 
-           plan.price === 0 ? "Comenzar Gratis" : "Seleccionar Plan"}
+          Próximamente
         </Button>
       </CardContent>
     </Card>
