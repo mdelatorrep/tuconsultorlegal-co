@@ -40,7 +40,7 @@ export default function LawyerTrainingPage({ onBack, lawyerData }: LawyerTrainin
     }
   };
 
-  const totalModules = 8;
+  const totalModules = 4;
 
   const trainingModules = [
     {
