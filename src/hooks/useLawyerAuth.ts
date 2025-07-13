@@ -89,6 +89,8 @@ export const useLawyerAuth = () => {
     AuthStorage.clearLawyerAuth();
     setIsAuthenticated(false);
     setUser(null);
+    // Force navigation to home page after logout
+    window.location.href = '/';
   };
 
   const getAuthHeaders = () => {
