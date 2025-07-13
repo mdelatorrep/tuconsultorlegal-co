@@ -87,7 +87,7 @@ interface ContractDetail {
   user_email?: string;
 }
 
-export default function AdminPage() {
+function AdminPage() {
   const [lawyers, setLawyers] = useState<Lawyer[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [lawyerStats, setLawyerStats] = useState<LawyerStats[]>([]);
@@ -581,84 +581,54 @@ export default function AdminPage() {
         can_create_agents: newLawyer.can_create_agents,
     });
 
-const url = "https://tkaezookvtpulfpaffes.supabase.co/functions/v1/create-lawyer";
-const response = await fetch(url, {
-  method: "POST",
-  headers: {
-    Authorization: authHeaders.authorization,      // Bearer <token>
-    "Content-Type": "application/json",
-    apikey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRrYWV6b29rdnRwdWxmcGFmZmVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3NzEwNzUsImV4cCI6MjA2NzM0NzA3NX0.j7fSfaXMqwmytVuXIU4_miAbn-v65b5x0ncRr0K-CNE"
-  },
-  body: JSON.stringify({
-    email: sanitizedEmail,
-    full_name: sanitizedName,
-    phone_number: newLawyer.phone_number,
-    can_create_agents: newLawyer.can_create_agents
-  }),
-});
 
-console.log("HTTP status create-lawyer:", response.status);
-const payload = await response.json();
-console.log("Payload create-lawyer:", payload);
-
-if (!response.ok) {
-  throw new Error(payload.error || `HTTP ${response.status}`);
-}
-
-    console.log('create-lawyer response:', payload);
-
-  if (!payload?.success) {
-    console.error('Business logic error:', payload?.error);
-    throw new Error(payload?.error || 'Error al crear el abogado');
-  }
-
-      // Success - show the generated token
-      const lawyerToken = payload.lawyer?.secure_password;
-      if (lawyerToken) {
+  const updateLawyerPermissions = async (lawyerId: string, field: string, value: boolean) => {
+    try {
+      // Solo permitir actualizar campos específicos de abogados (NO is_admin)
+      if (field !== 'active' && field !== 'can_create_agents') {
         toast({
-          title: "✅ Abogado creado exitosamente",
-          description: `Token de acceso: ${lawyerToken}`,
-          duration: 15000,
+          title: "Campo no válido",
+          description: "Solo se pueden modificar los campos 'active' y 'can_create_agents' para abogados.",
+          variant: "destructive"
         });
-
-        // Show detailed alert with token
-        setTimeout(() => {
-          alert(`🎉 Abogado creado exitosamente!\n\n👤 Nombre: ${sanitizedName}\n📧 Email: ${sanitizedEmail}\n🔑 Token de acceso: ${lawyerToken}\n\n⚠️ IMPORTANTE: Comparte este token con el abogado para que pueda acceder al sistema.`);
-        }, 500);
-      } else {
-        toast({
-          title: "✅ Abogado creado",
-          description: "El abogado ha sido creado exitosamente",
-        });
+        return;
       }
 
-      // Reset form
-      setNewLawyer({
-        email: "",
-        full_name: "",
-        phone_number: "",
-        can_create_agents: false
+      const authHeaders = getAuthHeaders();
+      
+      const { data, error } = await supabase.functions.invoke('update-lawyer-permissions', {
+        headers: authHeaders,
+        body: {
+          lawyer_id: lawyerId,
+          field,
+          value
+        }
       });
 
-      // Refresh data
-      await loadData();
-      
-    } catch (error: any) {
-      console.error('Create lawyer error:', error);
-      
-      let errorMessage = "Error desconocido al crear el abogado";
-      
-      if (error.message?.includes('Authentication failed')) {
-        errorMessage = "Error de autenticación. Por favor, inicia sesión nuevamente.";
-      } else if (error.message?.includes('Admin privileges required')) {
-        errorMessage = "No tienes permisos de administrador para realizar esta acción.";
-      } else if (error.message?.includes('Email already exists')) {
-        errorMessage = "Ya existe un abogado registrado con este email.";
-      } else if (error.message?.includes('Invalid email format')) {
-        errorMessage = "El formato del email no es válido.";
-      } else if (error.message) {
-        errorMessage = error.message;
+      if (error || !data?.success) {
+        throw new Error(data?.error || error?.message || 'Error al actualizar permisos');
       }
+
+      // Update local state
+      setLawyers(prev => prev.map(lawyer => 
+        lawyer.id === lawyerId 
+          ? { ...lawyer, [field]: value }
+          : lawyer
+      ));
+
+      toast({
+        title: "Permisos actualizados",
+        description: `Permiso ${field} actualizado correctamente`,
+      });
+    } catch (error: any) {
+      console.error('Update lawyer permissions error:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Error al actualizar permisos del abogado",
+        variant: "destructive"
+      });
+    }
+  };
       
       toast({
         title: "❌ Error al crear abogado",
@@ -2333,3 +2303,5 @@ if (!response.ok) {
     </div>
   );
 }
+
+export default AdminPage;
