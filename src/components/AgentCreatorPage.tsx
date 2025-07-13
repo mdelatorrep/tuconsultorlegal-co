@@ -159,8 +159,8 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         variant: "destructive",
       });
 
-      // Return to step 3 to try again
-      setCurrentStep(3);
+      // Stay on step 4 to show error and allow retry
+      // setCurrentStep(3); // Commented out to prevent redirect
     }
   };
 
