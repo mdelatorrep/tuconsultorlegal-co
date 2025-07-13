@@ -3058,6 +3058,101 @@ function AdminPage() {
             </div>
           </div>
         )}
+
+        {/* Blog Editor Dialog */}
+        {showBlogEditor && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-background rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-semibold">
+                    {selectedBlog ? 'Editar Artículo' : 'Nuevo Artículo'}
+                  </h2>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowBlogEditor(false)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="blog-title">Título *</Label>
+                      <Input
+                        id="blog-title"
+                        value={blogForm.title}
+                        onChange={(e) => setBlogForm(prev => ({ 
+                          ...prev, 
+                          title: e.target.value,
+                          slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+                        }))}
+                        placeholder="Título del artículo"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="blog-status">Estado</Label>
+                      <Select
+                        value={blogForm.status}
+                        onValueChange={(value: "draft" | "published" | "archived") => 
+                          setBlogForm(prev => ({ ...prev, status: value }))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="draft">Borrador</SelectItem>
+                          <SelectItem value="published">Publicado</SelectItem>
+                          <SelectItem value="archived">Archivado</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="blog-content">Contenido *</Label>
+                    <Textarea
+                      id="blog-content"
+                      value={blogForm.content}
+                      onChange={(e) => setBlogForm(prev => ({ ...prev, content: e.target.value }))}
+                      placeholder="Contenido del artículo..."
+                      className="min-h-[300px]"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="blog-excerpt">Extracto</Label>
+                    <Textarea
+                      id="blog-excerpt"
+                      value={blogForm.excerpt}
+                      onChange={(e) => setBlogForm(prev => ({ ...prev, excerpt: e.target.value }))}
+                      placeholder="Breve descripción..."
+                      className="min-h-[100px]"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 mt-6 pt-6 border-t">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowBlogEditor(false)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={selectedBlog ? updateBlog : createBlog}
+                    disabled={!blogForm.title || !blogForm.content}
+                  >
+                    {selectedBlog ? 'Actualizar' : 'Crear'} Artículo
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
