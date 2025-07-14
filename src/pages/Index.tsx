@@ -78,6 +78,12 @@ export default function Index() {
   };
 
   const renderCurrentPage = () => {
+    // Check for dynamic blog article routes first
+    if (currentPage.startsWith("blog-articulo-")) {
+      const slug = currentPage.replace("blog-articulo-", "");
+      return <BlogArticlePage articleId={slug} onOpenChat={handleOpenChat} onNavigate={handleNavigate} />;
+    }
+
     switch (currentPage) {
       case "home":
         return <HomePage onOpenChat={handleOpenChat} />;
@@ -89,12 +95,6 @@ export default function Index() {
         return <PricingPage onOpenChat={handleOpenChat} onNavigate={handleNavigate} />;
       case "blog":
         return <BlogPage onOpenChat={handleOpenChat} onNavigate={handleNavigate} />;
-      case "blog-articulo-arriendo":
-        return <BlogArticlePage articleId="arriendo" onOpenChat={handleOpenChat} onNavigate={handleNavigate} />;
-      case "blog-articulo-despido":
-        return <BlogArticlePage articleId="despido" onOpenChat={handleOpenChat} onNavigate={handleNavigate} />;
-      case "blog-articulo-vehiculo":
-        return <BlogArticlePage articleId="vehiculo" onOpenChat={handleOpenChat} onNavigate={handleNavigate} />;
       case "contacto":
         return <ContactPage onOpenChat={handleOpenChat} onNavigate={handleNavigate} />;
       case "documento":
