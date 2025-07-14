@@ -1281,10 +1281,59 @@ function AdminPage() {
       });
     } else {
       setSelectedBlog(null);
+      // Create blog with standard template
+      const standardTemplate = `
+# Introducción
+
+Explicar brevemente el tema legal que se va a tratar y por qué es importante para el lector.
+
+## ¿Qué es [concepto legal]?
+
+Definir claramente el concepto legal principal del artículo en términos sencillos.
+
+## Marco Legal en Colombia
+
+Explicar la legislación colombiana aplicable y referencias normativas relevantes.
+
+## Casos Prácticos
+
+### Ejemplo 1: [Situación común]
+Describir un caso práctico real y cómo se resuelve legalmente.
+
+### Ejemplo 2: [Otra situación]
+Otro ejemplo que ilustre diferentes aspectos del tema.
+
+## Pasos a Seguir
+
+1. **Primer paso**: Explicación clara
+2. **Segundo paso**: Más detalles
+3. **Tercer paso**: Conclusión
+
+## Documentos Necesarios
+
+- Documento 1
+- Documento 2
+- Documento 3
+
+## Consejos Importantes
+
+> **⚠️ Advertencia**: Puntos críticos que el lector debe tener en cuenta.
+
+> **💡 Consejo**: Recomendaciones útiles para el lector.
+
+## Conclusión
+
+Resumir los puntos clave y proporcionar recomendaciones finales.
+
+---
+
+*¿Necesitas ayuda específica con tu caso? Consulta con nuestro asistente legal Lexi para obtener orientación personalizada.*
+      `.trim();
+
       setBlogForm({
         title: "",
         slug: "",
-        content: "",
+        content: standardTemplate,
         excerpt: "",
         featured_image: "",
         status: "draft",
@@ -3996,7 +4045,66 @@ function AdminPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="blog-content">Contenido *</Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="blog-content">Contenido *</Label>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const standardTemplate = `
+# Introducción
+
+Explicar brevemente el tema legal que se va a tratar y por qué es importante para el lector.
+
+## ¿Qué es [concepto legal]?
+
+Definir claramente el concepto legal principal del artículo en términos sencillos.
+
+## Marco Legal en Colombia
+
+Explicar la legislación colombiana aplicable y referencias normativas relevantes.
+
+## Casos Prácticos
+
+### Ejemplo 1: [Situación común]
+Describir un caso práctico real y cómo se resuelve legalmente.
+
+### Ejemplo 2: [Otra situación]
+Otro ejemplo que ilustre diferentes aspectos del tema.
+
+## Pasos a Seguir
+
+1. **Primer paso**: Explicación clara
+2. **Segundo paso**: Más detalles
+3. **Tercer paso**: Conclusión
+
+## Documentos Necesarios
+
+- Documento 1
+- Documento 2
+- Documento 3
+
+## Consejos Importantes
+
+> **⚠️ Advertencia**: Puntos críticos que el lector debe tener en cuenta.
+
+> **💡 Consejo**: Recomendaciones útiles para el lector.
+
+## Conclusión
+
+Resumir los puntos clave y proporcionar recomendaciones finales.
+
+---
+
+*¿Necesitas ayuda específica con tu caso? Consulta con nuestro asistente legal Lexi para obtener orientación personalizada.*
+                          `.trim();
+                          setBlogForm(prev => ({ ...prev, content: standardTemplate }));
+                        }}
+                      >
+                        📝 Usar Plantilla Estándar
+                      </Button>
+                    </div>
                     <Textarea
                       id="blog-content"
                       value={blogForm.content}
@@ -4014,6 +4122,77 @@ function AdminPage() {
                       onChange={(e) => setBlogForm(prev => ({ ...prev, excerpt: e.target.value }))}
                       placeholder="Breve descripción..."
                       className="min-h-[100px]"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Imagen del Artículo</Label>
+                    <div className="flex gap-2">
+                      {blogForm.featured_image && (
+                        <div className="w-24 h-16 rounded border">
+                          <img 
+                            src={blogForm.featured_image} 
+                            alt="Preview" 
+                            className="w-full h-full object-cover rounded"
+                          />
+                        </div>
+                      )}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={async () => {
+                          if (!blogForm.title) {
+                            toast({
+                              title: "Error",
+                              description: "Primero agrega un título para generar la imagen",
+                              variant: "destructive"
+                            });
+                            return;
+                          }
+
+                          try {
+                            toast({
+                              title: "Generando imagen...",
+                              description: "Esto puede tomar unos segundos",
+                            });
+
+                            const { data, error } = await supabase.functions.invoke('generate-blog-image', {
+                              body: {
+                                blogId: selectedBlog?.id || 'preview',
+                                title: blogForm.title,
+                                content: blogForm.content,
+                                tags: blogForm.tags
+                              }
+                            });
+
+                            if (error) throw error;
+
+                            if (data?.imageUrl) {
+                              setBlogForm(prev => ({ ...prev, featured_image: data.imageUrl }));
+                              toast({
+                                title: "Imagen generada",
+                                description: "Se ha generado una imagen automáticamente",
+                              });
+                            }
+                          } catch (error: any) {
+                            console.error('Error generating image:', error);
+                            toast({
+                              title: "Error",
+                              description: "No se pudo generar la imagen automáticamente",
+                              variant: "destructive"
+                            });
+                          }
+                        }}
+                        disabled={!blogForm.title}
+                      >
+                        🎨 Generar Imagen con IA
+                      </Button>
+                    </div>
+                    <Input
+                      placeholder="O pega una URL de imagen existente..."
+                      value={blogForm.featured_image}
+                      onChange={(e) => setBlogForm(prev => ({ ...prev, featured_image: e.target.value }))}
                     />
                   </div>
                 </div>
