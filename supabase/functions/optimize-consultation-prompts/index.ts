@@ -81,26 +81,6 @@ serve(async (req) => {
     // Create Supabase client
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Authorization header missing' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Verify admin token
-    const { data: verification, error: verificationError } = await supabase.functions.invoke('verify-admin-token', {
-      headers: { authorization: authHeader }
-    });
-
-    if (verificationError || !verification?.valid) {
-      return new Response(JSON.stringify({ error: 'Invalid admin token' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
     // Get configured OpenAI model
     const { data: configData, error: configError } = await supabase
       .from('system_config')
