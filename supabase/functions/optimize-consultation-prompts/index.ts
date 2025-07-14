@@ -163,7 +163,22 @@ Devuelve el prompt optimizado y mejorado.`
     console.log('Calling OpenAI API for consultation prompt optimization...');
     const data = await callOpenAIWithRetry(requestBody);
 
-    const optimizedPrompt = data.choices[0].message.content.trim();
+    let optimizedPrompt = data.choices[0].message.content.trim();
+    
+    // Clean the response to remove special characters and formatting
+    optimizedPrompt = optimizedPrompt
+      .replace(/```[a-zA-Z]*\n?/g, '') // Remove code block markers
+      .replace(/\*\*([^*]+)\*\*/g, '$1') // Remove bold markdown **text**
+      .replace(/\*([^*]+)\*/g, '$1') // Remove italic markdown *text*
+      .replace(/`([^`]+)`/g, '$1') // Remove inline code `text`
+      .replace(/#{1,6}\s*/g, '') // Remove markdown headers
+      .replace(/^\s*[-*+]\s+/gm, '') // Remove bullet points
+      .replace(/^\s*\d+\.\s+/gm, '') // Remove numbered lists
+      .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1') // Remove markdown links [text](url)
+      .replace(/_{2,}/g, ' ') // Replace multiple underscores with space
+      .replace(/\s{2,}/g, ' ') // Replace multiple spaces with single space
+      .replace(/\n{3,}/g, '\n\n') // Replace multiple newlines with double newline
+      .trim();
 
     console.log('Consultation prompt optimization completed successfully');
 
