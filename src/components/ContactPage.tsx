@@ -3,6 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { MapPin, Phone, Mail, Clock, MessageCircle } from "lucide-react";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import useSEO from "@/hooks/useSEO";
 
 interface ContactPageProps {
@@ -11,6 +14,16 @@ interface ContactPageProps {
 }
 
 export default function ContactPage({ onOpenChat, onNavigate }: ContactPageProps) {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    consultation_type: 'Consulta General',
+    message: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
+
   // SEO optimization for contact page
   useSEO({
     title: "Contacto - Tu Consultor Legal Colombia | Asesoría Legal Profesional",
@@ -39,6 +52,67 @@ export default function ContactPage({ onOpenChat, onNavigate }: ContactPageProps
 
   const handleConsultationRequest = () => {
     onOpenChat("Hola, me gustaría solicitar una consulta legal gratuita. ¿Pueden ayudarme?");
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.name || !formData.email || !formData.message) {
+      toast({
+        title: "Error",
+        description: "Por favor completa todos los campos obligatorios.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const { error } = await supabase
+        .from('contact_messages')
+        .insert({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone || null,
+          consultation_type: formData.consultation_type,
+          message: formData.message
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "¡Mensaje enviado!",
+        description: "Hemos recibido tu mensaje. Te contactaremos pronto.",
+      });
+
+      // Reset form
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        consultation_type: 'Consulta General',
+        message: ''
+      });
+
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo enviar el mensaje. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -129,45 +203,81 @@ export default function ContactPage({ onOpenChat, onNavigate }: ContactPageProps
               </p>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Nombre *</label>
-                  <Input placeholder="Tu nombre completo" />
+              <form onSubmit={handleSubmit}>
+                <div className="space-y-6">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Nombre *</label>
+                      <Input 
+                        name="name"
+                        value={formData.name}
+                        onChange={handleInputChange}
+                        placeholder="Tu nombre completo"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Email *</label>
+                      <Input 
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        placeholder="tu@email.com"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Teléfono</label>
+                    <Input 
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      placeholder="+57 xxx xxx xxxx"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Tipo de Consulta</label>
+                    <select 
+                      name="consultation_type"
+                      value={formData.consultation_type}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border rounded-md"
+                    >
+                      <option value="Consulta General">Consulta General</option>
+                      <option value="Derecho Laboral">Derecho Laboral</option>
+                      <option value="Derecho Civil">Derecho Civil</option>
+                      <option value="Derecho Comercial">Derecho Comercial</option>
+                      <option value="Documentos Jurídicos">Documentos Jurídicos</option>
+                      <option value="Otros">Otros</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Mensaje *</label>
+                    <Textarea 
+                      name="message"
+                      value={formData.message}
+                      onChange={handleInputChange}
+                      placeholder="Describe brevemente tu consulta legal..."
+                      rows={5}
+                      required
+                    />
+                  </div>
+
+                  <Button 
+                    type="submit" 
+                    className="w-full" 
+                    size="lg"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? "Enviando..." : "Enviar Mensaje"}
+                  </Button>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Email *</label>
-                  <Input type="email" placeholder="tu@email.com" />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Teléfono</label>
-                <Input placeholder="+57 xxx xxx xxxx" />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Tipo de Consulta</label>
-                <select className="w-full p-2 border rounded-md">
-                  <option>Consulta General</option>
-                  <option>Derecho Laboral</option>
-                  <option>Derecho Civil</option>
-                  <option>Derecho Comercial</option>
-                  <option>Documentos Jurídicos</option>
-                  <option>Otros</option>
-                </select>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Mensaje *</label>
-                <Textarea 
-                  placeholder="Describe brevemente tu consulta legal..."
-                  rows={5}
-                />
-              </div>
-
-              <Button className="w-full" size="lg">
-                Enviar Mensaje
-              </Button>
+              </form>
 
               <p className="text-xs text-muted-foreground text-center">
                 Al enviar este formulario, aceptas nuestros{" "}

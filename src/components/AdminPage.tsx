@@ -15,7 +15,7 @@ import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { AuthStorage } from "@/utils/authStorage";
 import AdminLogin from "./AdminLogin";
 import LawyerStatsAdmin from "./LawyerStatsAdmin";
-import { Users, FileText, Shield, Plus, Check, X, BarChart3, TrendingUp, DollarSign, Activity, LogOut, Unlock, AlertTriangle, Eye, EyeOff, Trash2, Copy, ChartPie, Settings, RefreshCw, Save, BookOpen, Calendar, Tags, Globe, Building } from "lucide-react";
+import { Users, FileText, Shield, Plus, Check, X, BarChart3, TrendingUp, DollarSign, Activity, LogOut, Unlock, AlertTriangle, Eye, EyeOff, Trash2, Copy, ChartPie, Settings, RefreshCw, Save, BookOpen, Calendar, Tags, Globe, Building, MessageSquare, Mail } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from "recharts";
 import DOMPurify from 'dompurify';
@@ -115,6 +115,20 @@ interface BlogPost {
   };
 }
 
+interface ContactMessage {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  consultation_type: string;
+  message: string;
+  status: 'pending' | 'responded' | 'archived';
+  created_at: string;
+  updated_at: string;
+  admin_notes?: string;
+  responded_at?: string;
+}
+
 function AdminPage() {
   const [lawyers, setLawyers] = useState<Lawyer[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -122,6 +136,7 @@ function AdminPage() {
   const [businessStats, setBusinessStats] = useState<BusinessStats | null>(null);
   const [contracts, setContracts] = useState<ContractDetail[]>([]);
   const [blogs, setBlogs] = useState<BlogPost[]>([]);
+  const [contactMessages, setContactMessages] = useState<ContactMessage[]>([]);
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
   const [tokenRequests, setTokenRequests] = useState<any[]>([]);
   const [pendingAgentsCount, setPendingAgentsCount] = useState(0);
@@ -356,6 +371,9 @@ function AdminPage() {
       // Load blogs
       await loadBlogs();
 
+      // Load contact messages
+      await loadContactMessages();
+
       // Load statistics
       await loadStatistics(lawyersData || [], agentsData || []);
       console.log('Data loading completed successfully');
@@ -424,6 +442,67 @@ function AdminPage() {
       toast({
         title: "Error al cargar blogs",
         description: "Error inesperado al cargar los artículos del blog.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const loadContactMessages = async () => {
+    try {
+      const { data: messagesData, error } = await supabase
+        .from('contact_messages')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading contact messages:', error);
+        toast({
+          title: "Error al cargar mensajes",
+          description: "No se pudieron cargar los mensajes de contacto.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      setContactMessages((messagesData || []) as ContactMessage[]);
+      console.log('Contact messages loaded:', messagesData?.length || 0);
+    } catch (error) {
+      console.error('Error loading contact messages:', error);
+      toast({
+        title: "Error al cargar mensajes",
+        description: "Error inesperado al cargar los mensajes de contacto.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const updateContactMessageStatus = async (messageId: string, status: 'pending' | 'responded' | 'archived', adminNotes?: string) => {
+    try {
+      const updateData: any = { status };
+      if (adminNotes) {
+        updateData.admin_notes = adminNotes;
+      }
+      if (status === 'responded') {
+        updateData.responded_at = new Date().toISOString();
+      }
+
+      const { error } = await supabase
+        .from('contact_messages')
+        .update(updateData)
+        .eq('id', messageId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Éxito",
+        description: "Estado del mensaje actualizado correctamente.",
+      });
+
+      await loadContactMessages();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Error al actualizar el estado del mensaje.",
         variant: "destructive"
       });
     }
@@ -1808,13 +1887,30 @@ Resumir los puntos clave y proporcionar recomendaciones finales.
                   <Settings className="h-4 w-4 mb-1" />
                   Config
                 </TabsTrigger>
+                <TabsTrigger 
+                  value="messages" 
+                  className="flex-shrink-0 flex flex-col items-center py-3 px-4 text-xs whitespace-nowrap min-w-[70px] relative data-[state=active]:bg-background data-[state=active]:text-foreground"
+                >
+                  <div className="relative">
+                    <Mail className="h-4 w-4 mb-1" />
+                    {contactMessages.filter(msg => msg.status === 'pending').length > 0 && (
+                      <Badge 
+                        variant="destructive" 
+                        className="absolute -top-2 -right-2 h-4 w-4 p-0 text-xs rounded-full flex items-center justify-center animate-pulse"
+                      >
+                        {contactMessages.filter(msg => msg.status === 'pending').length}
+                      </Badge>
+                    )}
+                  </div>
+                  Mensajes
+                </TabsTrigger>
               </TabsList>
             </div>
           </div>
 
           {/* Desktop Menu - Grid layout */}
           <div className="hidden md:block">
-            <TabsList className="grid w-full grid-cols-6 h-auto p-1">
+            <TabsList className="grid w-full grid-cols-7 h-auto p-1">
               <TabsTrigger 
                 value="lawyers" 
                 className="flex flex-row items-center gap-2 p-3 text-sm"
@@ -1872,6 +1968,21 @@ Resumir los puntos clave y proporcionar recomendaciones finales.
               >
                 <Settings className="h-4 w-4" />
                 Configuración
+              </TabsTrigger>
+              <TabsTrigger 
+                value="messages" 
+                className="flex flex-row items-center gap-2 p-3 text-sm relative"
+              >
+                <Mail className="h-4 w-4" />
+                Mensajes de Contacto
+                {contactMessages.filter(msg => msg.status === 'pending').length > 0 && (
+                  <Badge 
+                    variant="destructive" 
+                    className="ml-1 h-5 w-5 p-0 text-xs rounded-full flex items-center justify-center animate-pulse"
+                  >
+                    {contactMessages.filter(msg => msg.status === 'pending').length}
+                  </Badge>
+                )}
               </TabsTrigger>
             </TabsList>
           </div>
@@ -3273,6 +3384,129 @@ Resumir los puntos clave y proporcionar recomendaciones finales.
                       </CardContent>
                     </Card>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="messages" className="space-y-4 sm:space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Mail className="h-5 w-5" />
+                  Mensajes de Contacto
+                  {contactMessages.filter(msg => msg.status === 'pending').length > 0 && (
+                    <Badge variant="destructive" className="ml-2">
+                      {contactMessages.filter(msg => msg.status === 'pending').length} pendientes
+                    </Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {contactMessages.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Mail className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                      <p className="text-muted-foreground">No hay mensajes de contacto</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {contactMessages.map((message) => (
+                        <Card key={message.id} className={`border ${message.status === 'pending' ? 'border-orange-200 bg-orange-50' : ''}`}>
+                          <CardContent className="p-4">
+                            <div className="flex justify-between items-start mb-3">
+                              <div>
+                                <h4 className="font-semibold text-lg">{message.name}</h4>
+                                <p className="text-sm text-muted-foreground">{message.email}</p>
+                                {message.phone && <p className="text-sm text-muted-foreground">{message.phone}</p>}
+                              </div>
+                              <div className="flex flex-col items-end gap-2">
+                                <Badge 
+                                  variant={message.status === 'pending' ? 'destructive' : message.status === 'responded' ? 'default' : 'secondary'}
+                                >
+                                  {message.status === 'pending' ? 'Pendiente' : 
+                                   message.status === 'responded' ? 'Respondido' : 'Archivado'}
+                                </Badge>
+                                <p className="text-xs text-muted-foreground">
+                                  {new Date(message.created_at).toLocaleDateString('es-ES', {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </p>
+                              </div>
+                            </div>
+                            
+                            <div className="mb-3">
+                              <Badge variant="outline" className="mb-2">
+                                {message.consultation_type}
+                              </Badge>
+                              <p className="text-sm">{message.message}</p>
+                            </div>
+
+                            {message.admin_notes && (
+                              <div className="mb-3 p-3 bg-muted rounded-md">
+                                <p className="text-xs text-muted-foreground mb-1">Notas del administrador:</p>
+                                <p className="text-sm">{message.admin_notes}</p>
+                              </div>
+                            )}
+
+                            <div className="flex gap-2">
+                              {message.status === 'pending' && (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    onClick={() => updateContactMessageStatus(message.id, 'responded')}
+                                  >
+                                    <Check className="h-4 w-4 mr-1" />
+                                    Marcar Respondido
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => updateContactMessageStatus(message.id, 'archived')}
+                                  >
+                                    <X className="h-4 w-4 mr-1" />
+                                    Archivar
+                                  </Button>
+                                </>
+                              )}
+                              {message.status === 'responded' && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => updateContactMessageStatus(message.id, 'archived')}
+                                >
+                                  <X className="h-4 w-4 mr-1" />
+                                  Archivar
+                                </Button>
+                              )}
+                              {message.status === 'archived' && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => updateContactMessageStatus(message.id, 'pending')}
+                                >
+                                  <RefreshCw className="h-4 w-4 mr-1" />
+                                  Restaurar
+                                </Button>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => window.open(`mailto:${message.email}?subject=Re: ${message.consultation_type}&body=Hola ${message.name},%0A%0AGracias por contactarnos.`)}
+                              >
+                                <Mail className="h-4 w-4 mr-1" />
+                                Responder
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

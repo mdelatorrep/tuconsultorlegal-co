@@ -177,6 +177,48 @@ export type Database = {
           },
         ]
       }
+      contact_messages: {
+        Row: {
+          admin_notes: string | null
+          consultation_type: string
+          created_at: string
+          email: string
+          id: string
+          message: string
+          name: string
+          phone: string | null
+          responded_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          consultation_type?: string
+          created_at?: string
+          email: string
+          id?: string
+          message: string
+          name: string
+          phone?: string | null
+          responded_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          consultation_type?: string
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string
+          name?: string
+          phone?: string | null
+          responded_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       document_categories: {
         Row: {
           created_at: string
