@@ -123,6 +123,7 @@ interface ContactMessage {
   consultation_type: string;
   message: string;
   status: 'pending' | 'responded' | 'archived';
+  is_read: boolean;
   created_at: string;
   updated_at: string;
   admin_notes?: string;
@@ -139,6 +140,7 @@ function AdminPage() {
   const [contactMessages, setContactMessages] = useState<ContactMessage[]>([]);
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
   const [tokenRequests, setTokenRequests] = useState<any[]>([]);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [pendingAgentsCount, setPendingAgentsCount] = useState(0);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [selectedBlog, setSelectedBlog] = useState<BlogPost | null>(null);
@@ -234,6 +236,31 @@ function AdminPage() {
     if (isAuthenticated) {
       loadOpenAIModels();
     }
+  }, [isAuthenticated]);
+
+  // Realtime updates for contact messages
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const channel = supabase
+      .channel('contact-messages-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'contact_messages'
+        },
+        (payload) => {
+          console.log('Contact message change:', payload);
+          loadContactMessages();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [isAuthenticated]);
 
   const sanitizeInput = (input: string): string => {
@@ -464,8 +491,14 @@ function AdminPage() {
         return;
       }
 
-      setContactMessages((messagesData || []) as ContactMessage[]);
-      console.log('Contact messages loaded:', messagesData?.length || 0);
+      const messages = (messagesData || []) as ContactMessage[];
+      setContactMessages(messages);
+      
+      // Contar mensajes no leídos
+      const unreadCount = messages.filter(msg => !msg.is_read).length;
+      setUnreadMessagesCount(unreadCount);
+      
+      console.log('Contact messages loaded:', messagesData?.length || 0, 'Unread:', unreadCount);
     } catch (error) {
       console.error('Error loading contact messages:', error);
       toast({
@@ -503,6 +536,45 @@ function AdminPage() {
       toast({
         title: "Error",
         description: error.message || "Error al actualizar el estado del mensaje.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const markMessageAsRead = async (messageId: string) => {
+    try {
+      const { error } = await supabase
+        .from('contact_messages')
+        .update({ is_read: true })
+        .eq('id', messageId);
+
+      if (error) throw error;
+
+      await loadContactMessages();
+    } catch (error: any) {
+      console.error('Error marking message as read:', error);
+    }
+  };
+
+  const markMessageAsUnread = async (messageId: string) => {
+    try {
+      const { error } = await supabase
+        .from('contact_messages')
+        .update({ is_read: false })
+        .eq('id', messageId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Mensaje marcado como no leído",
+        description: "El mensaje ha sido marcado como no leído.",
+      });
+
+      await loadContactMessages();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Error al marcar el mensaje como no leído.",
         variant: "destructive"
       });
     }
@@ -1889,12 +1961,12 @@ Resumir los puntos clave y proporcionar recomendaciones finales.
                 >
                   <div className="relative">
                     <Mail className="h-4 w-4 mb-1" />
-                    {contactMessages.filter(msg => msg.status === 'pending').length > 0 && (
+                    {unreadMessagesCount > 0 && (
                       <Badge 
                         variant="destructive" 
                         className="absolute -top-2 -right-2 h-4 w-4 p-0 text-xs rounded-full flex items-center justify-center animate-pulse"
                       >
-                        {contactMessages.filter(msg => msg.status === 'pending').length}
+                        {unreadMessagesCount}
                       </Badge>
                     )}
                   </div>
@@ -1971,12 +2043,12 @@ Resumir los puntos clave y proporcionar recomendaciones finales.
               >
                 <Mail className="h-4 w-4" />
                 Mensajes de Contacto
-                {contactMessages.filter(msg => msg.status === 'pending').length > 0 && (
+                {unreadMessagesCount > 0 && (
                   <Badge 
                     variant="destructive" 
                     className="ml-1 h-5 w-5 p-0 text-xs rounded-full flex items-center justify-center animate-pulse"
                   >
-                    {contactMessages.filter(msg => msg.status === 'pending').length}
+                    {unreadMessagesCount}
                   </Badge>
                 )}
               </TabsTrigger>
@@ -3391,9 +3463,9 @@ Resumir los puntos clave y proporcionar recomendaciones finales.
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Mail className="h-5 w-5" />
                   Mensajes de Contacto
-                  {contactMessages.filter(msg => msg.status === 'pending').length > 0 && (
+                  {unreadMessagesCount > 0 && (
                     <Badge variant="destructive" className="ml-2">
-                      {contactMessages.filter(msg => msg.status === 'pending').length} pendientes
+                      {unreadMessagesCount} no leídos
                     </Badge>
                   )}
                 </CardTitle>
@@ -3408,21 +3480,42 @@ Resumir los puntos clave y proporcionar recomendaciones finales.
                   ) : (
                     <div className="space-y-4">
                       {contactMessages.map((message) => (
-                        <Card key={message.id} className={`border ${message.status === 'pending' ? 'border-orange-200 bg-orange-50' : ''}`}>
+                        <Card 
+                          key={message.id} 
+                          className={`border ${
+                            !message.is_read ? 'border-blue-200 bg-blue-50 shadow-md' : 
+                            message.status === 'pending' ? 'border-orange-200 bg-orange-50' : ''
+                          }`}
+                          onClick={() => !message.is_read && markMessageAsRead(message.id)}
+                        >
                           <CardContent className="p-4">
                             <div className="flex justify-between items-start mb-3">
-                              <div>
-                                <h4 className="font-semibold text-lg">{message.name}</h4>
-                                <p className="text-sm text-muted-foreground">{message.email}</p>
-                                {message.phone && <p className="text-sm text-muted-foreground">{message.phone}</p>}
+                              <div className="flex items-start gap-2">
+                                {!message.is_read && (
+                                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 animate-pulse" />
+                                )}
+                                <div>
+                                  <h4 className={`font-semibold text-lg ${!message.is_read ? 'font-bold' : ''}`}>
+                                    {message.name}
+                                  </h4>
+                                  <p className="text-sm text-muted-foreground">{message.email}</p>
+                                  {message.phone && <p className="text-sm text-muted-foreground">{message.phone}</p>}
+                                </div>
                               </div>
                               <div className="flex flex-col items-end gap-2">
-                                <Badge 
-                                  variant={message.status === 'pending' ? 'destructive' : message.status === 'responded' ? 'default' : 'secondary'}
-                                >
-                                  {message.status === 'pending' ? 'Pendiente' : 
-                                   message.status === 'responded' ? 'Respondido' : 'Archivado'}
-                                </Badge>
+                                <div className="flex gap-2">
+                                  {!message.is_read && (
+                                    <Badge variant="default" className="bg-blue-500">
+                                      Nuevo
+                                    </Badge>
+                                  )}
+                                  <Badge 
+                                    variant={message.status === 'pending' ? 'destructive' : message.status === 'responded' ? 'default' : 'secondary'}
+                                  >
+                                    {message.status === 'pending' ? 'Pendiente' : 
+                                     message.status === 'responded' ? 'Respondido' : 'Archivado'}
+                                  </Badge>
+                                </div>
                                 <p className="text-xs text-muted-foreground">
                                   {new Date(message.created_at).toLocaleDateString('es-ES', {
                                     year: 'numeric',
@@ -3497,6 +3590,19 @@ Resumir los puntos clave y proporcionar recomendaciones finales.
                                 <Mail className="h-4 w-4 mr-1" />
                                 Responder
                               </Button>
+                              {message.is_read && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    markMessageAsUnread(message.id);
+                                  }}
+                                >
+                                  <EyeOff className="h-4 w-4 mr-1" />
+                                  Marcar no leído
+                                </Button>
+                              )}
                             </div>
                           </CardContent>
                         </Card>
