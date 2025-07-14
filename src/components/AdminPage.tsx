@@ -2813,7 +2813,7 @@ function AdminPage() {
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-2">
-                          <Label htmlFor="model-selection">Modelo para Mejora de Prompts</Label>
+                          <Label htmlFor="model-selection">Modelo para Optimización de Prompts</Label>
                           <Select
                             value={selectedModelForImprovement}
                             onValueChange={setSelectedModelForImprovement}
@@ -2822,15 +2822,26 @@ function AdminPage() {
                               <SelectValue placeholder="Seleccionar modelo de OpenAI" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="gpt-4.1-2025-04-14">GPT-4.1 (Recomendado)</SelectItem>
-                              <SelectItem value="o3-2025-04-16">O3 (Razonamiento Avanzado)</SelectItem>
-                              <SelectItem value="o4-mini-2025-04-16">O4 Mini (Rápido)</SelectItem>
-                              <SelectItem value="gpt-4.1-mini-2025-04-14">GPT-4.1 Mini</SelectItem>
-                              <SelectItem value="gpt-4o">GPT-4O (Clásico)</SelectItem>
+                              {availableModels.length > 0 ? (
+                                availableModels.map((model) => (
+                                  <SelectItem key={model.id} value={model.id}>
+                                    <div className="flex flex-col">
+                                      <span className="font-medium">{model.id}</span>
+                                      <span className="text-xs text-muted-foreground">
+                                        {model.owned_by}
+                                      </span>
+                                    </div>
+                                  </SelectItem>
+                                ))
+                              ) : (
+                                <SelectItem value="gpt-4.1-2025-04-14" disabled>
+                                  Cargando modelos...
+                                </SelectItem>
+                              )}
                             </SelectContent>
                           </Select>
                           <p className="text-xs text-muted-foreground">
-                            Selecciona el modelo que se usará para mejorar automáticamente los prompts con IA.
+                            Selecciona el modelo que se usará para optimizar automáticamente los prompts de consultoría.
                           </p>
                         </div>
                       </CardContent>
@@ -2880,7 +2891,7 @@ function AdminPage() {
                               ) : (
                                 <RefreshCw className="h-4 w-4 mr-2" />
                               )}
-                              Mejorar con IA
+                              Optimizar con IA
                             </Button>
                           </div>
                         </CardContent>
@@ -2929,7 +2940,7 @@ function AdminPage() {
                               ) : (
                                 <RefreshCw className="h-4 w-4 mr-2" />
                               )}
-                              Mejorar con IA
+                              Optimizar con IA
                             </Button>
                           </div>
                         </CardContent>

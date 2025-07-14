@@ -101,46 +101,64 @@ serve(async (req) => {
       });
     }
 
-    const { current_prompt, target_audience, model } = await req.json();
+    // Get configured OpenAI model
+    const { data: configData, error: configError } = await supabase
+      .from('system_config')
+      .select('config_value')
+      .eq('config_key', 'openai_model')
+      .single();
 
-    if (!current_prompt || !target_audience || !model) {
+    const selectedModel = (configError || !configData) 
+      ? 'gpt-4.1-2025-04-14'  // Default fallback
+      : configData.config_value;
+
+    console.log('Using OpenAI model:', selectedModel);
+
+    const { current_prompt, target_audience } = await req.json();
+
+    if (!current_prompt || !target_audience) {
       return new Response(JSON.stringify({ 
-        error: 'Faltan parámetros requeridos: current_prompt, target_audience, model' 
+        error: 'Faltan parámetros requeridos: current_prompt, target_audience' 
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log(`Improving prompt for ${target_audience} using model ${model}`);
+    console.log(`Optimizing consultation prompt for ${target_audience} using model ${selectedModel}`);
 
-    // Sistema de prompt optimizado para mejora de prompts de consultoría legal
-    const systemPrompt = `Eres un experto en optimización de prompts para asistentes de IA especializados en consultoría legal. Tu tarea es mejorar y optimizar prompts para chatbots de consultoría legal.
+    // Sistema de prompt optimizado para prompts de consultoría legal
+    const systemPrompt = `Eres un experto en optimización de prompts para consultoría legal. Tu especialidad es mejorar prompts para asistentes de IA que brindan consultoría legal específicamente para ${target_audience}.
 
 CONTEXTO:
 - El prompt será usado por un asistente de IA que brinda consultoría legal
-- El target audience es: ${target_audience}
-- El asistente debe ser profesional, preciso y útil
-- Debe mantener límites éticos y legales apropiados
+- Debe estar optimizado específicamente para ${target_audience}
+- Debe mantener un enfoque profesional y especializado en el tipo de audiencia
 
-CRITERIOS DE MEJORA:
-1. CLARIDAD: El prompt debe ser claro y específico sobre el rol del asistente
-2. PROFESIONALISMO: Debe mantener un tono profesional y confiable
-3. LÍMITES: Debe establecer claramente qué puede y no puede hacer el asistente
-4. ESTRUCTURA: Debe tener una estructura lógica y organizada
-5. ADAPTACIÓN: Debe estar adaptado específicamente para ${target_audience}
+CRITERIOS DE OPTIMIZACIÓN PARA ${target_audience.toUpperCase()}:
+1. LENGUAJE APROPIADO: Adapta el lenguaje y terminología según la audiencia
+2. CASOS DE USO: Incluye ejemplos y situaciones típicas para ${target_audience}
+3. LÍMITES CLAROS: Establece qué puede y no puede hacer el asistente
+4. ESTRUCTURA PROFESIONAL: Mantén organización clara y profesional
+5. DISCLAIMERS: Incluye avisos legales apropiados
 
-INSTRUCCIONES:
-- Mejora el prompt actual manteniendo su propósito principal
-- Hazlo más específico y efectivo para consultoría legal dirigida a ${target_audience}
-- Incluye disclaimers legales apropiados
-- Asegúrate de que sea comprensible pero profesional
-- Optimiza para generar respuestas útiles y precisas
+INSTRUCCIONES ESPECÍFICAS:
+${target_audience === 'personas' ? `
+- Usa lenguaje claro y accesible para el público general
+- Incluye explicaciones de conceptos legales complejos
+- Enfócate en situaciones cotidianas: familia, trabajo, vivienda, contratos básicos
+- Proporciona orientación práctica y pasos a seguir
+` : `
+- Usa terminología empresarial y legal más técnica
+- Enfócate en temas corporativos: contratos comerciales, normatividad empresarial, compliance
+- Incluye consideraciones fiscales y regulatorias
+- Proporciona análisis más profundos de riesgos legales
+`}
 
-Devuelve SOLO el prompt mejorado, sin explicaciones adicionales.`;
+Devuelve SOLO el prompt optimizado, sin explicaciones adicionales.`;
 
     const requestBody = {
-      model: model,
+      model: selectedModel,
       messages: [
         {
           role: 'system',
@@ -148,37 +166,37 @@ Devuelve SOLO el prompt mejorado, sin explicaciones adicionales.`;
         },
         {
           role: 'user',
-          content: `Mejora este prompt de consultoría legal:
+          content: `Optimiza este prompt de consultoría legal para ${target_audience}:
 
 PROMPT ACTUAL:
 ${current_prompt}
 
 TARGET AUDIENCE: ${target_audience}
 
-Devuelve el prompt mejorado y optimizado.`
+Devuelve el prompt optimizado y mejorado.`
         }
       ],
       max_tokens: 1500,
       temperature: 0.3,
     };
 
-    console.log('Calling OpenAI API for prompt improvement...');
+    console.log('Calling OpenAI API for consultation prompt optimization...');
     const data = await callOpenAIWithRetry(requestBody);
 
-    const improvedPrompt = data.choices[0].message.content.trim();
+    const optimizedPrompt = data.choices[0].message.content.trim();
 
-    console.log('Prompt improvement completed successfully');
+    console.log('Consultation prompt optimization completed successfully');
 
     return new Response(JSON.stringify({ 
-      improved_prompt: improvedPrompt,
-      model_used: model,
+      optimized_prompt: optimizedPrompt,
+      model_used: selectedModel,
       target_audience: target_audience
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
-    console.error('Error in improve-prompt-ai function:', error);
+    console.error('Error in optimize-consultation-prompts function:', error);
     return new Response(JSON.stringify({ 
       error: error.message || 'Error interno del servidor' 
     }), {
