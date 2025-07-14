@@ -109,7 +109,7 @@ serve(async (req) => {
       .single();
 
     const selectedModel = (configError || !configData) 
-      ? 'gpt-4.1-2025-04-14'  // Default fallback
+      ? 'gpt-4o-mini'  // Default fallback model
       : configData.config_value;
 
     console.log('Using OpenAI model:', selectedModel);
