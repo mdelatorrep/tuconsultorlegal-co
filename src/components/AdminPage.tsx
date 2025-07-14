@@ -1684,29 +1684,16 @@ Resumir los puntos clave y proporcionar recomendaciones finales.
   // Toggle category status (active/inactive)
   const toggleCategoryStatus = async (categoryId: string, isActive: boolean) => {
     try {
-      const authHeaders = getAuthHeaders();
-      
-      // Use PUT method directly with the correct body structure
-      const response = await fetch(
-        `https://tkaezookvtpulfpaffes.supabase.co/functions/v1/manage-document-categories`,
-        {
-          method: 'PUT',
-          headers: {
-            'Authorization': authHeaders.authorization,
-            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRrYWV6b29rdnRwdWxmcGFmZmVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3NzEwNzUsImV4cCI6MjA2NzM0NzA3NX0.j7fSfaXMqwmytVuXIU4_miAbn-v65b5x0ncRr0K-CNE',
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            id: categoryId,
-            is_active: isActive
-          })
-        }
-      );
+      const { data, error } = await supabase.functions.invoke('manage-document-categories', {
+        body: {
+          id: categoryId,
+          is_active: isActive
+        },
+        method: 'PUT'
+      });
 
-      const data = await response.json();
-
-      if (!response.ok || !data?.success) {
-        throw new Error(data?.error || 'Error al actualizar categoría');
+      if (error || !data?.success) {
+        throw new Error(data?.error || error?.message || 'Error al actualizar categoría');
       }
 
       toast({
@@ -1731,32 +1718,19 @@ Resumir los puntos clave y proporcionar recomendaciones finales.
     if (!selectedCategory) return;
 
     try {
-      const authHeaders = getAuthHeaders();
-      
-      // Use fetch directly with PUT method
-      const response = await fetch(
-        `https://tkaezookvtpulfpaffes.supabase.co/functions/v1/manage-document-categories`,
-        {
-          method: 'PUT',
-          headers: {
-            'Authorization': authHeaders.authorization,
-            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRrYWV6b29rdnRwdWxmcGFmZmVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3NzEwNzUsImV4cCI6MjA2NzM0NzA3NX0.j7fSfaXMqwmytVuXIU4_miAbn-v65b5x0ncRr0K-CNE',
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            id: selectedCategory.id,
-            name: sanitizeInput(editCategoryForm.name),
-            description: sanitizeInput(editCategoryForm.description),
-            icon: editCategoryForm.icon,
-            is_active: editCategoryForm.is_active
-          })
-        }
-      );
+      const { data, error } = await supabase.functions.invoke('manage-document-categories', {
+        body: {
+          id: selectedCategory.id,
+          name: sanitizeInput(editCategoryForm.name),
+          description: sanitizeInput(editCategoryForm.description),
+          icon: editCategoryForm.icon,
+          is_active: editCategoryForm.is_active
+        },
+        method: 'PUT'
+      });
 
-      const data = await response.json();
-
-      if (!response.ok || !data?.success) {
-        throw new Error(data?.error || 'Error al actualizar categoría');
+      if (error || !data?.success) {
+        throw new Error(data?.error || error?.message || 'Error al actualizar categoría');
       }
 
       toast({
