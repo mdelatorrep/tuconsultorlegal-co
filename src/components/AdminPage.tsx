@@ -155,6 +155,11 @@ function AdminPage() {
     consultation_prompt_personas: '',
     consultation_prompt_empresas: ''
   });
+  const [improvingPrompt, setImprovingPrompt] = useState({
+    personas: false,
+    empresas: false
+  });
+  const [selectedModelForImprovement, setSelectedModelForImprovement] = useState('gpt-4.1-2025-04-14');
   const { toast } = useToast();
   const { isAuthenticated, isLoading, user, logout, getAuthHeaders, checkAuthStatus } = useAdminAuth();
 
@@ -556,6 +561,59 @@ function AdminPage() {
         description: "No se pudo actualizar el prompt de IA.",
         variant: "destructive"
       });
+    }
+  };
+
+  const improvePromptWithAI = async (type: 'personas' | 'empresas') => {
+    try {
+      setImprovingPrompt(prev => ({ ...prev, [type]: true }));
+      
+      const currentPrompt = aiPrompts[`consultation_prompt_${type}`];
+      
+      if (!currentPrompt.trim()) {
+        toast({
+          title: "Error",
+          description: "Debe existir un prompt actual para poder mejorarlo.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const authHeaders = getAuthHeaders();
+      const { data: improvedData, error: improveError } = await supabase.functions.invoke('improve-prompt-ai', {
+        headers: authHeaders,
+        body: {
+          current_prompt: currentPrompt,
+          target_audience: type,
+          model: selectedModelForImprovement
+        }
+      });
+
+      if (improveError || !improvedData?.improved_prompt) {
+        throw new Error(improvedData?.error || improveError?.message || 'Error al mejorar el prompt');
+      }
+
+      // Update the prompt with the improved version
+      const configKey = `consultation_prompt_${type}`;
+      setAiPrompts(prev => ({
+        ...prev,
+        [configKey]: improvedData.improved_prompt
+      }));
+
+      toast({
+        title: "Prompt mejorado",
+        description: `El prompt para ${type} ha sido mejorado usando ${improvedData.model_used}. Recuerda guardar los cambios.`,
+      });
+
+    } catch (error: any) {
+      console.error('Error improving prompt:', error);
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo mejorar el prompt con IA.",
+        variant: "destructive"
+      });
+    } finally {
+      setImprovingPrompt(prev => ({ ...prev, [type]: false }));
     }
   };
 
@@ -2746,6 +2804,39 @@ function AdminPage() {
                       </p>
                     </div>
 
+                    {/* Model Selection for AI Improvement */}
+                    <Card className="mb-6">
+                      <CardHeader>
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <RefreshCw className="h-4 w-4" />
+                          Configuración de Mejora con IA
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          <Label htmlFor="model-selection">Modelo para Mejora de Prompts</Label>
+                          <Select
+                            value={selectedModelForImprovement}
+                            onValueChange={setSelectedModelForImprovement}
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Seleccionar modelo de OpenAI" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="gpt-4.1-2025-04-14">GPT-4.1 (Recomendado)</SelectItem>
+                              <SelectItem value="o3-2025-04-16">O3 (Razonamiento Avanzado)</SelectItem>
+                              <SelectItem value="o4-mini-2025-04-16">O4 Mini (Rápido)</SelectItem>
+                              <SelectItem value="gpt-4.1-mini-2025-04-14">GPT-4.1 Mini</SelectItem>
+                              <SelectItem value="gpt-4o">GPT-4O (Clásico)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-muted-foreground">
+                            Selecciona el modelo que se usará para mejorar automáticamente los prompts con IA.
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       {/* Prompt para Personas */}
                       <Card>
@@ -2770,14 +2861,29 @@ function AdminPage() {
                               rows={5}
                             />
                           </div>
-                          <Button
-                            onClick={() => updateAiPrompt('personas', aiPrompts.consultation_prompt_personas)}
-                            disabled={!aiPrompts.consultation_prompt_personas.trim()}
-                            className="w-full"
-                          >
-                            <Save className="h-4 w-4 mr-2" />
-                            Guardar Prompt para Personas
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={() => updateAiPrompt('personas', aiPrompts.consultation_prompt_personas)}
+                              disabled={!aiPrompts.consultation_prompt_personas.trim()}
+                              className="flex-1"
+                            >
+                              <Save className="h-4 w-4 mr-2" />
+                              Guardar
+                            </Button>
+                            <Button
+                              onClick={() => improvePromptWithAI('personas')}
+                              disabled={!aiPrompts.consultation_prompt_personas.trim() || improvingPrompt.personas}
+                              variant="outline"
+                              className="flex-1"
+                            >
+                              {improvingPrompt.personas ? (
+                                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                              ) : (
+                                <RefreshCw className="h-4 w-4 mr-2" />
+                              )}
+                              Mejorar con IA
+                            </Button>
+                          </div>
                         </CardContent>
                       </Card>
 
@@ -2804,14 +2910,29 @@ function AdminPage() {
                               rows={5}
                             />
                           </div>
-                          <Button
-                            onClick={() => updateAiPrompt('empresas', aiPrompts.consultation_prompt_empresas)}
-                            disabled={!aiPrompts.consultation_prompt_empresas.trim()}
-                            className="w-full"
-                          >
-                            <Save className="h-4 w-4 mr-2" />
-                            Guardar Prompt para Empresas
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={() => updateAiPrompt('empresas', aiPrompts.consultation_prompt_empresas)}
+                              disabled={!aiPrompts.consultation_prompt_empresas.trim()}
+                              className="flex-1"
+                            >
+                              <Save className="h-4 w-4 mr-2" />
+                              Guardar
+                            </Button>
+                            <Button
+                              onClick={() => improvePromptWithAI('empresas')}
+                              disabled={!aiPrompts.consultation_prompt_empresas.trim() || improvingPrompt.empresas}
+                              variant="outline"
+                              className="flex-1"
+                            >
+                              {improvingPrompt.empresas ? (
+                                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                              ) : (
+                                <RefreshCw className="h-4 w-4 mr-2" />
+                              )}
+                              Mejorar con IA
+                            </Button>
+                          </div>
                         </CardContent>
                       </Card>
                     </div>
