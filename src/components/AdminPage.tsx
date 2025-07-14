@@ -580,7 +580,7 @@ function AdminPage() {
       }
 
       const authHeaders = getAuthHeaders();
-      const { data: improvedData, error: improveError } = await supabase.functions.invoke('improve-prompt-ai', {
+      const { data: improvedData, error: improveError } = await supabase.functions.invoke('optimize-consultation-prompts', {
         headers: authHeaders,
         body: {
           current_prompt: currentPrompt,
@@ -588,20 +588,20 @@ function AdminPage() {
         }
       });
 
-      if (improveError || !improvedData?.improved_prompt) {
-        throw new Error(improvedData?.error || improveError?.message || 'Error al mejorar el prompt');
+      if (improveError || !improvedData?.optimized_prompt) {
+        throw new Error(improvedData?.error || improveError?.message || 'Error al optimizar el prompt');
       }
 
-      // Update the prompt with the improved version
+      // Update the prompt with the optimized version
       const configKey = `consultation_prompt_${type}`;
       setAiPrompts(prev => ({
         ...prev,
-        [configKey]: improvedData.improved_prompt
+        [configKey]: improvedData.optimized_prompt
       }));
 
       toast({
-        title: "Prompt mejorado",
-        description: `El prompt para ${type} ha sido mejorado usando ${improvedData.model_used}. Recuerda guardar los cambios.`,
+        title: "Prompt optimizado",
+        description: `El prompt para ${type} ha sido optimizado usando ${improvedData.model_used}. Recuerda guardar los cambios.`,
       });
 
     } catch (error: any) {
