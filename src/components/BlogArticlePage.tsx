@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { ArrowLeft, Calendar, Eye, Share2, Facebook, Twitter, Linkedin, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface BlogArticlePageProps {
   articleId: string;
@@ -25,6 +26,7 @@ interface BlogPost {
 export default function BlogArticlePage({ articleId, onOpenChat, onNavigate }: BlogArticlePageProps) {
   const [blog, setBlog] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     loadBlogArticle();
@@ -87,31 +89,44 @@ export default function BlogArticlePage({ articleId, onOpenChat, onNavigate }: B
     return formatted;
   };
 
-  const shareUrl = `${window.location.origin}/blog-articulo-${blog?.slug}`;
+  // Generate correct URL for hash-based routing
+  const shareUrl = `${window.location.origin}/#blog-articulo-${blog?.slug}`;
   const shareText = `${blog?.title} - ${blog?.excerpt || 'Artículo interesante sobre derecho'}`;
 
   const shareOnFacebook = () => {
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank');
+    const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+    window.open(url, '_blank', 'width=600,height=400');
   };
 
   const shareOnTwitter = () => {
-    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`, '_blank');
+    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
+    window.open(url, '_blank', 'width=600,height=400');
   };
 
   const shareOnLinkedIn = () => {
-    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`, '_blank');
+    const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
+    window.open(url, '_blank', 'width=600,height=400');
   };
 
   const shareOnWhatsApp = () => {
-    window.open(`https://wa.me/?text=${encodeURIComponent(`${shareText} ${shareUrl}`)}`, '_blank');
+    const url = `https://wa.me/?text=${encodeURIComponent(`${shareText} ${shareUrl}`)}`;
+    window.open(url, '_blank', 'width=600,height=400');
   };
 
   const copyToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(shareUrl);
-      // You could add a toast notification here
+      toast({
+        title: "¡Enlace copiado!",
+        description: "El enlace del artículo se ha copiado al portapapeles.",
+      });
     } catch (err) {
       console.error('Error copying to clipboard:', err);
+      toast({
+        title: "Error",
+        description: "No se pudo copiar el enlace al portapapeles.",
+        variant: "destructive",
+      });
     }
   };
 
