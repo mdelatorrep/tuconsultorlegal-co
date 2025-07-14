@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
-import { ArrowLeft, Calendar, Eye } from "lucide-react";
+import { ArrowLeft, Calendar, Eye, Share2, Facebook, Twitter, Linkedin, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface BlogArticlePageProps {
@@ -87,6 +87,34 @@ export default function BlogArticlePage({ articleId, onOpenChat, onNavigate }: B
     return formatted;
   };
 
+  const shareUrl = `${window.location.origin}/blog-articulo-${blog?.slug}`;
+  const shareText = `${blog?.title} - ${blog?.excerpt || 'Artículo interesante sobre derecho'}`;
+
+  const shareOnFacebook = () => {
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank');
+  };
+
+  const shareOnTwitter = () => {
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`, '_blank');
+  };
+
+  const shareOnLinkedIn = () => {
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`, '_blank');
+  };
+
+  const shareOnWhatsApp = () => {
+    window.open(`https://wa.me/?text=${encodeURIComponent(`${shareText} ${shareUrl}`)}`, '_blank');
+  };
+
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      // You could add a toast notification here
+    } catch (err) {
+      console.error('Error copying to clipboard:', err);
+    }
+  };
+
   return (
     <div className="container mx-auto px-6 py-20">
       <div className="max-w-4xl mx-auto">
@@ -126,6 +154,61 @@ export default function BlogArticlePage({ articleId, onOpenChat, onNavigate }: B
           className="prose prose-lg max-w-none"
           dangerouslySetInnerHTML={{ __html: formatContent(blog.content) }}
         />
+
+        {/* Social Share Section */}
+        <div className="mt-12 p-6 bg-muted/50 rounded-lg border">
+          <div className="flex items-center gap-3 mb-4">
+            <Share2 className="h-5 w-5 text-primary" />
+            <h3 className="text-lg font-semibold text-foreground">Compartir artículo</h3>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={shareOnFacebook}
+              className="flex items-center gap-2"
+            >
+              <Facebook className="h-4 w-4" />
+              Facebook
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={shareOnTwitter}
+              className="flex items-center gap-2"
+            >
+              <Twitter className="h-4 w-4" />
+              Twitter
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={shareOnLinkedIn}
+              className="flex items-center gap-2"
+            >
+              <Linkedin className="h-4 w-4" />
+              LinkedIn
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={shareOnWhatsApp}
+              className="flex items-center gap-2"
+            >
+              <MessageCircle className="h-4 w-4" />
+              WhatsApp
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={copyToClipboard}
+              className="flex items-center gap-2"
+            >
+              <Share2 className="h-4 w-4" />
+              Copiar enlace
+            </Button>
+          </div>
+        </div>
 
         <div className="mt-16 bg-success/10 border-l-4 border-success p-8 rounded-r-lg">
           <h3 className="text-2xl font-bold text-success mb-4">
