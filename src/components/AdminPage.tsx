@@ -1503,6 +1503,7 @@ function AdminPage() {
 
       // Reload n8n status after check
       await loadN8nStatus();
+      await loadN8nStatus();
       
       toast({
         title: "Estado verificado",

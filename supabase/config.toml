@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.delete-agent-draft]
 verify_jwt = false
+
+[functions.monitor-n8n-status]
+verify_jwt = false
