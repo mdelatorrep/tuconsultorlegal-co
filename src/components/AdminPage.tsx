@@ -15,7 +15,7 @@ import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { AuthStorage } from "@/utils/authStorage";
 import AdminLogin from "./AdminLogin";
 import LawyerStatsAdmin from "./LawyerStatsAdmin";
-import { Users, FileText, Shield, Plus, Check, X, BarChart3, TrendingUp, DollarSign, Activity, LogOut, Unlock, AlertTriangle, Eye, EyeOff, Trash2, Copy, ChartPie, Settings, RefreshCw, Save, BookOpen, Calendar, Tags, Globe } from "lucide-react";
+import { Users, FileText, Shield, Plus, Check, X, BarChart3, TrendingUp, DollarSign, Activity, LogOut, Unlock, AlertTriangle, Eye, EyeOff, Trash2, Copy, ChartPie, Settings, RefreshCw, Save, BookOpen, Calendar, Tags, Globe, Building } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from "recharts";
 import DOMPurify from 'dompurify';
@@ -151,6 +151,10 @@ function AdminPage() {
     is_active: true
   });
   const [serviceStatus, setServiceStatus] = useState<any>(null);
+  const [aiPrompts, setAiPrompts] = useState({
+    consultation_prompt_personas: '',
+    consultation_prompt_empresas: ''
+  });
   const { toast } = useToast();
   const { isAuthenticated, isLoading, user, logout, getAuthHeaders, checkAuthStatus } = useAdminAuth();
 
@@ -333,6 +337,9 @@ function AdminPage() {
       // Load system configuration
       await loadSystemConfig();
 
+      // Load AI prompts
+      await loadAiPrompts();
+
       // Load document categories
       await loadDocumentCategories();
 
@@ -500,6 +507,55 @@ function AdminPage() {
 
     } catch (error) {
       console.error('Error loading system config:', error);
+    }
+  };
+
+  const loadAiPrompts = async () => {
+    try {
+      const { data: configData, error: configError } = await supabase
+        .from('system_config')
+        .select('*')
+        .in('config_key', ['consultation_prompt_personas', 'consultation_prompt_empresas']);
+
+      if (configError) {
+        console.error('Error loading AI prompts:', configError);
+        return;
+      }
+
+      const promptsObj = configData?.reduce((acc, item) => {
+        acc[item.config_key] = item.config_value;
+        return acc;
+      }, {} as { [key: string]: string }) || {};
+
+      setAiPrompts({
+        consultation_prompt_personas: promptsObj['consultation_prompt_personas'] || '',
+        consultation_prompt_empresas: promptsObj['consultation_prompt_empresas'] || ''
+      });
+
+    } catch (error) {
+      console.error('Error loading AI prompts:', error);
+    }
+  };
+
+  const updateAiPrompt = async (type: 'personas' | 'empresas', prompt: string) => {
+    try {
+      const configKey = `consultation_prompt_${type}`;
+      const description = `Prompt de IA para consultoría de ${type}`;
+      
+      await updateSystemConfig(configKey, prompt, description);
+      
+      setAiPrompts(prev => ({
+        ...prev,
+        [configKey]: prompt
+      }));
+
+    } catch (error) {
+      console.error('Error updating AI prompt:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el prompt de IA.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -2678,6 +2734,99 @@ function AdminPage() {
                     </div>
                   </div>
 
+                </div>
+
+                {/* AI Prompts Configuration */}
+                <div className="border-t pt-6">
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-lg font-semibold">Prompts de IA para Consultoría</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Define los prompts que utilizará el agente de IA para atender consultas y asesorías.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {/* Prompt para Personas */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <Users className="h-4 w-4" />
+                            Prompt para Personas
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="prompt-personas">Configuración del Prompt</Label>
+                            <Textarea
+                              id="prompt-personas"
+                              value={aiPrompts.consultation_prompt_personas}
+                              onChange={(e) => setAiPrompts(prev => ({
+                                ...prev,
+                                consultation_prompt_personas: e.target.value
+                              }))}
+                              placeholder="Eres un asistente legal especializado en atender consultas de personas naturales. Tu objetivo es proporcionar orientación jurídica clara y comprensible..."
+                              className="min-h-[120px]"
+                              rows={5}
+                            />
+                          </div>
+                          <Button
+                            onClick={() => updateAiPrompt('personas', aiPrompts.consultation_prompt_personas)}
+                            disabled={!aiPrompts.consultation_prompt_personas.trim()}
+                            className="w-full"
+                          >
+                            <Save className="h-4 w-4 mr-2" />
+                            Guardar Prompt para Personas
+                          </Button>
+                        </CardContent>
+                      </Card>
+
+                      {/* Prompt para Empresas */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <Building className="h-4 w-4" />
+                            Prompt para Empresas
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="prompt-empresas">Configuración del Prompt</Label>
+                            <Textarea
+                              id="prompt-empresas"
+                              value={aiPrompts.consultation_prompt_empresas}
+                              onChange={(e) => setAiPrompts(prev => ({
+                                ...prev,
+                                consultation_prompt_empresas: e.target.value
+                              }))}
+                              placeholder="Eres un asistente legal especializado en derecho empresarial y corporativo. Tu objetivo es proporcionar asesoría jurídica especializada para empresas..."
+                              className="min-h-[120px]"
+                              rows={5}
+                            />
+                          </div>
+                          <Button
+                            onClick={() => updateAiPrompt('empresas', aiPrompts.consultation_prompt_empresas)}
+                            disabled={!aiPrompts.consultation_prompt_empresas.trim()}
+                            className="w-full"
+                          >
+                            <Save className="h-4 w-4 mr-2" />
+                            Guardar Prompt para Empresas
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    {/* Información adicional */}
+                    <div className="bg-muted/50 p-4 rounded-lg">
+                      <h4 className="font-medium text-sm mb-2">Información Importante:</h4>
+                      <ul className="text-xs text-muted-foreground space-y-1">
+                        <li>• Los prompts definen el comportamiento del asistente de IA en el chat de consultoría</li>
+                        <li>• Se recomienda ser específico sobre el tipo de consultas que puede atender</li>
+                        <li>• Incluye instrucciones sobre el tono y estilo de respuesta apropiado</li>
+                        <li>• Los cambios se aplicarán inmediatamente a nuevas conversaciones</li>
+                      </ul>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Document Categories Management */}
