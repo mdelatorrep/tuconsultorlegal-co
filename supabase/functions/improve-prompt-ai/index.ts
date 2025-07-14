@@ -101,18 +101,31 @@ serve(async (req) => {
       });
     }
 
-    const { current_prompt, target_audience, model } = await req.json();
+    // Get configured OpenAI model
+    const { data: configData, error: configError } = await supabase
+      .from('system_config')
+      .select('config_value')
+      .eq('config_key', 'openai_model')
+      .single();
 
-    if (!current_prompt || !target_audience || !model) {
+    const selectedModel = (configError || !configData) 
+      ? 'gpt-4.1-2025-04-14'  // Default fallback
+      : configData.config_value;
+
+    console.log('Using OpenAI model:', selectedModel);
+
+    const { current_prompt, target_audience } = await req.json();
+
+    if (!current_prompt || !target_audience) {
       return new Response(JSON.stringify({ 
-        error: 'Faltan parámetros requeridos: current_prompt, target_audience, model' 
+        error: 'Faltan parámetros requeridos: current_prompt, target_audience' 
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log(`Improving prompt for ${target_audience} using model ${model}`);
+    console.log(`Improving prompt for ${target_audience} using model ${selectedModel}`);
 
     // Sistema de prompt optimizado para mejora de prompts de consultoría legal
     const systemPrompt = `Eres un experto en optimización de prompts para asistentes de IA especializados en consultoría legal. Tu tarea es mejorar y optimizar prompts para chatbots de consultoría legal.
@@ -140,7 +153,7 @@ INSTRUCCIONES:
 Devuelve SOLO el prompt mejorado, sin explicaciones adicionales.`;
 
     const requestBody = {
-      model: model,
+      model: selectedModel,
       messages: [
         {
           role: 'system',
@@ -171,7 +184,7 @@ Devuelve el prompt mejorado y optimizado.`
 
     return new Response(JSON.stringify({ 
       improved_prompt: improvedPrompt,
-      model_used: model,
+      model_used: selectedModel,
       target_audience: target_audience
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

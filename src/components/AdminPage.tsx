@@ -584,8 +584,7 @@ function AdminPage() {
         headers: authHeaders,
         body: {
           current_prompt: currentPrompt,
-          target_audience: type,
-          model: selectedModelForImprovement
+          target_audience: type
         }
       });
 
