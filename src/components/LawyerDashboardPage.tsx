@@ -341,9 +341,17 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
               <h1 className={`${isMobile ? 'text-2xl' : 'text-4xl'} font-bold text-primary mb-2`}>
                 Panel de Abogados
               </h1>
-              <p className={`${isMobile ? 'text-base' : 'text-lg'} text-muted-foreground`}>
+              <p className={`${isMobile ? 'text-base' : 'text-lg'} text-muted-foreground mb-1`}>
                 Revisa y ajusta los documentos pendientes
               </p>
+              {user?.name && (
+                <div className="flex items-center gap-2 mt-2">
+                  <User className="h-4 w-4 text-emerald-600" />
+                  <span className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                    Bienvenido, {user.name}
+                  </span>
+                </div>
+              )}
             </div>
             
             <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex items-center gap-3'}`}>
