@@ -306,7 +306,7 @@ export default function DocumentFormFlow({ agentId, onBack, onComplete }: Docume
                     id={currentField.field}
                     value={formData[currentField.field] || ''}
                     onChange={(e) => updateFormData(currentField.field, e.target.value)}
-                    placeholder={`Ingresa ${currentField.description.toLowerCase()}`}
+                    placeholder={`Ingresa ${currentField.description?.toLowerCase() || 'la información'}`}
                     rows={4}
                     className="text-base"
                   />
@@ -316,7 +316,7 @@ export default function DocumentFormFlow({ agentId, onBack, onComplete }: Docume
                     type={currentField.type || 'text'}
                     value={formData[currentField.field] || ''}
                     onChange={(e) => updateFormData(currentField.field, e.target.value)}
-                    placeholder={`Ingresa ${currentField.description.toLowerCase()}`}
+                    placeholder={`Ingresa ${currentField.description?.toLowerCase() || 'la información'}`}
                     className="text-base"
                   />
                 )}
