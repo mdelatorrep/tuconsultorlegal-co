@@ -63,18 +63,46 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
       if (error) throw error;
       setAgent(data);
       
-      // Add initial message
+      // Add initial message requesting document creation
       const initialMessage: Message = {
-        role: 'assistant',
-        content: `¡Hola! Soy tu asistente legal especializado en ${data.document_name}. Te ayudaré a recopilar toda la información necesaria para generar tu documento. ¿Podrías contarme un poco sobre tu situación y qué necesitas?`,
+        role: 'user',
+        content: `Quiero crear un ${data.document_name}. Por favor ayúdame con la información necesaria.`,
         timestamp: new Date()
       };
       setMessages([initialMessage]);
+      
+      // Immediately get the assistant's response
+      await getInitialResponse(data, initialMessage);
     } catch (error) {
       console.error('Error loading agent:', error);
       toast.error('Error al cargar el agente');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getInitialResponse = async (agentData: AgentData, userMessage: Message) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('document-chat', {
+        body: {
+          messages: [{ role: userMessage.role, content: userMessage.content }],
+          agent_prompt: agentData.ai_prompt,
+          document_name: agentData.document_name
+        }
+      });
+
+      if (error) throw error;
+
+      const assistantMessage: Message = {
+        role: 'assistant',
+        content: data.message,
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, assistantMessage]);
+    } catch (error) {
+      console.error('Error getting initial response:', error);
+      toast.error('Error al inicializar el chat');
     }
   };
 
