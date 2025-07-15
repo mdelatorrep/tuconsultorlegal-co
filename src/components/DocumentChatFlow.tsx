@@ -354,11 +354,11 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      {/* Modal Container */}
-      <div className="w-full max-w-2xl h-[90vh] bg-background rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      {/* Modal Container - Responsive */}
+      <div className="w-full h-full sm:w-[95%] sm:max-w-2xl sm:h-[90vh] bg-background sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col">
         {/* Header - WhatsApp style - Modal optimized */}
-        <div className="bg-primary/95 backdrop-blur-sm px-4 py-3 shadow-sm">
+        <div className="bg-primary backdrop-blur-sm px-4 py-3 shadow-sm">
           <div className="flex items-center gap-3">
             <Button 
               variant="ghost" 
@@ -379,7 +379,7 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
         </div>
 
         {/* Messages - Modal scrollable area */}
-        <div className="flex-1 overflow-y-auto px-4 py-3 scroll-smooth bg-gradient-to-b from-muted/30 to-background">
+        <div className="flex-1 overflow-y-auto px-4 py-3 scroll-smooth bg-gradient-to-b from-background to-muted/20">
           <div className="space-y-3 pb-4">
             {messages.map((message, index) => (
               <div key={index} className="animate-fade-in">
@@ -457,7 +457,7 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
         </div>
 
         {/* Input area - Modal bottom */}
-        <div className="border-t bg-background/95 backdrop-blur-sm px-4 py-3">
+        <div className="border-t bg-background px-4 py-3">
           <div className="flex items-end gap-3">
             <div className="flex-1 relative">
               <Input
@@ -466,7 +466,7 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
                 onKeyPress={handleKeyPress}
                 placeholder="Escribe un mensaje..."
                 disabled={sending}
-                className="pr-4 py-2.5 rounded-full border-0 bg-muted focus:bg-card transition-colors text-sm"
+                className="pr-4 py-2.5 rounded-full bg-muted focus:bg-background transition-colors text-sm border"
                 autoComplete="off"
               />
             </div>
