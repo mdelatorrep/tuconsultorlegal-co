@@ -7,12 +7,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Bot, Plus, Settings, LogOut, Scale, Users, TrendingUp, BarChart3, Brain } from "lucide-react";
+import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Bot, Plus, Settings, LogOut, Scale, Users, TrendingUp, BarChart3, Brain, BookOpen } from "lucide-react";
 import LawyerStatsSection from "./LawyerStatsSection";
 import LawyerLogin from "./LawyerLogin";
 import AgentCreatorPage from "./AgentCreatorPage";
 import AgentManagerPage from "./AgentManagerPage";
 import LawyerTrainingPage from "./LawyerTrainingPage";
+import LawyerBlogManager from "./LawyerBlogManager";
 
 interface DocumentToken {
   id: string;
@@ -43,7 +44,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const [editedContent, setEditedContent] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager'>('dashboard');
   const { toast } = useToast();
   const { isAuthenticated, isLoading: authLoading, user, logout, checkAuthStatus } = useLawyerAuth();
   const isMobile = useIsMobile();
@@ -303,6 +304,11 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
     return <LawyerTrainingPage onBack={() => setCurrentView('dashboard')} lawyerData={user} />;
   }
 
+  // Show Blog Manager if selected
+  if (currentView === 'blog-manager') {
+    return <LawyerBlogManager onBack={() => setCurrentView('dashboard')} lawyerData={user} />;
+  }
+
   // Show Stats if selected
   if (currentView === 'stats') {
     return (
@@ -375,6 +381,17 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
               >
                 <Brain className="h-4 w-4" />
                 <span className={isMobile ? "text-sm" : ""}>{isMobile ? "Formación" : "Formación IA"}</span>
+              </Button>
+
+              {/* Blog Manager Button - Available for all lawyers */}
+              <Button
+                onClick={() => setCurrentView('blog-manager')}
+                variant="outline"
+                className="flex items-center gap-2 justify-center"
+                size={isMobile ? "default" : "lg"}
+              >
+                <BookOpen className="h-4 w-4" />
+                <span className={isMobile ? "text-sm" : ""}>{isMobile ? "Blog" : "Gestión Blog"}</span>
               </Button>
 
               {/* Agent Creator Access - Only show if lawyer has permission */}

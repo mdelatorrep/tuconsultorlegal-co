@@ -29,6 +29,27 @@ Deno.serve(async (req) => {
       })
     }
 
+    // Check if it's a lawyer token or admin token
+    let isLawyer = false
+    let lawyerData = null
+    
+    // Check if it's a lawyer token
+    if (authHeader.startsWith('Bearer ')) {
+      const token = authHeader.replace('Bearer ', '')
+      const { data: lawyer, error: lawyerError } = await supabase
+        .from('lawyer_tokens')
+        .select('*')
+        .eq('access_token', token)
+        .eq('active', true)
+        .single()
+      
+      if (lawyer && !lawyerError) {
+        isLawyer = true
+        lawyerData = lawyer
+        console.log('Lawyer authenticated:', lawyer.full_name)
+      }
+    }
+
     // Handle GET requests for listing blogs
     if (req.method === 'GET') {
       const url = new URL(req.url)
@@ -69,6 +90,49 @@ Deno.serve(async (req) => {
         case 'create':
           console.log('Creating new blog post')
           
+          // If it's a lawyer creating the blog, set them as author and force draft status
+          if (isLawyer && lawyerData) {
+            // Create admin account entry for lawyer if it doesn't exist
+            const { data: existingAdmin, error: adminCheckError } = await supabase
+              .from('admin_accounts')
+              .select('*')
+              .eq('email', lawyerData.email)
+              .single()
+            
+            let authorId = existingAdmin?.id
+            
+            if (!existingAdmin || adminCheckError) {
+              // Create admin account for the lawyer
+              const { data: newAdmin, error: createAdminError } = await supabase
+                .from('admin_accounts')
+                .insert({
+                  email: lawyerData.email,
+                  full_name: lawyerData.full_name,
+                  active: true,
+                  is_super_admin: false
+                })
+                .select()
+                .single()
+              
+              if (createAdminError) {
+                console.error('Error creating admin account for lawyer:', createAdminError)
+                return new Response(JSON.stringify({ 
+                  error: 'Failed to create author account',
+                  message: createAdminError.message 
+                }), {
+                  status: 500,
+                  headers: securityHeaders
+                })
+              }
+              
+              authorId = newAdmin.id
+            }
+            
+            data.author_id = authorId
+            data.status = 'draft' // Lawyers can only create drafts
+            console.log('Lawyer creating blog as draft with author_id:', authorId)
+          }
+          
           // Generate slug from title if not provided
           if (!data.slug && data.title) {
             data.slug = data.title
@@ -83,8 +147,8 @@ Deno.serve(async (req) => {
             data.reading_time = Math.ceil(wordCount / 200)
           }
 
-          // Set published_at if status is published
-          if (data.status === 'published' && !data.published_at) {
+          // Set published_at if status is published (only for admins)
+          if (data.status === 'published' && !data.published_at && !isLawyer) {
             data.published_at = new Date().toISOString()
           }
 
@@ -123,6 +187,42 @@ Deno.serve(async (req) => {
 
           console.log('Updating blog post:', id)
           
+          // If it's a lawyer, check they can only edit their own drafts
+          if (isLawyer && lawyerData) {
+            const { data: existingBlog, error: blogCheckError } = await supabase
+              .from('blog_posts')
+              .select('*, author:admin_accounts(email)')
+              .eq('id', id)
+              .single()
+            
+            if (blogCheckError || !existingBlog) {
+              return new Response(JSON.stringify({ error: 'Blog not found' }), {
+                status: 404,
+                headers: securityHeaders
+              })
+            }
+            
+            // Check if lawyer owns this blog
+            if (existingBlog.author?.email !== lawyerData.email) {
+              return new Response(JSON.stringify({ error: 'You can only edit your own blogs' }), {
+                status: 403,
+                headers: securityHeaders
+              })
+            }
+            
+            // Check if blog is still a draft
+            if (existingBlog.status !== 'draft') {
+              return new Response(JSON.stringify({ error: 'You can only edit draft blogs' }), {
+                status: 403,
+                headers: securityHeaders
+              })
+            }
+            
+            // Force status to remain draft for lawyers
+            data.status = 'draft'
+            console.log('Lawyer updating their draft blog:', id)
+          }
+          
           // Generate slug from title if not provided
           if (!data.slug && data.title) {
             data.slug = data.title
@@ -137,8 +237,8 @@ Deno.serve(async (req) => {
             data.reading_time = Math.ceil(wordCount / 200)
           }
 
-          // Set published_at if status is changed to published
-          if (data.status === 'published' && !data.published_at) {
+          // Set published_at if status is changed to published (only for admins)
+          if (data.status === 'published' && !data.published_at && !isLawyer) {
             data.published_at = new Date().toISOString()
           }
 
@@ -177,6 +277,40 @@ Deno.serve(async (req) => {
           }
 
           console.log('Deleting blog post:', id)
+          
+          // If it's a lawyer, check they can only delete their own drafts
+          if (isLawyer && lawyerData) {
+            const { data: existingBlog, error: blogCheckError } = await supabase
+              .from('blog_posts')
+              .select('*, author:admin_accounts(email)')
+              .eq('id', id)
+              .single()
+            
+            if (blogCheckError || !existingBlog) {
+              return new Response(JSON.stringify({ error: 'Blog not found' }), {
+                status: 404,
+                headers: securityHeaders
+              })
+            }
+            
+            // Check if lawyer owns this blog
+            if (existingBlog.author?.email !== lawyerData.email) {
+              return new Response(JSON.stringify({ error: 'You can only delete your own blogs' }), {
+                status: 403,
+                headers: securityHeaders
+              })
+            }
+            
+            // Check if blog is still a draft
+            if (existingBlog.status !== 'draft') {
+              return new Response(JSON.stringify({ error: 'You can only delete draft blogs' }), {
+                status: 403,
+                headers: securityHeaders
+              })
+            }
+            
+            console.log('Lawyer deleting their draft blog:', id)
+          }
 
           const { error: deleteError } = await supabase
             .from('blog_posts')
