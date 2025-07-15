@@ -354,131 +354,135 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
     );
   }
 
+  console.log('DocumentChatFlow rendering:', { loading, agent: !!agent, showUserForm, agentId });
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      {/* Modal Container - Responsive */}
-      <div className="w-full h-full sm:w-[95%] sm:max-w-2xl sm:h-[90vh] bg-background sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col">
-        {/* Header - WhatsApp style - Modal optimized */}
-        <div className="bg-primary backdrop-blur-sm px-4 py-3 shadow-sm">
-          <div className="flex items-center gap-3">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={onBack} 
-              className="text-primary-foreground hover:bg-primary-foreground/10 p-2"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div className="w-9 h-9 bg-primary-foreground/10 rounded-full flex items-center justify-center shrink-0">
-              <Bot className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h1 className="font-semibold text-primary-foreground text-base truncate">{agent.document_name}</h1>
-              <p className="text-xs text-primary-foreground/70">Asistente legal • En línea</p>
+    <div className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
+      <div className="flex items-center justify-center min-h-screen p-4">
+        {/* Modal Container - Responsive */}
+        <div className="w-full max-w-2xl max-h-[90vh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+          {/* Header - WhatsApp style - Modal optimized */}
+          <div className="bg-primary px-4 py-3 shadow-sm">
+            <div className="flex items-center gap-3">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={onBack} 
+                className="text-primary-foreground hover:bg-primary-foreground/10 p-2"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+              <div className="w-9 h-9 bg-primary-foreground/10 rounded-full flex items-center justify-center shrink-0">
+                <Bot className="w-5 h-5 text-primary-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h1 className="font-semibold text-primary-foreground text-base truncate">{agent.document_name}</h1>
+                <p className="text-xs text-primary-foreground/70">Asistente legal • En línea</p>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Messages - Modal scrollable area */}
-        <div className="flex-1 overflow-y-auto px-4 py-3 scroll-smooth bg-gradient-to-b from-background to-muted/20">
-          <div className="space-y-3 pb-4">
-            {messages.map((message, index) => (
-              <div key={index} className="animate-fade-in">
-                <div className={`flex gap-2 mb-1 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  {message.role === 'user' ? (
-                    /* User message - right side */
-                    <div className="max-w-[80%] group">
-                      <div className="bg-primary text-primary-foreground rounded-2xl rounded-tr-md px-4 py-2.5 shadow-sm">
-                        <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{message.content}</p>
-                        <div className="flex items-center justify-end gap-1 mt-1">
-                          <span className="text-xs opacity-70">
-                            {message.timestamp.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
-                          </span>
+          {/* Messages - Modal scrollable area */}
+          <div className="flex-1 overflow-y-auto px-4 py-3 bg-gray-50 dark:bg-gray-800" style={{ maxHeight: '60vh' }}>
+            <div className="space-y-3 pb-4">
+              {messages.map((message, index) => (
+                <div key={index} className="animate-fade-in">
+                  <div className={`flex gap-2 mb-1 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    {message.role === 'user' ? (
+                      /* User message - right side */
+                      <div className="max-w-[80%] group">
+                        <div className="bg-primary text-primary-foreground rounded-2xl rounded-tr-md px-4 py-2.5 shadow-sm">
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{message.content}</p>
+                          <div className="flex items-center justify-end gap-1 mt-1">
+                            <span className="text-xs opacity-70">
+                              {message.timestamp.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ) : (
-                    /* Assistant message - left side */
-                    <div className="max-w-[80%] group">
-                      <div className="bg-card border rounded-2xl rounded-tl-md px-4 py-2.5 shadow-sm">
-                        <p className="text-sm leading-relaxed whitespace-pre-wrap break-words text-card-foreground">{message.content}</p>
-                        <div className="flex items-center justify-start gap-1 mt-1">
-                          <span className="text-xs text-muted-foreground">
-                            {message.timestamp.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
-                          </span>
+                    ) : (
+                      /* Assistant message - left side */
+                      <div className="max-w-[80%] group">
+                        <div className="bg-white dark:bg-gray-700 border rounded-2xl rounded-tl-md px-4 py-2.5 shadow-sm">
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap break-words text-gray-900 dark:text-gray-100">{message.content}</p>
+                          <div className="flex items-center justify-start gap-1 mt-1">
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {message.timestamp.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Generate button as a special message */}
+                  {message.showGenerateButton && (
+                    <div className="flex justify-start mb-2 animate-fade-in">
+                      <div className="max-w-[80%]">
+                        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl rounded-tl-md px-4 py-3 shadow-sm">
+                          <div className="flex items-center gap-2 mb-2">
+                            <FileText className="w-4 h-4 text-green-600 dark:text-green-400" />
+                            <span className="text-sm font-medium text-green-700 dark:text-green-300">¡Documento listo para generar!</span>
+                          </div>
+                          <Button 
+                            onClick={() => setShowUserForm(true)}
+                            className="w-full bg-green-600 hover:bg-green-700 text-white rounded-xl"
+                            size="sm"
+                          >
+                            Continuar con mis datos
+                          </Button>
                         </div>
                       </div>
                     </div>
                   )}
                 </div>
-                
-                {/* Generate button as a special message */}
-                {message.showGenerateButton && (
-                  <div className="flex justify-start mb-2 animate-fade-in">
-                    <div className="max-w-[80%]">
-                      <div className="bg-success/10 border border-success/20 rounded-2xl rounded-tl-md px-4 py-3 shadow-sm">
-                        <div className="flex items-center gap-2 mb-2">
-                          <FileText className="w-4 h-4 text-success" />
-                          <span className="text-sm font-medium text-success">¡Documento listo para generar!</span>
+              ))}
+              
+              {/* Typing indicator */}
+              {sending && (
+                <div className="flex justify-start animate-fade-in">
+                  <div className="max-w-[80%]">
+                    <div className="bg-white dark:bg-gray-700 border rounded-2xl rounded-tl-md px-4 py-3 shadow-sm">
+                      <div className="flex items-center gap-2">
+                        <div className="flex space-x-1">
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                         </div>
-                        <Button 
-                          onClick={() => setShowUserForm(true)}
-                          className="w-full bg-success hover:bg-success/90 text-success-foreground rounded-xl"
-                          size="sm"
-                        >
-                          Continuar con mis datos
-                        </Button>
+                        <span className="text-xs text-gray-500">Escribiendo...</span>
                       </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-            
-            {/* Typing indicator */}
-            {sending && (
-              <div className="flex justify-start animate-fade-in">
-                <div className="max-w-[80%]">
-                  <div className="bg-card border rounded-2xl rounded-tl-md px-4 py-3 shadow-sm">
-                    <div className="flex items-center gap-2">
-                      <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                        <div className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                      </div>
-                      <span className="text-xs text-muted-foreground">Escribiendo...</span>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
-            
-            <div ref={messagesEndRef} />
-          </div>
-        </div>
-
-        {/* Input area - Modal bottom */}
-        <div className="border-t bg-background px-4 py-3">
-          <div className="flex items-end gap-3">
-            <div className="flex-1 relative">
-              <Input
-                value={currentMessage}
-                onChange={(e) => setCurrentMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Escribe un mensaje..."
-                disabled={sending}
-                className="pr-4 py-2.5 rounded-full bg-muted focus:bg-background transition-colors text-sm border"
-                autoComplete="off"
-              />
+              )}
+              
+              <div ref={messagesEndRef} />
             </div>
-            <Button 
-              onClick={sendMessage} 
-              disabled={sending || !currentMessage.trim()}
-              size="icon"
-              className="rounded-full w-10 h-10 shrink-0 bg-primary hover:bg-primary/90"
-            >
-              <Send className="w-4 h-4" />
-            </Button>
+          </div>
+
+          {/* Input area - Modal bottom */}
+          <div className="border-t bg-white dark:bg-gray-900 px-4 py-3">
+            <div className="flex items-end gap-3">
+              <div className="flex-1 relative">
+                <Input
+                  value={currentMessage}
+                  onChange={(e) => setCurrentMessage(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Escribe un mensaje..."
+                  disabled={sending}
+                  className="pr-4 py-2.5 rounded-full bg-gray-100 dark:bg-gray-800 focus:bg-white dark:focus:bg-gray-700 transition-colors text-sm border"
+                  autoComplete="off"
+                />
+              </div>
+              <Button 
+                onClick={sendMessage} 
+                disabled={sending || !currentMessage.trim()}
+                size="icon"
+                className="rounded-full w-10 h-10 shrink-0 bg-primary hover:bg-primary/90"
+              >
+                <Send className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>
