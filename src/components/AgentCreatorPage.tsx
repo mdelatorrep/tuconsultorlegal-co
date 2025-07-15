@@ -540,7 +540,11 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       });
 
     } catch (error) {
-      console.error('Error improving document info with AI:', error);
+      console.error('=== ERROR IN improveDocumentInfo ===');
+      console.error('Error type:', typeof error);
+      console.error('Error object:', error);
+      console.error('Error message:', error instanceof Error ? error.message : 'Unknown error');
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       setIsImprovingDocInfo(false);
       
       toast({

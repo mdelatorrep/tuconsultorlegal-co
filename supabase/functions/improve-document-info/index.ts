@@ -108,17 +108,19 @@ serve(async (req) => {
 
     console.log('Using OpenAI model:', selectedModel);
 
+    console.log('=== REQUEST BODY PARSING ===');
     const { docName, docDesc, docCategory, targetAudience } = await req.json();
 
     console.log('Improving document info with AI:', {
-      docName,
-      docDesc,
-      docCategory,
-      targetAudience,
+      docName: docName || 'MISSING',
+      docDesc: docDesc || 'MISSING', 
+      docCategory: docCategory || 'MISSING',
+      targetAudience: targetAudience || 'MISSING',
       model: selectedModel
     });
 
     if (!docName || !docDesc) {
+      console.log('=== VALIDATION FAILED ===');
       return new Response(
         JSON.stringify({ 
           success: false, 
