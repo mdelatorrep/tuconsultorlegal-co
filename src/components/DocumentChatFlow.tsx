@@ -357,7 +357,7 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
   console.log('DocumentChatFlow rendering:', { loading, agent: !!agent, showUserForm, agentId });
 
   return (
-    <div className="fixed inset-0 z-[9999]" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+    <div className="fixed inset-0 z-[9999]" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 1)' }}>
       <div className="flex items-center justify-center min-h-screen p-4">
         {/* Modal Container - Responsive */}
         <div className="w-full max-w-2xl max-h-[90vh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
