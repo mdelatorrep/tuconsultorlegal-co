@@ -25,6 +25,10 @@ interface BlogPost {
   meta_title?: string | null;
   meta_description?: string | null;
   reading_time?: number | null;
+  author?: {
+    full_name: string;
+    email: string;
+  };
 }
 
 export default function BlogPage({ onOpenChat, onNavigate }: BlogPageProps) {
@@ -40,7 +44,10 @@ export default function BlogPage({ onOpenChat, onNavigate }: BlogPageProps) {
       setLoading(true);
       const { data, error } = await supabase
         .from('blog_posts')
-        .select('*')
+        .select(`
+          *,
+          author:admin_accounts(full_name, email)
+        `)
         .eq('status', 'published')
         .order('published_at', { ascending: false });
 
@@ -162,6 +169,12 @@ export default function BlogPage({ onOpenChat, onNavigate }: BlogPageProps) {
                   {featuredBlog.excerpt || featuredBlog.content.substring(0, 200) + '...'}
                 </p>
                 <div className="flex items-center gap-4 text-sm text-muted-foreground mb-6">
+                  {featuredBlog.author?.full_name && (
+                    <div className="flex items-center gap-1">
+                      <User className="h-4 w-4" />
+                      {featuredBlog.author.full_name}
+                    </div>
+                  )}
                   <div className="flex items-center gap-1">
                     <Calendar className="h-4 w-4" />
                     {new Date(featuredBlog.published_at || featuredBlog.created_at).toLocaleDateString()}
@@ -211,6 +224,12 @@ export default function BlogPage({ onOpenChat, onNavigate }: BlogPageProps) {
                           {blog.excerpt || blog.content.substring(0, 150) + '...'}
                         </p>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground mb-4">
+                          {blog.author?.full_name && (
+                            <>
+                              <User className="h-3 w-3" />
+                              {blog.author.full_name}
+                            </>
+                          )}
                           <Calendar className="h-3 w-3" />
                           {new Date(blog.published_at || blog.created_at).toLocaleDateString()}
                           <Eye className="h-3 w-3 ml-2" />

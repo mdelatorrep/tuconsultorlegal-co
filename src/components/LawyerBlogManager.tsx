@@ -27,6 +27,10 @@ interface BlogPost {
   meta_title?: string | null;
   meta_description?: string | null;
   reading_time?: number | null;
+  author?: {
+    full_name: string;
+    email: string;
+  };
 }
 
 interface LawyerBlogManagerProps {
@@ -62,11 +66,28 @@ export default function LawyerBlogManager({ onBack, lawyerData }: LawyerBlogMana
     try {
       setLoading(true);
       
-      // Get only blogs created by this lawyer
+      // First, get the admin account ID for this lawyer
+      const { data: adminAccount, error: adminError } = await supabase
+        .from('admin_accounts')
+        .select('id')
+        .eq('email', lawyerData.email)
+        .single();
+
+      if (adminError || !adminAccount) {
+        console.log('No admin account found for lawyer, no blogs to show');
+        setBlogs([]);
+        setLoading(false);
+        return;
+      }
+
+      // Get only blogs created by this lawyer using their admin account ID
       const { data, error } = await supabase
         .from('blog_posts')
-        .select('*')
-        .eq('author_id', lawyerData.id)
+        .select(`
+          *,
+          author:admin_accounts(full_name, email)
+        `)
+        .eq('author_id', adminAccount.id)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -147,10 +168,10 @@ export default function LawyerBlogManager({ onBack, lawyerData }: LawyerBlogMana
       const blogData = {
         ...blogForm,
         slug: blogForm.slug || generateSlug(blogForm.title),
-        author_id: lawyerData.id,
         status: 'draft', // Los abogados solo pueden crear borradores
       };
 
+      // Don't set author_id here - let the edge function handle it
       const { data, error } = await supabase.functions.invoke('manage-blog-posts', {
         body: {
           action: selectedBlog ? 'update' : 'create',
