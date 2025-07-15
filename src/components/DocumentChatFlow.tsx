@@ -13,9 +13,10 @@ interface DocumentChatFlowProps {
 }
 
 interface Message {
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: Date;
+  showGenerateButton?: boolean;
 }
 
 interface AgentData {
@@ -27,6 +28,7 @@ interface AgentData {
   suggested_price: number;
   sla_hours: number | null;
   ai_prompt: string;
+  placeholder_fields: any;
 }
 
 export default function DocumentChatFlow({ agentId, onBack, onComplete }: DocumentChatFlowProps) {
@@ -38,6 +40,7 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
   const [generating, setGenerating] = useState(false);
   const [userInfo, setUserInfo] = useState({ name: '', email: '' });
   const [showUserForm, setShowUserForm] = useState(false);
+  const [collectedData, setCollectedData] = useState<Record<string, any>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -137,18 +140,50 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
         timestamp: new Date()
       };
 
-      setMessages(prev => [...prev, assistantMessage]);
+      // Extract information from the conversation for placeholders
+      const extractedData = extractInformationFromMessage(userMessage.content);
+      setCollectedData(prev => ({ ...prev, ...extractedData }));
 
-      // Check if the assistant is ready to generate the document
-      if (data.message.toLowerCase().includes('generar') || data.message.toLowerCase().includes('proceder')) {
-        setShowUserForm(true);
-      }
+      // Check if the assistant indicates readiness to generate
+      const isReadyToGenerate = data.message.includes('Ya tengo toda la información necesaria para proceder con la generación del documento.');
+
+      const assistantMessageWithButton: Message = {
+        role: 'assistant',
+        content: data.message,
+        timestamp: new Date(),
+        showGenerateButton: isReadyToGenerate
+      };
+
+      setMessages(prev => [...prev, assistantMessageWithButton]);
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error('Error al enviar el mensaje');
     } finally {
       setSending(false);
     }
+  };
+
+  const extractInformationFromMessage = (content: string): Record<string, any> => {
+    const extracted: Record<string, any> = {};
+    
+    // Extract common patterns based on agent's placeholder fields
+    if (agent?.placeholder_fields && Array.isArray(agent.placeholder_fields)) {
+      agent.placeholder_fields.forEach((field: any) => {
+        if (field.type === 'text' || field.type === 'string') {
+          // Simple extraction based on field labels and common patterns
+          const fieldLabel = field.label?.toLowerCase() || field.name?.toLowerCase();
+          if (fieldLabel) {
+            const regex = new RegExp(`${fieldLabel}[:\\s]+([^\\n\\.]+)`, 'i');
+            const match = content.match(regex);
+            if (match) {
+              extracted[field.name] = match[1].trim();
+            }
+          }
+        }
+      });
+    }
+    
+    return extracted;
   };
 
   const generateDocument = async () => {
@@ -163,7 +198,8 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
           document_name: agent.document_name,
           user_email: userInfo.email,
           user_name: userInfo.name,
-          sla_hours: agent.sla_hours || 4
+          sla_hours: agent.sla_hours || 4,
+          collected_data: collectedData
         }
       });
 
@@ -298,25 +334,40 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
       <div className="flex-1 overflow-auto p-4">
         <div className="max-w-4xl mx-auto space-y-4">
           {messages.map((message, index) => (
-            <div key={index} className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              {message.role === 'assistant' && (
-                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center shrink-0">
-                  <Bot className="w-4 h-4 text-primary-foreground" />
+            <div key={index}>
+              <div className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                {message.role === 'assistant' && (
+                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center shrink-0">
+                    <Bot className="w-4 h-4 text-primary-foreground" />
+                  </div>
+                )}
+                <div className={`max-w-[80%] rounded-lg p-3 ${
+                  message.role === 'user' 
+                    ? 'bg-primary text-primary-foreground ml-12' 
+                    : 'bg-muted'
+                }`}>
+                  <p className="whitespace-pre-wrap">{message.content}</p>
+                  <p className="text-xs opacity-70 mt-1">
+                    {message.timestamp.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+                  </p>
                 </div>
-              )}
-              <div className={`max-w-[80%] rounded-lg p-3 ${
-                message.role === 'user' 
-                  ? 'bg-primary text-primary-foreground ml-12' 
-                  : 'bg-muted'
-              }`}>
-                <p className="whitespace-pre-wrap">{message.content}</p>
-                <p className="text-xs opacity-70 mt-1">
-                  {message.timestamp.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
-                </p>
+                {message.role === 'user' && (
+                  <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center shrink-0">
+                    <User className="w-4 h-4" />
+                  </div>
+                )}
               </div>
-              {message.role === 'user' && (
-                <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center shrink-0">
-                  <User className="w-4 h-4" />
+              
+              {/* Show generate button as part of the chat when assistant is ready */}
+              {message.showGenerateButton && (
+                <div className="flex justify-start mt-3 ml-11">
+                  <Button 
+                    onClick={() => setShowUserForm(true)}
+                    className="bg-success hover:bg-success-dark text-success-foreground"
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    Generar mi documento
+                  </Button>
                 </div>
               )}
             </div>
@@ -355,17 +406,6 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
               <Send className="w-4 h-4" />
             </Button>
           </div>
-          {messages.length > 2 && (
-            <div className="mt-2 flex justify-center">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setShowUserForm(true)}
-              >
-                ¿Listo para generar el documento?
-              </Button>
-            </div>
-          )}
         </div>
       </div>
     </div>
