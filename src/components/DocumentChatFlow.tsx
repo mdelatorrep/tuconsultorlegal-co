@@ -72,7 +72,13 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
         const isRecent = Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000; // 24 hours
         
         if (isRecent && parsed.messages.length > 1) {
-          setMessages(parsed.messages);
+          // Convert timestamp strings/numbers back to Date objects
+          const messagesWithDates = parsed.messages.map((msg: any) => ({
+            ...msg,
+            timestamp: new Date(msg.timestamp)
+          }));
+          
+          setMessages(messagesWithDates);
           setCollectedData(parsed.collectedData || {});
           setUserInfo(parsed.userInfo || { name: '', email: '' });
           return;
