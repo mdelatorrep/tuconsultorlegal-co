@@ -45,7 +45,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const [isSaving, setIsSaving] = useState(false);
   const [currentView, setCurrentView] = useState<'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training'>('dashboard');
   const { toast } = useToast();
-  const { isAuthenticated, isLoading: authLoading, user, logout } = useLawyerAuth();
+  const { isAuthenticated, isLoading: authLoading, user, logout, checkAuthStatus } = useLawyerAuth();
   const isMobile = useIsMobile();
 
   // Fetch documents when authenticated
@@ -269,8 +269,8 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   if (!isAuthenticated) {
     return <LawyerLogin onLoginSuccess={() => {
       console.log('Login success callback triggered');
-      // Redirigir al dashboard de abogados después del login exitoso
-      window.location.href = '/#abogados';
+      // Forzar re-verificación del estado de autenticación
+      checkAuthStatus();
     }} />;
   }
 
