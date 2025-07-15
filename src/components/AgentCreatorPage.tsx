@@ -127,7 +127,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
     setIsLoadingDrafts(true);
     try {
       const { data, error } = await supabase.functions.invoke('get-agent-drafts', {
-        body: { lawyerId: lawyerData.tokenId || lawyerData.id } // Fallback al id si tokenId no existe
+        body: { lawyerId: lawyerData.tokenId } // Usar tokenId que apunta a lawyer_tokens.id
       });
 
       if (error) {
@@ -152,11 +152,11 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
     try {
       const draftName = formData.docName || `Borrador ${new Date().toLocaleDateString()}`;
       
-      console.log('Attempting to save draft with lawyerId:', lawyerData.tokenId || lawyerData.id);
+      console.log('Attempting to save draft with lawyerId:', lawyerData.tokenId);
       
       const { data, error } = await supabase.functions.invoke('save-agent-draft', {
         body: {
-          lawyerId: lawyerData.tokenId || lawyerData.id, // Fallback al id si tokenId no existe
+          lawyerId: lawyerData.tokenId, // Usar tokenId que apunta a lawyer_tokens.id
           draftId: currentDraftId,
           draftName,
           stepCompleted: currentStep,
@@ -231,7 +231,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       const { data, error } = await supabase.functions.invoke('delete-agent-draft', {
         body: {
           draftId,
-          lawyerId: lawyerData.tokenId || lawyerData.id // Fallback al id si tokenId no existe
+          lawyerId: lawyerData.tokenId // Usar tokenId que apunta a lawyer_tokens.id
         }
       });
 
@@ -610,10 +610,15 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       
       console.log('Publishing agent with data:', {
         name: formData.docName,
-        created_by: lawyerData.tokenId || lawyerData.id,
+        created_by: lawyerData.tokenId,
         lawyerPriceValue,
-        calculatedPriceValue
+        calculatedPriceValue,
+        hasTokenId: !!lawyerData.tokenId
       });
+      
+      if (!lawyerData.tokenId) {
+        throw new Error('Token de abogado no válido. Por favor inicia sesión nuevamente.');
+      }
       
       const { data, error } = await supabase
         .from('legal_agents')
@@ -628,7 +633,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
           final_price: calculatedPriceValue, // AI calculated price for admin review
           price_justification: aiResults.priceJustification,
           status: 'pending_review',
-          created_by: lawyerData.tokenId || lawyerData.id, // Usar tokenId correcto con fallback
+          created_by: lawyerData.tokenId, // Usar tokenId que apunta a lawyer_tokens.id
           target_audience: formData.targetAudience,
           sla_hours: formData.slaEnabled ? formData.slaHours : null,
           sla_enabled: formData.slaEnabled
@@ -669,7 +674,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
           await supabase.functions.invoke('delete-agent-draft', {
             body: {
               draftId: currentDraftId,
-              lawyerId: lawyerData.tokenId || lawyerData.id
+              lawyerId: lawyerData.tokenId
             }
           });
           console.log('Draft deleted after successful publish');
