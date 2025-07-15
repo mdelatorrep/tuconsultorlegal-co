@@ -354,105 +354,111 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
   }
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-gradient-to-b from-muted/30 to-background">
-      {/* Header - WhatsApp style - Mobile optimized */}
-      <div className="sticky top-0 z-10 bg-primary/95 backdrop-blur-sm border-b px-2 py-3 shadow-sm">
-        <div className="flex items-center gap-2 w-full">
-          <Button variant="ghost" size="sm" onClick={onBack} className="text-primary-foreground hover:bg-primary-foreground/10 p-2">
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div className="w-9 h-9 bg-primary-foreground/10 rounded-full flex items-center justify-center shrink-0">
-            <Bot className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h1 className="font-semibold text-primary-foreground text-sm truncate">{agent.document_name}</h1>
-            <p className="text-xs text-primary-foreground/70">Asistente legal • En línea</p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      {/* Modal Container */}
+      <div className="w-full max-w-2xl h-[90vh] bg-background rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+        {/* Header - WhatsApp style - Modal optimized */}
+        <div className="bg-primary/95 backdrop-blur-sm px-4 py-3 shadow-sm">
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={onBack} 
+              className="text-primary-foreground hover:bg-primary-foreground/10 p-2"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div className="w-9 h-9 bg-primary-foreground/10 rounded-full flex items-center justify-center shrink-0">
+              <Bot className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h1 className="font-semibold text-primary-foreground text-base truncate">{agent.document_name}</h1>
+              <p className="text-xs text-primary-foreground/70">Asistente legal • En línea</p>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Messages - WhatsApp style scrollable - Mobile optimized */}
-      <div className="flex-1 overflow-y-auto px-3 py-2 scroll-smooth bg-chat-pattern" style={{ height: 'calc(100vh - 120px)' }}>
-        <div className="w-full space-y-2 pb-4">
-          {messages.map((message, index) => (
-            <div key={index} className="animate-fade-in">
-              <div className={`flex gap-1 mb-1 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                {message.role === 'user' ? (
-                  /* User message - right side */
-                  <div className="max-w-[85%] sm:max-w-[75%] group">
-                    <div className="bg-primary text-primary-foreground rounded-2xl rounded-tr-md px-3 py-2 shadow-sm">
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{message.content}</p>
-                      <div className="flex items-center justify-end gap-1 mt-1">
-                        <span className="text-xs opacity-70">
-                          {message.timestamp.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
-                        </span>
+        {/* Messages - Modal scrollable area */}
+        <div className="flex-1 overflow-y-auto px-4 py-3 scroll-smooth bg-gradient-to-b from-muted/30 to-background">
+          <div className="space-y-3 pb-4">
+            {messages.map((message, index) => (
+              <div key={index} className="animate-fade-in">
+                <div className={`flex gap-2 mb-1 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  {message.role === 'user' ? (
+                    /* User message - right side */
+                    <div className="max-w-[80%] group">
+                      <div className="bg-primary text-primary-foreground rounded-2xl rounded-tr-md px-4 py-2.5 shadow-sm">
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{message.content}</p>
+                        <div className="flex items-center justify-end gap-1 mt-1">
+                          <span className="text-xs opacity-70">
+                            {message.timestamp.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ) : (
-                  /* Assistant message - left side */
-                  <div className="max-w-[85%] sm:max-w-[75%] group">
-                    <div className="bg-card border rounded-2xl rounded-tl-md px-3 py-2 shadow-sm">
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap break-words text-card-foreground">{message.content}</p>
-                      <div className="flex items-center justify-start gap-1 mt-1">
-                        <span className="text-xs text-muted-foreground">
-                          {message.timestamp.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
-                        </span>
+                  ) : (
+                    /* Assistant message - left side */
+                    <div className="max-w-[80%] group">
+                      <div className="bg-card border rounded-2xl rounded-tl-md px-4 py-2.5 shadow-sm">
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap break-words text-card-foreground">{message.content}</p>
+                        <div className="flex items-center justify-start gap-1 mt-1">
+                          <span className="text-xs text-muted-foreground">
+                            {message.timestamp.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Generate button as a special message */}
+                {message.showGenerateButton && (
+                  <div className="flex justify-start mb-2 animate-fade-in">
+                    <div className="max-w-[80%]">
+                      <div className="bg-success/10 border border-success/20 rounded-2xl rounded-tl-md px-4 py-3 shadow-sm">
+                        <div className="flex items-center gap-2 mb-2">
+                          <FileText className="w-4 h-4 text-success" />
+                          <span className="text-sm font-medium text-success">¡Documento listo para generar!</span>
+                        </div>
+                        <Button 
+                          onClick={() => setShowUserForm(true)}
+                          className="w-full bg-success hover:bg-success/90 text-success-foreground rounded-xl"
+                          size="sm"
+                        >
+                          Continuar con mis datos
+                        </Button>
                       </div>
                     </div>
                   </div>
                 )}
               </div>
-              
-              {/* Generate button as a special message */}
-              {message.showGenerateButton && (
-                <div className="flex justify-start mb-2 animate-fade-in">
-                  <div className="max-w-[85%] sm:max-w-[75%]">
-                    <div className="bg-success/10 border border-success/20 rounded-2xl rounded-tl-md px-3 py-3 shadow-sm">
-                      <div className="flex items-center gap-2 mb-2">
-                        <FileText className="w-4 h-4 text-success" />
-                        <span className="text-sm font-medium text-success">¡Documento listo para generar!</span>
+            ))}
+            
+            {/* Typing indicator */}
+            {sending && (
+              <div className="flex justify-start animate-fade-in">
+                <div className="max-w-[80%]">
+                  <div className="bg-card border rounded-2xl rounded-tl-md px-4 py-3 shadow-sm">
+                    <div className="flex items-center gap-2">
+                      <div className="flex space-x-1">
+                        <div className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                        <div className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                       </div>
-                      <Button 
-                        onClick={() => setShowUserForm(true)}
-                        className="w-full bg-success hover:bg-success/90 text-success-foreground rounded-xl"
-                        size="sm"
-                      >
-                        Continuar con mis datos
-                      </Button>
+                      <span className="text-xs text-muted-foreground">Escribiendo...</span>
                     </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-          
-          {/* Typing indicator */}
-          {sending && (
-            <div className="flex justify-start animate-fade-in">
-              <div className="max-w-[85%] sm:max-w-[75%]">
-                <div className="bg-card border rounded-2xl rounded-tl-md px-3 py-2 shadow-sm">
-                  <div className="flex items-center gap-1">
-                    <div className="flex space-x-1">
-                      <div className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                      <div className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                    </div>
-                    <span className="text-xs text-muted-foreground ml-2">Escribiendo...</span>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-          
-          <div ref={messagesEndRef} />
+            )}
+            
+            <div ref={messagesEndRef} />
+          </div>
         </div>
-      </div>
 
-      {/* Input area - WhatsApp style - Mobile optimized */}
-      <div className="sticky bottom-0 z-10 bg-background/95 backdrop-blur-sm border-t px-3 py-2 safe-area-bottom">
-        <div className="w-full">
-          <div className="flex items-end gap-2">
+        {/* Input area - Modal bottom */}
+        <div className="border-t bg-background/95 backdrop-blur-sm px-4 py-3">
+          <div className="flex items-end gap-3">
             <div className="flex-1 relative">
               <Input
                 value={currentMessage}
