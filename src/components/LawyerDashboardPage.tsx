@@ -269,10 +269,8 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   if (!isAuthenticated) {
     return <LawyerLogin onLoginSuccess={() => {
       console.log('Login success callback triggered');
-      // Forzar re-verificación del estado de autenticación
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
+      // Redirigir al dashboard de abogados después del login exitoso
+      window.location.href = '/#abogados';
     }} />;
   }
 
