@@ -467,7 +467,16 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
   };
 
   const improveDocumentInfo = async () => {
+    console.log('=== improveDocumentInfo CALLED ===');
+    console.log('Form data validation:', {
+      docName: formData.docName?.trim(),
+      docDesc: formData.docDesc?.trim(),
+      docCat: formData.docCat,
+      targetAudience: formData.targetAudience
+    });
+
     if (!formData.docName.trim() || !formData.docDesc.trim() || !formData.docCat) {
+      console.log('Validation failed - missing required fields');
       toast({
         title: "Campos requeridos",
         description: "Por favor completa el nombre, descripción y categoría del documento.",
@@ -476,6 +485,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       return;
     }
 
+    console.log('Setting isImprovingDocInfo to true');
     setIsImprovingDocInfo(true);
     
     try {
@@ -486,6 +496,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         targetAudience: formData.targetAudience
       });
 
+      console.log('About to call supabase.functions.invoke...');
       const { data, error } = await supabase.functions.invoke('improve-document-info', {
         body: {
           docName: formData.docName,
@@ -494,6 +505,8 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
           targetAudience: formData.targetAudience
         }
       });
+
+      console.log('Supabase function response:', { data, error });
 
       if (error) {
         console.error('Supabase function error:', error);

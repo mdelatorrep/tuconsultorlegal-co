@@ -38,3 +38,81 @@ verify_jwt = false
 
 [functions.generate-blog-image]
 verify_jwt = false
+
+[functions.improve-document-info]
+verify_jwt = false
+
+[functions.improve-template-ai]
+verify_jwt = false
+
+[functions.improve-prompt-ai]
+verify_jwt = false
+
+[functions.process-agent-ai]
+verify_jwt = false
+
+[functions.optimize-consultation-prompts]
+verify_jwt = false
+
+[functions.manage-blog-posts]
+verify_jwt = false
+
+[functions.manage-document-categories]
+verify_jwt = false
+
+[functions.update-agent]
+verify_jwt = false
+
+[functions.delete-agent]
+verify_jwt = false
+
+[functions.get-openai-models]
+verify_jwt = false
+
+[functions.update-system-config]
+verify_jwt = false
+
+[functions.get-token-requests]
+verify_jwt = false
+
+[functions.manage-token-request]
+verify_jwt = false
+
+[functions.request-lawyer-token]
+verify_jwt = false
+
+[functions.verify-lawyer-token]
+verify_jwt = false
+
+[functions.lawyer-login]
+verify_jwt = false
+
+[functions.get-lawyer-documents]
+verify_jwt = false
+
+[functions.verify-admin-token]
+verify_jwt = false
+
+[functions.verify-admin-profile]
+verify_jwt = false
+
+[functions.unlock-admin]
+verify_jwt = false
+
+[functions.get-sla-stats]
+verify_jwt = false
+
+[functions.get-sla-stats-by-lawyer]
+verify_jwt = false
+
+[functions.track-pricing-click]
+verify_jwt = false
+
+[functions.check-payment-status]
+verify_jwt = false
+
+[functions.create-payment-config]
+verify_jwt = false
+
+[functions.generate-sitemap]
+verify_jwt = false

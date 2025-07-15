@@ -1,8 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -14,72 +12,80 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Función para realizar el llamado a OpenAI con reintentos
-  async function callOpenAIWithRetry(requestBody: any, maxRetries = 3) {
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        console.log(`OpenAI attempt ${attempt}/${maxRetries}`);
-        
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${openAIApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestBody),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.text();
-          console.error(`OpenAI API error (attempt ${attempt}):`, response.status, errorData);
-          
-          // Si es el último intento o un error permanente, lanzar error
-          if (attempt === maxRetries || response.status === 400 || response.status === 401) {
-            throw new Error(`Error de OpenAI: ${response.status} ${response.statusText}`);
-          }
-          
-          // Esperar antes del siguiente intento (backoff exponencial)
-          await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
-          continue;
-        }
-
-        const data = await response.json();
-        
-        if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-          console.error(`Invalid OpenAI response (attempt ${attempt}):`, data);
-          
-          if (attempt === maxRetries) {
-            throw new Error('Respuesta inválida de OpenAI');
-          }
-          
-          await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
-          continue;
-        }
-
-        return data;
-        
-      } catch (error) {
-        console.error(`OpenAI call failed (attempt ${attempt}):`, error);
-        
-        if (attempt === maxRetries) {
-          throw error;
-        }
-        
-        // Esperar antes del siguiente intento
-        await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
-      }
-    }
-  }
-
   try {
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
       throw new Error('OpenAI API key not configured');
     }
 
+    // Función para realizar el llamado a OpenAI con reintentos
+    async function callOpenAIWithRetry(requestBody: any, maxRetries = 3) {
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          console.log(`OpenAI attempt ${attempt}/${maxRetries}`);
+          
+          const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${openAIApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBody),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.text();
+            console.error(`OpenAI API error (attempt ${attempt}):`, response.status, errorData);
+            
+            // Si es el último intento o un error permanente, lanzar error
+            if (attempt === maxRetries || response.status === 400 || response.status === 401) {
+              throw new Error(`Error de OpenAI: ${response.status} ${response.statusText}`);
+            }
+            
+            // Esperar antes del siguiente intento (backoff exponencial)
+            await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+            continue;
+          }
+
+          const data = await response.json();
+          
+          if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+            console.error(`Invalid OpenAI response (attempt ${attempt}):`, data);
+            
+            if (attempt === maxRetries) {
+              throw new Error('Respuesta inválida de OpenAI');
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+            continue;
+          }
+
+          return data;
+          
+        } catch (error) {
+          console.error(`OpenAI call failed (attempt ${attempt}):`, error);
+          
+          if (attempt === maxRetries) {
+            throw error;
+          }
+          
+          // Esperar antes del siguiente intento
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+        }
+      }
+    }
+
+    console.log('=== IMPROVE-DOCUMENT-INFO FUNCTION START ===');
+    
     // Initialize Supabase client to get system configuration
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    
+    console.log('Environment check:', {
+      hasOpenAIKey: !!openAIApiKey,
+      hasSupabaseUrl: !!supabaseUrl,
+      hasServiceKey: !!supabaseServiceKey
+    });
     
     if (!supabaseServiceKey || !supabaseUrl) {
       throw new Error('Missing Supabase configuration');
@@ -88,6 +94,7 @@ serve(async (req) => {
     const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.50.3');
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    console.log('Getting system configuration...');
     // Get configured OpenAI model
     const { data: configData, error: configError } = await supabase
       .from('system_config')
@@ -96,7 +103,7 @@ serve(async (req) => {
       .single();
 
     const selectedModel = (configError || !configData) 
-      ? 'gpt-4.1-2025-04-14'  // Default fallback
+      ? 'gpt-4o-mini'  // Default fallback - compatible model
       : configData.config_value;
 
     console.log('Using OpenAI model:', selectedModel);
