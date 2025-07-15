@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Check, FileText, Home, Briefcase, Car, Eye, Shield, Users, DollarSign } from "lucide-react";
+import DocumentFormFlow from "./DocumentFormFlow";
+import DocumentCreationSuccess from "./DocumentCreationSuccess";
 
 interface PersonasPageProps {
   onOpenChat: (message: string) => void;
@@ -24,6 +26,9 @@ interface AgentService {
 export default function PersonasPage({ onOpenChat, onNavigate }: PersonasPageProps) {
   const [services, setServices] = useState<AgentService[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentView, setCurrentView] = useState<'list' | 'form' | 'success'>('list');
+  const [selectedAgent, setSelectedAgent] = useState<string>('');
+  const [documentToken, setDocumentToken] = useState<string>('');
 
   const iconMap: { [key: string]: JSX.Element } = {
     FileText: <FileText className="w-10 h-10" />,
@@ -59,7 +64,30 @@ export default function PersonasPage({ onOpenChat, onNavigate }: PersonasPagePro
   };
 
   const handleDocumentAction = (service: AgentService) => {
-    onOpenChat(service.document_name);
+    setSelectedAgent(service.id);
+    setCurrentView('form');
+  };
+
+  const handleFormBack = () => {
+    setCurrentView('list');
+    setSelectedAgent('');
+  };
+
+  const handleFormComplete = (token: string) => {
+    setDocumentToken(token);
+    setCurrentView('success');
+  };
+
+  const handleSuccessBack = () => {
+    setCurrentView('list');
+    setSelectedAgent('');
+    setDocumentToken('');
+  };
+
+  const handleNavigateToTracking = () => {
+    if (onNavigate) {
+      onNavigate('seguimiento');
+    }
   };
 
   const groupedServices = services.reduce((acc, service) => {
@@ -91,6 +119,28 @@ export default function PersonasPage({ onOpenChat, onNavigate }: PersonasPagePro
     const hash = category.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a; }, 0);
     return colors[Math.abs(hash) % colors.length];
   };
+
+  // Show form flow if agent is selected
+  if (currentView === 'form' && selectedAgent) {
+    return (
+      <DocumentFormFlow
+        agentId={selectedAgent}
+        onBack={handleFormBack}
+        onComplete={handleFormComplete}
+      />
+    );
+  }
+
+  // Show success screen if document was created
+  if (currentView === 'success' && documentToken) {
+    return (
+      <DocumentCreationSuccess
+        token={documentToken}
+        onBack={handleSuccessBack}
+        onNavigateToTracking={handleNavigateToTracking}
+      />
+    );
+  }
 
   if (loading) {
     return (
