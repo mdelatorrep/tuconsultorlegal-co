@@ -35,7 +35,15 @@ INSTRUCCIONES ADICIONALES PARA EL CHAT:
 - Recopila toda la información necesaria para generar el documento
 - Sé conversacional y amigable, pero profesional
 - Cuando tengas toda la información necesaria, indica que ya puedes proceder con la generación del documento
-- Si el usuario pide aclaraciones legales, proporciona información precisa según la legislación colombiana`;
+- Si el usuario pide aclaraciones legales, proporciona información precisa según la legislación colombiana
+
+IMPORTANTE - FORMATO DE RESPUESTA:
+- NO uses asteriscos (*) para enfatizar texto
+- NO uses guiones bajos (_) para cursiva
+- NO uses caracteres especiales para formatear (**, __, ##, etc.)
+- Escribe en texto plano sin formato markdown
+- Usa solo puntos, comas y signos de puntuación normales
+- Para enfatizar, usa palabras como "importante", "crucial", "especialmente"`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
