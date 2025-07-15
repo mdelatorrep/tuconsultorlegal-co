@@ -377,7 +377,7 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
               </div>
               <div className="flex-1 min-w-0">
                 <h1 className="font-semibold text-primary-foreground text-base truncate">{agent.document_name}</h1>
-                <p className="text-xs text-primary-foreground/70">Asistente legal • En línea</p>
+                <p className="text-xs text-primary-foreground/70">Lexi • En línea</p>
               </div>
             </div>
           </div>
