@@ -51,6 +51,38 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
     scrollToBottom();
   }, [messages]);
 
+  // Persist chat data to localStorage
+  useEffect(() => {
+    if (messages.length > 0) {
+      localStorage.setItem(`chat_${agentId}`, JSON.stringify({
+        messages,
+        collectedData,
+        userInfo,
+        timestamp: Date.now()
+      }));
+    }
+  }, [messages, collectedData, userInfo, agentId]);
+
+  // Load persisted data on mount
+  useEffect(() => {
+    const persistedData = localStorage.getItem(`chat_${agentId}`);
+    if (persistedData) {
+      try {
+        const parsed = JSON.parse(persistedData);
+        const isRecent = Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000; // 24 hours
+        
+        if (isRecent && parsed.messages.length > 1) {
+          setMessages(parsed.messages);
+          setCollectedData(parsed.collectedData || {});
+          setUserInfo(parsed.userInfo || { name: '', email: '' });
+          return;
+        }
+      } catch (error) {
+        console.error('Error loading persisted chat data:', error);
+      }
+    }
+  }, [agentId]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -316,9 +348,9 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Header */}
-      <div className="bg-background border-b p-4">
+    <div className="fixed inset-0 flex flex-col bg-background">
+      {/* Header - Fixed */}
+      <div className="sticky top-0 z-10 bg-background border-b p-4 shadow-sm">
         <div className="flex items-center gap-3 max-w-4xl mx-auto">
           <Button variant="ghost" size="sm" onClick={onBack}>
             <ArrowLeft className="w-4 h-4" />
@@ -330,9 +362,9 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-auto p-4">
-        <div className="max-w-4xl mx-auto space-y-4">
+      {/* Messages - Scrollable */}
+      <div className="flex-1 overflow-y-auto p-4 scroll-smooth">
+        <div className="max-w-4xl mx-auto space-y-4 pb-4">
           {messages.map((message, index) => (
             <div key={index}>
               <div className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -341,12 +373,12 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
                     <Bot className="w-4 h-4 text-primary-foreground" />
                   </div>
                 )}
-                <div className={`max-w-[80%] rounded-lg p-3 ${
+                <div className={`max-w-[80%] rounded-lg p-3 break-words ${
                   message.role === 'user' 
                     ? 'bg-primary text-primary-foreground ml-12' 
                     : 'bg-muted'
                 }`}>
-                  <p className="whitespace-pre-wrap">{message.content}</p>
+                  <p className="whitespace-pre-wrap text-sm">{message.content}</p>
                   <p className="text-xs opacity-70 mt-1">
                     {message.timestamp.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
                   </p>
@@ -363,7 +395,7 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
                 <div className="flex justify-start mt-3 ml-11">
                   <Button 
                     onClick={() => setShowUserForm(true)}
-                    className="bg-success hover:bg-success-dark text-success-foreground"
+                    className="bg-success hover:bg-success/90 text-success-foreground"
                   >
                     <FileText className="w-4 h-4 mr-2" />
                     Generar mi documento
@@ -390,8 +422,8 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
         </div>
       </div>
 
-      {/* Input */}
-      <div className="border-t p-4">
+      {/* Input - Fixed */}
+      <div className="sticky bottom-0 z-10 bg-background border-t p-4 shadow-sm">
         <div className="max-w-4xl mx-auto">
           <div className="flex gap-2">
             <Input
@@ -401,6 +433,7 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
               placeholder="Escribe tu mensaje..."
               disabled={sending}
               className="flex-1"
+              autoComplete="off"
             />
             <Button onClick={sendMessage} disabled={sending || !currentMessage.trim()}>
               <Send className="w-4 h-4" />
