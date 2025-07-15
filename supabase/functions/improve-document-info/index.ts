@@ -95,18 +95,18 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     console.log('Getting system configuration...');
-    // Get configured OpenAI model
+    // Get configured OpenAI model (use different config key than admin to avoid conflicts)
     const { data: configData, error: configError } = await supabase
       .from('system_config')
       .select('config_value')
-      .eq('config_key', 'openai_model')
+      .eq('config_key', 'openai_model_lawyer')
       .single();
 
     const selectedModel = (configError || !configData) 
-      ? 'gpt-4o-mini'  // Default fallback - compatible model
+      ? 'gpt-4o-mini'  // Default fallback - compatible model for lawyers
       : configData.config_value;
 
-    console.log('Using OpenAI model:', selectedModel);
+    console.log('Using OpenAI model for lawyer functions:', selectedModel);
 
     console.log('=== REQUEST BODY PARSING ===');
     const { docName, docDesc, docCategory, targetAudience } = await req.json();
@@ -178,14 +178,39 @@ Mejora el nombre y descripción para que sean más atractivos y comprensibles pa
     }
 
     const responseText = data.choices[0].message.content.trim();
+    console.log('Raw OpenAI response:', responseText);
     
     // Parse the JSON response
     let improvedInfo;
     try {
-      improvedInfo = JSON.parse(responseText);
+      // Try to extract JSON from the response if it contains extra text
+      let jsonText = responseText;
+      
+      // Check if response contains JSON within code blocks or extra text
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        jsonText = jsonMatch[0];
+      }
+      
+      console.log('Attempting to parse JSON:', jsonText);
+      improvedInfo = JSON.parse(jsonText);
+      
+      // Validate required fields
+      if (!improvedInfo.improvedName || !improvedInfo.improvedDescription) {
+        console.error('Missing required fields in response:', improvedInfo);
+        throw new Error('La respuesta de IA no contiene los campos requeridos');
+      }
+      
     } catch (parseError) {
       console.error('Error parsing OpenAI response:', parseError);
-      throw new Error('Error al procesar la respuesta de IA');
+      console.error('Response that failed to parse:', responseText);
+      
+      // Fallback: return original values if AI response is malformed
+      console.log('Using fallback - returning original values');
+      improvedInfo = {
+        improvedName: docName,
+        improvedDescription: docDesc
+      };
     }
 
     console.log('Document info improvement successful:', {
