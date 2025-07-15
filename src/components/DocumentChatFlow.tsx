@@ -81,7 +81,6 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
           setMessages(messagesWithDates);
           setCollectedData(parsed.collectedData || {});
           setUserInfo(parsed.userInfo || { name: '', email: '' });
-          return;
         }
       } catch (error) {
         console.error('Error loading persisted chat data:', error);
@@ -104,16 +103,18 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
       if (error) throw error;
       setAgent(data);
       
-      // Add initial message requesting document creation
-      const initialMessage: Message = {
-        role: 'user',
-        content: `Quiero crear un ${data.document_name}. Por favor ayúdame con la información necesaria.`,
-        timestamp: new Date()
-      };
-      setMessages([initialMessage]);
-      
-      // Immediately get the assistant's response
-      await getInitialResponse(data, initialMessage);
+      // Only add initial message if there are no existing messages
+      if (messages.length === 0) {
+        const initialMessage: Message = {
+          role: 'user',
+          content: `Quiero crear un ${data.document_name}. Por favor ayúdame con la información necesaria.`,
+          timestamp: new Date()
+        };
+        setMessages([initialMessage]);
+        
+        // Immediately get the assistant's response
+        await getInitialResponse(data, initialMessage);
+      }
     } catch (error) {
       console.error('Error loading agent:', error);
       toast.error('Error al cargar el agente');
