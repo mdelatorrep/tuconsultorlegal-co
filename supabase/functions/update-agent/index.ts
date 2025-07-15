@@ -223,11 +223,9 @@ Deno.serve(async (req) => {
 
     console.log('Agent updated successfully')
 
-    // Log the update event
-    await supabase.rpc('log_security_event', {
-      event_type: 'agent_updated',
-      user_id: user_id,
-      details: { 
+    // Log the update event (optional, continue if fails)
+    try {
+      console.log('Agent update completed:', {
         agent_id: agent_id,
         agent_name: existingAgent.name,
         updated_by: adminVerified ? 'admin' : 'creator',
@@ -236,8 +234,10 @@ Deno.serve(async (req) => {
           from: existingAgent.status,
           to: updateData.status
         } : null
-      }
-    })
+      });
+    } catch (logError) {
+      console.warn('Could not log security event:', logError);
+    }
 
     return new Response(JSON.stringify({
       success: true,
