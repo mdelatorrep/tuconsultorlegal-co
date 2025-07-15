@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Check, FileText, Building, Users, DollarSign, Scale, Handshake, Shield } from "lucide-react";
-import DocumentFormFlow from "./DocumentFormFlow";
+import DocumentChatFlow from "./DocumentChatFlow";
 import DocumentCreationSuccess from "./DocumentCreationSuccess";
 
 interface EmpresasPageProps {
@@ -119,10 +119,10 @@ export default function EmpresasPage({ onOpenChat, onNavigate }: EmpresasPagePro
     return colors[Math.abs(hash) % colors.length];
   };
 
-  // Show form flow if agent is selected
+  // Show chat flow if agent is selected
   if (currentView === 'form' && selectedAgent) {
     return (
-      <DocumentFormFlow
+      <DocumentChatFlow
         agentId={selectedAgent}
         onBack={handleFormBack}
         onComplete={handleFormComplete}
