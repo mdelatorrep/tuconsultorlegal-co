@@ -6,6 +6,9 @@ verify_jwt = false
 [functions.bold-webhook]
 verify_jwt = false
 
+[functions.create-document-token]
+verify_jwt = false
+
 [functions.create-lawyer]
 verify_jwt = true
 
