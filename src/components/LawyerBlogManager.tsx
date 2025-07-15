@@ -128,10 +128,59 @@ export default function LawyerBlogManager({ onBack, lawyerData }: LawyerBlogMana
       });
     } else {
       setSelectedBlog(null);
+      // Create blog with standard template for lawyers
+      const standardTemplate = `
+# Introducción
+
+Explicar brevemente el tema legal que se va a tratar y por qué es importante para el lector.
+
+## ¿Qué es [concepto legal]?
+
+Definir claramente el concepto legal principal del artículo en términos sencillos.
+
+## Marco Legal en Colombia
+
+Explicar la legislación colombiana aplicable y referencias normativas relevantes.
+
+## Casos Prácticos
+
+### Ejemplo 1: [Situación común]
+Describir un caso práctico real y cómo se resuelve legalmente.
+
+### Ejemplo 2: [Otra situación]
+Otro ejemplo que ilustre diferentes aspectos del tema.
+
+## Pasos a Seguir
+
+1. **Primer paso**: Explicación clara
+2. **Segundo paso**: Más detalles
+3. **Tercer paso**: Conclusión
+
+## Documentos Necesarios
+
+- Documento 1
+- Documento 2
+- Documento 3
+
+## Consejos Importantes
+
+> **⚠️ Advertencia**: Puntos críticos que el lector debe tener en cuenta.
+
+> **💡 Consejo**: Recomendaciones útiles para el lector.
+
+## Conclusión
+
+Resumir los puntos clave y proporcionar recomendaciones finales.
+
+---
+
+*¿Necesitas ayuda específica con tu caso? Consulta con nuestro asistente legal Lexi para obtener orientación personalizada.*
+      `.trim();
+
       setBlogForm({
         title: "",
         slug: "",
-        content: "",
+        content: standardTemplate,
         excerpt: "",
         featured_image: "",
         meta_title: "",
@@ -139,6 +188,21 @@ export default function LawyerBlogManager({ onBack, lawyerData }: LawyerBlogMana
         tags: [],
       });
     }
+    setShowEditor(true);
+  };
+
+  const openEditorBlank = () => {
+    setSelectedBlog(null);
+    setBlogForm({
+      title: "",
+      slug: "",
+      content: "",
+      excerpt: "",
+      featured_image: "",
+      meta_title: "",
+      meta_description: "",
+      tags: [],
+    });
     setShowEditor(true);
   };
 
@@ -307,7 +371,7 @@ export default function LawyerBlogManager({ onBack, lawyerData }: LawyerBlogMana
                 Gestión de Blog
               </h1>
               <p className="text-lg text-muted-foreground">
-                Crea y gestiona tus artículos de blog. Solo los administradores pueden publicarlos.
+                Crea y gestiona tus artículos de blog con plantilla profesional incluida. Solo los administradores pueden publicarlos.
               </p>
               {lawyerData?.name && (
                 <div className="flex items-center gap-2 mt-2">
@@ -318,19 +382,20 @@ export default function LawyerBlogManager({ onBack, lawyerData }: LawyerBlogMana
                 </div>
               )}
             </div>
-            <Dialog open={showEditor} onOpenChange={setShowEditor}>
-              <DialogTrigger asChild>
-                <Button onClick={() => openEditor()}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nuevo Blog
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>
-                    {selectedBlog ? 'Editar Blog' : 'Nuevo Blog'}
-                  </DialogTitle>
-                </DialogHeader>
+            <div className="flex gap-2">
+              <Dialog open={showEditor} onOpenChange={setShowEditor}>
+                <DialogTrigger asChild>
+                  <Button onClick={() => openEditor()}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nuevo Blog (con plantilla)
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {selectedBlog ? 'Editar Blog' : 'Nuevo Blog'}
+                    </DialogTitle>
+                  </DialogHeader>
                 
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
@@ -431,8 +496,17 @@ export default function LawyerBlogManager({ onBack, lawyerData }: LawyerBlogMana
                     </Button>
                   </div>
                 </div>
-              </DialogContent>
-            </Dialog>
+                </DialogContent>
+              </Dialog>
+              
+              <Button 
+                variant="outline"
+                onClick={() => openEditorBlank()}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Blog en blanco
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -447,10 +521,16 @@ export default function LawyerBlogManager({ onBack, lawyerData }: LawyerBlogMana
                 <p className="text-muted-foreground mb-4">
                   No tienes blogs creados aún.
                 </p>
-                <Button onClick={() => openEditor()}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Crear mi primer blog
-                </Button>
+                <div className="flex gap-2 justify-center">
+                  <Button onClick={() => openEditor()}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Crear con plantilla
+                  </Button>
+                  <Button variant="outline" onClick={() => openEditorBlank()}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Crear en blanco
+                  </Button>
+                </div>
               </div>
             ) : (
               <Table>
@@ -528,10 +608,12 @@ export default function LawyerBlogManager({ onBack, lawyerData }: LawyerBlogMana
               Información importante
             </h3>
             <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+              <li>• Los blogs se crean con una <strong>plantilla profesional</strong> que incluye estructura estándar para contenido legal</li>
               <li>• Los blogs se crean como borradores y deben ser publicados por un administrador</li>
               <li>• Puedes editar tus blogs mientras estén en estado borrador</li>
               <li>• Una vez publicados, solo los administradores pueden modificarlos</li>
               <li>• Los tags ayudan a categorizar tu contenido para mejor organización</li>
+              <li>• La plantilla incluye secciones para: introducción, marco legal, casos prácticos, documentos necesarios y consejos</li>
             </ul>
           </CardContent>
         </Card>
