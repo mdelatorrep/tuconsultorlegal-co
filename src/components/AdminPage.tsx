@@ -99,7 +99,7 @@ interface BlogPost {
   content: string;
   excerpt?: string;
   featured_image?: string;
-  status: 'draft' | 'published' | 'archived';
+  status: 'draft' | 'en_revision' | 'published' | 'archived';
   author_id: string;
   published_at?: string;
   created_at: string;
@@ -137,6 +137,7 @@ function AdminPage() {
   const [businessStats, setBusinessStats] = useState<BusinessStats | null>(null);
   const [contracts, setContracts] = useState<ContractDetail[]>([]);
   const [blogs, setBlogs] = useState<BlogPost[]>([]);
+  const [pendingBlogsCount, setPendingBlogsCount] = useState<number>(0);
   const [contactMessages, setContactMessages] = useState<ContactMessage[]>([]);
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
   const [tokenRequests, setTokenRequests] = useState<any[]>([]);
@@ -213,7 +214,7 @@ function AdminPage() {
     content: "",
     excerpt: "",
     featured_image: "",
-    status: "draft" as "draft" | "published" | "archived",
+    status: "draft" as "draft" | "en_revision" | "published" | "archived",
     meta_title: "",
     meta_description: "",
     tags: [] as string[],
@@ -462,7 +463,12 @@ function AdminPage() {
 
       if (blogsData?.success) {
         setBlogs(blogsData.blogs || []);
-        console.log('Blogs loaded:', blogsData.blogs?.length || 0);
+        
+        // Count pending blogs (en_revision status)
+        const pendingCount = (blogsData.blogs || []).filter((blog: BlogPost) => blog.status === 'en_revision').length;
+        setPendingBlogsCount(pendingCount);
+        
+        console.log('Blogs loaded:', blogsData.blogs?.length || 0, 'Pending:', pendingCount);
       }
     } catch (error) {
       console.error('Error loading blogs:', error);
@@ -1324,7 +1330,7 @@ function AdminPage() {
         tags: [],
       });
       setShowBlogEditor(false);
-      await loadBlogs();
+      await loadBlogs(); // This will update the pending count
     } catch (error: any) {
       console.error('Error creating blog:', error);
       toast({
@@ -1365,7 +1371,7 @@ function AdminPage() {
 
       setShowBlogEditor(false);
       setSelectedBlog(null);
-      await loadBlogs();
+      await loadBlogs(); // This will update the pending count
     } catch (error: any) {
       console.error('Error updating blog:', error);
       toast({
@@ -1405,7 +1411,7 @@ function AdminPage() {
         description: "Blog eliminado exitosamente",
       });
 
-      await loadBlogs();
+      await loadBlogs(); // This will update the pending count
     } catch (error: any) {
       console.error('Error deleting blog:', error);
       toast({
@@ -1943,10 +1949,15 @@ Resumir los puntos clave y proporcionar recomendaciones finales.
                 </TabsTrigger>
                 <TabsTrigger 
                   value="blogs" 
-                  className="flex-shrink-0 flex flex-col items-center py-3 px-4 text-xs whitespace-nowrap min-w-[70px] data-[state=active]:bg-background data-[state=active]:text-foreground"
+                  className="flex-shrink-0 flex flex-col items-center py-3 px-4 text-xs whitespace-nowrap min-w-[70px] data-[state=active]:bg-background data-[state=active]:text-foreground relative"
                 >
                   <BookOpen className="h-4 w-4 mb-1" />
                   Blog
+                  {pendingBlogsCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {pendingBlogsCount}
+                    </span>
+                  )}
                 </TabsTrigger>
                 <TabsTrigger 
                   value="config" 
@@ -2025,10 +2036,15 @@ Resumir los puntos clave y proporcionar recomendaciones finales.
               </TabsTrigger>
               <TabsTrigger 
                 value="blogs" 
-                className="flex flex-row items-center gap-2 p-3 text-sm"
+                className="flex flex-row items-center gap-2 p-3 text-sm relative"
               >
                 <BookOpen className="h-4 w-4" />
                 Gestión de Blog
+                {pendingBlogsCount > 0 && (
+                  <span className="bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center ml-1">
+                    {pendingBlogsCount}
+                  </span>
+                )}
               </TabsTrigger>
               <TabsTrigger 
                 value="config" 
@@ -2985,10 +3001,16 @@ Resumir los puntos clave y proporcionar recomendaciones finales.
                         <TableCell>
                           <Badge variant={
                             blog.status === 'published' ? 'default' : 
-                            blog.status === 'draft' ? 'secondary' : 'destructive'
+                            blog.status === 'draft' ? 'secondary' : 
+                            blog.status === 'en_revision' ? 'outline' :
+                            'destructive'
+                          } className={
+                            blog.status === 'en_revision' ? 'bg-yellow-50 text-yellow-800 border-yellow-300' : ''
                           }>
                             {blog.status === 'published' ? 'Publicado' : 
-                             blog.status === 'draft' ? 'Borrador' : 'Archivado'}
+                             blog.status === 'draft' ? 'Borrador' : 
+                             blog.status === 'en_revision' ? 'En Revisión' :
+                             'Archivado'}
                           </Badge>
                         </TableCell>
                         <TableCell>{blog.author?.full_name || 'Desconocido'}</TableCell>
@@ -2997,24 +3019,62 @@ Resumir los puntos clave y proporcionar recomendaciones finales.
                           {blog.published_at ? new Date(blog.published_at).toLocaleDateString() : '-'}
                         </TableCell>
                         <TableCell>{blog.views_count}</TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => openBlogEditor(blog)}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => deleteBlog(blog.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
+                         <TableCell>
+                           <div className="flex gap-2">
+                             <Button
+                               size="sm"
+                               variant="outline"
+                               onClick={() => openBlogEditor(blog)}
+                             >
+                               <Eye className="h-4 w-4" />
+                             </Button>
+                             {blog.status === 'en_revision' && (
+                               <Button
+                                 size="sm"
+                                 variant="default"
+                                 onClick={async () => {
+                                   try {
+                                     const { data, error } = await supabase.functions.invoke('manage-blog-posts', {
+                                       body: {
+                                         action: 'update',
+                                         id: blog.id,
+                                         status: 'published',
+                                         published_at: new Date().toISOString()
+                                       }
+                                     });
+                                     
+                                     if (error || !data?.success) {
+                                       throw new Error(data?.error || 'Error al aprobar el blog');
+                                     }
+                                     
+                                     toast({
+                                       title: "Blog aprobado",
+                                       description: "El blog ha sido publicado exitosamente",
+                                     });
+                                     
+                                     await loadBlogs();
+                                   } catch (error: any) {
+                                     toast({
+                                       title: "Error",
+                                       description: error.message || "No se pudo aprobar el blog",
+                                       variant: "destructive"
+                                     });
+                                   }
+                                 }}
+                                 className="bg-green-600 hover:bg-green-700"
+                               >
+                                 ✓
+                               </Button>
+                             )}
+                             <Button
+                               size="sm"
+                               variant="destructive"
+                               onClick={() => deleteBlog(blog.id)}
+                             >
+                               <Trash2 className="h-4 w-4" />
+                             </Button>
+                           </div>
+                         </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

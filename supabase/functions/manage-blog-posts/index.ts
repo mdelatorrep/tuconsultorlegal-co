@@ -129,8 +129,11 @@ Deno.serve(async (req) => {
             }
             
             data.author_id = authorId
-            data.status = 'draft' // Lawyers can only create drafts
-            console.log('Lawyer creating blog as draft with author_id:', authorId)
+            // New blogs from lawyers go to revision, unless it's an edit
+            if (!data.status || data.status === 'draft') {
+              data.status = 'en_revision'
+            }
+            console.log('Lawyer creating/updating blog with author_id:', authorId, 'status:', data.status)
           }
           
           // Generate slug from title if not provided
@@ -210,17 +213,16 @@ Deno.serve(async (req) => {
               })
             }
             
-            // Check if blog is still a draft
-            if (existingBlog.status !== 'draft') {
-              return new Response(JSON.stringify({ error: 'You can only edit draft blogs' }), {
+            // Check if blog is still editable (draft or en_revision)
+            if (existingBlog.status !== 'draft' && existingBlog.status !== 'en_revision') {
+              return new Response(JSON.stringify({ error: 'You can only edit draft or in-review blogs' }), {
                 status: 403,
                 headers: securityHeaders
               })
             }
             
-            // Force status to remain draft for lawyers
-            data.status = 'draft'
-            console.log('Lawyer updating their draft blog:', id)
+            // Don't force status change - let lawyers update in revision state
+            console.log('Lawyer updating their blog:', id, 'current status:', existingBlog.status)
           }
           
           // Generate slug from title if not provided
@@ -301,15 +303,15 @@ Deno.serve(async (req) => {
               })
             }
             
-            // Check if blog is still a draft
-            if (existingBlog.status !== 'draft') {
-              return new Response(JSON.stringify({ error: 'You can only delete draft blogs' }), {
+            // Check if blog is still editable (draft or en_revision)
+            if (existingBlog.status !== 'draft' && existingBlog.status !== 'en_revision') {
+              return new Response(JSON.stringify({ error: 'You can only delete draft or in-review blogs' }), {
                 status: 403,
                 headers: securityHeaders
               })
             }
             
-            console.log('Lawyer deleting their draft blog:', id)
+            console.log('Lawyer deleting their blog:', id, 'status:', existingBlog.status)
           }
 
           const { error: deleteError } = await supabase

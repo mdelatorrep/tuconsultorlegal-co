@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Plus, Edit3, Trash2, Eye, Calendar, User } from "lucide-react";
+import { ArrowLeft, Plus, Edit3, Trash2, Eye, Calendar, User, Sparkles } from "lucide-react";
 
 interface BlogPost {
   id: string;
@@ -232,7 +232,7 @@ Resumir los puntos clave y proporcionar recomendaciones finales.
       const blogData = {
         ...blogForm,
         slug: blogForm.slug || generateSlug(blogForm.title),
-        status: 'draft', // Los abogados solo pueden crear borradores
+        status: selectedBlog ? selectedBlog.status : 'en_revision', // Nuevo blog va a revisión, editado mantiene estado
       };
 
       // Don't set author_id here - let the edge function handle it
@@ -325,6 +325,8 @@ Resumir los puntos clave y proporcionar recomendaciones finales.
     switch (status) {
       case 'draft':
         return <Badge variant="secondary">Borrador</Badge>;
+      case 'en_revision':
+        return <Badge variant="outline" className="bg-yellow-50 text-yellow-800 border-yellow-300">En Revisión</Badge>;
       case 'published':
         return <Badge variant="default" className="bg-green-100 text-green-800">Publicado</Badge>;
       case 'archived':
@@ -443,15 +445,67 @@ Resumir los puntos clave y proporcionar recomendaciones finales.
                     />
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium">Imagen destacada (URL)</label>
-                      <Input
-                        value={blogForm.featured_image}
-                        onChange={(e) => setBlogForm({ ...blogForm, featured_image: e.target.value })}
-                        placeholder="https://ejemplo.com/imagen.jpg"
-                      />
-                    </div>
+                   <div className="grid grid-cols-2 gap-4">
+                     <div>
+                       <label className="text-sm font-medium">Imagen destacada (URL)</label>
+                       <div className="flex gap-2">
+                         <Input
+                           value={blogForm.featured_image}
+                           onChange={(e) => setBlogForm({ ...blogForm, featured_image: e.target.value })}
+                           placeholder="https://ejemplo.com/imagen.jpg"
+                         />
+                         <Button
+                           type="button"
+                           variant="outline"
+                           size="sm"
+                           onClick={async () => {
+                             if (!blogForm.title) {
+                               toast({
+                                 title: "Error",
+                                 description: "Primero agrega un título para generar la imagen",
+                                 variant: "destructive"
+                               });
+                               return;
+                             }
+
+                             try {
+                               toast({
+                                 title: "Generando imagen...",
+                                 description: "Esto puede tomar unos segundos",
+                               });
+
+                               const { data, error } = await supabase.functions.invoke('generate-blog-image', {
+                                 body: {
+                                   blogId: selectedBlog?.id || 'preview',
+                                   title: blogForm.title,
+                                   content: blogForm.content,
+                                   tags: blogForm.tags
+                                 }
+                               });
+
+                               if (error) throw error;
+
+                               if (data?.imageUrl) {
+                                 setBlogForm(prev => ({ ...prev, featured_image: data.imageUrl }));
+                                 toast({
+                                   title: "Imagen generada",
+                                   description: "Se ha generado una imagen automáticamente",
+                                 });
+                               }
+                             } catch (error: any) {
+                               console.error('Error generating image:', error);
+                               toast({
+                                 title: "Error",
+                                 description: "No se pudo generar la imagen automáticamente",
+                                 variant: "destructive"
+                               });
+                             }
+                           }}
+                         >
+                           <Sparkles className="h-4 w-4" />
+                         </Button>
+                       </div>
+                     </div>
                     <div>
                       <label className="text-sm font-medium">Tags (separados por comas)</label>
                       <Input
@@ -609,10 +663,11 @@ Resumir los puntos clave y proporcionar recomendaciones finales.
             </h3>
             <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
               <li>• Los blogs se crean con una <strong>plantilla profesional</strong> que incluye estructura estándar para contenido legal</li>
-              <li>• Los blogs se crean como borradores y deben ser publicados por un administrador</li>
-              <li>• Puedes editar tus blogs mientras estén en estado borrador</li>
+              <li>• Puedes <strong>generar imágenes con IA</strong> automáticamente basadas en el contenido de tu blog</li>
+              <li>• Los blogs nuevos van a <strong>estado "En Revisión"</strong> para ser aprobados por un administrador</li>
+              <li>• Puedes editar tus blogs mientras estén en estado borrador o en revisión</li>
               <li>• Una vez publicados, solo los administradores pueden modificarlos</li>
-              <li>• Los tags ayudan a categorizar tu contenido para mejor organización</li>
+              <li>• Los tags ayudan a categorizar tu contenido y mejorar la generación de imágenes</li>
               <li>• La plantilla incluye secciones para: introducción, marco legal, casos prácticos, documentos necesarios y consejos</li>
             </ul>
           </CardContent>
