@@ -19,15 +19,15 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 0%;
 
-    /* Brand Colors - Electric Blue Theme */
-    --primary: 233 49% 46%; /* azul eléctrico #3C46B2 */
-    --primary-light: 233 60% 60%; /* azul eléctrico más claro */
+    /* Brand Colors - Professional Trust Theme */
+    --primary: 224 47% 32%; /* azul marino profesional #2D3B7A */
+    --primary-light: 224 78% 63%; /* azul eléctrico moderno #4F68E8 */
     --primary-foreground: 0 0% 100%;
 
-    /* Action/CTA Colors - Orange Red */
-    --success: 13 87% 58%; /* rojo naranja #F15438 */
-    --success-dark: 13 87% 50%; /* rojo naranja más oscuro */
-    --success-foreground: 0 0% 100%;
+    /* Action/CTA Colors - Gold Accent */
+    --success: 44 95% 51%; /* dorado confianza #F7B500 */
+    --success-dark: 44 95% 45%; /* dorado más oscuro */
+    --success-foreground: 224 47% 32%;
 
     /* Secondary Colors */
     --secondary: 0 0% 85%; /* gris claro #D8D8D8 */
@@ -49,22 +49,24 @@ All colors MUST be HSL.
     --radius: 0.75rem;
 
     /* Brand Theme Specific Colors */
-    --brand-blue: 233 49% 46%; /* azul eléctrico principal */
-    --brand-blue-light: 233 60% 60%;
-    --brand-orange: 13 87% 58%; /* rojo naranja */
-    --brand-orange-dark: 13 87% 50%;
-    --brand-gray-light: 0 0% 85%;
-    --brand-text-light: 0 0% 60%;
+    --brand-blue: 224 47% 32%; /* azul marino profesional */
+    --brand-blue-light: 224 78% 63%; /* azul eléctrico moderno */
+    --brand-gold: 44 95% 51%; /* dorado confianza */
+    --brand-gold-dark: 44 95% 45%; /* dorado oscuro */
+    --brand-gray-light: 220 15% 92%; /* gris más cálido */
+    --brand-text-light: 224 15% 55%; /* texto más armonioso */
 
     /* Gradients */
     --gradient-hero: linear-gradient(135deg, hsl(var(--brand-blue)), hsl(var(--brand-blue-light)));
-    --gradient-card: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--muted)) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--brand-gray-light)) 100%);
+    --gradient-accent: linear-gradient(90deg, hsl(var(--brand-gold)) 0%, hsl(var(--brand-gold-dark)) 100%);
 
     /* Shadows */
-    --shadow-soft: 0 4px 6px -1px hsl(var(--brand-blue) / 0.1);
-    --shadow-card: 0 10px 15px -3px hsl(var(--brand-blue) / 0.1);
-    --shadow-hero: 0 20px 25px -5px hsl(var(--brand-blue) / 0.15);
-    --shadow-glow: 0 0 40px hsl(var(--brand-blue) / 0.3);
+    --shadow-soft: 0 4px 6px -1px hsl(var(--brand-blue) / 0.08);
+    --shadow-card: 0 10px 15px -3px hsl(var(--brand-blue) / 0.12);
+    --shadow-hero: 0 20px 25px -5px hsl(var(--brand-blue) / 0.18);
+    --shadow-glow: 0 0 40px hsl(var(--brand-gold) / 0.25);
+    --shadow-trust: 0 8px 32px hsl(var(--brand-blue) / 0.15);
 
     /* Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
