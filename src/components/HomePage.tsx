@@ -10,21 +10,21 @@ interface HomePageProps {
 export default function HomePage({ onOpenChat }: HomePageProps) {
   // SEO optimization for home page
   useSEO({
-    title: "Tu Consultor Legal - Asesoría Legal con IA en Colombia | Documentos Jurídicos Inteligentes",
-    description: "Asesoría legal profesional con Inteligencia Artificial en Colombia. Genera contratos, demandas y documentos jurídicos de forma rápida, segura y económica. Consultas especializadas para personas y empresas.",
-    keywords: "asesoría legal Colombia, abogado virtual, documentos jurídicos IA, contratos inteligentes, consulta legal online, derechos laborales, derecho empresarial, servicios legales digitales, tuconsultorlegal",
+    title: "Tu Consultor Legal - Democratizando el Acceso a Servicios Legales de Alta Calidad en Colombia",
+    description: "Democratizamos el acceso a servicios legales de alta calidad en Colombia con tecnología. Asesoría legal confiable, documentos jurídicos precisos y soporte profesional para todos.",
+    keywords: "asesoría legal Colombia, democratizar servicios legales, abogado virtual, documentos jurídicos IA, contratos inteligentes, consulta legal accesible, derechos laborales, derecho empresarial, servicios legales digitales, tuconsultorlegal",
     canonical: "https://tuconsultorlegal.co/",
     ogImage: "https://tuconsultorlegal.co/og-image.png",
     structuredData: {
       "@context": "https://schema.org",
       "@type": "WebPage",
-      "name": "Tu Consultor Legal - Inicio",
-      "description": "Plataforma de asesoría legal con IA para Colombia",
+      "name": "Tu Consultor Legal - Democratizando el Acceso a Servicios Legales",
+      "description": "Democratizando el acceso a servicios legales de alta calidad en Colombia con tecnología",
       "url": "https://tuconsultorlegal.co/",
       "mainEntity": {
         "@type": "LegalService",
         "name": "Tu Consultor Legal",
-        "description": "Asesoría legal con Inteligencia Artificial",
+        "description": "Democratizando el acceso a servicios legales de alta calidad en Colombia con tecnología",
         "provider": {
           "@type": "Organization",
           "name": "Tu Consultor Legal",
@@ -36,28 +36,28 @@ export default function HomePage({ onOpenChat }: HomePageProps) {
 
   const features = [
     {
-      icon: <Zap className="w-8 h-8" />,
-      title: "Rápido y Eficiente",
-      description: "Olvídate de esperar días. Nuestra IA genera borradores de alta calidad en minutos, listos para ser revisados.",
-      color: "bg-blue-100 text-legal-blue"
+      icon: <Shield className="w-8 h-8" />,
+      title: "Respaldo Legal Profesional",
+      description: "Cada documento es revisado por abogados certificados para garantizar tu protección legal y tranquilidad total.",
+      color: "bg-primary/10 text-primary"
     },
     {
       icon: <DollarSign className="w-8 h-8" />,
-      title: "Asequible y Transparente", 
-      description: "Accede a servicios legales de primer nivel a una fracción del costo. Conoce el precio desde el inicio, sin sorpresas.",
-      color: "bg-green-100 text-success"
+      title: "Acceso Democrático",
+      description: "Servicios legales de alta calidad a precios justos. Sin letra pequeña, sin costos ocultos.",
+      color: "bg-success/10 text-success"
     },
     {
-      icon: <Shield className="w-8 h-8" />,
-      title: "Confiable y Seguro",
-      description: "Combinamos la agilidad de la IA con la rigurosidad y experiencia de abogados humanos que validan cada documento.",
-      color: "bg-rose-100 text-rose-600"
+      icon: <Zap className="w-8 h-8" />,
+      title: "Tecnología Inteligente",
+      description: "IA avanzada que aprende del derecho colombiano para crear documentos precisos en minutos, no días.",
+      color: "bg-accent/10 text-accent"
     },
     {
       icon: <MessageCircle className="w-8 h-8" />,
-      title: "Siempre Disponible",
-      description: "Tu asistente legal no duerme. Realiza tus consultas y solicita tus documentos a cualquier hora, desde cualquier lugar.",
-      color: "bg-yellow-100 text-yellow-600"
+      title: "Acompañamiento Continuo",
+      description: "Siempre a tu lado con asesoría personalizada y soporte cuando más lo necesitas.",
+      color: "bg-warning/10 text-warning"
     }
   ];
 
@@ -77,9 +77,9 @@ export default function HomePage({ onOpenChat }: HomePageProps) {
   ];
 
   const stats = [
-    { icon: <Check />, text: "Validado por Abogados" },
-    { icon: <Clock />, text: "Disponible 24/7" },
-    { icon: <Users />, text: "+5,000 Colombianos Asistidos" }
+    { icon: <Check />, text: "Respaldo Legal Certificado" },
+    { icon: <Clock />, text: "Siempre Disponible" },
+    { icon: <Users />, text: "+5,000 Colombianos Beneficiados" }
   ];
 
   return (
@@ -90,11 +90,14 @@ export default function HomePage({ onOpenChat }: HomePageProps) {
       <section className="hero-gradient text-primary-foreground">
         <div className="container mx-auto px-6 py-24 text-center">
           <h1 className="text-4xl md:text-6xl font-extrabold leading-tight mb-6">
-            Asesoría y Documentos Legales en Colombia, Simplificados con IA.
+            Servicios Legales de Alta Calidad para Todos los Colombianos
           </h1>
-          <p className="text-lg md:text-xl max-w-3xl mx-auto text-primary-foreground/90 mb-10">
-            Resuelve tus dudas jurídicas y crea contratos de arrendamiento, laborales y más en minutos. 
-            Fácil, rápido y con la validación de abogados expertos.
+          <p className="text-lg md:text-xl max-w-3xl mx-auto text-primary-foreground/90 mb-6">
+            Democratizamos el acceso a asesoría legal profesional con tecnología inteligente. 
+            Resuelve tus dudas jurídicas y obtén documentos legales seguros, validados por abogados expertos.
+          </p>
+          <p className="text-base max-w-2xl mx-auto text-primary-foreground/80 mb-10">
+            ✓ Confiable y seguro ✓ Precios justos ✓ Respaldo profesional ✓ Disponible 24/7
           </p>
           
           <Button
@@ -121,7 +124,7 @@ export default function HomePage({ onOpenChat }: HomePageProps) {
       <section className="bg-card py-20">
         <div className="container mx-auto px-6">
           <h2 className="text-3xl font-bold text-center mb-12 text-foreground">
-            ¿Por qué elegir Tu Consultor Legal?
+            Nuestra Misión: Democratizar el Acceso a Servicios Legales de Calidad
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => (
@@ -158,10 +161,10 @@ export default function HomePage({ onOpenChat }: HomePageProps) {
       <section className="bg-primary text-primary-foreground">
         <div className="container mx-auto px-6 py-20 text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            ¿Listo para resolver tus necesidades legales?
+            Da el Primer Paso Hacia tu Seguridad Legal
           </h2>
           <p className="text-lg text-primary-foreground/80 mb-8">
-            No dejes que la complejidad legal te detenga. Empieza hoy con una asesoría gratuita.
+            Únete a miles de colombianos que ya confían en nosotros. Tu tranquilidad legal está a un clic de distancia.
           </p>
           <Button
             variant="success"
