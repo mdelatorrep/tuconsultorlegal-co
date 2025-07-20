@@ -1,13 +1,15 @@
 import { Button } from "./ui/button";
-import { Check, Clock, Users, Shield, Zap, DollarSign, MessageCircle } from "lucide-react";
+import { Check, Clock, Users, Shield, Zap, DollarSign, MessageCircle, FileText, Star } from "lucide-react";
 import ServiceStatusAlert from "./ServiceStatusAlert";
 import useSEO from "@/hooks/useSEO";
+import { usePopularDocuments } from "@/hooks/usePopularDocuments";
 
 interface HomePageProps {
   onOpenChat: (message?: string) => void;
 }
 
 export default function HomePage({ onOpenChat }: HomePageProps) {
+  const { documents: popularDocuments, loading: loadingDocs } = usePopularDocuments();
   // SEO optimization for home page
   useSEO({
     title: "Tu Consultor Legal - Democratizando el Acceso a Servicios Legales de Alta Calidad en Colombia",
@@ -136,6 +138,85 @@ export default function HomePage({ onOpenChat }: HomePageProps) {
                 <p className="text-muted-foreground">{feature.description}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Popular Documents Section */}
+      <section className="py-20 bg-muted/50">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-foreground mb-4">
+              Documentos Más Solicitados
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Accede rápidamente a los documentos legales que más necesitan los colombianos. 
+              Proceso simple, seguro y con respaldo profesional.
+            </p>
+          </div>
+
+          {loadingDocs ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, index) => (
+                <div key={index} className="bg-card p-6 rounded-lg shadow-soft animate-pulse">
+                  <div className="bg-muted rounded-full w-12 h-12 mb-4"></div>
+                  <div className="bg-muted h-6 rounded mb-2"></div>
+                  <div className="bg-muted h-4 rounded mb-4"></div>
+                  <div className="bg-muted h-10 rounded"></div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {popularDocuments.map((doc, index) => (
+                <div key={doc.id} className="bg-card p-6 rounded-lg shadow-soft hover:shadow-card transition-smooth border border-border group hover:border-primary/20">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="bg-primary/10 text-primary rounded-full p-3 w-12 h-12 flex items-center justify-center">
+                      <FileText className="w-6 h-6" />
+                    </div>
+                    {doc.request_count > 0 && (
+                      <div className="flex items-center text-sm text-muted-foreground">
+                        <Star className="w-4 h-4 mr-1 text-warning" />
+                        <span>{doc.request_count} solicitudes</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-smooth">
+                    {doc.name}
+                  </h3>
+                  
+                  <p className="text-muted-foreground mb-4 text-sm">
+                    {doc.description}
+                  </p>
+                  
+                  <div className="mb-4">
+                    <span className="inline-block bg-accent/10 text-accent text-xs px-2 py-1 rounded-full">
+                      {doc.category}
+                    </span>
+                  </div>
+                  
+                  <Button 
+                    className="w-full" 
+                    variant="outline"
+                    onClick={() => onOpenChat(`Quiero crear un ${doc.name.toLowerCase()}`)}
+                  >
+                    {doc.button_cta || 'Crear Documento'}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="text-center mt-12">
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => onOpenChat("Quiero ver todos los documentos disponibles")}
+              className="hover:bg-primary hover:text-primary-foreground transition-smooth"
+            >
+              Ver Todos los Documentos
+            </Button>
           </div>
         </div>
       </section>
