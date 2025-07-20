@@ -14,7 +14,7 @@ import LawyerStatsAdmin from "./LawyerStatsAdmin";
 import OpenAIAgentManager from "./OpenAIAgentManager";
 import LawyerBlogManager from "./LawyerBlogManager";
 import SystemConfigManager from "./SystemConfigManager";
-import { Copy, Users, Bot, BarChart3, Clock, CheckCircle, Lock, Unlock, Trash2, Check, X, Plus, Loader2, MessageCircle, BookOpen, Settings, Zap } from "lucide-react";
+import { Copy, Users, Bot, BarChart3, Clock, CheckCircle, Lock, Unlock, Trash2, Check, X, Plus, Loader2, MessageCircle, BookOpen, Settings, Zap, Mail, Phone } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Label } from "./ui/label";
@@ -60,6 +60,7 @@ function AdminPage() {
   const [newLawyer, setNewLawyer] = useState({
     name: "",
     email: "",
+    phone: "",
     canCreateAgents: false,
     canSeeBusinessStats: false
   });
@@ -152,9 +153,11 @@ function AdminPage() {
     try {
       setIsProcessing(true);
       const { data, error } = await supabase.functions.invoke('create-lawyer', {
+        headers: getAuthHeaders(),
         body: {
           name: newLawyer.name,
           email: newLawyer.email,
+          phone_number: newLawyer.phone,
           canCreateAgents: newLawyer.canCreateAgents,
           canSeeBusinessStats: newLawyer.canSeeBusinessStats
         }
@@ -162,7 +165,13 @@ function AdminPage() {
 
       if (error) throw error;
 
-      setNewLawyer({ name: "", email: "", canCreateAgents: false, canSeeBusinessStats: false });
+      setNewLawyer({ 
+        name: "", 
+        email: "", 
+        phone: "", 
+        canCreateAgents: false, 
+        canSeeBusinessStats: false 
+      });
       await loadLawyers();
       
       toast({
@@ -279,7 +288,7 @@ function AdminPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 border rounded-lg">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 p-4 border rounded-lg">
                   <Input
                     placeholder="Nombre completo"
                     value={newLawyer.name}
@@ -291,6 +300,11 @@ function AdminPage() {
                     value={newLawyer.email}
                     onChange={(e) => setNewLawyer(prev => ({ ...prev, email: e.target.value }))}
                   />
+                  <Input
+                    placeholder="Teléfono (opcional)"
+                    value={newLawyer.phone || ''}
+                    onChange={(e) => setNewLawyer(prev => ({ ...prev, phone: e.target.value }))}
+                  />
                   <div className="flex items-center space-x-2">
                     <Switch
                       checked={newLawyer.canCreateAgents}
@@ -301,7 +315,7 @@ function AdminPage() {
                   <Button 
                     onClick={createLawyer} 
                     disabled={!newLawyer.name || !newLawyer.email || isProcessing}
-                    className="md:col-span-2 lg:col-span-4"
+                    className="lg:col-span-5"
                   >
                     {isProcessing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
                     Crear Abogado
@@ -312,46 +326,170 @@ function AdminPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Nombre</TableHead>
-                        <TableHead className="hidden sm:table-cell">Email</TableHead>
-                        <TableHead className="hidden md:table-cell">Estado</TableHead>
+                        <TableHead>Abogado</TableHead>
+                        <TableHead className="hidden sm:table-cell">Contacto</TableHead>
+                        <TableHead className="hidden md:table-cell">Permisos</TableHead>
+                        <TableHead className="hidden lg:table-cell">Actividad</TableHead>
+                        <TableHead>Estado</TableHead>
                         <TableHead>Acciones</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {lawyers.map((lawyer) => (
-                        <TableRow key={lawyer.id}>
+                        <TableRow key={lawyer.id} className={!(lawyer as any).active ? 'opacity-60' : ''}>
                           <TableCell className="font-medium">
                             <div>
-                              <div>{lawyer.name}</div>
-                              <div className="text-xs text-muted-foreground sm:hidden">{lawyer.email}</div>
+                              <div className="flex items-center gap-2">
+                                {(lawyer as any).full_name || lawyer.name}
+                                {lawyer.can_create_agents && (
+                                  <Badge variant="outline" className="text-xs">
+                                    <Bot className="w-3 h-3 mr-1" />
+                                    Agentes
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="text-xs text-muted-foreground sm:hidden">
+                                {lawyer.email}
+                              </div>
                             </div>
                           </TableCell>
-                          <TableCell className="hidden sm:table-cell">{lawyer.email}</TableCell>
-                          <TableCell className="hidden md:table-cell">
-                            {lawyer.is_verified ? (
-                              <Badge variant="default" className="text-xs">
-                                <CheckCircle className="w-3 h-3 mr-1" />
-                                Verificado
-                              </Badge>
-                            ) : (
-                              <Badge variant="secondary" className="text-xs">
-                                <Clock className="w-3 h-3 mr-1" />
-                                Pendiente
-                              </Badge>
-                            )}
+                          
+                          <TableCell className="hidden sm:table-cell">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1 text-xs">
+                                <Mail className="w-3 h-3" />
+                                {lawyer.email}
+                              </div>
+                              {(lawyer as any).phone_number && (
+                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                  <Phone className="w-3 h-3" />
+                                  {(lawyer as any).phone_number}
+                                </div>
+                              )}
+                            </div>
                           </TableCell>
+                          
+                          <TableCell className="hidden md:table-cell">
+                            <div className="space-y-1">
+                              <Badge variant={lawyer.can_create_agents ? 'default' : 'secondary'} className="text-xs">
+                                {lawyer.can_create_agents ? 'Puede crear agentes' : 'Solo consulta'}
+                              </Badge>
+                              {lawyer.can_see_business_stats && (
+                                <Badge variant="outline" className="text-xs">
+                                  Ver estadísticas
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          
+                          <TableCell className="hidden lg:table-cell">
+                            <div className="text-xs">
+                              {(lawyer as any).last_login_at ? (
+                                <>
+                                  <div>{format(new Date((lawyer as any).last_login_at), 'dd/MM/yyyy', { locale: es })}</div>
+                                  <div className="text-muted-foreground">
+                                    {format(new Date((lawyer as any).last_login_at), 'HH:mm', { locale: es })}
+                                  </div>
+                                </>
+                              ) : (
+                                <span className="text-muted-foreground">Nunca</span>
+                              )}
+                            </div>
+                          </TableCell>
+                          
                           <TableCell>
-                            {lawyer.verification_token && (
+                            <div className="flex flex-col gap-1">
+                              <Badge variant={(lawyer as any).active !== false ? 'default' : 'secondary'} className="text-xs">
+                                {(lawyer as any).active !== false ? (
+                                  <>
+                                    <CheckCircle className="w-3 h-3 mr-1" />
+                                    Activo
+                                  </>
+                                ) : (
+                                  <>
+                                    <Lock className="w-3 h-3 mr-1" />
+                                    Inactivo
+                                  </>
+                                )}
+                              </Badge>
+                            </div>
+                          </TableCell>
+                          
+                          <TableCell>
+                            <div className="flex gap-1">
                               <Button
-                                variant="outline"
                                 size="sm"
-                                onClick={() => copyLawyerToken(lawyer.verification_token!)}
-                                className="text-xs"
+                                variant="outline"
+                                onClick={() => copyLawyerToken((lawyer as any).access_token || (lawyer as any).verification_token)}
+                                title="Copiar token"
                               >
                                 <Copy className="w-3 h-3" />
                               </Button>
-                            )}
+                              
+                              <Button
+                                size="sm"
+                                variant={(lawyer as any).active !== false ? "outline" : "default"}
+                                onClick={async () => {
+                                  try {
+                                    const { error } = await supabase
+                                      .from('lawyer_tokens')
+                                      .update({ active: !(lawyer as any).active })
+                                      .eq('lawyer_id', (lawyer as any).lawyer_id || lawyer.id);
+                                    
+                                    if (error) throw error;
+                                    await loadLawyers();
+                                    
+                                    toast({
+                                      title: (lawyer as any).active ? "Abogado desactivado" : "Abogado activado",
+                                      description: `El abogado ha sido ${(lawyer as any).active ? 'desactivado' : 'activado'} exitosamente`,
+                                    });
+                                  } catch (error: any) {
+                                    toast({
+                                      title: "Error",
+                                      description: error.message || "Error al cambiar el estado del abogado",
+                                      variant: "destructive"
+                                    });
+                                  }
+                                }}
+                                title={(lawyer as any).active ? "Desactivar" : "Activar"}
+                              >
+                                {(lawyer as any).active ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
+                              </Button>
+                              
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={async () => {
+                                  const lawyerName = (lawyer as any).full_name || lawyer.name;
+                                  if (!confirm(`¿Estás seguro de que deseas eliminar al abogado "${lawyerName}"?`)) return;
+                                  
+                                  try {
+                                    const { data, error } = await supabase.functions.invoke('delete-lawyer', {
+                                      headers: getAuthHeaders(),
+                                      body: { lawyerId: (lawyer as any).lawyer_id || lawyer.id }
+                                    });
+
+                                    if (error) throw error;
+
+                                    toast({
+                                      title: "Abogado eliminado",
+                                      description: `${lawyerName} ha sido eliminado exitosamente`,
+                                    });
+
+                                    await loadLawyers();
+                                  } catch (error: any) {
+                                    toast({
+                                      title: "Error",
+                                      description: error.message || "Error al eliminar el abogado",
+                                      variant: "destructive"
+                                    });
+                                  }
+                                }}
+                                title="Eliminar"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
