@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Scale, X, Send, AlertCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ChatMessage {
   id: string;
@@ -21,7 +22,7 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
-      content: '¡Hola! Soy Lexi, tu asistente legal. ¿En qué puedo ayudarte hoy?',
+      content: '¡Hola! Soy Lexi, tu asistente legal de tuconsultorlegal.co 🤖⚖️\n\nEstoy aquí para ayudarte con:\n• Consultas legales generales\n• Información sobre documentos\n• Orientación sobre trámites legales\n• Conexión con nuestros servicios especializados\n\n¿En qué puedo ayudarte hoy?',
       sender: 'assistant',
       timestamp: new Date()
     }
@@ -66,32 +67,28 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
     }
   }, [isOpen]);
 
-  // Send message to n8n webhook
+  // Send message using OpenAI agent through Supabase
   const sendMessage = async (messageContent: string) => {
     setIsLoading(true);
     setConnectionError(false);
 
     try {
-      const response = await fetch('https://buildera.app.n8n.cloud/webhook/a9c21cdd-8709-416a-a9c1-3b615b7e9f6b/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          chatInput: messageContent,
+      const { data, error } = await supabase.functions.invoke('document-chat', {
+        body: {
+          message: messageContent,
           sessionId: generateSessionId(),
-        }),
+          agentType: 'lexi',
+          context: 'general_legal_assistance'
+        }
       });
 
-      if (!response.ok) {
-        throw new Error('Error en la conexión');
+      if (error) {
+        throw new Error(error.message || 'Error en la conexión');
       }
 
-      const data = await response.json();
-      
       const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
-        content: data.output || 'Lo siento, ha ocurrido un error. Por favor, inténtalo de nuevo.',
+        content: data.response || 'Lo siento, ha ocurrido un error. Por favor, inténtalo de nuevo.',
         sender: 'assistant',
         timestamp: new Date()
       };
@@ -173,7 +170,7 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
             ⚖️
           </div>
           <div>
-            <h3 className="font-semibold text-sm md:text-base">Lexi, tu Asistente Legal</h3>
+            <h3 className="font-semibold text-sm md:text-base">Lexi - Asistente Legal</h3>
             <p className="text-xs opacity-90">tuconsultorlegal.co</p>
           </div>
         </div>
