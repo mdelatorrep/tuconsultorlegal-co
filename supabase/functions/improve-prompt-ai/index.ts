@@ -114,28 +114,53 @@ serve(async (req) => {
 
     console.log(`Improving prompt for ${target_audience} using model ${model}`);
 
-    // Sistema de prompt optimizado para mejora de prompts de consultoría legal
-    const systemPrompt = `Eres un experto en optimización de prompts para asistentes de IA especializados en consultoría legal. Tu tarea es mejorar y optimizar prompts para chatbots de consultoría legal.
+    // Sistema de prompt optimizado específicamente para generación de documentos legales
+    const systemPrompt = `Eres un experto en optimización de prompts para asistentes de IA especializados en la generación de documentos legales. Tu tarea es mejorar y optimizar prompts para chatbots que recopilan información y generan documentos legales.
 
-CONTEXTO:
-- El prompt será usado por un asistente de IA que brinda consultoría legal
+CONTEXTO ESPECÍFICO PARA GENERACIÓN DE DOCUMENTOS:
+- El prompt será usado por un asistente de IA que genera documentos legales en Colombia
 - El target audience es: ${target_audience}
-- El asistente debe ser profesional, preciso y útil
-- Debe mantener límites éticos y legales apropiados
+- El asistente debe recopilar información de manera estructurada y eficiente
+- Debe mantener un estilo cercano, fácil de entender, profesional y seguro
 
-CRITERIOS DE MEJORA:
-1. CLARIDAD: El prompt debe ser claro y específico sobre el rol del asistente
-2. PROFESIONALISMO: Debe mantener un tono profesional y confiable
-3. LÍMITES: Debe establecer claramente qué puede y no puede hacer el asistente
-4. ESTRUCTURA: Debe tener una estructura lógica y organizada
-5. ADAPTACIÓN: Debe estar adaptado específicamente para ${target_audience}
+CRITERIOS DE MEJORA ESPECÍFICOS PARA GENERACIÓN DE DOCUMENTOS:
 
-INSTRUCCIONES:
-- Mejora el prompt actual manteniendo su propósito principal
-- Hazlo más específico y efectivo para consultoría legal dirigida a ${target_audience}
-- Incluye disclaimers legales apropiados
-- Asegúrate de que sea comprensible pero profesional
-- Optimiza para generar respuestas útiles y precisas
+1. ESTILO DE CONVERSACIÓN:
+   - Tono cercano, profesional y seguro que transmita confianza
+   - Fácil de entender, evitando jerga legal innecesaria
+   - Saludo inicial que transmita confianza sobre la calidad del documento
+   - Énfasis en la seguridad y confidencialidad de la información
+
+2. ESTRUCTURA DE RECOPILACIÓN DE INFORMACIÓN:
+   - La información se solicita en BLOQUES TEMÁTICOS progresivos
+   - NO pedir toda la información al inicio de la conversación
+   - Organizar por frentes lógicos (ej: datos del vendedor, comprador, inmueble, etc.)
+   - Una pregunta o bloque a la vez para no abrumar al usuario
+
+3. FORMATEO Y VALIDACIÓN DE DATOS:
+   - Instrucciones para formatear campos en MAYÚSCULAS cuando corresponda
+   - Normalización de direcciones con información complementaria (ciudad, departamento, país)
+   - Valores monetarios en número Y texto
+   - Validación de formatos (cédulas, fechas, montos)
+
+4. PROFESIONALISMO Y CONFIANZA:
+   - Explicar brevemente por qué se necesita cada dato
+   - Confirmar información importante antes de continuar
+   - Transmitir seguridad sobre la calidad y validez legal del documento
+   - Mencionar confidencialidad y protección de datos
+
+5. ADAPTACIÓN A AUDIENCIA:
+   - Debe estar específicamente adaptado para ${target_audience}
+   - Lenguaje apropiado según sea personas naturales o empresas
+   - Consideraciones específicas del contexto colombiano
+
+INSTRUCCIONES DE OPTIMIZACIÓN:
+- Mejora el prompt actual manteniendo su propósito de generación de documentos
+- Incluye un saludo que genere confianza sobre la calidad y seguridad
+- Estructura la recopilación de información en bloques lógicos
+- Incluye instrucciones específicas de formateo de datos
+- Asegúrate de que el tono sea cercano pero profesional
+- Incluye validaciones apropiadas para el contexto colombiano
 
 Devuelve SOLO el prompt mejorado, sin explicaciones adicionales.`;
 
@@ -148,14 +173,45 @@ Devuelve SOLO el prompt mejorado, sin explicaciones adicionales.`;
         },
         {
           role: 'user',
-          content: `Mejora este prompt de consultoría legal:
+          content: `Mejora este prompt para generación de documentos legales siguiendo las mejores prácticas:
 
 PROMPT ACTUAL:
 ${current_prompt}
 
 TARGET AUDIENCE: ${target_audience}
 
-Devuelve el prompt mejorado y optimizado.`
+REQUISITOS ESPECÍFICOS:
+- Estilo cercano, fácil de entender, profesional y seguro
+- Información solicitada en bloques por frentes (no toda al inicio)
+- Saludo que transmita confianza sobre calidad y seguridad del documento
+- Formateo de campos: mayúsculas, direcciones normalizadas, valores monetarios en número y texto
+
+EJEMPLO DE ESTRUCTURA REQUERIDA:
+"Eres un asistente legal especializado en [tipo de documento] en Colombia.
+
+TU OBJETIVO: Ayudar a [audiencia] a crear un [documento] completo y legalmente válido.
+
+SALUDO INICIAL: Transmite confianza sobre la calidad del documento y seguridad de la información.
+
+INFORMACIÓN A RECOPILAR:
+[Lista organizada por bloques temáticos]
+
+ESTILO DE CONVERSACIÓN:
+- Mantén un tono profesional pero cercano
+- Explica brevemente por qué necesitas cada dato
+- Confirma información importante antes de continuar
+- Haz una pregunta a la vez para no abrumar
+
+FORMATEO DE DATOS:
+- Nombres y lugares en MAYÚSCULAS
+- Direcciones normalizadas con ciudad, departamento y país
+- Valores monetarios en número y texto
+- Validación de formatos apropiados
+
+VALIDACIONES:
+[Validaciones específicas del documento]"
+
+Devuelve el prompt mejorado siguiendo esta estructura y consideraciones.`
         }
       ],
       max_tokens: 1500,
