@@ -185,12 +185,19 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
         return;
       }
 
+      // Primero obtener los datos del agente para copiar el nombre
+      const agent = agents.find(a => a.id === agentId);
+      if (!agent) {
+        throw new Error('Agente no encontrado');
+      }
+
       const { data, error } = await supabase.functions.invoke('update-agent', {
         body: JSON.stringify({
           agent_id: agentId,
           user_id: lawyerData.id,
           is_admin: lawyerData.is_admin,
-          status: 'active'
+          status: 'active',
+          document_name: agent.name // Copiar el nombre del agente al nombre del documento
         }),
         headers: {
           'Content-Type': 'application/json',
