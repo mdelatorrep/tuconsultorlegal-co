@@ -220,7 +220,7 @@ export default function PersonasPage({ onOpenChat, onNavigate }: PersonasPagePro
             <Button
               variant="success"
               size="lg"
-              onClick={() => onOpenChat("Quiero una consultoría")}
+              onClick={() => onOpenChat("Quiero una consultoría personal. Soy una persona natural que necesita asesoría legal individual.")}
             >
               Iniciar Asesoría Gratuita
             </Button>

@@ -219,7 +219,7 @@ export default function EmpresasPage({ onOpenChat, onNavigate }: EmpresasPagePro
             <Button
               variant="default"
               size="lg"
-              onClick={() => onOpenChat("Quiero una consultoría")}
+              onClick={() => onOpenChat("Quiero una consultoría empresarial. Represento una empresa que necesita asesoría legal corporativa.")}
             >
               Consulta Empresarial
             </Button>
