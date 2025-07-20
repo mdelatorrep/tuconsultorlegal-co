@@ -1,3 +1,4 @@
+import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,6 +9,7 @@ import NotFound from "./pages/NotFound";
 import AdminPage from "./components/AdminPage";
 import { useAuthManager } from "@/hooks/useAuthManager";
 import { useLogRocket } from "@/hooks/useLogRocket";
+import { useUserTracking } from "@/hooks/useUserTracking";
 
 const queryClient = new QueryClient();
 
@@ -17,6 +19,22 @@ const AppContent = () => {
   
   // Inicializar LogRocket para monitoreo de UX
   useLogRocket();
+  
+  // Inicializar tracking para usuarios anónimos
+  const { trackAnonymousUser, trackPageVisit } = useUserTracking();
+  
+  // Track anonymous user on app load
+  React.useEffect(() => {
+    trackAnonymousUser({
+      firstVisit: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+      language: navigator.language
+    });
+    
+    trackPageVisit(window.location.pathname, {
+      referrer: document.referrer
+    });
+  }, [trackAnonymousUser, trackPageVisit]);
   
   return (
     <>

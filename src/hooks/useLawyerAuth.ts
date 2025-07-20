@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { AuthStorage } from '@/utils/authStorage';
+import { useLogRocket } from '@/hooks/useLogRocket';
 
 interface LawyerUser {
   id: string;
@@ -14,6 +15,7 @@ export const useLawyerAuth = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<LawyerUser | null>(null);
+  const { identifyUser } = useLogRocket();
 
   useEffect(() => {
     checkAuthStatus();
@@ -37,6 +39,15 @@ export const useLawyerAuth = () => {
       console.log('Found lawyer auth in storage');
       setUser(lawyerAuth.user);
       setIsAuthenticated(true);
+      
+      // Identify user in LogRocket
+      identifyUser({
+        id: lawyerAuth.user.id,
+        name: lawyerAuth.user.name,
+        email: lawyerAuth.user.email,
+        role: 'lawyer',
+        subscriptionType: lawyerAuth.user.canCreateAgents ? 'lawyer_premium' : 'lawyer_basic'
+      });
     } catch (error) {
       console.error('Error checking lawyer auth status:', error);
       logout();
@@ -71,6 +82,15 @@ export const useLawyerAuth = () => {
         
         setUser(data.user);
         setIsAuthenticated(true);
+        
+        // Identify user in LogRocket
+        identifyUser({
+          id: data.user.id,
+          name: data.user.name,
+          email: data.user.email,
+          role: 'lawyer',
+          subscriptionType: data.user.canCreateAgents ? 'lawyer_premium' : 'lawyer_basic'
+        });
         
         // Forzar una verificación del estado para asegurar consistencia
         setTimeout(() => {

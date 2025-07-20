@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useLogRocket } from '@/hooks/useLogRocket';
 import type { User, Session } from '@supabase/supabase-js';
 
 interface AdminProfile {
@@ -21,6 +22,7 @@ export const useNativeAdminAuth = () => {
   const [user, setUser] = useState<AdminUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const { toast } = useToast();
+  const { identifyUser } = useLogRocket();
 
   useEffect(() => {
     checkAuthStatus();
@@ -86,6 +88,16 @@ export const useNativeAdminAuth = () => {
 
       setUser(adminUser);
       setIsAuthenticated(true);
+      
+      // Identify user in LogRocket
+      identifyUser({
+        id: adminUser.id,
+        name: adminUser.profile?.full_name || adminUser.email || 'Admin User',
+        email: adminUser.email || '',
+        role: adminUser.profile?.is_super_admin ? 'super_admin' : 'admin',
+        subscriptionType: 'admin_access'
+      });
+      
       console.log('Admin authentication state updated: authenticated =', true);
     } catch (error) {
       console.error('Error in loadAdminProfile:', error);
