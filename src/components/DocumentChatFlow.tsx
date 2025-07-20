@@ -268,6 +268,9 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
 
     setGenerating(true);
     try {
+      // Procesar y extraer información estructurada de la conversación
+      const processedConversation = await processConversationData();
+      
       const { data, error } = await supabase.functions.invoke('generate-document-from-chat', {
         body: {
           conversation: messages.map(msg => ({ role: msg.role, content: msg.content })),
@@ -276,7 +279,8 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
           user_email: userInfo.email,
           user_name: userInfo.name,
           sla_hours: agent.sla_hours || 4,
-          collected_data: collectedData
+          collected_data: { ...collectedData, ...processedConversation },
+          placeholder_fields: agent.placeholder_fields
         }
       });
 
@@ -290,6 +294,34 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
     } finally {
       setGenerating(false);
     }
+  };
+
+  const processConversationData = async () => {
+    const conversationText = messages.map(msg => msg.content).join('\n');
+    const extractedData: Record<string, any> = {};
+    
+    // Extract common information patterns
+    const patterns = {
+      nombres: /(?:mi nombre es|me llamo|soy)\s+([^,.\n]+)/gi,
+      fechas: /(\d{1,2})\s+de\s+(\w+)\s+de\s+(\d{4})/gi,
+      ciudades: /(?:en|de|desde)\s+([A-ZÁÉÍÓÚ][a-záéíóú]+(?:\s+[A-ZÁÉÍÓÚ][a-záéíóú]+)*)/gi,
+      documentos: /(?:cédula|cc|nit|rut)\s*:?\s*(\d{1,3}(?:\.\d{3})*(?:\.\d{3})*)/gi,
+      direcciones: /(?:dirección|vivo en|ubicado en)\s*:?\s*([^,.\n]+)/gi,
+      telefonos: /(?:teléfono|celular|móvil)\s*:?\s*(\d+)/gi,
+      correos: /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/gi
+    };
+
+    // Extract and normalize data
+    Object.entries(patterns).forEach(([key, pattern]) => {
+      const matches = conversationText.match(pattern);
+      if (matches) {
+        extractedData[key] = matches.map(match => 
+          key === 'nombres' || key === 'ciudades' ? match.toUpperCase() : match
+        );
+      }
+    });
+
+    return extractedData;
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
