@@ -19,9 +19,9 @@ export const useLogRocket = () => {
   useEffect(() => {
     // Solo inicializar LogRocket en producción o cuando esté explícitamente habilitado
     const isProduction = import.meta.env.PROD;
-    const logRocketAppId = import.meta.env.VITE_LOGROCKET_APP_ID || 'tu_app_id_aqui';
+    const logRocketAppId = import.meta.env.VITE_LOGROCKET_APP_ID || 'ykekku/legalai';
     
-    if (isProduction && logRocketAppId && logRocketAppId !== 'tu_app_id_aqui') {
+    if (isProduction && logRocketAppId) {
       initializeLogRocket({
         appId: logRocketAppId,
         enabled: true,
