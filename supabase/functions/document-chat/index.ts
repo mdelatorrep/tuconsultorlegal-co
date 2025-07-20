@@ -19,6 +19,74 @@ serve(async (req) => {
     const { message, messages, agent_prompt, document_name, sessionId, agentType, context } = await req.json();
 
     // Handle different chat types
+    if (agentType === 'routing') {
+      // Legal consultation routing logic
+      const routingPrompt = `Eres un sistema experto de routing para consultas legales. Analiza la consulta del usuario y determina:
+
+1. ¿Necesita asesoría legal especializada? (true/false)
+2. ¿Qué especialización legal requiere? (civil, laboral, comercial, penal, etc.)
+3. ¿Es una consulta compleja que requiere investigación legal profunda? (true/false)
+
+ESPECIALIZACIONES DISPONIBLES:
+- civil: Derecho civil, contratos, propiedad, familia
+- laboral: Derecho laboral, empleos, contratos de trabajo
+- comercial: Derecho comercial, empresas, sociedades
+- penal: Derecho penal, delitos, procedimientos penales
+- administrativo: Derecho administrativo, entidades públicas
+- constitucional: Derecho constitucional, derechos fundamentales
+
+CRITERIOS PARA ROUTING ESPECIALIZADO:
+- Consultas sobre legislación específica
+- Casos que requieren análisis jurisprudencial
+- Situaciones contractuales complejas
+- Procedimientos legales específicos
+- Cálculos legales (laborales, civiles, etc.)
+
+Responde SOLO en formato JSON:
+{
+  "needsSpecializedAdvice": boolean,
+  "specialization": "string o null",
+  "isComplex": boolean,
+  "reasoning": "explicación breve"
+}`;
+
+      const routingResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openaiApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: routingPrompt
+            },
+            {
+              role: 'user',
+              content: message || (messages && messages[messages.length - 1]?.content) || ''
+            }
+          ],
+          max_tokens: 200,
+          temperature: 0.1,
+          response_format: { type: "json_object" }
+        }),
+      });
+
+      if (!routingResponse.ok) {
+        throw new Error(`OpenAI API error: ${routingResponse.status}`);
+      }
+
+      const routingData = await routingResponse.json();
+      const routingResult = JSON.parse(routingData.choices[0]?.message?.content || '{}');
+
+      return new Response(
+        JSON.stringify(routingResult),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     if (agentType === 'lexi') {
       // General legal assistant - Lexi
       const lexiSystemPrompt = `Eres Lexi, la asistente legal virtual de tuconsultorlegal.co, una plataforma innovadora que democratiza el acceso a servicios legales de alta calidad en Colombia.

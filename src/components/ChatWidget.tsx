@@ -2,8 +2,9 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { Scale, X, Send, AlertCircle } from "lucide-react";
+import { Scale, X, Send, AlertCircle, Settings } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "./ui/use-toast";
 
 interface ChatMessage {
   id: string;
@@ -19,10 +20,11 @@ interface ChatWidgetProps {
 }
 
 export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWidgetProps) {
+  const { toast } = useToast();
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
-      content: '¡Hola! Soy Lexi, tu asistente legal de tuconsultorlegal.co 🤖⚖️\n\nEstoy aquí para ayudarte con:\n• Consultas legales generales\n• Información sobre documentos\n• Orientación sobre trámites legales\n• Conexión con nuestros servicios especializados\n\n¿En qué puedo ayudarte hoy?',
+      content: '¡Hola! Soy Lexi, tu asistente legal inteligente de tuconsultorlegal.co 🤖⚖️\n\nTengo acceso a un equipo de especialistas legales y puedo ayudarte con:\n\n🎯 CONSULTAS ESPECIALIZADAS:\n• Derecho Civil (contratos, propiedad, familia)\n• Derecho Laboral (empleos, prestaciones)\n• Derecho Comercial (empresas, sociedades)\n• Derecho Administrativo y más\n\n📋 SERVICIOS GENERALES:\n• Información sobre documentos legales\n• Orientación sobre trámites\n• Consultas básicas de legislación\n\nCuando detecte que necesitas asesoría especializada, te conectaré automáticamente con el experto apropiado.\n\n¿En qué puedo ayudarte hoy?',
       sender: 'assistant',
       timestamp: new Date()
     }
@@ -31,6 +33,7 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
   const [isLoading, setIsLoading] = useState(false);
   const [connectionError, setConnectionError] = useState(false);
   const [hasProcessedInitialMessage, setHasProcessedInitialMessage] = useState(false);
+  const [advisorsInitialized, setAdvisorsInitialized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto scroll to bottom when new messages arrive
@@ -67,33 +70,133 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
     }
   }, [isOpen]);
 
-  // Send message using OpenAI agent through Supabase
+  // Check and initialize legal advisors when chat opens
+  useEffect(() => {
+    if (isOpen && !advisorsInitialized) {
+      checkAndInitializeAdvisors();
+    }
+  }, [isOpen, advisorsInitialized]);
+
+  // Check if legal advisors need initialization
+  const checkAndInitializeAdvisors = async () => {
+    try {
+      const { data: advisors, error } = await supabase
+        .from('legal_advisor_agents')
+        .select('openai_agent_id')
+        .like('openai_agent_id', 'temp_%')
+        .limit(1);
+
+      if (advisors && advisors.length > 0) {
+        // Advisors need initialization
+        console.log('Initializing legal advisors...');
+        const { data, error: initError } = await supabase.functions.invoke('create-legal-advisor-agents', {
+          body: {}
+        });
+
+        if (initError) {
+          console.error('Error initializing advisors:', initError);
+        } else {
+          console.log('Legal advisors initialized successfully');
+          setAdvisorsInitialized(true);
+        }
+      } else {
+        setAdvisorsInitialized(true);
+      }
+    } catch (error) {
+      console.error('Error checking advisor status:', error);
+      setAdvisorsInitialized(true); // Set to true to avoid infinite loops
+    }
+  };
+
+  // Send message using intelligent legal advisor routing
   const sendMessage = async (messageContent: string) => {
     setIsLoading(true);
     setConnectionError(false);
 
     try {
-      const { data, error } = await supabase.functions.invoke('document-chat', {
+      // First, determine if this needs specialized legal advice
+      const routingResponse = await supabase.functions.invoke('document-chat', {
         body: {
           message: messageContent,
           sessionId: generateSessionId(),
-          agentType: 'lexi',
-          context: 'general_legal_assistance'
+          agentType: 'routing',
+          context: 'legal_routing'
         }
       });
 
-      if (error) {
-        throw new Error(error.message || 'Error en la conexión');
+      if (routingResponse.error) {
+        throw new Error(routingResponse.error.message || 'Error en el análisis de consulta');
+      }
+
+      const { needsSpecializedAdvice, specialization, isComplex } = routingResponse.data;
+
+      let finalResponse;
+
+      if (needsSpecializedAdvice && specialization) {
+        // Route to specialized legal advisor
+        console.log(`Routing to specialized advisor: ${specialization}`);
+        
+        const advisorResponse = await supabase.functions.invoke('legal-consultation-advisor', {
+          body: {
+            messages: [{ role: 'user', content: messageContent }],
+            agentId: await getAdvisorAgent(specialization),
+            consultationTopic: messageContent.substring(0, 100),
+            legalArea: specialization
+          }
+        });
+
+        if (advisorResponse.error) {
+          throw new Error('Error en la consulta especializada');
+        }
+
+        finalResponse = {
+          response: advisorResponse.data.message,
+          specialization: advisorResponse.data.specialization,
+          isSpecialized: true
+        };
+      } else {
+        // Use general Lexi assistant
+        const lexiResponse = await supabase.functions.invoke('document-chat', {
+          body: {
+            message: messageContent,
+            sessionId: generateSessionId(),
+            agentType: 'lexi',
+            context: 'general_legal_assistance'
+          }
+        });
+
+        if (lexiResponse.error) {
+          throw new Error(lexiResponse.error.message || 'Error en la respuesta');
+        }
+
+        finalResponse = {
+          response: lexiResponse.data.response,
+          isSpecialized: false
+        };
       }
 
       const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
-        content: data.response || 'Lo siento, ha ocurrido un error. Por favor, inténtalo de nuevo.',
+        content: finalResponse.response || 'Lo siento, ha ocurrido un error. Por favor, inténtalo de nuevo.',
         sender: 'assistant',
         timestamp: new Date()
       };
 
       setMessages(prev => [...prev, assistantMessage]);
+
+      // If specialized advice was provided, show indicator
+      if (finalResponse.isSpecialized) {
+        const specializationMessage: ChatMessage = {
+          id: (Date.now() + 2).toString(),
+          content: `🎯 Respuesta proporcionada por nuestro especialista en ${finalResponse.specialization}`,
+          sender: 'assistant',
+          timestamp: new Date()
+        };
+        setTimeout(() => {
+          setMessages(prev => [...prev, specializationMessage]);
+        }, 1000);
+      }
+
     } catch (error) {
       console.error('Error sending message:', error);
       setConnectionError(true);
@@ -108,6 +211,29 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Get appropriate legal advisor agent ID
+  const getAdvisorAgent = async (specialization: string): Promise<string> => {
+    try {
+      const { data: agents, error } = await supabase
+        .from('legal_advisor_agents')
+        .select('openai_agent_id')
+        .eq('specialization', specialization)
+        .eq('status', 'active')
+        .limit(1);
+
+      if (error || !agents || agents.length === 0) {
+        console.warn(`No advisor found for specialization: ${specialization}`);
+        // Return a default agent ID or fallback
+        return 'default_agent';
+      }
+
+      return agents[0].openai_agent_id;
+    } catch (error) {
+      console.error('Error getting advisor agent:', error);
+      return 'default_agent';
     }
   };
 
