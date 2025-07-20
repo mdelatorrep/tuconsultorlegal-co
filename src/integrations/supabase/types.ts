@@ -93,6 +93,13 @@ export type Database = {
             foreignKeyName: "agent_conversations_openai_agent_id_fkey"
             columns: ["openai_agent_id"]
             isOneToOne: false
+            referencedRelation: "openai_agent_analytics"
+            referencedColumns: ["openai_agent_id"]
+          },
+          {
+            foreignKeyName: "agent_conversations_openai_agent_id_fkey"
+            columns: ["openai_agent_id"]
+            isOneToOne: false
             referencedRelation: "openai_agents"
             referencedColumns: ["id"]
           },
@@ -733,6 +740,13 @@ export type Database = {
             referencedRelation: "legal_agents"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "openai_agent_jobs_legal_agent_id_fkey"
+            columns: ["legal_agent_id"]
+            isOneToOne: false
+            referencedRelation: "openai_agent_analytics"
+            referencedColumns: ["legal_agent_id"]
+          },
         ]
       }
       openai_agents: {
@@ -785,6 +799,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "legal_agents"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "openai_agents_legal_agent_id_fkey"
+            columns: ["legal_agent_id"]
+            isOneToOne: false
+            referencedRelation: "openai_agent_analytics"
+            referencedColumns: ["legal_agent_id"]
           },
         ]
       }
@@ -964,7 +985,29 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      openai_agent_analytics: {
+        Row: {
+          agent_name: string | null
+          calculated_success_rate: number | null
+          document_name: string | null
+          jobs_completed: number | null
+          jobs_failed: number | null
+          jobs_pending: number | null
+          last_openai_activity: string | null
+          legal_agent_id: string | null
+          openai_agent_id: string | null
+          openai_conversations_count: number | null
+          openai_created_at: string | null
+          openai_enabled: boolean | null
+          openai_external_id: string | null
+          openai_status: string | null
+          openai_success_rate: number | null
+          successful_documents: number | null
+          target_audience: string | null
+          total_conversations: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never

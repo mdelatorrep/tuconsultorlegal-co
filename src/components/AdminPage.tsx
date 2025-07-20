@@ -15,7 +15,8 @@ import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { AuthStorage } from "@/utils/authStorage";
 import AdminLogin from "./AdminLogin";
 import LawyerStatsAdmin from "./LawyerStatsAdmin";
-import { Users, FileText, Shield, Plus, Check, X, BarChart3, TrendingUp, DollarSign, Activity, LogOut, Unlock, AlertTriangle, Eye, EyeOff, Trash2, Copy, ChartPie, Settings, RefreshCw, Save, BookOpen, Calendar, Tags, Globe, Building, MessageSquare, Mail } from "lucide-react";
+import OpenAIAgentManager from "./OpenAIAgentManager";
+import { Users, FileText, Shield, Plus, Check, X, BarChart3, TrendingUp, DollarSign, Activity, LogOut, Unlock, AlertTriangle, Eye, EyeOff, Trash2, Copy, ChartPie, Settings, RefreshCw, Save, BookOpen, Calendar, Tags, Globe, Building, MessageSquare, Mail, Bot } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from "recharts";
 import DOMPurify from 'dompurify';
@@ -1941,6 +1942,13 @@ Resumir los puntos clave y proporcionar recomendaciones finales.
                   Agentes
                 </TabsTrigger>
                 <TabsTrigger 
+                  value="openai" 
+                  className="flex-shrink-0 flex flex-col items-center py-3 px-4 text-xs whitespace-nowrap min-w-[70px] data-[state=active]:bg-background data-[state=active]:text-foreground"
+                >
+                  <Bot className="h-4 w-4 mb-1" />
+                  OpenAI
+                </TabsTrigger>
+                <TabsTrigger 
                   value="stats" 
                   className="flex-shrink-0 flex flex-col items-center py-3 px-4 text-xs whitespace-nowrap min-w-[70px] data-[state=active]:bg-background data-[state=active]:text-foreground"
                 >
@@ -1989,7 +1997,7 @@ Resumir los puntos clave y proporcionar recomendaciones finales.
 
           {/* Desktop Menu - Grid layout */}
           <div className="hidden md:block">
-            <TabsList className="grid w-full grid-cols-7 h-auto p-1">
+            <TabsList className="grid w-full grid-cols-8 h-auto p-1">
               <TabsTrigger 
                 value="lawyers" 
                 className="flex flex-row items-center gap-2 p-3 text-sm"
@@ -2026,13 +2034,20 @@ Resumir los puntos clave y proporcionar recomendaciones finales.
                     {pendingAgentsCount}
                   </Badge>
                 )}
-              </TabsTrigger>
-              <TabsTrigger 
-                value="stats" 
-                className="flex flex-row items-center gap-2 p-3 text-sm"
-              >
-                <ChartPie className="h-4 w-4" />
-                Performance Legal
+               </TabsTrigger>
+               <TabsTrigger 
+                 value="openai" 
+                 className="flex flex-row items-center gap-2 p-3 text-sm"
+               >
+                 <Bot className="h-4 w-4" />
+                 Agentes OpenAI
+               </TabsTrigger>
+               <TabsTrigger 
+                 value="stats" 
+                 className="flex flex-row items-center gap-2 p-3 text-sm"
+               >
+                 <ChartPie className="h-4 w-4" />
+                 Performance Legal
               </TabsTrigger>
               <TabsTrigger 
                 value="blogs" 
@@ -2951,6 +2966,10 @@ Resumir los puntos clave y proporcionar recomendaciones finales.
                 </Card>
               </TabsContent>
             </Tabs>
+          </TabsContent>
+
+          <TabsContent value="openai" className="space-y-4 sm:space-y-6">
+            <OpenAIAgentManager />
           </TabsContent>
 
           <TabsContent value="stats" className="space-y-4 sm:space-y-6">
