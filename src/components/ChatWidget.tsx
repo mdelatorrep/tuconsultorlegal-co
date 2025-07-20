@@ -167,7 +167,7 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
       style={{ zIndex: 9999 }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-primary to-primary-light text-primary-foreground rounded-t-lg">
+      <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-success to-success-dark text-success-foreground rounded-t-lg">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
             ⚖️
@@ -181,7 +181,7 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
           variant="ghost"
           size="sm"
           onClick={onToggle}
-          className="text-primary-foreground hover:bg-white/20 p-1 h-8 w-8"
+          className="text-success-foreground hover:bg-white/20 p-1 h-8 w-8"
         >
           <X size={16} />
         </Button>
@@ -246,14 +246,14 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="Escribe tu consulta legal aquí..."
             disabled={isLoading}
-            className="flex-1 rounded-full bg-background border-border focus:border-primary transition-smooth"
+            className="flex-1 rounded-full bg-background border-border focus:border-success transition-smooth"
             autoComplete="off"
           />
           <Button
             type="submit"
             size="sm"
             disabled={!inputValue.trim() || isLoading}
-            className="rounded-full w-10 h-10 p-0 bg-primary hover:bg-primary-light transition-smooth"
+            className="rounded-full w-10 h-10 p-0 bg-success hover:bg-success-dark transition-smooth"
           >
             <Send size={16} />
           </Button>
