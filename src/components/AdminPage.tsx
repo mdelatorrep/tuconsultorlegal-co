@@ -10,6 +10,9 @@ import { Switch } from "./ui/switch";
 import { toast } from "@/hooks/use-toast";
 import NativeAdminLogin from "./NativeAdminLogin";
 import { useNativeAdminAuth } from "../hooks/useNativeAdminAuth";
+import LawyerStatsAdmin from "./LawyerStatsAdmin";
+import OpenAIAgentManager from "./OpenAIAgentManager";
+import LawyerBlogManager from "./LawyerBlogManager";
 import { Copy, Users, Bot, BarChart3, Clock, CheckCircle, Lock, Unlock, Trash2, Check, X, Plus, Loader2, MessageCircle, BookOpen, Settings, Zap } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -60,7 +63,7 @@ function AdminPage() {
     canSeeBusinessStats: false
   });
 
-  const { isAuthenticated, isLoading: authLoading, user } = useNativeAdminAuth();
+  const { isAuthenticated, isLoading: authLoading, user, session, getAuthHeaders } = useNativeAdminAuth();
 
   useEffect(() => {
     if (isAuthenticated && !authLoading) {
@@ -361,10 +364,114 @@ function AdminPage() {
           <TabsContent value="requests">
             <Card>
               <CardHeader>
-                <CardTitle>Solicitudes de Token</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="w-5 h-5" />
+                  Solicitudes de Token de Abogados
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <p>Funcionalidad disponible próximamente.</p>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Nombre</TableHead>
+                        <TableHead className="hidden sm:table-cell">Email</TableHead>
+                        <TableHead className="hidden md:table-cell">Empresa</TableHead>
+                        <TableHead>Estado</TableHead>
+                        <TableHead>Acciones</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {tokenRequests.map((request) => (
+                        <TableRow key={request.id}>
+                          <TableCell className="font-medium">
+                            <div>
+                              <div>{request.full_name}</div>
+                              <div className="text-xs text-muted-foreground sm:hidden">{request.email}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell">{request.email}</TableCell>
+                          <TableCell className="hidden md:table-cell">{request.law_firm || 'N/A'}</TableCell>
+                          <TableCell>
+                            <Badge variant={
+                              request.status === 'approved' ? 'default' :
+                              request.status === 'rejected' ? 'destructive' : 'outline'
+                            }>
+                              {request.status === 'approved' ? 'Aprobado' :
+                               request.status === 'rejected' ? 'Rechazado' : 'Pendiente'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              {request.status === 'pending' && (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    onClick={async () => {
+                                      try {
+                                        const { data, error } = await supabase.functions.invoke('manage-token-request', {
+                                          body: {
+                                            action: 'approve',
+                                            requestId: request.id
+                                          }
+                                        });
+                                        if (error) throw error;
+                                        await loadTokenRequests();
+                                        toast({
+                                          title: "Solicitud aprobada",
+                                          description: "El token de abogado ha sido generado",
+                                        });
+                                      } catch (error: any) {
+                                        toast({
+                                          title: "Error",
+                                          description: error.message || "Error al aprobar la solicitud",
+                                          variant: "destructive"
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    <Check className="w-3 h-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={async () => {
+                                      const reason = prompt('Razón del rechazo:');
+                                      if (!reason) return;
+                                      try {
+                                        const { data, error } = await supabase.functions.invoke('manage-token-request', {
+                                          body: {
+                                            action: 'reject',
+                                            requestId: request.id,
+                                            rejectionReason: reason
+                                          }
+                                        });
+                                        if (error) throw error;
+                                        await loadTokenRequests();
+                                        toast({
+                                          title: "Solicitud rechazada",
+                                          description: "La solicitud ha sido rechazada",
+                                        });
+                                      } catch (error: any) {
+                                        toast({
+                                          title: "Error",
+                                          description: error.message || "Error al rechazar la solicitud",
+                                          variant: "destructive"
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -372,45 +479,137 @@ function AdminPage() {
           <TabsContent value="agents">
             <Card>
               <CardHeader>
-                <CardTitle>Gestión de Agentes</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Bot className="w-5 h-5" />
+                  Gestión de Agentes
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <p>Funcionalidad disponible próximamente.</p>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Nombre</TableHead>
+                        <TableHead className="hidden sm:table-cell">Documento</TableHead>
+                        <TableHead className="hidden md:table-cell">Categoría</TableHead>
+                        <TableHead>Estado</TableHead>
+                        <TableHead>Acciones</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {agents.map((agent) => (
+                        <TableRow key={agent.id}>
+                          <TableCell className="font-medium">
+                            <div>
+                              <div>{agent.name}</div>
+                              <div className="text-xs text-muted-foreground sm:hidden">{agent.document_name}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell">{agent.document_name}</TableCell>
+                          <TableCell className="hidden md:table-cell">{agent.category}</TableCell>
+                          <TableCell>
+                            <Badge variant={
+                              agent.status === 'approved' ? 'default' :
+                              agent.status === 'rejected' ? 'destructive' : 'outline'
+                            }>
+                              {agent.status === 'approved' ? 'Aprobado' :
+                               agent.status === 'rejected' ? 'Rechazado' : 'Pendiente'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              {agent.status === 'pending_review' && (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    onClick={async () => {
+                                      try {
+                                        const { error } = await supabase.functions.invoke('update-agent', {
+                                          body: {
+                                            agentId: agent.id,
+                                            status: 'approved'
+                                          }
+                                        });
+                                        if (error) throw error;
+                                        await loadAgents();
+                                        toast({
+                                          title: "Agente aprobado",
+                                          description: "El agente ha sido aprobado exitosamente",
+                                        });
+                                      } catch (error: any) {
+                                        toast({
+                                          title: "Error",
+                                          description: error.message || "Error al aprobar el agente",
+                                          variant: "destructive"
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    <Check className="w-3 h-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={async () => {
+                                      const reason = prompt('Razón del rechazo:');
+                                      if (!reason) return;
+                                      try {
+                                        const { error } = await supabase.functions.invoke('update-agent', {
+                                          body: {
+                                            agentId: agent.id,
+                                            status: 'rejected',
+                                            rejectionReason: reason
+                                          }
+                                        });
+                                        if (error) throw error;
+                                        await loadAgents();
+                                        toast({
+                                          title: "Agente rechazado",
+                                          description: "El agente ha sido rechazado",
+                                        });
+                                      } catch (error: any) {
+                                        toast({
+                                          title: "Error",
+                                          description: error.message || "Error al rechazar el agente",
+                                          variant: "destructive"
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="openai">
-            <Card>
-              <CardHeader>
-                <CardTitle>Configuración OpenAI</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>Configuración disponible próximamente.</p>
-              </CardContent>
-            </Card>
+            <OpenAIAgentManager />
           </TabsContent>
 
           <TabsContent value="stats">
-            <Card>
-              <CardHeader>
-                <CardTitle>Estadísticas</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>Estadísticas disponibles próximamente.</p>
-              </CardContent>
-            </Card>
+            <LawyerStatsAdmin 
+              authHeaders={{
+                ...getAuthHeaders(),
+                'Content-Type': 'application/json'
+              }}
+              viewMode="global"
+            />
           </TabsContent>
 
           <TabsContent value="blogs">
-            <Card>
-              <CardHeader>
-                <CardTitle>Gestión de Blog</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>Gestión de blog disponible próximamente.</p>
-              </CardContent>
-            </Card>
+            <LawyerBlogManager 
+              onBack={() => {}}
+              lawyerData={user}
+            />
           </TabsContent>
 
           <TabsContent value="config">
