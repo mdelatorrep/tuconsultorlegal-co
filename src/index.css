@@ -19,15 +19,15 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 0%;
 
-    /* Brand Colors - Professional Trust Theme */
-    --primary: 224 47% 32%; /* azul marino profesional #2D3B7A */
-    --primary-light: 224 78% 63%; /* azul eléctrico moderno #4F68E8 */
+    /* Brand Colors - Modern Legal Tech */
+    --primary: 220 60% 20%; /* azul marino profundo #1e2a5e */
+    --primary-light: 220 85% 55%; /* azul eléctrico vibrante #2563eb */
     --primary-foreground: 0 0% 100%;
 
-    /* Action/CTA Colors - Gold Accent */
-    --success: 44 95% 51%; /* dorado confianza #F7B500 */
-    --success-dark: 44 95% 45%; /* dorado más oscuro */
-    --success-foreground: 224 47% 32%;
+    /* Action/CTA Colors - Trust Gold */
+    --success: 45 93% 47%; /* oro confianza #e6a700 */
+    --success-dark: 45 100% 35%; /* oro profundo #b8860b */
+    --success-foreground: 220 60% 20%;
 
     /* Secondary Colors */
     --secondary: 0 0% 85%; /* gris claro #D8D8D8 */
