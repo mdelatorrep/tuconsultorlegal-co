@@ -164,18 +164,43 @@ export const useAdminAuth = () => {
         throw new Error('Invalid credentials');
       }
 
-      // Simulate admin verification (no admin_profiles table exists)
-      // For now, any successful auth is considered admin access
+      // Verify admin status in admin_accounts table
+      const { data: adminData, error: adminError } = await supabase
+        .from('admin_accounts')
+        .select('*')
+        .eq('email', email.trim().toLowerCase())
+        .eq('active', true)
+        .single();
+
+      if (adminError || !adminData) {
+        // If user authenticated but is not in admin_accounts, sign them out
+        await supabase.auth.signOut();
+        throw new Error('Access denied - not an admin user');
+      }
+
+      // Store session token in admin_accounts for edge function verification
+      const { error: updateError } = await supabase
+        .from('admin_accounts')
+        .update({ 
+          user_id: authData.user.id,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', adminData.id);
+
+      if (updateError) {
+        console.error('Error updating admin account:', updateError);
+      }
+
       const data = {
         success: true,
         token: authData.session.access_token,
         expiresAt: new Date(authData.session.expires_at * 1000).toISOString(),
         user: {
           id: authData.user.id,
-          email: authData.user.email || '',
-          name: authData.user.email || 'Admin',
+          email: adminData.email,
+          name: adminData.full_name || adminData.email,
           isAdmin: true,
-          isSuperAdmin: false
+          isSuperAdmin: adminData.is_super_admin || false
         }
       };
 
@@ -225,6 +250,12 @@ export const useAdminAuth = () => {
         toast({
           title: "Credenciales inválidas",
           description: "Email o contraseña incorrectos.",
+          variant: "destructive"
+        });
+      } else if (error.message === 'Access denied - not an admin user') {
+        toast({
+          title: "Acceso denegado",
+          description: "Tu cuenta no tiene permisos de administrador.",
           variant: "destructive"
         });
       } else if (error.message === 'Account temporarily locked') {
