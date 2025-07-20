@@ -170,7 +170,7 @@ function AdminPage() {
     is_active: true
   });
   const [serviceStatus, setServiceStatus] = useState<any>(null);
-  const [n8nStatus, setN8nStatus] = useState<any>(null);
+  
   const [aiPrompts, setAiPrompts] = useState({
     consultation_prompt_personas: '',
     consultation_prompt_empresas: ''
@@ -395,7 +395,6 @@ function AdminPage() {
 
       // Load service status
       await loadServiceStatus();
-      await loadN8nStatus();
 
       // Load blogs
       await loadBlogs();
@@ -1641,25 +1640,6 @@ Resumir los puntos clave y proporcionar recomendaciones finales.
     }
   };
 
-  // Load n8n service status
-  const loadN8nStatus = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('service_status')
-        .select('*')
-        .eq('service_name', 'n8n')
-        .single();
-
-      if (error) {
-        console.error('Error loading n8n service status:', error);
-        return;
-      }
-
-      setN8nStatus(data);
-    } catch (error) {
-      console.error('Error loading n8n service status:', error);
-    }
-  };
 
   // Trigger manual OpenAI status check
   const checkOpenAIStatus = async () => {
@@ -1693,38 +1673,6 @@ Resumir los puntos clave y proporcionar recomendaciones finales.
     }
   };
 
-  // Trigger manual n8n status check
-  const checkN8nStatus = async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke('monitor-n8n-status');
-      
-      if (error) {
-        console.error('Error checking n8n status:', error);
-        toast({
-          title: "Error al verificar estado",
-          description: "No se pudo verificar el estado de n8n.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Reload n8n status after check
-      await loadN8nStatus();
-      await loadN8nStatus();
-      
-      toast({
-        title: "Estado verificado",
-        description: "Se ha actualizado el estado de n8n.",
-      });
-    } catch (error) {
-      console.error('Error checking n8n status:', error);
-      toast({
-        title: "Error al verificar estado",
-        description: "Error inesperado al verificar el estado.",
-        variant: "destructive"
-      });
-    }
-  };
 
   // Get status badge variant and color
   const getStatusDisplay = (status: string) => {
@@ -1744,11 +1692,6 @@ Resumir los puntos clave y proporcionar recomendaciones finales.
   const getStatusSource = (errorMessage: string | null, serviceName: string = 'openai') => {
     if (!errorMessage) return 'Verificación directa de API';
     
-    if (serviceName === 'n8n') {
-      if (errorMessage.includes('Status API')) return 'Página oficial de estado de n8n';
-      if (errorMessage.includes('minor') || errorMessage.includes('major') || errorMessage.includes('critical')) {
-        return 'Página oficial de estado de n8n';
-      }
       return 'Verificación directa de API';
     }
     
@@ -3437,15 +3380,6 @@ Resumir los puntos clave y proporcionar recomendaciones finales.
                         <RefreshCw className="h-4 w-4" />
                         Verificar OpenAI
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={checkN8nStatus}
-                        className="flex items-center gap-2"
-                      >
-                        <RefreshCw className="h-4 w-4" />
-                        Verificar n8n
-                      </Button>
                     </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -3490,46 +3424,6 @@ Resumir los puntos clave y proporcionar recomendaciones finales.
                       </CardContent>
                     </Card>
                     
-                    <Card>
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <p className="text-sm font-medium">n8n Cloud</p>
-                            {n8nStatus ? (
-                              <>
-                                <Badge variant={getStatusDisplay(n8nStatus.status).variant as any} className="mt-1">
-                                  {getStatusDisplay(n8nStatus.status).text}
-                                </Badge>
-                                {n8nStatus.last_checked && (
-                                  <p className="text-xs text-muted-foreground mt-1">
-                                    Última verificación: {new Date(n8nStatus.last_checked).toLocaleString()}
-                                  </p>
-                                )}
-                                {n8nStatus.response_time_ms && (
-                                  <p className="text-xs text-muted-foreground">
-                                    Tiempo de respuesta: {n8nStatus.response_time_ms}ms
-                                  </p>
-                                )}
-                                <p className="text-xs text-muted-foreground">
-                                  Fuente: {getStatusSource(n8nStatus.error_message, 'n8n')}
-                                </p>
-                                {n8nStatus.error_message && (
-                                  <p className="text-xs text-red-500 mt-1">
-                                    {n8nStatus.error_message}
-                                  </p>
-                                )}
-                              </>
-                            ) : (
-                              <Badge variant="outline" className="mt-1">Cargando...</Badge>
-                            )}
-                          </div>
-                          {n8nStatus && React.createElement(
-                            getStatusDisplay(n8nStatus.status).icon,
-                            { className: `h-8 w-8 ${getStatusDisplay(n8nStatus.status).color}` }
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
                   </div>
                 </div>
               </CardContent>
