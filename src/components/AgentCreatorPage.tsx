@@ -703,20 +703,24 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       const { data, error } = await supabase
         .from('legal_agents')
         .insert({
-          name: formData.docName,
-          description: formData.docDesc,
-          category: formData.docCat,
-          template_content: formData.docTemplate,
-          ai_prompt: aiResults.enhancedPrompt,
-          placeholder_fields: aiResults.extractedPlaceholders,
-          suggested_price: lawyerPriceValue, // Lawyer's suggested price for client
-          final_price: calculatedPriceValue, // AI calculated price for admin review
-          price_justification: aiResults.priceJustification || 'Precio estimado por el abogado',
-          status: 'pending_review',
-          created_by: lawyerData.tokenId, // Usar tokenId que apunta a lawyer_tokens.id
-          target_audience: formData.targetAudience,
-          sla_hours: formData.slaEnabled ? formData.slaHours : null,
-          sla_enabled: formData.slaEnabled
+           name: formData.docName,
+           description: formData.docDesc,
+           category: formData.docCat,
+           template_content: formData.docTemplate,
+           ai_prompt: aiResults.enhancedPrompt,
+           placeholder_fields: aiResults.extractedPlaceholders,
+           suggested_price: lawyerPriceValue, // Lawyer's suggested price for client
+           final_price: calculatedPriceValue, // AI calculated price for admin review
+           price_justification: aiResults.priceJustification || 'Precio estimado por el abogado',
+           status: 'pending_review',
+           created_by: lawyerData.tokenId, // Usar tokenId que apunta a lawyer_tokens.id
+           target_audience: formData.targetAudience,
+           sla_hours: formData.slaEnabled ? formData.slaHours : null,
+           sla_enabled: formData.slaEnabled,
+           document_name: formData.docName, // Use the same name as the agent name
+           document_description: formData.docDesc,
+           frontend_icon: 'FileText',
+           button_cta: 'Generar Documento'
         })
         .select()
         .maybeSingle();
