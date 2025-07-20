@@ -51,26 +51,63 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Check if user has admin profile
+    // Check if user has admin account
     const { data: admin, error } = await supabase
-      .from('admin_profiles')
+      .from('admin_accounts')
       .select('*')
       .eq('user_id', user.id)
       .eq('active', true)
       .maybeSingle()
 
+    // If no admin account found by user_id, try by email
+    if (!admin && user.email) {
+      const { data: adminByEmail, error: emailError } = await supabase
+        .from('admin_accounts')
+        .select('*')
+        .eq('email', user.email.toLowerCase())
+        .eq('active', true)
+        .maybeSingle()
+      
+      if (emailError || !adminByEmail) {
+        return new Response(JSON.stringify({ error: 'Invalid admin token' }), {
+          status: 401,
+          headers: securityHeaders
+        })
+      }
+      
+      // Update the admin account with the user_id
+      await supabase
+        .from('admin_accounts')
+        .update({ user_id: user.id })
+        .eq('id', adminByEmail.id)
+        
+      return new Response(JSON.stringify({
+        valid: true,
+        user: {
+          id: adminByEmail.id,
+          email: user.email,
+          name: adminByEmail.full_name,
+          isAdmin: true,
+          isSuperAdmin: adminByEmail.is_super_admin || false
+        }
+      }), {
+        headers: securityHeaders
+      })
+    }
+
     if (error || !admin) {
-      return new Response(JSON.stringify({ error: 'Invalid token' }), {
+      return new Response(JSON.stringify({ error: 'Invalid admin token' }), {
         status: 401,
         headers: securityHeaders
       })
     }
 
-    // Log successful admin access
-    await supabase.rpc('log_admin_action', {
-      action_type: 'token_verified',
-      details: { email: user.email }
-    })
+    // Log successful admin access (optional - would need log_admin_action function)
+    // await supabase.rpc('log_admin_action', {
+    //   action_type: 'token_verified',
+    //   details: { email: user.email }
+    // })
+    console.log('Admin token verified successfully for:', user.email)
 
     return new Response(JSON.stringify({
       valid: true,
