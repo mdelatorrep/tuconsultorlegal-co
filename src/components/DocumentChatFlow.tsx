@@ -148,6 +148,9 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
     }
   };
 
+  const [threadId, setThreadId] = useState<string | null>(null);
+  const [openaiAgentId, setOpenaiAgentId] = useState<string | null>(null);
+
   const sendMessage = async () => {
     if (!currentMessage.trim() || !agent || sending) return;
 
@@ -163,37 +166,72 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
     setSending(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('document-chat', {
+      // Get or verify OpenAI agent for this legal agent
+      if (!openaiAgentId) {
+        const { data: openaiAgent, error: agentError } = await supabase
+          .from('openai_agents')
+          .select('openai_agent_id')
+          .eq('legal_agent_id', agentId)
+          .eq('status', 'active')
+          .single();
+
+        if (agentError || !openaiAgent) {
+          // Fallback to original chat system if no OpenAI agent exists
+          const { data, error } = await supabase.functions.invoke('document-chat', {
+            body: {
+              messages: updatedMessages.map(msg => ({ role: msg.role, content: msg.content })),
+              agent_prompt: agent.ai_prompt,
+              document_name: agent.document_name
+            }
+          });
+
+          if (error) throw error;
+
+          const assistantMessage: Message = {
+            role: 'assistant',
+            content: data.message,
+            timestamp: new Date(),
+            showGenerateButton: data.message.includes('Ya tengo toda la información necesaria')
+          };
+
+          setMessages(prev => [...prev, assistantMessage]);
+          setSending(false);
+          return;
+        }
+
+        setOpenaiAgentId(openaiAgent.openai_agent_id);
+      }
+
+      // Use OpenAI Agents workflow orchestrator
+      const { data, error } = await supabase.functions.invoke('agent-workflow-orchestrator', {
         body: {
           messages: updatedMessages.map(msg => ({ role: msg.role, content: msg.content })),
-          agent_prompt: agent.ai_prompt,
-          document_name: agent.document_name
+          agentId: openaiAgentId,
+          documentTokenId: null, // Will be set when document is generated
+          threadId: threadId
         }
       });
 
       if (error) throw error;
 
+      // Update thread ID if new thread was created
+      if (data.threadId && !threadId) {
+        setThreadId(data.threadId);
+      }
+
       const assistantMessage: Message = {
         role: 'assistant',
         content: data.message,
-        timestamp: new Date()
+        timestamp: new Date(),
+        showGenerateButton: data.message.toLowerCase().includes('generar') && 
+                           data.message.toLowerCase().includes('documento')
       };
 
       // Extract information from the conversation for placeholders
       const extractedData = extractInformationFromMessage(userMessage.content);
       setCollectedData(prev => ({ ...prev, ...extractedData }));
 
-      // Check if the assistant indicates readiness to generate
-      const isReadyToGenerate = data.message.includes('Ya tengo toda la información necesaria para proceder con la generación del documento.');
-
-      const assistantMessageWithButton: Message = {
-        role: 'assistant',
-        content: data.message,
-        timestamp: new Date(),
-        showGenerateButton: isReadyToGenerate
-      };
-
-      setMessages(prev => [...prev, assistantMessageWithButton]);
+      setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error('Error al enviar el mensaje');

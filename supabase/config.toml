@@ -3,6 +3,18 @@ project_id = "tkaezookvtpulfpaffes"
 [functions.admin-login]
 verify_jwt = false
 
+[functions.create-openai-agent]
+verify_jwt = false
+
+[functions.agent-workflow-orchestrator]
+verify_jwt = false
+
+[functions.quality-validation-agent]
+verify_jwt = false
+
+[functions.legal-compliance-agent]
+verify_jwt = false
+
 [functions.bold-webhook]
 verify_jwt = false
 

@@ -663,10 +663,39 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         return;
       }
 
-      toast({
-        title: "Agente enviado a revisión exitosamente",
-        description: `El agente "${formData.docName}" ha sido enviado para revisión del administrador.`,
-      });
+      // Create OpenAI Agent automatically
+      try {
+        console.log('Creating OpenAI agent for legal agent:', data.id);
+        const { data: openaiAgentResult, error: openaiError } = await supabase.functions.invoke('create-openai-agent', {
+          body: {
+            legalAgentId: data.id,
+            agentConfig: {
+              model: 'gpt-4o'
+            }
+          }
+        });
+
+        if (openaiError) {
+          console.error('Error creating OpenAI agent:', openaiError);
+          toast({
+            title: "Agente creado con advertencia",
+            description: `El agente "${formData.docName}" fue enviado a revisión, pero hubo un error al crear el agente de IA. Se puede configurar manualmente después.`,
+            variant: "destructive",
+          });
+        } else {
+          console.log('OpenAI agent created successfully:', openaiAgentResult);
+          toast({
+            title: "Agente enviado a revisión exitosamente",
+            description: `El agente "${formData.docName}" ha sido enviado para revisión y su agente de IA ha sido configurado automáticamente.`,
+          });
+        }
+      } catch (openaiCreationError) {
+        console.error('Error in OpenAI agent creation process:', openaiCreationError);
+        toast({
+          title: "Agente enviado a revisión exitosamente",
+          description: `El agente "${formData.docName}" ha sido enviado para revisión del administrador.`,
+        });
+      }
 
       // Delete the current draft since it's now published
       if (currentDraftId) {

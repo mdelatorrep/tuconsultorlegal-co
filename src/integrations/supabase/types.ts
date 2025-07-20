@@ -47,6 +47,57 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_conversations: {
+        Row: {
+          conversation_data: Json | null
+          created_at: string
+          document_token_id: string | null
+          id: string
+          openai_agent_id: string | null
+          status: string
+          thread_id: string
+          updated_at: string
+          user_session_id: string | null
+        }
+        Insert: {
+          conversation_data?: Json | null
+          created_at?: string
+          document_token_id?: string | null
+          id?: string
+          openai_agent_id?: string | null
+          status?: string
+          thread_id: string
+          updated_at?: string
+          user_session_id?: string | null
+        }
+        Update: {
+          conversation_data?: Json | null
+          created_at?: string
+          document_token_id?: string | null
+          id?: string
+          openai_agent_id?: string | null
+          status?: string
+          thread_id?: string
+          updated_at?: string
+          user_session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_conversations_document_token_id_fkey"
+            columns: ["document_token_id"]
+            isOneToOne: false
+            referencedRelation: "document_tokens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_conversations_openai_agent_id_fkey"
+            columns: ["openai_agent_id"]
+            isOneToOne: false
+            referencedRelation: "openai_agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_drafts: {
         Row: {
           ai_results: Json | null
@@ -111,6 +162,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      agent_workflows: {
+        Row: {
+          agents_config: Json
+          created_at: string
+          description: string | null
+          execution_steps: Json
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+          workflow_type: string
+        }
+        Insert: {
+          agents_config?: Json
+          created_at?: string
+          description?: string | null
+          execution_steps?: Json
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+          workflow_type: string
+        }
+        Update: {
+          agents_config?: Json
+          created_at?: string
+          description?: string | null
+          execution_steps?: Json
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+          workflow_type?: string
+        }
+        Relationships: []
       }
       blog_posts: {
         Row: {
@@ -500,6 +587,59 @@ export type Database = {
           },
         ]
       }
+      openai_agents: {
+        Row: {
+          created_at: string
+          id: string
+          instructions: string
+          legal_agent_id: string | null
+          metadata: Json | null
+          model: string
+          name: string
+          openai_agent_id: string
+          status: string
+          tool_resources: Json | null
+          tools: Json | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          instructions: string
+          legal_agent_id?: string | null
+          metadata?: Json | null
+          model?: string
+          name: string
+          openai_agent_id: string
+          status?: string
+          tool_resources?: Json | null
+          tools?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          instructions?: string
+          legal_agent_id?: string | null
+          metadata?: Json | null
+          model?: string
+          name?: string
+          openai_agent_id?: string
+          status?: string
+          tool_resources?: Json | null
+          tools?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "openai_agents_legal_agent_id_fkey"
+            columns: ["legal_agent_id"]
+            isOneToOne: false
+            referencedRelation: "legal_agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pricing_analytics: {
         Row: {
           clicked_at: string
@@ -619,6 +759,60 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      workflow_executions: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          current_step: number | null
+          document_token_id: string | null
+          error_message: string | null
+          execution_data: Json | null
+          id: string
+          started_at: string | null
+          status: string
+          workflow_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          current_step?: number | null
+          document_token_id?: string | null
+          error_message?: string | null
+          execution_data?: Json | null
+          id?: string
+          started_at?: string | null
+          status?: string
+          workflow_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          current_step?: number | null
+          document_token_id?: string | null
+          error_message?: string | null
+          execution_data?: Json | null
+          id?: string
+          started_at?: string | null
+          status?: string
+          workflow_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_executions_document_token_id_fkey"
+            columns: ["document_token_id"]
+            isOneToOne: false
+            referencedRelation: "document_tokens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_executions_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "agent_workflows"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
