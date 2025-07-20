@@ -13,6 +13,7 @@ import { useNativeAdminAuth } from "../hooks/useNativeAdminAuth";
 import LawyerStatsAdmin from "./LawyerStatsAdmin";
 import OpenAIAgentManager from "./OpenAIAgentManager";
 import LawyerBlogManager from "./LawyerBlogManager";
+import SystemConfigManager from "./SystemConfigManager";
 import { Copy, Users, Bot, BarChart3, Clock, CheckCircle, Lock, Unlock, Trash2, Check, X, Plus, Loader2, MessageCircle, BookOpen, Settings, Zap } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -613,20 +614,16 @@ function AdminPage() {
           </TabsContent>
 
           <TabsContent value="config">
-            <Card>
-              <CardHeader>
-                <CardTitle>Configuración del Sistema</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>Configuración disponible próximamente.</p>
-              </CardContent>
-            </Card>
+            <SystemConfigManager />
           </TabsContent>
 
           <TabsContent value="messages">
             <Card>
               <CardHeader>
-                <CardTitle>Mensajes de Contacto</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageCircle className="w-5 h-5" />
+                  Mensajes de Contacto
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
@@ -635,22 +632,39 @@ function AdminPage() {
                       <TableRow>
                         <TableHead>Nombre</TableHead>
                         <TableHead className="hidden sm:table-cell">Email</TableHead>
-                        <TableHead className="hidden md:table-cell">Fecha</TableHead>
+                        <TableHead className="hidden md:table-cell">Tipo</TableHead>
+                        <TableHead className="hidden lg:table-cell">Mensaje</TableHead>
                         <TableHead>Estado</TableHead>
+                        <TableHead>Acciones</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {contactMessages.map((message) => (
-                        <TableRow key={message.id}>
+                        <TableRow key={message.id} className={!message.is_read ? 'bg-blue-50 dark:bg-blue-950/10' : ''}>
                           <TableCell className="font-medium">
                             <div>
-                              <div>{message.name}</div>
+                              <div className="flex items-center gap-2">
+                                {message.name}
+                                {!message.is_read && (
+                                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                )}
+                              </div>
                               <div className="text-xs text-muted-foreground sm:hidden">{message.email}</div>
                             </div>
                           </TableCell>
                           <TableCell className="hidden sm:table-cell">{message.email}</TableCell>
                           <TableCell className="hidden md:table-cell">
-                            {format(new Date(message.created_at), 'dd/MM/yyyy', { locale: es })}
+                            <Badge variant="outline" className="text-xs">
+                              {(message as any).consultation_type || 'General'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell max-w-xs">
+                            <div className="truncate" title={message.message}>
+                              {message.message.length > 100 
+                                ? `${message.message.substring(0, 100)}...` 
+                                : message.message
+                              }
+                            </div>
                           </TableCell>
                           <TableCell>
                             <Badge variant={
@@ -660,6 +674,108 @@ function AdminPage() {
                               {message.status === 'responded' ? 'Respondido' :
                                message.status === 'archived' ? 'Archivado' : 'Pendiente'}
                             </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              {!message.is_read && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={async () => {
+                                    try {
+                                      const { error } = await supabase
+                                        .from('contact_messages')
+                                        .update({ is_read: true })
+                                        .eq('id', message.id);
+                                      
+                                      if (error) throw error;
+                                      await loadContactMessages();
+                                      
+                                      toast({
+                                        title: "Mensaje marcado como leído",
+                                        description: "El mensaje ha sido marcado como leído",
+                                      });
+                                    } catch (error: any) {
+                                      toast({
+                                        title: "Error",
+                                        description: error.message || "Error al marcar como leído",
+                                        variant: "destructive"
+                                      });
+                                    }
+                                  }}
+                                  title="Marcar como leído"
+                                >
+                                  <CheckCircle className="w-3 h-3" />
+                                </Button>
+                              )}
+                              {message.status === 'pending' && (
+                                <Button
+                                  size="sm"
+                                  onClick={async () => {
+                                    const response = prompt('Respuesta al mensaje:');
+                                    if (!response) return;
+                                    try {
+                                      const { error } = await supabase
+                                        .from('contact_messages')
+                                        .update({ 
+                                          status: 'responded', 
+                                          is_read: true,
+                                          responded_at: new Date().toISOString(),
+                                          admin_notes: response
+                                        })
+                                        .eq('id', message.id);
+                                      
+                                      if (error) throw error;
+                                      await loadContactMessages();
+                                      
+                                      toast({
+                                        title: "Mensaje respondido",
+                                        description: "El mensaje ha sido marcado como respondido",
+                                      });
+                                    } catch (error: any) {
+                                      toast({
+                                        title: "Error",
+                                        description: error.message || "Error al responder mensaje",
+                                        variant: "destructive"
+                                      });
+                                    }
+                                  }}
+                                  title="Responder mensaje"
+                                >
+                                  <Check className="w-3 h-3" />
+                                </Button>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={async () => {
+                                  if (!confirm('¿Estás seguro de que deseas archivar este mensaje?')) return;
+                                  try {
+                                    const { error } = await supabase
+                                      .from('contact_messages')
+                                      .update({ status: 'archived', is_read: true })
+                                      .eq('id', message.id);
+                                    
+                                    if (error) throw error;
+                                    await loadContactMessages();
+                                    
+                                    toast({
+                                      title: "Mensaje archivado",
+                                      description: "El mensaje ha sido archivado",
+                                    });
+                                  } catch (error: any) {
+                                    toast({
+                                      title: "Error",
+                                      description: error.message || "Error al archivar mensaje",
+                                      variant: "destructive"
+                                    });
+                                  }
+                                }}
+                                title="Archivar mensaje"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
