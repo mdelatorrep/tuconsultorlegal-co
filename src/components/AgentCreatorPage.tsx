@@ -290,12 +290,47 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
 
   const handleNext = () => {
     if (currentStep === 1) {
+      // Validate step 1 fields before proceeding
+      if (!formData.docName.trim() || !formData.docDesc.trim() || !formData.docCat) {
+        toast({
+          title: "Campos requeridos",
+          description: "Por favor completa el nombre, descripción y categoría del documento antes de continuar.",
+          variant: "destructive",
+        });
+        return;
+      }
       // For step 1, improve document info with AI first
       improveDocumentInfo();
+    } else if (currentStep === 2) {
+      // Validate step 2 fields
+      if (!formData.docTemplate.trim()) {
+        toast({
+          title: "Plantilla requerida",
+          description: "Por favor ingresa el contenido de la plantilla del documento.",
+          variant: "destructive",
+        });
+        return;
+      }
+      const nextStep = currentStep + 1;
+      setCurrentStep(nextStep);
+      setMaxStepReached(Math.max(maxStepReached, nextStep));
+    } else if (currentStep === 3) {
+      // Validate step 3 fields
+      if (!formData.initialPrompt.trim()) {
+        toast({
+          title: "Prompt requerido",
+          description: "Por favor ingresa las instrucciones iniciales para el agente.",
+          variant: "destructive",
+        });
+        return;
+      }
+      const nextStep = currentStep + 1;
+      setCurrentStep(nextStep);
+      setMaxStepReached(Math.max(maxStepReached, nextStep));
     } else if (currentStep < 5) {
       const nextStep = currentStep + 1;
       setCurrentStep(nextStep);
-      setMaxStepReached(Math.max(maxStepReached, nextStep)); // Update max step reached
+      setMaxStepReached(Math.max(maxStepReached, nextStep));
     }
   };
 
@@ -510,7 +545,16 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
 
       if (error) {
         console.error('Supabase function error:', error);
-        throw new Error(error.message || 'Error al mejorar la información del documento');
+        setIsImprovingDocInfo(false);
+        toast({
+          title: "Error al mejorar información",
+          description: "No se pudo mejorar la información del documento. Continuando con datos originales.",
+          variant: "destructive",
+        });
+        // Continue to next step with original data
+        setCurrentStep(2);
+        setMaxStepReached(Math.max(maxStepReached, 2));
+        return;
       }
 
       if (!data?.success) {
@@ -549,9 +593,13 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       
       toast({
         title: "Error al mejorar información",
-        description: error instanceof Error ? error.message : "No se pudo mejorar la información con IA. Intenta nuevamente.",
+        description: "No se pudo mejorar la información del documento. Continuando con datos originales.",
         variant: "destructive",
       });
+
+      // Continue to next step even if improvement fails
+      setCurrentStep(2);
+      setMaxStepReached(Math.max(maxStepReached, 2));
     }
   };
 
@@ -573,7 +621,6 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
   const rejectDocumentInfo = () => {
     setDocInfoImprovement(prev => ({ ...prev, showImprovement: false }));
     setCurrentStep(2);
-    setMaxStepReached(Math.max(maxStepReached, 2)); // Update max step reached
     setMaxStepReached(Math.max(maxStepReached, 2)); // Update max step reached
     
     toast({

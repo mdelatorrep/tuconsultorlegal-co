@@ -109,8 +109,10 @@ serve(async (req) => {
     console.log('Using OpenAI model for lawyer functions:', selectedModel);
 
     console.log('=== REQUEST BODY PARSING ===');
-    const { docName, docDesc, docCategory, targetAudience } = await req.json();
+    const requestBody = await req.json();
+    const { docName, docDesc, docCategory, targetAudience } = requestBody;
 
+    console.log('Raw request body:', requestBody);
     console.log('Improving document info with AI:', {
       docName: docName || 'MISSING',
       docDesc: docDesc || 'MISSING', 
@@ -133,7 +135,7 @@ serve(async (req) => {
       );
     }
 
-    const requestBody = {
+    const openAIRequestBody = {
       model: selectedModel,
       messages: [
         {
@@ -169,7 +171,7 @@ Mejora el nombre y descripción para que sean más atractivos y comprensibles pa
       max_tokens: 1000,
     };
 
-    const data = await callOpenAIWithRetry(requestBody);
+    const data = await callOpenAIWithRetry(openAIRequestBody);
 
     
     if (!data.choices || !data.choices[0] || !data.choices[0].message) {
