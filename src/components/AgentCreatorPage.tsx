@@ -327,6 +327,27 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       const nextStep = currentStep + 1;
       setCurrentStep(nextStep);
       setMaxStepReached(Math.max(maxStepReached, nextStep));
+    } else if (currentStep === 4) {
+      // Validate step 4 fields (AI processing and price)
+      if (!aiResults.enhancedPrompt || aiResults.extractedPlaceholders.length === 0) {
+        toast({
+          title: "Procesamiento IA incompleto",
+          description: "Debes completar el procesamiento de IA antes de continuar.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!formData.lawyerSuggestedPrice || formData.lawyerSuggestedPrice.trim() === '') {
+        toast({
+          title: "Precio requerido",
+          description: "Por favor ingresa un precio sugerido para el documento.",
+          variant: "destructive",
+        });
+        return;
+      }
+      const nextStep = currentStep + 1;
+      setCurrentStep(nextStep);
+      setMaxStepReached(Math.max(maxStepReached, nextStep));
     } else if (currentStep < 5) {
       const nextStep = currentStep + 1;
       setCurrentStep(nextStep);
@@ -650,17 +671,29 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         return;
       }
 
-      // Convert lawyer suggested price to integer (remove $ and commas), default to 0 if invalid
-      const lawyerPriceValue = parseInt(formData.lawyerSuggestedPrice.replace(/[^0-9]/g, '')) || 0;
-      // Convert calculated price to integer (for admin review), default to 0 if invalid
-      const calculatedPriceValue = parseInt(aiResults.calculatedPrice.replace(/[^0-9]/g, '')) || 0;
+      // Validate lawyer suggested price is provided
+      if (!formData.lawyerSuggestedPrice || formData.lawyerSuggestedPrice.trim() === '') {
+        toast({
+          title: "Precio requerido",
+          description: "Por favor ingresa un precio sugerido para el documento.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Convert lawyer suggested price to integer (remove $ and commas), ensure it's a valid number
+      const lawyerPriceValue = parseInt(formData.lawyerSuggestedPrice.replace(/[^0-9]/g, '')) || 50000; // Default minimum
+      // Convert calculated price to integer (for admin review), default to lawyer price if invalid
+      const calculatedPriceValue = parseInt(aiResults.calculatedPrice.replace(/[^0-9]/g, '')) || lawyerPriceValue;
       
       console.log('Publishing agent with data:', {
         name: formData.docName,
         created_by: lawyerData.tokenId,
         lawyerPriceValue,
         calculatedPriceValue,
-        hasTokenId: !!lawyerData.tokenId
+        hasTokenId: !!lawyerData.tokenId,
+        enhancedPromptLength: aiResults.enhancedPrompt.length,
+        placeholdersCount: aiResults.extractedPlaceholders.length
       });
       
       if (!lawyerData.tokenId) {
@@ -678,7 +711,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
           placeholder_fields: aiResults.extractedPlaceholders,
           suggested_price: lawyerPriceValue, // Lawyer's suggested price for client
           final_price: calculatedPriceValue, // AI calculated price for admin review
-          price_justification: aiResults.priceJustification,
+          price_justification: aiResults.priceJustification || 'Precio estimado por el abogado',
           status: 'pending_review',
           created_by: lawyerData.tokenId, // Usar tokenId que apunta a lawyer_tokens.id
           target_audience: formData.targetAudience,
@@ -686,10 +719,16 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
           sla_enabled: formData.slaEnabled
         })
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error creating agent:', error);
+        console.error('Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         
         let errorMessage = "No se pudo crear el agente. Intenta nuevamente.";
         
@@ -700,11 +739,25 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
           errorMessage = "Ya existe un agente con este nombre. Usa un nombre diferente.";
         } else if (error.message?.includes('violates check')) {
           errorMessage = "Los datos del agente no son válidos. Revisa todos los campos.";
+        } else if (error.message?.includes('null value')) {
+          errorMessage = "Faltan campos requeridos. Asegúrate de completar todos los pasos correctamente.";
+        } else if (error.code === 'PGRST116') {
+          errorMessage = "No se pudo guardar el agente. Verifica que todos los campos estén completos.";
         }
         
         toast({
           title: "Error al enviar a revisión",
-          description: errorMessage,
+          description: `${errorMessage} (${error.message})`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!data) {
+        console.error('No data returned from insert operation');
+        toast({
+          title: "Error al enviar a revisión",
+          description: "No se pudo crear el agente. Verifica que todos los campos estén completos.",
           variant: "destructive",
         });
         return;
@@ -1542,15 +1595,20 @@ VALIDACIONES:
                           Ingresa el precio que consideras justo para cobrar al cliente final por este documento.
                         </p>
                         <div className="space-y-2">
-                          <Label htmlFor="lawyerPrice">Precio Sugerido (COP)</Label>
+                          <Label htmlFor="lawyerPrice" className="text-base font-medium">
+                            Precio Sugerido (COP) - Requerido *
+                          </Label>
                           <Input
                             id="lawyerPrice"
                             type="text"
                             placeholder="Ej: $ 80,000 COP"
                             value={formData.lawyerSuggestedPrice}
                             onChange={(e) => handleInputChange('lawyerSuggestedPrice', e.target.value)}
-                            className="text-lg font-semibold"
+                            className={`text-lg font-semibold ${!formData.lawyerSuggestedPrice ? 'border-red-300 focus:border-red-500' : ''}`}
                           />
+                          {!formData.lawyerSuggestedPrice && (
+                            <p className="text-sm text-red-600">Este campo es requerido para continuar al paso 5</p>
+                          )}
                         </div>
                         <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-md">
                           <p className="text-sm text-blue-700 dark:text-blue-300">
