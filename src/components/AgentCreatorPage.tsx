@@ -766,7 +766,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       // Agent will be submitted for review - OpenAI agent will be created upon approval
       toast({
         title: "¡Agente enviado a revisión!",
-        description: `El agente "${formData.docName}" fue enviado a revisión exitosamente. El agente de IA se configurará automáticamente una vez que sea aprobado por el administrador.`,
+        description: `El agente "${formData.docName}" fue enviado a revisión exitosamente. Una vez aprobado, se creará automáticamente un agente OpenAI especializado para optimizar la experiencia del usuario.`,
         variant: "default",
       });
 

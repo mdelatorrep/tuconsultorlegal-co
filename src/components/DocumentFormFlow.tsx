@@ -55,7 +55,24 @@ export default function DocumentFormFlow({ agentId, onBack, onComplete }: Docume
 
   useEffect(() => {
     loadAgent();
+    // Load any previous chat session data
+    loadPreviousSessionData();
   }, [agentId]);
+
+  const loadPreviousSessionData = () => {
+    const sessionData = localStorage.getItem(`document_session_${agentId}`);
+    if (sessionData) {
+      try {
+        const parsed = JSON.parse(sessionData);
+        if (parsed.extractedFormData && Object.keys(parsed.extractedFormData).length > 0) {
+          setFormData(prev => ({ ...prev, ...parsed.extractedFormData }));
+          toast.success('Se cargaron datos de tu sesión anterior');
+        }
+      } catch (error) {
+        console.error('Error loading session data:', error);
+      }
+    }
+  };
 
   const loadAgent = async () => {
     try {

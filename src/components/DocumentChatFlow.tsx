@@ -51,14 +51,24 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
     scrollToBottom();
   }, [messages]);
 
-  // Persist chat data to localStorage
+  // Persist chat data to localStorage with sync to DocumentFormFlow
   useEffect(() => {
     if (messages.length > 0) {
-      localStorage.setItem(`chat_${agentId}`, JSON.stringify({
+      const chatData = {
         messages,
         collectedData,
         userInfo,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        agentId,
+        mode: 'chat'
+      };
+      
+      localStorage.setItem(`chat_${agentId}`, JSON.stringify(chatData));
+      
+      // Sync with form flow data
+      localStorage.setItem(`document_session_${agentId}`, JSON.stringify({
+        ...chatData,
+        extractedFormData: collectedData
       }));
     }
   }, [messages, collectedData, userInfo, agentId]);
@@ -202,7 +212,7 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
         setOpenaiAgentId(openaiAgent.openai_agent_id);
       }
 
-      // Use OpenAI Agents workflow orchestrator
+      // Use OpenAI Agents workflow orchestrator with enhanced error handling
       const { data, error } = await supabase.functions.invoke('agent-workflow-orchestrator', {
         body: {
           messages: updatedMessages.map(msg => ({ role: msg.role, content: msg.content })),
@@ -211,6 +221,31 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
           threadId: threadId
         }
       });
+      
+      if (error) {
+        console.error('OpenAI Agent error, falling back to basic chat:', error);
+        // Fallback to original chat system
+        const { data: fallbackData, error: fallbackError } = await supabase.functions.invoke('document-chat', {
+          body: {
+            messages: updatedMessages.map(msg => ({ role: msg.role, content: msg.content })),
+            agent_prompt: agent.ai_prompt,
+            document_name: agent.document_name
+          }
+        });
+
+        if (fallbackError) throw fallbackError;
+
+        const assistantMessage: Message = {
+          role: 'assistant',
+          content: fallbackData.message,
+          timestamp: new Date(),
+          showGenerateButton: fallbackData.message.includes('Ya tengo toda la información necesaria')
+        };
+
+        setMessages(prev => [...prev, assistantMessage]);
+        setSending(false);
+        return;
+      }
 
       if (error) throw error;
 

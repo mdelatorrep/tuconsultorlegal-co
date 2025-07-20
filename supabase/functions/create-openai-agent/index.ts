@@ -7,121 +7,83 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const supabaseUrl = Deno.env.get('SUPABASE_URL');
-const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const openAIApiKey = Deno.env.get('OPENAI_API_KEY')!;
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Validate environment variables
-    if (!supabaseUrl || !supabaseServiceKey) {
-      console.error('Missing Supabase environment variables');
-      throw new Error('Missing Supabase configuration');
-    }
-
-    if (!openAIApiKey) {
-      console.error('Missing OpenAI API key');
-      throw new Error('OpenAI API key not configured');
-    }
-
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const { legalAgentId, agentConfig } = await req.json();
+    const { legal_agent_id, force_recreate = false } = await req.json();
 
-    console.log('Creating OpenAI agent for legal agent:', legalAgentId);
-    console.log('Agent config:', agentConfig);
-    console.log('Environment check:', {
-      hasSupabaseUrl: !!supabaseUrl,
-      hasServiceKey: !!supabaseServiceKey,
-      hasOpenAIKey: !!openAIApiKey
-    });
+    if (!legal_agent_id) {
+      return new Response(JSON.stringify({ error: 'legal_agent_id is required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
 
-    // Get legal agent details
+    console.log(`Creating OpenAI agent for legal agent: ${legal_agent_id}`);
+
+    // Get the legal agent details
     const { data: legalAgent, error: fetchError } = await supabase
       .from('legal_agents')
       .select('*')
-      .eq('id', legalAgentId)
+      .eq('id', legal_agent_id)
+      .single();
+
+    if (fetchError || !legalAgent) {
+      throw new Error(`Legal agent not found: ${fetchError?.message}`);
+    }
+
+    // Check if OpenAI agent already exists
+    const { data: existingAgent, error: existingError } = await supabase
+      .from('openai_agents')
+      .select('*')
+      .eq('legal_agent_id', legal_agent_id)
+      .eq('status', 'active')
       .maybeSingle();
 
-    if (fetchError) {
-      console.error('Error fetching legal agent:', fetchError);
-      throw new Error(`Error fetching legal agent: ${fetchError.message}`);
+    if (existingAgent && !force_recreate) {
+      return new Response(JSON.stringify({
+        success: true,
+        message: 'OpenAI agent already exists',
+        openai_agent_id: existingAgent.openai_agent_id,
+        agent_id: existingAgent.id
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
-    if (!legalAgent) {
-      console.error('Legal agent not found for ID:', legalAgentId);
-      throw new Error('Legal agent not found');
+    // If recreating, deactivate existing agent
+    if (existingAgent && force_recreate) {
+      await supabase
+        .from('openai_agents')
+        .update({ status: 'inactive' })
+        .eq('id', existingAgent.id);
+
+      // Delete from OpenAI
+      try {
+        await fetch(`https://api.openai.com/v1/assistants/${existingAgent.openai_agent_id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${openAIApiKey}`,
+            'OpenAI-Beta': 'assistants=v2'
+          }
+        });
+      } catch (deleteError) {
+        console.warn('Could not delete existing OpenAI agent:', deleteError);
+      }
     }
 
-    console.log('Legal agent found:', {
-      id: legalAgent.id,
-      name: legalAgent.name,
-      category: legalAgent.category
-    });
+    // Generate enhanced instructions for the OpenAI agent
+    const agentInstructions = generateDocumentAgentInstructions(legalAgent);
 
-    // Generate document-specific instructions based on category and type
-    const specificInstructions = generateSpecificInstructions(legalAgent);
-    
-    // Create specialized OpenAI agent with function calling capabilities
-    const agentInstructions = `
-Eres un asistente legal especializado en ${legalAgent.category}. Tu nombre es ${legalAgent.name}.
-
-RESPONSABILIDADES PRINCIPALES:
-- Generar documentos legales de alta calidad basados en plantillas específicas
-- Recopilar información necesaria del usuario mediante conversación natural
-- Validar la completitud y coherencia de la información proporcionada
-- Aplicar las mejores prácticas legales y de redacción
-
-CONTEXTO DEL DOCUMENTO:
-- Tipo: ${legalAgent.document_name}
-- Descripción: ${legalAgent.description}
-- Categoría: ${legalAgent.category}
-- Audiencia objetivo: ${legalAgent.target_audience}
-
-PLANTILLA BASE:
-${legalAgent.template_content}
-
-CAMPOS REQUERIDOS:
-${legalAgent.placeholder_fields ? JSON.stringify(legalAgent.placeholder_fields, null, 2) : 'No hay campos específicos definidos'}
-
-INFORMACIÓN ADICIONAL REQUERIDA:
-- Audiencia objetivo: ${legalAgent.target_audience}
-- SLA habilitado: ${legalAgent.sla_enabled}
-- Horas SLA: ${legalAgent.sla_hours || 'No especificado'}
-- Precio sugerido: ${legalAgent.suggested_price || 'No especificado'}
-
-INSTRUCCIONES ESPECÍFICAS DEL ABOGADO:
-${legalAgent.ai_prompt}
-
-${specificInstructions}
-
-FLUJO DE TRABAJO:
-1. Saluda al usuario y explica qué documento vas a ayudar a crear
-2. Recopila TODA la información necesaria usando una conversación natural
-3. Valida que tienes toda la información antes de generar el documento
-4. Genera el documento final aplicando la plantilla con los datos recopilados
-5. Ofrece revisiones o ajustes si es necesario
-
-HERRAMIENTAS DISPONIBLES:
-- generate_document: Para crear el documento final
-- validate_information: Para verificar que tienes toda la información necesaria
-- request_clarification: Para solicitar información adicional al usuario
-
-REGLAS IMPORTANTES:
-- SIEMPRE valida la información antes de generar documentos
-- Usa un lenguaje profesional pero amigable
-- No generes documentos con información incompleta
-- Solicita aclaraciones cuando sea necesario
-- Aplica las normativas legales colombianas cuando sea relevante
-- Para ${legalAgent.target_audience}, ajusta el lenguaje apropiadamente
-- Considera las implicaciones del SLA de ${legalAgent.sla_hours || 4} horas
-`;
-
-    // Create OpenAI Agent with function calling
+    // Create new OpenAI Agent
     const openAIResponse = await fetch('https://api.openai.com/v1/assistants', {
       method: 'POST',
       headers: {
@@ -130,107 +92,106 @@ REGLAS IMPORTANTES:
         'OpenAI-Beta': 'assistants=v2'
       },
       body: JSON.stringify({
-        model: agentConfig?.model || 'gpt-4o',
-        name: legalAgent.name,
+        model: 'gpt-4.1-2025-04-14',
+        name: `${legalAgent.name} - Asistente de Documentos`,
         instructions: agentInstructions,
         tools: [
           {
             type: "function",
             function: {
-              name: "generate_document",
-              description: "Generate the final legal document using the collected information",
+              name: "collect_document_information",
+              description: "Collect and structure information needed for the legal document",
               parameters: {
                 type: "object",
                 properties: {
-                  documentData: {
+                  collected_data: {
                     type: "object",
-                    description: "All the collected information to fill the document template"
+                    description: "Structured data collected from conversation"
                   },
-                  userRequests: {
-                    type: "string",
-                    description: "Any specific requests or modifications from the user"
+                  completion_percentage: {
+                    type: "number",
+                    description: "Percentage of required information collected (0-100)"
+                  },
+                  missing_fields: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "List of missing required fields"
+                  },
+                  ready_to_generate: {
+                    type: "boolean",
+                    description: "Whether enough information has been collected to generate the document"
                   }
                 },
-                required: ["documentData"]
+                required: ["collected_data", "completion_percentage", "ready_to_generate"]
               }
             }
           },
           {
-            type: "function",
+            type: "function", 
             function: {
-              name: "validate_information",
-              description: "Validate that all required information has been collected",
+              name: "validate_document_data",
+              description: "Validate collected data against document requirements",
               parameters: {
                 type: "object",
                 properties: {
-                  collectedData: {
+                  validation_results: {
                     type: "object",
-                    description: "The information collected so far"
-                  }
-                },
-                required: ["collectedData"]
-              }
-            }
-          },
-          {
-            type: "function",
-            function: {
-              name: "request_clarification",
-              description: "Request additional or clarifying information from the user",
-              parameters: {
-                type: "object",
-                properties: {
-                  question: {
-                    type: "string",
-                    description: "The specific question or clarification needed"
+                    description: "Results of data validation"
                   },
-                  field: {
-                    type: "string",
-                    description: "The field or area that needs clarification"
+                  errors: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "List of validation errors"
+                  },
+                  warnings: {
+                    type: "array", 
+                    items: { type: "string" },
+                    description: "List of validation warnings"
                   }
                 },
-                required: ["question"]
+                required: ["validation_results"]
               }
             }
           }
         ],
         metadata: {
-          legal_agent_id: legalAgentId,
-          category: legalAgent.category,
+          legal_agent_id: legal_agent_id,
           document_type: legalAgent.document_name,
-          created_by_system: 'tuconsultorlegal'
+          target_audience: legalAgent.target_audience,
+          created_by_system: 'tuconsultorlegal',
+          version: '2.0'
         }
       })
     });
 
     if (!openAIResponse.ok) {
       const errorData = await openAIResponse.text();
-      console.error('OpenAI API error:', errorData);
+      console.error(`OpenAI API error:`, errorData);
       throw new Error(`OpenAI API error: ${openAIResponse.status}`);
     }
 
     const openAIAgent = await openAIResponse.json();
-    console.log('OpenAI agent created successfully:', openAIAgent.id);
+    console.log(`OpenAI agent created successfully: ${openAIAgent.id}`);
 
-    // Save agent in our database
-    const { data: savedAgent, error: saveError } = await supabase
+    // Save to database
+    const { data: dbAgent, error: insertError } = await supabase
       .from('openai_agents')
       .insert({
-        legal_agent_id: legalAgentId,
         openai_agent_id: openAIAgent.id,
-        name: legalAgent.name,
-        model: agentConfig?.model || 'gpt-4o',
+        name: openAIAgent.name,
         instructions: agentInstructions,
+        model: 'gpt-4.1-2025-04-14',
         tools: openAIAgent.tools,
         tool_resources: openAIAgent.tool_resources || {},
         metadata: openAIAgent.metadata,
+        legal_agent_id: legal_agent_id,
         status: 'active'
       })
       .select()
       .single();
 
-    if (saveError) {
-      console.error('Error saving agent to database:', saveError);
+    if (insertError) {
+      console.error(`Error saving agent to database:`, insertError);
       // Try to delete the OpenAI agent if database save failed
       await fetch(`https://api.openai.com/v1/assistants/${openAIAgent.id}`, {
         method: 'DELETE',
@@ -239,24 +200,17 @@ REGLAS IMPORTANTES:
           'OpenAI-Beta': 'assistants=v2'
         }
       });
-      throw saveError;
+      throw insertError;
     }
-
-    console.log('Agent saved to database successfully');
-
-    // Update legal agent status to indicate it has an OpenAI agent
-    await supabase
-      .from('legal_agents')
-      .update({ status: 'active' })
-      .eq('id', legalAgentId);
 
     return new Response(JSON.stringify({
       success: true,
+      message: 'OpenAI agent created successfully',
       openai_agent_id: openAIAgent.id,
-      agent_data: savedAgent,
-      message: 'OpenAI agent created successfully'
+      agent_id: dbAgent.id,
+      legal_agent_id: legal_agent_id
     }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
   } catch (error) {
@@ -266,83 +220,68 @@ REGLAS IMPORTANTES:
       error: error.message
     }), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
 });
 
-// Generate document-specific instructions based on category and type
-function generateSpecificInstructions(legalAgent: any): string {
-  const category = legalAgent.category?.toLowerCase() || '';
-  const documentName = legalAgent.document_name?.toLowerCase() || '';
-  const targetAudience = legalAgent.target_audience || '';
+function generateDocumentAgentInstructions(legalAgent: any): string {
+  const placeholders = legalAgent.placeholder_fields || [];
+  const placeholderList = placeholders.map((p: any) => 
+    `- ${p.placeholder}: ${p.pregunta} (${p.tipo || 'texto'}${p.requerido ? ' - REQUERIDO' : ''})`
+  ).join('\n');
 
-  let specificInstructions = '';
+  return `
+Eres un asistente legal especializado en ayudar a crear "${legalAgent.document_name}" para ${legalAgent.target_audience === 'empresas' ? 'empresas' : 'personas naturales'}.
 
-  // Category-specific instructions
-  if (category.includes('contrato') || category.includes('contract')) {
-    specificInstructions += `
-INSTRUCCIONES ESPECÍFICAS PARA CONTRATOS:
-- Verifica que todas las partes estén claramente identificadas
-- Asegúrate de incluir objeto del contrato, obligaciones y derechos
-- Incluye cláusulas de resolución de conflictos
-- Especifica términos y condiciones de pago si aplica
-- Incluye cláusulas de terminación y causales de incumplimiento`;
-  }
+MISIÓN PRINCIPAL:
+Recopilar toda la información necesaria para generar el documento legal de manera conversacional, amigable y eficiente.
 
-  if (category.includes('societario') || category.includes('corporate')) {
-    specificInstructions += `
-INSTRUCCIONES ESPECÍFICAS PARA DERECHO SOCIETARIO:
-- Verifica el cumplimiento con el Código de Comercio colombiano
-- Incluye información sobre capital social y participaciones
-- Especifica órganos de administración y representación legal
-- Incluye procedimientos de toma de decisiones
-- Verifica requisitos de registro mercantil`;
-  }
+DOCUMENTO A GENERAR: ${legalAgent.document_name}
+AUDIENCIA: ${legalAgent.target_audience === 'empresas' ? 'Empresas y personas jurídicas' : 'Personas naturales'}
+DESCRIPCIÓN: ${legalAgent.description}
 
-  if (category.includes('laboral') || category.includes('employment')) {
-    specificInstructions += `
-INSTRUCCIONES ESPECÍFICAS PARA DERECHO LABORAL:
-- Cumple con el Código Sustantivo del Trabajo
-- Incluye salarios, prestaciones sociales y horarios
-- Especifica causales de terminación del contrato
-- Incluye cláusulas de confidencialidad si aplica
-- Verifica cumplimiento con normativas de seguridad social`;
-  }
+INFORMACIÓN REQUERIDA:
+${placeholderList}
 
-  if (category.includes('civil') || category.includes('family')) {
-    specificInstructions += `
-INSTRUCCIONES ESPECÍFICAS PARA DERECHO CIVIL:
-- Verifica capacidad legal de las partes
-- Incluye identificación completa de personas y bienes
-- Especifica derechos y obligaciones claramente
-- Incluye procedimientos de notificación
-- Considera aspectos de derecho de familia si aplica`;
-  }
+INSTRUCCIONES DEL ABOGADO:
+${legalAgent.ai_prompt}
 
-  // Audience-specific instructions
-  if (targetAudience === 'empresas') {
-    specificInstructions += `
-AJUSTES PARA AUDIENCIA EMPRESARIAL:
-- Usa terminología comercial apropiada
-- Incluye consideraciones de responsabilidad corporativa
-- Especifica aspectos tributarios relevantes
-- Incluye cláusulas de confidencialidad empresarial
-- Considera implicaciones de compliance empresarial`;
-  } else if (targetAudience === 'personas') {
-    specificInstructions += `
-AJUSTES PARA PERSONAS NATURALES:
-- Usa lenguaje claro y accesible
-- Explica términos legales complejos
-- Incluye protección de derechos del consumidor
-- Especifica derechos fundamentales aplicables
-- Considera limitaciones económicas del individuo`;
-  }
+PROTOCOLO DE TRABAJO:
+1. **SALUDO PROFESIONAL**: Preséntate como asistente especializado en ${legalAgent.document_name}
+2. **EXPLICACIÓN CLARA**: Explica qué documento vas a ayudar a crear y por qué es importante
+3. **RECOPILACIÓN CONVERSACIONAL**: 
+   - Haz preguntas de manera natural y progresiva
+   - No hagas más de 2-3 preguntas por mensaje
+   - Adapta el lenguaje según la audiencia (${legalAgent.target_audience})
+   - Explica por qué necesitas cada información
+4. **VALIDACIÓN CONTINUA**: Confirma la información recibida y aclara dudas
+5. **SEGUIMIENTO DEL PROGRESO**: Informa al usuario cuánta información falta
+6. **FINALIZACIÓN**: Cuando tengas toda la información, confirma que está listo para generar
 
-  return specificInstructions || `
-INSTRUCCIONES GENERALES:
-- Aplica principios generales del derecho colombiano
-- Incluye cláusulas estándar de protección
-- Verifica coherencia y completitud del documento
-- Usa terminología jurídica apropiada`;
+REGLAS IMPORTANTES:
+- Usa la función collect_document_information para estructurar los datos recopilados
+- Usa validate_document_data para verificar la completitud de la información
+- Mantén un tono profesional pero amigable
+- ${legalAgent.target_audience === 'empresas' ? 'Usa terminología empresarial apropiada (razón social, NIT, representante legal)' : 'Usa lenguaje claro y accesible para personas naturales'}
+- Explica términos legales cuando sea necesario
+- NO generes el documento - solo recopila la información
+- Pregunta una cosa a la vez para evitar abrumar al usuario
+- Confirma información crítica antes de continuar
+
+TONO Y ESTILO:
+- Profesional pero cercano
+- Claro y directo
+- Empático con las necesidades del usuario
+- Educativo cuando sea apropiado
+
+EJEMPLO DE INICIO:
+"¡Hola! Soy tu asistente legal especializado en ${legalAgent.document_name}. Te voy a ayudar a recopilar toda la información necesaria para crear tu documento de manera rápida y eficiente.
+
+Este documento es importante porque [explicar brevemente el propósito]. Para poder crearlo correctamente, necesitaré algunos datos específicos.
+
+¿Podrías comenzar diciéndome [primera pregunta más importante]?"
+
+¡Recuerda: Tu trabajo es hacer que el proceso sea fácil y comprensible para el usuario!
+`;
 }

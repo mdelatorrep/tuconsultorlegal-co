@@ -127,7 +127,7 @@ ${docTemplate}`
     const enhancedPromptData = await enhancePromptResponse.json();
     const enhancedPrompt = enhancedPromptData.choices[0].message.content;
 
-    // 2. Extract placeholders from template
+    // 2. Extract placeholders from template with validation
     const extractPlaceholdersResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -146,15 +146,18 @@ PÚBLICO OBJETIVO: ${targetAudience === 'empresas' ? 'Empresas y clientes corpor
 FORMATO DE RESPUESTA:
 Responde ÚNICAMENTE con un array JSON válido de objetos con esta estructura:
 [
-  {"placeholder": "{{variable_name}}", "pregunta": "Pregunta clara para el usuario"},
-  {"placeholder": "{{otra_variable}}", "pregunta": "Otra pregunta clara"}
+  {"placeholder": "{{variable_name}}", "pregunta": "Pregunta clara para el usuario", "tipo": "texto|fecha|numero|email|telefono", "requerido": true|false},
+  {"placeholder": "{{otra_variable}}", "pregunta": "Otra pregunta clara", "tipo": "texto", "requerido": true}
 ]
 
-REGLAS:
-- Identifica TODOS los placeholders que usan {{}} o similar
+REGLAS CRÍTICAS:
+- Identifica TODOS los placeholders que usan {{}} o similar ({{NOMBRE}}, {{FECHA}}, etc.)
 - Cada pregunta debe ser clara, específica y en español colombiano
 - Las preguntas deben ser profesionales pero amigables
 - ${targetAudience === 'empresas' ? 'Adapta las preguntas para contexto empresarial (razón social, NIT, representante legal, etc.)' : 'Usa lenguaje amigable para personas naturales (nombre completo, cédula, dirección personal, etc.)'}
+- Clasifica el tipo de dato esperado (texto, fecha, numero, email, telefono)
+- Marca como requerido=true solo campos esenciales para el documento
+- VALIDACIÓN: Asegúrate de que cada placeholder en la plantilla tenga su pregunta correspondiente
 - No incluyas texto adicional, solo el array JSON`
           },
           {
@@ -164,10 +167,12 @@ REGLAS:
 DOCUMENTO: ${docName}
 PÚBLICO OBJETIVO: ${targetAudience === 'empresas' ? 'Empresas' : 'Personas'}
 PLANTILLA:
-${docTemplate}`
+${docTemplate}
+
+IMPORTANTE: Verifica que identificas TODOS los placeholders presentes en la plantilla. Busca patrones como {{ALGO}}, {ALGO}, [ALGO], etc.`
           }
         ],
-        temperature: 0.2,
+        temperature: 0.1,
         max_tokens: 1500,
       }),
     });
@@ -177,15 +182,48 @@ ${docTemplate}`
     
     try {
       extractedPlaceholders = JSON.parse(placeholdersData.choices[0].message.content);
+      
+      // Validate that all placeholders in template are captured
+      const templatePlaceholderRegex = /\{\{([^}]+)\}\}/g;
+      const templatePlaceholders = [...docTemplate.matchAll(templatePlaceholderRegex)];
+      const extractedPlaceholderNames = extractedPlaceholders.map(p => p.placeholder);
+      
+      // Add any missing placeholders
+      for (const match of templatePlaceholders) {
+        if (!extractedPlaceholderNames.includes(match[0])) {
+          console.warn(`Missing placeholder detected: ${match[0]}`);
+          extractedPlaceholders.push({
+            placeholder: match[0],
+            pregunta: `¿Cuál es el valor para ${match[1].replace(/_/g, ' ')}?`,
+            tipo: 'texto',
+            requerido: true
+          });
+        }
+      }
+      
     } catch (error) {
       console.error('Error parsing placeholders:', error);
-      // Fallback: extract placeholders using regex
-      const placeholderRegex = /\{\{([^}]+)\}\}/g;
-      const matches = [...docTemplate.matchAll(placeholderRegex)];
-      extractedPlaceholders = matches.map(match => ({
-        placeholder: match[0],
-        pregunta: `¿Cuál es el valor para ${match[1].replace(/_/g, ' ')}?`
-      }));
+      // Enhanced fallback: extract placeholders using multiple patterns
+      const patterns = [
+        /\{\{([^}]+)\}\}/g,  // {{PLACEHOLDER}}
+        /\{([^}]+)\}/g,      // {PLACEHOLDER}
+        /\[([^\]]+)\]/g      // [PLACEHOLDER]
+      ];
+      
+      extractedPlaceholders = [];
+      for (const pattern of patterns) {
+        const matches = [...docTemplate.matchAll(pattern)];
+        for (const match of matches) {
+          if (!extractedPlaceholders.some(p => p.placeholder === match[0])) {
+            extractedPlaceholders.push({
+              placeholder: match[0],
+              pregunta: `¿Cuál es el valor para ${match[1].replace(/_/g, ' ')}?`,
+              tipo: 'texto',
+              requerido: true
+            });
+          }
+        }
+      }
     }
 
     // 3. Calculate suggested price based on complexity
