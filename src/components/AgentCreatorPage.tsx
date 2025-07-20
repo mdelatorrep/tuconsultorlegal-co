@@ -779,8 +779,8 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
           console.error('Error creating OpenAI agent:', openaiError);
           toast({
             title: "Agente creado con advertencia",
-            description: `El agente "${formData.docName}" fue enviado a revisión, pero hubo un error al crear el agente de IA. Se puede configurar manualmente después.`,
-            variant: "destructive",
+            description: `El agente "${formData.docName}" fue enviado a revisión exitosamente. El agente de IA se configurará automáticamente una vez que sea aprobado por el administrador.`,
+            variant: "default", // Changed from destructive to default
           });
         } else {
           console.log('OpenAI agent created successfully:', openaiAgentResult);

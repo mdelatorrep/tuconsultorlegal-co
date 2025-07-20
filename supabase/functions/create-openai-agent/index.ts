@@ -7,9 +7,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY')!;
+const supabaseUrl = Deno.env.get('SUPABASE_URL');
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -18,21 +18,50 @@ serve(async (req) => {
   }
 
   try {
+    // Validate environment variables
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Missing Supabase environment variables');
+      throw new Error('Missing Supabase configuration');
+    }
+
+    if (!openAIApiKey) {
+      console.error('Missing OpenAI API key');
+      throw new Error('OpenAI API key not configured');
+    }
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const { legalAgentId, agentConfig } = await req.json();
 
     console.log('Creating OpenAI agent for legal agent:', legalAgentId);
+    console.log('Agent config:', agentConfig);
+    console.log('Environment check:', {
+      hasSupabaseUrl: !!supabaseUrl,
+      hasServiceKey: !!supabaseServiceKey,
+      hasOpenAIKey: !!openAIApiKey
+    });
 
     // Get legal agent details
     const { data: legalAgent, error: fetchError } = await supabase
       .from('legal_agents')
       .select('*')
       .eq('id', legalAgentId)
-      .single();
+      .maybeSingle();
 
-    if (fetchError || !legalAgent) {
+    if (fetchError) {
+      console.error('Error fetching legal agent:', fetchError);
+      throw new Error(`Error fetching legal agent: ${fetchError.message}`);
+    }
+
+    if (!legalAgent) {
+      console.error('Legal agent not found for ID:', legalAgentId);
       throw new Error('Legal agent not found');
     }
+
+    console.log('Legal agent found:', {
+      id: legalAgent.id,
+      name: legalAgent.name,
+      category: legalAgent.category
+    });
 
     // Generate document-specific instructions based on category and type
     const specificInstructions = generateSpecificInstructions(legalAgent);
