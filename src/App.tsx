@@ -7,12 +7,16 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AdminPage from "./components/AdminPage";
 import { useAuthManager } from "@/hooks/useAuthManager";
+import { useLogRocket } from "@/hooks/useLogRocket";
 
 const queryClient = new QueryClient();
 
 const AppContent = () => {
   // Inicializar el gestor de autenticación para limpieza automática
   useAuthManager();
+  
+  // Inicializar LogRocket para monitoreo de UX
+  useLogRocket();
   
   return (
     <>

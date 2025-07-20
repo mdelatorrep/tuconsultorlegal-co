@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useLegalTracking } from "@/hooks/useLogRocket";
 
 export const useDocumentPayment = () => {
   const [trackingCode, setTrackingCode] = useState("");
@@ -10,6 +11,7 @@ export const useDocumentPayment = () => {
   const [paymentCompleted, setPaymentCompleted] = useState(false);
   const [trackingCodeError, setTrackingCodeError] = useState("");
   const { toast } = useToast();
+  const { trackPayment, trackDocumentGeneration, trackUserJourney } = useLegalTracking();
 
   // Check for payment completion on load
   useEffect(() => {
@@ -70,12 +72,24 @@ export const useDocumentPayment = () => {
       // Check if already paid/downloaded
       if (data.status === 'pagado' || data.status === 'descargado') {
         setPaymentCompleted(true);
+        // Track existing paid document verification
+        trackUserJourney('document_verified', 'payment', {
+          documentType: data.document_type,
+          status: data.status,
+          alreadyPaid: true
+        });
       }
 
       setDocumentData(data);
       toast({
         title: "Código verificado",
         description: `Documento "${data.document_type}" encontrado correctamente.`,
+      });
+
+      // Track successful verification
+      trackUserJourney('tracking_code_verified', 'payment', {
+        documentType: data.document_type,
+        price: data.price
       });
 
     } catch (error) {
@@ -128,6 +142,9 @@ export const useDocumentPayment = () => {
       setPaymentCompleted(true);
       setDocumentData({ ...data, status: 'pagado' });
       
+      // Track successful payment
+      trackPayment(data.price, 'COP', 'bold', data.document_type);
+      
       toast({
         title: "¡Pago confirmado!",
         description: "Tu pago ha sido procesado exitosamente. Puedes descargar el documento.",
@@ -158,6 +175,12 @@ export const useDocumentPayment = () => {
       if (data?.paymentApproved) {
         setPaymentCompleted(true);
         setIsProcessingPayment(false);
+        
+        // Track payment completion
+        if (documentData) {
+          trackPayment(documentData.price, 'COP', 'bold', documentData.document_type);
+        }
+        
         toast({
           title: "¡Pago completado!",
           description: "Tu pago ha sido procesado exitosamente.",

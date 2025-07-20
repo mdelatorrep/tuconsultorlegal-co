@@ -5,6 +5,7 @@ import { Input } from "./ui/input";
 import { Scale, X, Send, AlertCircle, Settings } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "./ui/use-toast";
+import { useLegalTracking } from "@/hooks/useLogRocket";
 
 interface ChatMessage {
   id: string;
@@ -21,6 +22,8 @@ interface ChatWidgetProps {
 
 export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWidgetProps) {
   const { toast } = useToast();
+  const { trackConsultationStart, trackAgentInteraction, trackUserJourney } = useLegalTracking();
+  
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
@@ -67,8 +70,13 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
   useEffect(() => {
     if (!isOpen) {
       setHasProcessedInitialMessage(false);
+    } else {
+      // Track chat opening
+      trackUserJourney('chat_opened', window.location.pathname, {
+        initialMessage: !!initialMessage
+      });
     }
-  }, [isOpen]);
+  }, [isOpen, initialMessage, trackUserJourney]);
 
   // Check and initialize legal advisors when chat opens
   useEffect(() => {
@@ -113,6 +121,12 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
     setIsLoading(true);
     setConnectionError(false);
 
+    // Track consultation start if it's the first message
+    if (messages.length <= 1) {
+      const consultationType = initialMessage?.includes('empresarial') ? 'business' : 'personal';
+      trackConsultationStart(consultationType);
+    }
+
     try {
       // First, determine if this needs specialized legal advice
       const routingResponse = await supabase.functions.invoke('document-chat', {
@@ -136,6 +150,12 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
         // Route to specialized legal advisor
         console.log(`Routing to specialized advisor: ${specialization}`);
         
+        // Track specialized advisor interaction
+        trackAgentInteraction(specialization, 'legal_advice', {
+          messageLength: messageContent.length,
+          isComplex: isComplex
+        });
+        
         const advisorResponse = await supabase.functions.invoke('legal-consultation-advisor', {
           body: {
             messages: [{ role: 'user', content: messageContent }],
@@ -156,6 +176,10 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
         };
       } else {
         // Use general Lexi assistant
+        trackAgentInteraction('lexi', 'chat', {
+          messageLength: messageContent.length
+        });
+        
         const lexiResponse = await supabase.functions.invoke('document-chat', {
           body: {
             message: messageContent,
