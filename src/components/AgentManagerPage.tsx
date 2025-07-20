@@ -198,6 +198,47 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
         }
       });
 
+      if (error) {
+        console.error('Error updating agent:', error);
+        throw error;
+      }
+
+      // Create OpenAI Agent after approval
+      try {
+        console.log('Creating OpenAI agent for approved agent:', agentId);
+        const { data: openaiAgentResult, error: openaiError } = await supabase.functions.invoke('create-openai-agent', {
+          body: {
+            legalAgentId: agentId,
+            agentConfig: {
+              model: 'gpt-4o'
+            }
+          }
+        });
+
+        if (openaiError) {
+          console.error('Error creating OpenAI agent:', openaiError);
+          toast({
+            title: "Agente aprobado con advertencia",
+            description: "El agente fue aprobado exitosamente, pero hubo un problema al configurar el agente de IA. Se puede configurar manualmente después.",
+            variant: "destructive",
+          });
+        } else {
+          console.log('OpenAI agent created successfully:', openaiAgentResult);
+          toast({
+            title: "¡Agente aprobado y activado!",
+            description: "El agente fue aprobado exitosamente y el agente de IA fue configurado correctamente.",
+            variant: "default",
+          });
+        }
+      } catch (error) {
+        console.error('Error creating OpenAI agent:', error);
+        toast({
+          title: "Agente aprobado con advertencia",
+          description: "El agente fue aprobado exitosamente, pero hubo un error al configurar el agente de IA.",
+          variant: "destructive",
+        });
+      }
+
       if (error || !data?.success) {
         throw new Error(data?.error || error?.message || 'Error al aprobar el agente');
       }

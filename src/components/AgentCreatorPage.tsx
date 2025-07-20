@@ -763,39 +763,12 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         return;
       }
 
-      // Create OpenAI Agent automatically
-      try {
-        console.log('Creating OpenAI agent for legal agent:', data.id);
-        const { data: openaiAgentResult, error: openaiError } = await supabase.functions.invoke('create-openai-agent', {
-          body: {
-            legalAgentId: data.id,
-            agentConfig: {
-              model: 'gpt-4o'
-            }
-          }
-        });
-
-        if (openaiError) {
-          console.error('Error creating OpenAI agent:', openaiError);
-          toast({
-            title: "Agente creado con advertencia",
-            description: `El agente "${formData.docName}" fue enviado a revisión exitosamente. El agente de IA se configurará automáticamente una vez que sea aprobado por el administrador.`,
-            variant: "default", // Changed from destructive to default
-          });
-        } else {
-          console.log('OpenAI agent created successfully:', openaiAgentResult);
-          toast({
-            title: "Agente enviado a revisión exitosamente",
-            description: `El agente "${formData.docName}" ha sido enviado para revisión y su agente de IA ha sido configurado automáticamente.`,
-          });
-        }
-      } catch (openaiCreationError) {
-        console.error('Error in OpenAI agent creation process:', openaiCreationError);
-        toast({
-          title: "Agente enviado a revisión exitosamente",
-          description: `El agente "${formData.docName}" ha sido enviado para revisión del administrador.`,
-        });
-      }
+      // Agent will be submitted for review - OpenAI agent will be created upon approval
+      toast({
+        title: "¡Agente enviado a revisión!",
+        description: `El agente "${formData.docName}" fue enviado a revisión exitosamente. El agente de IA se configurará automáticamente una vez que sea aprobado por el administrador.`,
+        variant: "default",
+      });
 
       // Delete the current draft since it's now published
       if (currentDraftId) {
