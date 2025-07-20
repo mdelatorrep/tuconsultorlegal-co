@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "./ui/button";
-import { Menu, X, Scale } from "lucide-react";
+import { Menu, X } from "lucide-react";
+import logoImage from "/logo.png";
 
 interface HeaderProps {
   currentPage: string;
@@ -32,9 +33,13 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
         {/* Logo */}
         <button
           onClick={() => handleNavClick("home")}
-          className="flex items-center space-x-2 text-2xl font-bold text-primary hover:text-primary-light transition-smooth"
+          className="flex items-center space-x-3 text-xl font-bold text-primary hover:text-primary-light transition-smooth"
         >
-          <Scale className="w-8 h-8" />
+          <img 
+            src={logoImage} 
+            alt="Tu Consultor Legal" 
+            className="w-10 h-10 object-contain"
+          />
           <span>Tu Consultor Legal</span>
         </button>
 
