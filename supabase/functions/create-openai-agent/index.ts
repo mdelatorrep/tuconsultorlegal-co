@@ -34,6 +34,9 @@ serve(async (req) => {
       throw new Error('Legal agent not found');
     }
 
+    // Generate document-specific instructions based on category and type
+    const specificInstructions = generateSpecificInstructions(legalAgent);
+    
     // Create specialized OpenAI agent with function calling capabilities
     const agentInstructions = `
 Eres un asistente legal especializado en ${legalAgent.category}. Tu nombre es ${legalAgent.name}.
@@ -54,10 +57,18 @@ PLANTILLA BASE:
 ${legalAgent.template_content}
 
 CAMPOS REQUERIDOS:
-${JSON.stringify(legalAgent.placeholder_fields, null, 2)}
+${legalAgent.placeholder_fields ? JSON.stringify(legalAgent.placeholder_fields, null, 2) : 'No hay campos específicos definidos'}
 
-INSTRUCCIONES ESPECÍFICAS:
+INFORMACIÓN ADICIONAL REQUERIDA:
+- Audiencia objetivo: ${legalAgent.target_audience}
+- SLA habilitado: ${legalAgent.sla_enabled}
+- Horas SLA: ${legalAgent.sla_hours || 'No especificado'}
+- Precio sugerido: ${legalAgent.suggested_price || 'No especificado'}
+
+INSTRUCCIONES ESPECÍFICAS DEL ABOGADO:
 ${legalAgent.ai_prompt}
+
+${specificInstructions}
 
 FLUJO DE TRABAJO:
 1. Saluda al usuario y explica qué documento vas a ayudar a crear
@@ -77,6 +88,8 @@ REGLAS IMPORTANTES:
 - No generes documentos con información incompleta
 - Solicita aclaraciones cuando sea necesario
 - Aplica las normativas legales colombianas cuando sea relevante
+- Para ${legalAgent.target_audience}, ajusta el lenguaje apropiadamente
+- Considera las implicaciones del SLA de ${legalAgent.sla_hours || 4} horas
 `;
 
     // Create OpenAI Agent with function calling
@@ -228,3 +241,79 @@ REGLAS IMPORTANTES:
     });
   }
 });
+
+// Generate document-specific instructions based on category and type
+function generateSpecificInstructions(legalAgent: any): string {
+  const category = legalAgent.category?.toLowerCase() || '';
+  const documentName = legalAgent.document_name?.toLowerCase() || '';
+  const targetAudience = legalAgent.target_audience || '';
+
+  let specificInstructions = '';
+
+  // Category-specific instructions
+  if (category.includes('contrato') || category.includes('contract')) {
+    specificInstructions += `
+INSTRUCCIONES ESPECÍFICAS PARA CONTRATOS:
+- Verifica que todas las partes estén claramente identificadas
+- Asegúrate de incluir objeto del contrato, obligaciones y derechos
+- Incluye cláusulas de resolución de conflictos
+- Especifica términos y condiciones de pago si aplica
+- Incluye cláusulas de terminación y causales de incumplimiento`;
+  }
+
+  if (category.includes('societario') || category.includes('corporate')) {
+    specificInstructions += `
+INSTRUCCIONES ESPECÍFICAS PARA DERECHO SOCIETARIO:
+- Verifica el cumplimiento con el Código de Comercio colombiano
+- Incluye información sobre capital social y participaciones
+- Especifica órganos de administración y representación legal
+- Incluye procedimientos de toma de decisiones
+- Verifica requisitos de registro mercantil`;
+  }
+
+  if (category.includes('laboral') || category.includes('employment')) {
+    specificInstructions += `
+INSTRUCCIONES ESPECÍFICAS PARA DERECHO LABORAL:
+- Cumple con el Código Sustantivo del Trabajo
+- Incluye salarios, prestaciones sociales y horarios
+- Especifica causales de terminación del contrato
+- Incluye cláusulas de confidencialidad si aplica
+- Verifica cumplimiento con normativas de seguridad social`;
+  }
+
+  if (category.includes('civil') || category.includes('family')) {
+    specificInstructions += `
+INSTRUCCIONES ESPECÍFICAS PARA DERECHO CIVIL:
+- Verifica capacidad legal de las partes
+- Incluye identificación completa de personas y bienes
+- Especifica derechos y obligaciones claramente
+- Incluye procedimientos de notificación
+- Considera aspectos de derecho de familia si aplica`;
+  }
+
+  // Audience-specific instructions
+  if (targetAudience === 'empresas') {
+    specificInstructions += `
+AJUSTES PARA AUDIENCIA EMPRESARIAL:
+- Usa terminología comercial apropiada
+- Incluye consideraciones de responsabilidad corporativa
+- Especifica aspectos tributarios relevantes
+- Incluye cláusulas de confidencialidad empresarial
+- Considera implicaciones de compliance empresarial`;
+  } else if (targetAudience === 'personas') {
+    specificInstructions += `
+AJUSTES PARA PERSONAS NATURALES:
+- Usa lenguaje claro y accesible
+- Explica términos legales complejos
+- Incluye protección de derechos del consumidor
+- Especifica derechos fundamentales aplicables
+- Considera limitaciones económicas del individuo`;
+  }
+
+  return specificInstructions || `
+INSTRUCCIONES GENERALES:
+- Aplica principios generales del derecho colombiano
+- Incluye cláusulas estándar de protección
+- Verifica coherencia y completitud del documento
+- Usa terminología jurídica apropiada`;
+}

@@ -134,7 +134,10 @@ serve(async (req) => {
                 break;
                 
               case 'validate_information':
-                output = await handleValidateInformation(functionArgs);
+                output = await handleValidateInformation(
+                  functionArgs, 
+                  openaiAgent.legal_agents.placeholder_fields
+                );
                 break;
                 
               case 'request_clarification':
@@ -231,12 +234,29 @@ async function handleGenerateDocument(supabase: any, args: any, legalAgent: any,
     let documentContent = legalAgent.template_content;
     const placeholderFields = legalAgent.placeholder_fields || [];
     
-    // Replace placeholders with actual data
+    // Replace placeholders with actual data from documentData
     for (const field of placeholderFields) {
       const placeholder = field.placeholder;
-      const value = args.documentData[placeholder] || `[${placeholder}]`;
+      const fieldName = field.name || placeholder;
       
-      // Replace all occurrences of the placeholder
+      // Look for the value in the provided documentData
+      let value = args.documentData[fieldName] || 
+                 args.documentData[placeholder] || 
+                 args.documentData[field.pregunta] || 
+                 `[${placeholder}]`;
+      
+      // If value is still a placeholder, try to find it by question text
+      if (value.startsWith('[') && value.endsWith(']')) {
+        for (const [key, val] of Object.entries(args.documentData)) {
+          if (key.toLowerCase().includes(fieldName.toLowerCase()) || 
+              fieldName.toLowerCase().includes(key.toLowerCase())) {
+            value = val as string;
+            break;
+          }
+        }
+      }
+      
+      // Replace all occurrences of the placeholder in the template
       const regex = new RegExp(`\\[${placeholder}\\]`, 'g');
       documentContent = documentContent.replace(regex, value);
     }
@@ -246,7 +266,7 @@ async function handleGenerateDocument(supabase: any, args: any, legalAgent: any,
       documentContent += `\n\nObservaciones adicionales: ${args.userRequests}`;
     }
     
-    // Update document token with generated content
+    // Update document token with generated content if documentTokenId is provided
     if (documentTokenId) {
       const { error: updateError } = await supabase
         .from('document_tokens')
@@ -270,17 +290,36 @@ async function handleGenerateDocument(supabase: any, args: any, legalAgent: any,
   }
 }
 
-async function handleValidateInformation(args: any) {
+async function handleValidateInformation(args: any, placeholderFields?: any[]) {
   console.log('Validating information:', args);
   
   const collectedData = args.collectedData || {};
   const missingFields = [];
+  const requiredFields = placeholderFields || [];
   
-  // Check if we have all required fields
-  // This is a basic validation - you can make it more sophisticated
+  // Check if we have all required placeholder fields
+  for (const field of requiredFields) {
+    const fieldName = field.name || field.placeholder;
+    const fieldValue = collectedData[fieldName] || 
+                       collectedData[field.placeholder] || 
+                       collectedData[field.pregunta];
+    
+    if (!fieldValue || fieldValue.toString().trim() === '') {
+      missingFields.push(field.pregunta || field.placeholder || fieldName);
+    }
+  }
+  
+  // Check other collected data
   for (const [key, value] of Object.entries(collectedData)) {
     if (!value || value.toString().trim() === '') {
-      missingFields.push(key);
+      // Only add if not already in missingFields
+      const fieldLabel = requiredFields.find(f => 
+        f.name === key || f.placeholder === key
+      )?.pregunta || key;
+      
+      if (!missingFields.includes(fieldLabel)) {
+        missingFields.push(fieldLabel);
+      }
     }
   }
   
