@@ -8,8 +8,8 @@ import { Badge } from "./ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Switch } from "./ui/switch";
 import { toast } from "@/hooks/use-toast";
-import AdminLogin from "./AdminLogin";
-import { useAdminAuth } from "../hooks/useAdminAuth";
+import NativeAdminLogin from "./NativeAdminLogin";
+import { useNativeAdminAuth } from "../hooks/useNativeAdminAuth";
 import { Copy, Users, Bot, BarChart3, Clock, CheckCircle, Lock, Unlock, Trash2, Check, X, Plus, Loader2, MessageCircle, BookOpen, Settings, Zap } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -60,7 +60,7 @@ function AdminPage() {
     canSeeBusinessStats: false
   });
 
-  const { isAuthenticated, isLoading: authLoading, user } = useAdminAuth();
+  const { isAuthenticated, isLoading: authLoading, user } = useNativeAdminAuth();
 
   useEffect(() => {
     if (isAuthenticated && !authLoading) {
@@ -197,7 +197,7 @@ function AdminPage() {
   }
 
   if (!isAuthenticated) {
-    return <AdminLogin onLoginSuccess={handleLoginSuccess} />;
+    return <NativeAdminLogin onLoginSuccess={handleLoginSuccess} />;
   }
 
   return (
