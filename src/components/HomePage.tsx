@@ -6,9 +6,10 @@ import { usePopularDocuments } from "@/hooks/usePopularDocuments";
 
 interface HomePageProps {
   onOpenChat: (message?: string) => void;
+  onNavigate: (page: string) => void;
 }
 
-export default function HomePage({ onOpenChat }: HomePageProps) {
+export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
   const { documents: popularDocuments, loading: loadingDocs } = usePopularDocuments();
   // SEO optimization for home page
   useSEO({
@@ -208,14 +209,22 @@ export default function HomePage({ onOpenChat }: HomePageProps) {
             </div>
           )}
 
-          <div className="text-center mt-12">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-12">
+            <Button
+              variant="default"
+              size="lg"
+              onClick={() => onNavigate("personas")}
+              className="bg-primary text-primary-foreground hover:bg-primary/90 transition-smooth shadow-lg w-full sm:w-auto"
+            >
+              📄 Documentos para Personas
+            </Button>
             <Button
               variant="outline"
               size="lg"
-              onClick={() => onOpenChat("Quiero ver todos los documentos disponibles")}
-              className="hover:bg-primary hover:text-primary-foreground transition-smooth"
+              onClick={() => onNavigate("empresas")}
+              className="border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-smooth w-full sm:w-auto"
             >
-              Ver Todos los Documentos
+              🏢 Documentos para Empresas
             </Button>
           </div>
         </div>

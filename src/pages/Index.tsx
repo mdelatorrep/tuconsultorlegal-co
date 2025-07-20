@@ -86,7 +86,7 @@ export default function Index() {
 
     switch (currentPage) {
       case "home":
-        return <HomePage onOpenChat={handleOpenChat} />;
+        return <HomePage onOpenChat={handleOpenChat} onNavigate={handleNavigate} />;
       case "personas":
         return <PersonasPage onOpenChat={handleOpenChat} onNavigate={handleNavigate} />;
       case "empresas":
@@ -110,7 +110,7 @@ export default function Index() {
       case "privacidad":
         return <PrivacyPolicyPage onOpenChat={handleOpenChat} />;
       default:
-        return <HomePage onOpenChat={handleOpenChat} />;
+        return <HomePage onOpenChat={handleOpenChat} onNavigate={handleNavigate} />;
     }
   };
 
