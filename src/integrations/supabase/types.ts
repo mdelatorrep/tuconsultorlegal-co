@@ -565,7 +565,11 @@ export type Database = {
           final_price: number | null
           frontend_icon: string | null
           id: string
+          last_openai_activity: string | null
           name: string
+          openai_conversations_count: number | null
+          openai_enabled: boolean | null
+          openai_success_rate: number | null
           placeholder_fields: Json
           price_justification: string | null
           sla_enabled: boolean | null
@@ -588,7 +592,11 @@ export type Database = {
           final_price?: number | null
           frontend_icon?: string | null
           id?: string
+          last_openai_activity?: string | null
           name: string
+          openai_conversations_count?: number | null
+          openai_enabled?: boolean | null
+          openai_success_rate?: number | null
           placeholder_fields?: Json
           price_justification?: string | null
           sla_enabled?: boolean | null
@@ -611,7 +619,11 @@ export type Database = {
           final_price?: number | null
           frontend_icon?: string | null
           id?: string
+          last_openai_activity?: string | null
           name?: string
+          openai_conversations_count?: number | null
+          openai_enabled?: boolean | null
+          openai_success_rate?: number | null
           placeholder_fields?: Json
           price_justification?: string | null
           sla_enabled?: boolean | null
@@ -678,6 +690,47 @@ export type Database = {
             columns: ["advisor_agent_id"]
             isOneToOne: false
             referencedRelation: "legal_advisor_agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      openai_agent_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          legal_agent_id: string
+          retry_count: number | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          legal_agent_id: string
+          retry_count?: number | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          legal_agent_id?: string
+          retry_count?: number | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "openai_agent_jobs_legal_agent_id_fkey"
+            columns: ["legal_agent_id"]
+            isOneToOne: false
+            referencedRelation: "legal_agents"
             referencedColumns: ["id"]
           },
         ]
