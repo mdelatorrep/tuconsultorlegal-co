@@ -507,6 +507,51 @@ export type Database = {
           },
         ]
       }
+      legal_advisor_agents: {
+        Row: {
+          created_at: string
+          id: string
+          instructions: string
+          legal_sources: Json | null
+          model: string
+          name: string
+          openai_agent_id: string
+          search_keywords: Json | null
+          specialization: string
+          status: string
+          target_audience: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          instructions: string
+          legal_sources?: Json | null
+          model?: string
+          name: string
+          openai_agent_id: string
+          search_keywords?: Json | null
+          specialization: string
+          status?: string
+          target_audience: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          instructions?: string
+          legal_sources?: Json | null
+          model?: string
+          name?: string
+          openai_agent_id?: string
+          search_keywords?: Json | null
+          specialization?: string
+          status?: string
+          target_audience?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       legal_agents: {
         Row: {
           ai_prompt: string
@@ -583,6 +628,56 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "lawyer_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      legal_consultations: {
+        Row: {
+          advisor_agent_id: string | null
+          consultation_data: Json | null
+          consultation_topic: string | null
+          created_at: string
+          id: string
+          legal_area: string | null
+          sources_consulted: Json | null
+          status: string
+          thread_id: string
+          updated_at: string
+          user_session_id: string | null
+        }
+        Insert: {
+          advisor_agent_id?: string | null
+          consultation_data?: Json | null
+          consultation_topic?: string | null
+          created_at?: string
+          id?: string
+          legal_area?: string | null
+          sources_consulted?: Json | null
+          status?: string
+          thread_id: string
+          updated_at?: string
+          user_session_id?: string | null
+        }
+        Update: {
+          advisor_agent_id?: string | null
+          consultation_data?: Json | null
+          consultation_topic?: string | null
+          created_at?: string
+          id?: string
+          legal_area?: string | null
+          sources_consulted?: Json | null
+          status?: string
+          thread_id?: string
+          updated_at?: string
+          user_session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_consultations_advisor_agent_id_fkey"
+            columns: ["advisor_agent_id"]
+            isOneToOne: false
+            referencedRelation: "legal_advisor_agents"
             referencedColumns: ["id"]
           },
         ]

@@ -3,6 +3,12 @@ project_id = "tkaezookvtpulfpaffes"
 [functions.admin-login]
 verify_jwt = false
 
+[functions.create-legal-advisor-agents]
+verify_jwt = false
+
+[functions.legal-consultation-advisor]
+verify_jwt = false
+
 [functions.create-openai-agent]
 verify_jwt = false
 
