@@ -456,6 +456,7 @@ export type Database = {
           access_token: string
           active: boolean
           can_create_agents: boolean
+          can_create_blogs: boolean
           created_at: string
           created_by: string | null
           email: string
@@ -471,6 +472,7 @@ export type Database = {
           access_token: string
           active?: boolean
           can_create_agents?: boolean
+          can_create_blogs?: boolean
           created_at?: string
           created_by?: string | null
           email: string
@@ -486,6 +488,7 @@ export type Database = {
           access_token?: string
           active?: boolean
           can_create_agents?: boolean
+          can_create_blogs?: boolean
           created_at?: string
           created_by?: string | null
           email?: string

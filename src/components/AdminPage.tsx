@@ -14,10 +14,17 @@ import LawyerStatsAdmin from "./LawyerStatsAdmin";
 import OpenAIAgentManager from "./OpenAIAgentManager";
 import LawyerBlogManager from "./LawyerBlogManager";
 import SystemConfigManager from "./SystemConfigManager";
-import { Copy, Users, Bot, BarChart3, Clock, CheckCircle, Lock, Unlock, Trash2, Check, X, Plus, Loader2, MessageCircle, BookOpen, Settings, Zap, Mail, Phone } from "lucide-react";
+import { Copy, Users, Bot, BarChart3, Clock, CheckCircle, Lock, Unlock, Trash2, Check, X, Plus, Loader2, MessageCircle, BookOpen, Settings, Zap, Mail, Phone, Bell, LogOut, UserCheck, FileText, AlertCircle, Globe, Eye, EyeOff, Archive, Reply, User2, Timer, CreditCard, ShieldCheck, Activity, Briefcase, Calendar, Building2, Award, Coffee, Sparkles, Gavel, FileCheck, Users2, Target, TrendingUp, BookOpenCheck, Newspaper, PenTool, Send, Flag, CheckSquare, Heart, Star, Laptop, Smartphone, Headphones, HelpCircle, Shield, Zap as ZapIcon } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Label } from "./ui/label";
+import { Textarea } from "./ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "./ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { Progress } from "./ui/progress";
+import { Separator } from "./ui/separator";
 
 interface Lawyer {
   id: string;
@@ -27,9 +34,33 @@ interface Lawyer {
   is_verified: boolean;
   verification_token?: string;
   can_create_agents: boolean;
+  can_create_blogs: boolean;
   can_see_business_stats: boolean;
   is_locked: boolean;
   lock_reason?: string;
+  active?: boolean;
+  full_name?: string;
+  phone_number?: string;
+  last_login_at?: string;
+  lawyer_id?: string;
+  access_token?: string;
+}
+
+interface Agent {
+  id: string;
+  name: string;
+  document_name: string;
+  description: string;
+  category: string;
+  status: 'pending_review' | 'approved' | 'rejected' | 'active' | 'suspended';
+  created_at: string;
+  created_by?: string;
+  suggested_price: number;
+  final_price?: number;
+  target_audience: string;
+  template_content?: string;
+  ai_prompt?: string;
+  price_justification?: string;
 }
 
 interface ContactMessage {
@@ -44,28 +75,69 @@ interface ContactMessage {
   status: 'pending' | 'responded' | 'archived';
   admin_notes?: string;
   responded_at?: string;
+  consultation_type?: string;
+}
+
+interface TokenRequest {
+  id: string;
+  full_name: string;
+  email: string;
+  law_firm?: string;
+  specialization?: string;
+  years_of_experience?: number;
+  reason_for_request?: string;
+  phone_number?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  created_at: string;
+  reviewed_at?: string;
+  reviewed_by?: string;
+  rejection_reason?: string;
+}
+
+interface BlogPost {
+  id: string;
+  title: string;
+  slug: string;
+  content: string;
+  excerpt?: string;
+  featured_image?: string;
+  status: 'draft' | 'en_revision' | 'published' | 'archived';
+  author_id: string;
+  published_at?: string;
+  created_at: string;
+  updated_at: string;
+  author?: {
+    full_name: string;
+    email: string;
+  };
 }
 
 function AdminPage() {
   const [lawyers, setLawyers] = useState<Lawyer[]>([]);
-  const [agents, setAgents] = useState<any[]>([]);
+  const [agents, setAgents] = useState<Agent[]>([]);
   const [contactMessages, setContactMessages] = useState<ContactMessage[]>([]);
-  const [tokenRequests, setTokenRequests] = useState<any[]>([]);
+  const [tokenRequests, setTokenRequests] = useState<TokenRequest[]>([]);
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [pendingAgentsCount, setPendingAgentsCount] = useState(0);
   const [pendingBlogsCount, setPendingBlogsCount] = useState(0);
+  const [pendingTokenRequests, setPendingTokenRequests] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
+  const [showAgentDetails, setShowAgentDetails] = useState(false);
 
   const [newLawyer, setNewLawyer] = useState({
     name: "",
     email: "",
     phone: "",
     canCreateAgents: false,
+    canCreateBlogs: false,
     canSeeBusinessStats: false
   });
 
-  const { isAuthenticated, isLoading: authLoading, user, session, getAuthHeaders } = useNativeAdminAuth();
+  const { isAuthenticated, isLoading: authLoading, user, session, getAuthHeaders, logout } = useNativeAdminAuth();
 
   useEffect(() => {
     if (isAuthenticated && !authLoading) {
@@ -85,7 +157,8 @@ function AdminPage() {
         loadLawyers(),
         loadAgents(),
         loadTokenRequests(),
-        loadContactMessages()
+        loadContactMessages(),
+        loadBlogPosts()
       ]);
     } catch (error) {
       console.error('Error loading admin data:', error);
@@ -127,6 +200,9 @@ function AdminPage() {
       const { data, error } = await supabase.functions.invoke('get-token-requests');
       if (error) throw error;
       setTokenRequests(data || []);
+      
+      const pending = data?.filter((request: any) => request.status === 'pending').length || 0;
+      setPendingTokenRequests(pending);
     } catch (error) {
       console.error('Error loading token requests:', error);
     }
@@ -149,6 +225,21 @@ function AdminPage() {
     }
   };
 
+  const loadBlogPosts = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-blog-posts', {
+        method: 'GET'
+      });
+      if (error) throw error;
+      
+      setBlogPosts(data?.blogs || []);
+      const pending = data?.blogs?.filter((blog: any) => blog.status === 'en_revision').length || 0;
+      setPendingBlogsCount(pending);
+    } catch (error) {
+      console.error('Error loading blog posts:', error);
+    }
+  };
+
   const createLawyer = async () => {
     try {
       setIsProcessing(true);
@@ -159,6 +250,7 @@ function AdminPage() {
           email: newLawyer.email,
           phone_number: newLawyer.phone,
           canCreateAgents: newLawyer.canCreateAgents,
+          canCreateBlogs: newLawyer.canCreateBlogs,
           canSeeBusinessStats: newLawyer.canSeeBusinessStats
         }
       });
@@ -170,19 +262,20 @@ function AdminPage() {
         email: "", 
         phone: "", 
         canCreateAgents: false, 
+        canCreateBlogs: false,
         canSeeBusinessStats: false 
       });
       await loadLawyers();
       
       toast({
-        title: "Abogado creado",
-        description: `${newLawyer.name} ha sido creado exitosamente`,
+        title: "Abogado creado exitosamente",
+        description: `${newLawyer.name} ha sido registrado en el sistema jurídico`,
       });
     } catch (error: any) {
       console.error('Error creating lawyer:', error);
       toast({
         title: "Error al crear abogado",
-        description: error.message || "Error desconocido al crear el abogado",
+        description: error.message || "Error inesperado al registrar el abogado en el sistema",
         variant: "destructive"
       });
     } finally {
@@ -190,20 +283,140 @@ function AdminPage() {
     }
   };
 
+  const handleApproveAgent = async (agentId: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('update-agent', {
+        headers: getAuthHeaders(),
+        body: {
+          agent_id: agentId,
+          status: 'approved'
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Agente aprobado",
+        description: "El agente legal ha sido aprobado y está disponible para uso público",
+      });
+      
+      await loadAgents();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Error al aprobar el agente",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleSuspendAgent = async (agentId: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('update-agent', {
+        headers: getAuthHeaders(),
+        body: {
+          agent_id: agentId,
+          status: 'suspended'
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Agente suspendido",
+        description: "El agente ha sido suspendido temporalmente",
+      });
+      
+      await loadAgents();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Error al suspender el agente",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleActivateAgent = async (agentId: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('update-agent', {
+        headers: getAuthHeaders(),
+        body: {
+          agent_id: agentId,
+          status: 'approved'
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Agente reactivado",
+        description: "El agente ha sido reactivado y está disponible nuevamente",
+      });
+      
+      await loadAgents();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Error al reactivar el agente",
+        variant: "destructive"
+      });
+    }
+  };
+
   const copyLawyerToken = (token: string) => {
     navigator.clipboard.writeText(token);
     toast({
-      title: "Token copiado",
-      description: "El token del abogado ha sido copiado al portapapeles",
+      title: "Token copiado al portapapeles",
+      description: "El token de acceso del abogado ha sido copiado correctamente",
     });
+  };
+
+  const markMessageAsRead = async (messageId: string) => {
+    try {
+      const { error } = await supabase
+        .from('contact_messages')
+        .update({ is_read: true })
+        .eq('id', messageId);
+
+      if (error) throw error;
+      await loadContactMessages();
+    } catch (error) {
+      console.error('Error marking message as read:', error);
+    }
+  };
+
+  const respondToMessage = async (messageId: string, response: string) => {
+    try {
+      const { error } = await supabase
+        .from('contact_messages')
+        .update({ 
+          status: 'responded',
+          admin_notes: response,
+          responded_at: new Date().toISOString()
+        })
+        .eq('id', messageId);
+
+      if (error) throw error;
+      
+      toast({
+        title: "Respuesta registrada",
+        description: "La respuesta al mensaje ha sido registrada exitosamente",
+      });
+      
+      await loadContactMessages();
+    } catch (error) {
+      console.error('Error responding to message:', error);
+    }
   };
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Cargando...</p>
+          <p className="mt-4 text-muted-foreground">Cargando Panel de Administración...</p>
+          <p className="text-sm text-muted-foreground">Sistema Jurídico Colombiano</p>
         </div>
       </div>
     );
@@ -214,27 +427,122 @@ function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-3 sm:p-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-3 sm:p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Panel de Administración</h1>
-            <p className="text-sm text-muted-foreground mt-1">Gestiona abogados, agentes y configuración del sistema</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Panel de Administración de Colombia</h1>
+            <p className="text-sm text-muted-foreground mt-1">Gestiona abogados, agentes legales y configuración del sistema jurídico</p>
+            {user?.email && (
+              <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">
+                Administrador: {user.email}
+              </p>
+            )}
           </div>
           
-          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-            {unreadMessagesCount > 0 && (
-              <Badge variant="destructive" className="text-xs">
-                <MessageCircle className="w-3 h-3 mr-1" />
-                {unreadMessagesCount} msg
-              </Badge>
-            )}
-            {pendingAgentsCount > 0 && (
-              <Badge variant="outline" className="text-xs">
-                <Bot className="w-3 h-3 mr-1" />
-                {pendingAgentsCount} pending
-              </Badge>
-            )}
+          <div className="flex items-center gap-3">
+            {/* Notificaciones */}
+            <Popover open={showNotifications} onOpenChange={setShowNotifications}>
+              <PopoverTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="relative"
+                  onClick={() => setShowNotifications(!showNotifications)}
+                >
+                  <Bell className="w-4 h-4" />
+                  {(unreadMessagesCount > 0 || pendingAgentsCount > 0 || pendingTokenRequests > 0) && (
+                    <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full text-xs w-5 h-5 flex items-center justify-center">
+                      {unreadMessagesCount + pendingAgentsCount + pendingTokenRequests}
+                    </span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-4" align="end">
+                <div className="space-y-3">
+                  <h4 className="font-medium flex items-center gap-2">
+                    <Bell className="w-4 h-4" />
+                    Centro de Notificaciones
+                  </h4>
+                  <Separator />
+                  
+                  {unreadMessagesCount > 0 && (
+                    <div className="flex items-center justify-between p-2 bg-red-50 dark:bg-red-950/20 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <MessageCircle className="w-4 h-4 text-red-500" />
+                        <span className="text-sm">Consultas sin responder</span>
+                      </div>
+                      <Badge variant="destructive" className="text-xs">
+                        {unreadMessagesCount}
+                      </Badge>
+                    </div>
+                  )}
+                  
+                  {pendingAgentsCount > 0 && (
+                    <div className="flex items-center justify-between p-2 bg-orange-50 dark:bg-orange-950/20 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Bot className="w-4 h-4 text-orange-500" />
+                        <span className="text-sm">Agentes pendientes de revisión</span>
+                      </div>
+                      <Badge variant="outline" className="text-xs">
+                        {pendingAgentsCount}
+                      </Badge>
+                    </div>
+                  )}
+                  
+                  {pendingTokenRequests > 0 && (
+                    <div className="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-blue-500" />
+                        <span className="text-sm">Solicitudes de acceso pendientes</span>
+                      </div>
+                      <Badge variant="outline" className="text-xs">
+                        {pendingTokenRequests}
+                      </Badge>
+                    </div>
+                  )}
+                  
+                  {unreadMessagesCount === 0 && pendingAgentsCount === 0 && pendingTokenRequests === 0 && (
+                    <div className="text-center py-4 text-muted-foreground">
+                      <CheckCircle className="w-8 h-8 mx-auto mb-2 text-green-500" />
+                      <p className="text-sm">Todo al día</p>
+                      <p className="text-xs">No hay notificaciones pendientes</p>
+                    </div>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            {/* Botón de cierre de sesión */}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20">
+                  <LogOut className="w-4 h-4" />
+                  <span className="hidden sm:inline">Cerrar Sesión</span>
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="flex items-center gap-2">
+                    <LogOut className="w-5 h-5 text-red-500" />
+                    Confirmar Cierre de Sesión
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    ¿Estás seguro de que deseas cerrar la sesión de administrador? 
+                    Tendrás que volver a iniciar sesión para acceder al panel.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={logout}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    Cerrar Sesión
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
 
@@ -247,22 +555,37 @@ function AdminPage() {
             <TabsTrigger value="requests" className="flex items-center gap-1 text-xs p-2">
               <Clock className="w-3 h-3" />
               <span className="hidden sm:inline">Solicitudes</span>
+              {pendingTokenRequests > 0 && (
+                <span className="ml-1 bg-destructive text-destructive-foreground rounded-full text-xs w-4 h-4 flex items-center justify-center">
+                  {pendingTokenRequests}
+                </span>
+              )}
             </TabsTrigger>
             <TabsTrigger value="agents" className="flex items-center gap-1 text-xs p-2">
               <Bot className="w-3 h-3" />
               <span className="hidden sm:inline">Agentes</span>
+              {pendingAgentsCount > 0 && (
+                <span className="ml-1 bg-orange-500 text-white rounded-full text-xs w-4 h-4 flex items-center justify-center">
+                  {pendingAgentsCount}
+                </span>
+              )}
             </TabsTrigger>
             <TabsTrigger value="openai" className="flex items-center gap-1 text-xs p-2">
               <Zap className="w-3 h-3" />
-              <span className="hidden sm:inline">OpenAI</span>
+              <span className="hidden sm:inline">IA OpenAI</span>
             </TabsTrigger>
             <TabsTrigger value="stats" className="flex items-center gap-1 text-xs p-2">
               <BarChart3 className="w-3 h-3" />
-              <span className="hidden sm:inline">Stats</span>
+              <span className="hidden sm:inline">Estadísticas</span>
             </TabsTrigger>
             <TabsTrigger value="blogs" className="flex items-center gap-1 text-xs p-2">
               <BookOpen className="w-3 h-3" />
               <span className="hidden sm:inline">Blog</span>
+              {pendingBlogsCount > 0 && (
+                <span className="ml-1 bg-blue-500 text-white rounded-full text-xs w-4 h-4 flex items-center justify-center">
+                  {pendingBlogsCount}
+                </span>
+              )}
             </TabsTrigger>
             <TabsTrigger value="config" className="flex items-center gap-1 text-xs p-2">
               <Settings className="w-3 h-3" />
@@ -270,9 +593,9 @@ function AdminPage() {
             </TabsTrigger>
             <TabsTrigger value="messages" className="flex items-center gap-1 text-xs p-2">
               <MessageCircle className="w-3 h-3" />
-              <span className="hidden sm:inline">Mensajes</span>
+              <span className="hidden sm:inline">Consultas</span>
               {unreadMessagesCount > 0 && (
-                <span className="ml-1 bg-destructive text-destructive-foreground rounded-full text-xs w-5 h-5 flex items-center justify-center">
+                <span className="ml-1 bg-destructive text-destructive-foreground rounded-full text-xs w-4 h-4 flex items-center justify-center">
                   {unreadMessagesCount}
                 </span>
               )}
@@ -284,41 +607,57 @@ function AdminPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Users className="w-5 h-5" />
-                  Gestión de Abogados
+                  Gestión de Abogados Colombianos
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 p-4 border rounded-lg">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 p-4 border rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
                   <Input
-                    placeholder="Nombre completo"
+                    placeholder="Nombre completo del abogado"
                     value={newLawyer.name}
                     onChange={(e) => setNewLawyer(prev => ({ ...prev, name: e.target.value }))}
                   />
                   <Input
-                    placeholder="Email"
+                    placeholder="Correo electrónico"
                     type="email"
                     value={newLawyer.email}
                     onChange={(e) => setNewLawyer(prev => ({ ...prev, email: e.target.value }))}
                   />
                   <Input
-                    placeholder="Teléfono (opcional)"
+                    placeholder="Número de teléfono (opcional)"
                     value={newLawyer.phone || ''}
                     onChange={(e) => setNewLawyer(prev => ({ ...prev, phone: e.target.value }))}
                   />
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={newLawyer.canCreateAgents}
+                        onCheckedChange={(checked) => setNewLawyer(prev => ({ ...prev, canCreateAgents: checked }))}
+                      />
+                      <Label className="text-xs">Crear Agentes</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={newLawyer.canCreateBlogs}
+                        onCheckedChange={(checked) => setNewLawyer(prev => ({ ...prev, canCreateBlogs: checked }))}
+                      />
+                      <Label className="text-xs">Crear Blogs</Label>
+                    </div>
+                  </div>
                   <div className="flex items-center space-x-2">
                     <Switch
-                      checked={newLawyer.canCreateAgents}
-                      onCheckedChange={(checked) => setNewLawyer(prev => ({ ...prev, canCreateAgents: checked }))}
+                      checked={newLawyer.canSeeBusinessStats}
+                      onCheckedChange={(checked) => setNewLawyer(prev => ({ ...prev, canSeeBusinessStats: checked }))}
                     />
-                    <Label className="text-xs">Crear Agentes</Label>
+                    <Label className="text-xs">Ver Estadísticas</Label>
                   </div>
                   <Button 
                     onClick={createLawyer} 
                     disabled={!newLawyer.name || !newLawyer.email || isProcessing}
-                    className="lg:col-span-5"
+                    className="lg:col-span-6"
                   >
                     {isProcessing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
-                    Crear Abogado
+                    Registrar Abogado en el Sistema
                   </Button>
                 </div>
 
@@ -328,8 +667,8 @@ function AdminPage() {
                       <TableRow>
                         <TableHead>Abogado</TableHead>
                         <TableHead className="hidden sm:table-cell">Contacto</TableHead>
-                        <TableHead className="hidden md:table-cell">Permisos</TableHead>
-                        <TableHead className="hidden lg:table-cell">Actividad</TableHead>
+                        <TableHead className="hidden md:table-cell">Permisos Especiales</TableHead>
+                        <TableHead className="hidden lg:table-cell">Última Conexión</TableHead>
                         <TableHead>Estado</TableHead>
                         <TableHead>Acciones</TableHead>
                       </TableRow>
@@ -342,9 +681,15 @@ function AdminPage() {
                               <div className="flex items-center gap-2">
                                 {(lawyer as any).full_name || lawyer.name}
                                 {lawyer.can_create_agents && (
-                                  <Badge variant="outline" className="text-xs">
+                                  <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
                                     <Bot className="w-3 h-3 mr-1" />
                                     Agentes
+                                  </Badge>
+                                )}
+                                {lawyer.can_create_blogs && (
+                                  <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
+                                    <BookOpen className="w-3 h-3 mr-1" />
+                                    Blog
                                   </Badge>
                                 )}
                               </div>
@@ -371,14 +716,28 @@ function AdminPage() {
                           
                           <TableCell className="hidden md:table-cell">
                             <div className="space-y-1">
-                              <Badge variant={lawyer.can_create_agents ? 'default' : 'secondary'} className="text-xs">
-                                {lawyer.can_create_agents ? 'Puede crear agentes' : 'Solo consulta'}
-                              </Badge>
-                              {lawyer.can_see_business_stats && (
-                                <Badge variant="outline" className="text-xs">
-                                  Ver estadísticas
-                                </Badge>
-                              )}
+                              <div className="flex flex-wrap gap-1">
+                                {lawyer.can_create_agents && (
+                                  <Badge variant="default" className="text-xs">
+                                    Crear Agentes
+                                  </Badge>
+                                )}
+                                {lawyer.can_create_blogs && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    Crear Blogs
+                                  </Badge>
+                                )}
+                                {lawyer.can_see_business_stats && (
+                                  <Badge variant="outline" className="text-xs">
+                                    Ver Estadísticas
+                                  </Badge>
+                                )}
+                                {!lawyer.can_create_agents && !lawyer.can_create_blogs && !lawyer.can_see_business_stats && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    Acceso Básico
+                                  </Badge>
+                                )}
+                              </div>
                             </div>
                           </TableCell>
                           
@@ -392,7 +751,7 @@ function AdminPage() {
                                   </div>
                                 </>
                               ) : (
-                                <span className="text-muted-foreground">Nunca</span>
+                                <span className="text-muted-foreground">Nunca se ha conectado</span>
                               )}
                             </div>
                           </TableCell>
@@ -421,7 +780,7 @@ function AdminPage() {
                                 size="sm"
                                 variant="outline"
                                 onClick={() => copyLawyerToken((lawyer as any).access_token || (lawyer as any).verification_token)}
-                                title="Copiar token"
+                                title="Copiar token de acceso"
                               >
                                 <Copy className="w-3 h-3" />
                               </Button>
@@ -431,11 +790,14 @@ function AdminPage() {
                                 variant={(lawyer as any).active !== false ? "outline" : "default"}
                                 onClick={async () => {
                                   try {
-                                    const { error } = await supabase
-                                      .from('lawyer_tokens')
-                                      .update({ active: !(lawyer as any).active })
-                                      .eq('lawyer_id', (lawyer as any).lawyer_id || lawyer.id);
-                                    
+                                    const { data, error } = await supabase.functions.invoke('update-lawyer-status', {
+                                      headers: getAuthHeaders(),
+                                      body: { 
+                                        lawyerId: (lawyer as any).lawyer_id || lawyer.id,
+                                        active: !(lawyer as any).active
+                                      }
+                                    });
+
                                     if (error) throw error;
                                     await loadLawyers();
                                     
@@ -615,116 +977,173 @@ function AdminPage() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="agents">
+          <TabsContent value="agents" className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Bot className="w-5 h-5" />
-                  Gestión de Agentes
+                  Gestión de Agentes Legales
+                  <Badge variant="outline" className="ml-auto">
+                    {agents.length} Total
+                  </Badge>
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Nombre</TableHead>
-                        <TableHead className="hidden sm:table-cell">Documento</TableHead>
-                        <TableHead className="hidden md:table-cell">Categoría</TableHead>
-                        <TableHead>Estado</TableHead>
-                        <TableHead>Acciones</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {agents.map((agent) => (
-                        <TableRow key={agent.id}>
-                          <TableCell className="font-medium">
-                            <div>
-                              <div>{agent.name}</div>
-                              <div className="text-xs text-muted-foreground sm:hidden">{agent.document_name}</div>
+              <CardContent className="space-y-4">
+                {/* Estadísticas de Agentes */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <Card className="p-4">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-orange-500" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Pendientes de Revisión</p>
+                        <p className="font-bold text-lg">{agents.filter(a => a.status === 'pending_review').length}</p>
+                      </div>
+                    </div>
+                  </Card>
+                  <Card className="p-4">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Activos</p>
+                        <p className="font-bold text-lg">{agents.filter(a => a.status === 'approved' || a.status === 'active').length}</p>
+                      </div>
+                    </div>
+                  </Card>
+                  <Card className="p-4">
+                    <div className="flex items-center gap-2">
+                      <X className="w-4 h-4 text-red-500" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Suspendidos</p>
+                        <p className="font-bold text-lg">{agents.filter(a => a.status === 'suspended').length}</p>
+                      </div>
+                    </div>
+                  </Card>
+                  <Card className="p-4">
+                    <div className="flex items-center gap-2">
+                      <Target className="w-4 h-4 text-blue-500" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Para Empresas</p>
+                        <p className="font-bold text-lg">{agents.filter(a => a.target_audience === 'empresas').length}</p>
+                      </div>
+                    </div>
+                  </Card>
+                </div>
+
+                {/* Lista de Agentes */}
+                <div className="space-y-3">
+                  {agents.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Bot className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>No hay agentes registrados en el sistema</p>
+                      <p className="text-sm">Los agentes aparecerán aquí cuando los abogados los creen</p>
+                    </div>
+                  ) : (
+                    agents.map((agent) => (
+                      <Card key={agent.id} className="p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h4 className="font-semibold text-lg">{agent.name}</h4>
+                              <Badge variant={
+                                agent.status === 'pending_review' ? 'destructive' :
+                                agent.status === 'approved' || agent.status === 'active' ? 'default' :
+                                agent.status === 'suspended' ? 'secondary' : 'outline'
+                              }>
+                                {agent.status === 'pending_review' ? 'Pendiente de Revisión' :
+                                 agent.status === 'approved' || agent.status === 'active' ? 'Activo' :
+                                 agent.status === 'suspended' ? 'Suspendido' : agent.status}
+                              </Badge>
+                              <Badge variant="outline" className="text-xs">
+                                {agent.target_audience === 'empresas' ? 'Empresas' : 'Personas'}
+                              </Badge>
                             </div>
-                          </TableCell>
-                          <TableCell className="hidden sm:table-cell">{agent.document_name}</TableCell>
-                          <TableCell className="hidden md:table-cell">{agent.category}</TableCell>
-                          <TableCell>
-                            <Badge variant={
-                              agent.status === 'approved' ? 'default' :
-                              agent.status === 'rejected' ? 'destructive' : 'outline'
-                            }>
-                              {agent.status === 'approved' ? 'Aprobado' :
-                               agent.status === 'rejected' ? 'Rechazado' : 'Pendiente'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                              {agent.status === 'pending_review' && (
-                                <>
-                                  <Button
-                                    size="sm"
-                                    onClick={async () => {
-                                      try {
-                                        const { error } = await supabase.functions.invoke('update-agent', {
-                                          body: {
-                                            agentId: agent.id,
-                                            status: 'approved'
-                                          }
-                                        });
-                                        if (error) throw error;
-                                        await loadAgents();
-                                        toast({
-                                          title: "Agente aprobado",
-                                          description: "El agente ha sido aprobado exitosamente",
-                                        });
-                                      } catch (error: any) {
-                                        toast({
-                                          title: "Error",
-                                          description: error.message || "Error al aprobar el agente",
-                                          variant: "destructive"
-                                        });
-                                      }
-                                    }}
-                                  >
-                                    <Check className="w-3 h-3" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    onClick={async () => {
-                                      const reason = prompt('Razón del rechazo:');
-                                      if (!reason) return;
-                                      try {
-                                        const { error } = await supabase.functions.invoke('update-agent', {
-                                          body: {
-                                            agentId: agent.id,
-                                            status: 'rejected',
-                                            rejectionReason: reason
-                                          }
-                                        });
-                                        if (error) throw error;
-                                        await loadAgents();
-                                        toast({
-                                          title: "Agente rechazado",
-                                          description: "El agente ha sido rechazado",
-                                        });
-                                      } catch (error: any) {
-                                        toast({
-                                          title: "Error",
-                                          description: error.message || "Error al rechazar el agente",
-                                          variant: "destructive"
-                                        });
-                                      }
-                                    }}
-                                  >
-                                    <X className="w-3 h-3" />
-                                  </Button>
-                                </>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                              <div>
+                                <p className="text-muted-foreground">Documento:</p>
+                                <p className="font-medium">{agent.document_name || agent.name}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Categoría:</p>
+                                <p className="font-medium">{agent.category}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Precio:</p>
+                                <p className="font-medium">
+                                  ${agent.final_price || agent.suggested_price} COP
+                                </p>
+                              </div>
+                            </div>
+                            
+                            <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+                              {agent.description}
+                            </p>
+                            
+                            <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                {format(new Date(agent.created_at), 'dd MMM yyyy', { locale: es })}
+                              </span>
+                              {agent.created_by && (
+                                <span className="flex items-center gap-1">
+                                  <User2 className="w-3 h-3" />
+                                  Creado por abogado
+                                </span>
                               )}
                             </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                          </div>
+                          
+                          <div className="flex flex-col gap-2 ml-4">
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedAgent(agent);
+                                setShowAgentDetails(true);
+                              }}
+                            >
+                              <Eye className="w-3 h-3 mr-1" />
+                              Ver Detalles
+                            </Button>
+                            
+                            {agent.status === 'pending_review' && (
+                              <Button 
+                                size="sm" 
+                                variant="default"
+                                onClick={() => handleApproveAgent(agent.id)}
+                                className="bg-green-600 hover:bg-green-700"
+                              >
+                                <Check className="w-3 h-3 mr-1" />
+                                Aprobar
+                              </Button>
+                            )}
+                            
+                            {(agent.status === 'approved' || agent.status === 'active') && (
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => handleSuspendAgent(agent.id)}
+                              >
+                                <Lock className="w-3 h-3 mr-1" />
+                                Suspender
+                              </Button>
+                            )}
+                            
+                            {agent.status === 'suspended' && (
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => handleActivateAgent(agent.id)}
+                              >
+                                <Unlock className="w-3 h-3 mr-1" />
+                                Reactivar
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </Card>
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -735,196 +1154,262 @@ function AdminPage() {
           </TabsContent>
 
           <TabsContent value="stats">
-            <LawyerStatsAdmin 
-              authHeaders={{
-                ...getAuthHeaders(),
-                'Content-Type': 'application/json'
-              }}
-              viewMode="global"
-            />
+            <LawyerStatsAdmin authHeaders={getAuthHeaders()} />
           </TabsContent>
 
           <TabsContent value="blogs">
-            <LawyerBlogManager 
-              onBack={() => {}}
-              lawyerData={user}
-            />
+            <LawyerBlogManager onBack={() => {}} lawyerData={{ email: user?.email, name: user?.email }} />
           </TabsContent>
 
           <TabsContent value="config">
             <SystemConfigManager />
           </TabsContent>
 
-          <TabsContent value="messages">
+          <TabsContent value="messages" className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <MessageCircle className="w-5 h-5" />
-                  Mensajes de Contacto
+                  Consultas de Usuarios
+                  <Badge variant="outline" className="ml-auto">
+                    {contactMessages.length} Total
+                  </Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Nombre</TableHead>
-                        <TableHead className="hidden sm:table-cell">Email</TableHead>
-                        <TableHead className="hidden md:table-cell">Tipo</TableHead>
-                        <TableHead className="hidden lg:table-cell">Mensaje</TableHead>
-                        <TableHead>Estado</TableHead>
-                        <TableHead>Acciones</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {contactMessages.map((message) => (
-                        <TableRow key={message.id} className={!message.is_read ? 'bg-blue-50 dark:bg-blue-950/10' : ''}>
-                          <TableCell className="font-medium">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                {message.name}
-                                {!message.is_read && (
-                                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                                )}
-                              </div>
-                              <div className="text-xs text-muted-foreground sm:hidden">{message.email}</div>
-                            </div>
-                          </TableCell>
-                          <TableCell className="hidden sm:table-cell">{message.email}</TableCell>
-                          <TableCell className="hidden md:table-cell">
-                            <Badge variant="outline" className="text-xs">
-                              {(message as any).consultation_type || 'General'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="hidden lg:table-cell max-w-xs">
-                            <div className="truncate" title={message.message}>
-                              {message.message.length > 100 
-                                ? `${message.message.substring(0, 100)}...` 
-                                : message.message
-                              }
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={
-                              message.status === 'responded' ? 'default' :
-                              message.status === 'archived' ? 'secondary' : 'outline'
-                            }>
-                              {message.status === 'responded' ? 'Respondido' :
-                               message.status === 'archived' ? 'Archivado' : 'Pendiente'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
+                <div className="space-y-4">
+                  {contactMessages.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <MessageCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>No hay consultas de usuarios</p>
+                    </div>
+                  ) : (
+                    contactMessages.map((message) => (
+                      <Card key={message.id} className={`p-4 ${!message.is_read ? 'border-l-4 border-l-blue-500 bg-blue-50/50 dark:bg-blue-950/20' : ''}`}>
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h4 className="font-semibold">{message.name}</h4>
+                              <Badge variant={
+                                message.status === 'pending' ? 'destructive' :
+                                message.status === 'responded' ? 'default' : 'secondary'
+                              }>
+                                {message.status === 'pending' ? 'Pendiente' :
+                                 message.status === 'responded' ? 'Respondido' : 'Archivado'}
+                              </Badge>
                               {!message.is_read && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={async () => {
-                                    try {
-                                      const { error } = await supabase
-                                        .from('contact_messages')
-                                        .update({ is_read: true })
-                                        .eq('id', message.id);
-                                      
-                                      if (error) throw error;
-                                      await loadContactMessages();
-                                      
-                                      toast({
-                                        title: "Mensaje marcado como leído",
-                                        description: "El mensaje ha sido marcado como leído",
-                                      });
-                                    } catch (error: any) {
-                                      toast({
-                                        title: "Error",
-                                        description: error.message || "Error al marcar como leído",
-                                        variant: "destructive"
-                                      });
-                                    }
-                                  }}
-                                  title="Marcar como leído"
-                                >
-                                  <CheckCircle className="w-3 h-3" />
-                                </Button>
+                                <Badge variant="outline" className="bg-blue-100 text-blue-800">
+                                  Nuevo
+                                </Badge>
                               )}
-                              {message.status === 'pending' && (
-                                <Button
-                                  size="sm"
-                                  onClick={async () => {
-                                    const response = prompt('Respuesta al mensaje:');
-                                    if (!response) return;
-                                    try {
-                                      const { error } = await supabase
-                                        .from('contact_messages')
-                                        .update({ 
-                                          status: 'responded', 
-                                          is_read: true,
-                                          responded_at: new Date().toISOString(),
-                                          admin_notes: response
-                                        })
-                                        .eq('id', message.id);
-                                      
-                                      if (error) throw error;
-                                      await loadContactMessages();
-                                      
-                                      toast({
-                                        title: "Mensaje respondido",
-                                        description: "El mensaje ha sido marcado como respondido",
-                                      });
-                                    } catch (error: any) {
-                                      toast({
-                                        title: "Error",
-                                        description: error.message || "Error al responder mensaje",
-                                        variant: "destructive"
-                                      });
-                                    }
-                                  }}
-                                  title="Responder mensaje"
-                                >
-                                  <Check className="w-3 h-3" />
-                                </Button>
-                              )}
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={async () => {
-                                  if (!confirm('¿Estás seguro de que deseas archivar este mensaje?')) return;
-                                  try {
-                                    const { error } = await supabase
-                                      .from('contact_messages')
-                                      .update({ status: 'archived', is_read: true })
-                                      .eq('id', message.id);
-                                    
-                                    if (error) throw error;
-                                    await loadContactMessages();
-                                    
-                                    toast({
-                                      title: "Mensaje archivado",
-                                      description: "El mensaje ha sido archivado",
-                                    });
-                                  } catch (error: any) {
-                                    toast({
-                                      title: "Error",
-                                      description: error.message || "Error al archivar mensaje",
-                                      variant: "destructive"
-                                    });
-                                  }
-                                }}
-                                title="Archivar mensaje"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </Button>
                             </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mb-3">
+                              <div>
+                                <p className="text-muted-foreground">Email:</p>
+                                <p className="font-medium">{message.email}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Teléfono:</p>
+                                <p className="font-medium">{message.phone || 'No proporcionado'}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Tipo de Consulta:</p>
+                                <p className="font-medium">{message.consultation_type || 'General'}</p>
+                              </div>
+                            </div>
+                            
+                            <p className="text-sm mb-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                              {message.message}
+                            </p>
+                            
+                            {message.admin_notes && (
+                              <div className="mt-3 p-3 bg-green-50 dark:bg-green-950/20 rounded-lg">
+                                <p className="text-sm font-medium text-green-800 dark:text-green-200 mb-1">Respuesta del Administrador:</p>
+                                <p className="text-sm text-green-700 dark:text-green-300">{message.admin_notes}</p>
+                              </div>
+                            )}
+                            
+                            <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                {format(new Date(message.created_at), 'dd MMM yyyy HH:mm', { locale: es })}
+                              </span>
+                              {message.responded_at && (
+                                <span className="flex items-center gap-1">
+                                  <Reply className="w-3 h-3" />
+                                  Respondido: {format(new Date(message.responded_at), 'dd MMM yyyy', { locale: es })}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="flex flex-col gap-2 ml-4">
+                            {!message.is_read && (
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => markMessageAsRead(message.id)}
+                              >
+                                <Eye className="w-3 h-3 mr-1" />
+                                Marcar Leído
+                              </Button>
+                            )}
+                            
+                            {message.status === 'pending' && (
+                              <Dialog>
+                                <DialogTrigger asChild>
+                                  <Button size="sm" variant="default">
+                                    <Reply className="w-3 h-3 mr-1" />
+                                    Responder
+                                  </Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                  <DialogHeader>
+                                    <DialogTitle>Responder Consulta</DialogTitle>
+                                    <DialogDescription>
+                                      Responder a la consulta de {message.name}
+                                    </DialogDescription>
+                                  </DialogHeader>
+                                  <div className="space-y-4">
+                                    <div>
+                                      <Label>Consulta Original:</Label>
+                                      <p className="text-sm p-2 bg-gray-100 dark:bg-gray-800 rounded">{message.message}</p>
+                                    </div>
+                                    <div>
+                                      <Label htmlFor="response">Tu Respuesta:</Label>
+                                      <Textarea 
+                                        id="response"
+                                        placeholder="Escribe tu respuesta aquí..."
+                                        className="mt-1"
+                                      />
+                                    </div>
+                                    <Button 
+                                      onClick={(e) => {
+                                        const response = (e.target as any).closest('.space-y-4').querySelector('textarea').value;
+                                        if (response.trim()) {
+                                          respondToMessage(message.id, response);
+                                        }
+                                      }}
+                                    >
+                                      Enviar Respuesta
+                                    </Button>
+                                  </div>
+                                </DialogContent>
+                              </Dialog>
+                            )}
+                          </div>
+                        </div>
+                      </Card>
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Dialog para detalles del agente */}
+      <Dialog open={showAgentDetails} onOpenChange={setShowAgentDetails}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Bot className="w-5 h-5" />
+              Detalles del Agente Legal
+            </DialogTitle>
+            <DialogDescription>
+              Información completa del agente legal
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedAgent && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium">Nombre del Agente</Label>
+                  <p className="text-lg font-semibold">{selectedAgent.name}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Estado</Label>
+                  <Badge variant={
+                    selectedAgent.status === 'pending_review' ? 'destructive' :
+                    selectedAgent.status === 'approved' || selectedAgent.status === 'active' ? 'default' :
+                    'secondary'
+                  }>
+                    {selectedAgent.status === 'pending_review' ? 'Pendiente de Revisión' :
+                     selectedAgent.status === 'approved' || selectedAgent.status === 'active' ? 'Activo' :
+                     'Suspendido'}
+                  </Badge>
+                </div>
+              </div>
+              
+              <div>
+                <Label className="text-sm font-medium">Descripción</Label>
+                <p className="mt-1 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">{selectedAgent.description}</p>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium">Categoría</Label>
+                  <p>{selectedAgent.category}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Audiencia Objetivo</Label>
+                  <p>{selectedAgent.target_audience === 'empresas' ? 'Empresas' : 'Personas'}</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium">Precio Sugerido</Label>
+                  <p>${selectedAgent.suggested_price} COP</p>
+                </div>
+                {selectedAgent.final_price && (
+                  <div>
+                    <Label className="text-sm font-medium">Precio Final</Label>
+                    <p>${selectedAgent.final_price} COP</p>
+                  </div>
+                )}
+              </div>
+              
+              {selectedAgent.template_content && (
+                <div>
+                  <Label className="text-sm font-medium">Contenido de la Plantilla</Label>
+                  <Textarea 
+                    value={selectedAgent.template_content}
+                    readOnly
+                    className="mt-1 min-h-[200px]"
+                  />
+                </div>
+              )}
+              
+              {selectedAgent.ai_prompt && (
+                <div>
+                  <Label className="text-sm font-medium">Prompt de IA</Label>
+                  <Textarea 
+                    value={selectedAgent.ai_prompt}
+                    readOnly
+                    className="mt-1 min-h-[100px]"
+                  />
+                </div>
+              )}
+              
+              {selectedAgent.price_justification && (
+                <div>
+                  <Label className="text-sm font-medium">Justificación del Precio</Label>
+                  <p className="mt-1 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">{selectedAgent.price_justification}</p>
+                </div>
+              )}
+              
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Calendar className="w-4 h-4" />
+                Creado el {format(new Date(selectedAgent.created_at), 'dd MMMM yyyy', { locale: es })}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
