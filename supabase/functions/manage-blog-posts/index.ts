@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
     // Handle GET requests for listing blogs
     if (req.method === 'GET') {
       const url = new URL(req.url)
-      const action = url.searchParams.get('action')
+      const action = url.searchParams.get('action') || 'list'
       
       if (action === 'list') {
         console.log('Fetching blog list')

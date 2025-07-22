@@ -227,8 +227,9 @@ function AdminPage() {
 
   const loadBlogPosts = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke('manage-blog-posts', {
-        method: 'GET'
+      const { data, error } = await supabase.functions.invoke('manage-blog-posts?action=list', {
+        method: 'GET',
+        headers: getAuthHeaders()
       });
       if (error) throw error;
       
