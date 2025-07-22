@@ -14,7 +14,7 @@ import LawyerStatsAdmin from "./LawyerStatsAdmin";
 import OpenAIAgentManager from "./OpenAIAgentManager";
 import LawyerBlogManager from "./LawyerBlogManager";
 import SystemConfigManager from "./SystemConfigManager";
-import { Copy, Users, Bot, BarChart3, Clock, CheckCircle, Lock, Unlock, Trash2, Check, X, Plus, Loader2, MessageCircle, BookOpen, Settings, Zap, Mail, Phone, Bell, LogOut, UserCheck, FileText, AlertCircle, Globe, Eye, EyeOff, Archive, Reply, User2, Timer, CreditCard, ShieldCheck, Activity, Briefcase, Calendar, Building2, Award, Coffee, Sparkles, Gavel, FileCheck, Users2, Target, TrendingUp, BookOpenCheck, Newspaper, PenTool, Send, Flag, CheckSquare, Heart, Star, Laptop, Smartphone, Headphones, HelpCircle, Shield, Zap as ZapIcon } from "lucide-react";
+import { Copy, Users, Bot, BarChart3, Clock, CheckCircle, Lock, Unlock, Trash2, Check, X, Plus, Loader2, MessageCircle, BookOpen, Settings, Zap, Mail, Phone, Bell, LogOut, UserCheck, FileText, AlertCircle, Globe, Eye, EyeOff, Archive, Reply, User2, Timer, CreditCard, ShieldCheck, Activity, Briefcase, Calendar, Building2, Award, Coffee, Sparkles, Gavel, FileCheck, Users2, Target, TrendingUp, BookOpenCheck, Newspaper, PenTool, Send, Flag, CheckSquare, Heart, Star, Laptop, Smartphone, Headphones, HelpCircle, Shield, Zap as ZapIcon, Edit, Save } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Label } from "./ui/label";
@@ -127,6 +127,8 @@ function AdminPage() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [showAgentDetails, setShowAgentDetails] = useState(false);
+  const [editingAgent, setEditingAgent] = useState<any>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const [newLawyer, setNewLawyer] = useState({
     name: "",
@@ -363,6 +365,63 @@ function AdminPage() {
         variant: "destructive"
       });
     }
+  };
+
+  const handleEditAgent = (agent: any) => {
+    setEditingAgent({ ...agent });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveAgentEdits = async () => {
+    if (!editingAgent) return;
+
+    try {
+      const { data, error } = await supabase.functions.invoke('update-agent', {
+        headers: getAuthHeaders(),
+        body: {
+          agent_id: editingAgent.id,
+          name: editingAgent.name,
+          description: editingAgent.description,
+          document_name: editingAgent.document_name,
+          document_description: editingAgent.document_description,
+          category: editingAgent.category,
+          suggested_price: editingAgent.suggested_price,
+          final_price: editingAgent.final_price,
+          price_justification: editingAgent.price_justification,
+          target_audience: editingAgent.target_audience,
+          template_content: editingAgent.template_content,
+          ai_prompt: editingAgent.ai_prompt
+        }
+      });
+
+      if (error) throw error;
+
+      // Actualizar la lista local
+      setAgents(agents.map(agent => 
+        agent.id === editingAgent.id ? editingAgent : agent
+      ));
+
+      setIsEditDialogOpen(false);
+      setEditingAgent(null);
+
+      toast({
+        title: "Agente actualizado",
+        description: "Los cambios se han guardado exitosamente",
+      });
+
+      await loadAgents();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Error al actualizar el agente",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const updateEditingAgentField = (field: string, value: any) => {
+    if (!editingAgent) return;
+    setEditingAgent({ ...editingAgent, [field]: value });
   };
 
   const copyLawyerToken = (token: string) => {
@@ -1110,6 +1169,17 @@ function AdminPage() {
                             {agent.status === 'pending_review' && (
                               <Button 
                                 size="sm" 
+                                variant="outline"
+                                onClick={() => handleEditAgent(agent)}
+                              >
+                                <Edit className="w-3 h-3 mr-1" />
+                                Editar
+                              </Button>
+                            )}
+                            
+                            {agent.status === 'pending_review' && (
+                              <Button 
+                                size="sm" 
                                 variant="default"
                                 onClick={() => handleApproveAgent(agent.id)}
                                 className="bg-green-600 hover:bg-green-700"
@@ -1310,6 +1380,192 @@ function AdminPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Dialog para editar agente */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit className="w-5 h-5" />
+              Editar Agente Legal
+            </DialogTitle>
+            <DialogDescription>
+              Modificar los detalles del agente antes de su aprobación
+            </DialogDescription>
+          </DialogHeader>
+          
+          {editingAgent && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="agent-name">Nombre del Agente</Label>
+                  <Input
+                    id="agent-name"
+                    value={editingAgent.name}
+                    onChange={(e) => updateEditingAgentField('name', e.target.value)}
+                    placeholder="Nombre del agente legal"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="document-name">Nombre del Documento</Label>
+                  <Input
+                    id="document-name"
+                    value={editingAgent.document_name || ''}
+                    onChange={(e) => updateEditingAgentField('document_name', e.target.value)}
+                    placeholder="Nombre del documento generado"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="agent-description">Descripción del Agente</Label>
+                <Textarea
+                  id="agent-description"
+                  value={editingAgent.description}
+                  onChange={(e) => updateEditingAgentField('description', e.target.value)}
+                  placeholder="Descripción detallada del agente"
+                  className="min-h-[100px]"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="document-description">Descripción del Documento</Label>
+                <Textarea
+                  id="document-description"
+                  value={editingAgent.document_description || ''}
+                  onChange={(e) => updateEditingAgentField('document_description', e.target.value)}
+                  placeholder="Descripción del documento que genera"
+                  className="min-h-[80px]"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="category">Categoría</Label>
+                  <Select value={editingAgent.category} onValueChange={(value) => updateEditingAgentField('category', value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar categoría" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="contratos">Contratos</SelectItem>
+                      <SelectItem value="laboral">Laboral</SelectItem>
+                      <SelectItem value="civil">Civil</SelectItem>
+                      <SelectItem value="comercial">Comercial</SelectItem>
+                      <SelectItem value="penal">Penal</SelectItem>
+                      <SelectItem value="inmobiliario">Inmobiliario</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="target-audience">Audiencia Objetivo</Label>
+                  <Select value={editingAgent.target_audience || 'personas'} onValueChange={(value) => updateEditingAgentField('target_audience', value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar audiencia" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="personas">Personas Naturales</SelectItem>
+                      <SelectItem value="empresas">Empresas</SelectItem>
+                      <SelectItem value="ambos">Ambos</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="suggested-price">Precio Sugerido (COP)</Label>
+                  <Input
+                    id="suggested-price"
+                    type="number"
+                    value={editingAgent.suggested_price}
+                    onChange={(e) => updateEditingAgentField('suggested_price', parseInt(e.target.value) || 0)}
+                    placeholder="0"
+                    min="0"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="final-price">Precio Final (COP)</Label>
+                  <Input
+                    id="final-price"
+                    type="number"
+                    value={editingAgent.final_price || ''}
+                    onChange={(e) => updateEditingAgentField('final_price', parseInt(e.target.value) || 0)}
+                    placeholder="0"
+                    min="0"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="price-justification">Justificación del Precio</Label>
+                <Textarea
+                  id="price-justification"
+                  value={editingAgent.price_justification || ''}
+                  onChange={(e) => updateEditingAgentField('price_justification', e.target.value)}
+                  placeholder="Justificación del precio establecido"
+                  className="min-h-[80px]"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="template-content">Contenido de la Plantilla</Label>
+                <Textarea
+                  id="template-content"
+                  value={editingAgent.template_content}
+                  onChange={(e) => updateEditingAgentField('template_content', e.target.value)}
+                  placeholder="Plantilla del documento"
+                  className="min-h-[150px] font-mono"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="ai-prompt">Prompt de IA</Label>
+                <Textarea
+                  id="ai-prompt"
+                  value={editingAgent.ai_prompt}
+                  onChange={(e) => updateEditingAgentField('ai_prompt', e.target.value)}
+                  placeholder="Instrucciones para la IA"
+                  className="min-h-[120px]"
+                />
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                <Button 
+                  onClick={handleSaveAgentEdits}
+                  className="flex-1 sm:flex-none"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  Guardar Cambios
+                </Button>
+                
+                {editingAgent.status === 'pending_review' && (
+                  <Button 
+                    onClick={() => {
+                      handleApproveAgent(editingAgent.id);
+                      setIsEditDialogOpen(false);
+                    }}
+                    className="flex-1 sm:flex-none bg-green-600 hover:bg-green-700"
+                  >
+                    <Check className="h-4 w-4 mr-2" />
+                    Guardar y Aprobar
+                  </Button>
+                )}
+                
+                <Button 
+                  variant="outline"
+                  onClick={() => setIsEditDialogOpen(false)}
+                  className="flex-1 sm:flex-none"
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Dialog para detalles del agente */}
       <Dialog open={showAgentDetails} onOpenChange={setShowAgentDetails}>
