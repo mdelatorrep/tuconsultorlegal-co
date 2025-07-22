@@ -380,6 +380,8 @@ function AdminPage() {
         headers: getAuthHeaders(),
         body: {
           agent_id: editingAgent.id,
+          user_id: user?.id || editingAgent.created_by,
+          is_admin: true, // AdminPage always has admin permissions
           name: editingAgent.name,
           description: editingAgent.description,
           document_name: editingAgent.document_name,
