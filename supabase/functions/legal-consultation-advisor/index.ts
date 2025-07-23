@@ -126,7 +126,7 @@ serve(async (req) => {
             
             switch (toolCall.function.name) {
               case 'search_legal_sources':
-                output = await handleLegalSearch(functionArgs, advisorAgent, sourcesConsulted);
+                output = await handleLegalSearch(functionArgs, advisorAgent, sourcesConsulted, supabase);
                 break;
                 
               case 'validate_legal_citation':
@@ -230,12 +230,34 @@ serve(async (req) => {
   }
 });
 
+async function getKnowledgeBaseUrls(supabase: any): Promise<any[]> {
+  try {
+    const { data: urls, error } = await supabase
+      .from('knowledge_base_urls')
+      .select('url, description, category, priority')
+      .eq('is_active', true)
+      .order('priority', { ascending: false })
+      .order('category');
+
+    if (error || !urls) {
+      console.error('Error loading knowledge base URLs:', error);
+      return [];
+    }
+
+    return urls;
+  } catch (error) {
+    console.error('Error loading knowledge base URLs:', error);
+    return [];
+  }
+}
+
 // Function handlers for legal consultation
-async function handleLegalSearch(args: any, advisorAgent: any, sourcesConsulted: string[]) {
+async function handleLegalSearch(args: any, advisorAgent: any, sourcesConsulted: string[], supabase: any) {
   console.log('Performing legal search:', args);
   
   const { query, legal_area, source_type } = args;
   const legalSources = advisorAgent.legal_sources || [];
+  const knowledgeBaseUrls = await getKnowledgeBaseUrls(supabase);
   
   // Build search query with Colombian legal context
   const searchQueries = [
@@ -247,11 +269,38 @@ async function handleLegalSearch(args: any, advisorAgent: any, sourcesConsulted:
 
   let searchResults = '';
   
+  // Add knowledge base URLs as primary sources
+  if (knowledgeBaseUrls.length > 0) {
+    searchResults += '🏛️ FUENTES OFICIALES AUTORIZADAS:\n';
+    
+    const urlsByCategory = knowledgeBaseUrls.reduce((acc: any, url: any) => {
+      if (!acc[url.category]) acc[url.category] = [];
+      acc[url.category].push(url);
+      return acc;
+    }, {});
+
+    Object.entries(urlsByCategory).forEach(([category, categoryUrls]: [string, any]) => {
+      const categoryNames: { [key: string]: string } = {
+        'legislacion': 'LEGISLACIÓN Y NORMATIVIDAD',
+        'jurisprudencia': 'JURISPRUDENCIA Y DECISIONES JUDICIALES',
+        'normatividad': 'NORMATIVIDAD LOCAL Y DISTRITAL',
+        'doctrina': 'DOCTRINA JURÍDICA',
+        'general': 'FUENTES GENERALES'
+      };
+      
+      searchResults += `\n**${categoryNames[category] || category.toUpperCase()}:**\n`;
+      categoryUrls.slice(0, 3).forEach((url: any) => {
+        searchResults += `• ${url.url}${url.description ? ` - ${url.description}` : ''}\n`;
+        if (!sourcesConsulted.includes(url.url)) {
+          sourcesConsulted.push(url.url);
+        }
+      });
+    });
+  }
+  
   for (const searchQuery of searchQueries.slice(0, 2)) { // Limit to 2 searches
     try {
-      // In a real implementation, you would use the web search tool here
-      // For now, we'll simulate the search results
-      searchResults += `Búsqueda: "${searchQuery}"\n`;
+      searchResults += `\n🔍 Búsqueda: "${searchQuery}"\n`;
       searchResults += `Fuentes relevantes encontradas para ${legal_area} en Colombia:\n`;
       
       // Add specific legal sources
@@ -282,7 +331,7 @@ async function handleLegalSearch(args: any, advisorAgent: any, sourcesConsulted:
     }
   }
   
-  return `Resultados de búsqueda legal actualizados para "${query}" en ${legal_area}:\n\n${searchResults}\n⚠️ IMPORTANTE: Verifica la vigencia de estas fuentes y consulta las versiones más recientes en los sitios oficiales.`;
+  return `Resultados de búsqueda legal actualizados para "${query}" en ${legal_area}:\n\n${searchResults}\n⚠️ IMPORTANTE: Verifica la vigencia de estas fuentes y consulta las versiones más recientes en los sitios oficiales autorizados arriba listados.`;
 }
 
 async function handleCitationValidation(args: any) {

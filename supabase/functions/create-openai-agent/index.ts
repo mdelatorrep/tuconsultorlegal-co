@@ -81,7 +81,7 @@ serve(async (req) => {
     }
 
     // Generate enhanced instructions for the OpenAI agent
-    const agentInstructions = generateDocumentAgentInstructions(legalAgent);
+    const agentInstructions = await generateDocumentAgentInstructions(legalAgent, supabase);
 
     // Create new OpenAI Agent
     const openAIResponse = await fetch('https://api.openai.com/v1/assistants', {
@@ -225,17 +225,70 @@ serve(async (req) => {
   }
 });
 
-function generateDocumentAgentInstructions(legalAgent: any): string {
+async function getKnowledgeBaseUrls(supabase: any): Promise<string> {
+  try {
+    const { data: urls, error } = await supabase
+      .from('knowledge_base_urls')
+      .select('url, description, category, priority')
+      .eq('is_active', true)
+      .order('priority', { ascending: false })
+      .order('category');
+
+    if (error || !urls || urls.length === 0) {
+      return 'No hay URLs específicas configuradas en la base de conocimiento.';
+    }
+
+    const urlsByCategory = urls.reduce((acc: any, url: any) => {
+      if (!acc[url.category]) acc[url.category] = [];
+      acc[url.category].push(url);
+      return acc;
+    }, {});
+
+    let urlsText = '\nFUENTES OFICIALES AUTORIZADAS:\n';
+    urlsText += 'IMPORTANTE: Solo puedes referenciar y recomendar consultar las siguientes fuentes oficiales:\n\n';
+
+    Object.entries(urlsByCategory).forEach(([category, categoryUrls]: [string, any]) => {
+      const categoryNames: { [key: string]: string } = {
+        'legislacion': 'LEGISLACIÓN Y NORMATIVIDAD',
+        'jurisprudencia': 'JURISPRUDENCIA Y DECISIONES JUDICIALES',
+        'normatividad': 'NORMATIVIDAD LOCAL Y DISTRITAL',
+        'doctrina': 'DOCTRINA JURÍDICA',
+        'general': 'FUENTES GENERALES'
+      };
+      
+      urlsText += `**${categoryNames[category] || category.toUpperCase()}:**\n`;
+      categoryUrls.forEach((url: any) => {
+        urlsText += `- ${url.url}${url.description ? ` - ${url.description}` : ''}\n`;
+      });
+      urlsText += '\n';
+    });
+
+    urlsText += 'INSTRUCCIONES PARA USO DE FUENTES:\n';
+    urlsText += '- Solo referencias estas fuentes oficiales en tus respuestas\n';
+    urlsText += '- Menciona la fuente específica cuando sea relevante\n';
+    urlsText += '- Si el usuario pregunta sobre algo no cubierto por estas fuentes, explica que necesitas consultar fuentes oficiales adicionales\n';
+    urlsText += '- Siempre prioriza la información de fuentes con mayor prioridad\n\n';
+
+    return urlsText;
+  } catch (error) {
+    console.error('Error loading knowledge base URLs:', error);
+    return 'Error al cargar las fuentes oficiales. Procede con información general.';
+  }
+}
+
+async function generateDocumentAgentInstructions(legalAgent: any, supabase: any): Promise<string> {
   const placeholders = legalAgent.placeholder_fields || [];
   const placeholderList = placeholders.map((p: any) => 
     `- ${p.placeholder}: ${p.pregunta} (${p.tipo || 'texto'}${p.requerido ? ' - REQUERIDO' : ''})`
   ).join('\n');
 
+  const knowledgeBaseUrls = await getKnowledgeBaseUrls(supabase);
+
   return `
 Eres un asistente legal especializado en ayudar a crear "${legalAgent.document_name}" para ${legalAgent.target_audience === 'empresas' ? 'empresas' : 'personas naturales'}.
 
 MISIÓN PRINCIPAL:
-Recopilar toda la información necesaria para generar el documento legal de manera conversacional, amigable y eficiente.
+Recopilar toda la información necesaria para generar el documento legal de manera conversacional, amigable y eficiente, basándote únicamente en fuentes oficiales autorizadas.
 
 DOCUMENTO A GENERAR: ${legalAgent.document_name}
 AUDIENCIA: ${legalAgent.target_audience === 'empresas' ? 'Empresas y personas jurídicas' : 'Personas naturales'}
@@ -247,6 +300,8 @@ ${placeholderList}
 INSTRUCCIONES DEL ABOGADO:
 ${legalAgent.ai_prompt}
 
+${knowledgeBaseUrls}
+
 PROTOCOLO DE TRABAJO:
 1. **SALUDO PROFESIONAL**: Preséntate como asistente especializado en ${legalAgent.document_name}
 2. **EXPLICACIÓN CLARA**: Explica qué documento vas a ayudar a crear y por qué es importante
@@ -255,6 +310,7 @@ PROTOCOLO DE TRABAJO:
    - No hagas más de 2-3 preguntas por mensaje
    - Adapta el lenguaje según la audiencia (${legalAgent.target_audience})
    - Explica por qué necesitas cada información
+   - Referencia las fuentes oficiales cuando sea apropiado
 4. **VALIDACIÓN CONTINUA**: Confirma la información recibida y aclara dudas
 5. **SEGUIMIENTO DEL PROGRESO**: Informa al usuario cuánta información falta
 6. **FINALIZACIÓN**: Cuando tengas toda la información, confirma que está listo para generar
@@ -268,12 +324,15 @@ REGLAS IMPORTANTES:
 - NO generes el documento - solo recopila la información
 - Pregunta una cosa a la vez para evitar abrumar al usuario
 - Confirma información crítica antes de continuar
+- SOLO usa las fuentes oficiales listadas arriba para cualquier referencia legal
+- Si necesitas información de fuentes no listadas, explica que requiere validación adicional
 
 TONO Y ESTILO:
 - Profesional pero cercano
 - Claro y directo
 - Empático con las necesidades del usuario
 - Educativo cuando sea apropiado
+- Respaldado por fuentes oficiales
 
 EJEMPLO DE INICIO:
 "¡Hola! Soy tu asistente legal especializado en ${legalAgent.document_name}. Te voy a ayudar a recopilar toda la información necesaria para crear tu documento de manera rápida y eficiente.
@@ -282,6 +341,6 @@ Este documento es importante porque [explicar brevemente el propósito]. Para po
 
 ¿Podrías comenzar diciéndome [primera pregunta más importante]?"
 
-¡Recuerda: Tu trabajo es hacer que el proceso sea fácil y comprensible para el usuario!
+¡Recuerda: Tu trabajo es hacer que el proceso sea fácil y comprensible para el usuario, siempre basándote en fuentes oficiales autorizadas!
 `;
 }

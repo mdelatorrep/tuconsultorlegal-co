@@ -110,7 +110,7 @@ serve(async (req) => {
           throw new Error('Legal agent data not found');
         }
 
-        const agentInstructions = generateDocumentAgentInstructions(legalAgent);
+        const agentInstructions = await generateDocumentAgentInstructions(legalAgent, supabase);
 
         // Create OpenAI Assistant
         const openAIResponse = await fetch('https://api.openai.com/v1/assistants', {
@@ -274,16 +274,69 @@ serve(async (req) => {
   }
 });
 
-function generateDocumentAgentInstructions(legalAgent: any): string {
+async function getKnowledgeBaseUrls(supabase: any): Promise<string> {
+  try {
+    const { data: urls, error } = await supabase
+      .from('knowledge_base_urls')
+      .select('url, description, category, priority')
+      .eq('is_active', true)
+      .order('priority', { ascending: false })
+      .order('category');
+
+    if (error || !urls || urls.length === 0) {
+      return 'No hay URLs específicas configuradas en la base de conocimiento.';
+    }
+
+    const urlsByCategory = urls.reduce((acc: any, url: any) => {
+      if (!acc[url.category]) acc[url.category] = [];
+      acc[url.category].push(url);
+      return acc;
+    }, {});
+
+    let urlsText = '\nFUENTES OFICIALES AUTORIZADAS:\n';
+    urlsText += 'IMPORTANTE: Solo puedes referenciar y recomendar consultar las siguientes fuentes oficiales:\n\n';
+
+    Object.entries(urlsByCategory).forEach(([category, categoryUrls]: [string, any]) => {
+      const categoryNames: { [key: string]: string } = {
+        'legislacion': 'LEGISLACIÓN Y NORMATIVIDAD',
+        'jurisprudencia': 'JURISPRUDENCIA Y DECISIONES JUDICIALES',
+        'normatividad': 'NORMATIVIDAD LOCAL Y DISTRITAL',
+        'doctrina': 'DOCTRINA JURÍDICA',
+        'general': 'FUENTES GENERALES'
+      };
+      
+      urlsText += `**${categoryNames[category] || category.toUpperCase()}:**\n`;
+      categoryUrls.forEach((url: any) => {
+        urlsText += `- ${url.url}${url.description ? ` - ${url.description}` : ''}\n`;
+      });
+      urlsText += '\n';
+    });
+
+    urlsText += 'INSTRUCCIONES PARA USO DE FUENTES:\n';
+    urlsText += '- Solo referencias estas fuentes oficiales en tus respuestas\n';
+    urlsText += '- Menciona la fuente específica cuando sea relevante\n';
+    urlsText += '- Si el usuario pregunta sobre algo no cubierto por estas fuentes, explica que necesitas consultar fuentes oficiales adicionales\n';
+    urlsText += '- Siempre prioriza la información de fuentes con mayor prioridad\n\n';
+
+    return urlsText;
+  } catch (error) {
+    console.error('Error loading knowledge base URLs:', error);
+    return 'Error al cargar las fuentes oficiales. Procede con información general.';
+  }
+}
+
+async function generateDocumentAgentInstructions(legalAgent: any, supabase: any): Promise<string> {
   const placeholders = legalAgent.placeholder_fields || [];
   const placeholderList = placeholders.map((p: any) => 
     `- ${p.placeholder}: ${p.pregunta || p.description} (${p.tipo || 'texto'}${p.requerido ? ' - REQUERIDO' : ''})`
   ).join('\n');
 
+  const knowledgeBaseUrls = await getKnowledgeBaseUrls(supabase);
+
   return `
 Eres un asistente legal automatizado especializado en "${legalAgent.document_name}" para ${legalAgent.target_audience === 'empresas' ? 'empresas' : 'personas naturales'}.
 
-MISIÓN: Recopilar información de manera conversacional y eficiente para generar documentos legales precisos.
+MISIÓN: Recopilar información de manera conversacional y eficiente para generar documentos legales precisos, basándote únicamente en fuentes oficiales autorizadas.
 
 DOCUMENTO: ${legalAgent.document_name}
 AUDIENCIA: ${legalAgent.target_audience === 'empresas' ? 'Empresas y personas jurídicas' : 'Personas naturales'}
@@ -295,12 +348,15 @@ ${placeholderList}
 INSTRUCCIONES ESPECÍFICAS DEL ABOGADO:
 ${legalAgent.ai_prompt}
 
+${knowledgeBaseUrls}
+
 PROTOCOLO AUTOMATIZADO:
 1. Saludo profesional y explicación del documento
 2. Recopilación progresiva (máximo 2-3 preguntas por mensaje)
 3. Validación continua de la información recibida
 4. Uso de collect_document_information para estructurar datos
 5. Seguimiento del progreso y comunicación clara al usuario
+6. Referencia a fuentes oficiales cuando sea apropiado
 
 REGLAS CRÍTICAS:
 - Mantén un tono profesional pero amigable
@@ -309,7 +365,9 @@ REGLAS CRÍTICAS:
 - NO generes documentos - solo recopila información
 - Confirma información crítica antes de continuar
 - Informa progreso: "Hemos completado X de Y campos necesarios"
+- SOLO usa las fuentes oficiales listadas arriba para cualquier referencia legal
+- Si necesitas información de fuentes no listadas, explica que requiere validación adicional
 
-¡Tu objetivo es hacer el proceso fácil y comprensible para crear documentos legales de calidad!
+¡Tu objetivo es hacer el proceso fácil y comprensible para crear documentos legales de calidad, respaldado por fuentes oficiales!
 `;
 }
