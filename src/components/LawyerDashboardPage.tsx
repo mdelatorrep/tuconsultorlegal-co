@@ -7,13 +7,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Bot, Plus, Settings, LogOut, Scale, Users, TrendingUp, BarChart3, Brain, BookOpen } from "lucide-react";
+import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Bot, Plus, Settings, LogOut, Scale, Users, TrendingUp, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target } from "lucide-react";
 import LawyerStatsSection from "./LawyerStatsSection";
 import LawyerLogin from "./LawyerLogin";
 import AgentCreatorPage from "./AgentCreatorPage";
 import AgentManagerPage from "./AgentManagerPage";
 import LawyerTrainingPage from "./LawyerTrainingPage";
 import LawyerBlogManager from "./LawyerBlogManager";
+import ResearchModule from "./lawyer-modules/ResearchModule";
+import AnalyzeModule from "./lawyer-modules/AnalyzeModule";
+import DraftModule from "./lawyer-modules/DraftModule";
+import StrategizeModule from "./lawyer-modules/StrategizeModule";
+import IntegrationsModule from "./lawyer-modules/IntegrationsModule";
 
 interface DocumentToken {
   id: string;
@@ -44,7 +49,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const [editedContent, setEditedContent] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager' | 'research' | 'analyze' | 'draft' | 'strategize' | 'integrations'>('dashboard');
   const { toast } = useToast();
   const { isAuthenticated, isLoading: authLoading, user, logout, checkAuthStatus } = useLawyerAuth();
   const isMobile = useIsMobile();
@@ -309,6 +314,82 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
     return <LawyerBlogManager onBack={() => setCurrentView('dashboard')} lawyerData={user} />;
   }
 
+  // Show AI Modules
+  if (currentView === 'research') {
+    return (
+      <div className="container mx-auto px-6 py-20">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-6">
+            <Button onClick={() => setCurrentView('dashboard')} variant="outline">
+              ← Volver al Dashboard
+            </Button>
+          </div>
+          <ResearchModule />
+        </div>
+      </div>
+    );
+  }
+
+  if (currentView === 'analyze') {
+    return (
+      <div className="container mx-auto px-6 py-20">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-6">
+            <Button onClick={() => setCurrentView('dashboard')} variant="outline">
+              ← Volver al Dashboard
+            </Button>
+          </div>
+          <AnalyzeModule />
+        </div>
+      </div>
+    );
+  }
+
+  if (currentView === 'draft') {
+    return (
+      <div className="container mx-auto px-6 py-20">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-6">
+            <Button onClick={() => setCurrentView('dashboard')} variant="outline">
+              ← Volver al Dashboard
+            </Button>
+          </div>
+          <DraftModule />
+        </div>
+      </div>
+    );
+  }
+
+  if (currentView === 'strategize') {
+    return (
+      <div className="container mx-auto px-6 py-20">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-6">
+            <Button onClick={() => setCurrentView('dashboard')} variant="outline">
+              ← Volver al Dashboard
+            </Button>
+          </div>
+          <StrategizeModule />
+        </div>
+      </div>
+    );
+  }
+
+  if (currentView === 'integrations') {
+    return (
+      <div className="container mx-auto px-6 py-20">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-6">
+            <Button onClick={() => setCurrentView('dashboard')} variant="outline">
+              ← Volver al Dashboard
+            </Button>
+          </div>
+          <IntegrationsModule />
+        </div>
+      </div>
+    );
+  }
+
   // Show Stats if selected
   if (currentView === 'stats') {
     return (
@@ -345,10 +426,10 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
           <div className={`${isMobile ? 'space-y-4' : 'flex justify-between items-start'}`}>
             <div>
               <h1 className={`${isMobile ? 'text-2xl' : 'text-4xl'} font-bold text-primary mb-2`}>
-                Panel de Abogados
+                Panel de Abogados IA Pro
               </h1>
               <p className={`${isMobile ? 'text-base' : 'text-lg'} text-muted-foreground mb-1`}>
-                Revisa y ajusta los documentos pendientes
+                Herramientas de IA para potenciar tu práctica legal
               </p>
               {user?.name && (
                 <div className="flex items-center gap-2 mt-2">
@@ -360,16 +441,37 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
               )}
             </div>
             
-            <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex items-center gap-3'}`}>
+            <div className={`${isMobile ? 'grid grid-cols-2 gap-2' : 'flex items-center gap-2 flex-wrap'}`}>
+              {/* AI Modules */}
+              <Button onClick={() => setCurrentView('research')} variant="outline" size="sm">
+                <Search className="h-4 w-4 mr-2" />
+                Research
+              </Button>
+              <Button onClick={() => setCurrentView('analyze')} variant="outline" size="sm">
+                <Eye className="h-4 w-4 mr-2" />
+                Analyze
+              </Button>
+              <Button onClick={() => setCurrentView('draft')} variant="outline" size="sm">
+                <PenTool className="h-4 w-4 mr-2" />
+                Draft
+              </Button>
+              <Button onClick={() => setCurrentView('strategize')} variant="outline" size="sm">
+                <Target className="h-4 w-4 mr-2" />
+                Strategize
+              </Button>
+              <Button onClick={() => setCurrentView('integrations')} variant="outline" size="sm">
+                <Settings className="h-4 w-4 mr-2" />
+                Integrations
+              </Button>
+              
               {/* Stats Button */}
               <Button
                 onClick={() => setCurrentView('stats')}
                 variant="outline"
-                className="flex items-center gap-2 justify-center"
-                size={isMobile ? "default" : "lg"}
+                size="sm"
               >
-                <BarChart3 className="h-4 w-4" />
-                <span className={isMobile ? "text-sm" : ""}>{isMobile ? "Stats" : "Estadísticas"}</span>
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Stats
               </Button>
 
               {/* Training Button - Available for all lawyers */}
