@@ -15,7 +15,8 @@ import OpenAIAgentManager from "./OpenAIAgentManager";
 import LawyerBlogManager from "./LawyerBlogManager";
 import SystemConfigManager from "./SystemConfigManager";
 import KnowledgeBaseManager from "./KnowledgeBaseManager";
-import { Copy, Users, Bot, BarChart3, Clock, CheckCircle, Lock, Unlock, Trash2, Check, X, Plus, Loader2, MessageCircle, BookOpen, Settings, Zap, Mail, Phone, Bell, LogOut, UserCheck, FileText, AlertCircle, Globe, Eye, EyeOff, Archive, Reply, User2, Timer, CreditCard, ShieldCheck, Activity, Briefcase, Calendar, Building2, Award, Coffee, Sparkles, Gavel, FileCheck, Users2, Target, TrendingUp, BookOpenCheck, Newspaper, PenTool, Send, Flag, CheckSquare, Heart, Star, Laptop, Smartphone, Headphones, HelpCircle, Shield, Zap as ZapIcon, Edit, Save } from "lucide-react";
+import CategoryManager from "./CategoryManager";
+import { Copy, Users, Bot, BarChart3, Clock, CheckCircle, Lock, Unlock, Trash2, Check, X, Plus, Loader2, MessageCircle, BookOpen, Settings, Zap, Mail, Phone, Bell, LogOut, UserCheck, FileText, AlertCircle, Globe, Eye, EyeOff, Archive, Reply, User2, Timer, CreditCard, ShieldCheck, Activity, Briefcase, Calendar, Building2, Award, Coffee, Sparkles, Gavel, FileCheck, Users2, Target, TrendingUp, BookOpenCheck, Newspaper, PenTool, Send, Flag, CheckSquare, Heart, Star, Laptop, Smartphone, Headphones, HelpCircle, Shield, Zap as ZapIcon, Edit, Save, Tag } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Label } from "./ui/label";
@@ -610,7 +611,7 @@ function AdminPage() {
         </div>
 
         <Tabs defaultValue="lawyers" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-9 h-auto gap-1 p-1">
+          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-10 h-auto gap-1 p-1">
             <TabsTrigger value="lawyers" className="flex items-center gap-1 text-xs p-2">
               <Users className="w-3 h-3" />
               <span className="hidden sm:inline">Abogados</span>
@@ -666,6 +667,10 @@ function AdminPage() {
             <TabsTrigger value="knowledge" className="flex items-center gap-1 text-xs p-2">
               <Globe className="w-3 h-3" />
               <span className="hidden sm:inline">Base de Conocimiento</span>
+            </TabsTrigger>
+            <TabsTrigger value="categories" className="flex items-center gap-1 text-xs p-2">
+              <Tag className="w-3 h-3" />
+              <span className="hidden sm:inline">Categorías</span>
             </TabsTrigger>
           </TabsList>
 
@@ -1245,6 +1250,10 @@ function AdminPage() {
 
           <TabsContent value="knowledge">
             <KnowledgeBaseManager />
+          </TabsContent>
+
+          <TabsContent value="categories">
+            <CategoryManager />
           </TabsContent>
 
           <TabsContent value="messages" className="space-y-4">

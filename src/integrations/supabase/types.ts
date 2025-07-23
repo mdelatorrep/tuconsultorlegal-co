@@ -318,8 +318,11 @@ export type Database = {
       }
       document_categories: {
         Row: {
+          category_type: string | null
+          color_class: string | null
           created_at: string
           description: string | null
+          display_order: number | null
           icon: string | null
           id: string
           is_active: boolean
@@ -327,8 +330,11 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          category_type?: string | null
+          color_class?: string | null
           created_at?: string
           description?: string | null
+          display_order?: number | null
           icon?: string | null
           id?: string
           is_active?: boolean
@@ -336,8 +342,11 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          category_type?: string | null
+          color_class?: string | null
           created_at?: string
           description?: string | null
+          display_order?: number | null
           icon?: string | null
           id?: string
           is_active?: boolean

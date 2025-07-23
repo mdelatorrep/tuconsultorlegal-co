@@ -33,6 +33,7 @@ interface KnowledgeBaseUrl {
 
 export default function KnowledgeBaseManager() {
   const [urls, setUrls] = useState<KnowledgeBaseUrl[]>([]);
+  const [categories, setCategories] = useState<{ value: string; label: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingUrl, setEditingUrl] = useState<KnowledgeBaseUrl | null>(null);
@@ -47,17 +48,38 @@ export default function KnowledgeBaseManager() {
     is_active: true
   });
 
-  const categories = [
-    { value: 'legislacion', label: 'Legislación' },
-    { value: 'jurisprudencia', label: 'Jurisprudencia' },
-    { value: 'normatividad', label: 'Normatividad' },
-    { value: 'doctrina', label: 'Doctrina' },
-    { value: 'general', label: 'General' }
-  ];
-
   useEffect(() => {
     loadUrls();
+    loadCategories();
   }, []);
+
+  const loadCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('document_categories')
+        .select('name, color_class')
+        .eq('is_active', true)
+        .in('category_type', ['knowledge_base', 'both'])
+        .order('display_order')
+        .order('name');
+
+      if (error) throw error;
+      
+      const categoriesData = data?.map(cat => ({
+        value: cat.name.toLowerCase().replace(/\s+/g, '_'),
+        label: cat.name,
+        color_class: cat.color_class
+      })) || [];
+
+      setCategories(categoriesData);
+    } catch (error) {
+      console.error('Error loading categories:', error);
+      // Fallback a categorías por defecto si hay error
+      setCategories([
+        { value: 'general', label: 'General' }
+      ]);
+    }
+  };
 
   const loadUrls = async () => {
     try {
@@ -217,6 +239,13 @@ export default function KnowledgeBaseManager() {
   };
 
   const getCategoryBadge = (category: string) => {
+    const dynamicCategory = categories.find(cat => cat.value === category);
+    
+    if (dynamicCategory && (dynamicCategory as any).color_class) {
+      return <Badge className={(dynamicCategory as any).color_class}>{dynamicCategory.label}</Badge>;
+    }
+
+    // Fallback a configuración estática si no se encuentra en categorías dinámicas
     const categoryConfig = {
       legislacion: { color: "bg-blue-100 text-blue-800", label: "Legislación" },
       jurisprudencia: { color: "bg-purple-100 text-purple-800", label: "Jurisprudencia" },
