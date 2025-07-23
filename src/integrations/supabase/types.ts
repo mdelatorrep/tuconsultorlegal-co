@@ -400,6 +400,51 @@ export type Database = {
         }
         Relationships: []
       }
+      knowledge_base_urls: {
+        Row: {
+          category: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          last_verified: string | null
+          priority: number | null
+          tags: string[] | null
+          updated_at: string
+          url: string
+          verification_status: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          last_verified?: string | null
+          priority?: number | null
+          tags?: string[] | null
+          updated_at?: string
+          url: string
+          verification_status?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          last_verified?: string | null
+          priority?: number | null
+          tags?: string[] | null
+          updated_at?: string
+          url?: string
+          verification_status?: string | null
+        }
+        Relationships: []
+      }
       lawyer_token_requests: {
         Row: {
           created_at: string
