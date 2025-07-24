@@ -332,16 +332,33 @@ function AdminPage() {
 
   const handleApproveAgent = async (agentId: string) => {
     try {
+      console.log('🚀 Iniciando aprobación de agente:', agentId);
+      
+      const headers = getAuthHeaders();
+      console.log('📝 Headers de autenticación:', headers);
+      
+      const requestBody = {
+        agent_id: agentId,
+        user_id: user?.id || 'mock-admin-id',
+        is_admin: true,
+        status: 'approved'
+      };
+      console.log('📦 Cuerpo de la petición:', requestBody);
+
       const { data, error } = await supabase.functions.invoke('update-agent', {
-        headers: getAuthHeaders(),
-        body: {
-          agent_id: agentId,
-          status: 'approved'
-        }
+        headers,
+        body: requestBody
       });
 
-      if (error) throw error;
+      console.log('📊 Respuesta de la función:', { data, error });
 
+      if (error) {
+        console.error('❌ Error en la función update-agent:', error);
+        throw error;
+      }
+
+      console.log('✅ Agente aprobado exitosamente');
+      
       toast({
         title: "Agente aprobado",
         description: "El agente legal ha sido aprobado y está disponible para uso público",
@@ -349,6 +366,7 @@ function AdminPage() {
       
       await loadAgents();
     } catch (error: any) {
+      console.error('❌ Error completo en handleApproveAgent:', error);
       toast({
         title: "Error",
         description: error.message || "Error al aprobar el agente",
