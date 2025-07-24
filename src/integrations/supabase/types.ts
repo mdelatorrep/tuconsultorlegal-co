@@ -454,6 +454,56 @@ export type Database = {
         }
         Relationships: []
       }
+      lawyer_certificates: {
+        Row: {
+          certificate_code: string
+          certificate_name: string
+          certificate_type: string
+          created_at: string
+          id: string
+          is_active: boolean
+          issued_date: string
+          lawyer_id: string
+          linkedin_share_url: string | null
+          updated_at: string
+          verification_url: string | null
+        }
+        Insert: {
+          certificate_code: string
+          certificate_name?: string
+          certificate_type?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          issued_date?: string
+          lawyer_id: string
+          linkedin_share_url?: string | null
+          updated_at?: string
+          verification_url?: string | null
+        }
+        Update: {
+          certificate_code?: string
+          certificate_name?: string
+          certificate_type?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          issued_date?: string
+          lawyer_id?: string
+          linkedin_share_url?: string | null
+          updated_at?: string
+          verification_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lawyer_certificates_lawyer_id_fkey"
+            columns: ["lawyer_id"]
+            isOneToOne: false
+            referencedRelation: "lawyer_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lawyer_token_requests: {
         Row: {
           created_at: string
@@ -567,6 +617,59 @@ export type Database = {
             columns: ["request_id"]
             isOneToOne: false
             referencedRelation: "lawyer_token_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lawyer_training_progress: {
+        Row: {
+          certificate_id: string | null
+          completed_at: string | null
+          completion_percentage: number
+          course_name: string
+          created_at: string
+          id: string
+          is_certified: boolean
+          lawyer_id: string
+          modules_completed: Json
+          started_at: string
+          total_modules: number
+          updated_at: string
+        }
+        Insert: {
+          certificate_id?: string | null
+          completed_at?: string | null
+          completion_percentage?: number
+          course_name?: string
+          created_at?: string
+          id?: string
+          is_certified?: boolean
+          lawyer_id: string
+          modules_completed?: Json
+          started_at?: string
+          total_modules?: number
+          updated_at?: string
+        }
+        Update: {
+          certificate_id?: string | null
+          completed_at?: string | null
+          completion_percentage?: number
+          course_name?: string
+          created_at?: string
+          id?: string
+          is_certified?: boolean
+          lawyer_id?: string
+          modules_completed?: Json
+          started_at?: string
+          total_modules?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lawyer_training_progress_lawyer_id_fkey"
+            columns: ["lawyer_id"]
+            isOneToOne: false
+            referencedRelation: "lawyer_tokens"
             referencedColumns: ["id"]
           },
         ]
