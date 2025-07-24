@@ -54,7 +54,7 @@ interface Agent {
   document_name: string;
   description: string;
   category: string;
-  status: 'pending_review' | 'approved' | 'rejected' | 'active' | 'suspended';
+  status: 'pending_review' | 'active' | 'rejected' | 'suspended';
   created_at: string;
   created_by?: string;
   suggested_price: number;
@@ -220,7 +220,6 @@ function AdminPage() {
       console.log('📊 Agentes recibidos:', data?.length || 0);
       console.log('📈 Agentes por estado:', {
         pending_review: data?.filter((a: any) => a.status === 'pending_review').length || 0,
-        approved: data?.filter((a: any) => a.status === 'approved').length || 0,
         active: data?.filter((a: any) => a.status === 'active').length || 0,
         suspended: data?.filter((a: any) => a.status === 'suspended').length || 0
       });
@@ -374,7 +373,7 @@ function AdminPage() {
       const { data: updatedAgent, error } = await supabase
         .from('legal_agents')
         .update({ 
-          status: 'approved',
+          status: 'active',
           updated_at: new Date().toISOString()
         })
         .eq('id', agentId)
@@ -389,8 +388,8 @@ function AdminPage() {
       console.log('✅ Agente aprobado exitosamente:', updatedAgent);
       
       toast({
-        title: "Agente aprobado",
-        description: "El agente legal ha sido aprobado y está disponible para uso público",
+        title: "Agente activado",
+        description: "El agente legal ha sido activado y está disponible para uso público",
       });
       
       await loadAgents();
@@ -449,7 +448,7 @@ function AdminPage() {
         headers: getAuthHeaders(),
         body: {
           agent_id: agentId,
-          status: 'approved'
+          status: 'active'
         }
       });
 
@@ -1187,7 +1186,7 @@ function AdminPage() {
                       <CheckCircle className="w-4 h-4 text-green-500" />
                       <div>
                         <p className="text-sm text-muted-foreground">Activos</p>
-                        <p className="font-bold text-lg">{agents.filter(a => a.status === 'approved' || a.status === 'active').length}</p>
+                        <p className="font-bold text-lg">{agents.filter(a => a.status === 'active').length}</p>
                       </div>
                     </div>
                   </Card>
@@ -1226,15 +1225,15 @@ function AdminPage() {
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-2">
                               <h4 className="font-semibold text-lg">{agent.name}</h4>
-                              <Badge variant={
+                               <Badge variant={
                                 agent.status === 'pending_review' ? 'destructive' :
-                                agent.status === 'approved' || agent.status === 'active' ? 'default' :
+                                agent.status === 'active' ? 'default' :
                                 agent.status === 'suspended' ? 'secondary' : 'outline'
-                              }>
-                                {agent.status === 'pending_review' ? 'Pendiente de Revisión' :
-                                 agent.status === 'approved' || agent.status === 'active' ? 'Activo' :
-                                 agent.status === 'suspended' ? 'Suspendido' : agent.status}
-                              </Badge>
+                               }>
+                                 {agent.status === 'pending_review' ? 'Pendiente de Revisión' :
+                                  agent.status === 'active' ? 'Activo' :
+                                  agent.status === 'suspended' ? 'Suspendido' : agent.status}
+                               </Badge>
                               <Badge variant="outline" className="text-xs">
                                 {agent.target_audience === 'empresas' ? 'Empresas' : 'Personas'}
                               </Badge>
@@ -1314,7 +1313,7 @@ function AdminPage() {
                               </Button>
                             )}
                             
-                            {(agent.status === 'approved' || agent.status === 'active') && (
+                            {agent.status === 'active' && (
                               <Button 
                                 size="sm" 
                                 variant="outline"
@@ -1726,11 +1725,11 @@ function AdminPage() {
                   <Label className="text-sm font-medium">Estado</Label>
                   <Badge variant={
                     selectedAgent.status === 'pending_review' ? 'destructive' :
-                    selectedAgent.status === 'approved' || selectedAgent.status === 'active' ? 'default' :
+                    selectedAgent.status === 'active' ? 'default' :
                     'secondary'
                   }>
                     {selectedAgent.status === 'pending_review' ? 'Pendiente de Revisión' :
-                     selectedAgent.status === 'approved' || selectedAgent.status === 'active' ? 'Activo' :
+                     selectedAgent.status === 'active' ? 'Activo' :
                      'Suspendido'}
                   </Badge>
                 </div>

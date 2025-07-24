@@ -50,7 +50,7 @@ export default function PersonasPage({ onOpenChat, onNavigate }: PersonasPagePro
       const { data: agents, error } = await supabase
         .from('legal_agents')
         .select('*')
-        .in('status', ['active', 'approved']) // Incluir agentes activos y aprobados
+        .eq('status', 'active')
         .in('target_audience', ['personas', 'ambos'])
         .order('category', { ascending: true });
 

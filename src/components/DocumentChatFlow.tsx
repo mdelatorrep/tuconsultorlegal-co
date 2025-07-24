@@ -182,7 +182,7 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
           .from('openai_agents')
           .select('openai_agent_id')
           .eq('legal_agent_id', agentId)
-          .in('status', ['active', 'approved']) // Incluir agentes activos y aprobados
+          .eq('status', 'active')
           .single();
 
         if (agentError || !openaiAgent) {

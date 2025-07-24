@@ -245,7 +245,7 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
         .from('legal_advisor_agents')
         .select('openai_agent_id')
         .eq('specialization', specialization)
-        .in('status', ['active', 'approved']) // Incluir agentes activos y aprobados
+        .eq('status', 'active')
         .limit(1);
 
       if (error || !agents || agents.length === 0) {
