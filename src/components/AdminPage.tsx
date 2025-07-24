@@ -1501,12 +1501,11 @@ function AdminPage() {
                       <SelectValue placeholder="Seleccionar categoría" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="contratos">Contratos</SelectItem>
-                      <SelectItem value="laboral">Laboral</SelectItem>
-                      <SelectItem value="civil">Civil</SelectItem>
-                      <SelectItem value="comercial">Comercial</SelectItem>
-                      <SelectItem value="penal">Penal</SelectItem>
-                      <SelectItem value="inmobiliario">Inmobiliario</SelectItem>
+                      {categories.map((category) => (
+                        <SelectItem key={category.value} value={category.value}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
