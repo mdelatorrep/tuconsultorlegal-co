@@ -198,11 +198,24 @@ function AdminPage() {
   const loadAgents = async () => {
     try {
       console.log('🔄 Cargando agentes legales...');
-      const { data, error } = await supabase.functions.invoke('get-agents-admin', {
-        headers: getAuthHeaders()
-      });
+      
+      // **SISTEMA UNIFICADO**: Usar consulta directa con RLS (ya no necesitamos edge functions)
+      const { data, error } = await supabase
+        .from('legal_agents')
+        .select(`
+          *,
+          created_by_lawyer:lawyer_tokens!legal_agents_created_by_fkey(
+            id,
+            full_name,
+            email
+          )
+        `)
+        .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error cargando agentes:', error);
+        throw error;
+      }
       
       console.log('📊 Agentes recibidos:', data?.length || 0);
       console.log('📈 Agentes por estado:', {
@@ -212,7 +225,7 @@ function AdminPage() {
         suspended: data?.filter((a: any) => a.status === 'suspended').length || 0
       });
 
-      setAgents(data || []);
+      setAgents((data || []) as Agent[]);
       
       const pending = data?.filter((agent: any) => agent.status === 'pending_review').length || 0;
       setPendingAgentsCount(pending);
