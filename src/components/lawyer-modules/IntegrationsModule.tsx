@@ -4,8 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Mail, FolderOpen, Calendar, Settings, Bot, Loader2, CheckCircle } from "lucide-react";
+import { Mail, FolderOpen, Calendar, Settings, Bot, Loader2, CheckCircle, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+
+interface IntegrationsModuleProps {
+  onBack?: () => void;
+}
 
 interface IntegrationResult {
   type: 'email_summary' | 'file_organization' | 'calendar_management';
@@ -16,7 +20,7 @@ interface IntegrationResult {
   timestamp: string;
 }
 
-export default function IntegrationsModule() {
+export default function IntegrationsModule({ onBack }: IntegrationsModuleProps) {
   const [emailContent, setEmailContent] = useState("");
   const [fileName, setFileName] = useState("");
   const [eventDescription, setEventDescription] = useState("");
@@ -247,16 +251,34 @@ export default function IntegrationsModule() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3 mb-6">
-        <Settings className="h-8 w-8 text-primary" />
-        <div>
-          <h2 className="text-2xl font-bold text-primary">Integraciones IA</h2>
-          <p className="text-muted-foreground">
-            Automatiza tareas administrativas y organizacionales
-          </p>
-        </div>
-      </div>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-6 py-6">
+        <div className="max-w-6xl mx-auto">
+          {/* Header with back button */}
+          <div className="flex items-center gap-4 mb-6">
+            {onBack && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onBack}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Volver al Dashboard
+              </Button>
+            )}
+          </div>
+
+          <div className="space-y-6">
+            <div className="flex items-center gap-3 mb-6">
+              <Settings className="h-8 w-8 text-primary" />
+              <div>
+                <h2 className="text-2xl font-bold text-primary">Integraciones IA</h2>
+                <p className="text-muted-foreground">
+                  Automatiza tareas administrativas y organizacionales
+                </p>
+              </div>
+            </div>
 
       {/* Integration Tools */}
       <div className="grid md:grid-cols-3 gap-6">
@@ -419,6 +441,9 @@ export default function IntegrationsModule() {
           </CardContent>
         </Card>
       )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

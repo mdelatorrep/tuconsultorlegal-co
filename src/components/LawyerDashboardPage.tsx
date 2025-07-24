@@ -217,15 +217,15 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
       case 'blog-manager':
         return <LawyerBlogManager onBack={() => setCurrentView('dashboard')} lawyerData={user} />;
       case 'research':
-        return <ResearchModule />;
+        return <ResearchModule onBack={() => setCurrentView('dashboard')} />;
       case 'analyze':
-        return <AnalyzeModule />;
+        return <AnalyzeModule onBack={() => setCurrentView('dashboard')} />;
       case 'draft':
-        return <DraftModule />;
+        return <DraftModule onBack={() => setCurrentView('dashboard')} />;
       case 'strategize':
-        return <StrategizeModule />;
+        return <StrategizeModule onBack={() => setCurrentView('dashboard')} />;
       case 'integrations':
-        return <IntegrationsModule />;
+        return <IntegrationsModule onBack={() => setCurrentView('dashboard')} />;
       case 'stats':
         return <LawyerStatsSection />;
       default:

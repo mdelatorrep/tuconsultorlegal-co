@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Search, BookOpen, FileText, Loader2 } from "lucide-react";
+import { Search, BookOpen, FileText, Loader2, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -14,7 +14,11 @@ interface ResearchResult {
   timestamp: string;
 }
 
-export default function ResearchModule() {
+interface ResearchModuleProps {
+  onBack?: () => void;
+}
+
+export default function ResearchModule({ onBack }: ResearchModuleProps) {
   const [query, setQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<ResearchResult[]>([]);
@@ -68,16 +72,34 @@ export default function ResearchModule() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3 mb-6">
-        <Search className="h-8 w-8 text-primary" />
-        <div>
-          <h2 className="text-2xl font-bold text-primary">Investigación Jurídica IA</h2>
-          <p className="text-muted-foreground">
-            Asistente de investigación con acceso a legislación y jurisprudencia colombiana
-          </p>
-        </div>
-      </div>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-6 py-6">
+        <div className="max-w-6xl mx-auto">
+          {/* Header with back button */}
+          <div className="flex items-center gap-4 mb-6">
+            {onBack && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onBack}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Volver al Dashboard
+              </Button>
+            )}
+          </div>
+
+          <div className="space-y-6">
+            <div className="flex items-center gap-3 mb-6">
+              <Search className="h-8 w-8 text-primary" />
+              <div>
+                <h2 className="text-2xl font-bold text-primary">Investigación Jurídica IA</h2>
+                <p className="text-muted-foreground">
+                  Asistente de investigación con acceso a legislación y jurisprudencia colombiana
+                </p>
+              </div>
+            </div>
 
       {/* Search Interface */}
       <Card>
@@ -174,6 +196,9 @@ export default function ResearchModule() {
           </CardContent>
         </Card>
       )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

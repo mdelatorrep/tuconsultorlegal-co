@@ -4,8 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { PenTool, FileText, Download, Copy, Loader2 } from "lucide-react";
+import { PenTool, FileText, Download, Copy, Loader2, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+
+interface DraftModuleProps {
+  onBack?: () => void;
+}
 
 interface DraftResult {
   prompt: string;
@@ -25,7 +29,7 @@ const DOCUMENT_TYPES = [
   { value: "documento_personalizado", label: "Documento Personalizado" }
 ];
 
-export default function DraftModule() {
+export default function DraftModule({ onBack }: DraftModuleProps) {
   const [prompt, setPrompt] = useState("");
   const [documentType, setDocumentType] = useState("");
   const [isDrafting, setIsDrafting] = useState(false);
@@ -139,16 +143,34 @@ El presente contrato se regirá por las leyes de la República de Colombia.
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3 mb-6">
-        <PenTool className="h-8 w-8 text-primary" />
-        <div>
-          <h2 className="text-2xl font-bold text-primary">Redacción Asistida</h2>
-          <p className="text-muted-foreground">
-            Genera borradores profesionales de documentos legales con IA
-          </p>
-        </div>
-      </div>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-6 py-6">
+        <div className="max-w-6xl mx-auto">
+          {/* Header with back button */}
+          <div className="flex items-center gap-4 mb-6">
+            {onBack && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onBack}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Volver al Dashboard
+              </Button>
+            )}
+          </div>
+
+          <div className="space-y-6">
+            <div className="flex items-center gap-3 mb-6">
+              <PenTool className="h-8 w-8 text-primary" />
+              <div>
+                <h2 className="text-2xl font-bold text-primary">Redacción Asistida</h2>
+                <p className="text-muted-foreground">
+                  Genera borradores profesionales de documentos legales con IA
+                </p>
+              </div>
+            </div>
 
       {/* Draft Interface */}
       <Card>
@@ -287,6 +309,9 @@ El presente contrato se regirá por las leyes de la República de Colombia.
           </CardContent>
         </Card>
       )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

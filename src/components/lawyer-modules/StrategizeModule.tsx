@@ -3,8 +3,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Brain, Target, AlertTriangle, CheckCircle, Scale, Loader2 } from "lucide-react";
+import { Brain, Target, AlertTriangle, CheckCircle, Scale, Loader2, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+
+interface StrategizeModuleProps {
+  onBack?: () => void;
+}
 
 interface StrategicAnalysis {
   caseDescription: string;
@@ -33,7 +37,7 @@ interface StrategicAnalysis {
   timestamp: string;
 }
 
-export default function StrategizeModule() {
+export default function StrategizeModule({ onBack }: StrategizeModuleProps) {
   const [caseDescription, setCaseDescription] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analyses, setAnalyses] = useState<StrategicAnalysis[]>([]);
@@ -181,16 +185,34 @@ export default function StrategizeModule() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3 mb-6">
-        <Brain className="h-8 w-8 text-primary" />
-        <div>
-          <h2 className="text-2xl font-bold text-primary">Asistente Estratégico</h2>
-          <p className="text-muted-foreground">
-            Análisis estratégico integral de casos legales con IA
-          </p>
-        </div>
-      </div>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-6 py-6">
+        <div className="max-w-6xl mx-auto">
+          {/* Header with back button */}
+          <div className="flex items-center gap-4 mb-6">
+            {onBack && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onBack}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Volver al Dashboard
+              </Button>
+            )}
+          </div>
+
+          <div className="space-y-6">
+            <div className="flex items-center gap-3 mb-6">
+              <Brain className="h-8 w-8 text-primary" />
+              <div>
+                <h2 className="text-2xl font-bold text-primary">Asistente Estratégico</h2>
+                <p className="text-muted-foreground">
+                  Análisis estratégico integral de casos legales con IA
+                </p>
+              </div>
+            </div>
 
       {/* Analysis Interface */}
       <Card>
@@ -389,6 +411,9 @@ export default function StrategizeModule() {
           </CardContent>
         </Card>
       )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
