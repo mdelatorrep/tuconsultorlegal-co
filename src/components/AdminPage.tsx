@@ -356,33 +356,24 @@ function AdminPage() {
       console.log('🚀 Iniciando aprobación de agente:', agentId);
       console.log('👤 Usuario actual:', user);
       
-      const headers = getAuthHeaders();
-      console.log('📝 Headers de autenticación:', headers);
-      
-      // Para admin, usar un ID genérico si no hay user.id
-      const adminUserId = user?.id || 'admin-user-' + Date.now();
-      
-      const requestBody = {
-        agent_id: agentId,
-        user_id: adminUserId,
-        is_admin: true,
-        status: 'approved'
-      };
-      console.log('📦 Cuerpo de la petición:', requestBody);
-
-      const { data, error } = await supabase.functions.invoke('update-agent', {
-        headers,
-        body: requestBody
-      });
-
-      console.log('📊 Respuesta de la función:', { data, error });
+      // **NUEVO SISTEMA**: Usar Supabase cliente directo con RLS
+      // Ya no necesitamos edge functions complicadas
+      const { data: updatedAgent, error } = await supabase
+        .from('legal_agents')
+        .update({ 
+          status: 'approved',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', agentId)
+        .select()
+        .single();
 
       if (error) {
-        console.error('❌ Error en la función update-agent:', error);
+        console.error('❌ Error actualizando agente:', error);
         throw error;
       }
 
-      console.log('✅ Agente aprobado exitosamente');
+      console.log('✅ Agente aprobado exitosamente:', updatedAgent);
       
       toast({
         title: "Agente aprobado",
