@@ -11,63 +11,63 @@ const securityHeaders = {
 }
 
 Deno.serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
+  // Only allow POST requests
   if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405, headers: corsHeaders })
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), { 
+      status: 405, 
+      headers: securityHeaders 
+    })
   }
 
   try {
+    // Initialize Supabase client with service role key
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    console.log('Update agent function called')
-
-    // Get authorization header
-    const authHeader = req.headers.get('authorization')
-    console.log('Auth header received:', !!authHeader)
-    
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Authorization required' }), {
-        status: 401,
-        headers: securityHeaders
-      })
-    }
+    console.log('🚀 Update agent function called')
 
     // Parse request body
     let requestBody
     try {
       const bodyText = await req.text()
-      console.log('Raw request body length:', bodyText.length)
+      console.log('📦 Raw request body length:', bodyText.length)
       
       if (!bodyText.trim()) {
-        return new Response(JSON.stringify({ error: 'Empty request body' }), {
+        console.error('❌ Empty request body')
+        return new Response(JSON.stringify({ error: 'Request body cannot be empty' }), {
           status: 400,
           headers: securityHeaders
         })
       }
       
       requestBody = JSON.parse(bodyText)
-      console.log('Request body parsed successfully, keys:', Object.keys(requestBody))
+      console.log('✅ Request body parsed successfully')
+      console.log('📋 Request data keys:', Object.keys(requestBody))
     } catch (parseError) {
-      console.error('JSON parse error:', parseError)
+      console.error('❌ JSON parse error:', parseError)
       return new Response(JSON.stringify({ 
         error: 'Invalid JSON in request body',
-        message: parseError.message 
+        details: parseError.message 
       }), {
         status: 400,
         headers: securityHeaders
       })
     }
 
+    // Extract required fields
     const { 
       agent_id, 
       user_id, 
       is_admin,
+      status,
+      // Optional fields for updates
       name,
       description,
       document_name,
@@ -79,7 +79,6 @@ Deno.serve(async (req) => {
       target_audience,
       template_content,
       ai_prompt,
-      status,
       sla_enabled,
       sla_hours,
       button_cta,
@@ -87,25 +86,18 @@ Deno.serve(async (req) => {
       frontend_icon
     } = requestBody
 
-    // Input validation
+    // Validate required fields
     if (!agent_id) {
-      return new Response(JSON.stringify({ error: 'Agent ID is required' }), {
+      console.error('❌ Missing agent_id')
+      return new Response(JSON.stringify({ error: 'agent_id is required' }), {
         status: 400,
         headers: securityHeaders
       })
     }
 
-    // For admin operations, user_id is not strictly required
-    if (!user_id && !is_admin) {
-      return new Response(JSON.stringify({ error: 'User ID is required for non-admin operations' }), {
-        status: 400,
-        headers: securityHeaders
-      })
-    }
+    console.log('🔍 Attempting to update agent:', agent_id)
 
-    console.log('Attempting to update agent with ID:', agent_id)
-
-    // Check if agent exists and get its details
+    // Check if agent exists
     const { data: existingAgent, error: fetchError } = await supabase
       .from('legal_agents')
       .select('*')
@@ -113,43 +105,50 @@ Deno.serve(async (req) => {
       .maybeSingle()
 
     if (fetchError) {
-      console.error('Error fetching agent:', fetchError)
-      return new Response(JSON.stringify({ error: 'Error fetching agent data' }), {
+      console.error('❌ Error fetching agent:', fetchError)
+      return new Response(JSON.stringify({ 
+        error: 'Database error while fetching agent',
+        details: fetchError.message 
+      }), {
         status: 500,
         headers: securityHeaders
       })
     }
 
     if (!existingAgent) {
+      console.error('❌ Agent not found:', agent_id)
       return new Response(JSON.stringify({ error: 'Agent not found' }), {
         status: 404,
         headers: securityHeaders
       })
     }
 
-    console.log('Found agent to update:', existingAgent.name)
+    console.log('✅ Found agent to update:', existingAgent.name)
 
-    // Check permissions - simplified for admin operations
+    // **SIMPLIFIED AUTHORIZATION LOGIC**
+    // For admin operations (is_admin=true), allow the update
+    // For regular users, check if they created the agent
     let canUpdate = false
-    let adminVerified = false
+    let updateReason = ''
 
-    console.log('Checking permissions...', { is_admin, authHeader: !!authHeader, user_id });
-
-    // For admin operations, just check if is_admin is true and we have an auth header
-    if (is_admin && authHeader) {
-      canUpdate = true;
-      adminVerified = true;
-      console.log('Admin access granted - bypassing complex authentication');
-    } else if (existingAgent.created_by === user_id) {
-      // Creator can update their own agents
-      canUpdate = true;
-      console.log('Creator access granted');
+    if (is_admin) {
+      canUpdate = true
+      updateReason = 'admin_override'
+      console.log('✅ Admin access granted')
+    } else if (user_id && existingAgent.created_by === user_id) {
+      canUpdate = true
+      updateReason = 'creator_access'
+      console.log('✅ Creator access granted')
+    } else {
+      canUpdate = false
+      updateReason = 'access_denied'
+      console.log('❌ Access denied')
     }
 
     if (!canUpdate) {
-      console.log('Access denied - user cannot update this agent');
       return new Response(JSON.stringify({ 
-        error: 'No tienes permisos para modificar este agente' 
+        error: 'No tienes permisos para modificar este agente',
+        reason: updateReason
       }), {
         status: 403,
         headers: securityHeaders
@@ -161,7 +160,7 @@ Deno.serve(async (req) => {
       updated_at: new Date().toISOString()
     }
 
-    // Only update provided fields
+    // Add fields that are provided (only update non-undefined fields)
     if (name !== undefined) updateData.name = name
     if (description !== undefined) updateData.description = description
     if (document_name !== undefined) updateData.document_name = document_name
@@ -179,17 +178,15 @@ Deno.serve(async (req) => {
     if (frontend_icon !== undefined) updateData.frontend_icon = frontend_icon
 
     // Admin-only fields
-    if (adminVerified) {
+    if (is_admin) {
       if (final_price !== undefined) updateData.final_price = final_price
       if (status !== undefined) updateData.status = status
-      
-      // Note: price_approved_by and price_approved_at fields don't exist in legal_agents table
-      // If needed in the future, they would need to be added via database migration
     }
 
-    console.log('Update data prepared:', Object.keys(updateData))
+    console.log('📝 Update data prepared:', Object.keys(updateData))
+    console.log('🎯 Status change:', status ? `${existingAgent.status} → ${status}` : 'no status change')
 
-    // Update the agent
+    // Perform the update
     const { data: updatedAgent, error: updateError } = await supabase
       .from('legal_agents')
       .update(updateData)
@@ -198,42 +195,43 @@ Deno.serve(async (req) => {
       .single()
 
     if (updateError) {
-      console.error('Error updating agent:', updateError)
-      return new Response(JSON.stringify({ error: 'Error updating agent' }), {
+      console.error('❌ Error updating agent:', updateError)
+      return new Response(JSON.stringify({ 
+        error: 'Database error during update',
+        details: updateError.message 
+      }), {
         status: 500,
         headers: securityHeaders
       })
     }
 
-    console.log('Agent updated successfully')
+    console.log('✅ Agent updated successfully')
 
-    // Log the update event (optional, continue if fails)
-    try {
-      console.log('Agent update completed:', {
-        agent_id: agent_id,
-        agent_name: existingAgent.name,
-        updated_by: adminVerified ? 'admin' : 'creator',
-        updated_fields: Object.keys(updateData),
-        status_change: existingAgent.status !== updateData.status ? {
-          from: existingAgent.status,
-          to: updateData.status
-        } : null
-      });
-    } catch (logError) {
-      console.warn('Could not log security event:', logError);
-    }
+    // Log the successful operation
+    console.log('📊 Update completed:', {
+      agent_id: agent_id,
+      agent_name: existingAgent.name,
+      updated_by: updateReason,
+      updated_fields: Object.keys(updateData),
+      status_changed: existingAgent.status !== updateData.status
+    })
 
+    // Return success response
     return new Response(JSON.stringify({
       success: true,
       message: `Agente "${existingAgent.name}" actualizado exitosamente`,
-      agent: updatedAgent
+      agent: updatedAgent,
+      updated_fields: Object.keys(updateData)
     }), {
       headers: securityHeaders
     })
 
   } catch (error) {
-    console.error('Error in update-agent function:', error)
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+    console.error('💥 Critical error in update-agent function:', error)
+    return new Response(JSON.stringify({ 
+      error: 'Internal server error',
+      message: 'An unexpected error occurred while updating the agent'
+    }), {
       status: 500,
       headers: securityHeaders
     })
