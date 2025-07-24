@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    console.log('Delete lawyer function called')
+    console.log('🗑️ Delete lawyer function called - simplified auth system')
 
     // Parse request body
     let requestBody
@@ -60,24 +60,28 @@ Deno.serve(async (req) => {
       }
     }
 
-    const { lawyer_id } = requestBody
+    // **SISTEMA DE AUTENTICACIÓN SIMPLIFICADO** - compatible con frontend
+    const { lawyer_id, lawyerId } = requestBody
+    
+    // Aceptar tanto lawyer_id como lawyerId para flexibilidad del frontend
+    const targetId = lawyer_id || lawyerId
 
     // Validate required fields
-    if (!lawyer_id) {
-      console.error('Missing lawyer_id in request')
-      return new Response(JSON.stringify({ error: 'lawyer_id is required' }), {
+    if (!targetId) {
+      console.error('Missing lawyer_id/lawyerId in request', { requestBody })
+      return new Response(JSON.stringify({ error: 'lawyer_id or lawyerId is required' }), {
         status: 400,
         headers: securityHeaders
       })
     }
 
-    console.log('Processing deletion for lawyer ID:', lawyer_id)
+    console.log('Processing deletion for lawyer ID:', targetId)
 
     // Check if lawyer exists
     const { data: existingLawyer, error: fetchError } = await supabase
       .from('lawyer_tokens')
       .select('id, full_name, email')
-      .eq('id', lawyer_id)
+      .eq('id', targetId)
       .maybeSingle()
 
     if (fetchError) {
@@ -89,7 +93,7 @@ Deno.serve(async (req) => {
     }
 
     if (!existingLawyer) {
-      console.log('Lawyer not found with ID:', lawyer_id)
+      console.log('Lawyer not found with ID:', targetId)
       return new Response(JSON.stringify({ error: 'Lawyer not found' }), {
         status: 404,
         headers: securityHeaders
@@ -102,7 +106,7 @@ Deno.serve(async (req) => {
     const { error: deleteError } = await supabase
       .from('lawyer_tokens')
       .delete()
-      .eq('id', lawyer_id)
+      .eq('id', targetId)
 
     if (deleteError) {
       console.error('Error deleting lawyer:', deleteError)
