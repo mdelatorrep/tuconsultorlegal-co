@@ -63,7 +63,7 @@ interface Agent {
   document_name: string;
   description: string;
   category: string;
-  status: 'pending_review' | 'active' | 'rejected' | 'suspended';
+  status: 'pending_review' | 'approved' | 'active' | 'rejected' | 'suspended';
   created_at: string;
   created_by?: string;
   suggested_price: number;
@@ -233,6 +233,65 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
     }
   };
 
+  // Función para actualizar estado de agente
+  const handleUpdateAgentStatus = async (agentId: string, newStatus: string) => {
+    try {
+      const response = await supabase.functions.invoke('update-agent', {
+        body: {
+          agent_id: agentId,
+          status: newStatus,
+          user_id: user?.id,
+          is_admin: true
+        }
+      });
+
+      if (response.error) throw new Error(response.error.message);
+
+      toast({
+        title: "Estado actualizado",
+        description: `Agente actualizado a estado: ${newStatus}`,
+      });
+
+      await loadAgents();
+    } catch (error) {
+      console.error('Error updating agent status:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el estado del agente",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Función para eliminar agente
+  const handleDeleteAgent = async (agent: Agent) => {
+    try {
+      const response = await supabase.functions.invoke('delete-agent', {
+        body: {
+          agent_id: agent.id,
+          user_id: user?.id,
+          is_admin: true
+        }
+      });
+
+      if (response.error) throw new Error(response.error.message);
+
+      toast({
+        title: "Agente eliminado",
+        description: `${agent.name} ha sido eliminado exitosamente`,
+      });
+
+      await loadAgents();
+    } catch (error) {
+      console.error('Error deleting agent:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el agente",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Función para eliminar abogado
   const handleDeleteLawyer = async (lawyer: Lawyer) => {
     try {
@@ -277,26 +336,31 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
 
   const loadAgents = async () => {
     try {
-      const { data, error } = await supabase
-        .from('legal_agents')
-        .select(`
-          *,
-          created_by_lawyer:lawyer_tokens!legal_agents_created_by_fkey(
-            id,
-            full_name,
-            email
-          )
-        `)
-        .order('created_at', { ascending: false });
+      console.log('🔄 Loading agents with admin authentication...');
+      
+      const response = await supabase.functions.invoke('get-agents-admin', {
+        headers: getAuthHeaders()
+      });
 
-      if (error) throw error;
+      if (response.error) {
+        console.error('Error from get-agents-admin:', response.error);
+        throw new Error(response.error.message || 'Error al cargar agentes');
+      }
       
-      setAgents((data || []) as Agent[]);
+      const agentsData = response.data || [];
+      console.log('✅ Loaded agents:', agentsData.length);
       
-      const pending = data?.filter((agent: any) => agent.status === 'pending_review').length || 0;
+      setAgents(agentsData);
+      
+      const pending = agentsData.filter((agent: any) => agent.status === 'pending_review').length || 0;
       setPendingAgentsCount(pending);
     } catch (error) {
       console.error('Error loading agents:', error);
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar los agentes legales",
+        variant: "destructive"
+      });
     }
   };
 
@@ -822,31 +886,156 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
             <CardContent>
               <div className="space-y-4">
                 {agents.map((agent) => (
-                  <div key={agent.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex-1">
-                      <h4 className="font-medium">{agent.name}</h4>
-                      <p className="text-sm text-muted-foreground">{agent.description}</p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <Badge>{agent.category}</Badge>
-                        <Badge variant={agent.status === 'active' ? 'default' : 'secondary'}>
-                          {agent.status}
-                        </Badge>
+                  <div key={agent.id} className="border rounded-lg p-6 space-y-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-semibold text-lg">{agent.name}</h4>
+                          <Badge variant={
+                            agent.status === 'active' ? 'default' : 
+                            agent.status === 'pending_review' ? 'destructive' : 
+                            agent.status === 'approved' ? 'default' :
+                            'secondary'
+                          }>
+                            {agent.status === 'pending_review' ? 'Pendiente Revisión' :
+                             agent.status === 'active' ? 'Activo' :
+                             agent.status === 'approved' ? 'Aprobado' :
+                             agent.status === 'suspended' ? 'Suspendido' :
+                             agent.status}
+                          </Badge>
+                        </div>
+                        
+                        <p className="text-sm text-muted-foreground">{agent.description}</p>
+                        
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge variant="outline">{agent.category}</Badge>
+                          <Badge variant="outline">{agent.target_audience}</Badge>
+                          <span className="text-xs text-muted-foreground">
+                            Precio sugerido: ${agent.suggested_price?.toLocaleString()}
+                          </span>
+                          {agent.final_price && (
+                            <span className="text-xs text-green-600 font-medium">
+                              Precio final: ${agent.final_price?.toLocaleString()}
+                            </span>
+                          )}
+                        </div>
+                        
+                        <div className="text-xs text-muted-foreground">
+                          Creado: {format(new Date(agent.created_at), 'dd/MM/yyyy HH:mm', { locale: es })}
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {agent.status === 'pending_review' && (
-                        <>
-                          <Button size="sm" variant="default">
-                            <Check className="w-4 h-4" />
+
+                    <div className="flex items-center justify-between pt-4 border-t">
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedAgent(agent);
+                            setShowAgentDetails(true);
+                          }}
+                        >
+                          <Eye className="w-4 h-4 mr-1" />
+                          Ver Detalles
+                        </Button>
+                        
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => {
+                            setEditingAgent(agent);
+                            setIsEditDialogOpen(true);
+                          }}
+                        >
+                          <Edit className="w-4 h-4 mr-1" />
+                          Editar
+                        </Button>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {agent.status === 'pending_review' && (
+                          <>
+                            <Button 
+                              size="sm" 
+                              variant="default"
+                              onClick={() => handleUpdateAgentStatus(agent.id, 'approved')}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              <Check className="w-4 h-4 mr-1" />
+                              Aprobar
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="destructive"
+                              onClick={() => handleUpdateAgentStatus(agent.id, 'suspended')}
+                            >
+                              <X className="w-4 h-4 mr-1" />
+                              Rechazar
+                            </Button>
+                          </>
+                        )}
+                        
+                        {agent.status === 'approved' && (
+                          <Button 
+                            size="sm" 
+                            variant="default"
+                            onClick={() => handleUpdateAgentStatus(agent.id, 'active')}
+                            className="bg-blue-600 hover:bg-blue-700"
+                          >
+                            <CheckCircle className="w-4 h-4 mr-1" />
+                            Activar
                           </Button>
-                          <Button size="sm" variant="destructive">
-                            <X className="w-4 h-4" />
+                        )}
+                        
+                        {(agent.status === 'active' || agent.status === 'approved') && (
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleUpdateAgentStatus(agent.id, 'suspended')}
+                          >
+                            <Lock className="w-4 h-4 mr-1" />
+                            Suspender
                           </Button>
-                        </>
-                      )}
+                        )}
+                        
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button size="sm" variant="destructive">
+                              <Trash2 className="w-4 h-4 mr-1" />
+                              Eliminar
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>¿Confirmar eliminación?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta acción eliminará permanentemente el agente "{agent.name}" y no se puede deshacer.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => handleDeleteAgent(agent)}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                Eliminar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </div>
                   </div>
                 ))}
+                
+                {agents.length === 0 && (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Bot className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
+                    <p className="text-lg font-medium">No hay agentes legales</p>
+                    <p className="text-sm">Los agentes creados por los abogados aparecerán aquí</p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
