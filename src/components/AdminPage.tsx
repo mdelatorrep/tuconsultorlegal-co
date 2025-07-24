@@ -552,21 +552,28 @@ function AdminPage() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || authLoading) {
+    console.log('🔄 Loading state:', { isLoading, authLoading, isAuthenticated });
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
           <p className="mt-4 text-muted-foreground">Cargando Panel de Administración...</p>
           <p className="text-sm text-muted-foreground">Sistema Jurídico Colombiano</p>
+          <p className="text-xs text-muted-foreground mt-2">
+            Debug: isLoading={String(isLoading)}, authLoading={String(authLoading)}, isAuthenticated={String(isAuthenticated)}
+          </p>
         </div>
       </div>
     );
   }
 
   if (!isAuthenticated) {
+    console.log('🔐 Not authenticated, showing login');
     return <NativeAdminLogin onLoginSuccess={handleLoginSuccess} />;
   }
+
+  console.log('✅ Admin panel loading successfully');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-3 sm:p-6">
