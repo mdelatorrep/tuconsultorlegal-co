@@ -354,13 +354,17 @@ function AdminPage() {
   const handleApproveAgent = async (agentId: string) => {
     try {
       console.log('🚀 Iniciando aprobación de agente:', agentId);
+      console.log('👤 Usuario actual:', user);
       
       const headers = getAuthHeaders();
       console.log('📝 Headers de autenticación:', headers);
       
+      // Para admin, usar un ID genérico si no hay user.id
+      const adminUserId = user?.id || 'admin-user-' + Date.now();
+      
       const requestBody = {
         agent_id: agentId,
-        user_id: user?.id || 'mock-admin-id',
+        user_id: adminUserId,
         is_admin: true,
         status: 'approved'
       };

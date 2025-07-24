@@ -95,8 +95,9 @@ Deno.serve(async (req) => {
       })
     }
 
-    if (!user_id) {
-      return new Response(JSON.stringify({ error: 'User ID is required' }), {
+    // For admin operations, user_id is not strictly required
+    if (!user_id && !is_admin) {
+      return new Response(JSON.stringify({ error: 'User ID is required for non-admin operations' }), {
         status: 400,
         headers: securityHeaders
       })
