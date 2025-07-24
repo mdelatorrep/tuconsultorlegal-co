@@ -2,12 +2,16 @@ import { useState, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Upload, FileText, AlertTriangle, CheckCircle, Eye, Loader2, ArrowLeft, Home } from "lucide-react";
+import { Upload, FileText, AlertTriangle, CheckCircle, Eye, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import UnifiedSidebar from "../UnifiedSidebar";
 
 interface AnalyzeModuleProps {
-  onBack?: () => void;
+  user: any;
+  currentView: string;
+  onViewChange: (view: string) => void;
+  onLogout: () => void;
 }
 
 interface AnalysisResult {
@@ -28,7 +32,7 @@ interface AnalysisResult {
   timestamp: string;
 }
 
-export default function AnalyzeModule({ onBack }: AnalyzeModuleProps) {
+export default function AnalyzeModule({ user, currentView, onViewChange, onLogout }: AnalyzeModuleProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -127,33 +131,12 @@ export default function AnalyzeModule({ onBack }: AnalyzeModuleProps) {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
-        <Sidebar className="w-64">
-          <SidebarContent>
-            {/* Header del Sidebar */}
-            <div className="p-4 border-b">
-              <h2 className="text-lg font-semibold text-foreground">Análisis de Documentos</h2>
-              <p className="text-sm text-muted-foreground">IA Legal Pro</p>
-            </div>
-
-            {/* Menu Items */}
-            <SidebarGroup>
-              <SidebarGroupLabel>Navegación</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton 
-                      onClick={onBack}
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors hover:bg-muted"
-                    >
-                      <Home className="h-4 w-4" />
-                      <span>Volver al Dashboard</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </SidebarContent>
-        </Sidebar>
+        <UnifiedSidebar 
+          user={user}
+          currentView={currentView}
+          onViewChange={onViewChange}
+          onLogout={onLogout}
+        />
 
         {/* Main Content */}
         <main className="flex-1">

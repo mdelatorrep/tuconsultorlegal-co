@@ -3,10 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Search, BookOpen, FileText, Loader2, ArrowLeft, Home } from "lucide-react";
+import { Search, BookOpen, FileText, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import UnifiedSidebar from "../UnifiedSidebar";
 
 interface ResearchResult {
   query: string;
@@ -16,10 +17,13 @@ interface ResearchResult {
 }
 
 interface ResearchModuleProps {
-  onBack?: () => void;
+  user: any;
+  currentView: string;
+  onViewChange: (view: string) => void;
+  onLogout: () => void;
 }
 
-export default function ResearchModule({ onBack }: ResearchModuleProps) {
+export default function ResearchModule({ user, currentView, onViewChange, onLogout }: ResearchModuleProps) {
   const [query, setQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<ResearchResult[]>([]);
@@ -75,33 +79,12 @@ export default function ResearchModule({ onBack }: ResearchModuleProps) {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
-        <Sidebar className="w-64">
-          <SidebarContent>
-            {/* Header del Sidebar */}
-            <div className="p-4 border-b">
-              <h2 className="text-lg font-semibold text-foreground">Investigación Jurídica</h2>
-              <p className="text-sm text-muted-foreground">IA Legal Pro</p>
-            </div>
-
-            {/* Menu Items */}
-            <SidebarGroup>
-              <SidebarGroupLabel>Navegación</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton 
-                      onClick={onBack}
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors hover:bg-muted"
-                    >
-                      <Home className="h-4 w-4" />
-                      <span>Volver al Dashboard</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </SidebarContent>
-        </Sidebar>
+        <UnifiedSidebar 
+          user={user}
+          currentView={currentView}
+          onViewChange={onViewChange}
+          onLogout={onLogout}
+        />
 
         {/* Main Content */}
         <main className="flex-1">

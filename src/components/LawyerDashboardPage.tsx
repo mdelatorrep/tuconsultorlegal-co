@@ -213,19 +213,19 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
       case 'agent-manager':
         return <AgentManagerPage onBack={() => setCurrentView('dashboard')} lawyerData={user} />;
       case 'training':
-        return <LawyerTrainingPage onBack={() => setCurrentView('dashboard')} lawyerData={user} />;
+        return <LawyerTrainingPage user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as any)} onLogout={logout} lawyerData={user} />;
       case 'blog-manager':
         return <LawyerBlogManager onBack={() => setCurrentView('dashboard')} lawyerData={user} />;
       case 'research':
-        return <ResearchModule onBack={() => setCurrentView('dashboard')} />;
+        return <ResearchModule user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as any)} onLogout={logout} />;
       case 'analyze':
-        return <AnalyzeModule onBack={() => setCurrentView('dashboard')} />;
+        return <AnalyzeModule user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as any)} onLogout={logout} />;
       case 'draft':
-        return <DraftModule onBack={() => setCurrentView('dashboard')} />;
+        return <DraftModule user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as any)} onLogout={logout} />;
       case 'strategize':
-        return <StrategizeModule onBack={() => setCurrentView('dashboard')} />;
+        return <StrategizeModule user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as any)} onLogout={logout} />;
       case 'integrations':
-        return <IntegrationsModule onBack={() => setCurrentView('dashboard')} />;
+        return <IntegrationsModule user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as any)} onLogout={logout} />;
       case 'stats':
         return <LawyerStatsSection />;
       default:

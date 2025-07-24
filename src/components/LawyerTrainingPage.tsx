@@ -22,26 +22,30 @@ import {
   Home
 } from "lucide-react";
 import AILegalTrainingSystem from "./AILegalTrainingSystem";
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import UnifiedSidebar from "./UnifiedSidebar";
 
 interface LawyerTrainingPageProps {
-  onBack: () => void;
+  user: any;
+  currentView: string;
+  onViewChange: (view: string) => void;
+  onLogout: () => void;
   lawyerData: any;
 }
 
-export default function LawyerTrainingPage({ onBack, lawyerData }: LawyerTrainingPageProps) {
-  const [currentView, setCurrentView] = useState<'overview' | 'training'>('overview');
+export default function LawyerTrainingPage({ user, currentView, onViewChange, onLogout, lawyerData }: LawyerTrainingPageProps) {
+  const [trainingView, setTrainingView] = useState<'overview' | 'training'>('overview');
 
   const startCertification = () => {
-    setCurrentView('training');
+    setTrainingView('training');
   };
 
-  if (currentView === 'training') {
+  if (trainingView === 'training') {
     return (
       <AILegalTrainingSystem
         lawyerId={lawyerData?.id || ''}
         lawyerData={lawyerData}
-        onBack={() => setCurrentView('overview')}
+        onBack={() => setTrainingView('overview')}
       />
     );
   }
@@ -49,33 +53,12 @@ export default function LawyerTrainingPage({ onBack, lawyerData }: LawyerTrainin
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
-        <Sidebar className="w-64">
-          <SidebarContent>
-            {/* Header del Sidebar */}
-            <div className="p-4 border-b">
-              <h2 className="text-lg font-semibold text-foreground">Formación IA Legal</h2>
-              <p className="text-sm text-muted-foreground">IA Legal Pro</p>
-            </div>
-
-            {/* Menu Items */}
-            <SidebarGroup>
-              <SidebarGroupLabel>Navegación</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton 
-                      onClick={onBack}
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors hover:bg-muted"
-                    >
-                      <Home className="h-4 w-4" />
-                      <span>Volver al Dashboard</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </SidebarContent>
-        </Sidebar>
+        <UnifiedSidebar 
+          user={user}
+          currentView={currentView}
+          onViewChange={onViewChange}
+          onLogout={onLogout}
+        />
 
         {/* Main Content */}
         <main className="flex-1">

@@ -3,12 +3,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Brain, Target, AlertTriangle, CheckCircle, Scale, Loader2, ArrowLeft, Home } from "lucide-react";
+import { Brain, Target, AlertTriangle, CheckCircle, Scale, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import UnifiedSidebar from "../UnifiedSidebar";
 
 interface StrategizeModuleProps {
-  onBack?: () => void;
+  user: any;
+  currentView: string;
+  onViewChange: (view: string) => void;
+  onLogout: () => void;
 }
 
 interface StrategicAnalysis {
@@ -38,7 +42,7 @@ interface StrategicAnalysis {
   timestamp: string;
 }
 
-export default function StrategizeModule({ onBack }: StrategizeModuleProps) {
+export default function StrategizeModule({ user, currentView, onViewChange, onLogout }: StrategizeModuleProps) {
   const [caseDescription, setCaseDescription] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analyses, setAnalyses] = useState<StrategicAnalysis[]>([]);
@@ -188,33 +192,12 @@ export default function StrategizeModule({ onBack }: StrategizeModuleProps) {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
-        <Sidebar className="w-64">
-          <SidebarContent>
-            {/* Header del Sidebar */}
-            <div className="p-4 border-b">
-              <h2 className="text-lg font-semibold text-foreground">Asistente Estratégico</h2>
-              <p className="text-sm text-muted-foreground">IA Legal Pro</p>
-            </div>
-
-            {/* Menu Items */}
-            <SidebarGroup>
-              <SidebarGroupLabel>Navegación</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton 
-                      onClick={onBack}
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors hover:bg-muted"
-                    >
-                      <Home className="h-4 w-4" />
-                      <span>Volver al Dashboard</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </SidebarContent>
-        </Sidebar>
+        <UnifiedSidebar 
+          user={user}
+          currentView={currentView}
+          onViewChange={onViewChange}
+          onLogout={onLogout}
+        />
 
         {/* Main Content */}
         <main className="flex-1">

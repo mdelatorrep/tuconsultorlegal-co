@@ -4,12 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { PenTool, FileText, Download, Copy, Loader2, ArrowLeft, Home } from "lucide-react";
+import { PenTool, FileText, Download, Copy, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import UnifiedSidebar from "../UnifiedSidebar";
 
 interface DraftModuleProps {
-  onBack?: () => void;
+  user: any;
+  currentView: string;
+  onViewChange: (view: string) => void;
+  onLogout: () => void;
 }
 
 interface DraftResult {
@@ -30,7 +34,7 @@ const DOCUMENT_TYPES = [
   { value: "documento_personalizado", label: "Documento Personalizado" }
 ];
 
-export default function DraftModule({ onBack }: DraftModuleProps) {
+export default function DraftModule({ user, currentView, onViewChange, onLogout }: DraftModuleProps) {
   const [prompt, setPrompt] = useState("");
   const [documentType, setDocumentType] = useState("");
   const [isDrafting, setIsDrafting] = useState(false);
@@ -146,33 +150,12 @@ El presente contrato se regirá por las leyes de la República de Colombia.
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
-        <Sidebar className="w-64">
-          <SidebarContent>
-            {/* Header del Sidebar */}
-            <div className="p-4 border-b">
-              <h2 className="text-lg font-semibold text-foreground">Redacción Asistida</h2>
-              <p className="text-sm text-muted-foreground">IA Legal Pro</p>
-            </div>
-
-            {/* Menu Items */}
-            <SidebarGroup>
-              <SidebarGroupLabel>Navegación</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton 
-                      onClick={onBack}
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors hover:bg-muted"
-                    >
-                      <Home className="h-4 w-4" />
-                      <span>Volver al Dashboard</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </SidebarContent>
-        </Sidebar>
+        <UnifiedSidebar 
+          user={user}
+          currentView={currentView}
+          onViewChange={onViewChange}
+          onLogout={onLogout}
+        />
 
         {/* Main Content */}
         <main className="flex-1">
