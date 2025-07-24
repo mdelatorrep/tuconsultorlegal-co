@@ -18,9 +18,11 @@ import {
   Award,
   Video,
   Download,
-  ChevronRight
+  ChevronRight,
+  Home
 } from "lucide-react";
 import AILegalTrainingSystem from "./AILegalTrainingSystem";
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 
 interface LawyerTrainingPageProps {
   onBack: () => void;
@@ -45,23 +47,61 @@ export default function LawyerTrainingPage({ onBack, lawyerData }: LawyerTrainin
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <Button variant="ghost" onClick={onBack} className="mb-4">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Volver al Dashboard
-          </Button>
-          <h1 className="text-2xl font-bold text-primary flex items-center gap-2">
-            <Brain className="w-6 h-6" />
-            Centro de Formación IA Legal
-          </h1>
-          <p className="text-muted-foreground">
-            Programa de Certificación IA Lawyer Fundamentals
-          </p>
-        </div>
-      </div>
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-background">
+        <Sidebar className="w-64">
+          <SidebarContent>
+            {/* Header del Sidebar */}
+            <div className="p-4 border-b">
+              <h2 className="text-lg font-semibold text-foreground">Formación IA Legal</h2>
+              <p className="text-sm text-muted-foreground">IA Legal Pro</p>
+            </div>
+
+            {/* Menu Items */}
+            <SidebarGroup>
+              <SidebarGroupLabel>Navegación</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton 
+                      onClick={onBack}
+                      className="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors hover:bg-muted"
+                    >
+                      <Home className="h-4 w-4" />
+                      <span>Volver al Dashboard</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </SidebarContent>
+        </Sidebar>
+
+        {/* Main Content */}
+        <main className="flex-1">
+          {/* Header with Sidebar Toggle */}
+          <header className="h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="flex h-14 items-center px-4">
+              <SidebarTrigger className="mr-4" />
+              <h1 className="text-lg font-semibold">Centro de Formación IA Legal</h1>
+            </div>
+          </header>
+
+          <div className="container mx-auto px-6 py-6">
+            <div className="max-w-6xl mx-auto">
+              <div className="space-y-6">
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h1 className="text-2xl font-bold text-primary flex items-center gap-2">
+                      <Brain className="w-6 h-6" />
+                      Centro de Formación IA Legal
+                    </h1>
+                    <p className="text-muted-foreground">
+                      Programa de Certificación IA Lawyer Fundamentals
+                    </p>
+                  </div>
+                </div>
 
       {/* Welcome Section */}
       <Card className="border-2 border-primary/20 bg-gradient-to-r from-primary/5 to-blue-50">
@@ -306,6 +346,11 @@ export default function LawyerTrainingPage({ onBack, lawyerData }: LawyerTrainin
           Comenzar Certificación Ahora
         </Button>
       </div>
-    </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </SidebarProvider>
   );
 }

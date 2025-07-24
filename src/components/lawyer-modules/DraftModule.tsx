@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { PenTool, FileText, Download, Copy, Loader2, ArrowLeft } from "lucide-react";
+import { PenTool, FileText, Download, Copy, Loader2, ArrowLeft, Home } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 
 interface DraftModuleProps {
   onBack?: () => void;
@@ -143,34 +144,58 @@ El presente contrato se regirá por las leyes de la República de Colombia.
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-6 py-6">
-        <div className="max-w-6xl mx-auto">
-          {/* Header with back button */}
-          <div className="flex items-center gap-4 mb-6">
-            {onBack && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onBack}
-                className="flex items-center gap-2"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Volver al Dashboard
-              </Button>
-            )}
-          </div>
-
-          <div className="space-y-6">
-            <div className="flex items-center gap-3 mb-6">
-              <PenTool className="h-8 w-8 text-primary" />
-              <div>
-                <h2 className="text-2xl font-bold text-primary">Redacción Asistida</h2>
-                <p className="text-muted-foreground">
-                  Genera borradores profesionales de documentos legales con IA
-                </p>
-              </div>
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-background">
+        <Sidebar className="w-64">
+          <SidebarContent>
+            {/* Header del Sidebar */}
+            <div className="p-4 border-b">
+              <h2 className="text-lg font-semibold text-foreground">Redacción Asistida</h2>
+              <p className="text-sm text-muted-foreground">IA Legal Pro</p>
             </div>
+
+            {/* Menu Items */}
+            <SidebarGroup>
+              <SidebarGroupLabel>Navegación</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton 
+                      onClick={onBack}
+                      className="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors hover:bg-muted"
+                    >
+                      <Home className="h-4 w-4" />
+                      <span>Volver al Dashboard</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </SidebarContent>
+        </Sidebar>
+
+        {/* Main Content */}
+        <main className="flex-1">
+          {/* Header with Sidebar Toggle */}
+          <header className="h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="flex h-14 items-center px-4">
+              <SidebarTrigger className="mr-4" />
+              <h1 className="text-lg font-semibold">Redacción Asistida</h1>
+            </div>
+          </header>
+
+          <div className="container mx-auto px-6 py-6">
+            <div className="max-w-6xl mx-auto">
+              <div className="space-y-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <PenTool className="h-8 w-8 text-primary" />
+                  <div>
+                    <h2 className="text-2xl font-bold text-primary">Redacción Asistida</h2>
+                    <p className="text-muted-foreground">
+                      Genera borradores profesionales de documentos legales con IA
+                    </p>
+                  </div>
+                </div>
 
       {/* Draft Interface */}
       <Card>
@@ -309,9 +334,11 @@ El presente contrato se regirá por las leyes de la República de Colombia.
           </CardContent>
         </Card>
       )}
+              </div>
+            </div>
           </div>
-        </div>
+        </main>
       </div>
-    </div>
+    </SidebarProvider>
   );
 }
