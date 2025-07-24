@@ -249,6 +249,7 @@ function AdminPage() {
 
   const loadCategories = async () => {
     try {
+      console.log('🔍 Cargando categorías desde document_categories...');
       const { data, error } = await supabase
         .from('document_categories')
         .select('name')
@@ -257,24 +258,32 @@ function AdminPage() {
         .order('display_order')
         .order('name');
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error en query de categorías:', error);
+        throw error;
+      }
+      
+      console.log('📊 Datos de categorías recibidos:', data);
       
       const categoriesData = data?.map(cat => ({
         name: cat.name,
-        value: cat.name.toLowerCase()
+        value: cat.name.toLowerCase().replace(/\s+/g, '_')
       })) || [];
 
+      console.log('✅ Categorías procesadas:', categoriesData);
       setCategories(categoriesData);
     } catch (error) {
-      console.error('Error loading categories:', error);
+      console.error('❌ Error loading categories:', error);
       // Fallback a categorías por defecto si hay error
-      setCategories([
+      const fallbackCategories = [
         { name: 'Contratos', value: 'contratos' },
         { name: 'Laboral', value: 'laboral' },
         { name: 'Civil', value: 'civil' },
         { name: 'Comercial', value: 'comercial' },
         { name: 'Penal', value: 'penal' }
-      ]);
+      ];
+      console.log('🔄 Usando categorías fallback:', fallbackCategories);
+      setCategories(fallbackCategories);
     }
   };
 
@@ -403,6 +412,8 @@ function AdminPage() {
   };
 
   const handleEditAgent = (agent: any) => {
+    console.log('📝 Abriendo editor para agente:', agent);
+    console.log('📂 Estado actual de categorías:', categories);
     setEditingAgent({ ...agent });
     setIsEditDialogOpen(true);
   };
@@ -1501,11 +1512,14 @@ function AdminPage() {
                       <SelectValue placeholder="Seleccionar categoría" />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category.value} value={category.value}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
+                      {(() => {
+                        console.log('🎯 Renderizando categorías en dropdown:', categories);
+                        return categories.map((category) => (
+                          <SelectItem key={category.value} value={category.value}>
+                            {category.name}
+                          </SelectItem>
+                        ));
+                      })()}
                     </SelectContent>
                   </Select>
                 </div>
