@@ -120,6 +120,7 @@ function AdminPage() {
   const [contactMessages, setContactMessages] = useState<ContactMessage[]>([]);
   const [tokenRequests, setTokenRequests] = useState<TokenRequest[]>([]);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+  const [categories, setCategories] = useState<{name: string; value: string}[]>([]);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [pendingAgentsCount, setPendingAgentsCount] = useState(0);
   const [pendingBlogsCount, setPendingBlogsCount] = useState(0);
@@ -162,7 +163,8 @@ function AdminPage() {
         loadAgents(),
         loadTokenRequests(),
         loadContactMessages(),
-        loadBlogPosts()
+        loadBlogPosts(),
+        loadCategories()
       ]);
     } catch (error) {
       console.error('Error loading admin data:', error);
@@ -242,6 +244,37 @@ function AdminPage() {
       setPendingBlogsCount(pending);
     } catch (error) {
       console.error('Error loading blog posts:', error);
+    }
+  };
+
+  const loadCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('document_categories')
+        .select('name')
+        .eq('is_active', true)
+        .in('category_type', ['document', 'both'])
+        .order('display_order')
+        .order('name');
+
+      if (error) throw error;
+      
+      const categoriesData = data?.map(cat => ({
+        name: cat.name,
+        value: cat.name.toLowerCase()
+      })) || [];
+
+      setCategories(categoriesData);
+    } catch (error) {
+      console.error('Error loading categories:', error);
+      // Fallback a categorías por defecto si hay error
+      setCategories([
+        { name: 'Contratos', value: 'contratos' },
+        { name: 'Laboral', value: 'laboral' },
+        { name: 'Civil', value: 'civil' },
+        { name: 'Comercial', value: 'comercial' },
+        { name: 'Penal', value: 'penal' }
+      ]);
     }
   };
 
