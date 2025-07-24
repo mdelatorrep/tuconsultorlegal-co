@@ -276,6 +276,11 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
           title: "Estrategia",
           icon: Target,
           view: "strategize" as const
+        },
+        {
+          title: "Integraciones",
+          icon: Settings,
+          view: "integrations" as const
         }
       ]
     },
@@ -291,11 +296,6 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
           title: "Gestionar Agentes",
           icon: Settings,
           view: "agent-manager" as const
-        },
-        {
-          title: "Integraciones",
-          icon: Settings,
-          view: "integrations" as const
         }
       ]
     }] : []),
