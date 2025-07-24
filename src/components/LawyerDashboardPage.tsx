@@ -486,15 +486,18 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
               </Button>
 
               {/* Blog Manager Button - Available for all lawyers */}
-              <Button
-                onClick={() => setCurrentView('blog-manager')}
-                variant="outline"
-                className="flex items-center gap-2 justify-center"
-                size={isMobile ? "default" : "lg"}
-              >
-                <BookOpen className="h-4 w-4" />
-                <span className={isMobile ? "text-sm" : ""}>{isMobile ? "Blog" : "Gestión Blog"}</span>
-              </Button>
+              {/* Blog Manager Access - Only show if lawyer has permission */}
+              {user?.canCreateBlogs && (
+                <Button
+                  onClick={() => setCurrentView('blog-manager')}
+                  variant="outline"
+                  className="flex items-center gap-2 justify-center"
+                  size={isMobile ? "default" : "lg"}
+                >
+                  <BookOpen className="h-4 w-4" />
+                  <span className={isMobile ? "text-sm" : ""}>{isMobile ? "Blog" : "Gestión Blog"}</span>
+                </Button>
+              )}
 
               {/* Agent Creator Access - Only show if lawyer has permission */}
               {user?.canCreateAgents && (

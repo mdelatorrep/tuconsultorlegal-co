@@ -9,6 +9,7 @@ interface LawyerUser {
   email: string;
   name: string;
   canCreateAgents: boolean;
+  canCreateBlogs: boolean;
 }
 
 export const useLawyerAuth = () => {
@@ -74,6 +75,8 @@ export const useLawyerAuth = () => {
 
       if (data && data.success && data.user) {
         console.log('Login successful! User data:', data.user);
+        console.log('User permissions - canCreateAgents:', data.user.canCreateAgents);
+        console.log('User permissions - canCreateBlogs:', data.user.canCreateBlogs);
         
         AuthStorage.setLawyerAuth({
           token: token.trim(),
