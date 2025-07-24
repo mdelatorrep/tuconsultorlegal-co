@@ -199,6 +199,82 @@ function AdminPage() {
     }
   };
 
+  // Función para copiar información del abogado al portapapeles
+  const handleCopyLawyerInfo = async (lawyer: Lawyer) => {
+    try {
+      const lawyerInfo = `
+Información del Abogado:
+========================
+Nombre: ${lawyer.full_name}
+Email: ${lawyer.email}
+Teléfono: ${lawyer.phone_number || 'No especificado'}
+ID: ${lawyer.id}
+Token de Acceso: ${lawyer.access_token || 'No disponible'}
+Estado: ${lawyer.active ? 'Activo' : 'Inactivo'}
+Puede crear agentes: ${lawyer.can_create_agents ? 'Sí' : 'No'}
+Puede crear blogs: ${lawyer.can_create_blogs ? 'Sí' : 'No'}
+Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { locale: es })}
+Último login: ${lawyer.last_login_at ? format(new Date(lawyer.last_login_at), 'dd/MM/yyyy HH:mm', { locale: es }) : 'Nunca'}
+      `.trim();
+
+      await navigator.clipboard.writeText(lawyerInfo);
+      
+      toast({
+        title: "Información copiada",
+        description: `Información de ${lawyer.full_name} copiada al portapapeles`,
+      });
+    } catch (error) {
+      console.error('Error copying lawyer info:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo copiar la información",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Función para eliminar abogado
+  const handleDeleteLawyer = async (lawyer: Lawyer) => {
+    try {
+      console.log('🗑️ Iniciando eliminación de abogado:', lawyer.full_name);
+
+      const response = await supabase.functions.invoke('delete-lawyer', {
+        body: {
+          lawyer_id: lawyer.id, // Usando el ID del abogado
+          lawyerId: lawyer.id    // También enviando como lawyerId para compatibilidad
+        }
+      });
+
+      console.log('Response from delete-lawyer:', response);
+
+      if (response.error) {
+        console.error('Error from delete-lawyer function:', response.error);
+        throw new Error(response.error.message || 'Error al eliminar abogado');
+      }
+
+      if (response.data?.error) {
+        console.error('Error in response data:', response.data.error);
+        throw new Error(response.data.error);
+      }
+
+      toast({
+        title: "Abogado eliminado",
+        description: `${lawyer.full_name} ha sido eliminado exitosamente`,
+      });
+
+      // Recargar la lista de abogados
+      await loadLawyers();
+
+    } catch (error) {
+      console.error('Error deleting lawyer:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "No se pudo eliminar el abogado",
+        variant: "destructive",
+      });
+    }
+  };
+
   const loadAgents = async () => {
     try {
       const { data, error } = await supabase
@@ -687,12 +763,39 @@ function AdminPage() {
                             >
                               <Edit className="w-3 h-3" />
                             </Button>
-                            <Button variant="outline" size="sm" title="Copiar información">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              title="Copiar información"
+                              onClick={() => handleCopyLawyerInfo(lawyer)}
+                            >
                               <Copy className="w-3 h-3" />
                             </Button>
-                            <Button variant="outline" size="sm" title="Eliminar abogado">
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="outline" size="sm" title="Eliminar abogado">
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>¿Eliminar abogado?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Esta acción eliminará permanentemente la cuenta de <strong>{lawyer.full_name}</strong> 
+                                    ({lawyer.email}). Esta acción no se puede deshacer.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction 
+                                    onClick={() => handleDeleteLawyer(lawyer)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Eliminar
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </div>
                         </TableCell>
                       </TableRow>
