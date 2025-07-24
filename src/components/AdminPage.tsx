@@ -655,22 +655,34 @@ function AdminPage() {
                           </div>
                         </TableCell>
                         
-                        <TableCell className="hidden md:table-cell">
-                          <div className="flex gap-1">
-                            {lawyer.can_create_agents && (
-                              <Badge variant="outline" className="text-xs">
-                                <Bot className="w-3 h-3 mr-1" />
-                                Agentes
-                              </Badge>
-                            )}
-                            {lawyer.can_create_blogs && (
-                              <Badge variant="outline" className="text-xs">
-                                <BookOpen className="w-3 h-3 mr-1" />
-                                Blog
-                              </Badge>
-                            )}
-                          </div>
-                        </TableCell>
+                         <TableCell className="hidden md:table-cell">
+                           <div className="flex flex-wrap gap-1">
+                             {lawyer.can_create_agents && (
+                               <Badge variant="outline" className="text-xs">
+                                 <Bot className="w-3 h-3 mr-1" />
+                                 Agentes
+                               </Badge>
+                             )}
+                             {lawyer.can_create_blogs && (
+                               <Badge variant="outline" className="text-xs">
+                                 <BookOpen className="w-3 h-3 mr-1" />
+                                 Blog
+                               </Badge>
+                             )}
+                             {lawyer.can_see_business_stats && (
+                               <Badge variant="outline" className="text-xs">
+                                 <BarChart3 className="w-3 h-3 mr-1" />
+                                 Stats
+                               </Badge>
+                             )}
+                             {!lawyer.can_create_agents && !lawyer.can_create_blogs && !lawyer.can_see_business_stats && (
+                               <Badge variant="secondary" className="text-xs">
+                                 <X className="w-3 h-3 mr-1" />
+                                 Sin permisos
+                               </Badge>
+                             )}
+                           </div>
+                         </TableCell>
                         
                         <TableCell>
                           <Badge variant={(lawyer as any).active ? "default" : "secondary"}>

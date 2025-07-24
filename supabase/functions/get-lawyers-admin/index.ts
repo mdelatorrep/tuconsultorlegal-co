@@ -51,6 +51,7 @@ Deno.serve(async (req) => {
       phone_number: lawyer.phone_number,
       active: lawyer.active,
       can_create_agents: lawyer.can_create_agents,
+      can_create_blogs: lawyer.can_create_blogs,
       created_at: lawyer.created_at,
       last_login_at: lawyer.last_login_at,
       access_token: lawyer.access_token // For display purposes only
