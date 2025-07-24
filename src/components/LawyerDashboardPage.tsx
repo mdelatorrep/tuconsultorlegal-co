@@ -306,14 +306,19 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
           title: "Formación IA",
           icon: Brain,
           view: "training" as const
-        },
-        ...(user?.canCreateBlogs ? [{
+        }
+      ]
+    },
+    ...(user?.canCreateBlogs ? [{
+      title: "Contenido",
+      items: [
+        {
           title: "Gestión Blog",
           icon: BookOpen,
           view: "blog-manager" as const
-        }] : [])
+        }
       ]
-    },
+    }] : []),
     {
       title: "Estadísticas",
       items: [
