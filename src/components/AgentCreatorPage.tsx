@@ -81,6 +81,8 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         .from('document_categories')
         .select('name')
         .eq('is_active', true)
+        .in('category_type', ['document', 'both'])
+        .order('display_order')
         .order('name');
 
       if (error) {
