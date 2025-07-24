@@ -393,16 +393,27 @@ function AdminPage() {
 
   const handleSuspendAgent = async (agentId: string) => {
     try {
-      const { data, error } = await supabase.functions.invoke('update-agent', {
-        headers: getAuthHeaders(),
-        body: {
-          agent_id: agentId,
-          status: 'suspended'
-        }
-      });
+      console.log('🚀 Iniciando suspensión de agente:', agentId);
+      console.log('👤 Usuario actual:', user);
+      
+      // **NUEVO SISTEMA**: Usar Supabase cliente directo con RLS y roles unificados
+      const { data: updatedAgent, error } = await supabase
+        .from('legal_agents')
+        .update({ 
+          status: 'suspended',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', agentId)
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error suspendiendo agente:', error);
+        throw error;
+      }
 
+      console.log('✅ Agente suspendido exitosamente:', updatedAgent);
+      
       toast({
         title: "Agente suspendido",
         description: "El agente ha sido suspendido temporalmente",
@@ -410,6 +421,7 @@ function AdminPage() {
       
       await loadAgents();
     } catch (error: any) {
+      console.error('❌ Error completo en handleSuspendAgent:', error);
       toast({
         title: "Error",
         description: error.message || "Error al suspender el agente",
