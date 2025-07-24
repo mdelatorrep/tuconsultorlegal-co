@@ -144,6 +144,13 @@ function AdminPage() {
 
   const { isAuthenticated, isLoading: authLoading, user, session, getAuthHeaders, logout } = useNativeAdminAuth();
 
+  console.log('🔍 Estado actual del admin panel:', {
+    isAuthenticated,
+    authLoading,
+    user: user ? { id: user.id, email: user.email } : null,
+    session: session ? 'presente' : 'ausente'
+  });
+
   useEffect(() => {
     if (isAuthenticated && !authLoading) {
       loadData();
@@ -190,14 +197,28 @@ function AdminPage() {
 
   const loadAgents = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke('get-agents-admin');
+      console.log('🔄 Cargando agentes legales...');
+      const { data, error } = await supabase.functions.invoke('get-agents-admin', {
+        headers: getAuthHeaders()
+      });
+
       if (error) throw error;
+      
+      console.log('📊 Agentes recibidos:', data?.length || 0);
+      console.log('📈 Agentes por estado:', {
+        pending_review: data?.filter((a: any) => a.status === 'pending_review').length || 0,
+        approved: data?.filter((a: any) => a.status === 'approved').length || 0,
+        active: data?.filter((a: any) => a.status === 'active').length || 0,
+        suspended: data?.filter((a: any) => a.status === 'suspended').length || 0
+      });
+
       setAgents(data || []);
       
       const pending = data?.filter((agent: any) => agent.status === 'pending_review').length || 0;
       setPendingAgentsCount(pending);
+      console.log('⏳ Agentes pendientes de revisión:', pending);
     } catch (error) {
-      console.error('Error loading agents:', error);
+      console.error('❌ Error loading agents:', error);
     }
   };
 
@@ -1255,7 +1276,10 @@ function AdminPage() {
                               <Button 
                                 size="sm" 
                                 variant="default"
-                                onClick={() => handleApproveAgent(agent.id)}
+                                onClick={() => {
+                                  console.log('🎯 Botón aprobar clickeado para agente:', agent.id, agent.name);
+                                  handleApproveAgent(agent.id);
+                                }}
                                 className="bg-green-600 hover:bg-green-700"
                               >
                                 <Check className="w-3 h-3 mr-1" />

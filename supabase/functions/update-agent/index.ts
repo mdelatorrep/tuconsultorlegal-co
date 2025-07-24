@@ -132,13 +132,21 @@ Deno.serve(async (req) => {
     let canUpdate = false
     let adminVerified = false
 
-    // Admin can always update
-    if (is_admin) {
-      // For now, accept any authenticated user as admin (consistent with frontend)
-      // This matches the mock admin behavior in useNativeAdminAuth.ts
-      canUpdate = true;
-      adminVerified = true;
-      console.log('Admin access granted (using current auth system)');
+    // Check for admin authentication via JWT token
+    if (is_admin && authHeader) {
+      try {
+        const token = authHeader.replace('Bearer ', '');
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        console.log('JWT payload parsed for admin verification, user ID:', payload.sub);
+        
+        // For now, any authenticated user via Supabase Auth is treated as admin
+        // This matches the behavior in useNativeAdminAuth.ts
+        canUpdate = true;
+        adminVerified = true;
+        console.log('Admin access granted via JWT token');
+      } catch (jwtError) {
+        console.log('Invalid JWT token for admin verification:', jwtError.message);
+      }
     }
     
     // Creator can update their own agents (with some restrictions)
