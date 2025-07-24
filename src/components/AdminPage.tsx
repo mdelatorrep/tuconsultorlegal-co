@@ -48,7 +48,6 @@ interface Lawyer {
   verification_token?: string;
   can_create_agents: boolean;
   can_create_blogs: boolean;
-  can_see_business_stats?: boolean;
   is_locked?: boolean;
   lock_reason?: string;
   active: boolean;
@@ -151,8 +150,7 @@ function AdminPage() {
     email: "",
     phone: "",
     canCreateAgents: false,
-    canCreateBlogs: false,
-    canSeeBusinessStats: false
+    canCreateBlogs: false
   });
 
   const { isAuthenticated, isLoading: authLoading, user, session, getAuthHeaders, logout } = useNativeAdminAuth();
@@ -415,8 +413,7 @@ function AdminPage() {
         email: "", 
         phone: "", 
         canCreateAgents: false, 
-        canCreateBlogs: false,
-        canSeeBusinessStats: false 
+        canCreateBlogs: false
       });
       await loadLawyers();
       
@@ -598,13 +595,6 @@ function AdminPage() {
                     <Label className="text-xs">Crear Blogs</Label>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    checked={newLawyer.canSeeBusinessStats}
-                    onCheckedChange={(checked) => setNewLawyer(prev => ({ ...prev, canSeeBusinessStats: checked }))}
-                  />
-                  <Label className="text-xs">Ver Estadísticas</Label>
-                </div>
                 <Button 
                   onClick={createLawyer} 
                   disabled={!newLawyer.name || !newLawyer.email || isProcessing}
@@ -669,18 +659,12 @@ function AdminPage() {
                                  Blog
                                </Badge>
                              )}
-                             {lawyer.can_see_business_stats && (
-                               <Badge variant="outline" className="text-xs">
-                                 <BarChart3 className="w-3 h-3 mr-1" />
-                                 Stats
-                               </Badge>
-                             )}
-                             {!lawyer.can_create_agents && !lawyer.can_create_blogs && !lawyer.can_see_business_stats && (
-                               <Badge variant="secondary" className="text-xs">
-                                 <X className="w-3 h-3 mr-1" />
-                                 Sin permisos
-                               </Badge>
-                             )}
+                              {!lawyer.can_create_agents && !lawyer.can_create_blogs && (
+                                <Badge variant="secondary" className="text-xs">
+                                  <X className="w-3 h-3 mr-1" />
+                                  Sin permisos
+                                </Badge>
+                              )}
                            </div>
                          </TableCell>
                         

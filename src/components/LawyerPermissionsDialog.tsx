@@ -12,7 +12,6 @@ import { supabase } from '@/integrations/supabase/client';
 interface LawyerPermissions {
   can_create_agents: boolean;
   can_create_blogs: boolean;
-  can_see_business_stats?: boolean;
 }
 
 interface Lawyer {
@@ -21,7 +20,6 @@ interface Lawyer {
   full_name: string;
   can_create_agents: boolean;
   can_create_blogs: boolean;
-  can_see_business_stats?: boolean;
   active: boolean;
 }
 
@@ -42,8 +40,7 @@ export default function LawyerPermissionsDialog({
 }: LawyerPermissionsDialogProps) {
   const [permissions, setPermissions] = useState<LawyerPermissions>({
     can_create_agents: false,
-    can_create_blogs: false,
-    can_see_business_stats: false
+    can_create_blogs: false
   });
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -52,8 +49,7 @@ export default function LawyerPermissionsDialog({
   if (lawyer && !permissions.can_create_agents && !permissions.can_create_blogs) {
     setPermissions({
       can_create_agents: lawyer.can_create_agents,
-      can_create_blogs: lawyer.can_create_blogs,
-      can_see_business_stats: lawyer.can_see_business_stats || false
+      can_create_blogs: lawyer.can_create_blogs
     });
   }
 
@@ -113,13 +109,6 @@ export default function LawyerPermissionsDialog({
       description: 'Permite al abogado crear y publicar artículos en el blog',
       icon: BookOpen,
       color: 'text-green-600'
-    },
-    {
-      key: 'can_see_business_stats' as keyof LawyerPermissions,
-      label: 'Ver Estadísticas de Negocio',
-      description: 'Permite al abogado acceder a las estadísticas del sistema',
-      icon: BarChart3,
-      color: 'text-purple-600'
     }
   ];
 
