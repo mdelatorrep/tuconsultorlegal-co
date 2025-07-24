@@ -36,21 +36,22 @@ import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Progress } from "./ui/progress";
 import { Separator } from "./ui/separator";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "./ui/sidebar";
+import LawyerPermissionsDialog from './LawyerPermissionsDialog';
 
 interface Lawyer {
   id: string;
   name: string;
   email: string;
+  full_name: string;
   created_at: string;
-  is_verified: boolean;
+  is_verified?: boolean;
   verification_token?: string;
   can_create_agents: boolean;
   can_create_blogs: boolean;
-  can_see_business_stats: boolean;
-  is_locked: boolean;
+  can_see_business_stats?: boolean;
+  is_locked?: boolean;
   lock_reason?: string;
-  active?: boolean;
-  full_name?: string;
+  active: boolean;
   phone_number?: string;
   last_login_at?: string;
   lawyer_id?: string;
@@ -142,6 +143,8 @@ function AdminPage() {
   const [editingAgent, setEditingAgent] = useState<any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [currentView, setCurrentView] = useState('dashboard');
+  const [selectedLawyerForPermissions, setSelectedLawyerForPermissions] = useState<Lawyer | null>(null);
+  const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
 
   const [newLawyer, setNewLawyer] = useState({
     name: "",
@@ -677,13 +680,21 @@ function AdminPage() {
                         
                         <TableCell>
                           <div className="flex items-center gap-1">
-                            <Button variant="outline" size="sm">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                setSelectedLawyerForPermissions(lawyer);
+                                setPermissionsDialogOpen(true);
+                              }}
+                              title="Editar permisos"
+                            >
                               <Edit className="w-3 h-3" />
                             </Button>
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" title="Copiar información">
                               <Copy className="w-3 h-3" />
                             </Button>
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" title="Eliminar abogado">
                               <Trash2 className="w-3 h-3" />
                             </Button>
                           </div>
@@ -1001,6 +1012,18 @@ function AdminPage() {
           </div>
         </main>
       </div>
+
+      {/* Permissions Dialog */}
+      <LawyerPermissionsDialog
+        lawyer={selectedLawyerForPermissions}
+        open={permissionsDialogOpen}
+        onClose={() => {
+          setPermissionsDialogOpen(false);
+          setSelectedLawyerForPermissions(null);
+        }}
+        onPermissionsUpdated={loadLawyers}
+        authHeaders={getAuthHeaders()}
+      />
     </SidebarProvider>
   );
 }
