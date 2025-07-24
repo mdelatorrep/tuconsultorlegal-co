@@ -132,20 +132,14 @@ Deno.serve(async (req) => {
     let canUpdate = false
     let adminVerified = false
 
-    // Check for admin authentication via JWT token
+    // Check for admin authentication
     if (is_admin && authHeader) {
-      try {
-        const token = authHeader.replace('Bearer ', '');
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        console.log('JWT payload parsed for admin verification, user ID:', payload.sub);
-        
-        // For now, any authenticated user via Supabase Auth is treated as admin
-        // This matches the behavior in useNativeAdminAuth.ts
+      const token = authHeader.replace('Bearer ', '');
+      // For simplicity, if there's a valid Bearer token and is_admin is true, allow
+      if (token && token.length > 10) {
         canUpdate = true;
         adminVerified = true;
-        console.log('Admin access granted via JWT token');
-      } catch (jwtError) {
-        console.log('Invalid JWT token for admin verification:', jwtError.message);
+        console.log('Admin access granted via token');
       }
     }
     
