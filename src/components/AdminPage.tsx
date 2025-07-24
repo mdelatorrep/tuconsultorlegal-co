@@ -331,8 +331,8 @@ function AdminPage() {
           email: newLawyer.email,
           phone_number: newLawyer.phone,
           canCreateAgents: newLawyer.canCreateAgents,
-          canCreateBlogs: newLawyer.canCreateBlogs,
-          canSeeBusinessStats: newLawyer.canSeeBusinessStats
+          canCreateBlogs: newLawyer.canCreateBlogs
+          // Nota: canSeeBusinessStats no se almacena en lawyer_tokens
         }
       });
 

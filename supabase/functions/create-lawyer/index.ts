@@ -24,9 +24,11 @@ const securityHeaders = {
 // Validation schema
 const CreateLawyerSchema = z.object({
   email: z.string().email('Invalid email format'),
-  full_name: z.string().min(2, 'Full name must be at least 2 characters'),
+  name: z.string().min(2, 'Name must be at least 2 characters'),
   phone_number: z.string().optional(),
-  can_create_agents: z.boolean().default(false),
+  canCreateAgents: z.boolean().default(false),
+  canCreateBlogs: z.boolean().default(false),
+  // canSeeBusinessStats field is not stored in lawyer_tokens table, so we'll ignore it
 })
 
 // Response utilities
@@ -82,19 +84,62 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Debug: Log environment variables status
-    logger.info('Environment check', {
-      hasSupabaseUrl: !!SUPABASE_URL,
-      hasAnonKey: !!SUPABASE_ANON_KEY,
-      hasServiceKey: !!SUPABASE_SERVICE_ROLE_KEY
-    })
-    
     logger.info('Create lawyer function started')
     
-    // Create service client (no authentication required)
-    const serviceClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+    // **SISTEMA UNIFICADO**: Verificar autenticación y autorización del admin
+    const authHeader = req.headers.get('authorization');
+    logger.info('Auth header received', { hasHeader: !!authHeader, headerPreview: authHeader?.substring(0, 20) + '...' });
     
-    logger.info('Service client created for lawyer creation')
+    if (!authHeader) {
+      return createErrorResponse('Authorization header required', 401);
+    }
+
+    // Create authenticated client using the provided token
+    const authClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: {
+        headers: {
+          authorization: authHeader
+        }
+      }
+    });
+
+    // Create service client for admin operations
+    const serviceClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    
+    // Get the authenticated user
+    const { data: { user: authUser }, error: authError } = await authClient.auth.getUser();
+    
+    logger.info('User authentication check', { 
+      hasUser: !!authUser, 
+      userId: authUser?.id, 
+      userEmail: authUser?.email,
+      authError: authError?.message 
+    });
+    
+    if (authError || !authUser) {
+      logger.error('Authentication failed', authError);
+      return createErrorResponse('Invalid authentication', 401);
+    }
+    
+    // Check if user has admin role using service client
+    const { data: userRoles, error: roleError } = await serviceClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', authUser.id)
+      .in('role', ['admin', 'super_admin']);
+    
+    logger.info('Role verification', { 
+      userId: authUser.id, 
+      foundRoles: userRoles?.map(r => r.role) || [], 
+      roleError: roleError?.message 
+    });
+    
+    if (roleError || !userRoles || userRoles.length === 0) {
+      logger.error('Admin role verification failed', { userId: authUser.id, roleError });
+      return createErrorResponse('Insufficient permissions - Admin role required', 403);
+    }
+    
+    logger.info('Admin authorization verified', { userId: authUser.id, roles: userRoles.map(r => r.role) });
 
     // Parse and validate request body
     let requestBody
@@ -120,7 +165,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    const { email, full_name, phone_number, can_create_agents } = validationResult.data
+    const { email, name, phone_number, canCreateAgents, canCreateBlogs } = validationResult.data
 
     logger.info('Input validation passed, creating lawyer account')
 
@@ -147,17 +192,19 @@ Deno.serve(async (req) => {
 
     logger.info('Creating lawyer token', { tokenLength: accessToken.length })
 
-    // Create lawyer token
+    // Create lawyer token with unified system fields
     const { data: tokenData, error: tokenError } = await serviceClient
       .from('lawyer_tokens')
       .insert({
         access_token: accessToken,
         email: email.toLowerCase(),
-        full_name,
+        full_name: name, // Map name to full_name for database
         phone_number: phone_number || null,
-        can_create_agents,
+        can_create_agents: canCreateAgents,
+        can_create_blogs: canCreateBlogs,
         lawyer_id: crypto.randomUUID(),
-        created_by: null // No admin verification required
+        created_by: authUser.id, // Track which admin created this lawyer
+        active: true
       })
       .select()
       .single()
@@ -171,12 +218,12 @@ Deno.serve(async (req) => {
       )
     }
 
-    logger.info('Lawyer token created successfully', { email })
+    logger.info('Lawyer token created successfully', { email, createdBy: authUser.id })
 
     return createSuccessResponse({
       lawyer: {
         ...tokenData,
-        secure_password: accessToken
+        access_token: accessToken // Return the token for admin reference
       }
     }, 201)
 
