@@ -628,13 +628,17 @@ export type Database = {
           completion_percentage: number
           course_name: string
           created_at: string
+          current_module_id: string | null
           id: string
           is_certified: boolean
+          last_validation_score: number | null
           lawyer_id: string
           modules_completed: Json
           started_at: string
           total_modules: number
           updated_at: string
+          validation_attempts: number | null
+          validation_history: Json | null
         }
         Insert: {
           certificate_id?: string | null
@@ -642,13 +646,17 @@ export type Database = {
           completion_percentage?: number
           course_name?: string
           created_at?: string
+          current_module_id?: string | null
           id?: string
           is_certified?: boolean
+          last_validation_score?: number | null
           lawyer_id: string
           modules_completed?: Json
           started_at?: string
           total_modules?: number
           updated_at?: string
+          validation_attempts?: number | null
+          validation_history?: Json | null
         }
         Update: {
           certificate_id?: string | null
@@ -656,13 +664,17 @@ export type Database = {
           completion_percentage?: number
           course_name?: string
           created_at?: string
+          current_module_id?: string | null
           id?: string
           is_certified?: boolean
+          last_validation_score?: number | null
           lawyer_id?: string
           modules_completed?: Json
           started_at?: string
           total_modules?: number
           updated_at?: string
+          validation_attempts?: number | null
+          validation_history?: Json | null
         }
         Relationships: [
           {
@@ -1086,6 +1098,54 @@ export type Database = {
           description?: string | null
           id?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      training_validations: {
+        Row: {
+          ai_evaluation: Json
+          answers: Json
+          created_at: string
+          id: string
+          lawyer_id: string
+          max_score: number
+          module_id: string
+          module_title: string
+          passed: boolean
+          questions: Json
+          score: number
+          updated_at: string
+          validated_at: string
+        }
+        Insert: {
+          ai_evaluation?: Json
+          answers?: Json
+          created_at?: string
+          id?: string
+          lawyer_id: string
+          max_score?: number
+          module_id: string
+          module_title: string
+          passed?: boolean
+          questions?: Json
+          score?: number
+          updated_at?: string
+          validated_at?: string
+        }
+        Update: {
+          ai_evaluation?: Json
+          answers?: Json
+          created_at?: string
+          id?: string
+          lawyer_id?: string
+          max_score?: number
+          module_id?: string
+          module_title?: string
+          passed?: boolean
+          questions?: Json
+          score?: number
+          updated_at?: string
+          validated_at?: string
         }
         Relationships: []
       }

@@ -137,3 +137,6 @@ verify_jwt = false
 
 [functions.generate-sitemap]
 verify_jwt = false
+
+[functions.ai-training-validator]
+verify_jwt = false
