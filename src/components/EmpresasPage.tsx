@@ -49,7 +49,7 @@ export default function EmpresasPage({ onOpenChat, onNavigate }: EmpresasPagePro
       const { data: agents, error } = await supabase
         .from('legal_agents')
         .select('*')
-        .eq('status', 'active')
+        .in('status', ['active', 'approved']) // Incluir agentes activos y aprobados
         .in('target_audience', ['empresas', 'ambos'])
         .order('category', { ascending: true });
 

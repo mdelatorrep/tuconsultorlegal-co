@@ -66,7 +66,7 @@ export default function LegalConsultationChat() {
       const { data, error } = await supabase
         .from('legal_advisor_agents')
         .select('*')
-        .eq('status', 'active')
+        .in('status', ['active', 'approved']) // Incluir agentes activos y aprobados
         .order('specialization', { ascending: true });
 
       if (error) throw error;
