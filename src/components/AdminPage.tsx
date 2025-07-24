@@ -15,6 +15,7 @@ import OpenAIAgentManager from "./OpenAIAgentManager";
 import LawyerBlogManager from "./LawyerBlogManager";
 import SystemConfigManager from "./SystemConfigManager";
 import KnowledgeBaseManager from "./KnowledgeBaseManager";
+import LawyerTrainingManager from "./LawyerTrainingManager";
 import CategoryManager from "./CategoryManager";
 import { Copy, Users, Bot, BarChart3, Clock, CheckCircle, Lock, Unlock, Trash2, Check, X, Plus, Loader2, MessageCircle, BookOpen, Settings, Zap, Mail, Phone, Bell, LogOut, UserCheck, FileText, AlertCircle, Globe, Eye, EyeOff, Archive, Reply, User2, Timer, CreditCard, ShieldCheck, Activity, Briefcase, Calendar, Building2, Award, Coffee, Sparkles, Gavel, FileCheck, Users2, Target, TrendingUp, BookOpenCheck, Newspaper, PenTool, Send, Flag, CheckSquare, Heart, Star, Laptop, Smartphone, Headphones, HelpCircle, Shield, Zap as ZapIcon, Edit, Save, Tag } from "lucide-react";
 import { format } from "date-fns";
@@ -1340,6 +1341,10 @@ function AdminPage() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+          
+          <TabsContent value="training">
+            <LawyerTrainingManager />
           </TabsContent>
 
           <TabsContent value="openai">
