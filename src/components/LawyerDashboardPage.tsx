@@ -7,7 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Bot, Plus, Settings, LogOut, Scale, Users, TrendingUp, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target } from "lucide-react";
+import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Bot, Plus, Settings, LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home } from "lucide-react";
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import LawyerStatsSection from "./LawyerStatsSection";
 import LawyerLogin from "./LawyerLogin";
 import AgentCreatorPage from "./AgentCreatorPage";
@@ -36,7 +37,6 @@ interface DocumentToken {
   sla_hours?: number;
   sla_deadline?: string;
   sla_status?: string;
-  agent_sla_hours?: number;
 }
 
 interface LawyerDashboardPageProps {
@@ -48,94 +48,128 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const [selectedDocument, setSelectedDocument] = useState<DocumentToken | null>(null);
   const [editedContent, setEditedContent] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
   const [currentView, setCurrentView] = useState<'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager' | 'research' | 'analyze' | 'draft' | 'strategize' | 'integrations'>('dashboard');
   const { toast } = useToast();
   const { isAuthenticated, isLoading: authLoading, user, logout, checkAuthStatus } = useLawyerAuth();
   const isMobile = useIsMobile();
 
+  // Helper functions
+  const getStatusVariant = (status: string) => {
+    switch (status) {
+      case 'solicitado': return 'default';
+      case 'revisado': return 'secondary';
+      case 'revision_usuario': return 'outline';
+      default: return 'outline';
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'solicitado': return 'Solicitado';
+      case 'revisado': return 'Revisado';
+      case 'revision_usuario': return 'Revisión Usuario';
+      default: return status;
+    }
+  };
+
+  const getSlaStatusVariant = (slaStatus?: string) => {
+    switch (slaStatus) {
+      case 'on_time': return 'default';
+      case 'at_risk': return 'outline';
+      case 'overdue': return 'destructive';
+      default: return 'secondary';
+    }
+  };
+
+  const getSlaStatusText = (slaStatus?: string) => {
+    switch (slaStatus) {
+      case 'on_time': return 'A tiempo';
+      case 'at_risk': return 'En riesgo';
+      case 'overdue': return 'Vencido';
+      default: return 'Pendiente';
+    }
+  };
+
   // Fetch documents when authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      fetchPendingDocuments();
+      fetchDocuments();
     }
   }, [isAuthenticated]);
 
-  const fetchPendingDocuments = async () => {
-    setIsLoading(true);
+  const fetchDocuments = async () => {
     try {
-      if (!user) {
-        console.error('No user data available');
-        return;
-      }
-
-      // Get the lawyer token from storage
-      const authData = sessionStorage.getItem('lawyer_token');
-      if (!authData) {
-        console.error('No lawyer token found');
-        toast({
-          title: "Error de autenticación",
-          description: "Token de abogado no encontrado. Por favor, inicia sesión nuevamente.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Use the new edge function to get filtered documents
-      const { data, error } = await supabase.functions.invoke('get-lawyer-documents', {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authData}`
-        }
-      });
+      const { data, error } = await supabase
+        .from('document_tokens')
+        .select('*')
+        .in('status', ['solicitado', 'revision_usuario'])
+        .order('created_at', { ascending: false });
 
       if (error) {
         console.error('Error fetching documents:', error);
-        toast({
-          title: "Error al cargar documentos",
-          description: "No se pudieron cargar los documentos pendientes.",
-          variant: "destructive",
-        });
         return;
       }
 
       setDocuments(data || []);
     } catch (error) {
       console.error('Error:', error);
-      toast({
-        title: "Error al cargar documentos",
-        description: "Ocurrió un error inesperado al cargar los documentos.",
-        variant: "destructive",
-      });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSelectDocument = (document: DocumentToken) => {
-    setSelectedDocument(document);
-    setEditedContent(document.document_content);
+  const handleDocumentClick = (doc: DocumentToken) => {
+    if (selectedDocument?.id === doc.id) {
+      setSelectedDocument(null);
+      setEditedContent("");
+    } else {
+      setSelectedDocument(doc);
+      setEditedContent(doc.document_content);
+    }
   };
 
-  const handleSaveDocument = async () => {
-    if (!selectedDocument) return;
-
-    setIsSaving(true);
+  const handleReviewDocument = async (documentId: string) => {
     try {
       const { error } = await supabase
         .from('document_tokens')
-        .update({ 
-          document_content: editedContent,
-          status: 'en_revision_abogado',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', selectedDocument.id);
+        .update({ status: 'revisado' })
+        .eq('id', documentId);
 
       if (error) {
         console.error('Error updating document:', error);
         toast({
-          title: "Error al guardar",
-          description: "No se pudo guardar el documento.",
+          title: "Error",
+          description: "No se pudo marcar el documento como revisado",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Documento actualizado",
+        description: "El documento ha sido marcado como revisado",
+      });
+
+      await fetchDocuments();
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!selectedDocument) return;
+
+    try {
+      const { error } = await supabase
+        .from('document_tokens')
+        .update({ document_content: editedContent })
+        .eq('id', selectedDocument.id);
+
+      if (error) {
+        console.error('Error saving document:', error);
+        toast({
+          title: "Error",
+          description: "No se pudo guardar el documento",
           variant: "destructive",
         });
         return;
@@ -143,145 +177,22 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
 
       toast({
         title: "Documento guardado",
-        description: "Los cambios han sido guardados exitosamente.",
+        description: "Los cambios han sido guardados exitosamente",
       });
 
-      // Update local state
-      setSelectedDocument({ ...selectedDocument, document_content: editedContent });
-      await fetchPendingDocuments();
+      await fetchDocuments();
     } catch (error) {
       console.error('Error:', error);
-    } finally {
-      setIsSaving(false);
     }
-  };
-
-  const handleApproveDocument = async () => {
-    if (!selectedDocument) return;
-
-    setIsSaving(true);
-    try {
-      const { error } = await supabase
-        .from('document_tokens')
-        .update({ 
-          document_content: editedContent,
-          status: 'revision_usuario',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', selectedDocument.id);
-
-      if (error) {
-        console.error('Error approving document:', error);
-        toast({
-          title: "Error al aprobar",
-          description: "No se pudo aprobar el documento.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      toast({
-        title: "Documento aprobado",
-        description: "El documento ha sido revisado y aprobado.",
-      });
-
-      setSelectedDocument(null);
-      setEditedContent("");
-      await fetchPendingDocuments();
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'solicitado':
-        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">Solicitado</Badge>;
-      case 'en_revision_abogado':
-        return <Badge variant="secondary" className="bg-yellow-50 text-yellow-700 border-yellow-200">En Revisión</Badge>;
-      case 'revisado':
-        return <Badge variant="default" className="bg-green-50 text-green-700 border-green-200">Revisado</Badge>;
-      case 'revision_usuario':
-        return <Badge variant="default" className="bg-purple-50 text-purple-700 border-purple-200">Revisión Usuario</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
-
-  const getSLABadge = (document: DocumentToken) => {
-    if (!document.sla_hours) {
-      return null;
-    }
-
-    const slaDeadline = new Date(document.created_at);
-    slaDeadline.setHours(slaDeadline.getHours() + document.sla_hours);
-    const now = new Date();
-    const timeLeft = slaDeadline.getTime() - now.getTime();
-    const hoursLeft = Math.ceil(timeLeft / (1000 * 60 * 60));
-
-    if (timeLeft <= 0) {
-      return <Badge variant="destructive" className="ml-2">ANS Vencido</Badge>;
-    } else if (hoursLeft <= 2) {
-      return <Badge variant="outline" className="ml-2 bg-orange-50 text-orange-700 border-orange-200">
-        ANS: {hoursLeft}h restantes
-      </Badge>;
-    } else {
-      return <Badge variant="outline" className="ml-2 bg-green-50 text-green-700 border-green-200">
-        ANS: {hoursLeft}h restantes
-      </Badge>;
-    }
-  };
-
-  const getSLAProgress = (document: DocumentToken) => {
-    if (!document.sla_hours) {
-      return null;
-    }
-
-    const created = new Date(document.created_at);
-    const slaDeadline = new Date(created);
-    slaDeadline.setHours(slaDeadline.getHours() + document.sla_hours);
-    const now = new Date();
-    
-    const totalTime = slaDeadline.getTime() - created.getTime();
-    const elapsed = now.getTime() - created.getTime();
-    const progress = Math.min(100, (elapsed / totalTime) * 100);
-    
-    let progressClass = "bg-green-500";
-    if (progress > 80) {
-      progressClass = "bg-red-500";
-    } else if (progress > 60) {
-      progressClass = "bg-orange-500";
-    }
-
-    return (
-      <div className="mt-2">
-        <div className="flex justify-between items-center text-xs text-muted-foreground mb-1">
-          <span>Progreso ANS</span>
-          <span>{Math.round(progress)}%</span>
-        </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div 
-            className={`h-2 rounded-full ${progressClass}`}
-            style={{ width: `${Math.min(100, progress)}%` }}
-          ></div>
-        </div>
-      </div>
-    );
   };
 
   // Show login form if not authenticated
   if (!isAuthenticated) {
-    return <LawyerLogin onLoginSuccess={() => {
-      console.log('Login success callback triggered');
-      // Forzar re-verificación del estado de autenticación
-      checkAuthStatus();
-    }} />;
+    return <LawyerLogin onLoginSuccess={checkAuthStatus} />;
   }
 
-  // Show loading if auth is still loading or documents are loading
-  if (authLoading || isLoading) {
+  // Show loading if auth is still loading
+  if (authLoading) {
     return (
       <div className="container mx-auto px-6 py-20">
         <div className="flex items-center justify-center min-h-[400px]">
@@ -294,386 +205,367 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
     );
   }
 
-  // Show Agent Creator if selected
-  if (currentView === 'agent-creator') {
-    return <AgentCreatorPage onBack={() => setCurrentView('dashboard')} lawyerData={user} />;
-  }
+  // Function to render module content
+  const renderModuleContent = () => {
+    switch (currentView) {
+      case 'agent-creator':
+        return <AgentCreatorPage onBack={() => setCurrentView('dashboard')} lawyerData={user} />;
+      case 'agent-manager':
+        return <AgentManagerPage onBack={() => setCurrentView('dashboard')} lawyerData={user} />;
+      case 'training':
+        return <LawyerTrainingPage onBack={() => setCurrentView('dashboard')} lawyerData={user} />;
+      case 'blog-manager':
+        return <LawyerBlogManager onBack={() => setCurrentView('dashboard')} lawyerData={user} />;
+      case 'research':
+        return <ResearchModule />;
+      case 'analyze':
+        return <AnalyzeModule />;
+      case 'draft':
+        return <DraftModule />;
+      case 'strategize':
+        return <StrategizeModule />;
+      case 'integrations':
+        return <IntegrationsModule />;
+      case 'stats':
+        return <LawyerStatsSection />;
+      default:
+        return null;
+    }
+  };
 
-  // Show Agent Manager if selected
-  if (currentView === 'agent-manager') {
-    return <AgentManagerPage onBack={() => setCurrentView('dashboard')} lawyerData={user} />;
-  }
-
-  // Show Training if selected
-  if (currentView === 'training') {
-    return <LawyerTrainingPage onBack={() => setCurrentView('dashboard')} lawyerData={user} />;
-  }
-
-  // Show Blog Manager if selected
-  if (currentView === 'blog-manager') {
-    return <LawyerBlogManager onBack={() => setCurrentView('dashboard')} lawyerData={user} />;
-  }
-
-  // Show AI Modules
-  if (currentView === 'research') {
+  // If not dashboard view, show module content
+  if (currentView !== 'dashboard') {
     return (
-      <div className="container mx-auto px-6 py-20">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-6">
-            <Button onClick={() => setCurrentView('dashboard')} variant="outline">
-              ← Volver al Dashboard
-            </Button>
-          </div>
-          <ResearchModule />
-        </div>
+      <div className="min-h-screen bg-background">
+        {renderModuleContent()}
       </div>
     );
   }
 
-  if (currentView === 'analyze') {
-    return (
-      <div className="container mx-auto px-6 py-20">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-6">
-            <Button onClick={() => setCurrentView('dashboard')} variant="outline">
-              ← Volver al Dashboard
-            </Button>
-          </div>
-          <AnalyzeModule />
-        </div>
-      </div>
-    );
-  }
-
-  if (currentView === 'draft') {
-    return (
-      <div className="container mx-auto px-6 py-20">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-6">
-            <Button onClick={() => setCurrentView('dashboard')} variant="outline">
-              ← Volver al Dashboard
-            </Button>
-          </div>
-          <DraftModule />
-        </div>
-      </div>
-    );
-  }
-
-  if (currentView === 'strategize') {
-    return (
-      <div className="container mx-auto px-6 py-20">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-6">
-            <Button onClick={() => setCurrentView('dashboard')} variant="outline">
-              ← Volver al Dashboard
-            </Button>
-          </div>
-          <StrategizeModule />
-        </div>
-      </div>
-    );
-  }
-
-  if (currentView === 'integrations') {
-    return (
-      <div className="container mx-auto px-6 py-20">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-6">
-            <Button onClick={() => setCurrentView('dashboard')} variant="outline">
-              ← Volver al Dashboard
-            </Button>
-          </div>
-          <IntegrationsModule />
-        </div>
-      </div>
-    );
-  }
-
-  // Show Stats if selected
-  if (currentView === 'stats') {
-    return (
-      <div className="container mx-auto px-6 py-20">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-6 flex items-center justify-between">
-            <Button
-              onClick={() => setCurrentView('dashboard')}
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              ← Volver al Dashboard
-            </Button>
-            <Button
-              onClick={logout}
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              <LogOut className="h-4 w-4" />
-              Salir
-            </Button>
-          </div>
-          <LawyerStatsSection />
-        </div>
-      </div>
-    );
-  }
+  // Sidebar menu configuration
+  const menuItems = [
+    {
+      title: "Panel Principal",
+      items: [
+        {
+          title: "Dashboard",
+          icon: Home,
+          view: "dashboard" as const
+        }
+      ]
+    },
+    {
+      title: "Herramientas Legales",
+      items: [
+        {
+          title: "Investigación",
+          icon: Search,
+          view: "research" as const
+        },
+        {
+          title: "Análisis",
+          icon: Eye,
+          view: "analyze" as const
+        },
+        {
+          title: "Redacción",
+          icon: PenTool,
+          view: "draft" as const
+        },
+        {
+          title: "Estrategia",
+          icon: Target,
+          view: "strategize" as const
+        }
+      ]
+    },
+    ...(user?.canCreateAgents ? [{
+      title: "Gestión IA",
+      items: [
+        {
+          title: "Crear Agente",
+          icon: Bot,
+          view: "agent-creator" as const
+        },
+        {
+          title: "Gestionar Agentes",
+          icon: Settings,
+          view: "agent-manager" as const
+        },
+        {
+          title: "Integraciones",
+          icon: Settings,
+          view: "integrations" as const
+        }
+      ]
+    }] : []),
+    {
+      title: "Desarrollo",
+      items: [
+        {
+          title: "Formación IA",
+          icon: Brain,
+          view: "training" as const
+        },
+        ...(user?.canCreateBlogs ? [{
+          title: "Gestión Blog",
+          icon: BookOpen,
+          view: "blog-manager" as const
+        }] : [])
+      ]
+    },
+    {
+      title: "Estadísticas",
+      items: [
+        {
+          title: "Métricas",
+          icon: BarChart3,
+          view: "stats" as const
+        }
+      ]
+    }
+  ];
 
   return (
-    <div className="container mx-auto px-6 py-20">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className={`${isMobile ? 'space-y-4' : 'flex justify-between items-start'}`}>
-            <div>
-              <h1 className={`${isMobile ? 'text-2xl' : 'text-4xl'} font-bold text-primary mb-2`}>
-                Panel de Abogados IA Pro
-              </h1>
-              <p className={`${isMobile ? 'text-base' : 'text-lg'} text-muted-foreground mb-1`}>
-                Herramientas de IA para potenciar tu práctica legal
-              </p>
-              {user?.name && (
-                <div className="flex items-center gap-2 mt-2">
-                  <User className="h-4 w-4 text-emerald-600" />
-                  <span className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
-                    Bienvenido, {user.name}
-                  </span>
-                </div>
-              )}
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-background">
+        <Sidebar className="w-64">
+          <SidebarContent>
+            {/* Header del Sidebar */}
+            <div className="p-4 border-b">
+              <h2 className="text-lg font-semibold text-foreground">Portal Abogados</h2>
+              <p className="text-sm text-muted-foreground">{user?.name}</p>
             </div>
-            
-            <div className={`${isMobile ? 'grid grid-cols-2 gap-2' : 'flex items-center gap-2 flex-wrap'}`}>
-              {/* AI Modules */}
-              <Button onClick={() => setCurrentView('research')} variant="outline" size="sm">
-                <Search className="h-4 w-4 mr-2" />
-                Research
-              </Button>
-              <Button onClick={() => setCurrentView('analyze')} variant="outline" size="sm">
-                <Eye className="h-4 w-4 mr-2" />
-                Analyze
-              </Button>
-              <Button onClick={() => setCurrentView('draft')} variant="outline" size="sm">
-                <PenTool className="h-4 w-4 mr-2" />
-                Draft
-              </Button>
-              <Button onClick={() => setCurrentView('strategize')} variant="outline" size="sm">
-                <Target className="h-4 w-4 mr-2" />
-                Strategize
-              </Button>
-              <Button onClick={() => setCurrentView('integrations')} variant="outline" size="sm">
-                <Settings className="h-4 w-4 mr-2" />
-                Integrations
-              </Button>
-              
-              {/* Stats Button */}
-              <Button
-                onClick={() => setCurrentView('stats')}
-                variant="outline"
-                size="sm"
-              >
-                <BarChart3 className="h-4 w-4 mr-2" />
-                Stats
-              </Button>
 
-              {/* Training Button - Available for all lawyers */}
-              <Button
-                onClick={() => setCurrentView('training')}
-                variant="outline"
-                className="flex items-center gap-2 justify-center"
-                size={isMobile ? "default" : "lg"}
-              >
-                <Brain className="h-4 w-4" />
-                <span className={isMobile ? "text-sm" : ""}>{isMobile ? "Formación" : "Formación IA"}</span>
-              </Button>
+            {/* Menu Items */}
+            {menuItems.map((section, index) => (
+              <SidebarGroup key={index}>
+                <SidebarGroupLabel>{section.title}</SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {section.items.map((item) => (
+                      <SidebarMenuItem key={item.view}>
+                        <SidebarMenuButton 
+                          onClick={() => setCurrentView(item.view)}
+                          className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                            currentView === item.view 
+                              ? 'bg-primary text-primary-foreground' 
+                              : 'hover:bg-muted'
+                          }`}
+                        >
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.title}</span>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            ))}
 
-              {/* Blog Manager Button - Available for all lawyers */}
-              {/* Blog Manager Access - Only show if lawyer has permission */}
-              {user?.canCreateBlogs && (
-                <Button
-                  onClick={() => setCurrentView('blog-manager')}
-                  variant="outline"
-                  className="flex items-center gap-2 justify-center"
-                  size={isMobile ? "default" : "lg"}
-                >
-                  <BookOpen className="h-4 w-4" />
-                  <span className={isMobile ? "text-sm" : ""}>{isMobile ? "Blog" : "Gestión Blog"}</span>
-                </Button>
-              )}
-
-              {/* Agent Creator Access - Only show if lawyer has permission */}
-              {user?.canCreateAgents && (
-                <>
-                  <Button
-                    onClick={() => setCurrentView('agent-manager')}
-                    variant="outline"
-                    className="flex items-center gap-2 justify-center"
-                    size={isMobile ? "default" : "lg"}
-                  >
-                    <Settings className="h-5 w-5" />
-                    <span className={isMobile ? "text-sm" : ""}>{isMobile ? "Gestionar" : "Gestionar Agentes"}</span>
-                  </Button>
-                  <Button
-                    onClick={() => setCurrentView('agent-creator')}
-                    className="flex items-center gap-2 justify-center"
-                    size={isMobile ? "default" : "lg"}
-                  >
-                    <Bot className="h-5 w-5" />
-                    <Plus className="h-4 w-4" />
-                    <span className={isMobile ? "text-sm" : ""}>{isMobile ? "Crear" : "Crear Agente"}</span>
-                  </Button>
-                </>
-              )}
-              
-              {/* Logout Button */}
+            {/* Logout Button */}
+            <div className="p-4 border-t mt-auto">
               <Button
                 onClick={logout}
                 variant="outline"
-                className="flex items-center gap-2 justify-center"
-                size={isMobile ? "default" : "lg"}
+                className="w-full flex items-center gap-2"
               >
-                <LogOut className="h-5 w-5" />
-                <span className={isMobile ? "text-sm" : ""}>{isMobile ? "Salir" : "Cerrar Sesión"}</span>
+                <LogOut className="h-4 w-4" />
+                Cerrar Sesión
               </Button>
             </div>
-          </div>
-        </div>
+          </SidebarContent>
+        </Sidebar>
 
-        <div className={`${isMobile ? 'space-y-8' : 'grid lg:grid-cols-2 gap-8'}`}>
-          {/* Documents List */}
-          <div className="space-y-4">
-            <h2 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-semibold mb-4`}>Documentos Pendientes</h2>
-            
-            {documents.length === 0 ? (
-              <Card>
-                <CardContent className="p-8 text-center">
-                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">No hay documentos pendientes de revisión</p>
-                </CardContent>
-              </Card>
-            ) : (
-              documents.map((document) => (
-                <Card 
-                  key={document.id} 
-                  className={`cursor-pointer transition-all hover:shadow-md ${
-                    selectedDocument?.id === document.id ? 'ring-2 ring-primary' : ''
-                  }`}
-                  onClick={() => handleSelectDocument(document)}
-                >
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">{document.document_type}</CardTitle>
-                      <div className="flex items-center">
-                        {getStatusBadge(document.status)}
-                        {getSLABadge(document)}
-                      </div>
-                    </div>
-                    <CardDescription>
-                      Código: {document.token}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2 text-sm">
-                      {document.user_name && (
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4" />
-                          <span>{document.user_name}</span>
-                        </div>
-                      )}
-                      {document.user_email && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-muted-foreground">{document.user_email}</span>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
-                        <span>{new Date(document.created_at).toLocaleDateString()}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <DollarSign className="h-4 w-4" />
-                        <span>${document.price.toLocaleString()}</span>
-                      </div>
-                      
-                      {/* Show user observations if any */}
-                      {document.user_observations && (
-                        <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-800 rounded">
-                          <div className="flex items-center gap-2 mb-2">
-                            <User className="h-4 w-4 text-yellow-600" />
-                            <span className="font-medium text-yellow-800 dark:text-yellow-200">Observaciones del Cliente:</span>
-                          </div>
-                          <p className="text-sm text-yellow-700 dark:text-yellow-300">{document.user_observations}</p>
-                          {document.user_observation_date && (
-                            <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
-                              Enviadas: {new Date(document.user_observation_date).toLocaleDateString('es-CO')} {new Date(document.user_observation_date).toLocaleTimeString('es-CO')}
-                            </p>
-                          )}
-                        </div>
-                      )}
-                      
-                      {/* ANS Progress */}
-                      {getSLAProgress(document)}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </div>
+        {/* Main Content */}
+        <main className="flex-1">
+          {/* Header with Sidebar Toggle */}
+          <header className="h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="flex h-14 items-center px-4">
+              <SidebarTrigger className="mr-4" />
+              <h1 className="text-lg font-semibold">Dashboard Legal</h1>
+            </div>
+          </header>
 
-          {/* Document Editor */}
-          <div className="space-y-4">
-            {selectedDocument ? (
-              <>
-                <div className={`${isMobile ? 'space-y-4' : 'flex items-center justify-between'}`}>
-                  <h2 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-semibold`}>Editor de Documento</h2>
-                  <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex gap-2'}`}>
-                    <Button 
-                      onClick={handleSaveDocument}
-                      disabled={isSaving}
-                      variant="outline"
-                      className={isMobile ? "w-full" : ""}
-                    >
-                      <Save className="h-4 w-4 mr-2" />
-                      Guardar
-                    </Button>
-                    <Button 
-                      onClick={handleApproveDocument}
-                      disabled={isSaving}
-                      className={isMobile ? "w-full" : ""}
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Aprobar
-                    </Button>
+          {/* Dashboard Content */}
+          <div className="container mx-auto px-6 py-6">
+            <div className="max-w-7xl mx-auto">
+              {/* Welcome Section */}
+              <div className="mb-8">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h1 className="text-3xl font-bold text-foreground">
+                      Bienvenido, {user?.name}
+                    </h1>
+                    <p className="text-muted-foreground mt-1">
+                      Gestiona tus documentos legales y herramientas de IA
+                    </p>
                   </div>
+                  <Badge variant="outline" className="flex items-center gap-2">
+                    <Scale className="h-4 w-4" />
+                    Portal Legal
+                  </Badge>
+                </div>
+              </div>
+
+              <div className={`${isMobile ? 'space-y-8' : 'grid lg:grid-cols-2 gap-8'}`}>
+                {/* Documents List */}
+                <div className="space-y-4">
+                  <h2 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-semibold mb-4`}>Documentos Pendientes</h2>
+                  
+                  {documents.length === 0 ? (
+                    <Card>
+                      <CardContent className="p-8 text-center">
+                        <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                        <p className="text-muted-foreground">No hay documentos pendientes de revisión</p>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    documents.map((doc) => (
+                      <Card key={doc.id} className="border border-border hover:border-primary transition-colors">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-lg flex items-center justify-between">
+                            <span className="truncate">{doc.document_type}</span>
+                            <Badge variant={getStatusVariant(doc.status)}>
+                              {getStatusText(doc.status)}
+                            </Badge>
+                          </CardTitle>
+                          <CardDescription className="text-sm text-muted-foreground">
+                            <div className="flex items-center gap-4">
+                              <span className="flex items-center gap-1">
+                                <User className="h-3 w-3" />
+                                {doc.user_name || 'Usuario anónimo'}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                {new Date(doc.created_at).toLocaleDateString()}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <DollarSign className="h-3 w-3" />
+                                ${doc.price.toLocaleString()}
+                              </span>
+                            </div>
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="flex justify-between items-center">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDocumentClick(doc)}
+                            >
+                              {selectedDocument?.id === doc.id ? 'Ocultar' : 'Ver Detalles'}
+                            </Button>
+                            {doc.status === 'solicitado' && (
+                              <Button
+                                size="sm"
+                                onClick={() => handleReviewDocument(doc.id)}
+                                disabled={isLoading}
+                              >
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                Marcar como Revisado
+                              </Button>
+                            )}
+                          </div>
+                          
+                          {/* SLA Information */}
+                          {(doc.sla_hours) && (
+                            <div className="mt-3 p-2 bg-muted rounded-lg">
+                              <div className="flex items-center justify-between text-xs">
+                                <span>SLA: {doc.sla_hours}h</span>
+                                <Badge 
+                                  variant={getSlaStatusVariant(doc.sla_status)}
+                                  className="text-xs"
+                                >
+                                  {getSlaStatusText(doc.sla_status)}
+                                </Badge>
+                              </div>
+                              {doc.sla_deadline && (
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  Vence: {new Date(doc.sla_deadline).toLocaleString()}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
                 </div>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle>{selectedDocument.document_type}</CardTitle>
-                    <CardDescription>
-                      Código: {selectedDocument.token} | Estado: {getStatusBadge(selectedDocument.status)}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <Textarea
-                      value={editedContent}
-                      onChange={(e) => setEditedContent(e.target.value)}
-                      placeholder="Contenido del documento..."
-                      className="min-h-[400px] font-mono text-sm"
-                    />
-                  </CardContent>
-                </Card>
-              </>
-            ) : (
-              <Card>
-                <CardContent className="p-8 text-center">
-                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">
-                    Selecciona un documento de la lista para comenzar a editarlo
-                  </p>
-                </CardContent>
-              </Card>
-            )}
+                {/* Document Details */}
+                <div className="space-y-4">
+                  <h2 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-semibold mb-4`}>
+                    {selectedDocument ? 'Detalles del Documento' : 'Selecciona un Documento'}
+                  </h2>
+                  
+                  {selectedDocument ? (
+                    <Card className="border-2 border-primary">
+                      <CardHeader>
+                        <CardTitle className="text-xl">{selectedDocument.document_type}</CardTitle>
+                        <CardDescription>
+                          Token: {selectedDocument.token}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Contenido del Documento:</label>
+                          <Textarea
+                            value={editedContent}
+                            onChange={(e) => setEditedContent(e.target.value)}
+                            className="min-h-[200px] resize-none"
+                            placeholder="Contenido del documento..."
+                          />
+                        </div>
+
+                        {selectedDocument.user_observations && (
+                          <div className="p-4 bg-muted rounded-lg">
+                            <h4 className="font-medium text-sm mb-2">Observaciones del Usuario:</h4>
+                            <p className="text-sm text-muted-foreground">
+                              {selectedDocument.user_observations}
+                            </p>
+                            {selectedDocument.user_observation_date && (
+                              <p className="text-xs text-muted-foreground mt-2">
+                                Fecha: {new Date(selectedDocument.user_observation_date).toLocaleString()}
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                        <div className="flex gap-2">
+                          <Button 
+                            onClick={handleSave}
+                            disabled={isLoading}
+                            className="flex-1"
+                          >
+                            <Save className="h-4 w-4 mr-2" />
+                            Guardar Cambios
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => setSelectedDocument(null)}
+                          >
+                            Cerrar
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <Card className="h-64 flex items-center justify-center">
+                      <CardContent className="text-center">
+                        <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                        <p className="text-muted-foreground">
+                          Selecciona un documento para ver sus detalles
+                        </p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+        </main>
       </div>
-    </div>
+    </SidebarProvider>
   );
 }
