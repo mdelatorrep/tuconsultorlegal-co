@@ -1287,16 +1287,14 @@ function AdminPage() {
                               Ver Detalles
                             </Button>
                             
-                            {agent.status === 'pending_review' && (
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                onClick={() => handleEditAgent(agent)}
-                              >
-                                <Edit className="w-3 h-3 mr-1" />
-                                Editar
-                              </Button>
-                            )}
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => handleEditAgent(agent)}
+                            >
+                              <Edit className="w-3 h-3 mr-1" />
+                              Editar
+                            </Button>
                             
                             {agent.status === 'pending_review' && (
                               <Button 
@@ -1684,7 +1682,7 @@ function AdminPage() {
                     className="flex-1 sm:flex-none bg-green-600 hover:bg-green-700"
                   >
                     <Check className="h-4 w-4 mr-2" />
-                    Guardar y Aprobar
+                    Guardar y Activar
                   </Button>
                 )}
                 
