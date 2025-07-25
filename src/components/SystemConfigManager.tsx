@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit3, Trash2, Settings, Save, X } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, Edit3, Trash2, Settings, Save, X, RefreshCw } from "lucide-react";
 import { Label } from "@/components/ui/label";
 
 interface SystemConfig {
@@ -45,6 +46,8 @@ export default function SystemConfigManager() {
   const [editingConfig, setEditingConfig] = useState<SystemConfig | null>(null);
   const [saving, setSaving] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('legal-tools');
+  const [openaiModels, setOpenaiModels] = useState<string[]>([]);
+  const [loadingModels, setLoadingModels] = useState(false);
   const { toast } = useToast();
 
   const [configForm, setConfigForm] = useState({
@@ -217,6 +220,7 @@ export default function SystemConfigManager() {
 
   useEffect(() => {
     loadConfigs();
+    loadOpenAIModels();
   }, []);
 
   const loadConfigs = async () => {
@@ -238,6 +242,27 @@ export default function SystemConfigManager() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadOpenAIModels = async () => {
+    try {
+      setLoadingModels(true);
+      const { data, error } = await supabase.functions.invoke('get-openai-models');
+      
+      if (error) {
+        console.error('Error loading OpenAI models:', error);
+        return;
+      }
+
+      if (data?.success && data?.models) {
+        const modelIds = data.models.map((model: any) => model.id);
+        setOpenaiModels(modelIds);
+      }
+    } catch (error: any) {
+      console.error('Error loading OpenAI models:', error);
+    } finally {
+      setLoadingModels(false);
     }
   };
 
@@ -438,14 +463,66 @@ export default function SystemConfigManager() {
               </div>
               
               <div>
-                <Label htmlFor="config_value">Valor</Label>
-                <Textarea
-                  id="config_value"
-                  value={configForm.config_value}
-                  onChange={(e) => setConfigForm({ ...configForm, config_value: e.target.value })}
-                  placeholder="Valor de la configuración"
-                  rows={3}
-                />
+                <Label htmlFor="config_value">
+                  Valor
+                  {(configForm.config_key.includes('model') && configForm.config_key.includes('ai')) && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={loadOpenAIModels}
+                      disabled={loadingModels}
+                      className="ml-2 h-6 text-xs"
+                    >
+                      {loadingModels ? (
+                        <div className="animate-spin rounded-full h-3 w-3 border-b border-current"></div>
+                      ) : (
+                        <RefreshCw className="w-3 h-3" />
+                      )}
+                      {loadingModels ? 'Cargando...' : 'Actualizar modelos'}
+                    </Button>
+                  )}
+                </Label>
+                
+                {(configForm.config_key.includes('model') && configForm.config_key.includes('ai')) ? (
+                  <Select
+                    value={configForm.config_value}
+                    onValueChange={(value) => setConfigForm({ ...configForm, config_value: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona un modelo de OpenAI" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {openaiModels.length > 0 ? (
+                        openaiModels.map((model) => (
+                          <SelectItem key={model} value={model}>
+                            {model}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="" disabled>
+                          {loadingModels ? 'Cargando modelos...' : 'No hay modelos disponibles'}
+                        </SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                ) : configForm.config_key.includes('prompt') || configForm.config_key.includes('system') ? (
+                  <Textarea
+                    id="config_value"
+                    value={configForm.config_value}
+                    onChange={(e) => setConfigForm({ ...configForm, config_value: e.target.value })}
+                    placeholder="Valor de la configuración"
+                    rows={6}
+                  />
+                ) : (
+                  <Input
+                    id="config_value"
+                    value={configForm.config_value}
+                    onChange={(e) => setConfigForm({ ...configForm, config_value: e.target.value })}
+                    placeholder="Valor de la configuración"
+                    type={configForm.config_key.includes('timeout') || configForm.config_key.includes('sla') || configForm.config_key.includes('retry') ? 'number' : 'text'}
+                  />
+                )}
               </div>
               
               <div>
