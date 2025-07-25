@@ -500,7 +500,7 @@ export default function SystemConfigManager() {
                           </SelectItem>
                         ))
                       ) : (
-                        <SelectItem value="" disabled>
+                        <SelectItem value="no-models-available" disabled>
                           {loadingModels ? 'Cargando modelos...' : 'No hay modelos disponibles'}
                         </SelectItem>
                       )}
