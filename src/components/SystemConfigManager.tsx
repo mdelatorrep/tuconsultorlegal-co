@@ -20,12 +20,31 @@ interface SystemConfig {
   updated_at: string;
 }
 
+interface ConfigCategory {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  configs: ConfigTemplate[];
+}
+
+interface ConfigTemplate {
+  key: string;
+  name: string;
+  description: string;
+  defaultValue: string;
+  type: 'text' | 'textarea' | 'select' | 'number';
+  options?: string[];
+  placeholder?: string;
+}
+
 export default function SystemConfigManager() {
   const [configs, setConfigs] = useState<SystemConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [showEditor, setShowEditor] = useState(false);
   const [editingConfig, setEditingConfig] = useState<SystemConfig | null>(null);
   const [saving, setSaving] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>('legal-tools');
   const { toast } = useToast();
 
   const [configForm, setConfigForm] = useState({
@@ -33,6 +52,168 @@ export default function SystemConfigManager() {
     config_value: "",
     description: ""
   });
+
+  // Definir categorías de configuración
+  const configCategories: ConfigCategory[] = [
+    {
+      id: 'legal-tools',
+      name: 'Herramientas Legales',
+      description: 'Configuraciones para módulos de investigación, análisis, redacción y estrategia',
+      icon: 'Scale',
+      configs: [
+        {
+          key: 'research_ai_model',
+          name: 'Modelo IA para Investigación',
+          description: 'Modelo de IA utilizado para el módulo de investigación legal',
+          defaultValue: 'gpt-4.1-2025-04-14',
+          type: 'select',
+          options: ['gpt-4.1-2025-04-14', 'gpt-4o', 'o3-2025-04-16']
+        },
+        {
+          key: 'research_system_prompt',
+          name: 'Prompt del Sistema - Investigación',
+          description: 'Prompt base para el sistema de investigación legal',
+          defaultValue: 'Eres un asistente especializado en investigación jurídica. Proporciona análisis detallados y citas precisas de legislación relevante.',
+          type: 'textarea'
+        },
+        {
+          key: 'analysis_ai_model',
+          name: 'Modelo IA para Análisis',
+          description: 'Modelo de IA utilizado para el módulo de análisis legal',
+          defaultValue: 'gpt-4.1-2025-04-14',
+          type: 'select',
+          options: ['gpt-4.1-2025-04-14', 'gpt-4o', 'o3-2025-04-16']
+        },
+        {
+          key: 'analysis_system_prompt',
+          name: 'Prompt del Sistema - Análisis',
+          description: 'Prompt base para el sistema de análisis legal',
+          defaultValue: 'Eres un experto en análisis jurídico. Evalúa documentos legales con precisión y proporciona recomendaciones estratégicas.',
+          type: 'textarea'
+        },
+        {
+          key: 'drafting_ai_model',
+          name: 'Modelo IA para Redacción',
+          description: 'Modelo de IA utilizado para el módulo de redacción legal',
+          defaultValue: 'gpt-4.1-2025-04-14',
+          type: 'select',
+          options: ['gpt-4.1-2025-04-14', 'gpt-4o', 'o3-2025-04-16']
+        },
+        {
+          key: 'drafting_system_prompt',
+          name: 'Prompt del Sistema - Redacción',
+          description: 'Prompt base para el sistema de redacción legal',
+          defaultValue: 'Eres un redactor jurídico experto. Crea documentos legales precisos, claros y conformes a la legislación vigente.',
+          type: 'textarea'
+        },
+        {
+          key: 'strategy_ai_model',
+          name: 'Modelo IA para Estrategia',
+          description: 'Modelo de IA utilizado para el módulo de estrategia legal',
+          defaultValue: 'o3-2025-04-16',
+          type: 'select',
+          options: ['gpt-4.1-2025-04-14', 'gpt-4o', 'o3-2025-04-16']
+        },
+        {
+          key: 'strategy_system_prompt',
+          name: 'Prompt del Sistema - Estrategia',
+          description: 'Prompt base para el sistema de estrategia legal',
+          defaultValue: 'Eres un estratega jurídico senior. Desarrolla estrategias legales comprehensivas considerando todos los aspectos del caso.',
+          type: 'textarea'
+        }
+      ]
+    },
+    {
+      id: 'ai-management',
+      name: 'Gestión IA',
+      description: 'Configuraciones para creación y optimización de agentes IA',
+      icon: 'Brain',
+      configs: [
+        {
+          key: 'agent_creation_ai_model',
+          name: 'Modelo IA para Creación de Agentes',
+          description: 'Modelo utilizado para generar y optimizar agentes legales',
+          defaultValue: 'gpt-4.1-2025-04-14',
+          type: 'select',
+          options: ['gpt-4.1-2025-04-14', 'gpt-4o', 'o3-2025-04-16']
+        },
+        {
+          key: 'agent_creation_system_prompt',
+          name: 'Prompt para Creación de Agentes',
+          description: 'Prompt utilizado para generar nuevos agentes legales',
+          defaultValue: 'Eres un experto en creación de agentes legales especializados. Genera prompts, plantillas y configuraciones optimizadas.',
+          type: 'textarea'
+        },
+        {
+          key: 'document_description_optimizer_model',
+          name: 'Modelo IA para Optimizar Descripciones',
+          description: 'Modelo utilizado para optimizar descripciones de documentos',
+          defaultValue: 'gpt-4.1-2025-04-14',
+          type: 'select',
+          options: ['gpt-4.1-2025-04-14', 'gpt-4o', 'o3-2025-04-16']
+        },
+        {
+          key: 'document_description_optimizer_prompt',
+          name: 'Prompt para Optimizar Descripciones',
+          description: 'Prompt para mejorar descripciones de documentos legales',
+          defaultValue: 'Optimiza la descripción del documento legal para que sea clara, precisa y atractiva para el usuario final.',
+          type: 'textarea'
+        },
+        {
+          key: 'template_optimizer_model',
+          name: 'Modelo IA para Optimizar Plantillas',
+          description: 'Modelo utilizado para optimizar plantillas de documentos',
+          defaultValue: 'gpt-4.1-2025-04-14',
+          type: 'select',
+          options: ['gpt-4.1-2025-04-14', 'gpt-4o', 'o3-2025-04-16']
+        },
+        {
+          key: 'template_optimizer_prompt',
+          name: 'Prompt para Optimizar Plantillas',
+          description: 'Prompt para mejorar plantillas de documentos legales',
+          defaultValue: 'Optimiza la plantilla del documento legal para que sea completa, precisa y fácil de completar.',
+          type: 'textarea'
+        },
+        {
+          key: 'content_optimization_model',
+          name: 'Modelo IA para Optimización General',
+          description: 'Modelo para optimización general de contenidos',
+          defaultValue: 'gpt-4.1-2025-04-14',
+          type: 'select',
+          options: ['gpt-4.1-2025-04-14', 'gpt-4o', 'o3-2025-04-16']
+        }
+      ]
+    },
+    {
+      id: 'system-general',
+      name: 'Configuración General',
+      description: 'Configuraciones generales del sistema y APIs',
+      icon: 'Settings',
+      configs: [
+        {
+          key: 'openai_api_timeout',
+          name: 'Timeout API OpenAI (segundos)',
+          description: 'Tiempo límite para requests a la API de OpenAI',
+          defaultValue: '30',
+          type: 'number'
+        },
+        {
+          key: 'max_retries_ai_requests',
+          name: 'Máximo de Reintentos IA',
+          description: 'Número máximo de reintentos para requests fallidos a IA',
+          defaultValue: '3',
+          type: 'number'
+        },
+        {
+          key: 'default_sla_hours',
+          name: 'SLA por Defecto (horas)',
+          description: 'Tiempo de SLA por defecto para documentos legales',
+          defaultValue: '4',
+          type: 'number'
+        }
+      ]
+    }
+  ];
 
   useEffect(() => {
     loadConfigs();
@@ -156,19 +337,54 @@ export default function SystemConfigManager() {
   };
 
   const getConfigTypeBadge = (key: string) => {
-    if (key.includes('email') || key.includes('smtp')) {
-      return <Badge variant="outline" className="bg-blue-50 text-blue-800">Email</Badge>;
+    if (key.includes('model') || key.includes('ai_')) {
+      return <Badge variant="outline" className="bg-purple-50 text-purple-800">IA Model</Badge>;
     }
-    if (key.includes('api') || key.includes('key')) {
-      return <Badge variant="outline" className="bg-purple-50 text-purple-800">API</Badge>;
+    if (key.includes('prompt') || key.includes('system_')) {
+      return <Badge variant="outline" className="bg-blue-50 text-blue-800">Prompt</Badge>;
     }
-    if (key.includes('url') || key.includes('endpoint')) {
-      return <Badge variant="outline" className="bg-green-50 text-green-800">URL</Badge>;
+    if (key.includes('research') || key.includes('analysis')) {
+      return <Badge variant="outline" className="bg-green-50 text-green-800">Legal Tool</Badge>;
     }
-    if (key.includes('feature') || key.includes('enable')) {
-      return <Badge variant="outline" className="bg-orange-50 text-orange-800">Feature</Badge>;
+    if (key.includes('timeout') || key.includes('retry') || key.includes('sla')) {
+      return <Badge variant="outline" className="bg-orange-50 text-orange-800">System</Badge>;
     }
     return <Badge variant="secondary">Config</Badge>;
+  };
+
+  const getCurrentCategoryConfigs = () => {
+    const category = configCategories.find(cat => cat.id === selectedCategory);
+    if (!category) return [];
+    
+    return category.configs.map(template => {
+      const existingConfig = configs.find(config => config.config_key === template.key);
+      return {
+        template,
+        config: existingConfig,
+        value: existingConfig?.config_value || template.defaultValue
+      };
+    });
+  };
+
+  const openEditorWithTemplate = (template: ConfigTemplate) => {
+    const existingConfig = configs.find(config => config.config_key === template.key);
+    
+    if (existingConfig) {
+      setEditingConfig(existingConfig);
+      setConfigForm({
+        config_key: existingConfig.config_key,
+        config_value: existingConfig.config_value,
+        description: existingConfig.description || template.description
+      });
+    } else {
+      setEditingConfig(null);
+      setConfigForm({
+        config_key: template.key,
+        config_value: template.defaultValue,
+        description: template.description
+      });
+    }
+    setShowEditor(true);
   };
 
   if (loading) {
@@ -192,7 +408,7 @@ export default function SystemConfigManager() {
             Configuración del Sistema
           </h2>
           <p className="text-muted-foreground">
-            Gestiona configuraciones globales del sistema
+            Gestiona configuraciones de IA y herramientas legales
           </p>
         </div>
         <Dialog open={showEditor} onOpenChange={setShowEditor}>
@@ -267,82 +483,109 @@ export default function SystemConfigManager() {
         </Dialog>
       </div>
 
-      {/* Configs Table */}
+      {/* Categories Navigation */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        {configCategories.map((category) => (
+          <Card
+            key={category.id}
+            className={`cursor-pointer transition-all hover:shadow-md ${
+              selectedCategory === category.id 
+                ? 'ring-2 ring-primary bg-primary/5' 
+                : 'hover:bg-muted/50'
+            }`}
+            onClick={() => setSelectedCategory(category.id)}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  {category.icon === 'Scale' && <span className="text-primary">⚖️</span>}
+                  {category.icon === 'Brain' && <span className="text-primary">🧠</span>}
+                  {category.icon === 'Settings' && <Settings className="w-4 h-4 text-primary" />}
+                </div>
+                <h3 className="font-semibold">{category.name}</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">{category.description}</p>
+              <div className="mt-3 flex items-center justify-between">
+                <Badge variant="secondary" className="text-xs">
+                  {category.configs.length} configuraciones
+                </Badge>
+                {selectedCategory === category.id && (
+                  <Badge variant="default" className="text-xs">Activa</Badge>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Current Category Configs */}
       <Card>
         <CardHeader>
-          <CardTitle>Configuraciones del Sistema ({configs.length})</CardTitle>
+          <CardTitle>
+            {configCategories.find(cat => cat.id === selectedCategory)?.name || 'Configuraciones'}
+            ({getCurrentCategoryConfigs().length})
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          {configs.length === 0 ? (
+          {getCurrentCategoryConfigs().length === 0 ? (
             <div className="text-center py-8">
               <Settings className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No hay configuraciones</h3>
+              <h3 className="text-lg font-semibold mb-2">No hay configuraciones en esta categoría</h3>
               <p className="text-muted-foreground mb-4">
-                Comienza creando tu primera configuración del sistema
+                Las configuraciones aparecerán aquí una vez que las crees
               </p>
-              <Button onClick={() => openEditor()}>
-                <Plus className="w-4 h-4 mr-2" />
-                Crear Configuración
-              </Button>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Clave</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead className="hidden md:table-cell">Valor</TableHead>
-                    <TableHead className="hidden lg:table-cell">Descripción</TableHead>
-                    <TableHead>Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {configs.map((config) => (
-                    <TableRow key={config.id}>
-                      <TableCell className="font-medium">
-                        <code className="text-sm bg-muted px-1 py-0.5 rounded">
-                          {config.config_key}
-                        </code>
-                      </TableCell>
-                      <TableCell>
-                        {getConfigTypeBadge(config.config_key)}
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell max-w-xs">
-                        <div className="truncate" title={config.config_value}>
-                          {config.config_value.length > 50 
-                            ? `${config.config_value.substring(0, 50)}...` 
-                            : config.config_value
-                          }
+            <div className="space-y-4">
+              {getCurrentCategoryConfigs().map(({ template, config, value }) => (
+                <div key={template.key} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="font-semibold">{template.name}</h4>
+                        {getConfigTypeBadge(template.key)}
+                        {config && <Badge variant="outline" className="text-xs">Configurado</Badge>}
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-2">{template.description}</p>
+                      <code className="text-xs bg-muted px-2 py-1 rounded">
+                        {template.key}
+                      </code>
+                    </div>
+                    <div className="flex gap-2 ml-4">
+                      <Button
+                        size="sm"
+                        variant={config ? "outline" : "default"}
+                        onClick={() => openEditorWithTemplate(template)}
+                      >
+                        <Edit3 className="w-3 h-3 mr-1" />
+                        {config ? 'Editar' : 'Configurar'}
+                      </Button>
+                      {config && (
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => deleteConfig(template.key)}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="bg-muted/30 rounded p-3">
+                    <div className="text-xs text-muted-foreground mb-1">Valor actual:</div>
+                    <div className="text-sm font-mono">
+                      {template.type === 'textarea' ? (
+                        <div className="max-h-20 overflow-y-auto">
+                          {value.length > 100 ? `${value.substring(0, 100)}...` : value}
                         </div>
-                      </TableCell>
-                      <TableCell className="hidden lg:table-cell max-w-sm">
-                        <div className="truncate" title={config.description}>
-                          {config.description || '-'}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => openEditor(config)}
-                          >
-                            <Edit3 className="w-3 h-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => deleteConfig(config.config_key)}
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                      ) : (
+                        <span>{value}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </CardContent>
