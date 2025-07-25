@@ -70,7 +70,7 @@ export default function SystemConfigManager() {
           description: 'Modelo de IA utilizado para el módulo de investigación legal',
           defaultValue: 'gpt-4.1-2025-04-14',
           type: 'select',
-          options: ['gpt-4.1-2025-04-14', 'gpt-4o', 'o3-2025-04-16']
+          options: [] // Se cargarán dinámicamente desde OpenAI
         },
         {
           key: 'research_system_prompt',
@@ -85,7 +85,7 @@ export default function SystemConfigManager() {
           description: 'Modelo de IA utilizado para el módulo de análisis legal',
           defaultValue: 'gpt-4.1-2025-04-14',
           type: 'select',
-          options: ['gpt-4.1-2025-04-14', 'gpt-4o', 'o3-2025-04-16']
+          options: []
         },
         {
           key: 'analysis_system_prompt',
@@ -100,7 +100,7 @@ export default function SystemConfigManager() {
           description: 'Modelo de IA utilizado para el módulo de redacción legal',
           defaultValue: 'gpt-4.1-2025-04-14',
           type: 'select',
-          options: ['gpt-4.1-2025-04-14', 'gpt-4o', 'o3-2025-04-16']
+          options: []
         },
         {
           key: 'drafting_system_prompt',
@@ -115,7 +115,7 @@ export default function SystemConfigManager() {
           description: 'Modelo de IA utilizado para el módulo de estrategia legal',
           defaultValue: 'o3-2025-04-16',
           type: 'select',
-          options: ['gpt-4.1-2025-04-14', 'gpt-4o', 'o3-2025-04-16']
+          options: []
         },
         {
           key: 'strategy_system_prompt',
@@ -138,7 +138,7 @@ export default function SystemConfigManager() {
           description: 'Modelo utilizado para generar y optimizar agentes legales',
           defaultValue: 'gpt-4.1-2025-04-14',
           type: 'select',
-          options: ['gpt-4.1-2025-04-14', 'gpt-4o', 'o3-2025-04-16']
+          options: []
         },
         {
           key: 'agent_creation_system_prompt',
@@ -153,7 +153,7 @@ export default function SystemConfigManager() {
           description: 'Modelo utilizado para optimizar descripciones de documentos',
           defaultValue: 'gpt-4.1-2025-04-14',
           type: 'select',
-          options: ['gpt-4.1-2025-04-14', 'gpt-4o', 'o3-2025-04-16']
+          options: []
         },
         {
           key: 'document_description_optimizer_prompt',
@@ -168,7 +168,7 @@ export default function SystemConfigManager() {
           description: 'Modelo utilizado para optimizar plantillas de documentos',
           defaultValue: 'gpt-4.1-2025-04-14',
           type: 'select',
-          options: ['gpt-4.1-2025-04-14', 'gpt-4o', 'o3-2025-04-16']
+          options: []
         },
         {
           key: 'template_optimizer_prompt',
@@ -183,7 +183,7 @@ export default function SystemConfigManager() {
           description: 'Modelo para optimización general de contenidos',
           defaultValue: 'gpt-4.1-2025-04-14',
           type: 'select',
-          options: ['gpt-4.1-2025-04-14', 'gpt-4o', 'o3-2025-04-16']
+          options: []
         }
       ]
     },
