@@ -337,10 +337,33 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
         throw new Error('No se encontró token de autenticación');
       }
 
+      console.log('🔧 Sending agent update with data:', {
+        agent_id: editingAgent.id,
+        user_id: user?.id,
+        is_admin: true,
+        name: editingAgent.name,
+        description: editingAgent.description,
+        document_name: editingAgent.document_name,
+        document_description: editingAgent.document_description,
+        category: editingAgent.category,
+        suggested_price: editingAgent.suggested_price,
+        final_price: editingAgent.final_price,
+        price_justification: editingAgent.price_justification,
+        target_audience: editingAgent.target_audience,
+        template_content: editingAgent.template_content,
+        ai_prompt: editingAgent.ai_prompt,
+        sla_enabled: editingAgent.sla_enabled,
+        sla_hours: editingAgent.sla_hours,
+        button_cta: editingAgent.button_cta,
+        placeholder_fields: editingAgent.placeholder_fields,
+        frontend_icon: editingAgent.frontend_icon,
+        status: editingAgent.status
+      });
+
       const response = await supabase.functions.invoke('update-agent', {
         body: {
           agent_id: editingAgent.id,
-          user_id: user?.id || 'admin_override',
+          user_id: user?.id,
           is_admin: true,
           name: editingAgent.name,
           description: editingAgent.description,
@@ -352,7 +375,13 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
           price_justification: editingAgent.price_justification,
           target_audience: editingAgent.target_audience,
           template_content: editingAgent.template_content,
-          ai_prompt: editingAgent.ai_prompt
+          ai_prompt: editingAgent.ai_prompt,
+          sla_enabled: editingAgent.sla_enabled,
+          sla_hours: editingAgent.sla_hours,
+          button_cta: editingAgent.button_cta,
+          placeholder_fields: editingAgent.placeholder_fields,
+          frontend_icon: editingAgent.frontend_icon,
+          status: editingAgent.status
         },
         headers: {
           'Content-Type': 'application/json',
@@ -1494,8 +1523,6 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
           </DialogHeader>
           
           {editingAgent && (
-            <div>
-              <p style={{color: 'red', fontWeight: 'bold'}}>🔧 DEBUG: EditingAgent exists: {editingAgent.name}</p>
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -1673,7 +1700,6 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
                   Cancelar
                 </Button>
               </div>
-            </div>
             </div>
           )}
         </DialogContent>
