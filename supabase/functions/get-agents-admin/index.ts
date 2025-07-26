@@ -23,34 +23,58 @@ Deno.serve(async (req) => {
       }
     );
 
-    // Extract the authorization header for authentication
+    // **AUTHENTICATION - SAME PATTERN AS DELETE-AGENT**
     const authHeader = req.headers.get('authorization');
     let lawyerId = null;
     let isAdmin = false;
 
     console.log('Auth header received:', !!authHeader);
 
-    if (authHeader) {
-      const token = authHeader.replace('Bearer ', '');
-      console.log('Processing token for authentication...');
-      
-      // For simplicity, if there's a valid Bearer token, treat as admin
-      // This matches the current admin authentication behavior
-      if (token && token.length > 10) {
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Authorization required' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Check admin authentication first
+    let adminToken = authHeader;
+    if (authHeader.startsWith('Bearer ')) {
+      adminToken = authHeader.substring(7);
+    }
+
+    const { data: admin, error: adminError } = await supabase
+      .from('admin_accounts')
+      .select('*')
+      .eq('session_token', adminToken)
+      .eq('active', true)
+      .maybeSingle();
+
+    if (!adminError && admin) {
+      // Check token expiration
+      if (!admin.token_expires_at || new Date(admin.token_expires_at) >= new Date()) {
         isAdmin = true;
-        console.log('User authenticated as admin based on token presence');
+        console.log('User authenticated as admin via admin_accounts.session_token');
+      }
+    }
+
+    // If not admin, check if it's a lawyer token
+    if (!isAdmin) {
+      const { data: lawyerCheck, error: lawyerError } = await supabase
+        .from('lawyer_tokens')
+        .select('id')
+        .eq('access_token', adminToken)
+        .eq('active', true)
+        .maybeSingle();
+      
+      if (!lawyerError && lawyerCheck) {
+        lawyerId = lawyerCheck.id;
+        console.log('User authenticated as lawyer via lawyer_tokens.access_token:', lawyerId);
       } else {
-        // Check if it's a lawyer token
-        const { data: lawyerCheck } = await supabase
-          .from('lawyer_tokens')
-          .select('id')
-          .eq('access_token', token)
-          .maybeSingle();
-        
-        if (lawyerCheck) {
-          lawyerId = lawyerCheck.id;
-          console.log('User authenticated as lawyer:', lawyerId);
-        }
+        return new Response(JSON.stringify({ error: 'Invalid authentication token' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
       }
     }
 

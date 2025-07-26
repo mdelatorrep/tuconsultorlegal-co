@@ -23,7 +23,44 @@ Deno.serve(async (req) => {
       }
     );
 
-    console.log('Fetching token requests...');
+    // **ADMIN AUTHENTICATION REQUIRED - SAME PATTERN AS DELETE-AGENT**
+    const authHeader = req.headers.get('authorization');
+    
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Authorization required' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    let adminToken = authHeader;
+    if (authHeader.startsWith('Bearer ')) {
+      adminToken = authHeader.substring(7);
+    }
+
+    const { data: admin, error: adminError } = await supabase
+      .from('admin_accounts')
+      .select('*')
+      .eq('session_token', adminToken)
+      .eq('active', true)
+      .maybeSingle();
+
+    if (adminError || !admin) {
+      return new Response(JSON.stringify({ error: 'Invalid admin token' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Check token expiration
+    if (admin.token_expires_at && new Date(admin.token_expires_at) < new Date()) {
+      return new Response(JSON.stringify({ error: 'Admin token expired' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    console.log('Admin authenticated:', admin.email);
 
     // Fetch pending and rejected token requests (hide approved ones)
     const { data: requests, error: requestsError } = await supabase

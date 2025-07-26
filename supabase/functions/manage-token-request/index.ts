@@ -24,16 +24,19 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { requestId, action, rejectionReason, canCreateAgents } = await req.json()
+    // **ADMIN AUTHENTICATION REQUIRED - SAME PATTERN AS DELETE-AGENT**
+    const authHeader = req.headers.get('authorization');
+    
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Authorization required' }), {
+        status: 401,
+        headers: securityHeaders
+      });
+    }
 
-    if (!requestId || !action || !['approve', 'reject'].includes(action)) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid request parameters' }), 
-        { 
-          status: 400, 
-          headers: securityHeaders
-        }
-      );
+    let adminToken = authHeader;
+    if (authHeader.startsWith('Bearer ')) {
+      adminToken = authHeader.substring(7);
     }
 
     // Create Supabase client with service role key
@@ -47,6 +50,44 @@ Deno.serve(async (req) => {
         }
       }
     );
+
+    const { data: admin, error: adminError } = await supabase
+      .from('admin_accounts')
+      .select('*')
+      .eq('session_token', adminToken)
+      .eq('active', true)
+      .maybeSingle();
+
+    if (adminError || !admin) {
+      return new Response(JSON.stringify({ error: 'Invalid admin token' }), {
+        status: 401,
+        headers: securityHeaders
+      });
+    }
+
+    // Check token expiration
+    if (admin.token_expires_at && new Date(admin.token_expires_at) < new Date()) {
+      return new Response(JSON.stringify({ error: 'Admin token expired' }), {
+        status: 401,
+        headers: securityHeaders
+      });
+    }
+
+    console.log('Admin authenticated:', admin.email);
+
+    const { requestId, action, rejectionReason, canCreateAgents } = await req.json()
+
+    if (!requestId || !action || !['approve', 'reject'].includes(action)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid request parameters' }), 
+        { 
+          status: 400, 
+          headers: securityHeaders
+        }
+      );
+    }
+
+    // Create Supabase client with service role key (moved up earlier, remove duplicate)
 
     console.log(`Processing token request: ${action} for ${requestId}`);
 
