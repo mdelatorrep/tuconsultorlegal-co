@@ -1020,9 +1020,14 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
                          <Button 
                            size="sm" 
                            variant="outline"
-                           onClick={() => {
+                           onClick={(e) => {
+                             console.log('🔧 Edit button clicked for agent:', agent.name);
+                             console.log('🔧 Agent data:', agent);
+                             e.preventDefault();
+                             e.stopPropagation();
                              setEditingAgent({ ...agent });
                              setIsEditDialogOpen(true);
+                             console.log('🔧 Edit dialog should be opening...');
                            }}
                         >
                           <Edit className="w-4 h-4 mr-1" />
@@ -1438,7 +1443,10 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
       </Dialog>
 
       {/* Diálogo de edición de agente */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+      <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
+        console.log('🔧 Dialog state change:', open);
+        setIsEditDialogOpen(open);
+      }}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Agente Legal</DialogTitle>
@@ -1448,6 +1456,8 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
           </DialogHeader>
           
           {editingAgent && (
+            <div>
+              <p style={{color: 'red', fontWeight: 'bold'}}>🔧 DEBUG: EditingAgent exists: {editingAgent.name}</p>
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -1612,6 +1622,7 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
                   Cancelar
                 </Button>
               </div>
+            </div>
             </div>
           )}
         </DialogContent>
