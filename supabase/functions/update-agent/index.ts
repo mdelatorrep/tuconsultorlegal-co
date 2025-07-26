@@ -134,23 +134,30 @@ Deno.serve(async (req) => {
     console.log('✅ Found agent to update:', existingAgent.name)
 
     // **SIMPLIFIED AUTHORIZATION LOGIC**
-    // For admin operations (is_admin=true), allow the update
-    // For regular users, check if they created the agent
+    // Check if request has authorization header (JWT token from Supabase)
+    const authorization = req.headers.get('authorization')
+    console.log('🔑 Authorization header present:', !!authorization)
+    
     let canUpdate = false
     let updateReason = ''
 
-    if (is_admin) {
+    // If we have authorization header and is_admin is true, allow update
+    if (authorization && is_admin) {
       canUpdate = true
-      updateReason = 'admin_override'
-      console.log('✅ Admin access granted')
-    } else if (user_id && existingAgent.created_by === user_id) {
+      updateReason = 'admin_with_auth'
+      console.log('✅ Admin access granted with JWT')
+    } else if (authorization && user_id && existingAgent.created_by === user_id) {
       canUpdate = true
       updateReason = 'creator_access'
       console.log('✅ Creator access granted')
+    } else if (!authorization) {
+      canUpdate = false
+      updateReason = 'no_auth_header'
+      console.log('❌ No authorization header')
     } else {
       canUpdate = false
       updateReason = 'access_denied'
-      console.log('❌ Access denied')
+      console.log('❌ Access denied - user_id:', user_id, 'created_by:', existingAgent.created_by)
     }
 
     if (!canUpdate) {
