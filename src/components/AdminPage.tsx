@@ -237,12 +237,21 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
   // Función para actualizar estado de agente
   const handleUpdateAgentStatus = async (agentId: string, newStatus: string) => {
     try {
+      const authHeaders = getAuthHeaders();
+      if (!authHeaders.authorization) {
+        throw new Error('No se encontró token de autenticación');
+      }
+
       const response = await supabase.functions.invoke('update-agent', {
         body: {
           agent_id: agentId,
           status: newStatus,
-          user_id: user?.id,
+          user_id: user?.id || 'admin_override',
           is_admin: true
+        },
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders
         }
       });
 
@@ -267,11 +276,20 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
   // Función para eliminar agente
   const handleDeleteAgent = async (agent: Agent) => {
     try {
+      const authHeaders = getAuthHeaders();
+      if (!authHeaders.authorization) {
+        throw new Error('No se encontró token de autenticación');
+      }
+
       const response = await supabase.functions.invoke('delete-agent', {
         body: {
           agent_id: agent.id,
-          user_id: user?.id,
+          user_id: user?.id || 'admin_override',
           is_admin: true
+        },
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders
         }
       });
 
@@ -288,6 +306,64 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
       toast({
         title: "Error",
         description: "No se pudo eliminar el agente",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Función para manejar la edición de agentes
+  const handleEditFieldChange = (field: string, value: any) => {
+    if (!editingAgent) return;
+    setEditingAgent({ ...editingAgent, [field]: value });
+  };
+
+  const handleSaveAgent = async () => {
+    if (!editingAgent) return;
+
+    try {
+      const authHeaders = getAuthHeaders();
+      if (!authHeaders.authorization) {
+        throw new Error('No se encontró token de autenticación');
+      }
+
+      const response = await supabase.functions.invoke('update-agent', {
+        body: {
+          agent_id: editingAgent.id,
+          user_id: user?.id || 'admin_override',
+          is_admin: true,
+          name: editingAgent.name,
+          description: editingAgent.description,
+          document_name: editingAgent.document_name,
+          document_description: editingAgent.document_description,
+          category: editingAgent.category,
+          suggested_price: editingAgent.suggested_price,
+          final_price: editingAgent.final_price,
+          price_justification: editingAgent.price_justification,
+          target_audience: editingAgent.target_audience,
+          template_content: editingAgent.template_content,
+          ai_prompt: editingAgent.ai_prompt
+        },
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders
+        }
+      });
+
+      if (response.error) throw new Error(response.error.message);
+
+      toast({
+        title: "Agente actualizado",
+        description: "El agente ha sido actualizado correctamente.",
+      });
+
+      await loadAgents();
+      setIsEditDialogOpen(false);
+      setEditingAgent(null);
+    } catch (error) {
+      console.error('Error updating agent:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el agente",
         variant: "destructive",
       });
     }
@@ -941,13 +1017,13 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
                           Ver Detalles
                         </Button>
                         
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => {
-                            setEditingAgent(agent);
-                            setIsEditDialogOpen(true);
-                          }}
+                         <Button 
+                           size="sm" 
+                           variant="outline"
+                           onClick={() => {
+                             setEditingAgent({ ...agent });
+                             setIsEditDialogOpen(true);
+                           }}
                         >
                           <Edit className="w-4 h-4 mr-1" />
                           Editar
@@ -1313,6 +1389,233 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
         onPermissionsUpdated={loadLawyers}
         authHeaders={getAuthHeaders()}
       />
+
+      {/* Diálogo de ver detalles del agente */}
+      <Dialog open={showAgentDetails} onOpenChange={setShowAgentDetails}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{selectedAgent?.name}</DialogTitle>
+            <DialogDescription>
+              Detalles completos del agente legal
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedAgent && (
+            <div className="space-y-6">
+              <div>
+                <h4 className="font-semibold mb-2">Descripción</h4>
+                <p className="text-sm text-muted-foreground">{selectedAgent.description}</p>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold mb-2">Plantilla del Documento</h4>
+                <div className="p-4 bg-muted rounded-md text-xs font-mono max-h-40 overflow-y-auto">
+                  {selectedAgent.template_content}
+                </div>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold mb-2">Prompt de IA</h4>
+                <div className="p-4 bg-muted rounded-md text-xs font-mono max-h-40 overflow-y-auto">
+                  {selectedAgent.ai_prompt}
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-semibold mb-2">Información General</h4>
+                  <div className="space-y-2 text-sm">
+                    <div><strong>Categoría:</strong> {selectedAgent.category}</div>
+                    <div><strong>Precio Sugerido:</strong> ${selectedAgent.suggested_price?.toLocaleString()} COP</div>
+                    <div><strong>Estado:</strong> {selectedAgent.status}</div>
+                    <div><strong>Creado:</strong> {new Date(selectedAgent.created_at).toLocaleDateString()}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo de edición de agente */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Agente Legal</DialogTitle>
+            <DialogDescription>
+              Modifica la información del agente legal
+            </DialogDescription>
+          </DialogHeader>
+          
+          {editingAgent && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="name">Nombre del Agente</Label>
+                  <Input
+                    id="name"
+                    value={editingAgent.name}
+                    onChange={(e) => handleEditFieldChange('name', e.target.value)}
+                    placeholder="Nombre del agente"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="document_name">Nombre del Documento</Label>
+                  <Input
+                    id="document_name"
+                    value={editingAgent.document_name || ''}
+                    onChange={(e) => handleEditFieldChange('document_name', e.target.value)}
+                    placeholder="Nombre del documento"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="description">Descripción</Label>
+                <Textarea
+                  id="description"
+                  value={editingAgent.description}
+                  onChange={(e) => handleEditFieldChange('description', e.target.value)}
+                  placeholder="Descripción del agente"
+                  rows={3}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="document_description">Descripción del Documento</Label>
+                <Textarea
+                  id="document_description"
+                  value={editingAgent.document_description || ''}
+                  onChange={(e) => handleEditFieldChange('document_description', e.target.value)}
+                  placeholder="Descripción del documento"
+                  rows={3}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="category">Categoría</Label>
+                  <Input
+                    id="category"
+                    value={editingAgent.category}
+                    onChange={(e) => handleEditFieldChange('category', e.target.value)}
+                    placeholder="Categoría del agente"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="target_audience">Audiencia Objetivo</Label>
+                  <Select
+                    value={editingAgent.target_audience || 'personas'}
+                    onValueChange={(value) => handleEditFieldChange('target_audience', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona audiencia" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="personas">Personas</SelectItem>
+                      <SelectItem value="empresas">Empresas</SelectItem>
+                      <SelectItem value="ambos">Ambos</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="suggested_price">Precio Sugerido (COP)</Label>
+                  <Input
+                    id="suggested_price"
+                    type="number"
+                    value={editingAgent.suggested_price}
+                    onChange={(e) => handleEditFieldChange('suggested_price', parseInt(e.target.value) || 0)}
+                    placeholder="Precio sugerido"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="final_price">Precio Final (COP)</Label>
+                  <Input
+                    id="final_price"
+                    type="number"
+                    value={editingAgent.final_price || ''}
+                    onChange={(e) => handleEditFieldChange('final_price', e.target.value ? parseInt(e.target.value) : null)}
+                    placeholder="Precio final (opcional)"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="price_justification">Justificación del Precio</Label>
+                <Textarea
+                  id="price_justification"
+                  value={editingAgent.price_justification || ''}
+                  onChange={(e) => handleEditFieldChange('price_justification', e.target.value)}
+                  placeholder="Justificación del precio"
+                  rows={3}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="template_content">Contenido de la Plantilla</Label>
+                <Textarea
+                  id="template_content"
+                  value={editingAgent.template_content}
+                  onChange={(e) => handleEditFieldChange('template_content', e.target.value)}
+                  placeholder="Contenido de la plantilla del documento"
+                  rows={6}
+                  className="font-mono text-sm"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="ai_prompt">Prompt de IA</Label>
+                <Textarea
+                  id="ai_prompt"
+                  value={editingAgent.ai_prompt}
+                  onChange={(e) => handleEditFieldChange('ai_prompt', e.target.value)}
+                  placeholder="Prompt para la IA"
+                  rows={6}
+                  className="font-mono text-sm"
+                />
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
+                <Button 
+                  onClick={handleSaveAgent}
+                  className="flex-1 sm:flex-none"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  Guardar Cambios
+                </Button>
+                
+                {editingAgent.status === 'pending_review' && (
+                  <Button 
+                    onClick={async () => {
+                      await handleUpdateAgentStatus(editingAgent.id, 'active');
+                      setIsEditDialogOpen(false);
+                    }}
+                    className="flex-1 sm:flex-none bg-success hover:bg-success/90"
+                  >
+                    <Check className="h-4 w-4 mr-2" />
+                    Aprobar y Activar
+                  </Button>
+                )}
+                
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsEditDialogOpen(false)}
+                  className="flex-1 sm:flex-none"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </SidebarProvider>
   );
 }
