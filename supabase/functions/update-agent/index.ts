@@ -50,6 +50,7 @@ Deno.serve(async (req) => {
       requestBody = JSON.parse(bodyText)
       console.log('✅ Request body parsed successfully')
       console.log('📋 Request data keys:', Object.keys(requestBody))
+      console.log('📋 Full request body:', JSON.stringify(requestBody, null, 2))
     } catch (parseError) {
       console.error('❌ JSON parse error:', parseError)
       return new Response(JSON.stringify({ 
@@ -89,7 +90,10 @@ Deno.serve(async (req) => {
     // Validate required fields
     if (!agent_id) {
       console.error('❌ Missing agent_id')
-      return new Response(JSON.stringify({ error: 'agent_id is required' }), {
+      return new Response(JSON.stringify({ 
+        error: 'agent_id is required',
+        success: false 
+      }), {
         status: 400,
         headers: securityHeaders
       })
@@ -108,7 +112,8 @@ Deno.serve(async (req) => {
       console.error('❌ Error fetching agent:', fetchError)
       return new Response(JSON.stringify({ 
         error: 'Database error while fetching agent',
-        details: fetchError.message 
+        details: fetchError.message,
+        success: false
       }), {
         status: 500,
         headers: securityHeaders
@@ -117,7 +122,10 @@ Deno.serve(async (req) => {
 
     if (!existingAgent) {
       console.error('❌ Agent not found:', agent_id)
-      return new Response(JSON.stringify({ error: 'Agent not found' }), {
+      return new Response(JSON.stringify({ 
+        error: 'Agent not found',
+        success: false 
+      }), {
         status: 404,
         headers: securityHeaders
       })
@@ -148,7 +156,8 @@ Deno.serve(async (req) => {
     if (!canUpdate) {
       return new Response(JSON.stringify({ 
         error: 'No tienes permisos para modificar este agente',
-        reason: updateReason
+        reason: updateReason,
+        success: false
       }), {
         status: 403,
         headers: securityHeaders
@@ -198,7 +207,8 @@ Deno.serve(async (req) => {
       console.error('❌ Error updating agent:', updateError)
       return new Response(JSON.stringify({ 
         error: 'Database error during update',
-        details: updateError.message 
+        details: updateError.message,
+        success: false
       }), {
         status: 500,
         headers: securityHeaders
@@ -228,9 +238,11 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('💥 Critical error in update-agent function:', error)
+    console.error('💥 Error stack:', error.stack)
     return new Response(JSON.stringify({ 
       error: 'Internal server error',
-      message: 'An unexpected error occurred while updating the agent'
+      message: 'An unexpected error occurred while updating the agent',
+      success: false
     }), {
       status: 500,
       headers: securityHeaders
