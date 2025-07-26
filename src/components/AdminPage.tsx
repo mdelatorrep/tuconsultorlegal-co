@@ -24,7 +24,7 @@ import {
   ShieldCheck, Activity, Briefcase, Calendar, Building2, Award, Coffee, Sparkles, Gavel, 
   FileCheck, Users2, Target, TrendingUp, BookOpenCheck, Newspaper, PenTool, Send, Flag, 
   CheckSquare, Heart, Star, Laptop, Smartphone, Headphones, HelpCircle, Shield, 
-  Zap as ZapIcon, Edit, Save, Tag, Menu, UserCog, Cog, Database, FolderOpen 
+  Zap as ZapIcon, Edit, Save, Tag, Menu, UserCog, Cog, Database, FolderOpen, Play
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -253,9 +253,12 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
           'Content-Type': 'application/json',
           ...authHeaders
         }
-      });
+       });
 
-      if (response.error) throw new Error(response.error.message);
+      if (response.error || response.data?.error) {
+        const errorMessage = response.error?.message || response.data?.error || 'Error desconocido';
+        throw new Error(errorMessage);
+      }
 
       toast({
         title: "Estado actualizado",
@@ -263,11 +266,12 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
       });
 
       await loadAgents();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating agent status:', error);
+      console.error('Full error details:', error);
       toast({
         title: "Error",
-        description: "No se pudo actualizar el estado del agente",
+        description: error.message || "No se pudo actualizar el estado del agente",
         variant: "destructive",
       });
     }
@@ -349,7 +353,10 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
         }
       });
 
-      if (response.error) throw new Error(response.error.message);
+      if (response.error || response.data?.error) {
+        const errorMessage = response.error?.message || response.data?.error || 'Error desconocido';
+        throw new Error(errorMessage);
+      }
 
       toast({
         title: "Agente actualizado",
@@ -359,11 +366,12 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
       await loadAgents();
       setIsEditDialogOpen(false);
       setEditingAgent(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating agent:', error);
+      console.error('Full error details:', error);
       toast({
         title: "Error",
-        description: "No se pudo actualizar el agente",
+        description: error.message || "No se pudo actualizar el agente",
         variant: "destructive",
       });
     }
@@ -1079,8 +1087,20 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
                             <Lock className="w-4 h-4 mr-1" />
                             Suspender
                           </Button>
-                        )}
-                        
+                         )}
+                         
+                         {agent.status === 'suspended' && (
+                           <Button 
+                             size="sm" 
+                             variant="default"
+                             onClick={() => handleUpdateAgentStatus(agent.id, 'active')}
+                             className="bg-green-600 hover:bg-green-700"
+                           >
+                             <Play className="w-4 h-4 mr-1" />
+                             Reactivar
+                           </Button>
+                         )}
+                         
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button size="sm" variant="destructive">
