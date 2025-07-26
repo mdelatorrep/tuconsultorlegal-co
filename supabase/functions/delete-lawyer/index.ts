@@ -77,11 +77,11 @@ Deno.serve(async (req) => {
 
     console.log('Processing deletion for lawyer ID:', targetId)
 
-    // Check if lawyer exists
+    // Check if lawyer exists - buscar por lawyer_id en lugar de id
     const { data: existingLawyer, error: fetchError } = await supabase
       .from('lawyer_tokens')
-      .select('id, full_name, email')
-      .eq('id', targetId)
+      .select('id, full_name, email, lawyer_id')
+      .eq('lawyer_id', targetId)
       .maybeSingle()
 
     if (fetchError) {
@@ -102,11 +102,11 @@ Deno.serve(async (req) => {
 
     console.log('Found lawyer to delete:', existingLawyer.full_name)
 
-    // Delete the lawyer account
+    // Delete the lawyer account - eliminar por lawyer_id
     const { error: deleteError } = await supabase
       .from('lawyer_tokens')
       .delete()
-      .eq('id', targetId)
+      .eq('lawyer_id', targetId)
 
     if (deleteError) {
       console.error('Error deleting lawyer:', deleteError)
