@@ -255,9 +255,16 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
         }
        });
 
-      if (response.error || response.data?.error) {
-        const errorMessage = response.error?.message || response.data?.error || 'Error desconocido';
-        throw new Error(errorMessage);
+      console.log('🔧 Response from update-agent:', response);
+
+      if (response.error) {
+        console.error('🔧 Response.error:', response.error);
+        throw new Error(response.error.message || 'Error en la respuesta');
+      }
+
+      if (response.data && !response.data.success) {
+        console.error('🔧 Response.data.error:', response.data.error);
+        throw new Error(response.data.error || 'Error en la actualización');
       }
 
       toast({
@@ -353,9 +360,17 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
         }
       });
 
-      if (response.error || response.data?.error) {
-        const errorMessage = response.error?.message || response.data?.error || 'Error desconocido';
-        throw new Error(errorMessage);
+
+      console.log('🔧 Response from save agent:', response);
+
+      if (response.error) {
+        console.error('🔧 Response.error:', response.error);
+        throw new Error(response.error.message || 'Error en la respuesta');
+      }
+
+      if (response.data && !response.data.success) {
+        console.error('🔧 Response.data.error:', response.data.error);
+        throw new Error(response.data.error || 'Error en la actualización');
       }
 
       toast({
@@ -1093,7 +1108,10 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
                            <Button 
                              size="sm" 
                              variant="default"
-                             onClick={() => handleUpdateAgentStatus(agent.id, 'active')}
+                             onClick={() => {
+                               console.log('🔧 Reactivate button clicked for agent:', agent.id);
+                               handleUpdateAgentStatus(agent.id, 'active');
+                             }}
                              className="bg-green-600 hover:bg-green-700"
                            >
                              <Play className="w-4 h-4 mr-1" />
@@ -1526,12 +1544,21 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="category">Categoría</Label>
-                  <Input
-                    id="category"
+                  <Select
                     value={editingAgent.category}
-                    onChange={(e) => handleEditFieldChange('category', e.target.value)}
-                    placeholder="Categoría del agente"
-                  />
+                    onValueChange={(value) => handleEditFieldChange('category', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona categoría" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((category) => (
+                        <SelectItem key={category.value} value={category.name}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 
                 <div>
@@ -1613,7 +1640,11 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
 
               <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
                 <Button 
-                  onClick={handleSaveAgent}
+                  onClick={() => {
+                    console.log('🔧 Save agent button clicked');
+                    console.log('🔧 Current editing agent:', editingAgent);
+                    handleSaveAgent();
+                  }}
                   className="flex-1 sm:flex-none"
                 >
                   <Save className="h-4 w-4 mr-2" />
