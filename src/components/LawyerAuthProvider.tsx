@@ -5,8 +5,12 @@ interface LawyerAuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   user: any;
-  loginWithEmailAndToken: (email: string, token: string) => Promise<boolean>;
-  logout: () => void;
+  session: any;
+  loginWithEmailAndPassword: (email: string, password: string) => Promise<boolean>;
+  signUpWithEmailAndPassword: (email: string, password: string, fullName: string) => Promise<boolean>;
+  resetPassword: (email: string) => Promise<boolean>;
+  updatePassword: (newPassword: string) => Promise<boolean>;
+  logout: () => Promise<void>;
   checkAuthStatus: () => Promise<void>;
   getAuthHeaders: () => Record<string, string>;
 }

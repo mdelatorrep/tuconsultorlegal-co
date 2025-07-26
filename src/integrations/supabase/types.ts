@@ -504,6 +504,39 @@ export type Database = {
           },
         ]
       }
+      lawyer_profiles: {
+        Row: {
+          can_create_agents: boolean | null
+          can_create_blogs: boolean | null
+          created_at: string | null
+          email: string
+          full_name: string
+          id: string
+          is_active: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          can_create_agents?: boolean | null
+          can_create_blogs?: boolean | null
+          created_at?: string | null
+          email: string
+          full_name: string
+          id: string
+          is_active?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          can_create_agents?: boolean | null
+          can_create_blogs?: boolean | null
+          created_at?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       lawyer_token_requests: {
         Row: {
           created_at: string
