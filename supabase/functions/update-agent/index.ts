@@ -133,43 +133,86 @@ Deno.serve(async (req) => {
 
     console.log('✅ Found agent to update:', existingAgent.name)
 
-    // **SIMPLIFIED AUTHORIZATION LOGIC**
-    // Check if request has authorization header (JWT token from Supabase)
-    const authorization = req.headers.get('authorization')
-    console.log('🔑 Authorization header present:', !!authorization)
+    // **AUTHORIZATION LOGIC - SAME AS DELETE-AGENT**
+    const authHeader = req.headers.get('authorization')
+    console.log('🔑 Auth header present:', !!authHeader)
     
-    let canUpdate = false
-    let updateReason = ''
+    if (!authHeader) {
+      console.error('❌ No authorization header')
+      return new Response(JSON.stringify({ 
+        error: 'Authorization required',
+        success: false
+      }), {
+        status: 401,
+        headers: securityHeaders
+      })
+    }
 
-    // If we have authorization header and is_admin is true, allow update
-    if (authorization && is_admin) {
-      canUpdate = true
-      updateReason = 'admin_with_auth'
-      console.log('✅ Admin access granted with JWT')
-    } else if (authorization && user_id && existingAgent.created_by === user_id) {
-      canUpdate = true
-      updateReason = 'creator_access'
-      console.log('✅ Creator access granted')
-    } else if (!authorization) {
-      canUpdate = false
-      updateReason = 'no_auth_header'
-      console.log('❌ No authorization header')
+    // Check permissions - Admin can update any agent, lawyers can only update their own
+    let canUpdate = false
+    let isVerifiedAdmin = false
+    let isVerifiedLawyer = false
+    let verifiedUser = null
+
+    if (is_admin) {
+      // Verify admin status using admin_accounts table - same as delete-agent
+      let adminToken = authHeader
+      if (authHeader.startsWith('Bearer ')) {
+        adminToken = authHeader.substring(7)
+      }
+
+      const { data: admin, error: tokenError } = await supabase
+        .from('admin_accounts')
+        .select('*')
+        .eq('session_token', adminToken)
+        .eq('active', true)
+        .maybeSingle()
+
+      if (!tokenError && admin) {
+        // Check token expiration
+        if (!admin.token_expires_at || new Date(admin.token_expires_at) >= new Date()) {
+          isVerifiedAdmin = true
+          canUpdate = true
+          verifiedUser = admin
+          console.log('✅ Admin verified, can update any agent')
+        }
+      }
     } else {
-      canUpdate = false
-      updateReason = 'access_denied'
-      console.log('❌ Access denied - user_id:', user_id, 'created_by:', existingAgent.created_by)
+      // Check if lawyer can update their own agent using lawyer_tokens table - same as delete-agent
+      let lawyerToken = authHeader
+      if (authHeader.startsWith('Bearer ')) {
+        lawyerToken = authHeader.substring(7)
+      }
+
+      const { data: lawyer, error: lawyerError } = await supabase
+        .from('lawyer_tokens')
+        .select('*')
+        .eq('access_token', lawyerToken)
+        .eq('active', true)
+        .maybeSingle()
+
+      if (!lawyerError && lawyer && lawyer.id === existingAgent.created_by) {
+        isVerifiedLawyer = true
+        canUpdate = true
+        verifiedUser = lawyer
+        console.log('✅ Lawyer verified, can update own agent')
+      }
     }
 
     if (!canUpdate) {
+      console.log('❌ User cannot update agent - insufficient permissions')
       return new Response(JSON.stringify({ 
-        error: 'No tienes permisos para modificar este agente',
-        reason: updateReason,
+        error: is_admin 
+          ? 'Token de administrador inválido o expirado' 
+          : 'Solo puedes editar agentes que tú has creado',
         success: false
       }), {
         status: 403,
         headers: securityHeaders
       })
     }
+
+    console.log('✅ Proceeding with update by verified user')
 
     // Prepare update data
     const updateData: any = {
