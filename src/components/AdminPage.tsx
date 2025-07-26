@@ -12,6 +12,7 @@ import { useNativeAdminAuth } from "../hooks/useNativeAdminAuth";
 import LawyerStatsAdmin from "./LawyerStatsAdmin";
 import OpenAIAgentManager from "./OpenAIAgentManager";
 import LawyerBlogManager from "./LawyerBlogManager";
+import AdminBlogManager from "./AdminBlogManager";
 import SystemConfigManager from "./SystemConfigManager";
 import KnowledgeBaseManager from "./KnowledgeBaseManager";
 import LawyerTrainingManager from "./LawyerTrainingManager";
@@ -1045,7 +1046,7 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
         return <OpenAIAgentManager />;
         
       case 'blogs':
-        return <LawyerBlogManager onBack={() => setCurrentView('dashboard')} lawyerData={{ full_name: user?.email || 'Admin' }} />;
+        return <AdminBlogManager onBack={() => setCurrentView('dashboard')} authHeaders={getAuthHeaders()} />;
         
       case 'config':
         return <SystemConfigManager />;

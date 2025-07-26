@@ -59,8 +59,18 @@ export default function LawyerBlogManager({ onBack, lawyerData }: LawyerBlogMana
   });
 
   useEffect(() => {
+    // Verificar permisos del abogado
+    if (!lawyerData?.can_create_blogs) {
+      toast({
+        title: "Sin permisos",
+        description: "No tienes permisos para gestionar blogs. Contacta al administrador.",
+        variant: "destructive",
+      });
+      onBack();
+      return;
+    }
     loadMyBlogs();
-  }, []);
+  }, [lawyerData]);
 
   const loadMyBlogs = async () => {
     try {
