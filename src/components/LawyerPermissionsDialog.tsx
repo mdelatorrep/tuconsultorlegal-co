@@ -68,17 +68,22 @@ export default function LawyerPermissionsDialog({
       console.log('Lawyer ID:', lawyer.id);
       console.log('New permissions:', permissions);
       
+      // Verificar usuario actual
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log('Current user:', user?.id);
+      
       // Actualizar permisos en lawyer_profiles
-      const { error: profileError } = await supabase
+      const { data, error: profileError, count } = await supabase
         .from('lawyer_profiles')
         .update({
           can_create_agents: permissions.can_create_agents,
           can_create_blogs: permissions.can_create_blogs,
           can_use_ai_tools: permissions.can_use_ai_tools
         })
-        .eq('id', lawyer.id);
+        .eq('id', lawyer.id)
+        .select();
 
-      console.log('Update result:', { profileError });
+      console.log('Update result:', { data, profileError, count });
 
       if (profileError) {
         console.error('Error updating lawyer_profiles:', profileError);
