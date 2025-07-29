@@ -126,8 +126,8 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
   }, [formData, currentStep, aiResults]);
 
   const loadDrafts = async () => {
-    if (!lawyerData?.tokenId) {
-      console.log('Cannot load drafts - no lawyer token available');
+    if (!lawyerData?.canCreateAgents) {
+      console.log('Cannot load drafts - user does not have agent creation permissions');
       setDrafts([]);
       return;
     }
@@ -135,7 +135,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
     setIsLoadingDrafts(true);
     try {
       const { data, error } = await supabase.functions.invoke('get-agent-drafts', {
-        body: { lawyerId: lawyerData.tokenId } // Usar tokenId que apunta a lawyer_tokens.id
+        body: { lawyerId: lawyerData.id } // Usar el ID del lawyer profile directamente
       });
 
       if (error) {
@@ -156,9 +156,9 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
   const saveDraft = async () => {
     if (isSavingDraft) return; // Prevent multiple simultaneous saves
     
-    // Skip auto-save if no token (user can still work, just won't auto-save)
-    if (!lawyerData?.tokenId) {
-      console.log('Cannot save draft - no lawyer token available');
+    // Skip auto-save if user doesn't have permissions
+    if (!lawyerData?.canCreateAgents) {
+      console.log('Cannot save draft - user does not have agent creation permissions');
       return;
     }
     
@@ -166,11 +166,11 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
     try {
       const draftName = formData.docName || `Borrador ${new Date().toLocaleDateString()}`;
       
-      console.log('Attempting to save draft with lawyerId:', lawyerData.tokenId);
+      console.log('Attempting to save draft with lawyerId:', lawyerData.id);
       
       const { data, error } = await supabase.functions.invoke('save-agent-draft', {
         body: {
-          lawyerId: lawyerData.tokenId, // Usar tokenId que apunta a lawyer_tokens.id
+          lawyerId: lawyerData.id, // Usar el ID del lawyer profile directamente
           draftId: currentDraftId,
           draftName,
           stepCompleted: currentStep,
@@ -245,7 +245,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       const { data, error } = await supabase.functions.invoke('delete-agent-draft', {
         body: {
           draftId,
-          lawyerId: lawyerData.tokenId // Usar tokenId que apunta a lawyer_tokens.id
+          lawyerId: lawyerData.id // Usar el ID del lawyer profile directamente
         }
       });
 
@@ -395,15 +395,10 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         templateLength: formData.docTemplate.length,
         promptLength: formData.initialPrompt.length,
         lawyerData: lawyerData, // Add this to debug
-        hasTokenId: !!lawyerData?.tokenId // Add this to debug
+        hasPermissions: !!lawyerData?.canCreateAgents // Add this to debug
       });
 
-      // Validate that we have the lawyer token (only for functions that require it)
-      if (!lawyerData?.tokenId) {
-        console.warn('No lawyer token available - some features may be limited');
-        // For now, allow the AI processing to continue without tokenId
-        // as this function doesn't strictly require it
-      }
+      // AI processing doesn't require special permissions, only basic authentication
 
       const { data, error } = await supabase.functions.invoke('process-agent-ai', {
         body: {
@@ -711,15 +706,15 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       
       console.log('Publishing agent with data:', {
         name: formData.docName,
-        created_by: lawyerData.tokenId,
+        created_by: lawyerData.id,
         lawyerPriceValue,
         calculatedPriceValue,
-        hasTokenId: !!lawyerData.tokenId,
+        hasPermissions: !!lawyerData.canCreateAgents,
         enhancedPromptLength: aiResults.enhancedPrompt.length,
         placeholdersCount: aiResults.extractedPlaceholders.length
       });
       
-      if (!lawyerData.tokenId) {
+      if (!lawyerData.canCreateAgents) {
         throw new Error('No tienes permisos para crear agentes. Solicita acceso al administrador.');
       }
       
@@ -736,7 +731,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
            final_price: calculatedPriceValue, // AI calculated price for admin review
            price_justification: aiResults.priceJustification || 'Precio estimado por el abogado',
            status: 'pending_review',
-           created_by: lawyerData.tokenId, // Usar tokenId que apunta a lawyer_tokens.id
+           created_by: lawyerData.id, // Usar el ID del lawyer profile directamente
            target_audience: formData.targetAudience,
            sla_hours: formData.slaEnabled ? formData.slaHours : null,
            sla_enabled: formData.slaEnabled,
@@ -803,7 +798,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
           await supabase.functions.invoke('delete-agent-draft', {
             body: {
               draftId: currentDraftId,
-              lawyerId: lawyerData.tokenId
+              lawyerId: lawyerData.id
             }
           });
           console.log('Draft deleted after successful publish');
@@ -932,7 +927,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
             <Button 
               variant="outline" 
               onClick={saveDraft}
-              disabled={isSavingDraft || !lawyerData?.tokenId}
+              disabled={isSavingDraft || !lawyerData?.canCreateAgents}
               className="flex items-center gap-2"
             >
               {isSavingDraft ? (
@@ -951,7 +946,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
                 loadDrafts();
               }}
               className="flex items-center gap-2"
-              disabled={!lawyerData?.tokenId}
+              disabled={!lawyerData?.canCreateAgents}
             >
               <FileText className="h-4 w-4" />
               Borradores ({drafts.length})
@@ -1678,9 +1673,9 @@ VALIDACIONES:
                    onClick={handlePublish} 
                    size={isMobile ? "default" : "lg"} 
                    className={`${isMobile ? "w-full text-base px-6 py-3" : "text-xl px-10 py-4"}`}
-                   disabled={!lawyerData?.tokenId}
-                 >
-                   {!lawyerData?.tokenId ? 'Requiere Permisos de Admin' : 'Enviar a Revisión'}
+                    disabled={!lawyerData?.canCreateAgents}
+                  >
+                    {!lawyerData?.canCreateAgents ? 'Requiere Permisos de Admin' : 'Enviar a Revisión'}
                  </Button>
               </div>
             )}

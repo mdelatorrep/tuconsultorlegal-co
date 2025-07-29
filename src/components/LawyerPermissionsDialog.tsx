@@ -59,12 +59,12 @@ export default function LawyerPermissionsDialog({
     setIsLoading(true);
     try {
       const { error } = await supabase
-        .from('lawyer_tokens')
+        .from('lawyer_profiles')
         .update({
           can_create_agents: permissions.can_create_agents,
           can_create_blogs: permissions.can_create_blogs
         })
-        .eq('lawyer_id', lawyer.id);
+        .eq('id', lawyer.id);
 
       if (error) {
         console.error('Error updating permissions:', error);

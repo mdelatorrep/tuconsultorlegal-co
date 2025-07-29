@@ -78,7 +78,7 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
       const { data, error } = await supabase
         .from('legal_agents')
         .select('*')
-        .eq('created_by', lawyerData.tokenId) // Usar tokenId para filtrar por abogado que los creó
+        .eq('created_by', lawyerData.id) // Usar el ID del lawyer profile directamente
         .in('status', ['active', 'pending_review', 'suspended']) // Incluir también suspendidos
         .order('created_at', { ascending: false });
 
