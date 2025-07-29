@@ -122,9 +122,9 @@ serve(async (req) => {
     // Map all possible fields that can be updated (admin has access to all fields)
     const updatableFields = [
       'name', 'description', 'document_name', 'document_description', 
-      'category', 'suggested_price', 'price_justification', 'target_audience',
+      'category', 'price', 'price_justification', 'target_audience',
       'template_content', 'ai_prompt', 'sla_enabled', 'sla_hours',
-      'button_cta', 'placeholder_fields', 'frontend_icon', 'final_price', 'status'
+      'button_cta', 'placeholder_fields', 'frontend_icon', 'status'
     ];
 
     // Add all fields if they exist in the request (admin can update everything)

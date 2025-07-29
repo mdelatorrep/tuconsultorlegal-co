@@ -68,8 +68,7 @@ interface Agent {
   status: 'pending_review' | 'approved' | 'active' | 'rejected' | 'suspended';
   created_at: string;
   created_by?: string;
-  suggested_price: number;
-  final_price?: number;
+  price: number;
   target_audience: string;
   template_content?: string;
   ai_prompt?: string;
@@ -255,6 +254,7 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
       status: newStatus,
       user_id: user?.id || 'admin_override',
       is_admin: true,
+      price: 0 // Default price for status updates
     };
 
     const response = await supabase.functions.invoke('update-agent', {
@@ -357,8 +357,7 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
         document_name: agentToSave.document_name,
         document_description: agentToSave.document_description,
         category: agentToSave.category,
-        suggested_price: agentToSave.suggested_price,
-        final_price: agentToSave.final_price,
+        price: agentToSave.price,
         price_justification: agentToSave.price_justification,
         target_audience: agentToSave.target_audience,
         template_content: agentToSave.template_content,
@@ -1043,13 +1042,12 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
                           <Badge variant="outline">{agent.category}</Badge>
                           <Badge variant="outline">{agent.target_audience}</Badge>
                           <span className="text-xs text-muted-foreground">
-                            Precio sugerido: ${agent.suggested_price?.toLocaleString()}
+                            {agent.price === 0 ? (
+                              <span className="text-green-600 font-medium">GRATIS</span>
+                            ) : (
+                              <>Precio: ${agent.price?.toLocaleString()} COP</>
+                            )}
                           </span>
-                          {agent.final_price && (
-                            <span className="text-xs text-green-600 font-medium">
-                              Precio final: ${agent.final_price?.toLocaleString()}
-                            </span>
-                          )}
                         </div>
                         
                         <div className="text-xs text-muted-foreground">
@@ -1442,7 +1440,7 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
                   <h4 className="font-semibold mb-2">Información General</h4>
                   <div className="space-y-2 text-sm">
                     <div><strong>Categoría:</strong> {selectedAgent.category}</div>
-                    <div><strong>Precio Sugerido:</strong> ${selectedAgent.suggested_price?.toLocaleString()} COP</div>
+                    <div><strong>Precio:</strong> {selectedAgent.price === 0 ? 'GRATIS' : `$${selectedAgent.price?.toLocaleString()} COP`}</div>
                     <div><strong>Estado:</strong> {selectedAgent.status}</div>
                     <div><strong>Creado:</strong> {new Date(selectedAgent.created_at).toLocaleDateString()}</div>
                   </div>
@@ -1550,27 +1548,20 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <Label htmlFor="suggested_price">Precio Sugerido (COP)</Label>
+                  <Label htmlFor="price">Precio (COP)</Label>
                   <Input
-                    id="suggested_price"
+                    id="price"
                     type="number"
-                    value={editingAgent.suggested_price}
-                    onChange={(e) => handleEditFieldChange('suggested_price', parseInt(e.target.value) || 0)}
-                    placeholder="Precio sugerido"
+                    min="0"
+                    value={editingAgent.price || 0}
+                    onChange={(e) => handleEditFieldChange('price', parseInt(e.target.value) || 0)}
+                    placeholder="Precio (0 = gratis)"
                   />
-                </div>
-                
-                <div>
-                  <Label htmlFor="final_price">Precio Final (COP)</Label>
-                  <Input
-                    id="final_price"
-                    type="number"
-                    value={editingAgent.final_price || ''}
-                    onChange={(e) => handleEditFieldChange('final_price', e.target.value ? parseInt(e.target.value) : null)}
-                    placeholder="Precio final (opcional)"
-                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Ingresa 0 para hacer el documento gratuito
+                  </p>
                 </div>
               </div>
 
