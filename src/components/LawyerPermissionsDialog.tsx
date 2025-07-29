@@ -69,37 +69,29 @@ export default function LawyerPermissionsDialog({
     
     setIsLoading(true);
     try {
-      // En lugar de usar el cliente de Supabase directo, hacer una llamada HTTP directa
-      // usando los headers de autenticación del admin
-      const response = await fetch(
-        `https://tkaezookvtpulfpaffes.supabase.co/rest/v1/lawyer_profiles?id=eq.${lawyer.id}`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRrYWV6b29rdnRwdWxmcGFmZmVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3NzEwNzUsImV4cCI6MjA2NzM0NzA3NX0.j7fSfaXMqwmytVuXIU4_miAbn-v65b5x0ncRr0K-CNE',
-            'prefer': 'return=representation',
-            ...authHeaders
-          },
-          body: JSON.stringify({
-            can_create_agents: permissions.can_create_agents,
-            can_create_blogs: permissions.can_create_blogs,
-            can_use_ai_tools: permissions.can_use_ai_tools
-          })
-        }
-      );
-
-      console.log('=== HTTP RESPONSE ===');
-      console.log('Status:', response.status, response.statusText);
+      console.log('=== UPDATING VIA SUPABASE CLIENT ===');
+      console.log('Using auth token:', authHeaders.authorization?.substring(0, 50) + '...');
       
-      const data = await response.json();
-      console.log('Response data:', data);
+      // Usar el cliente de Supabase directamente en lugar de HTTP
+      const { data, error } = await supabase
+        .from('lawyer_profiles')
+        .update({
+          can_create_agents: permissions.can_create_agents,
+          can_create_blogs: permissions.can_create_blogs,
+          can_use_ai_tools: permissions.can_use_ai_tools
+        })
+        .eq('id', lawyer.id)
+        .select();
 
-      if (!response.ok) {
-        console.error('HTTP Error updating lawyer_profiles:', data);
+      console.log('=== SUPABASE UPDATE RESPONSE ===');
+      console.log('Data:', data);
+      console.log('Error:', error);
+
+      if (error) {
+        console.error('Supabase update error:', error);
         toast({
           title: "Error",
-          description: `Error: ${response.statusText} - ${JSON.stringify(data)}`,
+          description: `Error al actualizar: ${error.message}`,
           variant: "destructive"
         });
         return;
