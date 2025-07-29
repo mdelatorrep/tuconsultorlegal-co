@@ -327,9 +327,16 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
     return;
   }
 
+  console.log('🚀 Starting handleSaveAgent for agent:', agentToSave.id);
+  console.log('🔍 Agent status:', agentToSave.status);
+  console.log('🔍 Agent name:', agentToSave.name);
+
   try {
     const authHeaders = getAuthHeaders();
+    console.log('🔑 Auth headers obtained:', !!authHeaders.authorization);
+    
     if (!authHeaders.authorization) {
+      console.error("❌ No authorization token found");
       throw new Error("No se encontró token de autenticación");
     }
 
@@ -337,7 +344,6 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
     const bodyPayload = {
       agent_id: agentToSave.id,
       user_id: user?.id,
-      // Recordatorio: Reemplaza esto con la variable segura 'isAdmin' de tu función de Edge
       is_admin: true, 
       name: agentToSave.name,
       description: agentToSave.description,
@@ -358,8 +364,11 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
       status: agentToSave.status,
     };
     
-    console.log('✅ Payload a enviar:', bodyPayload);
+    console.log('📦 Payload prepared. Keys:', Object.keys(bodyPayload));
+    console.log('🔍 User ID in payload:', bodyPayload.user_id);
+    console.log('🔍 Agent ID in payload:', bodyPayload.agent_id);
 
+    console.log('📡 Invoking update-agent function...');
     const response = await supabase.functions.invoke('update-agent', {
       body: bodyPayload,
       headers: { 
@@ -368,27 +377,39 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
       }
     });
 
+    console.log('📥 Response received:', response);
+    console.log('📥 Response error:', response.error);
+    console.log('📥 Response data:', response.data);
+
     if (response.error) {
-      throw new Error(response.error.message);
+      console.error('❌ Supabase function error:', response.error);
+      throw new Error(response.error.message || 'Error en la función de Supabase');
     }
 
     if (response.data && !response.data.success) {
+      console.error('❌ Function returned success=false:', response.data);
       throw new Error(response.data.error || 'La función devolvió un error de éxito falso');
     }
 
+    console.log('✅ Agent updated successfully');
     toast({
       title: "Agente actualizado",
       description: "El agente ha sido actualizado correctamente.",
     });
 
+    console.log('🔄 Reloading agents...');
     await loadAgents();
     setIsEditDialogOpen(false);
     setEditingAgent(null);
+    console.log('✅ Process completed successfully');
   } catch (error: any) {
-    console.error('Error al actualizar el agente:', error);
+    console.error('💥 Error in handleSaveAgent:', error);
+    console.error('💥 Error message:', error.message);
+    console.error('💥 Error stack:', error.stack);
+    
     toast({
-      title: "Error",
-      description: error.message || "No se pudo actualizar el agente",
+      title: "Error al guardar cambios",
+      description: error.message || "No se pudo actualizar el agente. Verifica la consola para más detalles.",
       variant: "destructive",
     });
   }
