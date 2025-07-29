@@ -40,9 +40,6 @@ export default function LawyerPermissionsDialog({
   onPermissionsUpdated,
   authHeaders
 }: LawyerPermissionsDialogProps) {
-  console.log('=== LAWYER PERMISSIONS DIALOG RENDERED ===');
-  console.log('Props:', { lawyer: lawyer?.id, open, authHeaders });
-  
   const [permissions, setPermissions] = useState<LawyerPermissions>({
     can_create_agents: false,
     can_create_blogs: false,
@@ -53,14 +50,7 @@ export default function LawyerPermissionsDialog({
 
   // Initialize permissions when lawyer changes
   useEffect(() => {
-    console.log('=== LAWYER PERMISSIONS DIALOG USEEFFECT ===');
-    console.log('Lawyer prop changed:', lawyer);
     if (lawyer) {
-      console.log('Setting permissions from lawyer:', {
-        can_create_agents: lawyer.can_create_agents,
-        can_create_blogs: lawyer.can_create_blogs,
-        can_use_ai_tools: lawyer.can_use_ai_tools
-      });
       setPermissions({
         can_create_agents: lawyer.can_create_agents,
         can_create_blogs: lawyer.can_create_blogs,
@@ -74,16 +64,8 @@ export default function LawyerPermissionsDialog({
 
     setIsLoading(true);
     try {
-      console.log('=== UPDATING LAWYER PERMISSIONS ===');
-      console.log('Lawyer ID:', lawyer.id);
-      console.log('New permissions:', permissions);
-      
-      // Verificar usuario actual
-      const { data: { user } } = await supabase.auth.getUser();
-      console.log('Current user:', user?.id);
-      
       // Actualizar permisos en lawyer_profiles
-      const { data, error: profileError, count } = await supabase
+      const { data, error: profileError } = await supabase
         .from('lawyer_profiles')
         .update({
           can_create_agents: permissions.can_create_agents,
@@ -92,8 +74,6 @@ export default function LawyerPermissionsDialog({
         })
         .eq('id', lawyer.id)
         .select('*');
-
-      console.log('Update result:', { data, profileError, count });
 
       if (profileError) {
         console.error('Error updating lawyer_profiles:', profileError);
@@ -151,10 +131,7 @@ export default function LawyerPermissionsDialog({
   if (!lawyer) return null;
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => {
-      console.log('LawyerPermissionsDialog open state changed:', isOpen);
-      if (!isOpen) onClose();
-    }}>
+    <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
