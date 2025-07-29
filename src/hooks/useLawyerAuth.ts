@@ -11,7 +11,7 @@ interface LawyerUser {
   name: string;
   canCreateAgents: boolean;
   canCreateBlogs: boolean;
-  tokenId: string; // ID from lawyer_tokens table
+  tokenId: string | null; // ID from lawyer_tokens table, can be null for new users
 }
 
 export const useLawyerAuth = () => {
@@ -46,6 +46,8 @@ export const useLawyerAuth = () => {
 
   const fetchLawyerProfile = async (authUser: User) => {
     try {
+      console.log('Fetching lawyer profile for user:', authUser.id);
+      
       const { data: profile, error } = await supabase
         .from('lawyer_profiles')
         .select('*')
@@ -59,28 +61,33 @@ export const useLawyerAuth = () => {
         return;
       }
 
-      // Also fetch the lawyer token to get the tokenId
+      console.log('Lawyer profile found:', profile.full_name);
+
+      // Try to fetch the lawyer token, but don't fail if it doesn't exist
       const { data: lawyerToken, error: tokenError } = await supabase
         .from('lawyer_tokens')
         .select('id, access_token')
         .eq('lawyer_id', authUser.id)
         .eq('active', true)
-        .single();
+        .maybeSingle(); // Use maybeSingle to allow null results
 
-      if (tokenError || !lawyerToken) {
-        console.error('Error fetching lawyer token:', tokenError);
-        setUser(null);
-        setIsAuthenticated(false);
-        return;
+      let tokenId = null;
+      if (tokenError) {
+        console.warn('No active lawyer token found (this is expected for new users):', tokenError);
+      } else if (lawyerToken) {
+        tokenId = lawyerToken.id;
+        console.log('Lawyer token found:', tokenId);
+      } else {
+        console.log('No active lawyer token found - user has limited access');
       }
 
       const lawyerUser: LawyerUser = {
         id: profile.id,
         email: profile.email,
         name: profile.full_name,
-        canCreateAgents: profile.can_create_agents,
-        canCreateBlogs: profile.can_create_blogs,
-        tokenId: lawyerToken.id // Add the tokenId from lawyer_tokens table
+        canCreateAgents: profile.can_create_agents && !!tokenId, // Only if has token
+        canCreateBlogs: profile.can_create_blogs && !!tokenId, // Only if has token
+        tokenId: tokenId // Can be null for users without tokens
       };
 
       setUser(lawyerUser);

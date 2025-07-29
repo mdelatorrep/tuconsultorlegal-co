@@ -126,6 +126,12 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
   }, [formData, currentStep, aiResults]);
 
   const loadDrafts = async () => {
+    if (!lawyerData?.tokenId) {
+      console.log('Cannot load drafts - no lawyer token available');
+      setDrafts([]);
+      return;
+    }
+    
     setIsLoadingDrafts(true);
     try {
       const { data, error } = await supabase.functions.invoke('get-agent-drafts', {
@@ -149,6 +155,12 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
 
   const saveDraft = async () => {
     if (isSavingDraft) return; // Prevent multiple simultaneous saves
+    
+    // Skip auto-save if no token (user can still work, just won't auto-save)
+    if (!lawyerData?.tokenId) {
+      console.log('Cannot save draft - no lawyer token available');
+      return;
+    }
     
     setIsSavingDraft(true);
     try {
@@ -386,9 +398,11 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         hasTokenId: !!lawyerData?.tokenId // Add this to debug
       });
 
-      // Validate that we have the lawyer token
+      // Validate that we have the lawyer token (only for functions that require it)
       if (!lawyerData?.tokenId) {
-        throw new Error('Token de abogado no disponible. Por favor inicia sesión nuevamente.');
+        console.warn('No lawyer token available - some features may be limited');
+        // For now, allow the AI processing to continue without tokenId
+        // as this function doesn't strictly require it
       }
 
       const { data, error } = await supabase.functions.invoke('process-agent-ai', {
@@ -706,7 +720,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       });
       
       if (!lawyerData.tokenId) {
-        throw new Error('Token de abogado no válido. Por favor inicia sesión nuevamente.');
+        throw new Error('No tienes permisos para crear agentes. Solicita acceso al administrador.');
       }
       
       const { data, error } = await supabase
@@ -889,6 +903,23 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
   return (
     <div className="container mx-auto px-6 py-8">
       <div className="max-w-4xl mx-auto">
+        {/* Token Status Alert */}
+        {!lawyerData?.tokenId && (
+          <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+            <div className="flex items-center gap-2">
+              <div className="h-4 w-4 bg-amber-500 rounded-full"></div>
+              <h3 className="font-medium text-amber-800 dark:text-amber-200">
+                Acceso Limitado
+              </h3>
+            </div>
+            <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+              Tu cuenta aún no tiene permisos completos. Puedes explorar la funcionalidad, pero no podrás guardar borradores ni crear agentes. 
+              <br />
+              Contacta al administrador para obtener acceso completo.
+            </p>
+          </div>
+        )}
+        
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <Button variant="ghost" onClick={onBack}>
@@ -901,7 +932,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
             <Button 
               variant="outline" 
               onClick={saveDraft}
-              disabled={isSavingDraft}
+              disabled={isSavingDraft || !lawyerData?.tokenId}
               className="flex items-center gap-2"
             >
               {isSavingDraft ? (
@@ -920,6 +951,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
                 loadDrafts();
               }}
               className="flex items-center gap-2"
+              disabled={!lawyerData?.tokenId}
             >
               <FileText className="h-4 w-4" />
               Borradores ({drafts.length})
@@ -1642,8 +1674,13 @@ VALIDACIONES:
                    El nuevo agente para el documento <strong>"{formData.docName}"</strong> está configurado y listo para ser enviado a revisión. 
                    Una vez aprobado por el administrador, estará disponible para todos los clientes en el sitio web.
                  </p>
-                 <Button onClick={handlePublish} size={isMobile ? "default" : "lg"} className={`${isMobile ? "w-full text-base px-6 py-3" : "text-xl px-10 py-4"}`}>
-                   Enviar a Revisión
+                 <Button 
+                   onClick={handlePublish} 
+                   size={isMobile ? "default" : "lg"} 
+                   className={`${isMobile ? "w-full text-base px-6 py-3" : "text-xl px-10 py-4"}`}
+                   disabled={!lawyerData?.tokenId}
+                 >
+                   {!lawyerData?.tokenId ? 'Requiere Permisos de Admin' : 'Enviar a Revisión'}
                  </Button>
               </div>
             )}
