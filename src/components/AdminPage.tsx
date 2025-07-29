@@ -329,97 +329,81 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
   };
 
   const handleSaveAgent = async () => {
-    if (!editingAgent) return;
+  // 1. Congelar el estado en una constante local.
+  // Esto nos protege de cualquier cambio de estado posterior.
+  const agentToSave = editingAgent;
 
-    try {
-      const authHeaders = getAuthHeaders();
-      if (!authHeaders.authorization) {
-        throw new Error('No se encontró token de autenticación');
-      }
+  // 2. Comprobar la constante local, no el estado.
+  if (!agentToSave) {
+    console.error("FALLO: Se intentó guardar pero no había ningún agente en edición.");
+    toast({ title: "Error", description: "No hay agente para guardar.", variant: "destructive" });
+    return;
+  }
 
-      console.log('🔧 Sending agent update with data:', {
-        agent_id: editingAgent.id,
-        user_id: user?.id,
-        is_admin: true,
-        name: editingAgent.name,
-        description: editingAgent.description,
-        document_name: editingAgent.document_name,
-        document_description: editingAgent.document_description,
-        category: editingAgent.category,
-        suggested_price: editingAgent.suggested_price,
-        final_price: editingAgent.final_price,
-        price_justification: editingAgent.price_justification,
-        target_audience: editingAgent.target_audience,
-        template_content: editingAgent.template_content,
-        ai_prompt: editingAgent.ai_prompt,
-        sla_enabled: editingAgent.sla_enabled,
-        sla_hours: editingAgent.sla_hours,
-        button_cta: editingAgent.button_cta,
-        placeholder_fields: editingAgent.placeholder_fields,
-        frontend_icon: editingAgent.frontend_icon,
-        status: editingAgent.status
-      });
-
-      const response = await supabase.functions.invoke('update-agent', {
-        body: {
-          agent_id: editingAgent.id,
-          user_id: user?.id,
-          is_admin: true,
-          name: editingAgent.name,
-          description: editingAgent.description,
-          document_name: editingAgent.document_name,
-          document_description: editingAgent.document_description,
-          category: editingAgent.category,
-          suggested_price: editingAgent.suggested_price,
-          final_price: editingAgent.final_price,
-          price_justification: editingAgent.price_justification,
-          target_audience: editingAgent.target_audience,
-          template_content: editingAgent.template_content,
-          ai_prompt: editingAgent.ai_prompt,
-          sla_enabled: editingAgent.sla_enabled,
-          sla_hours: editingAgent.sla_hours,
-          button_cta: editingAgent.button_cta,
-          placeholder_fields: editingAgent.placeholder_fields,
-          frontend_icon: editingAgent.frontend_icon,
-          status: editingAgent.status
-        },
-        headers: {
-          'Content-Type': 'application/json',
-          ...authHeaders
-        }
-      });
-
-
-      console.log('🔧 Response from save agent:', response);
-
-      if (response.error) {
-        console.error('🔧 Response.error:', response.error);
-        throw new Error(response.error.message || 'Error en la respuesta');
-      }
-
-      if (response.data && !response.data.success) {
-        console.error('🔧 Response.data.error:', response.data.error);
-        throw new Error(response.data.error || 'Error en la actualización');
-      }
-
-      toast({
-        title: "Agente actualizado",
-        description: "El agente ha sido actualizado correctamente.",
-      });
-
-      await loadAgents();
-      setIsEditDialogOpen(false);
-      setEditingAgent(null);
-    } catch (error: any) {
-      console.error('Error updating agent:', error);
-      console.error('Full error details:', error);
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo actualizar el agente",
-        variant: "destructive",
-      });
+  try {
+    const authHeaders = getAuthHeaders();
+    if (!authHeaders.authorization) {
+      throw new Error("No se encontró token de autenticación");
     }
-  };
+
+    // 3. Construir el payload usando la constante local.
+    const bodyPayload = {
+      agent_id: agentToSave.id,
+      user_id: user?.id,
+      // Recordatorio: Reemplaza esto con la variable segura 'isAdmin' de tu función de Edge
+      is_admin: true, 
+      name: agentToSave.name,
+      description: agentToSave.description,
+      document_name: agentToSave.document_name,
+      document_description: agentToSave.document_description,
+      category: agentToSave.category,
+      suggested_price: agentToSave.suggested_price,
+      final_price: agentToSave.final_price,
+      price_justification: agentToSave.price_justification,
+      target_audience: agentToSave.target_audience,
+      template_content: agentToSave.template_content,
+      ai_prompt: agentToSave.ai_prompt,
+      sla_enabled: agentToSave.sla_enabled,
+      sla_hours: agentToSave.sla_hours,
+      button_cta: agentToSave.button_cta,
+      placeholder_fields: agentToSave.placeholder_fields,
+      frontend_icon: agentToSave.frontend_icon,
+      status: agentToSave.status,
+    };
+    
+    console.log('✅ Payload a enviar:', bodyPayload);
+
+    const response = await supabase.functions.invoke('update-agent', {
+      body: bodyPayload, // Usar el payload seguro
+      // 4. Se elimina el header 'Content-Type'. Supabase lo gestiona.
+      headers: { ...authHeaders } 
+    });
+
+    if (response.error) {
+      throw new Error(response.error.message);
+    }
+
+    if (response.data && !response.data.success) {
+      throw new Error(response.data.error || 'La función devolvió un error de éxito falso');
+    }
+
+    toast({
+      title: "Agente actualizado",
+      description: "El agente ha sido actualizado correctamente.",
+    });
+
+    await loadAgents();
+    setIsEditDialogOpen(false);
+    setEditingAgent(null);
+  } catch (error: any) {
+    console.error('Error al actualizar el agente:', error);
+    toast({
+      title: "Error",
+      description: error.message || "No se pudo actualizar el agente",
+      variant: "destructive",
+    });
+  }
+};
 
   // Función para eliminar abogado
   const handleDeleteLawyer = async (lawyer: Lawyer) => {
