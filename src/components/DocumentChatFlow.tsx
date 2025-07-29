@@ -150,9 +150,11 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
    - Cédulas con puntos separadores (ej: 1.234.567.890)
    - Fechas en formato DD de MMMM de YYYY
 
-4. SOLO después de tener TODA la información requerida, responde: "He recopilado toda la información necesaria. ¿Deseas proceder con la generación del documento?"
+4. SOLO después de tener TODA la información requerida, responde EXACTAMENTE: "He recopilado toda la información necesaria para crear el documento. ¿Deseas proceder con la generación del documento?"
 
-5. NO permitas generar el documento hasta que TODOS los campos estén completos.`;
+5. NO permitas generar el documento hasta que TODOS los campos estén completos.
+
+6. IMPORTANTE: Usa las frases exactas "información necesaria" y "proceder con la generación" cuando toda la información esté completa.`;
 
       const { data, error } = await supabase.functions.invoke('document-chat', {
         body: {
@@ -179,6 +181,24 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
 
   const [threadId, setThreadId] = useState<string | null>(null);
   const [openaiAgentId, setOpenaiAgentId] = useState<string | null>(null);
+
+  // Function to determine if generate button should be shown
+  const shouldShowGenerateButton = (message: string): boolean => {
+    const lowerMessage = message.toLowerCase();
+    const triggerPhrases = [
+      'he recopilado toda la información',
+      'información necesaria',
+      'proceder con la generación',
+      'generar el documento',
+      'documento listo',
+      'continuar con la generación',
+      'toda la información está completa',
+      'crear el documento',
+      'proceder a generar'
+    ];
+    
+    return triggerPhrases.some(phrase => lowerMessage.includes(phrase));
+  };
 
   const sendMessage = async () => {
     if (!currentMessage.trim() || !agent || sending) return;
@@ -216,13 +236,12 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
 
           if (error) throw error;
 
-          const assistantMessage: Message = {
-            role: 'assistant',
-            content: data.message,
-            timestamp: new Date(),
-            showGenerateButton: data.message.includes('He recopilado toda la información necesaria') || 
-                               data.message.includes('¿Deseas proceder con la generación')
-          };
+      const assistantMessage: Message = {
+        role: 'assistant',
+        content: data.message,
+        timestamp: new Date(),
+        showGenerateButton: shouldShowGenerateButton(data.message)
+      };
 
           setMessages(prev => [...prev, assistantMessage]);
           setSending(false);
@@ -259,8 +278,7 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
             role: 'assistant',
             content: fallbackData.message,
             timestamp: new Date(),
-            showGenerateButton: fallbackData.message.includes('He recopilado toda la información necesaria') || 
-                               fallbackData.message.includes('¿Deseas proceder con la generación')
+            showGenerateButton: shouldShowGenerateButton(fallbackData.message)
           };
 
         setMessages(prev => [...prev, assistantMessage]);
@@ -279,8 +297,7 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
         role: 'assistant',
         content: data.message,
         timestamp: new Date(),
-        showGenerateButton: data.message.includes('He recopilado toda la información necesaria') || 
-                           data.message.includes('¿Deseas proceder con la generación')
+        showGenerateButton: shouldShowGenerateButton(data.message)
       };
 
       // Extract information from the conversation for placeholders
