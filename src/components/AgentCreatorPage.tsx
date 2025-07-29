@@ -899,7 +899,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
     <div className="container mx-auto px-6 py-8">
       <div className="max-w-4xl mx-auto">
         {/* Token Status Alert */}
-        {!lawyerData?.tokenId && (
+        {!lawyerData?.canCreateAgents && (
           <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
             <div className="flex items-center gap-2">
               <div className="h-4 w-4 bg-amber-500 rounded-full"></div>
@@ -908,7 +908,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
               </h3>
             </div>
             <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-              Tu cuenta aún no tiene permisos completos. Puedes explorar la funcionalidad, pero no podrás guardar borradores ni crear agentes. 
+              Tu cuenta aún no tiene permisos para crear agentes. Puedes explorar la funcionalidad, pero no podrás guardar borradores ni crear agentes. 
               <br />
               Contacta al administrador para obtener acceso completo.
             </p>
