@@ -337,14 +337,21 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
     });
 
     try {
+      // Verificar si la sesión está activa primero
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      if (!currentSession) {
+        console.error('❌ No active session found');
+        throw new Error('Sesión expirada. Por favor, inicia sesión nuevamente.');
+      }
+
       // Get auth headers
       const authHeaders = getAuthHeaders();
       if (!authHeaders.authorization) {
         console.error('❌ No authorization token found');
-        throw new Error('No se encontró token de autenticación. Por favor, inicia sesión nuevamente.');
+        throw new Error('No se encontró token de autenticación válido.');
       }
 
-      console.log('🔑 Auth headers validated');
+      console.log('🔑 Auth headers:', { hasToken: !!authHeaders.authorization });
 
       // Prepare the payload with all agent data
       const updatePayload = {

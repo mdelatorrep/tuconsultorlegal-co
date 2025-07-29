@@ -48,16 +48,32 @@ export const useNativeAdminAuth = () => {
 
   const checkAuthStatus = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error } = await supabase.auth.getSession();
       
-      if (session?.user) {
-        await loadAdminProfile(session.user);
-      } else {
+      if (error) {
+        console.error('Session error:', error);
         setIsAuthenticated(false);
         setUser(null);
+        setSession(null);
+        return;
+      }
+      
+      setSession(session);
+      
+      if (session?.user) {
+        console.log('Active session found for user:', session.user.email);
+        await loadAdminProfile(session.user);
+      } else {
+        console.log('No active session found');
+        setIsAuthenticated(false);
+        setUser(null);
+        setSession(null);
       }
     } catch (error) {
       console.error('Error checking auth status:', error);
+      setIsAuthenticated(false);
+      setUser(null);
+      setSession(null);
     } finally {
       setIsLoading(false);
     }
@@ -182,7 +198,11 @@ export const useNativeAdminAuth = () => {
   };
 
   const getAuthHeaders = () => {
-    return session?.access_token ? { 'authorization': `Bearer ${session.access_token}` } : {};
+    if (!session?.access_token) {
+      console.warn('No access token available');
+      return {};
+    }
+    return { 'authorization': `Bearer ${session.access_token}` };
   };
 
   return {
