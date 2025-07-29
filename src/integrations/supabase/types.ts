@@ -523,109 +523,46 @@ export type Database = {
       }
       lawyer_profiles: {
         Row: {
-          access_token: string | null
           active: boolean
           can_create_agents: boolean | null
           can_create_blogs: boolean | null
           can_use_ai_tools: boolean
           created_at: string | null
-          created_by: string | null
           email: string
           full_name: string
           id: string
           is_active: boolean | null
           last_login_at: string | null
-          last_used_at: string | null
           phone_number: string | null
-          request_id: string | null
           updated_at: string | null
         }
         Insert: {
-          access_token?: string | null
           active?: boolean
           can_create_agents?: boolean | null
           can_create_blogs?: boolean | null
           can_use_ai_tools?: boolean
           created_at?: string | null
-          created_by?: string | null
           email: string
           full_name: string
           id: string
           is_active?: boolean | null
           last_login_at?: string | null
-          last_used_at?: string | null
           phone_number?: string | null
-          request_id?: string | null
           updated_at?: string | null
         }
         Update: {
-          access_token?: string | null
           active?: boolean
           can_create_agents?: boolean | null
           can_create_blogs?: boolean | null
           can_use_ai_tools?: boolean
           created_at?: string | null
-          created_by?: string | null
           email?: string
           full_name?: string
           id?: string
           is_active?: boolean | null
           last_login_at?: string | null
-          last_used_at?: string | null
           phone_number?: string | null
-          request_id?: string | null
           updated_at?: string | null
-        }
-        Relationships: []
-      }
-      lawyer_token_requests: {
-        Row: {
-          created_at: string
-          email: string
-          full_name: string
-          id: string
-          law_firm: string | null
-          phone_number: string | null
-          reason_for_request: string | null
-          rejection_reason: string | null
-          reviewed_at: string | null
-          reviewed_by: string | null
-          specialization: string | null
-          status: string
-          updated_at: string
-          years_of_experience: number | null
-        }
-        Insert: {
-          created_at?: string
-          email: string
-          full_name: string
-          id?: string
-          law_firm?: string | null
-          phone_number?: string | null
-          reason_for_request?: string | null
-          rejection_reason?: string | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          specialization?: string | null
-          status?: string
-          updated_at?: string
-          years_of_experience?: number | null
-        }
-        Update: {
-          created_at?: string
-          email?: string
-          full_name?: string
-          id?: string
-          law_firm?: string | null
-          phone_number?: string | null
-          reason_for_request?: string | null
-          rejection_reason?: string | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          specialization?: string | null
-          status?: string
-          updated_at?: string
-          years_of_experience?: number | null
         }
         Relationships: []
       }
