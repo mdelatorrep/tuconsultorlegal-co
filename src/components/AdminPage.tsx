@@ -24,7 +24,7 @@ import {
   ShieldCheck, Activity, Briefcase, Calendar, Building2, Award, Coffee, Sparkles, Gavel, 
   FileCheck, Users2, Target, TrendingUp, BookOpenCheck, Newspaper, PenTool, Send, Flag, 
   CheckSquare, Heart, Star, Laptop, Smartphone, Headphones, HelpCircle, Shield, 
-  Zap as ZapIcon, Edit, Save, Tag, Menu, UserCog, Cog, Database, FolderOpen, Play
+  Zap as ZapIcon, Edit, Save, Tag, Menu, UserCog, Cog, Database, FolderOpen, Play, Brain
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -49,6 +49,7 @@ interface Lawyer {
   verification_token?: string;
   can_create_agents: boolean;
   can_create_blogs: boolean;
+  can_use_ai_tools: boolean;
   is_locked?: boolean;
   lock_reason?: string;
   active: boolean;
@@ -214,6 +215,7 @@ Token de Acceso: ${lawyer.access_token || 'No disponible'}
 Estado: ${lawyer.active ? 'Activo' : 'Inactivo'}
 Puede crear agentes: ${lawyer.can_create_agents ? 'Sí' : 'No'}
 Puede crear blogs: ${lawyer.can_create_blogs ? 'Sí' : 'No'}
+Puede usar herramientas IA: ${lawyer.can_use_ai_tools ? 'Sí' : 'No'}
 Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { locale: es })}
 Último login: ${lawyer.last_login_at ? format(new Date(lawyer.last_login_at), 'dd/MM/yyyy HH:mm', { locale: es }) : 'Nunca'}
       `.trim();
@@ -880,26 +882,32 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
                         </TableCell>
                         
                          <TableCell className="hidden md:table-cell">
-                           <div className="flex flex-wrap gap-1">
-                             {lawyer.can_create_agents && (
-                               <Badge variant="outline" className="text-xs">
-                                 <Bot className="w-3 h-3 mr-1" />
-                                 Agentes
-                               </Badge>
-                             )}
-                             {lawyer.can_create_blogs && (
-                               <Badge variant="outline" className="text-xs">
-                                 <BookOpen className="w-3 h-3 mr-1" />
-                                 Blog
-                               </Badge>
-                             )}
-                              {!lawyer.can_create_agents && !lawyer.can_create_blogs && (
-                                <Badge variant="secondary" className="text-xs">
-                                  <X className="w-3 h-3 mr-1" />
-                                  Sin permisos
+                            <div className="flex flex-wrap gap-1">
+                              {lawyer.can_create_agents && (
+                                <Badge variant="outline" className="text-xs">
+                                  <Bot className="w-3 h-3 mr-1" />
+                                  Agentes
                                 </Badge>
                               )}
-                           </div>
+                              {lawyer.can_create_blogs && (
+                                <Badge variant="outline" className="text-xs">
+                                  <BookOpen className="w-3 h-3 mr-1" />
+                                  Blog
+                                </Badge>
+                              )}
+                              {lawyer.can_use_ai_tools && (
+                                <Badge variant="outline" className="text-xs">
+                                  <Brain className="w-3 h-3 mr-1" />
+                                  IA Tools
+                                </Badge>
+                              )}
+                               {!lawyer.can_create_agents && !lawyer.can_create_blogs && !lawyer.can_use_ai_tools && (
+                                 <Badge variant="secondary" className="text-xs">
+                                   <X className="w-3 h-3 mr-1" />
+                                   Sin permisos
+                                 </Badge>
+                               )}
+                            </div>
                          </TableCell>
                         
                         <TableCell>

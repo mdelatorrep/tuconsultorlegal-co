@@ -11,6 +11,7 @@ interface LawyerUser {
   name: string;
   canCreateAgents: boolean;
   canCreateBlogs: boolean;
+  canUseAiTools: boolean;
 }
 
 export const useLawyerAuth = () => {
@@ -70,7 +71,8 @@ export const useLawyerAuth = () => {
         email: profile.email,
         name: profile.full_name,
         canCreateAgents: profile.can_create_agents,
-        canCreateBlogs: profile.can_create_blogs
+        canCreateBlogs: profile.can_create_blogs,
+        canUseAiTools: profile.can_use_ai_tools
       };
 
       setUser(lawyerUser);
@@ -161,7 +163,8 @@ export const useLawyerAuth = () => {
             full_name: fullName,
             is_lawyer: true,
             can_create_agents: false,
-            can_create_blogs: false
+            can_create_blogs: false,
+            can_use_ai_tools: false
           }
         }
       });

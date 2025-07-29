@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
 
     console.log('Admin authenticated via JWT token');
 
-    const { requestId, action, rejectionReason, canCreateAgents } = await req.json()
+    const { requestId, action, rejectionReason, canCreateAgents, canCreateBlogs, canUseAiTools } = await req.json()
 
     if (!requestId || !action || !['approve', 'reject'].includes(action)) {
       return new Response(
@@ -149,6 +149,8 @@ Deno.serve(async (req) => {
           phone_number: request.phone_number,
           access_token: accessToken,
           can_create_agents: canCreateAgents || false,
+          can_create_blogs: canCreateBlogs || false,
+          can_use_ai_tools: canUseAiTools || false,
           request_id: requestId
         })
         .select()

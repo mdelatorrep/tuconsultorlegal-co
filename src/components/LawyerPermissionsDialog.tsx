@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Bot, BookOpen, BarChart3, Save, X } from 'lucide-react';
+import { Bot, BookOpen, BarChart3, Save, X, Brain } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 interface LawyerPermissions {
   can_create_agents: boolean;
   can_create_blogs: boolean;
+  can_use_ai_tools: boolean;
 }
 
 interface Lawyer {
@@ -20,6 +21,7 @@ interface Lawyer {
   full_name: string;
   can_create_agents: boolean;
   can_create_blogs: boolean;
+  can_use_ai_tools: boolean;
   active: boolean;
 }
 
@@ -40,7 +42,8 @@ export default function LawyerPermissionsDialog({
 }: LawyerPermissionsDialogProps) {
   const [permissions, setPermissions] = useState<LawyerPermissions>({
     can_create_agents: false,
-    can_create_blogs: false
+    can_create_blogs: false,
+    can_use_ai_tools: false
   });
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -50,7 +53,8 @@ export default function LawyerPermissionsDialog({
     if (lawyer) {
       setPermissions({
         can_create_agents: lawyer.can_create_agents,
-        can_create_blogs: lawyer.can_create_blogs
+        can_create_blogs: lawyer.can_create_blogs,
+        can_use_ai_tools: lawyer.can_use_ai_tools
       });
     }
   }, [lawyer]);
@@ -64,7 +68,8 @@ export default function LawyerPermissionsDialog({
         .from('lawyer_profiles')
         .update({
           can_create_agents: permissions.can_create_agents,
-          can_create_blogs: permissions.can_create_blogs
+          can_create_blogs: permissions.can_create_blogs,
+          can_use_ai_tools: permissions.can_use_ai_tools
         })
         .eq('id', lawyer.id);
 
@@ -111,6 +116,13 @@ export default function LawyerPermissionsDialog({
       description: 'Permite al abogado crear y publicar artículos en el blog',
       icon: BookOpen,
       color: 'text-green-600'
+    },
+    {
+      key: 'can_use_ai_tools' as keyof LawyerPermissions,
+      label: 'Usar Herramientas de IA',
+      description: 'Permite al abogado acceder y usar las herramientas legales de IA',
+      icon: Brain,
+      color: 'text-purple-600'
     }
   ];
 

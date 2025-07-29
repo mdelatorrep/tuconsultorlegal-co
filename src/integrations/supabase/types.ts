@@ -797,6 +797,7 @@ export type Database = {
         Row: {
           can_create_agents: boolean | null
           can_create_blogs: boolean | null
+          can_use_ai_tools: boolean
           created_at: string | null
           email: string
           full_name: string
@@ -807,6 +808,7 @@ export type Database = {
         Insert: {
           can_create_agents?: boolean | null
           can_create_blogs?: boolean | null
+          can_use_ai_tools?: boolean
           created_at?: string | null
           email: string
           full_name: string
@@ -817,6 +819,7 @@ export type Database = {
         Update: {
           can_create_agents?: boolean | null
           can_create_blogs?: boolean | null
+          can_use_ai_tools?: boolean
           created_at?: string | null
           email?: string
           full_name?: string
@@ -883,6 +886,7 @@ export type Database = {
           active: boolean
           can_create_agents: boolean
           can_create_blogs: boolean
+          can_use_ai_tools: boolean
           created_at: string
           created_by: string | null
           email: string
@@ -899,6 +903,7 @@ export type Database = {
           active?: boolean
           can_create_agents?: boolean
           can_create_blogs?: boolean
+          can_use_ai_tools?: boolean
           created_at?: string
           created_by?: string | null
           email: string
@@ -915,6 +920,7 @@ export type Database = {
           active?: boolean
           can_create_agents?: boolean
           can_create_blogs?: boolean
+          can_use_ai_tools?: boolean
           created_at?: string
           created_by?: string | null
           email?: string
