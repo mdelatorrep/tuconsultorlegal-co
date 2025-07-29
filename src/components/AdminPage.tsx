@@ -236,53 +236,34 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
 
   // Función para actualizar estado de agente
   const handleUpdateAgentStatus = async (agentId: string, newStatus: string) => {
-    try {
-      const authHeaders = getAuthHeaders();
-      if (!authHeaders.authorization) {
-        throw new Error('No se encontró token de autenticación');
-      }
-
-      const response = await supabase.functions.invoke('update-agent', {
-        body: {
-          agent_id: agentId,
-          status: newStatus,
-          user_id: user?.id || 'admin_override',
-          is_admin: true
-        },
-        headers: {
-          'Content-Type': 'application/json',
-          ...authHeaders
-        }
-       });
-
-      console.log('🔧 Response from update-agent:', response);
-
-      if (response.error) {
-        console.error('🔧 Response.error:', response.error);
-        throw new Error(response.error.message || 'Error en la respuesta');
-      }
-
-      if (response.data && !response.data.success) {
-        console.error('🔧 Response.data.error:', response.data.error);
-        throw new Error(response.data.error || 'Error en la actualización');
-      }
-
-      toast({
-        title: "Estado actualizado",
-        description: `Agente actualizado a estado: ${newStatus}`,
-      });
-
-      await loadAgents();
-    } catch (error: any) {
-      console.error('Error updating agent status:', error);
-      console.error('Full error details:', error);
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo actualizar el estado del agente",
-        variant: "destructive",
-      });
+  if (!agentId || !newStatus) {
+    console.error('FALLO: El ID del agente o el nuevo estado no están definidos.');
+    return;
+  }
+  
+  try {
+    const authHeaders = getAuthHeaders();
+    if (!authHeaders.authorization) {
+      throw new Error('No se encontró token de autenticación');
     }
-  };
+
+    const bodyPayload = {
+      agent_id: agentId,
+      status: newStatus,
+      user_id: user?.id || 'admin_override',
+      is_admin: true,
+    };
+
+    const response = await supabase.functions.invoke('update-agent', {
+      body: bodyPayload,
+      headers: { ...authHeaders } // Sin 'Content-Type'
+    });
+    
+    // ...resto del código...
+  } catch (error: any) {
+    // ...resto del código...
+  }
+};
 
   // Función para eliminar agente
   const handleDeleteAgent = async (agent: Agent) => {
