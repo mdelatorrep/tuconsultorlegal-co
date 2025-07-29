@@ -62,6 +62,9 @@ export default function LawyerPermissionsDialog({
   const handleSave = async () => {
     if (!lawyer) return;
 
+    console.log('=== HANDLE SAVE CALLED ===');
+    console.log('Lawyer ID:', lawyer.id);
+    console.log('Current permissions state:', permissions);
     setIsLoading(true);
     try {
       // Actualizar permisos en lawyer_profiles
@@ -74,6 +77,10 @@ export default function LawyerPermissionsDialog({
         })
         .eq('id', lawyer.id)
         .select('*');
+
+      console.log('=== UPDATE RESULT ===');
+      console.log('Data returned:', data);
+      console.log('Error:', profileError);
 
       if (profileError) {
         console.error('Error updating lawyer_profiles:', profileError);
@@ -182,9 +189,11 @@ export default function LawyerPermissionsDialog({
                         <Switch
                           id={item.key}
                           checked={permissions[item.key] || false}
-                          onCheckedChange={(checked) => 
-                            setPermissions(prev => ({ ...prev, [item.key]: checked }))
-                          }
+                          onCheckedChange={(checked) => {
+                            console.log(`=== PERMISSION CHANGE ===`);
+                            console.log(`${item.key}: ${checked}`);
+                            setPermissions(prev => ({ ...prev, [item.key]: checked }));
+                          }}
                         />
                       </div>
                       <p className="text-xs text-muted-foreground">
