@@ -146,7 +146,11 @@ export const useLawyerAuth = () => {
 
   const signUpWithEmailAndPassword = async (email: string, password: string, fullName: string): Promise<boolean> => {
     try {
+      console.log('=== LAWYER SIGNUP START ===');
+      console.log('Attempting signup with:', { email, fullName });
+      
       const redirectUrl = `${window.location.origin}/`;
+      console.log('Redirect URL:', redirectUrl);
       
       const { data, error } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
@@ -162,11 +166,14 @@ export const useLawyerAuth = () => {
         }
       });
 
+      console.log('Supabase signup response:', { data, error });
+
       if (error) {
         console.error('SignUp error:', error);
         return false;
       }
 
+      console.log('=== LAWYER SIGNUP SUCCESS ===');
       return !!data.user;
     } catch (error) {
       console.error('SignUp error:', error);

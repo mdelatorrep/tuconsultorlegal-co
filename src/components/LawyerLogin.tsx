@@ -93,7 +93,9 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
     setErrorMessage('');
 
     try {
+      console.log('=== CALLING SIGNUP FUNCTION ===');
       const success = await signUpWithEmailAndPassword(email, password, fullName);
+      console.log('Signup result:', success);
       
       if (success) {
         toast({
@@ -106,6 +108,7 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
         setConfirmPassword('');
         setFullName('');
       } else {
+        console.log('Signup failed');
         setErrorMessage('Error al registrar la cuenta. Intenta nuevamente.');
       }
     } catch (error) {
