@@ -72,6 +72,7 @@ Deno.serve(async (req) => {
       active: lawyer.is_active,
       can_create_agents: lawyer.can_create_agents,
       can_create_blogs: lawyer.can_create_blogs,
+      can_use_ai_tools: lawyer.can_use_ai_tools,
       created_at: lawyer.created_at,
       updated_at: lawyer.updated_at
     }));
