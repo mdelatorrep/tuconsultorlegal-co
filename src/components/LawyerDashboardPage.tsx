@@ -206,6 +206,129 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
     );
   }
 
+  // Sidebar menu configuration
+  const menuItems = [
+    {
+      title: "Panel Principal",
+      items: [
+        {
+          title: "Dashboard",
+          icon: Home,
+          view: "dashboard" as const
+        }
+      ]
+    },
+    {
+      title: "Herramientas Legales",
+      items: [
+        {
+          title: "Investigación",
+          icon: Search,
+          view: "research" as const,
+          isPremium: !user?.canUseAiTools
+        },
+        {
+          title: "Análisis",
+          icon: Eye,
+          view: "analyze" as const,
+          isPremium: !user?.canUseAiTools
+        },
+        {
+          title: "Redacción",
+          icon: PenTool,
+          view: "draft" as const,
+          isPremium: !user?.canUseAiTools
+        },
+        {
+          title: "Estrategia",
+          icon: Target,
+          view: "strategize" as const,
+          isPremium: !user?.canUseAiTools
+        },
+        {
+          title: "Integraciones",
+          icon: Settings,
+          view: "integrations" as const,
+          isPremium: !user?.canUseAiTools
+        }
+      ]
+    },
+    ...(user?.canCreateAgents ? [{
+      title: "Gestión IA",
+      items: [
+        {
+          title: "Crear Agente",
+          icon: Bot,
+          view: "agent-creator" as const,
+          isPremium: false
+        },
+        {
+          title: "Gestionar Agentes",
+          icon: Settings,
+          view: "agent-manager" as const,
+          isPremium: false
+        }
+      ]
+    }] : [{
+      title: "Gestión IA",
+      items: [
+        {
+          title: "Crear Agente",
+          icon: Bot,
+          view: "agent-creator" as const,
+          isPremium: true
+        },
+        {
+          title: "Gestionar Agentes",
+          icon: Settings,
+          view: "agent-manager" as const,
+          isPremium: true
+        }
+      ]
+    }]),
+    {
+      title: "Desarrollo",
+      items: [
+        {
+          title: "Formación IA",
+          icon: Brain,
+          view: "training" as const
+        }
+      ]
+    },
+    ...(user?.canCreateBlogs ? [{
+      title: "Contenido",
+      items: [
+        {
+          title: "Gestión Blog",
+          icon: BookOpen,
+          view: "blog-manager" as const,
+          isPremium: false
+        }
+      ]
+    }] : [{
+      title: "Contenido",
+      items: [
+        {
+          title: "Gestión Blog",
+          icon: BookOpen,
+          view: "blog-manager" as const,
+          isPremium: true
+        }
+      ]
+    }]),
+    {
+      title: "Estadísticas",
+      items: [
+        {
+          title: "Métricas",
+          icon: BarChart3,
+          view: "stats" as const
+        }
+      ]
+    }
+  ];
+
   // Function to render module content
   const renderModuleContent = () => {
     switch (currentView) {
@@ -372,137 +495,80 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
     }
   };
 
-  // If not dashboard view, show module content
+  // If not dashboard view, show module content with sidebar
   if (currentView !== 'dashboard') {
     return (
-      <div className="min-h-screen bg-background">
-        {renderModuleContent()}
-      </div>
+      <SidebarProvider>
+        <div className="min-h-screen flex w-full">
+          <Sidebar className="w-64">
+            <SidebarContent>
+              {/* Header del Sidebar */}
+              <div className="p-4 border-b">
+                <h2 className="text-lg font-semibold text-foreground">Portal Abogados</h2>
+                <p className="text-sm text-muted-foreground">{user?.name}</p>
+              </div>
+
+              {/* Menu Items */}
+              {menuItems.map((section, index) => (
+                <SidebarGroup key={index}>
+                  <SidebarGroupLabel>{section.title}</SidebarGroupLabel>
+                  <SidebarGroupContent>
+                    <SidebarMenu>
+                      {section.items.map((item) => (
+                        <SidebarMenuItem key={item.view}>
+                          <SidebarMenuButton 
+                            onClick={() => setCurrentView(item.view)}
+                            className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                              currentView === item.view 
+                                ? 'bg-primary text-primary-foreground' 
+                                : 'hover:bg-muted'
+                            }`}
+                          >
+                            <item.icon className="h-4 w-4" />
+                            <span className="flex items-center gap-2">
+                              {item.title}
+                              {item.isPremium && (
+                                <>
+                                  <Lock className="h-3 w-3 text-amber-500" />
+                                  <Crown className="h-3 w-3 text-amber-500" />
+                                </>
+                              )}
+                            </span>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      ))}
+                    </SidebarMenu>
+                  </SidebarGroupContent>
+                </SidebarGroup>
+              ))}
+
+              {/* Logout Button */}
+              <div className="p-4 border-t mt-auto">
+                <Button
+                  onClick={logout}
+                  variant="outline"
+                  className="w-full flex items-center gap-2"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Cerrar Sesión
+                </Button>
+              </div>
+            </SidebarContent>
+          </Sidebar>
+
+          <main className="flex-1">
+            <header className="h-12 flex items-center border-b px-4">
+              <SidebarTrigger />
+            </header>
+            <div className="flex-1">
+              {renderModuleContent()}
+            </div>
+          </main>
+        </div>
+      </SidebarProvider>
     );
   }
 
-  // Sidebar menu configuration
-  const menuItems = [
-    {
-      title: "Panel Principal",
-      items: [
-        {
-          title: "Dashboard",
-          icon: Home,
-          view: "dashboard" as const
-        }
-      ]
-    },
-    {
-      title: "Herramientas Legales",
-      items: [
-        {
-          title: "Investigación",
-          icon: Search,
-          view: "research" as const,
-          isPremium: !user?.canUseAiTools
-        },
-        {
-          title: "Análisis",
-          icon: Eye,
-          view: "analyze" as const,
-          isPremium: !user?.canUseAiTools
-        },
-        {
-          title: "Redacción",
-          icon: PenTool,
-          view: "draft" as const,
-          isPremium: !user?.canUseAiTools
-        },
-        {
-          title: "Estrategia",
-          icon: Target,
-          view: "strategize" as const,
-          isPremium: !user?.canUseAiTools
-        },
-        {
-          title: "Integraciones",
-          icon: Settings,
-          view: "integrations" as const,
-          isPremium: !user?.canUseAiTools
-        }
-      ]
-    },
-    ...(user?.canCreateAgents ? [{
-      title: "Gestión IA",
-      items: [
-        {
-          title: "Crear Agente",
-          icon: Bot,
-          view: "agent-creator" as const,
-          isPremium: false
-        },
-        {
-          title: "Gestionar Agentes",
-          icon: Settings,
-          view: "agent-manager" as const,
-          isPremium: false
-        }
-      ]
-    }] : [{
-      title: "Gestión IA",
-      items: [
-        {
-          title: "Crear Agente",
-          icon: Bot,
-          view: "agent-creator" as const,
-          isPremium: true
-        },
-        {
-          title: "Gestionar Agentes",
-          icon: Settings,
-          view: "agent-manager" as const,
-          isPremium: true
-        }
-      ]
-    }]),
-    {
-      title: "Desarrollo",
-      items: [
-        {
-          title: "Formación IA",
-          icon: Brain,
-          view: "training" as const
-        }
-      ]
-    },
-    ...(user?.canCreateBlogs ? [{
-      title: "Contenido",
-      items: [
-        {
-          title: "Gestión Blog",
-          icon: BookOpen,
-          view: "blog-manager" as const,
-          isPremium: false
-        }
-      ]
-    }] : [{
-      title: "Contenido",
-      items: [
-        {
-          title: "Gestión Blog",
-          icon: BookOpen,
-          view: "blog-manager" as const,
-          isPremium: true
-        }
-      ]
-    }]),
-    {
-      title: "Estadísticas",
-      items: [
-        {
-          title: "Métricas",
-          icon: BarChart3,
-          view: "stats" as const
-        }
-      ]
-    }
-  ];
 
   return (
     <SidebarProvider>
