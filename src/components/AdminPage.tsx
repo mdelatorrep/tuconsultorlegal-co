@@ -243,12 +243,12 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
       }
 
       const response = await supabase.functions.invoke('update-agent', {
-        body: JSON.stringify({
+        body: {
           agent_id: agentId,
           status: newStatus,
           user_id: user?.id || 'admin_override',
           is_admin: true
-        }),
+        },
         headers: {
           'Content-Type': 'application/json',
           ...authHeaders
