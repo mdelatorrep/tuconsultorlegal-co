@@ -11,6 +11,7 @@ interface LawyerUser {
   name: string;
   canCreateAgents: boolean;
   canCreateBlogs: boolean;
+  tokenId: string; // ID from lawyer_tokens table
 }
 
 export const useLawyerAuth = () => {
@@ -58,12 +59,28 @@ export const useLawyerAuth = () => {
         return;
       }
 
+      // Also fetch the lawyer token to get the tokenId
+      const { data: lawyerToken, error: tokenError } = await supabase
+        .from('lawyer_tokens')
+        .select('id, access_token')
+        .eq('lawyer_id', authUser.id)
+        .eq('active', true)
+        .single();
+
+      if (tokenError || !lawyerToken) {
+        console.error('Error fetching lawyer token:', tokenError);
+        setUser(null);
+        setIsAuthenticated(false);
+        return;
+      }
+
       const lawyerUser: LawyerUser = {
         id: profile.id,
         email: profile.email,
         name: profile.full_name,
         canCreateAgents: profile.can_create_agents,
-        canCreateBlogs: profile.can_create_blogs
+        canCreateBlogs: profile.can_create_blogs,
+        tokenId: lawyerToken.id // Add the tokenId from lawyer_tokens table
       };
 
       setUser(lawyerUser);
