@@ -262,9 +262,29 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
       headers: authHeaders
     });
     
-    // ...resto del código...
+    if (response.error) {
+      console.error('Error from update-agent function:', response.error);
+      throw new Error(response.error.message || 'Error al actualizar el estado del agente');
+    }
+
+    if (response.data?.error) {
+      console.error('Error in response data:', response.data.error);
+      throw new Error(response.data.error);
+    }
+
+    toast({
+      title: "Estado actualizado",
+      description: `El agente ha sido ${newStatus === 'active' ? 'activado' : newStatus === 'approved' ? 'aprobado' : newStatus === 'suspended' ? 'suspendido' : 'actualizado'} exitosamente`,
+    });
+
+    await loadAgents();
   } catch (error: any) {
-    // ...resto del código...
+    console.error('Error updating agent status:', error);
+    toast({
+      title: "Error",
+      description: `No se pudo actualizar el estado del agente: ${error.message}`,
+      variant: "destructive",
+    });
   }
 };
 

@@ -33,8 +33,7 @@ interface AgentData {
   document_name: string;
   placeholder_fields: any;
   template_content: string;
-  final_price: number | null;
-  suggested_price: number;
+  price: number;
   sla_hours: number | null;
   ai_prompt: string;
 }
@@ -546,7 +545,7 @@ export default function DocumentFormFlow({ agentId, onBack, onComplete }: Docume
               <h4 className="font-medium mb-2 text-sm">Resumen del documento:</h4>
               <p className="text-sm text-muted-foreground mb-2">{agent.document_name}</p>
               <p className="text-base font-bold text-success">
-                Precio: ${(agent.final_price || agent.suggested_price).toLocaleString()} COP
+                Precio: {agent.price === 0 ? 'GRATIS' : `$${agent.price.toLocaleString()} COP`}
               </p>
             </div>
 

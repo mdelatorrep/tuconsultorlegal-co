@@ -40,8 +40,7 @@ interface LegalAgent {
   template_content: string;
   ai_prompt: string;
   placeholder_fields: any; // JSONB field from database
-  suggested_price: number;
-  final_price: number | null;
+  price: number;
   price_justification: string | null;
   status: string;
   created_at: string;
@@ -308,8 +307,7 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
           document_name: editingAgent.document_name,
           document_description: editingAgent.document_description,
           category: editingAgent.category,
-          suggested_price: editingAgent.suggested_price,
-          final_price: editingAgent.final_price,
+          price: editingAgent.price,
           price_justification: editingAgent.price_justification,
           target_audience: editingAgent.target_audience,
           template_content: editingAgent.template_content,
@@ -532,7 +530,7 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                           <div className="flex items-center gap-2 flex-wrap">
                             <DollarSign className="h-4 w-4 flex-shrink-0" />
                             <span className="text-muted-foreground">Precio:</span>
-                            <span className="font-medium">${agent.suggested_price.toLocaleString()} COP</span>
+                            <span className="font-medium">{agent.price === 0 ? 'GRATIS' : `$${agent.price.toLocaleString()} COP`}</span>
                           </div>
                           
                           <div className="flex items-center gap-2 flex-wrap">
@@ -596,7 +594,7 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                                       <h4 className="font-semibold mb-2">Información General</h4>
                                       <div className="space-y-2 text-sm">
                                         <div><strong>Categoría:</strong> {selectedAgent.category}</div>
-                                        <div><strong>Precio Sugerido:</strong> ${selectedAgent.suggested_price.toLocaleString()} COP</div>
+                                        <div><strong>Precio:</strong> {selectedAgent.price === 0 ? 'GRATIS' : `$${selectedAgent.price.toLocaleString()} COP`}</div>
                                          <div><strong>Estado:</strong> {getStatusText(selectedAgent.status)}</div>
                                         <div><strong>Creado:</strong> {new Date(selectedAgent.created_at).toLocaleDateString()}</div>
                                       </div>
@@ -697,7 +695,7 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                           <div className="flex items-center gap-2 flex-wrap">
                             <DollarSign className="h-4 w-4 flex-shrink-0" />
                             <span className="text-muted-foreground">Precio:</span>
-                            <span className="font-medium">${agent.suggested_price.toLocaleString()} COP</span>
+                            <span className="font-medium">{agent.price === 0 ? 'GRATIS' : `$${agent.price.toLocaleString()} COP`}</span>
                           </div>
                           
                           <div className="flex items-center gap-2 flex-wrap">
@@ -826,7 +824,7 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                           <div className="flex items-center gap-2 flex-wrap">
                             <DollarSign className="h-4 w-4 flex-shrink-0" />
                             <span className="text-muted-foreground">Precio:</span>
-                            <span className="font-medium">${agent.suggested_price.toLocaleString()} COP</span>
+                            <span className="font-medium">{agent.price === 0 ? 'GRATIS' : `$${agent.price.toLocaleString()} COP`}</span>
                           </div>
                           
                           <div className="flex items-center gap-2 flex-wrap">
@@ -950,7 +948,7 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                     <h4 className="font-semibold mb-2">Información General</h4>
                     <div className="space-y-2 text-sm">
                       <div><strong>Categoría:</strong> {selectedAgent.category}</div>
-                      <div><strong>Precio Sugerido:</strong> ${selectedAgent.suggested_price.toLocaleString()} COP</div>
+                      <div><strong>Precio:</strong> {selectedAgent.price === 0 ? 'GRATIS' : `$${selectedAgent.price.toLocaleString()} COP`}</div>
                       <div><strong>Estado:</strong> {getStatusText(selectedAgent.status)}</div>
                       <div><strong>Creado:</strong> {new Date(selectedAgent.created_at).toLocaleDateString()}</div>
                     </div>
@@ -1059,27 +1057,20 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   <div>
-                    <Label htmlFor="suggested_price">Precio Sugerido (COP)</Label>
+                    <Label htmlFor="price">Precio (COP)</Label>
                     <Input
-                      id="suggested_price"
+                      id="price"
                       type="number"
-                      value={editingAgent.suggested_price}
-                      onChange={(e) => handleEditFieldChange('suggested_price', parseInt(e.target.value) || 0)}
-                      placeholder="Precio sugerido"
+                      min="0"
+                      value={editingAgent.price || 0}
+                      onChange={(e) => handleEditFieldChange('price', parseInt(e.target.value) || 0)}
+                      placeholder="Precio (0 = gratis)"
                     />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="final_price">Precio Final (COP)</Label>
-                    <Input
-                      id="final_price"
-                      type="number"
-                      value={editingAgent.final_price || ''}
-                      onChange={(e) => handleEditFieldChange('final_price', e.target.value ? parseInt(e.target.value) : null)}
-                      placeholder="Precio final (opcional)"
-                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Ingresa 0 para hacer el documento gratuito
+                    </p>
                   </div>
                 </div>
 
