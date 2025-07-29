@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Bot, Plus, Settings, LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home } from "lucide-react";
+import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Bot, Plus, Settings, LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Lock, Crown } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import LawyerStatsSection from "./LawyerStatsSection";
 import LawyerLogin from "./LawyerLogin";
@@ -20,6 +20,7 @@ import AnalyzeModule from "./lawyer-modules/AnalyzeModule";
 import DraftModule from "./lawyer-modules/DraftModule";
 import StrategizeModule from "./lawyer-modules/StrategizeModule";
 import IntegrationsModule from "./lawyer-modules/IntegrationsModule";
+import PremiumFeatureCard from "./PremiumFeatureCard";
 
 interface DocumentToken {
   id: string;
@@ -209,25 +210,163 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const renderModuleContent = () => {
     switch (currentView) {
       case 'agent-creator':
+        if (!user?.canCreateAgents) {
+          return (
+            <PremiumFeatureCard
+              title="Crear Agentes de IA"
+              description="Crea y personaliza agentes de inteligencia artificial especializados en derecho"
+              icon={Bot}
+              featureName="la creación de agentes"
+              onUpgrade={() => {
+                toast({
+                  title: "Funcionalidad Premium",
+                  description: "Contacta al administrador para activar la creación de agentes",
+                });
+              }}
+            />
+          );
+        }
         return <AgentCreatorPage onBack={() => setCurrentView('dashboard')} lawyerData={user} />;
+      
       case 'agent-manager':
+        if (!user?.canCreateAgents) {
+          return (
+            <PremiumFeatureCard
+              title="Gestionar Agentes"
+              description="Administra y optimiza tus agentes de IA existentes"
+              icon={Settings}
+              featureName="la gestión de agentes"
+              onUpgrade={() => {
+                toast({
+                  title: "Funcionalidad Premium",
+                  description: "Contacta al administrador para activar la gestión de agentes",
+                });
+              }}
+            />
+          );
+        }
         return <AgentManagerPage onBack={() => setCurrentView('dashboard')} lawyerData={user} />;
+      
+      case 'blog-manager':
+        if (!user?.canCreateBlogs) {
+          return (
+            <PremiumFeatureCard
+              title="Gestión de Blog"
+              description="Crea y administra contenido legal para tu blog profesional"
+              icon={BookOpen}
+              featureName="la gestión del blog"
+              onUpgrade={() => {
+                toast({
+                  title: "Funcionalidad Premium",
+                  description: "Contacta al administrador para activar la gestión del blog",
+                });
+              }}
+            />
+          );
+        }
+        return <LawyerBlogManager onBack={() => setCurrentView('dashboard')} lawyerData={user} />;
+      
       case 'training':
         return <LawyerTrainingPage user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as any)} onLogout={logout} lawyerData={user} />;
-      case 'blog-manager':
-        return <LawyerBlogManager onBack={() => setCurrentView('dashboard')} lawyerData={user} />;
+      
       case 'research':
+        if (!user?.canUseAiTools) {
+          return (
+            <PremiumFeatureCard
+              title="Investigación Legal"
+              description="Realiza investigaciones avanzadas con IA especializada en derecho"
+              icon={Search}
+              featureName="las herramientas de investigación"
+              onUpgrade={() => {
+                toast({
+                  title: "Funcionalidad Premium",
+                  description: "Contacta al administrador para activar las herramientas de IA",
+                });
+              }}
+            />
+          );
+        }
         return <ResearchModule user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as any)} onLogout={logout} />;
+      
       case 'analyze':
+        if (!user?.canUseAiTools) {
+          return (
+            <PremiumFeatureCard
+              title="Análisis Legal"
+              description="Analiza documentos y casos con inteligencia artificial avanzada"
+              icon={Eye}
+              featureName="las herramientas de análisis"
+              onUpgrade={() => {
+                toast({
+                  title: "Funcionalidad Premium",
+                  description: "Contacta al administrador para activar las herramientas de IA",
+                });
+              }}
+            />
+          );
+        }
         return <AnalyzeModule user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as any)} onLogout={logout} />;
+      
       case 'draft':
+        if (!user?.canUseAiTools) {
+          return (
+            <PremiumFeatureCard
+              title="Redacción Legal"
+              description="Redacta documentos legales con asistencia de inteligencia artificial"
+              icon={PenTool}
+              featureName="las herramientas de redacción"
+              onUpgrade={() => {
+                toast({
+                  title: "Funcionalidad Premium",
+                  description: "Contacta al administrador para activar las herramientas de IA",
+                });
+              }}
+            />
+          );
+        }
         return <DraftModule user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as any)} onLogout={logout} />;
+      
       case 'strategize':
+        if (!user?.canUseAiTools) {
+          return (
+            <PremiumFeatureCard
+              title="Estrategia Legal"
+              description="Desarrolla estrategias legales con análisis predictivo de IA"
+              icon={Target}
+              featureName="las herramientas de estrategia"
+              onUpgrade={() => {
+                toast({
+                  title: "Funcionalidad Premium",
+                  description: "Contacta al administrador para activar las herramientas de IA",
+                });
+              }}
+            />
+          );
+        }
         return <StrategizeModule user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as any)} onLogout={logout} />;
+      
       case 'integrations':
+        if (!user?.canUseAiTools) {
+          return (
+            <PremiumFeatureCard
+              title="Integraciones"
+              description="Conecta y automatiza workflows con herramientas externas"
+              icon={Settings}
+              featureName="las integraciones avanzadas"
+              onUpgrade={() => {
+                toast({
+                  title: "Funcionalidad Premium",
+                  description: "Contacta al administrador para activar las herramientas de IA",
+                });
+              }}
+            />
+          );
+        }
         return <IntegrationsModule user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as any)} onLogout={logout} />;
+      
       case 'stats':
         return <LawyerStatsSection />;
+      
       default:
         return null;
     }
@@ -260,27 +399,32 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
         {
           title: "Investigación",
           icon: Search,
-          view: "research" as const
+          view: "research" as const,
+          isPremium: !user?.canUseAiTools
         },
         {
           title: "Análisis",
           icon: Eye,
-          view: "analyze" as const
+          view: "analyze" as const,
+          isPremium: !user?.canUseAiTools
         },
         {
           title: "Redacción",
           icon: PenTool,
-          view: "draft" as const
+          view: "draft" as const,
+          isPremium: !user?.canUseAiTools
         },
         {
           title: "Estrategia",
           icon: Target,
-          view: "strategize" as const
+          view: "strategize" as const,
+          isPremium: !user?.canUseAiTools
         },
         {
           title: "Integraciones",
           icon: Settings,
-          view: "integrations" as const
+          view: "integrations" as const,
+          isPremium: !user?.canUseAiTools
         }
       ]
     },
@@ -290,15 +434,33 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
         {
           title: "Crear Agente",
           icon: Bot,
-          view: "agent-creator" as const
+          view: "agent-creator" as const,
+          isPremium: false
         },
         {
           title: "Gestionar Agentes",
           icon: Settings,
-          view: "agent-manager" as const
+          view: "agent-manager" as const,
+          isPremium: false
         }
       ]
-    }] : []),
+    }] : [{
+      title: "Gestión IA",
+      items: [
+        {
+          title: "Crear Agente",
+          icon: Bot,
+          view: "agent-creator" as const,
+          isPremium: true
+        },
+        {
+          title: "Gestionar Agentes",
+          icon: Settings,
+          view: "agent-manager" as const,
+          isPremium: true
+        }
+      ]
+    }]),
     {
       title: "Desarrollo",
       items: [
@@ -315,10 +477,21 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
         {
           title: "Gestión Blog",
           icon: BookOpen,
-          view: "blog-manager" as const
+          view: "blog-manager" as const,
+          isPremium: false
         }
       ]
-    }] : []),
+    }] : [{
+      title: "Contenido",
+      items: [
+        {
+          title: "Gestión Blog",
+          icon: BookOpen,
+          view: "blog-manager" as const,
+          isPremium: true
+        }
+      ]
+    }]),
     {
       title: "Estadísticas",
       items: [
@@ -348,21 +521,29 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                 <SidebarGroupLabel>{section.title}</SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu>
-                    {section.items.map((item) => (
-                      <SidebarMenuItem key={item.view}>
-                        <SidebarMenuButton 
-                          onClick={() => setCurrentView(item.view)}
-                          className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                            currentView === item.view 
-                              ? 'bg-primary text-primary-foreground' 
-                              : 'hover:bg-muted'
-                          }`}
-                        >
-                          <item.icon className="h-4 w-4" />
-                          <span>{item.title}</span>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
+                     {section.items.map((item) => (
+                       <SidebarMenuItem key={item.view}>
+                         <SidebarMenuButton 
+                           onClick={() => setCurrentView(item.view)}
+                           className={`flex items-center justify-between gap-3 px-3 py-2 rounded-lg transition-colors ${
+                             currentView === item.view 
+                               ? 'bg-primary text-primary-foreground' 
+                               : 'hover:bg-muted'
+                           } ${(item as any).isPremium ? 'opacity-75' : ''}`}
+                         >
+                           <div className="flex items-center gap-3">
+                             <item.icon className="h-4 w-4" />
+                             <span>{item.title}</span>
+                           </div>
+                           {(item as any).isPremium && (
+                             <div className="flex items-center gap-1">
+                               <Crown className="h-3 w-3 text-amber-500" />
+                               <Lock className="h-3 w-3 text-muted-foreground" />
+                             </div>
+                           )}
+                         </SidebarMenuButton>
+                       </SidebarMenuItem>
+                     ))}
                   </SidebarMenu>
                 </SidebarGroupContent>
               </SidebarGroup>
