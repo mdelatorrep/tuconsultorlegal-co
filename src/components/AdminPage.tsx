@@ -238,55 +238,100 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
 
   // Función para actualizar estado de agente
   const handleUpdateAgentStatus = async (agentId: string, newStatus: string) => {
-  if (!agentId || !newStatus) {
-    console.error('FALLO: El ID del agente o el nuevo estado no están definidos.');
-    return;
-  }
-  
-  try {
-    const authHeaders = getAuthHeaders();
-    if (!authHeaders.authorization) {
-      throw new Error('No se encontró token de autenticación');
+    if (!agentId || !newStatus) {
+      console.error('FALLO: El ID del agente o el nuevo estado no están definidos.');
+      return;
     }
-
-    const bodyPayload = {
-      agent_id: agentId,
-      status: newStatus,
-      user_id: user?.id || 'admin_override',
-      is_admin: true,
-      price: 0 // Default price for status updates
-    };
-
-    const response = await supabase.functions.invoke('update-agent', {
-      body: bodyPayload,
-      headers: authHeaders
-    });
     
-    if (response.error) {
-      console.error('Error from update-agent function:', response.error);
-      throw new Error(response.error.message || 'Error al actualizar el estado del agente');
+    try {
+      const authHeaders = getAuthHeaders();
+      if (!authHeaders.authorization) {
+        throw new Error('No se encontró token de autenticación');
+      }
+
+      // Obtener los datos del agente actual
+      const agent = agents.find(a => a.id === agentId);
+      if (!agent) {
+        throw new Error('Agente no encontrado');
+      }
+
+      const bodyPayload = {
+        agent_id: agentId,
+        status: newStatus,
+        user_id: user?.id || 'admin_override',
+        is_admin: true,
+        document_name: agent.name // Copiar el nombre del agente al nombre del documento
+      };
+
+      const response = await supabase.functions.invoke('update-agent', {
+        body: bodyPayload,
+        headers: authHeaders
+      });
+      
+      if (response.error) {
+        console.error('Error from update-agent function:', response.error);
+        throw new Error(response.error.message || 'Error al actualizar el estado del agente');
+      }
+
+      if (response.data?.error) {
+        console.error('Error in response data:', response.data.error);
+        throw new Error(response.data.error);
+      }
+
+      // Si estamos aprobando (cambiando a 'active'), crear el agente de OpenAI
+      if (newStatus === 'active' && agent.status === 'pending_review') {
+        try {
+          console.log('Creating OpenAI agent for approved agent:', agentId);
+          const { data: openaiAgentResult, error: openaiError } = await supabase.functions.invoke('create-openai-agent', {
+            body: {
+              legalAgentId: agentId,
+              agentConfig: {
+                model: 'gpt-4o'
+              }
+            },
+            headers: authHeaders
+          });
+
+          if (openaiError) {
+            console.error('Error creating OpenAI agent:', openaiError);
+            toast({
+              title: "Agente aprobado con advertencia",
+              description: "El agente fue aprobado exitosamente, pero hubo un problema al configurar el agente de IA. Se puede configurar manualmente después.",
+              variant: "destructive",
+            });
+          } else {
+            console.log('OpenAI agent created successfully:', openaiAgentResult);
+            toast({
+              title: "¡Agente aprobado y activado!",
+              description: "El agente fue aprobado exitosamente y el agente de IA fue configurado correctamente.",
+            });
+          }
+        } catch (error) {
+          console.error('Error creating OpenAI agent:', error);
+          toast({
+            title: "Agente aprobado con advertencia",
+            description: "El agente fue aprobado exitosamente, pero hubo un error al configurar el agente de IA.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        // Para otros cambios de estado (no aprobación)
+        toast({
+          title: "Estado actualizado",
+          description: `El agente ha sido ${newStatus === 'active' ? 'activado' : newStatus === 'approved' ? 'aprobado' : newStatus === 'suspended' ? 'suspendido' : 'actualizado'} exitosamente`,
+        });
+      }
+
+      await loadAgents();
+    } catch (error: any) {
+      console.error('Error updating agent status:', error);
+      toast({
+        title: "Error",
+        description: `No se pudo actualizar el estado del agente: ${error.message}`,
+        variant: "destructive",
+      });
     }
-
-    if (response.data?.error) {
-      console.error('Error in response data:', response.data.error);
-      throw new Error(response.data.error);
-    }
-
-    toast({
-      title: "Estado actualizado",
-      description: `El agente ha sido ${newStatus === 'active' ? 'activado' : newStatus === 'approved' ? 'aprobado' : newStatus === 'suspended' ? 'suspendido' : 'actualizado'} exitosamente`,
-    });
-
-    await loadAgents();
-  } catch (error: any) {
-    console.error('Error updating agent status:', error);
-    toast({
-      title: "Error",
-      description: `No se pudo actualizar el estado del agente: ${error.message}`,
-      variant: "destructive",
-    });
-  }
-};
+  };
 
   // Función para eliminar agente
   const handleDeleteAgent = async (agent: Agent) => {
