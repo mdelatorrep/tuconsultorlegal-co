@@ -108,17 +108,6 @@ export default function LawyerPermissionsDialog({
       console.log('=== UPDATE SUCCESSFUL ===');
       console.log('Response data:', data);
 
-      // Verificar directamente en la base de datos que se actualizó
-      console.log('=== VERIFYING UPDATE IN DATABASE ===');
-      const { data: verificationData, error: verificationError } = await supabase
-        .from('lawyer_profiles')
-        .select('id, can_create_agents, can_create_blogs, can_use_ai_tools, updated_at')
-        .eq('id', lawyer.id)
-        .single();
-      
-      console.log('Database verification:', verificationData);
-      console.log('Verification error:', verificationError);
-
       toast({
         title: "Permisos actualizados",
         description: `Los permisos de ${lawyer.full_name} han sido actualizados correctamente`,
