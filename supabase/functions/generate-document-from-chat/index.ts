@@ -16,7 +16,7 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    const { conversation, template_content, document_name, user_email, user_name, sla_hours, collected_data, placeholder_fields } = await req.json();
+    const { conversation, template_content, document_name, user_email, user_name, sla_hours, collected_data, placeholder_fields, price } = await req.json();
 
     if (!conversation || !template_content) {
       return new Response(
@@ -193,7 +193,7 @@ FORMATO DE RESPUESTA: Devuelve únicamente el documento final usando la plantill
         document_content: documentContent,
         user_email: user_email,
         user_name: user_name,
-        price: 50000, // Default price, should be calculated from agent
+        price: price || 0,
         sla_hours: sla_hours || 4,
         sla_deadline: slaDeadline.toISOString(),
         status: 'solicitado',

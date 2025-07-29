@@ -134,10 +134,28 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
 
   const getInitialResponse = async (agentData: AgentData, userMessage: Message) => {
     try {
+      // Generar el prompt inicial que asegura recopilar TODOS los campos requeridos
+      const enhancedPrompt = `${agentData.ai_prompt}
+
+REGLAS ESTRICTAS PARA RECOPILACIÓN DE INFORMACIÓN:
+1. Debes recopilar TODA la información necesaria para completar los siguientes placeholders de la plantilla:
+${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) => `   - {{${field.field || field.name}}}: ${field.description || field.label}`).join('\n') : ''}
+
+2. Haz UNA pregunta específica a la vez para recopilar cada campo
+3. Normaliza automáticamente:
+   - Nombres y apellidos en MAYÚSCULAS
+   - Ciudades con departamento (ej: BOGOTÁ, CUNDINAMARCA)
+   - Cédulas con puntos separadores (ej: 1.234.567.890)
+   - Fechas en formato DD de MMMM de YYYY
+
+4. SOLO después de tener TODA la información requerida, responde: "He recopilado toda la información necesaria. ¿Deseas proceder con la generación del documento?"
+
+5. NO permitas generar el documento hasta que TODOS los campos estén completos.`;
+
       const { data, error } = await supabase.functions.invoke('document-chat', {
         body: {
           messages: [{ role: userMessage.role, content: userMessage.content }],
-          agent_prompt: agentData.ai_prompt,
+          agent_prompt: enhancedPrompt,
           document_name: agentData.document_name
         }
       });
@@ -200,7 +218,8 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
             role: 'assistant',
             content: data.message,
             timestamp: new Date(),
-            showGenerateButton: data.message.includes('Ya tengo toda la información necesaria')
+            showGenerateButton: data.message.includes('He recopilado toda la información necesaria') || 
+                               data.message.includes('¿Deseas proceder con la generación')
           };
 
           setMessages(prev => [...prev, assistantMessage]);
@@ -234,12 +253,13 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
 
         if (fallbackError) throw fallbackError;
 
-        const assistantMessage: Message = {
-          role: 'assistant',
-          content: fallbackData.message,
-          timestamp: new Date(),
-          showGenerateButton: fallbackData.message.includes('Ya tengo toda la información necesaria')
-        };
+          const assistantMessage: Message = {
+            role: 'assistant',
+            content: fallbackData.message,
+            timestamp: new Date(),
+            showGenerateButton: fallbackData.message.includes('He recopilado toda la información necesaria') || 
+                               fallbackData.message.includes('¿Deseas proceder con la generación')
+          };
 
         setMessages(prev => [...prev, assistantMessage]);
         setSending(false);
@@ -257,8 +277,8 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
         role: 'assistant',
         content: data.message,
         timestamp: new Date(),
-        showGenerateButton: data.message.toLowerCase().includes('generar') && 
-                           data.message.toLowerCase().includes('documento')
+        showGenerateButton: data.message.includes('He recopilado toda la información necesaria') || 
+                           data.message.includes('¿Deseas proceder con la generación')
       };
 
       // Extract information from the conversation for placeholders
@@ -314,13 +334,29 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
           user_name: userInfo.name,
           sla_hours: agent.sla_hours || 4,
           collected_data: { ...collectedData, ...processedConversation },
-          placeholder_fields: agent.placeholder_fields
+          placeholder_fields: agent.placeholder_fields,
+          price: agent.price
         }
       });
 
       if (error) throw error;
 
-      toast.success('Documento generado exitosamente');
+      // Crear deep link para seguimiento
+      const trackingUrl = `${window.location.origin}/seguimiento?token=${data.token}`;
+      
+      toast.success(
+        <div className="space-y-2">
+          <p className="font-semibold">¡Documento generado exitosamente!</p>
+          <p className="text-sm">Token: {data.token}</p>
+          <button 
+            onClick={() => window.open(trackingUrl, '_blank')}
+            className="text-primary underline text-sm"
+          >
+            Ver seguimiento
+          </button>
+        </div>
+      );
+      
       onComplete(data.token);
     } catch (error) {
       console.error('Error generating document:', error);
@@ -427,12 +463,27 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
                 </div>
               </div>
 
-              <div className="bg-muted rounded-lg p-4">
+              <div className="bg-muted rounded-lg p-4 space-y-3">
                 <h4 className="font-medium mb-2 text-sm">Resumen del documento:</h4>
                 <p className="text-sm text-muted-foreground mb-2">{agent.document_name}</p>
                 <p className="text-base font-bold text-success">
                   Precio: {agent.price === 0 ? 'GRATIS' : `$${agent.price.toLocaleString()} COP`}
                 </p>
+                
+                {/* Mostrar resumen de información recopilada */}
+                {Object.keys(collectedData).length > 0 && (
+                  <div className="border-t pt-3">
+                    <h5 className="text-sm font-medium mb-2">Información recopilada:</h5>
+                    <div className="text-xs space-y-1">
+                      {Object.entries(collectedData).map(([key, value]) => (
+                        <div key={key} className="flex justify-between">
+                          <span className="text-muted-foreground">{key}:</span>
+                          <span className="font-medium">{String(value)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-3">

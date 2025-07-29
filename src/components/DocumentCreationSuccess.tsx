@@ -17,6 +17,9 @@ export default function DocumentCreationSuccess({
   onNavigateToTracking 
 }: DocumentCreationSuccessProps) {
   const [copied, setCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  const trackingUrl = `${window.location.origin}/seguimiento?token=${token}`;
 
   const copyToClipboard = async () => {
     try {
@@ -26,6 +29,17 @@ export default function DocumentCreationSuccess({
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       toast.error('Error al copiar el código');
+    }
+  };
+
+  const copyLinkToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(trackingUrl);
+      setLinkCopied(true);
+      toast.success('Link de seguimiento copiado');
+      setTimeout(() => setLinkCopied(false), 2000);
+    } catch (error) {
+      toast.error('Error al copiar el link');
     }
   };
 
@@ -71,12 +85,34 @@ export default function DocumentCreationSuccess({
               </div>
             </div>
 
+            <div className="bg-muted rounded-lg p-4 mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <Label className="text-sm font-medium text-muted-foreground">
+                  Link directo de seguimiento:
+                </Label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={copyLinkToClipboard}
+                >
+                  {linkCopied ? (
+                    <CheckCircle className="w-4 h-4" />
+                  ) : (
+                    <Copy className="w-4 h-4" />
+                  )}
+                </Button>
+              </div>
+              <p className="text-sm font-mono bg-background p-2 rounded border break-all">
+                {trackingUrl}
+              </p>
+            </div>
+
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left">
               <h4 className="font-medium text-blue-900 mb-2">¿Qué sigue ahora?</h4>
               <ul className="text-sm text-blue-800 space-y-1">
                 <li>• Nuestro equipo legal revisará tu solicitud</li>
                 <li>• Recibirás notificaciones por correo electrónico</li>
-                <li>• Podrás hacer seguimiento con tu código</li>
+                <li>• Podrás hacer seguimiento con tu código o link directo</li>
                 <li>• Una vez listo, procederás al pago</li>
               </ul>
             </div>
