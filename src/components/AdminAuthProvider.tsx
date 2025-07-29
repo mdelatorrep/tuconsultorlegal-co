@@ -1,5 +1,5 @@
 import React, { createContext, useContext, ReactNode } from 'react';
-import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { useSecureAdminAuth } from '@/hooks/useSecureAdminAuth';
 
 interface AdminAuthContextType {
   isAuthenticated: boolean;
@@ -18,7 +18,7 @@ interface AdminAuthProviderProps {
 }
 
 export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }) => {
-  const authValues = useAdminAuth();
+  const authValues = useSecureAdminAuth();
 
   return (
     <AdminAuthContext.Provider value={authValues}>
