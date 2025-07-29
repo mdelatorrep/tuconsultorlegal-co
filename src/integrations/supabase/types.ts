@@ -409,6 +409,295 @@ export type Database = {
         }
         Relationships: []
       }
+      event_bookings: {
+        Row: {
+          booking_date: string
+          budget_max: number | null
+          budget_min: number | null
+          client_user_id: string
+          confirmed_at: string | null
+          created_at: string
+          end_time: string
+          event_date: string
+          event_name: string
+          event_type: string
+          expected_guests: number
+          id: string
+          location_preference: string | null
+          special_requirements: string | null
+          start_time: string
+          status: string
+          total_cost: number | null
+          updated_at: string
+          venue_space_id: string | null
+        }
+        Insert: {
+          booking_date?: string
+          budget_max?: number | null
+          budget_min?: number | null
+          client_user_id: string
+          confirmed_at?: string | null
+          created_at?: string
+          end_time: string
+          event_date: string
+          event_name: string
+          event_type: string
+          expected_guests: number
+          id?: string
+          location_preference?: string | null
+          special_requirements?: string | null
+          start_time: string
+          status?: string
+          total_cost?: number | null
+          updated_at?: string
+          venue_space_id?: string | null
+        }
+        Update: {
+          booking_date?: string
+          budget_max?: number | null
+          budget_min?: number | null
+          client_user_id?: string
+          confirmed_at?: string | null
+          created_at?: string
+          end_time?: string
+          event_date?: string
+          event_name?: string
+          event_type?: string
+          expected_guests?: number
+          id?: string
+          location_preference?: string | null
+          special_requirements?: string | null
+          start_time?: string
+          status?: string
+          total_cost?: number | null
+          updated_at?: string
+          venue_space_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_bookings_venue_space_id_fkey"
+            columns: ["venue_space_id"]
+            isOneToOne: false
+            referencedRelation: "venue_spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_categories: {
+        Row: {
+          color_class: string | null
+          created_at: string
+          description: string | null
+          display_order: number | null
+          icon: string | null
+          id: string
+          is_active: boolean
+          name: string
+        }
+        Insert: {
+          color_class?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+        }
+        Update: {
+          color_class?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+        }
+        Relationships: []
+      }
+      event_reviews: {
+        Row: {
+          created_at: string
+          event_booking_id: string | null
+          id: string
+          is_verified: boolean | null
+          rating: number
+          review_date: string
+          review_text: string | null
+          reviewee_id: string
+          reviewee_type: string
+          reviewer_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_booking_id?: string | null
+          id?: string
+          is_verified?: boolean | null
+          rating: number
+          review_date?: string
+          review_text?: string | null
+          reviewee_id: string
+          reviewee_type: string
+          reviewer_user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_booking_id?: string | null
+          id?: string
+          is_verified?: boolean | null
+          rating?: number
+          review_date?: string
+          review_text?: string | null
+          reviewee_id?: string
+          reviewee_type?: string
+          reviewer_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_reviews_event_booking_id_fkey"
+            columns: ["event_booking_id"]
+            isOneToOne: false
+            referencedRelation: "event_bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_service_bookings: {
+        Row: {
+          confirmed_at: string | null
+          created_at: string
+          event_booking_id: string
+          final_price: number | null
+          id: string
+          provider_id: string
+          provider_notes: string | null
+          quoted_price: number | null
+          requested_at: string
+          service_id: string
+          service_notes: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          confirmed_at?: string | null
+          created_at?: string
+          event_booking_id: string
+          final_price?: number | null
+          id?: string
+          provider_id: string
+          provider_notes?: string | null
+          quoted_price?: number | null
+          requested_at?: string
+          service_id: string
+          service_notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          confirmed_at?: string | null
+          created_at?: string
+          event_booking_id?: string
+          final_price?: number | null
+          id?: string
+          provider_id?: string
+          provider_notes?: string | null
+          quoted_price?: number | null
+          requested_at?: string
+          service_id?: string
+          service_notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_service_bookings_event_booking_id_fkey"
+            columns: ["event_booking_id"]
+            isOneToOne: false
+            referencedRelation: "event_bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_service_bookings_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "service_providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_service_bookings_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "event_services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_services: {
+        Row: {
+          availability_schedule: Json
+          base_price: number
+          category: string
+          created_at: string
+          description: string | null
+          equipment_included: Json | null
+          id: string
+          images: Json | null
+          is_active: boolean
+          min_duration_hours: number | null
+          name: string
+          price_type: string
+          provider_id: string
+          service_area_cities: Json
+          subcategory: string | null
+          updated_at: string
+        }
+        Insert: {
+          availability_schedule?: Json
+          base_price: number
+          category: string
+          created_at?: string
+          description?: string | null
+          equipment_included?: Json | null
+          id?: string
+          images?: Json | null
+          is_active?: boolean
+          min_duration_hours?: number | null
+          name: string
+          price_type: string
+          provider_id: string
+          service_area_cities?: Json
+          subcategory?: string | null
+          updated_at?: string
+        }
+        Update: {
+          availability_schedule?: Json
+          base_price?: number
+          category?: string
+          created_at?: string
+          description?: string | null
+          equipment_included?: Json | null
+          id?: string
+          images?: Json | null
+          is_active?: boolean
+          min_duration_hours?: number | null
+          name?: string
+          price_type?: string
+          provider_id?: string
+          service_area_cities?: Json
+          subcategory?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_services_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "service_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       knowledge_base_urls: {
         Row: {
           category: string | null
@@ -906,6 +1195,39 @@ export type Database = {
           },
         ]
       }
+      maturity_diagnoses: {
+        Row: {
+          answers: Json
+          completed_at: string
+          created_at: string
+          current_level: number
+          id: string
+          recommendations: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          answers?: Json
+          completed_at?: string
+          created_at?: string
+          current_level?: number
+          id?: string
+          recommendations?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          answers?: Json
+          completed_at?: string
+          created_at?: string
+          current_level?: number
+          id?: string
+          recommendations?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       openai_agent_jobs: {
         Row: {
           completed_at: string | null
@@ -1074,6 +1396,69 @@ export type Database = {
         }
         Relationships: []
       }
+      service_providers: {
+        Row: {
+          business_name: string
+          contact_name: string
+          created_at: string
+          description: string | null
+          email: string
+          id: string
+          is_active: boolean
+          is_verified: boolean | null
+          location_cities: Json
+          phone: string | null
+          portfolio_images: Json | null
+          rating: number | null
+          service_categories: Json
+          social_media: Json | null
+          total_reviews: number | null
+          updated_at: string
+          user_id: string
+          website_url: string | null
+        }
+        Insert: {
+          business_name: string
+          contact_name: string
+          created_at?: string
+          description?: string | null
+          email: string
+          id?: string
+          is_active?: boolean
+          is_verified?: boolean | null
+          location_cities?: Json
+          phone?: string | null
+          portfolio_images?: Json | null
+          rating?: number | null
+          service_categories?: Json
+          social_media?: Json | null
+          total_reviews?: number | null
+          updated_at?: string
+          user_id: string
+          website_url?: string | null
+        }
+        Update: {
+          business_name?: string
+          contact_name?: string
+          created_at?: string
+          description?: string | null
+          email?: string
+          id?: string
+          is_active?: boolean
+          is_verified?: boolean | null
+          location_cities?: Json
+          phone?: string | null
+          portfolio_images?: Json | null
+          rating?: number | null
+          service_categories?: Json
+          social_media?: Json | null
+          total_reviews?: number | null
+          updated_at?: string
+          user_id?: string
+          website_url?: string | null
+        }
+        Relationships: []
+      }
       service_status: {
         Row: {
           created_at: string | null
@@ -1202,6 +1587,78 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      venue_spaces: {
+        Row: {
+          amenities: Json | null
+          area_m2: number | null
+          availability_schedule: Json
+          capacity: number
+          created_at: string
+          description: string | null
+          id: string
+          images: Json | null
+          is_active: boolean
+          latitude: number | null
+          location_address: string
+          location_city: string
+          location_zone: string
+          longitude: number | null
+          max_hours: number | null
+          min_hours: number | null
+          name: string
+          price_per_hour: number
+          space_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amenities?: Json | null
+          area_m2?: number | null
+          availability_schedule?: Json
+          capacity: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          images?: Json | null
+          is_active?: boolean
+          latitude?: number | null
+          location_address: string
+          location_city: string
+          location_zone: string
+          longitude?: number | null
+          max_hours?: number | null
+          min_hours?: number | null
+          name: string
+          price_per_hour: number
+          space_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amenities?: Json | null
+          area_m2?: number | null
+          availability_schedule?: Json
+          capacity?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          images?: Json | null
+          is_active?: boolean
+          latitude?: number | null
+          location_address?: string
+          location_city?: string
+          location_zone?: string
+          longitude?: number | null
+          max_hours?: number | null
+          min_hours?: number | null
+          name?: string
+          price_per_hour?: number
+          space_type?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
