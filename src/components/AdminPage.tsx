@@ -316,101 +316,124 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
   };
 
   const handleSaveAgent = async () => {
-  // 1. Congelar el estado en una constante local.
-  // Esto nos protege de cualquier cambio de estado posterior.
-  const agentToSave = editingAgent;
+    // Freeze the current state to prevent race conditions
+    const agentToSave = editingAgent;
 
-  // 2. Comprobar la constante local, no el estado.
-  if (!agentToSave) {
-    console.error("FALLO: Se intentó guardar pero no había ningún agente en edición.");
-    toast({ title: "Error", description: "No hay agente para guardar.", variant: "destructive" });
-    return;
-  }
-
-  console.log('🚀 Starting handleSaveAgent for agent:', agentToSave.id);
-  console.log('🔍 Agent status:', agentToSave.status);
-  console.log('🔍 Agent name:', agentToSave.name);
-
-  try {
-    const authHeaders = getAuthHeaders();
-    console.log('🔑 Auth headers obtained:', !!authHeaders.authorization);
-    
-    if (!authHeaders.authorization) {
-      console.error("❌ No authorization token found");
-      throw new Error("No se encontró token de autenticación");
+    if (!agentToSave?.id) {
+      console.error('❌ No agent selected for editing');
+      toast({ 
+        title: "Error", 
+        description: "No hay agente seleccionado para editar.", 
+        variant: "destructive" 
+      });
+      return;
     }
 
-    // 3. Construir el payload usando la constante local.
-    const bodyPayload = {
-      agent_id: agentToSave.id,
-      user_id: user?.id,
-      is_admin: true, 
+    console.log('🚀 Starting handleSaveAgent for agent:', agentToSave.id);
+    console.log('🔍 Agent data:', {
+      id: agentToSave.id,
       name: agentToSave.name,
-      description: agentToSave.description,
-      document_name: agentToSave.document_name,
-      document_description: agentToSave.document_description,
-      category: agentToSave.category,
-      suggested_price: agentToSave.suggested_price,
-      final_price: agentToSave.final_price,
-      price_justification: agentToSave.price_justification,
-      target_audience: agentToSave.target_audience,
-      template_content: agentToSave.template_content,
-      ai_prompt: agentToSave.ai_prompt,
-      sla_enabled: agentToSave.sla_enabled,
-      sla_hours: agentToSave.sla_hours,
-      button_cta: agentToSave.button_cta,
-      placeholder_fields: agentToSave.placeholder_fields,
-      frontend_icon: agentToSave.frontend_icon,
-      status: agentToSave.status,
-    };
-    
-    console.log('📦 Payload prepared. Keys:', Object.keys(bodyPayload));
-    console.log('🔍 User ID in payload:', bodyPayload.user_id);
-    console.log('🔍 Agent ID in payload:', bodyPayload.agent_id);
-
-    console.log('📡 Invoking update-agent function...');
-    const response = await supabase.functions.invoke('update-agent', {
-      body: bodyPayload,
-      headers: authHeaders // Sin Content-Type, Supabase lo maneja automáticamente
+      status: agentToSave.status
     });
 
-    console.log('📥 Response received:', response);
-    console.log('📥 Response error:', response.error);
-    console.log('📥 Response data:', response.data);
+    try {
+      // Get auth headers
+      const authHeaders = getAuthHeaders();
+      if (!authHeaders.authorization) {
+        console.error('❌ No authorization token found');
+        throw new Error('No se encontró token de autenticación. Por favor, inicia sesión nuevamente.');
+      }
 
-    if (response.error) {
-      console.error('❌ Supabase function error:', response.error);
-      throw new Error(response.error.message || 'Error en la función de Supabase');
+      console.log('🔑 Auth headers validated');
+
+      // Prepare the payload with all agent data
+      const updatePayload = {
+        agent_id: agentToSave.id,
+        user_id: user?.id,
+        is_admin: true,
+        name: agentToSave.name,
+        description: agentToSave.description,
+        document_name: agentToSave.document_name,
+        document_description: agentToSave.document_description,
+        category: agentToSave.category,
+        suggested_price: agentToSave.suggested_price,
+        final_price: agentToSave.final_price,
+        price_justification: agentToSave.price_justification,
+        target_audience: agentToSave.target_audience,
+        template_content: agentToSave.template_content,
+        ai_prompt: agentToSave.ai_prompt,
+        sla_enabled: agentToSave.sla_enabled,
+        sla_hours: agentToSave.sla_hours,
+        button_cta: agentToSave.button_cta,
+        placeholder_fields: agentToSave.placeholder_fields,
+        frontend_icon: agentToSave.frontend_icon,
+        status: agentToSave.status
+      };
+
+      console.log('📦 Payload prepared with fields:', Object.keys(updatePayload));
+
+      // Call the update-agent function
+      console.log('📡 Calling update-agent function...');
+      const { data, error } = await supabase.functions.invoke('update-agent', {
+        body: updatePayload,
+        headers: authHeaders
+      });
+
+      console.log('📥 Function response:', { data, error });
+
+      // Handle function-level errors
+      if (error) {
+        console.error('❌ Supabase function error:', error);
+        throw new Error(`Error de función: ${error.message}`);
+      }
+
+      // Handle application-level errors
+      if (!data?.success) {
+        console.error('❌ Application error:', data);
+        throw new Error(data?.error || 'Error desconocido al actualizar el agente');
+      }
+
+      console.log('✅ Agent updated successfully');
+
+      // Show success message
+      toast({
+        title: "Agente actualizado",
+        description: "El agente ha sido actualizado correctamente.",
+        variant: "default"
+      });
+
+      // Reload agents and close dialog
+      console.log('🔄 Reloading agents list...');
+      await loadAgents();
+      
+      setIsEditDialogOpen(false);
+      setEditingAgent(null);
+      
+      console.log('✅ Process completed successfully');
+
+    } catch (error: any) {
+      console.error('💥 Error in handleSaveAgent:', error);
+      
+      // Show user-friendly error message
+      let errorMessage = "No se pudo actualizar el agente.";
+      
+      if (error.message?.includes('token')) {
+        errorMessage = "Tu sesión ha expirado. Por favor, inicia sesión nuevamente.";
+      } else if (error.message?.includes('permissions')) {
+        errorMessage = "No tienes permisos para realizar esta acción.";
+      } else if (error.message?.includes('not found')) {
+        errorMessage = "El agente no fue encontrado.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast({
+        title: "Error al guardar cambios",
+        description: errorMessage,
+        variant: "destructive"
+      });
     }
-
-    if (response.data && !response.data.success) {
-      console.error('❌ Function returned success=false:', response.data);
-      throw new Error(response.data.error || 'La función devolvió un error de éxito falso');
-    }
-
-    console.log('✅ Agent updated successfully');
-    toast({
-      title: "Agente actualizado",
-      description: "El agente ha sido actualizado correctamente.",
-    });
-
-    console.log('🔄 Reloading agents...');
-    await loadAgents();
-    setIsEditDialogOpen(false);
-    setEditingAgent(null);
-    console.log('✅ Process completed successfully');
-  } catch (error: any) {
-    console.error('💥 Error in handleSaveAgent:', error);
-    console.error('💥 Error message:', error.message);
-    console.error('💥 Error stack:', error.stack);
-    
-    toast({
-      title: "Error al guardar cambios",
-      description: error.message || "No se pudo actualizar el agente. Verifica la consola para más detalles.",
-      variant: "destructive",
-    });
-  }
-};
+  };
 
   // Función para eliminar abogado
   const handleDeleteLawyer = async (lawyer: Lawyer) => {
