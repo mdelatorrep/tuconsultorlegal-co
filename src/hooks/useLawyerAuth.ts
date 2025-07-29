@@ -257,14 +257,33 @@ export const useLawyerAuth = () => {
   const logout = async () => {
     try {
       console.log('Logging out lawyer');
-      await supabase.auth.signOut();
+      
+      // Check if there's an active session before attempting signOut
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      
+      if (currentSession) {
+        await supabase.auth.signOut();
+      } else {
+        console.log('No active session found, proceeding with local cleanup');
+      }
+      
+      // Always clear local state regardless of signOut result
       setIsAuthenticated(false);
       setUser(null);
       setSession(null);
+      
+      // Clear any stored auth data
+      AuthStorage.clearLawyerAuth();
+      
       // Force navigation to home page after logout
       window.location.href = '/';
     } catch (error) {
       console.error('Logout error:', error);
+      // Even if logout fails, clear local state
+      setIsAuthenticated(false);
+      setUser(null);
+      setSession(null);
+      window.location.href = '/';
     }
   };
 
