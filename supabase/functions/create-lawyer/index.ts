@@ -28,7 +28,7 @@ const CreateLawyerSchema = z.object({
   phone_number: z.string().optional(),
   canCreateAgents: z.boolean().default(false),
   canCreateBlogs: z.boolean().default(false),
-  // canSeeBusinessStats field is not stored in lawyer_tokens table, so we'll ignore it
+  // canSeeBusinessStats field is not stored in lawyer_profiles table, so we'll ignore it
 })
 
 // Response utilities
