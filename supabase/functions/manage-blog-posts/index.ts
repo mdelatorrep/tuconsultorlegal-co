@@ -37,10 +37,11 @@ Deno.serve(async (req) => {
     if (authHeader.startsWith('Bearer ')) {
       const token = authHeader.replace('Bearer ', '')
       const { data: lawyer, error: lawyerError } = await supabase
-        .from('lawyer_tokens')
+        .from('lawyer_profiles')
         .select('*')
         .eq('access_token', token)
         .eq('active', true)
+        .eq('is_active', true)
         .single()
       
       if (lawyer && !lawyerError) {

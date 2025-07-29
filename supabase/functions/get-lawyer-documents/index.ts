@@ -44,10 +44,11 @@ Deno.serve(async (req) => {
 
     // Verify lawyer token and get lawyer data
     const { data: lawyer, error: lawyerError } = await supabase
-      .from('lawyer_tokens')
-      .select('id, full_name, email, active')
+      .from('lawyer_profiles')
+      .select('id, full_name, email, active, is_active')
       .eq('access_token', lawyerToken)
       .eq('active', true)
+      .eq('is_active', true)
       .single()
 
     if (lawyerError || !lawyer) {

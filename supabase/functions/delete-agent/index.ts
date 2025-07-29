@@ -144,10 +144,11 @@ Deno.serve(async (req) => {
       }
 
       const { data: lawyer, error: lawyerError } = await supabase
-        .from('lawyer_tokens')
+        .from('lawyer_profiles')
         .select('*')
         .eq('access_token', lawyerToken)
         .eq('active', true)
+        .eq('is_active', true)
         .maybeSingle()
 
       if (!lawyerError && lawyer && lawyer.id === existingAgent.created_by) {

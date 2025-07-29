@@ -59,15 +59,9 @@ export default function CertificationVerificationPage() {
     setCertificate(null);
 
     try {
-      const { data, error: queryError } = await supabase
+      const { data: certData, error: queryError } = await supabase
         .from('lawyer_certificates')
-        .select(`
-          *,
-          lawyer_info:lawyer_tokens!lawyer_certificates_lawyer_id_fkey(
-            full_name,
-            email
-          )
-        `)
+        .select('*')
         .eq('certificate_code', code.trim().toUpperCase())
         .eq('is_active', true)
         .single();
@@ -81,7 +75,23 @@ export default function CertificationVerificationPage() {
         return;
       }
 
-      setCertificate(data);
+      // Get lawyer info separately
+      const { data: lawyerData, error: lawyerError } = await supabase
+        .from('lawyer_profiles')
+        .select('full_name, email')
+        .eq('id', certData.lawyer_id)
+        .single();
+
+      if (lawyerError) {
+        console.warn('Could not fetch lawyer info:', lawyerError);
+      }
+
+      const certificate = {
+        ...certData,
+        lawyer_info: lawyerData || { full_name: 'Información no disponible', email: '' }
+      };
+
+      setCertificate(certificate);
       toast.success('Certificación verificada exitosamente');
     } catch (error) {
       console.error('Error verifying certificate:', error);

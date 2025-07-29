@@ -121,19 +121,20 @@ Deno.serve(async (req) => {
     logger.info('Input validation passed, creating lawyer account')
 
     // Check if email already exists
-    const { data: existingToken, error: checkError } = await serviceClient
-      .from('lawyer_tokens')
+    const { data: existingProfile, error: checkError } = await serviceClient
+      .from('lawyer_profiles')
       .select('email')
       .eq('email', email.toLowerCase())
       .eq('active', true)
+      .eq('is_active', true)
       .maybeSingle()
 
     if (checkError) {
-      logger.error('Error checking existing lawyer token', checkError)
+      logger.error('Error checking existing lawyer profile', checkError)
       return createErrorResponse('Database error checking existing account', 500)
     }
 
-    if (existingToken) {
+    if (existingProfile) {
       logger.warn('Email already exists', { email })
       return createErrorResponse('Email already exists', 409)
     }
@@ -141,39 +142,40 @@ Deno.serve(async (req) => {
     // Generate secure access token (same logic as manage-token-request)
     const accessToken = generateSecureToken()
 
-    logger.info('Creating lawyer token', { tokenLength: accessToken.length })
+    logger.info('Creating lawyer profile', { tokenLength: accessToken.length })
 
-    // Create lawyer token with unified system fields
-    const { data: tokenData, error: tokenError } = await serviceClient
-      .from('lawyer_tokens')
+    // Create lawyer profile with unified system fields
+    const { data: profileData, error: profileError } = await serviceClient
+      .from('lawyer_profiles')
       .insert({
+        id: crypto.randomUUID(),
         access_token: accessToken,
         email: email.toLowerCase(),
         full_name: name, // Map name to full_name for database
         phone_number: phone_number || null,
         can_create_agents: canCreateAgents,
         can_create_blogs: canCreateBlogs,
-        lawyer_id: crypto.randomUUID(),
-        created_by: null, // Sistema simplificado - no tracking específico
-        active: true
+        can_use_ai_tools: false,
+        active: true,
+        is_active: true
       })
       .select()
       .single()
 
-    if (tokenError) {
-      logger.error('Error creating lawyer token', tokenError)
+    if (profileError) {
+      logger.error('Error creating lawyer profile', profileError)
       return createErrorResponse(
-        'Error al crear token de acceso', 
+        'Error al crear perfil de abogado', 
         500, 
-        tokenError.message
+        profileError.message
       )
     }
 
-    logger.info('Lawyer token created successfully', { email, system: 'simplified_auth' })
+    logger.info('Lawyer profile created successfully', { email, system: 'simplified_auth' })
 
     return createSuccessResponse({
       lawyer: {
-        ...tokenData,
+        ...profileData,
         access_token: accessToken // Return the token for admin reference
       }
     }, 201)

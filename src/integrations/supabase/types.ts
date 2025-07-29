@@ -193,15 +193,7 @@ export type Database = {
           target_audience?: string | null
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "agent_drafts_lawyer_id_fkey"
-            columns: ["lawyer_id"]
-            isOneToOne: false
-            referencedRelation: "lawyer_tokens"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       agent_workflows: {
         Row: {
@@ -527,48 +519,61 @@ export type Database = {
           updated_at?: string
           verification_url?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "lawyer_certificates_lawyer_id_fkey"
-            columns: ["lawyer_id"]
-            isOneToOne: false
-            referencedRelation: "lawyer_tokens"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       lawyer_profiles: {
         Row: {
+          access_token: string | null
+          active: boolean
           can_create_agents: boolean | null
           can_create_blogs: boolean | null
           can_use_ai_tools: boolean
           created_at: string | null
+          created_by: string | null
           email: string
           full_name: string
           id: string
           is_active: boolean | null
+          last_login_at: string | null
+          last_used_at: string | null
+          phone_number: string | null
+          request_id: string | null
           updated_at: string | null
         }
         Insert: {
+          access_token?: string | null
+          active?: boolean
           can_create_agents?: boolean | null
           can_create_blogs?: boolean | null
           can_use_ai_tools?: boolean
           created_at?: string | null
+          created_by?: string | null
           email: string
           full_name: string
           id: string
           is_active?: boolean | null
+          last_login_at?: string | null
+          last_used_at?: string | null
+          phone_number?: string | null
+          request_id?: string | null
           updated_at?: string | null
         }
         Update: {
+          access_token?: string | null
+          active?: boolean
           can_create_agents?: boolean | null
           can_create_blogs?: boolean | null
           can_use_ai_tools?: boolean
           created_at?: string | null
+          created_by?: string | null
           email?: string
           full_name?: string
           id?: string
           is_active?: boolean | null
+          last_login_at?: string | null
+          last_used_at?: string | null
+          phone_number?: string | null
+          request_id?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -623,75 +628,6 @@ export type Database = {
           years_of_experience?: number | null
         }
         Relationships: []
-      }
-      lawyer_tokens: {
-        Row: {
-          access_token: string
-          active: boolean
-          can_create_agents: boolean
-          can_create_blogs: boolean
-          can_use_ai_tools: boolean
-          created_at: string
-          created_by: string | null
-          email: string
-          full_name: string
-          id: string
-          last_login_at: string | null
-          lawyer_id: string
-          phone_number: string | null
-          request_id: string | null
-          updated_at: string
-        }
-        Insert: {
-          access_token: string
-          active?: boolean
-          can_create_agents?: boolean
-          can_create_blogs?: boolean
-          can_use_ai_tools?: boolean
-          created_at?: string
-          created_by?: string | null
-          email: string
-          full_name: string
-          id?: string
-          last_login_at?: string | null
-          lawyer_id: string
-          phone_number?: string | null
-          request_id?: string | null
-          updated_at?: string
-        }
-        Update: {
-          access_token?: string
-          active?: boolean
-          can_create_agents?: boolean
-          can_create_blogs?: boolean
-          can_use_ai_tools?: boolean
-          created_at?: string
-          created_by?: string | null
-          email?: string
-          full_name?: string
-          id?: string
-          last_login_at?: string | null
-          lawyer_id?: string
-          phone_number?: string | null
-          request_id?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "lawyer_tokens_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "lawyer_tokens_request_id_fkey"
-            columns: ["request_id"]
-            isOneToOne: false
-            referencedRelation: "lawyer_token_requests"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       lawyer_training_progress: {
         Row: {
@@ -748,15 +684,7 @@ export type Database = {
           validation_attempts?: number | null
           validation_history?: Json | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "lawyer_training_progress_lawyer_id_fkey"
-            columns: ["lawyer_id"]
-            isOneToOne: false
-            referencedRelation: "lawyer_tokens"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       legal_advisor_agents: {
         Row: {
@@ -885,15 +813,7 @@ export type Database = {
           template_content?: string
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "legal_agents_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "lawyer_tokens"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       legal_consultations: {
         Row: {
@@ -1170,69 +1090,6 @@ export type Database = {
           id?: string
           ip_address?: string | null
           user_identifier?: string | null
-        }
-        Relationships: []
-      }
-      service_providers: {
-        Row: {
-          business_name: string
-          contact_name: string
-          created_at: string
-          description: string | null
-          email: string
-          id: string
-          is_active: boolean
-          is_verified: boolean | null
-          location_cities: Json
-          phone: string | null
-          portfolio_images: Json | null
-          rating: number | null
-          service_categories: Json
-          social_media: Json | null
-          total_reviews: number | null
-          updated_at: string
-          user_id: string
-          website_url: string | null
-        }
-        Insert: {
-          business_name: string
-          contact_name: string
-          created_at?: string
-          description?: string | null
-          email: string
-          id?: string
-          is_active?: boolean
-          is_verified?: boolean | null
-          location_cities?: Json
-          phone?: string | null
-          portfolio_images?: Json | null
-          rating?: number | null
-          service_categories?: Json
-          social_media?: Json | null
-          total_reviews?: number | null
-          updated_at?: string
-          user_id: string
-          website_url?: string | null
-        }
-        Update: {
-          business_name?: string
-          contact_name?: string
-          created_at?: string
-          description?: string | null
-          email?: string
-          id?: string
-          is_active?: boolean
-          is_verified?: boolean | null
-          location_cities?: Json
-          phone?: string | null
-          portfolio_images?: Json | null
-          rating?: number | null
-          service_categories?: Json
-          social_media?: Json | null
-          total_reviews?: number | null
-          updated_at?: string
-          user_id?: string
-          website_url?: string | null
         }
         Relationships: []
       }

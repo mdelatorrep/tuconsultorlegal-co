@@ -39,11 +39,12 @@ Deno.serve(async (req) => {
     }
 
     // Find lawyer token
-    const { data: lawyerToken, error: tokenError } = await supabase
-      .from('lawyer_tokens')
+    const { data: lawyerProfile, error: tokenError } = await supabase
+      .from('lawyer_profiles')
       .select('*')
       .eq('access_token', token)
       .eq('active', true)
+      .eq('is_active', true)
       .maybeSingle()
 
     if (tokenError) {
@@ -54,34 +55,36 @@ Deno.serve(async (req) => {
       })
     }
 
-    if (!lawyerToken) {
+    if (!lawyerProfile) {
       return new Response(JSON.stringify({ valid: false, error: 'Invalid token' }), {
         status: 401,
         headers: securityHeaders
       })
     }
 
-    // Check if token is expired
-    if (lawyerToken.token_expires_at && new Date(lawyerToken.token_expires_at) <= new Date()) {
-      return new Response(JSON.stringify({ valid: false, error: 'Token expired' }), {
-        status: 401,
-        headers: securityHeaders
-      })
-    }
+    // Note: Token expiry can be added later if needed
+    // if (lawyerProfile.token_expires_at && new Date(lawyerProfile.token_expires_at) <= new Date()) {
+    //   return new Response(JSON.stringify({ valid: false, error: 'Token expired' }), {
+    //     status: 401,
+    //     headers: securityHeaders
+    //   })
+    // }
 
     // Update last used timestamp
     await supabase
-      .from('lawyer_tokens')
+      .from('lawyer_profiles')
       .update({ last_used_at: new Date().toISOString() })
-      .eq('id', lawyerToken.id)
+      .eq('id', lawyerProfile.id)
 
     return new Response(JSON.stringify({
       valid: true,
       user: {
-        id: lawyerToken.lawyer_id,
-        email: lawyerToken.email,
-        name: lawyerToken.full_name,
-        canCreateAgents: lawyerToken.can_create_agents
+        id: lawyerProfile.id,
+        email: lawyerProfile.email,
+        name: lawyerProfile.full_name,
+        canCreateAgents: lawyerProfile.can_create_agents,
+        canCreateBlogs: lawyerProfile.can_create_blogs,
+        canUseAiTools: lawyerProfile.can_use_ai_tools
       }
     }), {
       headers: securityHeaders

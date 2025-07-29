@@ -44,15 +44,16 @@ Deno.serve(async (req) => {
 
     // Query database for matching lawyer token
     console.log('Querying database for lawyer token...')
-    const { data: lawyerToken, error: tokenError } = await supabase
-      .from('lawyer_tokens')
+    const { data: lawyerProfile, error: tokenError } = await supabase
+      .from('lawyer_profiles')
       .select('*')
       .eq('access_token', token)
       .eq('email', email.toLowerCase())
       .eq('active', true)
+      .eq('is_active', true)
       .maybeSingle()
 
-    console.log('Database query result:', { data: lawyerToken, error: tokenError })
+    console.log('Database query result:', { data: lawyerProfile, error: tokenError })
 
     if (tokenError) {
       console.error('Database error:', tokenError)
@@ -65,7 +66,7 @@ Deno.serve(async (req) => {
       })
     }
 
-    if (!lawyerToken) {
+    if (!lawyerProfile) {
       console.log('No matching lawyer token found')
       return new Response(JSON.stringify({ 
         success: false, 
@@ -80,9 +81,9 @@ Deno.serve(async (req) => {
     
     // Update last login timestamp
     const { error: updateError } = await supabase
-      .from('lawyer_tokens')
+      .from('lawyer_profiles')
       .update({ last_login_at: new Date().toISOString() })
-      .eq('id', lawyerToken.id)
+      .eq('id', lawyerProfile.id)
 
     if (updateError) {
       console.warn('Failed to update last login:', updateError)
@@ -91,12 +92,13 @@ Deno.serve(async (req) => {
     const responseData = {
       success: true,
       user: {
-        id: lawyerToken.lawyer_id,
-        tokenId: lawyerToken.id, // Agregar el ID del token para las referencias FK
-        email: lawyerToken.email,
-        name: lawyerToken.full_name,
-        canCreateAgents: lawyerToken.can_create_agents,
-        canCreateBlogs: lawyerToken.can_create_blogs
+        id: lawyerProfile.id,
+        tokenId: lawyerProfile.id, // Usar el mismo ID ya que ahora todo está en una tabla
+        email: lawyerProfile.email,
+        name: lawyerProfile.full_name,
+        canCreateAgents: lawyerProfile.can_create_agents,
+        canCreateBlogs: lawyerProfile.can_create_blogs,
+        canUseAiTools: lawyerProfile.can_use_ai_tools
       }
     }
 

@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
 
     // Get all lawyers
     const { data: lawyers, error: lawyersError } = await supabase
-      .from('lawyer_tokens')
+      .from('lawyer_profiles')
       .select(`
         id,
         full_name,

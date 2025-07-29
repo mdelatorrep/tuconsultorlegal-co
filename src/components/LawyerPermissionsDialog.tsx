@@ -84,21 +84,6 @@ export default function LawyerPermissionsDialog({
         return;
       }
 
-      // También actualizar en lawyer_tokens si existe un token para este abogado
-      const { error: tokenError } = await supabase
-        .from('lawyer_tokens')
-        .update({
-          can_create_agents: permissions.can_create_agents,
-          can_create_blogs: permissions.can_create_blogs,
-          can_use_ai_tools: permissions.can_use_ai_tools
-        })
-        .eq('lawyer_id', lawyer.id);
-
-      // No marcar como error si no existe token, solo logearlo
-      if (tokenError) {
-        console.log('Note: No lawyer_token found for this lawyer, or error updating:', tokenError);
-      }
-
       toast({
         title: "Permisos actualizados",
         description: `Los permisos de ${lawyer.full_name} han sido actualizados correctamente`,

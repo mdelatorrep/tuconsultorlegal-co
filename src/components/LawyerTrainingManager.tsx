@@ -103,36 +103,58 @@ export default function LawyerTrainingManager() {
   };
 
   const loadTrainingProgress = async () => {
-    const { data, error } = await supabase
+    const { data: progressData, error } = await supabase
       .from('lawyer_training_progress')
-      .select(`
-        *,
-        lawyer_info:lawyer_tokens!lawyer_training_progress_lawyer_id_fkey(
-          full_name,
-          email
-        )
-      `)
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    setTrainingProgress(data || []);
+
+    // Enrich with lawyer info
+    const enrichedData = await Promise.all(
+      (progressData || []).map(async (progress) => {
+        const { data: lawyerData } = await supabase
+          .from('lawyer_profiles')
+          .select('full_name, email')
+          .eq('id', progress.lawyer_id)
+          .single();
+        
+        return {
+          ...progress,
+          lawyer_info: lawyerData || { full_name: 'Información no disponible', email: '' }
+        };
+      })
+    );
+
+    setTrainingProgress(enrichedData);
   };
 
   const loadCertificates = async () => {
-    const { data, error } = await supabase
+    const { data: certData, error } = await supabase
       .from('lawyer_certificates')
-      .select(`
-        *,
-        lawyer_info:lawyer_tokens!lawyer_certificates_lawyer_id_fkey(
-          full_name,
-          email
-        )
-      `)
+      .select('*')
       .eq('is_active', true)
       .order('issued_date', { ascending: false });
 
     if (error) throw error;
-    setCertificates(data || []);
+
+    // Enrich with lawyer info
+    const enrichedData = await Promise.all(
+      (certData || []).map(async (cert) => {
+        const { data: lawyerData } = await supabase
+          .from('lawyer_profiles')
+          .select('full_name, email')
+          .eq('id', cert.lawyer_id)
+          .single();
+        
+        return {
+          ...cert,
+          lawyer_info: lawyerData || { full_name: 'Información no disponible', email: '' }
+        };
+      })
+    );
+
+    setCertificates(enrichedData);
   };
 
   const loadLawyers = async () => {

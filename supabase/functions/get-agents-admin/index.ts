@@ -41,10 +41,11 @@ Deno.serve(async (req) => {
       } else {
         // Check if it's a lawyer token
         const { data: lawyerCheck } = await supabase
-          .from('lawyer_tokens')
+          .from('lawyer_profiles')
           .select('id')
           .eq('access_token', token)
           .eq('active', true)
+          .eq('is_active', true)
           .maybeSingle();
         
         if (lawyerCheck) {
@@ -59,12 +60,7 @@ Deno.serve(async (req) => {
     let query = supabase
       .from('legal_agents')
       .select(`
-        *,
-        created_by_lawyer:lawyer_tokens!legal_agents_created_by_fkey(
-          id,
-          full_name,
-          email
-        )
+        *
       `)
       .order('created_at', { ascending: false });
 

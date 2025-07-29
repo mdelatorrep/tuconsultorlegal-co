@@ -198,16 +198,8 @@ Deno.serve(async (req) => {
         .maybeSingle()
 
       if (!lawyerError && lawyerProfile && existingAgent.created_by) {
-        // Check if the lawyer created this agent (via lawyer_tokens mapping)
-        const { data: lawyerToken, error: tokenError } = await supabase
-          .from('lawyer_tokens')
-          .select('id')
-          .eq('lawyer_id', user.id)
-          .eq('id', existingAgent.created_by)
-          .eq('active', true)
-          .maybeSingle()
-
-        if (!tokenError && lawyerToken) {
+        // Check if the lawyer created this agent (direct comparison since everything is in lawyer_profiles now)
+        if (user.id === existingAgent.created_by) {
           canUpdate = true
           updateReason = 'lawyer_owner'
           console.log('✅ Lawyer verified, can update own agent')

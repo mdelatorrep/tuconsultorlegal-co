@@ -1,9 +1,10 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+}
 
 const securityHeaders = {
   ...corsHeaders,
@@ -11,58 +12,24 @@ const securityHeaders = {
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
   'X-XSS-Protection': '1; mode=block',
-  'Referrer-Policy': 'strict-origin-when-cross-origin',
 }
 
-Deno.serve(async (req) => {
+serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405, headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    // **SIMPLIFIED AUTHENTICATION FOR MANAGEMENT FUNCTIONS**
-    const authHeader = req.headers.get('authorization');
-    
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Authorization required' }), {
-        status: 401,
-        headers: securityHeaders
-      });
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-    
-    // For management functions, accept any valid JWT (simplified auth)
-    if (!token || token.length < 50) {
-      return new Response(JSON.stringify({ error: 'Invalid token format' }), {
-        status: 401,
-        headers: securityHeaders
-      });
-    }
-
-    // Create Supabase client with service role key
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    );
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
 
-    console.log('Admin authenticated via JWT token');
+    const { action, requestId, rejectionReason } = await req.json()
 
-    const { requestId, action, rejectionReason, canCreateAgents, canCreateBlogs, canUseAiTools } = await req.json()
-
-    if (!requestId || !action || !['approve', 'reject'].includes(action)) {
+    if (!action || !requestId) {
       return new Response(
-        JSON.stringify({ error: 'Invalid request parameters' }), 
+        JSON.stringify({ error: 'Missing required fields' }), 
         { 
           status: 400, 
           headers: securityHeaders
@@ -70,22 +37,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create Supabase client with service role key (moved up earlier, remove duplicate)
-
-    console.log(`Processing token request: ${action} for ${requestId}`);
-
-    // Get the token request
+    // Get the request details
     const { data: request, error: requestError } = await supabase
       .from('lawyer_token_requests')
       .select('*')
       .eq('id', requestId)
-      .eq('status', 'pending')
-      .maybeSingle()
+      .single()
 
     if (requestError || !request) {
-      console.error('Request error:', requestError);
+      console.error('Request fetch error:', requestError);
       return new Response(
-        JSON.stringify({ error: 'Token request not found or already processed' }), 
+        JSON.stringify({ error: 'Request not found' }), 
         { 
           status: 404, 
           headers: securityHeaders
@@ -138,28 +100,31 @@ Deno.serve(async (req) => {
       }
       
       const accessToken = tokenResult;
+      const lawyerId = crypto.randomUUID();
 
-      // Create lawyer token
-      const { data: lawyerToken, error: tokenError } = await supabase
-        .from('lawyer_tokens')
+      // Create lawyer profile directly
+      const { data: lawyerProfile, error: profileError } = await supabase
+        .from('lawyer_profiles')
         .insert({
-          lawyer_id: crypto.randomUUID(),
+          id: lawyerId,
           full_name: request.full_name,
           email: request.email,
           phone_number: request.phone_number,
           access_token: accessToken,
-          can_create_agents: canCreateAgents || false,
-          can_create_blogs: canCreateBlogs || false,
-          can_use_ai_tools: canUseAiTools || false,
-          request_id: requestId
+          can_create_agents: false,
+          can_create_blogs: false,
+          can_use_ai_tools: false,
+          active: true,
+          request_id: requestId,
+          is_active: true
         })
         .select()
         .single()
 
-      if (tokenError) {
-        console.error('Token creation error:', tokenError);
+      if (profileError) {
+        console.error('Profile creation error:', profileError);
         return new Response(
-          JSON.stringify({ error: 'Failed to create lawyer token: ' + tokenError.message }), 
+          JSON.stringify({ error: 'Failed to create lawyer profile' }), 
           { 
             status: 500, 
             headers: securityHeaders
@@ -192,7 +157,7 @@ Deno.serve(async (req) => {
           success: true, 
           message: 'Request approved successfully',
           token: accessToken,
-          lawyerId: lawyerToken.lawyer_id
+          lawyerId: lawyerId
         }), 
         { headers: securityHeaders }
       );
