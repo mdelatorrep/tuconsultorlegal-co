@@ -56,7 +56,7 @@ interface Lawyer {
   phone_number?: string;
   last_login_at?: string;
   lawyer_id?: string;
-  access_token?: string;
+  
 }
 
 interface Agent {
@@ -211,7 +211,6 @@ Nombre: ${lawyer.full_name}
 Email: ${lawyer.email}
 Teléfono: ${lawyer.phone_number || 'No especificado'}
 ID: ${lawyer.id}
-Token de Acceso: ${lawyer.access_token || 'No disponible'}
 Estado: ${lawyer.active ? 'Activo' : 'Inactivo'}
 Puede crear agentes: ${lawyer.can_create_agents ? 'Sí' : 'No'}
 Puede crear blogs: ${lawyer.can_create_blogs ? 'Sí' : 'No'}
