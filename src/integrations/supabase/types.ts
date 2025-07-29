@@ -483,39 +483,6 @@ export type Database = {
           },
         ]
       }
-      event_categories: {
-        Row: {
-          color_class: string | null
-          created_at: string
-          description: string | null
-          display_order: number | null
-          icon: string | null
-          id: string
-          is_active: boolean
-          name: string
-        }
-        Insert: {
-          color_class?: string | null
-          created_at?: string
-          description?: string | null
-          display_order?: number | null
-          icon?: string | null
-          id?: string
-          is_active?: boolean
-          name: string
-        }
-        Update: {
-          color_class?: string | null
-          created_at?: string
-          description?: string | null
-          display_order?: number | null
-          icon?: string | null
-          id?: string
-          is_active?: boolean
-          name?: string
-        }
-        Relationships: []
-      }
       event_reviews: {
         Row: {
           created_at: string
