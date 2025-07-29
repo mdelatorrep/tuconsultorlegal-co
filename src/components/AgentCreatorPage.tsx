@@ -52,6 +52,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
     originalName: "",
     originalDescription: "",
     showImprovement: false,
+    isEditing: false,
   });
   
   const [aiProcessingSuccess, setAiProcessingSuccess] = useState(false);
@@ -613,6 +614,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         originalName: data.originalName,
         originalDescription: data.originalDescription,
         showImprovement: true,
+        isEditing: false,
       });
 
       setIsImprovingDocInfo(false);
@@ -648,8 +650,9 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       docName: docInfoImprovement.improvedName,
       docDesc: docInfoImprovement.improvedDescription,
     }));
-    setDocInfoImprovement(prev => ({ ...prev, showImprovement: false }));
+    setDocInfoImprovement(prev => ({ ...prev, showImprovement: false, isEditing: false }));
     setCurrentStep(2);
+    setMaxStepReached(Math.max(maxStepReached, 2));
     
     toast({
       title: "Mejoras aplicadas",
@@ -658,7 +661,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
   };
 
   const rejectDocumentInfo = () => {
-    setDocInfoImprovement(prev => ({ ...prev, showImprovement: false }));
+    setDocInfoImprovement(prev => ({ ...prev, showImprovement: false, isEditing: false }));
     setCurrentStep(2);
     setMaxStepReached(Math.max(maxStepReached, 2)); // Update max step reached
     
@@ -666,6 +669,14 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       title: "Mejoras rechazadas",
       description: "Se mantuvieron los valores originales.",
     });
+  };
+
+  const enableEditingDocInfo = () => {
+    setDocInfoImprovement(prev => ({ ...prev, isEditing: true }));
+  };
+
+  const handleDocInfoEdit = (field: 'improvedName' | 'improvedDescription', value: string) => {
+    setDocInfoImprovement(prev => ({ ...prev, [field]: value }));
   };
 
   const handlePublish = async () => {
@@ -833,6 +844,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         originalName: "",
         originalDescription: "",
         showImprovement: false,
+        isEditing: false,
       });
       setCurrentStep(1);
       onBack();
@@ -1111,39 +1123,64 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
                         {/* Name comparison */}
                         <div>
                           <Label className="text-sm font-medium mb-2 block">Nombre del Documento</Label>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <p className="text-xs text-muted-foreground mb-1">Original:</p>
-                              <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded border text-sm">
-                                {docInfoImprovement.originalName}
+                          {docInfoImprovement.isEditing ? (
+                            <div className="space-y-2">
+                              <p className="text-xs text-emerald-600 dark:text-emerald-400">Editando mejora:</p>
+                              <Input
+                                value={docInfoImprovement.improvedName}
+                                onChange={(e) => handleDocInfoEdit('improvedName', e.target.value)}
+                                className="border-emerald-200 dark:border-emerald-800 focus:border-emerald-300 dark:focus:border-emerald-700"
+                                placeholder="Edita el nombre mejorado"
+                              />
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <p className="text-xs text-muted-foreground mb-1">Original:</p>
+                                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded border text-sm">
+                                  {docInfoImprovement.originalName}
+                                </div>
+                              </div>
+                              <div>
+                                <p className="text-xs text-emerald-600 dark:text-emerald-400 mb-1">Mejorado:</p>
+                                <div className="p-3 bg-emerald-50 dark:bg-emerald-950/50 rounded border border-emerald-200 dark:border-emerald-800 text-sm">
+                                  {docInfoImprovement.improvedName}
+                                </div>
                               </div>
                             </div>
-                            <div>
-                              <p className="text-xs text-emerald-600 dark:text-emerald-400 mb-1">Mejorado:</p>
-                              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/50 rounded border border-emerald-200 dark:border-emerald-800 text-sm">
-                                {docInfoImprovement.improvedName}
-                              </div>
-                            </div>
-                          </div>
+                          )}
                         </div>
                         
                         {/* Description comparison */}
                         <div>
                           <Label className="text-sm font-medium mb-2 block">Descripción</Label>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <p className="text-xs text-muted-foreground mb-1">Original:</p>
-                              <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded border text-sm">
-                                {docInfoImprovement.originalDescription}
+                          {docInfoImprovement.isEditing ? (
+                            <div className="space-y-2">
+                              <p className="text-xs text-emerald-600 dark:text-emerald-400">Editando mejora:</p>
+                              <Textarea
+                                value={docInfoImprovement.improvedDescription}
+                                onChange={(e) => handleDocInfoEdit('improvedDescription', e.target.value)}
+                                className="border-emerald-200 dark:border-emerald-800 focus:border-emerald-300 dark:focus:border-emerald-700"
+                                placeholder="Edita la descripción mejorada"
+                                rows={4}
+                              />
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <p className="text-xs text-muted-foreground mb-1">Original:</p>
+                                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded border text-sm">
+                                  {docInfoImprovement.originalDescription}
+                                </div>
+                              </div>
+                              <div>
+                                <p className="text-xs text-emerald-600 dark:text-emerald-400 mb-1">Mejorado:</p>
+                                <div className="p-3 bg-emerald-50 dark:bg-emerald-950/50 rounded border border-emerald-200 dark:border-emerald-800 text-sm">
+                                  {docInfoImprovement.improvedDescription}
+                                </div>
                               </div>
                             </div>
-                            <div>
-                              <p className="text-xs text-emerald-600 dark:text-emerald-400 mb-1">Mejorado:</p>
-                              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/50 rounded border border-emerald-200 dark:border-emerald-800 text-sm">
-                                {docInfoImprovement.improvedDescription}
-                              </div>
-                            </div>
-                          </div>
+                          )}
                         </div>
                       </div>
                       
@@ -1155,11 +1192,22 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
                         >
                           Mantener Original
                         </Button>
+                        {!docInfoImprovement.isEditing && (
+                          <Button 
+                            variant="outline" 
+                            onClick={enableEditingDocInfo}
+                            className={`text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-950/20 ${isMobile ? "w-full" : ""}`}
+                          >
+                            <Wand2 className="h-4 w-4 mr-2" />
+                            Editar Mejoras
+                          </Button>
+                        )}
                         <Button 
                           onClick={acceptDocumentInfo}
                           className={`bg-emerald-600 hover:bg-emerald-700 ${isMobile ? "w-full" : ""}`}
                         >
-                          Aplicar Mejoras
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          {docInfoImprovement.isEditing ? 'Aplicar Cambios' : 'Aplicar Mejoras'}
                         </Button>
                       </div>
                     </div>
