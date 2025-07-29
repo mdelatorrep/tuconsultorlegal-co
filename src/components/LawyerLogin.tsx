@@ -93,11 +93,16 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
     setErrorMessage('');
 
     try {
+      console.log('=== HANDLEREGISTER START ===');
+      console.log('Form data:', { email, fullName, passwordLength: password.length });
+      
       console.log('=== CALLING SIGNUP FUNCTION ===');
       const success = await signUpWithEmailAndPassword(email, password, fullName);
+      console.log('=== SIGNUP FUNCTION RETURNED ===');
       console.log('Signup result:', success);
       
       if (success) {
+        console.log('=== REGISTRATION SUCCESS - SHOWING SUCCESS MESSAGE ===');
         toast({
           title: "¡Registro exitoso!",
           description: "Revisa tu email para confirmar tu cuenta.",
@@ -108,13 +113,19 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
         setConfirmPassword('');
         setFullName('');
       } else {
-        console.log('Signup failed');
+        console.log('=== REGISTRATION FAILED - SHOWING ERROR MESSAGE ===');
         setErrorMessage('Error al registrar la cuenta. Intenta nuevamente.');
       }
     } catch (error) {
-      console.error('Register error:', error);
+      console.error('=== HANDLEREGISTER CATCH ERROR ===');
+      console.error('Register error details:', {
+        message: error?.message || 'Unknown error',
+        name: error?.name || 'Unknown',
+        stack: error?.stack || 'No stack trace'
+      });
       setErrorMessage('Error de conexión. Intenta nuevamente.');
     } finally {
+      console.log('=== HANDLEREGISTER COMPLETE ===');
       setIsLoading(false);
     }
   };

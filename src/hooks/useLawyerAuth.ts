@@ -151,9 +151,16 @@ export const useLawyerAuth = () => {
       console.log('=== LAWYER SIGNUP START ===');
       console.log('Attempting signup with:', { email, fullName });
       
+      // Verify inputs
+      if (!email || !password || !fullName) {
+        console.error('Missing required fields:', { email: !!email, password: !!password, fullName: !!fullName });
+        return false;
+      }
+      
       const redirectUrl = `${window.location.origin}/`;
       console.log('Redirect URL:', redirectUrl);
       
+      console.log('Calling supabase.auth.signUp...');
       const { data, error } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password: password,
@@ -169,17 +176,36 @@ export const useLawyerAuth = () => {
         }
       });
 
-      console.log('Supabase signup response:', { data, error });
+      console.log('Supabase signup response:', { 
+        user: data?.user ? 'User created' : 'No user', 
+        session: data?.session ? 'Session created' : 'No session',
+        error: error ? error.message : 'No error'
+      });
 
       if (error) {
-        console.error('SignUp error:', error);
+        console.error('SignUp error details:', {
+          message: error.message,
+          status: error.status,
+          code: error.code || 'NO_CODE'
+        });
+        return false;
+      }
+
+      if (!data.user) {
+        console.error('No user returned from signup');
         return false;
       }
 
       console.log('=== LAWYER SIGNUP SUCCESS ===');
-      return !!data.user;
+      console.log('User created with ID:', data.user.id);
+      return true;
     } catch (error) {
-      console.error('SignUp error:', error);
+      console.error('=== SIGNUP CATCH ERROR ===');
+      console.error('Error details:', {
+        message: error?.message || 'Unknown error',
+        name: error?.name || 'Unknown',
+        stack: error?.stack || 'No stack trace'
+      });
       return false;
     }
   };
