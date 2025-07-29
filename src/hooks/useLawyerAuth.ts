@@ -188,6 +188,12 @@ export const useLawyerAuth = () => {
           status: error.status,
           code: error.code || 'NO_CODE'
         });
+        
+        // Handle specific error cases
+        if (error.message?.includes('User already registered') || error.message?.includes('already registered')) {
+          throw new Error('Este email ya está registrado. Intenta iniciar sesión en su lugar.');
+        }
+        
         return false;
       }
 

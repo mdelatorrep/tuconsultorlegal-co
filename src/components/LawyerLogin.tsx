@@ -123,7 +123,12 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
         name: error?.name || 'Unknown',
         stack: error?.stack || 'No stack trace'
       });
-      setErrorMessage('Error de conexión. Intenta nuevamente.');
+      // Show specific error message if available
+      if (error?.message) {
+        setErrorMessage(error.message);
+      } else {
+        setErrorMessage('Error de conexión. Intenta nuevamente.');
+      }
     } finally {
       console.log('=== HANDLEREGISTER COMPLETE ===');
       setIsLoading(false);
