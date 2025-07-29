@@ -91,7 +91,7 @@ export default function LawyerPermissionsDialog({
           can_use_ai_tools: permissions.can_use_ai_tools
         })
         .eq('id', lawyer.id)
-        .select();
+        .select('*');
 
       console.log('Update result:', { data, profileError, count });
 
