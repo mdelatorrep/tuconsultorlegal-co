@@ -152,6 +152,7 @@ export const useAdminAuth = () => {
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     try {
+      console.log('=== ADMIN LOGIN START ===');
       console.log('Attempting admin login with:', { email });
       
       // Use native Supabase Auth for admin login
@@ -160,7 +161,10 @@ export const useAdminAuth = () => {
         password: password.trim()
       });
 
+      console.log('Supabase auth response:', { authData, authError });
+
       if (authError || !authData.user) {
+        console.error('Supabase auth failed:', authError);
         throw new Error('Invalid credentials');
       }
 
