@@ -64,6 +64,10 @@ export default function LawyerPermissionsDialog({
 
     setIsLoading(true);
     try {
+      console.log('=== UPDATING LAWYER PERMISSIONS ===');
+      console.log('Lawyer ID:', lawyer.id);
+      console.log('New permissions:', permissions);
+      
       // Actualizar permisos en lawyer_profiles
       const { error: profileError } = await supabase
         .from('lawyer_profiles')
@@ -74,11 +78,13 @@ export default function LawyerPermissionsDialog({
         })
         .eq('id', lawyer.id);
 
+      console.log('Update result:', { profileError });
+
       if (profileError) {
         console.error('Error updating lawyer_profiles:', profileError);
         toast({
           title: "Error",
-          description: "No se pudieron actualizar los permisos en el perfil del abogado",
+          description: `Error: ${profileError.message}`,
           variant: "destructive"
         });
         return;
