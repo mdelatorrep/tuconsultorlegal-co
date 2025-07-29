@@ -252,8 +252,8 @@ Deno.serve(async (req) => {
     if (placeholder_fields !== undefined) updateData.placeholder_fields = placeholder_fields
     if (frontend_icon !== undefined) updateData.frontend_icon = frontend_icon
 
-    // Admin-only fields
-    if (is_admin) {
+    // Admin-only fields (use secure isAdmin check)
+    if (isAdmin) {
       if (final_price !== undefined) updateData.final_price = final_price
       if (status !== undefined) updateData.status = status
     }
