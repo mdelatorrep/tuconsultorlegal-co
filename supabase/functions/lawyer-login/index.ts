@@ -42,12 +42,11 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Query database for matching lawyer token
-    console.log('Querying database for lawyer token...')
+    // Query database for matching lawyer profile
+    console.log('Querying database for lawyer profile...')
     const { data: lawyerProfile, error: tokenError } = await supabase
       .from('lawyer_profiles')
       .select('*')
-      .eq('access_token', token)
       .eq('email', email.toLowerCase())
       .eq('active', true)
       .eq('is_active', true)

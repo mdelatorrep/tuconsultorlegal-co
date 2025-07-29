@@ -110,12 +110,10 @@ serve(async (req) => {
           full_name: request.full_name,
           email: request.email,
           phone_number: request.phone_number,
-          access_token: accessToken,
           can_create_agents: false,
           can_create_blogs: false,
           can_use_ai_tools: false,
           active: true,
-          request_id: requestId,
           is_active: true
         })
         .select()
