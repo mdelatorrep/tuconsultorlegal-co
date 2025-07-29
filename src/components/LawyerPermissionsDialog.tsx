@@ -141,7 +141,10 @@ export default function LawyerPermissionsDialog({
   if (!lawyer) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={(isOpen) => {
+      console.log('LawyerPermissionsDialog open state changed:', isOpen);
+      if (!isOpen) onClose();
+    }}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
