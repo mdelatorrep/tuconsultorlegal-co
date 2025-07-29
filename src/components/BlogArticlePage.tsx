@@ -3,6 +3,7 @@ import { Button } from "./ui/button";
 import { ArrowLeft, Calendar, Eye, Share2, Facebook, Twitter, Linkedin, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import DOMPurify from 'dompurify';
 
 interface BlogArticlePageProps {
   articleId: string;
@@ -86,7 +87,13 @@ export default function BlogArticlePage({ articleId, onOpenChat, onNavigate }: B
     formatted = formatted.replace(/^## (.*$)/gm, '<h2 class="text-2xl font-bold mb-4 mt-8 text-foreground">$1</h2>');
     formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold">$1</strong>');
     formatted = formatted.replace(/^([^#->\n].+)$/gm, '<p class="mb-4 text-muted-foreground leading-relaxed">$1</p>');
-    return formatted;
+    
+    // Sanitize HTML to prevent XSS attacks
+    return DOMPurify.sanitize(formatted, {
+      ALLOWED_TAGS: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'strong', 'em', 'br', 'ul', 'ol', 'li', 'a'],
+      ALLOWED_ATTR: ['class', 'href', 'target', 'rel'],
+      ALLOW_DATA_ATTR: false
+    });
   };
 
   // Generate correct URL for hash-based routing

@@ -122,12 +122,22 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'approve') {
-      // Generate secure access token (10 characters: uppercase letters and numbers)
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      let accessToken = '';
-      for (let i = 0; i < 10; i++) {
-        accessToken += chars.charAt(Math.floor(Math.random() * chars.length));
+      // Generate secure access token using cryptographically secure method
+      const { data: tokenResult, error: tokenGenError } = await supabase
+        .rpc('generate_secure_lawyer_token');
+      
+      if (tokenGenError || !tokenResult) {
+        console.error('Token generation error:', tokenGenError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to generate secure token' }), 
+          { 
+            status: 500, 
+            headers: securityHeaders
+          }
+        );
       }
+      
+      const accessToken = tokenResult;
 
       // Create lawyer token
       const { data: lawyerToken, error: tokenError } = await supabase

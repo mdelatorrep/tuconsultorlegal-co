@@ -47,6 +47,39 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_profiles: {
+        Row: {
+          active: boolean
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          is_super_admin: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          is_super_admin?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          is_super_admin?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       agent_conversations: {
         Row: {
           conversation_data: Json | null
@@ -1363,6 +1396,33 @@ export type Database = {
         }
         Relationships: []
       }
+      security_audit_log: {
+        Row: {
+          created_at: string
+          details: Json | null
+          event_type: string
+          id: string
+          ip_address: string | null
+          user_identifier: string | null
+        }
+        Insert: {
+          created_at?: string
+          details?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          user_identifier?: string | null
+        }
+        Update: {
+          created_at?: string
+          details?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          user_identifier?: string | null
+        }
+        Relationships: []
+      }
       service_providers: {
         Row: {
           business_name: string
@@ -1711,6 +1771,10 @@ export type Database = {
       }
     }
     Functions: {
+      generate_secure_lawyer_token: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_user_role: {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["app_role"]
@@ -1721,6 +1785,15 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
         }
         Returns: boolean
+      }
+      log_security_event: {
+        Args: {
+          event_type: string
+          user_identifier?: string
+          details?: Json
+          ip_address?: string
+        }
+        Returns: undefined
       }
     }
     Enums: {
