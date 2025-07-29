@@ -259,7 +259,10 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
 
     const response = await supabase.functions.invoke('update-agent', {
       body: bodyPayload,
-      headers: { ...authHeaders } // Sin 'Content-Type'
+      headers: { 
+        'Content-Type': 'application/json',
+        ...authHeaders 
+      }
     });
     
     // ...resto del código...
@@ -358,9 +361,11 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
     console.log('✅ Payload a enviar:', bodyPayload);
 
     const response = await supabase.functions.invoke('update-agent', {
-      body: bodyPayload, // Usar el payload seguro
-      // 4. Se elimina el header 'Content-Type'. Supabase lo gestiona.
-      headers: { ...authHeaders } 
+      body: bodyPayload,
+      headers: { 
+        'Content-Type': 'application/json',
+        ...authHeaders 
+      }
     });
 
     if (response.error) {

@@ -192,13 +192,13 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
       }
 
       const { data, error } = await supabase.functions.invoke('update-agent', {
-        body: JSON.stringify({
+        body: {
           agent_id: agentId,
           user_id: lawyerData.id,
           is_admin: lawyerData.is_admin,
           status: 'active',
           document_name: agent.name // Copiar el nombre del agente al nombre del documento
-        }),
+        },
         headers: {
           'Content-Type': 'application/json',
           ...authHeaders
@@ -299,7 +299,7 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
       }
 
       const { data, error } = await supabase.functions.invoke('update-agent', {
-        body: JSON.stringify({
+        body: {
           agent_id: editingAgent.id,
           user_id: lawyerData.id,
           is_admin: lawyerData.is_admin,
@@ -314,7 +314,7 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
           target_audience: editingAgent.target_audience,
           template_content: editingAgent.template_content,
           ai_prompt: editingAgent.ai_prompt
-        }),
+        },
         headers: {
           'Content-Type': 'application/json',
           ...authHeaders
