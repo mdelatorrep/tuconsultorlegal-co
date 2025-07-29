@@ -381,8 +381,15 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         docDesc: formData.docDesc,
         docCat: formData.docCat,
         templateLength: formData.docTemplate.length,
-        promptLength: formData.initialPrompt.length
+        promptLength: formData.initialPrompt.length,
+        lawyerData: lawyerData, // Add this to debug
+        hasTokenId: !!lawyerData?.tokenId // Add this to debug
       });
+
+      // Validate that we have the lawyer token
+      if (!lawyerData?.tokenId) {
+        throw new Error('Token de abogado no disponible. Por favor inicia sesión nuevamente.');
+      }
 
       const { data, error } = await supabase.functions.invoke('process-agent-ai', {
         body: {
