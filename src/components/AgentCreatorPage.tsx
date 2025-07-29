@@ -742,17 +742,16 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       }
       
       const { data, error } = await supabase
-        .from('legal_agents')
-        .insert({
-           name: formData.docName,
-           description: formData.docDesc,
-           category: formData.docCat,
-           template_content: formData.docTemplate,
-           ai_prompt: aiResults.enhancedPrompt,
-           placeholder_fields: aiResults.extractedPlaceholders,
-           suggested_price: lawyerPriceValue, // Lawyer's suggested price for client
-           final_price: calculatedPriceValue, // AI calculated price for admin review
-           price_justification: aiResults.priceJustification || 'Precio estimado por el abogado',
+         .from('legal_agents')
+         .insert({
+            name: formData.docName,
+            description: formData.docDesc,
+            category: formData.docCat,
+            template_content: formData.docTemplate,
+            ai_prompt: aiResults.enhancedPrompt,
+            placeholder_fields: aiResults.extractedPlaceholders,
+            price: calculatedPriceValue, // Use the unified price field
+            price_justification: aiResults.priceJustification || 'Precio estimado por el abogado',
            status: 'pending_review',
            created_by: lawyerData.id, // Usar el ID del lawyer profile directamente
            target_audience: formData.targetAudience,
