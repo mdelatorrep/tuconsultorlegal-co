@@ -193,14 +193,11 @@ function AdminPage() {
 
   const loadLawyers = async () => {
     try {
-      console.log('=== LOADING LAWYERS ===');
       const { data, error } = await supabase.functions.invoke('get-lawyers-admin', {
         headers: getAuthHeaders()
       });
-      console.log('Lawyers loaded:', data);
       if (error) throw error;
       setLawyers(data || []);
-      console.log('Lawyers state updated');
     } catch (error) {
       console.error('Error loading lawyers:', error);
     }

@@ -64,60 +64,67 @@ export default function LawyerPermissionsDialog({
 
     console.log('=== STARTING PERMISSION UPDATE ===');
     console.log('Lawyer ID:', lawyer.id);
-    console.log('Permissions to update:', permissions);
-    console.log('Auth headers provided:', authHeaders);
+    console.log('New permissions:', permissions);
     
     setIsLoading(true);
     try {
-      console.log('=== UPDATING VIA SUPABASE CLIENT ===');
-      console.log('Using auth token:', authHeaders.authorization?.substring(0, 50) + '...');
-      
-      // Usar el cliente de Supabase directamente en lugar de HTTP
-      const { data, error } = await supabase
-        .from('lawyer_profiles')
-        .update({
-          can_create_agents: permissions.can_create_agents,
-          can_create_blogs: permissions.can_create_blogs,
-          can_use_ai_tools: permissions.can_use_ai_tools
-        })
-        .eq('id', lawyer.id)
-        .select();
+      // Usar la nueva función edge específica
+      const { data, error } = await supabase.functions.invoke('update-lawyer-permissions', {
+        body: {
+          lawyerId: lawyer.id,
+          permissions: {
+            can_create_agents: permissions.can_create_agents,
+            can_create_blogs: permissions.can_create_blogs,
+            can_use_ai_tools: permissions.can_use_ai_tools
+          }
+        },
+        headers: authHeaders
+      });
 
-      console.log('=== SUPABASE UPDATE RESPONSE ===');
+      console.log('=== FUNCTION RESPONSE ===');
       console.log('Data:', data);
       console.log('Error:', error);
 
       if (error) {
-        console.error('Supabase update error:', error);
+        console.error('Function invocation error:', error);
         toast({
           title: "Error",
-          description: `Error al actualizar: ${error.message}`,
+          description: `Error al actualizar permisos: ${error.message}`,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (!data.success) {
+        console.error('Function returned error:', data.error);
+        toast({
+          title: "Error",
+          description: `Error: ${data.error}`,
           variant: "destructive"
         });
         return;
       }
 
       console.log('=== UPDATE SUCCESSFUL ===');
-      console.log('Response data:', data);
+      console.log('Updated lawyer data:', data.data);
 
       toast({
         title: "Permisos actualizados",
         description: `Los permisos de ${lawyer.full_name} han sido actualizados correctamente`,
       });
 
-      console.log('=== CALLING onPermissionsUpdated ===');
+      // Actualizar la lista de abogados
       onPermissionsUpdated();
-      console.log('=== CALLING onClose ===');
       onClose();
+      
     } catch (error) {
       console.error('=== CATCH ERROR ===', error);
       toast({
         title: "Error",
-        description: "Ocurrió un error inesperado",
+        description: "Ocurrió un error inesperado al actualizar los permisos",
         variant: "destructive"
       });
     } finally {
-      console.log('=== FINALLY BLOCK ===');
       setIsLoading(false);
     }
   };
