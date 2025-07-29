@@ -129,13 +129,13 @@ function AdminPage() {
   const [lawyers, setLawyers] = useState<Lawyer[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [contactMessages, setContactMessages] = useState<ContactMessage[]>([]);
-  const [tokenRequests, setTokenRequests] = useState<TokenRequest[]>([]);
+  
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [categories, setCategories] = useState<{name: string; value: string}[]>([]);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [pendingAgentsCount, setPendingAgentsCount] = useState(0);
   const [pendingBlogsCount, setPendingBlogsCount] = useState(0);
-  const [pendingTokenRequests, setPendingTokenRequests] = useState(0);
+  
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -174,7 +174,7 @@ function AdminPage() {
       await Promise.all([
         loadLawyers(),
         loadAgents(),
-        loadTokenRequests(),
+        
         loadContactMessages(),
         loadBlogPosts(),
         loadCategories()
@@ -460,18 +460,6 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
     }
   };
 
-  const loadTokenRequests = async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke('get-token-requests');
-      if (error) throw error;
-      setTokenRequests(data || []);
-      
-      const pending = data?.filter((request: any) => request.status === 'pending').length || 0;
-      setPendingTokenRequests(pending);
-    } catch (error) {
-      console.error('Error loading token requests:', error);
-    }
-  };
 
   const loadContactMessages = async () => {
     try {
@@ -549,7 +537,6 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
       label: "Gestión de Usuarios",
       items: [
         { id: 'lawyers', label: 'Abogados', icon: Users, count: 0 },
-        { id: 'requests', label: 'Solicitudes de Acceso', icon: Clock, count: pendingTokenRequests },
       ]
     },
     {
@@ -720,11 +707,6 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
               </Card>
               <Card className="p-6">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Solicitudes</p>
-                    <p className="text-2xl font-bold">{pendingTokenRequests}</p>
-                  </div>
-                  <Clock className="w-8 h-8 text-red-500" />
                 </div>
               </Card>
             </div>
@@ -1221,54 +1203,6 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
       case 'categories':
         return <CategoryManager />;
         
-      case 'requests':
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="w-5 h-5" />
-                Solicitudes de Acceso
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {tokenRequests.map((request) => (
-                  <div key={request.id} className="p-4 border rounded-lg">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h4 className="font-medium">{request.full_name}</h4>
-                        <p className="text-sm text-muted-foreground">{request.email}</p>
-                        {request.law_firm && (
-                          <p className="text-sm">{request.law_firm}</p>
-                        )}
-                        <div className="flex items-center gap-2 mt-2">
-                          <Badge variant={request.status === 'pending' ? 'destructive' : 'default'}>
-                            {request.status}
-                          </Badge>
-                          {request.specialization && (
-                            <Badge variant="outline">{request.specialization}</Badge>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {request.status === 'pending' && (
-                          <>
-                            <Button size="sm" variant="default">
-                              <Check className="w-4 h-4" />
-                            </Button>
-                            <Button size="sm" variant="destructive">
-                              <X className="w-4 h-4" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        );
         
       default:
         return (
@@ -1322,9 +1256,9 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
                       onClick={() => setShowNotifications(!showNotifications)}
                     >
                       <Bell className="w-4 h-4" />
-                      {(unreadMessagesCount > 0 || pendingAgentsCount > 0 || pendingTokenRequests > 0) && (
+                      {(unreadMessagesCount > 0 || pendingAgentsCount > 0) && (
                         <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full text-xs w-5 h-5 flex items-center justify-center">
-                          {unreadMessagesCount + pendingAgentsCount + pendingTokenRequests}
+                          {unreadMessagesCount + pendingAgentsCount}
                         </span>
                       )}
                     </Button>
@@ -1361,19 +1295,8 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
                         </div>
                       )}
                       
-                      {pendingTokenRequests > 0 && (
-                        <div className="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
-                          <div className="flex items-center gap-2">
-                            <Clock className="w-4 h-4 text-blue-500" />
-                            <span className="text-sm">Solicitudes de acceso pendientes</span>
-                          </div>
-                          <Badge variant="outline" className="text-xs">
-                            {pendingTokenRequests}
-                          </Badge>
-                        </div>
-                      )}
                       
-                      {unreadMessagesCount === 0 && pendingAgentsCount === 0 && pendingTokenRequests === 0 && (
+                      {unreadMessagesCount === 0 && pendingAgentsCount === 0 && (
                         <div className="text-center py-4 text-muted-foreground">
                           <CheckCircle className="w-8 h-8 mx-auto mb-2 text-green-500" />
                           <p className="text-sm">Todo al día</p>
