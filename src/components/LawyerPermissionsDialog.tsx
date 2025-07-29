@@ -64,7 +64,8 @@ export default function LawyerPermissionsDialog({
 
     setIsLoading(true);
     try {
-      const { error } = await supabase
+      // Actualizar permisos en lawyer_profiles
+      const { error: profileError } = await supabase
         .from('lawyer_profiles')
         .update({
           can_create_agents: permissions.can_create_agents,
@@ -73,14 +74,29 @@ export default function LawyerPermissionsDialog({
         })
         .eq('id', lawyer.id);
 
-      if (error) {
-        console.error('Error updating permissions:', error);
+      if (profileError) {
+        console.error('Error updating lawyer_profiles:', profileError);
         toast({
           title: "Error",
-          description: "No se pudieron actualizar los permisos del abogado",
+          description: "No se pudieron actualizar los permisos en el perfil del abogado",
           variant: "destructive"
         });
         return;
+      }
+
+      // También actualizar en lawyer_tokens si existe un token para este abogado
+      const { error: tokenError } = await supabase
+        .from('lawyer_tokens')
+        .update({
+          can_create_agents: permissions.can_create_agents,
+          can_create_blogs: permissions.can_create_blogs,
+          can_use_ai_tools: permissions.can_use_ai_tools
+        })
+        .eq('lawyer_id', lawyer.id);
+
+      // No marcar como error si no existe token, solo logearlo
+      if (tokenError) {
+        console.log('Note: No lawyer_token found for this lawyer, or error updating:', tokenError);
       }
 
       toast({
