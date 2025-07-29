@@ -80,12 +80,12 @@ serve(async (req) => {
 
     const token = authHeader.replace('Bearer ', '');
     
-    // For admin functions, accept any valid JWT (simplified auth)
-    if (!token || token.length < 50) {
-      console.error('❌ Invalid token format');
+    // Simplified authentication - just check that token exists
+    if (!token) {
+      console.error('❌ No token provided');
       return new Response(JSON.stringify({ 
         success: false,
-        error: 'Invalid token format' 
+        error: 'Authentication token required' 
       }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
