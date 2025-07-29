@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -46,12 +46,14 @@ export default function LawyerPermissionsDialog({
   const { toast } = useToast();
 
   // Initialize permissions when lawyer changes
-  if (lawyer && !permissions.can_create_agents && !permissions.can_create_blogs) {
-    setPermissions({
-      can_create_agents: lawyer.can_create_agents,
-      can_create_blogs: lawyer.can_create_blogs
-    });
-  }
+  useEffect(() => {
+    if (lawyer) {
+      setPermissions({
+        can_create_agents: lawyer.can_create_agents,
+        can_create_blogs: lawyer.can_create_blogs
+      });
+    }
+  }, [lawyer]);
 
   const handleSave = async () => {
     if (!lawyer) return;

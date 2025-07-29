@@ -46,11 +46,11 @@ Deno.serve(async (req) => {
     console.log('Admin authenticated via JWT token');
     console.log('Fetching lawyers data...');
 
-    // Fetch all approved lawyer tokens (these are the registered lawyers)
+    // Fetch all lawyer profiles (these are the registered lawyers)
     const { data: lawyers, error: lawyersError } = await supabase
-      .from('lawyer_tokens')
+      .from('lawyer_profiles')
       .select('*')
-      .eq('active', true)
+      .eq('is_active', true)
       .order('created_at', { ascending: false });
 
     if (lawyersError) {
@@ -64,18 +64,16 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Transform the lawyer_tokens data to match the expected lawyer format
+    // Transform the lawyer_profiles data to match the expected lawyer format
     const transformedLawyers = (lawyers || []).map(lawyer => ({
-      id: lawyer.lawyer_id,
+      id: lawyer.id,
       email: lawyer.email,
       full_name: lawyer.full_name,
-      phone_number: lawyer.phone_number,
-      active: lawyer.active,
+      active: lawyer.is_active,
       can_create_agents: lawyer.can_create_agents,
       can_create_blogs: lawyer.can_create_blogs,
       created_at: lawyer.created_at,
-      last_login_at: lawyer.last_login_at,
-      access_token: lawyer.access_token // For display purposes only
+      updated_at: lawyer.updated_at
     }));
 
     return new Response(
