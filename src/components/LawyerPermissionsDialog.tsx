@@ -50,7 +50,14 @@ export default function LawyerPermissionsDialog({
 
   // Initialize permissions when lawyer changes
   useEffect(() => {
+    console.log('=== LAWYER PERMISSIONS DIALOG USEEFFECT ===');
+    console.log('Lawyer prop changed:', lawyer);
     if (lawyer) {
+      console.log('Setting permissions from lawyer:', {
+        can_create_agents: lawyer.can_create_agents,
+        can_create_blogs: lawyer.can_create_blogs,
+        can_use_ai_tools: lawyer.can_use_ai_tools
+      });
       setPermissions({
         can_create_agents: lawyer.can_create_agents,
         can_create_blogs: lawyer.can_create_blogs,

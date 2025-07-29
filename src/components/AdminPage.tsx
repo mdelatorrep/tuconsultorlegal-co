@@ -903,10 +903,13 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
                             <Button 
                               variant="outline" 
                               size="sm"
-                              onClick={() => {
-                                setSelectedLawyerForPermissions(lawyer);
-                                setPermissionsDialogOpen(true);
-                              }}
+              onClick={() => {
+                console.log('=== EDIT PERMISSIONS BUTTON CLICKED ===');
+                console.log('Selected lawyer:', lawyer);
+                setSelectedLawyerForPermissions(lawyer);
+                setPermissionsDialogOpen(true);
+                console.log('Dialog should be open now');
+              }}
                               title="Editar permisos"
                             >
                               <Edit className="w-3 h-3" />
