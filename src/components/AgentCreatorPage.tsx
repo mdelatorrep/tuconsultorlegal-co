@@ -572,14 +572,26 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       });
 
       console.log('About to call supabase.functions.invoke...');
-      const { data, error } = await supabase.functions.invoke('improve-document-info', {
-        body: {
-          docName: formData.docName,
-          docDesc: formData.docDesc,
-          docCategory: formData.docCat,
-          targetAudience: formData.targetAudience
-        }
+      
+      const requestBody = {
+        docName: formData.docName,
+        docDesc: formData.docDesc,
+        docCategory: formData.docCat,
+        targetAudience: formData.targetAudience
+      };
+      
+      console.log('Request body being sent:', requestBody);
+      
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout: La mejora de IA tomó demasiado tiempo')), 30000)
+      );
+      
+      const functionPromise = supabase.functions.invoke('improve-document-info', {
+        body: requestBody
       });
+      
+      const { data, error } = await Promise.race([functionPromise, timeoutPromise]) as any;
 
       console.log('Supabase function response:', { data, error });
 

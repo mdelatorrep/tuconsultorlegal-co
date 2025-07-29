@@ -13,112 +13,25 @@ serve(async (req) => {
   }
 
   try {
+    console.log('=== IMPROVE-DOCUMENT-INFO FUNCTION START ===');
+    
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
+      console.error('OpenAI API key not configured');
       throw new Error('OpenAI API key not configured');
     }
 
-    // Función para realizar el llamado a OpenAI con reintentos
-    async function callOpenAIWithRetry(requestBody: any, maxRetries = 3) {
-      for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        try {
-          console.log(`OpenAI attempt ${attempt}/${maxRetries}`);
-          
-          const response = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${openAIApiKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(requestBody),
-          });
-
-          if (!response.ok) {
-            const errorData = await response.text();
-            console.error(`OpenAI API error (attempt ${attempt}):`, response.status, errorData);
-            
-            // Si es el último intento o un error permanente, lanzar error
-            if (attempt === maxRetries || response.status === 400 || response.status === 401) {
-              throw new Error(`Error de OpenAI: ${response.status} ${response.statusText}`);
-            }
-            
-            // Esperar antes del siguiente intento (backoff exponencial)
-            await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
-            continue;
-          }
-
-          const data = await response.json();
-          
-          if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-            console.error(`Invalid OpenAI response (attempt ${attempt}):`, data);
-            
-            if (attempt === maxRetries) {
-              throw new Error('Respuesta inválida de OpenAI');
-            }
-            
-            await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
-            continue;
-          }
-
-          return data;
-          
-        } catch (error) {
-          console.error(`OpenAI call failed (attempt ${attempt}):`, error);
-          
-          if (attempt === maxRetries) {
-            throw error;
-          }
-          
-          // Esperar antes del siguiente intento
-          await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
-        }
-      }
-    }
-
-    console.log('=== IMPROVE-DOCUMENT-INFO FUNCTION START ===');
-    
-    // Initialize Supabase client to get system configuration
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    
-    console.log('Environment check:', {
-      hasOpenAIKey: !!openAIApiKey,
-      hasSupabaseUrl: !!supabaseUrl,
-      hasServiceKey: !!supabaseServiceKey
-    });
-    
-    if (!supabaseServiceKey || !supabaseUrl) {
-      throw new Error('Missing Supabase configuration');
-    }
-
-    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.50.3');
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    console.log('Getting system configuration...');
-    // Get configured OpenAI model (use different config key than admin to avoid conflicts)
-    const { data: configData, error: configError } = await supabase
-      .from('system_config')
-      .select('config_value')
-      .eq('config_key', 'openai_model_lawyer')
-      .single();
-
-    const selectedModel = (configError || !configData) 
-      ? 'gpt-4o-mini'  // Default fallback - compatible model for lawyers
-      : configData.config_value;
-
-    console.log('Using OpenAI model for lawyer functions:', selectedModel);
-
     console.log('=== REQUEST BODY PARSING ===');
     const requestBody = await req.json();
+    console.log('Raw request body:', requestBody);
+    
     const { docName, docDesc, docCategory, targetAudience } = requestBody;
 
-    console.log('Raw request body:', requestBody);
-    console.log('Improving document info with AI:', {
+    console.log('Parsed parameters:', {
       docName: docName || 'MISSING',
       docDesc: docDesc || 'MISSING', 
       docCategory: docCategory || 'MISSING',
-      targetAudience: targetAudience || 'MISSING',
-      model: selectedModel
+      targetAudience: targetAudience || 'MISSING'
     });
 
     if (!docName || !docDesc) {
@@ -135,8 +48,10 @@ serve(async (req) => {
       );
     }
 
+    console.log('=== CALLING OPENAI API ===');
+    
     const openAIRequestBody = {
-      model: selectedModel,
+      model: 'gpt-4o-mini',
       messages: [
         {
           role: 'system',
@@ -151,9 +66,14 @@ REGLAS IMPORTANTES:
 4. Usa términos que la gente busca comúnmente
 5. Haz que suene profesional pero accesible
 6. Mantén la precisión legal pero con lenguaje amigable
-7. RESPONDE ÚNICAMENTE CON UN JSON con las claves "improvedName" e "improvedDescription"
-8. NO incluyas explicaciones adicionales, solo el JSON
-9. ${targetAudience === 'empresas' ? 'Usa terminología corporativa apropiada y enfócate en aspectos empresariales' : 'Usa lenguaje amigable para personas naturales y enfócate en beneficios personales'}
+7. RESPONDE ÚNICAMENTE CON UN JSON válido con las claves "improvedName" e "improvedDescription"
+8. NO incluyas explicaciones adicionales, solo el JSON válido
+
+FORMATO DE RESPUESTA REQUERIDO:
+{
+  "improvedName": "nombre mejorado aquí",
+  "improvedDescription": "descripción mejorada aquí"
+}
 
 OBJETIVO: Mejorar el nombre y descripción para que sean más atractivos y comprensibles para ${targetAudience === 'empresas' ? 'empresas' : 'personas naturales'}.`
         },
@@ -168,14 +88,32 @@ Mejora el nombre y descripción para que sean más atractivos y comprensibles pa
         }
       ],
       temperature: 0.3,
-      max_tokens: 1000,
+      max_tokens: 500,
     };
 
-    const data = await callOpenAIWithRetry(openAIRequestBody);
+    console.log('Making OpenAI request...');
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(openAIRequestBody),
+    });
 
+    console.log('OpenAI response status:', response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('OpenAI API error:', response.status, errorText);
+      throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    console.log('OpenAI response data:', data);
     
     if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-      console.error('Invalid OpenAI response:', data);
+      console.error('Invalid OpenAI response structure:', data);
       throw new Error('Respuesta inválida de OpenAI');
     }
 
@@ -236,7 +174,10 @@ Mejora el nombre y descripción para que sean más atractivos y comprensibles pa
     );
 
   } catch (error) {
-    console.error('Error in improve-document-info function:', error);
+    console.error('=== ERROR IN IMPROVE-DOCUMENT-INFO ===');
+    console.error('Error type:', typeof error);
+    console.error('Error message:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     
     return new Response(
       JSON.stringify({ 
