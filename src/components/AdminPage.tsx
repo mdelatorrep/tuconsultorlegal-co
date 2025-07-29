@@ -371,10 +371,7 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
     console.log('📡 Invoking update-agent function...');
     const response = await supabase.functions.invoke('update-agent', {
       body: bodyPayload,
-      headers: { 
-        'Content-Type': 'application/json',
-        ...authHeaders 
-      }
+      headers: authHeaders // Sin Content-Type, Supabase lo maneja automáticamente
     });
 
     console.log('📥 Response received:', response);
