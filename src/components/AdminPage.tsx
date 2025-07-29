@@ -259,10 +259,7 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
 
     const response = await supabase.functions.invoke('update-agent', {
       body: bodyPayload,
-      headers: { 
-        'Content-Type': 'application/json',
-        ...authHeaders 
-      }
+      headers: authHeaders
     });
     
     // ...resto del código...
@@ -285,10 +282,7 @@ Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { l
           user_id: user?.id || 'admin_override',
           is_admin: true
         },
-        headers: {
-          'Content-Type': 'application/json',
-          ...authHeaders
-        }
+        headers: authHeaders
       });
 
       if (response.error) throw new Error(response.error.message);
