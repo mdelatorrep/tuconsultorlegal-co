@@ -41,13 +41,15 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
   const [showUserForm, setShowUserForm] = useState(false);
   const [collectedData, setCollectedData] = useState<Record<string, any>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadAgent();
   }, [agentId]);
 
   useEffect(() => {
-    scrollToBottom();
+    // Usar setTimeout para evitar que el scroll interfiera con el foco
+    setTimeout(() => scrollToBottom(), 100);
   }, [messages]);
 
   // Persist chat data to localStorage with sync to DocumentFormFlow
@@ -286,9 +288,14 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
       setCollectedData(prev => ({ ...prev, ...extractedData }));
 
       setMessages(prev => [...prev, assistantMessage]);
+      
+      // Mantener foco en el input después de recibir respuesta
+      maintainInputFocus();
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error('Error al enviar el mensaje');
+      // Mantener foco incluso en caso de error
+      maintainInputFocus();
     } finally {
       setSending(false);
     }
@@ -399,6 +406,15 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
       e.preventDefault();
       sendMessage();
     }
+  };
+
+  // Mantener el foco en el input después de enviar mensaje
+  const maintainInputFocus = () => {
+    setTimeout(() => {
+      if (inputRef.current && !sending) {
+        inputRef.current.focus();
+      }
+    }, 150);
   };
 
   if (loading) {
@@ -620,6 +636,7 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
             <div className="flex items-end gap-3">
               <div className="flex-1 relative">
                 <Input
+                  ref={inputRef}
                   value={currentMessage}
                   onChange={(e) => setCurrentMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
@@ -627,6 +644,7 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
                   disabled={sending}
                   className="pr-4 py-2.5 rounded-full bg-gray-100 dark:bg-gray-800 focus:bg-white dark:focus:bg-gray-700 transition-colors text-sm border"
                   autoComplete="off"
+                  autoFocus
                 />
               </div>
               <Button 
