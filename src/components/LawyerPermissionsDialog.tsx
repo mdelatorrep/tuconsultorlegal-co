@@ -40,6 +40,9 @@ export default function LawyerPermissionsDialog({
   onPermissionsUpdated,
   authHeaders
 }: LawyerPermissionsDialogProps) {
+  console.log('=== LAWYER PERMISSIONS DIALOG RENDERED ===');
+  console.log('Props:', { lawyer: lawyer?.id, open, authHeaders });
+  
   const [permissions, setPermissions] = useState<LawyerPermissions>({
     can_create_agents: false,
     can_create_blogs: false,
