@@ -69,12 +69,25 @@ serve(async (req) => {
         .eq('id', draftId)
         .eq('lawyer_id', lawyerId)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error updating draft:', error);
         throw error;
       }
+      
+      // If no data returned, the draft was already deleted (success case)
+      if (!data) {
+        console.log('Draft was already deleted, skipping update');
+        return new Response(JSON.stringify({
+          success: true,
+          draftId: draftId,
+          message: 'Borrador ya fue procesado exitosamente'
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
       result = data;
     } else {
       // Create new draft
