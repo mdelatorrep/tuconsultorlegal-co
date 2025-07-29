@@ -678,7 +678,6 @@ export type Database = {
           description: string
           document_description: string | null
           document_name: string | null
-          final_price: number | null
           frontend_icon: string | null
           id: string
           last_openai_activity: string | null
@@ -687,11 +686,11 @@ export type Database = {
           openai_enabled: boolean | null
           openai_success_rate: number | null
           placeholder_fields: Json
+          price: number
           price_justification: string | null
           sla_enabled: boolean | null
           sla_hours: number | null
           status: string
-          suggested_price: number
           target_audience: string | null
           template_content: string
           updated_at: string
@@ -705,7 +704,6 @@ export type Database = {
           description: string
           document_description?: string | null
           document_name?: string | null
-          final_price?: number | null
           frontend_icon?: string | null
           id?: string
           last_openai_activity?: string | null
@@ -714,11 +712,11 @@ export type Database = {
           openai_enabled?: boolean | null
           openai_success_rate?: number | null
           placeholder_fields?: Json
+          price?: number
           price_justification?: string | null
           sla_enabled?: boolean | null
           sla_hours?: number | null
           status?: string
-          suggested_price: number
           target_audience?: string | null
           template_content: string
           updated_at?: string
@@ -732,7 +730,6 @@ export type Database = {
           description?: string
           document_description?: string | null
           document_name?: string | null
-          final_price?: number | null
           frontend_icon?: string | null
           id?: string
           last_openai_activity?: string | null
@@ -741,11 +738,11 @@ export type Database = {
           openai_enabled?: boolean | null
           openai_success_rate?: number | null
           placeholder_fields?: Json
+          price?: number
           price_justification?: string | null
           sla_enabled?: boolean | null
           sla_hours?: number | null
           status?: string
-          suggested_price?: number
           target_audience?: string | null
           template_content?: string
           updated_at?: string
