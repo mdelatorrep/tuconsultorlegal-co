@@ -1771,6 +1771,15 @@ export type Database = {
       }
     }
     Functions: {
+      create_admin_profile: {
+        Args: {
+          auth_user_id: string
+          admin_full_name: string
+          admin_email: string
+          is_super_admin?: boolean
+        }
+        Returns: string
+      }
       generate_secure_lawyer_token: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -1794,6 +1803,10 @@ export type Database = {
           ip_address?: string
         }
         Returns: undefined
+      }
+      migrate_admin_accounts_to_profiles: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
     }
     Enums: {
