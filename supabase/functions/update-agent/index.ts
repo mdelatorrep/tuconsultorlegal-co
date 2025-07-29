@@ -133,7 +133,7 @@ Deno.serve(async (req) => {
 
     console.log('✅ Found agent to update:', existingAgent.name)
 
-    // **AUTHORIZATION LOGIC - SIMPLIFIED FOR UPDATE**
+    // **SECURE AUTHENTICATION LOGIC**
     const authHeader = req.headers.get('authorization')
     console.log('🔑 Auth header present:', !!authHeader)
     
@@ -148,50 +148,78 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Extract token
-    let token = authHeader
-    if (authHeader.startsWith('Bearer ')) {
-      token = authHeader.substring(7)
+    // Step 1: Create authenticated client to verify user securely
+    const authClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { 
+        global: { 
+          headers: { 
+            Authorization: authHeader 
+          } 
+        } 
+      }
+    )
+
+    // Step 2: Verify user with proper JWT validation
+    const { data: { user }, error: authError } = await authClient.auth.getUser()
+
+    if (authError || !user) {
+      console.error('❌ Invalid or expired token:', authError?.message)
+      return new Response(JSON.stringify({ 
+        error: 'Token inválido o expirado',
+        success: false
+      }), {
+        status: 401,
+        headers: securityHeaders
+      })
     }
 
-    // Check permissions - Admin can update any agent, lawyers can only update their own
+    console.log('✅ User authenticated:', user.email)
+
+    // Step 3: Implement proper authorization logic
     let canUpdate = false
-    let isVerifiedAdmin = false
-    let isVerifiedLawyer = false
-    let verifiedUser = null
     let updateReason = 'unknown'
 
-    if (is_admin) {
-      // For admin: use the JWT token directly (simplified auth for query/modification functions)
-      if (token && token.length > 50) {
-        isVerifiedAdmin = true
-        canUpdate = true
-        updateReason = 'admin_jwt'
-        console.log('✅ Admin verified via JWT token, can update any agent')
-      }
+    // Check if user is admin (from user metadata or user_roles table)
+    const isAdmin = user.app_metadata?.roles?.includes('admin') || 
+                   user.app_metadata?.roles?.includes('super_admin')
+
+    if (isAdmin) {
+      canUpdate = true
+      updateReason = 'admin_verified'
+      console.log('✅ Admin verified, can update any agent')
     } else {
-      // Check if lawyer can update their own agent using lawyer_tokens table
-      const { data: lawyer, error: lawyerError } = await supabase
-        .from('lawyer_tokens')
-        .select('*')
-        .eq('access_token', token)
-        .eq('active', true)
+      // Check if user is a lawyer and can update their own agent
+      const { data: lawyerProfile, error: lawyerError } = await supabase
+        .from('lawyer_profiles')
+        .select('id')
+        .eq('id', user.id)
         .maybeSingle()
 
-      if (!lawyerError && lawyer && lawyer.id === existingAgent.created_by) {
-        isVerifiedLawyer = true
-        canUpdate = true
-        verifiedUser = lawyer
-        updateReason = 'lawyer_token'
-        console.log('✅ Lawyer verified, can update own agent')
+      if (!lawyerError && lawyerProfile && existingAgent.created_by) {
+        // Check if the lawyer created this agent (via lawyer_tokens mapping)
+        const { data: lawyerToken, error: tokenError } = await supabase
+          .from('lawyer_tokens')
+          .select('id')
+          .eq('lawyer_id', user.id)
+          .eq('id', existingAgent.created_by)
+          .eq('active', true)
+          .maybeSingle()
+
+        if (!tokenError && lawyerToken) {
+          canUpdate = true
+          updateReason = 'lawyer_owner'
+          console.log('✅ Lawyer verified, can update own agent')
+        }
       }
     }
 
     if (!canUpdate) {
       console.log('❌ User cannot update agent - insufficient permissions')
       return new Response(JSON.stringify({ 
-        error: is_admin 
-          ? 'Token de administrador inválido' 
+        error: isAdmin 
+          ? 'Permisos de administrador insuficientes' 
           : 'Solo puedes editar agentes que tú has creado',
         success: false
       }), {
