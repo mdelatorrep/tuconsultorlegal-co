@@ -42,14 +42,9 @@ Deno.serve(async (req) => {
       lawyerToken = authHeader.substring(7)
     }
 
-    // Verify lawyer token and get lawyer data
-    const { data: lawyer, error: lawyerError } = await supabase
-      .from('lawyer_profiles')
-      .select('id, full_name, email, active, is_active')
-      .eq('access_token', lawyerToken)
-      .eq('active', true)
-      .eq('is_active', true)
-      .single()
+    // access_token no existe en lawyer_profiles
+    const lawyer = null;
+    const lawyerError = { message: 'Token validation not supported - access_token column does not exist' };
 
     if (lawyerError || !lawyer) {
       console.error('Invalid lawyer token:', lawyerError)

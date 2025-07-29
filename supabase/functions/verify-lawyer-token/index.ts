@@ -38,55 +38,9 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Find lawyer token
-    const { data: lawyerProfile, error: tokenError } = await supabase
-      .from('lawyer_profiles')
-      .select('*')
-      .eq('access_token', token)
-      .eq('active', true)
-      .eq('is_active', true)
-      .maybeSingle()
-
-    if (tokenError) {
-      console.error('Error checking lawyer token:', tokenError)
-      return new Response(JSON.stringify({ valid: false, error: 'Database error' }), {
-        status: 500,
-        headers: securityHeaders
-      })
-    }
-
-    if (!lawyerProfile) {
-      return new Response(JSON.stringify({ valid: false, error: 'Invalid token' }), {
-        status: 401,
-        headers: securityHeaders
-      })
-    }
-
-    // Note: Token expiry can be added later if needed
-    // if (lawyerProfile.token_expires_at && new Date(lawyerProfile.token_expires_at) <= new Date()) {
-    //   return new Response(JSON.stringify({ valid: false, error: 'Token expired' }), {
-    //     status: 401,
-    //     headers: securityHeaders
-    //   })
-    // }
-
-    // Update last used timestamp
-    await supabase
-      .from('lawyer_profiles')
-      .update({ last_used_at: new Date().toISOString() })
-      .eq('id', lawyerProfile.id)
-
-    return new Response(JSON.stringify({
-      valid: true,
-      user: {
-        id: lawyerProfile.id,
-        email: lawyerProfile.email,
-        name: lawyerProfile.full_name,
-        canCreateAgents: lawyerProfile.can_create_agents,
-        canCreateBlogs: lawyerProfile.can_create_blogs,
-        canUseAiTools: lawyerProfile.can_use_ai_tools
-      }
-    }), {
+    // lawyer_profiles no tiene access_token, retornar error
+    return new Response(JSON.stringify({ valid: false, error: 'Token validation not supported - access_token column does not exist in lawyer_profiles' }), {
+      status: 401,
       headers: securityHeaders
     })
 

@@ -33,16 +33,11 @@ Deno.serve(async (req) => {
     let isLawyer = false
     let lawyerData = null
     
-    // Check if it's a lawyer token
+    // access_token no existe en lawyer_profiles
     if (authHeader.startsWith('Bearer ')) {
       const token = authHeader.replace('Bearer ', '')
-      const { data: lawyer, error: lawyerError } = await supabase
-        .from('lawyer_profiles')
-        .select('*')
-        .eq('access_token', token)
-        .eq('active', true)
-        .eq('is_active', true)
-        .single()
+      const lawyer = null;
+      const lawyerError = { message: 'Token validation not supported' };
       
       if (lawyer && !lawyerError) {
         isLawyer = true

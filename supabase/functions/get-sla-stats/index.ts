@@ -44,14 +44,8 @@ Deno.serve(async (req) => {
         isGlobalView = true
         console.log('Admin user requesting global SLA stats')
       } else {
-        // Check if it's a lawyer token
-        const { data: lawyerCheck } = await supabase
-          .from('lawyer_profiles')
-          .select('id')
-          .eq('access_token', token)
-          .eq('active', true)
-          .eq('is_active', true)
-          .single()
+        // access_token no existe en lawyer_profiles
+        const lawyerCheck = null;
         
         if (lawyerCheck) {
           lawyerId = lawyerCheck.id

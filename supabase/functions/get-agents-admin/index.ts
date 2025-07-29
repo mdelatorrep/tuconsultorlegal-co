@@ -39,14 +39,8 @@ Deno.serve(async (req) => {
         isAdmin = true;
         console.log('User authenticated as admin based on JWT token');
       } else {
-        // Check if it's a lawyer token
-        const { data: lawyerCheck } = await supabase
-          .from('lawyer_profiles')
-          .select('id')
-          .eq('access_token', token)
-          .eq('active', true)
-          .eq('is_active', true)
-          .maybeSingle();
+        // access_token no existe en lawyer_profiles, verificación de token no disponible
+        const lawyerCheck = null;
         
         if (lawyerCheck) {
           lawyerId = lawyerCheck.id;

@@ -143,13 +143,9 @@ Deno.serve(async (req) => {
         lawyerToken = authHeader.substring(7)
       }
 
-      const { data: lawyer, error: lawyerError } = await supabase
-        .from('lawyer_profiles')
-        .select('*')
-        .eq('access_token', lawyerToken)
-        .eq('active', true)
-        .eq('is_active', true)
-        .maybeSingle()
+      // access_token no existe en lawyer_profiles
+      const lawyer = null;
+      const lawyerError = { message: 'Token validation not supported' };
 
       if (!lawyerError && lawyer && lawyer.id === existingAgent.created_by) {
         isVerifiedLawyer = true;

@@ -144,12 +144,11 @@ Deno.serve(async (req) => {
 
     logger.info('Creating lawyer profile', { tokenLength: accessToken.length })
 
-    // Create lawyer profile with unified system fields
+    // Create lawyer profile with unified system fields (access_token no existe en lawyer_profiles)
     const { data: profileData, error: profileError } = await serviceClient
       .from('lawyer_profiles')
       .insert({
         id: crypto.randomUUID(),
-        access_token: accessToken,
         email: email.toLowerCase(),
         full_name: name, // Map name to full_name for database
         phone_number: phone_number || null,
@@ -176,7 +175,8 @@ Deno.serve(async (req) => {
     return createSuccessResponse({
       lawyer: {
         ...profileData,
-        access_token: accessToken // Return the token for admin reference
+        // access_token no existe en lawyer_profiles, se retorna por separado
+        token: accessToken
       }
     }, 201)
 
