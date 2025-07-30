@@ -216,7 +216,9 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
 
     try {
       // Get or verify OpenAI agent for this legal agent
-      if (!openaiAgentId) {
+      let currentOpenaiAgentId = openaiAgentId;
+      
+      if (!currentOpenaiAgentId) {
         const { data: openaiAgent, error: agentError } = await supabase
           .from('openai_agents')
           .select('openai_agent_id')
@@ -236,26 +238,27 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
 
           if (error) throw error;
 
-      const assistantMessage: Message = {
-        role: 'assistant',
-        content: data.message,
-        timestamp: new Date(),
-        showGenerateButton: shouldShowGenerateButton(data.message)
-      };
+          const assistantMessage: Message = {
+            role: 'assistant',
+            content: data.message,
+            timestamp: new Date(),
+            showGenerateButton: shouldShowGenerateButton(data.message)
+          };
 
           setMessages(prev => [...prev, assistantMessage]);
           setSending(false);
           return;
         }
 
-        setOpenaiAgentId(openaiAgent.openai_agent_id);
+        currentOpenaiAgentId = openaiAgent.openai_agent_id;
+        setOpenaiAgentId(currentOpenaiAgentId);
       }
 
       // Use OpenAI Agents workflow orchestrator with enhanced error handling
       const { data, error } = await supabase.functions.invoke('agent-workflow-orchestrator', {
         body: {
           messages: updatedMessages.map(msg => ({ role: msg.role, content: msg.content })),
-          agentId: openaiAgentId,
+          agentId: currentOpenaiAgentId,
           documentTokenId: null, // Will be set when document is generated
           threadId: threadId
         }
