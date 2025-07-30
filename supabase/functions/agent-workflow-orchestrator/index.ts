@@ -204,6 +204,23 @@ serve(async (req) => {
         status: runStatus === 'completed' ? 'completed' : 'active'
       });
 
+    // Update agent statistics
+    const { error: statsError } = await supabase
+      .from('legal_agents')
+      .update({
+        openai_conversations_count: openaiAgent.legal_agents.openai_conversations_count + 1,
+        last_openai_activity: new Date().toISOString(),
+        openai_success_rate: runStatus === 'completed' ? 
+          ((openaiAgent.legal_agents.openai_success_rate || 0) * (openaiAgent.legal_agents.openai_conversations_count || 0) + (runStatus === 'completed' ? 100 : 0)) / 
+          ((openaiAgent.legal_agents.openai_conversations_count || 0) + 1) : 
+          openaiAgent.legal_agents.openai_success_rate
+      })
+      .eq('id', openaiAgent.legal_agent_id);
+
+    if (statsError) {
+      console.error('Error updating agent statistics:', statsError);
+    }
+
     return new Response(JSON.stringify({
       success: true,
       message: latestMessage.content[0]?.text?.value || 'No response',

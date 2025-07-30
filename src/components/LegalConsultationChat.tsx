@@ -134,13 +134,12 @@ export default function LegalConsultationChat() {
     setSending(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('legal-consultation-advisor', {
+      const { data, error } = await supabase.functions.invoke('agent-workflow-orchestrator', {
         body: {
           messages: updatedMessages.map(msg => ({ role: msg.role, content: msg.content })),
           agentId: selectedAgent.openai_agent_id,
           threadId: threadId,
-          consultationTopic: consultationTopic || currentMessage.trim(),
-          legalArea: selectedAgent.specialization
+          documentTokenId: null // For consultation mode, no document token needed
         }
       });
 
@@ -151,25 +150,17 @@ export default function LegalConsultationChat() {
         setThreadId(data.threadId);
       }
 
-      // Update sources consulted
-      if (data.sourcesConsulted && data.sourcesConsulted.length > 0) {
-        setSourcesConsulted(prev => {
-          const newSources = data.sourcesConsulted.filter((source: string) => !prev.includes(source));
-          return [...prev, ...newSources];
-        });
-      }
-
       const assistantMessage: Message = {
         role: 'assistant',
         content: data.message,
-        timestamp: new Date(),
-        sources: data.sourcesConsulted
+        timestamp: new Date()
       };
 
       setMessages(prev => [...prev, assistantMessage]);
 
-      if (data.sourcesConsulted && data.sourcesConsulted.length > 0) {
-        toast.success(`Consulté ${data.sourcesConsulted.length} fuentes legales actualizadas`);
+      // Show success message for workflow completion
+      if (data.runStatus === 'completed') {
+        toast.success('Consulta completada exitosamente');
       }
 
     } catch (error) {
