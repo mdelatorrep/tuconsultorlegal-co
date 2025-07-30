@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Upload, FileText, AlertTriangle, CheckCircle, Eye, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import UnifiedSidebar from "../UnifiedSidebar";
 
@@ -53,53 +54,35 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
 
     setIsAnalyzing(true);
     try {
-      // Simulated analysis - In production, this would process the document with AI
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      // Read file content (simplified for demo - in production would handle various formats)
+      const fileContent = await file.text().catch(() => "Documento cargado para análisis");
       
-      const mockAnalysis: AnalysisResult = {
-        fileName: file.name,
-        documentType: "Contrato de Arrendamiento Comercial",
-        clauses: [
-          {
-            name: "Cláusula de Precio",
-            content: "El canon de arrendamiento será de $5.000.000 mensuales...",
-            riskLevel: 'low',
-          },
-          {
-            name: "Cláusula Penal",
-            content: "En caso de incumplimiento, el arrendatario pagará una multa del 25%...",
-            riskLevel: 'high',
-            recommendation: "La cláusula penal del 25% excede la práctica comercial común del 10-15%. Recomendamos negociar una reducción."
-          },
-          {
-            name: "Duración del Contrato",
-            content: "El contrato tendrá una duración de 2 años prorrogables...",
-            riskLevel: 'medium',
-            recommendation: "Considerar incluir cláusula de terminación anticipada por causas justificadas."
-          }
-        ],
-        risks: [
-          {
-            type: "Cláusula Penal Excesiva",
-            description: "La penalidad del 25% está por encima del estándar de mercado",
-            severity: 'high'
-          },
-          {
-            type: "Ausencia de Fuerza Mayor",
-            description: "No se incluyen protecciones por eventos de fuerza mayor",
-            severity: 'medium'
-          }
-        ],
-        recommendations: [
-          "Negociar reducción de la cláusula penal al 10-15%",
-          "Incluir cláusula de fuerza mayor específica para situaciones excepcionales",
-          "Añadir mecanismo de revisión de canon anual",
-          "Establecer garantías proporcionales al riesgo"
-        ],
-        timestamp: new Date().toISOString()
+      // Call the legal document analysis function
+      const { data, error } = await supabase.functions.invoke('legal-document-analysis', {
+        body: { 
+          documentContent: fileContent, 
+          fileName: file.name 
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (!data.success) {
+        throw new Error(data.error || 'Error en el análisis');
+      }
+
+      const analysisResult: AnalysisResult = {
+        fileName: data.fileName,
+        documentType: data.documentType,
+        clauses: data.clauses,
+        risks: data.risks,
+        recommendations: data.recommendations,
+        timestamp: data.timestamp
       };
 
-      setAnalysis(mockAnalysis);
+      setAnalysis(analysisResult);
       
       toast({
         title: "Análisis completado",

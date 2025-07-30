@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Brain, Target, AlertTriangle, CheckCircle, Scale, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import UnifiedSidebar from "../UnifiedSidebar";
 
@@ -60,95 +61,30 @@ export default function StrategizeModule({ user, currentView, onViewChange, onLo
 
     setIsAnalyzing(true);
     try {
-      // Simulated strategic analysis - In production, this would use advanced AI
-      await new Promise(resolve => setTimeout(resolve, 5000));
-      
-      const mockAnalysis: StrategicAnalysis = {
-        caseDescription,
-        legalActions: [
-          {
-            action: "Acción de Protección al Consumidor",
-            viability: 'high',
-            description: "Demanda ante la Superintendencia de Industria y Comercio por prácticas comerciales abusivas",
-            requirements: [
-              "Prueba de la relación de consumo",
-              "Evidencia de las prácticas abusivas",
-              "Documentación de los perjuicios causados"
-            ]
-          },
-          {
-            action: "Demanda por Incumplimiento Contractual",
-            viability: 'medium',
-            description: "Acción ordinaria de incumplimiento ante jurisdicción civil",
-            requirements: [
-              "Contrato válido y vigente",
-              "Prueba del incumplimiento",
-              "Cuantificación de los daños"
-            ]
-          },
-          {
-            action: "Acción de Grupo",
-            viability: 'low',
-            description: "Si hay múltiples afectados con situación similar",
-            requirements: [
-              "Mínimo 20 personas afectadas",
-              "Daño común y homogéneo",
-              "Causa común del daño"
-            ]
-          }
-        ],
-        legalArguments: [
-          {
-            argument: "Violación del principio de buena fe contractual",
-            foundation: "Artículo 1603 del Código Civil y artículo 871 del Código de Comercio",
-            strength: 'strong'
-          },
-          {
-            argument: "Práctica comercial abusiva",
-            foundation: "Ley 1480 de 2011 - Estatuto del Consumidor, artículo 23",
-            strength: 'strong'
-          },
-          {
-            argument: "Enriquecimiento sin causa",
-            foundation: "Artículo 2042 del Código Civil",
-            strength: 'moderate'
-          }
-        ],
-        counterarguments: [
-          {
-            argument: "La contraparte puede alegar fuerza mayor o caso fortuito",
-            response: "Demostrar que las circunvencias eran previsibles y estaban dentro del control de la contraparte",
-            mitigation: "Presentar evidencia de negligencia o falta de diligencia en la gestión de riesgos"
-          },
-          {
-            argument: "Prescripción de la acción",
-            response: "Verificar términos de prescripción según el tipo de acción (3 años para responsabilidad civil)",
-            mitigation: "Documentar fechas exactas de conocimiento del daño e interrupción de prescripción"
-          }
-        ],
-        precedents: [
-          {
-            case: "Corte Suprema de Justicia - Sentencia SC4360-2018",
-            relevance: "Interpretación de cláusulas abusivas en contratos de adhesión",
-            outcome: "Favorable: Declaró nulidad de cláusulas leoninas"
-          },
-          {
-            case: "Consejo de Estado - Radicado 11001-03-24-000-2019-00215-00",
-            relevance: "Responsabilidad por información deficiente al consumidor",
-            outcome: "Favorable: Ordenó indemnización por daños causados"
-          }
-        ],
-        recommendations: [
-          "Iniciar con acción de protección al consumidor por mayor probabilidad de éxito",
-          "Recopilar evidencia documental completa antes de presentar demanda",
-          "Considerar mediación previa para reducir costos y tiempo",
-          "Evaluar garantías o seguros disponibles para recuperación",
-          "Documentar todos los perjuicios económicos y morales sufridos"
-        ],
-        timestamp: new Date().toISOString()
+      // Call the legal strategy analysis function
+      const { data, error } = await supabase.functions.invoke('legal-strategy-analysis', {
+        body: { caseDescription }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (!data.success) {
+        throw new Error(data.error || 'Error en el análisis estratégico');
+      }
+
+      const strategyResult: StrategicAnalysis = {
+        caseDescription: data.caseDescription,
+        legalActions: data.legalActions,
+        legalArguments: data.legalArguments,
+        counterarguments: data.counterarguments,
+        precedents: data.precedents,
+        recommendations: data.recommendations,
+        timestamp: data.timestamp
       };
 
-      setAnalyses(prev => [mockAnalysis, ...prev]);
+      setAnalyses(prev => [strategyResult, ...prev]);
       setCaseDescription("");
       
       toast({

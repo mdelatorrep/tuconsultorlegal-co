@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { PenTool, FileText, Download, Copy, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import UnifiedSidebar from "../UnifiedSidebar";
 
@@ -53,73 +54,31 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout 
 
     setIsDrafting(true);
     try {
-      // Simulated drafting - In production, this would call an AI service
-      await new Promise(resolve => setTimeout(resolve, 4000));
-      
-      const mockDraft: DraftResult = {
-        prompt,
-        documentType: DOCUMENT_TYPES.find(t => t.value === documentType)?.label || documentType,
-        content: `# ${DOCUMENT_TYPES.find(t => t.value === documentType)?.label}
+      // Call the legal document drafting function
+      const { data, error } = await supabase.functions.invoke('legal-document-drafting', {
+        body: { 
+          prompt, 
+          documentType: DOCUMENT_TYPES.find(t => t.value === documentType)?.label || documentType
+        }
+      });
 
-## PRIMERA: OBJETO DEL CONTRATO
-Por medio del presente contrato, las partes acuerdan establecer una colaboración empresarial bajo los siguientes términos y condiciones específicos derivados de: ${prompt}
+      if (error) {
+        throw error;
+      }
 
-## SEGUNDA: OBLIGACIONES DE LAS PARTES
-**PRIMERA PARTE:**
-- Cumplir con los estándares de calidad establecidos
-- Proporcionar la información necesaria para el desarrollo del objeto contractual
-- Realizar los pagos en los términos pactados
+      if (!data.success) {
+        throw new Error(data.error || 'Error en la generación');
+      }
 
-**SEGUNDA PARTE:**
-- Ejecutar las actividades conforme a las especificaciones técnicas
-- Mantener la confidencialidad de la información proporcionada
-- Entregar los resultados en los plazos establecidos
-
-## TERCERA: DURACIÓN Y VIGENCIA
-El presente contrato tendrá una duración de [ESPECIFICAR PLAZO] contados a partir de la fecha de suscripción, prorrogable por períodos iguales mediante acuerdo mutuo por escrito.
-
-## CUARTA: CONTRAPRESTACIÓN
-Como contraprestación por los servicios prestados, se establece un valor de [ESPECIFICAR MONTO] pagadero [ESPECIFICAR FORMA DE PAGO].
-
-## QUINTA: PROPIEDAD INTELECTUAL
-Todos los desarrollos, creaciones y mejoras que surjan durante la ejecución del contrato serán de propiedad [ESPECIFICAR TITULARIDAD] respetando los derechos morales de autor.
-
-## SEXTA: CONFIDENCIALIDAD
-Las partes se comprometen a mantener absoluta reserva y confidencialidad sobre toda la información comercial, técnica y estratégica a la que tengan acceso durante la ejecución del contrato.
-
-## SÉPTIMA: TERMINACIÓN
-El contrato podrá terminarse:
-a) Por mutuo acuerdo de las partes
-b) Por incumplimiento grave de cualquiera de las partes
-c) Por imposibilidad sobreviniente de cumplir el objeto contractual
-
-## OCTAVA: CLÁUSULA PENAL
-En caso de incumplimiento injustificado, la parte incumplida deberá pagar a la otra una suma equivalente al 10% del valor total del contrato.
-
-## NOVENA: RESOLUCIÓN DE CONFLICTOS
-Cualquier controversia será resuelta mediante mecanismos alternativos de solución de conflictos, preferiblemente conciliación ante centro autorizado.
-
-## DÉCIMA: LEY APLICABLE
-El presente contrato se regirá por las leyes de la República de Colombia.
-
----
-*Documento generado por IA Legal Pro - Requiere revisión y personalización por parte del abogado*`,
-        sections: [
-          "Objeto del Contrato",
-          "Obligaciones de las Partes", 
-          "Duración y Vigencia",
-          "Contraprestación",
-          "Propiedad Intelectual",
-          "Confidencialidad",
-          "Terminación",
-          "Cláusula Penal",
-          "Resolución de Conflictos",
-          "Ley Aplicable"
-        ],
-        timestamp: new Date().toISOString()
+      const draftResult: DraftResult = {
+        prompt: data.prompt,
+        documentType: data.documentType,
+        content: data.content,
+        sections: data.sections,
+        timestamp: data.timestamp
       };
 
-      setDrafts(prev => [mockDraft, ...prev]);
+      setDrafts(prev => [draftResult, ...prev]);
       setPrompt("");
       setDocumentType("");
       
