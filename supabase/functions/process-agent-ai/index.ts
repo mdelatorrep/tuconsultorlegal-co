@@ -44,16 +44,22 @@ serve(async (req) => {
     const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.50.3');
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get configured OpenAI model
+    // Get configured OpenAI model and prompt for agent creation
     const { data: configData, error: configError } = await supabase
       .from('system_config')
-      .select('config_value')
-      .eq('config_key', 'openai_model')
-      .single();
+      .select('config_key, config_value')
+      .in('config_key', ['agent_creation_ai_model', 'agent_creation_system_prompt']);
 
-    const selectedModel = (configError || !configData) 
-      ? 'gpt-4.1-2025-04-14'  // Default fallback
-      : configData.config_value;
+    let selectedModel = 'gpt-4.1-2025-04-14';
+    let customSystemPrompt = null;
+    
+    if (!configError && configData) {
+      const modelConfig = configData.find(c => c.config_key === 'agent_creation_ai_model');
+      const promptConfig = configData.find(c => c.config_key === 'agent_creation_system_prompt');
+      
+      if (modelConfig?.config_value) selectedModel = modelConfig.config_value;
+      if (promptConfig?.config_value) customSystemPrompt = promptConfig.config_value;
+    }
 
     console.log('Using OpenAI model:', selectedModel);
 
@@ -87,7 +93,7 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `Eres un experto en crear prompts para asistentes legales de IA. Tu trabajo es mejorar prompts básicos y convertirlos en instrucciones claras, profesionales y efectivas para agentes de IA que ayudan a crear documentos legales en Colombia.
+            content: customSystemPrompt || `Eres un experto en crear prompts para asistentes legales de IA. Tu trabajo es mejorar prompts básicos y convertirlos en instrucciones claras, profesionales y efectivas para agentes de IA que ayudan a crear documentos legales en Colombia.
 
 PÚBLICO OBJETIVO: ${targetAudience === 'empresas' ? 'Empresas y clientes corporativos' : 'Personas (clientes individuales)'}
 

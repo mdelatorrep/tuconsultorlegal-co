@@ -441,6 +441,43 @@ export default function SystemConfigManager() {
     setShowEditor(true);
   };
 
+  const initializeDefaultConfigs = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase.functions.invoke('init-system-config');
+      
+      if (error) {
+        console.error('Error initializing configs:', error);
+        toast({
+          title: "Error",
+          description: "No se pudieron inicializar las configuraciones predeterminadas",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (data?.success) {
+        toast({
+          title: "Configuraciones inicializadas",
+          description: `${data.message}. Se agregaron ${data.inserted_count} nuevas configuraciones.`,
+          variant: "default"
+        });
+        
+        // Recargar las configuraciones
+        await loadConfigs();
+      }
+    } catch (error: any) {
+      console.error('Error initializing configs:', error);
+      toast({
+        title: "Error",
+        description: "Error interno al inicializar configuraciones",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -465,128 +502,138 @@ export default function SystemConfigManager() {
             Gestiona configuraciones de IA y herramientas legales
           </p>
         </div>
-        <Dialog open={showEditor} onOpenChange={setShowEditor}>
-          <DialogTrigger asChild>
-            <Button onClick={() => openEditor()}>
-              <Plus className="w-4 h-4 mr-2" />
-              Nueva Configuración
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle>
-                {editingConfig ? 'Editar Configuración' : 'Nueva Configuración'}
-              </DialogTitle>
-            </DialogHeader>
-            
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="config_key">Clave de Configuración</Label>
-                <Input
-                  id="config_key"
-                  value={configForm.config_key}
-                  onChange={(e) => setConfigForm({ ...configForm, config_key: e.target.value })}
-                  placeholder="ej: smtp_host, api_endpoint, feature_enabled"
-                  disabled={!!editingConfig}
-                />
-              </div>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={initializeDefaultConfigs}
+            disabled={loading}
+          >
+            <Settings className="w-4 h-4 mr-2" />
+            Inicializar Configuraciones
+          </Button>
+          <Dialog open={showEditor} onOpenChange={setShowEditor}>
+            <DialogTrigger asChild>
+              <Button onClick={() => openEditor()}>
+                <Plus className="w-4 h-4 mr-2" />
+                Nueva Configuración
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingConfig ? 'Editar Configuración' : 'Nueva Configuración'}
+                </DialogTitle>
+              </DialogHeader>
               
-              <div>
-                <Label htmlFor="config_value">
-                  Valor
-                  {(configForm.config_key.includes('model') || configForm.config_key.endsWith('_model')) && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={loadOpenAIModels}
-                      disabled={loadingModels}
-                      className="ml-2 h-6 text-xs"
-                    >
-                      {loadingModels ? (
-                        <div className="animate-spin rounded-full h-3 w-3 border-b border-current"></div>
-                      ) : (
-                        <RefreshCw className="w-3 h-3" />
-                      )}
-                      {loadingModels ? 'Cargando...' : 'Actualizar modelos'}
-                    </Button>
-                  )}
-                </Label>
-                
-                {(configForm.config_key.includes('model') || configForm.config_key.endsWith('_model')) ? (
-                  <Select
-                    value={configForm.config_value}
-                    onValueChange={(value) => setConfigForm({ ...configForm, config_value: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona un modelo de OpenAI" />
-                    </SelectTrigger>
-                     <SelectContent>
-                       {openaiModels.length > 0 ? (
-                         openaiModels.map((model) => (
-                           <SelectItem key={model} value={model}>
-                             {model}
-                           </SelectItem>
-                         ))
-                       ) : (
-                         <SelectItem value="no-models-loaded" disabled>
-                           {loadingModels ? 'Cargando modelos...' : 'Haz clic en "Actualizar modelos" para cargar'}
-                         </SelectItem>
-                       )}
-                     </SelectContent>
-                  </Select>
-                ) : configForm.config_key.includes('prompt') || configForm.config_key.includes('system') ? (
-                  <Textarea
-                    id="config_value"
-                    value={configForm.config_value}
-                    onChange={(e) => setConfigForm({ ...configForm, config_value: e.target.value })}
-                    placeholder="Valor de la configuración"
-                    rows={6}
-                  />
-                ) : (
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="config_key">Clave de Configuración</Label>
                   <Input
-                    id="config_value"
-                    value={configForm.config_value}
-                    onChange={(e) => setConfigForm({ ...configForm, config_value: e.target.value })}
-                    placeholder="Valor de la configuración"
-                    type={configForm.config_key.includes('timeout') || configForm.config_key.includes('sla') || configForm.config_key.includes('retry') ? 'number' : 'text'}
+                    id="config_key"
+                    value={configForm.config_key}
+                    onChange={(e) => setConfigForm({ ...configForm, config_key: e.target.value })}
+                    placeholder="ej: smtp_host, api_endpoint, feature_enabled"
+                    disabled={!!editingConfig}
                   />
-                )}
-              </div>
-              
-              <div>
-                <Label htmlFor="description">Descripción (opcional)</Label>
-                <Textarea
-                  id="description"
-                  value={configForm.description}
-                  onChange={(e) => setConfigForm({ ...configForm, description: e.target.value })}
-                  placeholder="Descripción de para qué sirve esta configuración"
-                  rows={2}
-                />
-              </div>
-              
-              <div className="flex gap-2">
-                <Button onClick={saveConfig} disabled={saving} className="flex-1">
-                  {saving ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Guardando...
-                    </>
+                </div>
+                
+                <div>
+                  <Label htmlFor="config_value">
+                    Valor
+                    {(configForm.config_key.includes('model') || configForm.config_key.endsWith('_model')) && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={loadOpenAIModels}
+                        disabled={loadingModels}
+                        className="ml-2 h-6 text-xs"
+                      >
+                        {loadingModels ? (
+                          <div className="animate-spin rounded-full h-3 w-3 border-b border-current"></div>
+                        ) : (
+                          <RefreshCw className="w-3 h-3" />
+                        )}
+                        {loadingModels ? 'Cargando...' : 'Actualizar modelos'}
+                      </Button>
+                    )}
+                  </Label>
+                  
+                  {(configForm.config_key.includes('model') || configForm.config_key.endsWith('_model')) ? (
+                    <Select
+                      value={configForm.config_value}
+                      onValueChange={(value) => setConfigForm({ ...configForm, config_value: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecciona un modelo de OpenAI" />
+                      </SelectTrigger>
+                       <SelectContent>
+                         {openaiModels.length > 0 ? (
+                           openaiModels.map((model) => (
+                             <SelectItem key={model} value={model}>
+                               {model}
+                             </SelectItem>
+                           ))
+                         ) : (
+                           <SelectItem value="no-models-loaded" disabled>
+                             {loadingModels ? 'Cargando modelos...' : 'Haz clic en "Actualizar modelos" para cargar'}
+                           </SelectItem>
+                         )}
+                       </SelectContent>
+                    </Select>
+                  ) : configForm.config_key.includes('prompt') || configForm.config_key.includes('system') ? (
+                    <Textarea
+                      id="config_value"
+                      value={configForm.config_value}
+                      onChange={(e) => setConfigForm({ ...configForm, config_value: e.target.value })}
+                      placeholder="Valor de la configuración"
+                      rows={6}
+                    />
                   ) : (
-                    <>
-                      <Save className="w-4 h-4 mr-2" />
-                      Guardar
-                    </>
+                    <Input
+                      id="config_value"
+                      value={configForm.config_value}
+                      onChange={(e) => setConfigForm({ ...configForm, config_value: e.target.value })}
+                      placeholder="Valor de la configuración"
+                      type={configForm.config_key.includes('timeout') || configForm.config_key.includes('sla') || configForm.config_key.includes('retry') ? 'number' : 'text'}
+                    />
                   )}
-                </Button>
-                <Button variant="outline" onClick={() => setShowEditor(false)}>
-                  <X className="w-4 h-4 mr-2" />
-                  Cancelar
-                </Button>
+                </div>
+                
+                <div>
+                  <Label htmlFor="description">Descripción (opcional)</Label>
+                  <Textarea
+                    id="description"
+                    value={configForm.description}
+                    onChange={(e) => setConfigForm({ ...configForm, description: e.target.value })}
+                    placeholder="Descripción de para qué sirve esta configuración"
+                    rows={2}
+                  />
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button onClick={saveConfig} disabled={saving} className="flex-1">
+                    {saving ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Guardando...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4 mr-2" />
+                        Guardar
+                      </>
+                    )}
+                  </Button>
+                  <Button variant="outline" onClick={() => setShowEditor(false)}>
+                    <X className="w-4 h-4 mr-2" />
+                    Cancelar
+                  </Button>
+                </div>
               </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Categories Navigation */}

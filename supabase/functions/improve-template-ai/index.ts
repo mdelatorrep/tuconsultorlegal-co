@@ -29,16 +29,22 @@ serve(async (req) => {
     const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.50.3');
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get configured OpenAI model
+    // Get configured OpenAI model and prompt for template optimization
     const { data: configData, error: configError } = await supabase
       .from('system_config')
-      .select('config_value')
-      .eq('config_key', 'openai_model')
-      .single();
+      .select('config_key, config_value')
+      .in('config_key', ['template_optimizer_model', 'template_optimizer_prompt']);
 
-    const selectedModel = (configError || !configData) 
-      ? 'gpt-4.1-2025-04-14'  // Default fallback
-      : configData.config_value;
+    let selectedModel = 'gpt-4.1-2025-04-14';
+    let customSystemPrompt = null;
+    
+    if (!configError && configData) {
+      const modelConfig = configData.find(c => c.config_key === 'template_optimizer_model');
+      const promptConfig = configData.find(c => c.config_key === 'template_optimizer_prompt');
+      
+      if (modelConfig?.config_value) selectedModel = modelConfig.config_value;
+      if (promptConfig?.config_value) customSystemPrompt = promptConfig.config_value;
+    }
 
     console.log('Using OpenAI model:', selectedModel);
 
@@ -76,7 +82,7 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `Eres un experto en redacción de documentos legales en Colombia. Tu tarea es mejorar plantillas de documentos legales para hacerlas más completas, precisas y profesionales.
+            content: customSystemPrompt || `Eres un experto en redacción de documentos legales en Colombia. Tu tarea es mejorar plantillas de documentos legales para hacerlas más completas, precisas y profesionales.
 
 PÚBLICO OBJETIVO: ${targetAudience === 'empresas' ? 'Empresas y clientes corporativos' : 'Personas (clientes individuales)'}
 
