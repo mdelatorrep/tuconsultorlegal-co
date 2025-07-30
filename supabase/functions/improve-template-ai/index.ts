@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,58 +8,43 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log('=== IMPROVE-TEMPLATE-AI FUNCTION STARTED ===');
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('Handling CORS preflight request');
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Get environment variables
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    
+    console.log('Environment check:', {
+      hasOpenAIKey: !!openAIApiKey,
+      hasSupabaseKey: !!supabaseServiceKey,
+      hasSupabaseUrl: !!supabaseUrl
+    });
+    
     if (!openAIApiKey) {
       throw new Error('OpenAI API key not configured');
     }
 
-    // Initialize Supabase client to get system configuration
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    
     if (!supabaseServiceKey || !supabaseUrl) {
       throw new Error('Missing Supabase configuration');
     }
 
-    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.50.3');
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Get configured OpenAI model and prompt for template optimization
-    const { data: configData, error: configError } = await supabase
-      .from('system_config')
-      .select('config_key, config_value')
-      .in('config_key', ['template_optimizer_model', 'template_optimizer_prompt']);
-
-    let selectedModel = 'gpt-4.1-2025-04-14';
-    let customSystemPrompt = null;
+    // Parse request body
+    const requestBody = await req.json();
+    console.log('Request body received:', requestBody);
     
-    if (!configError && configData) {
-      const modelConfig = configData.find(c => c.config_key === 'template_optimizer_model');
-      const promptConfig = configData.find(c => c.config_key === 'template_optimizer_prompt');
-      
-      if (modelConfig?.config_value) selectedModel = modelConfig.config_value;
-      if (promptConfig?.config_value) customSystemPrompt = promptConfig.config_value;
-    }
+    const { templateContent, docName, docCategory, docDescription, targetAudience } = requestBody;
 
-    console.log('Using OpenAI model:', selectedModel);
-
-    const { templateContent, docName, docCategory, docDescription, targetAudience } = await req.json();
-
-    console.log('Improving template with AI:', {
-      docName,
-      docCategory,
-      templateLength: templateContent?.length || 0,
-      targetAudience,
-      model: selectedModel
-    });
-
+    // Validate required fields
     if (!templateContent || templateContent.trim().length === 0) {
+      console.log('Validation failed - missing template content');
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -71,18 +57,46 @@ serve(async (req) => {
       );
     }
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: selectedModel,
-        messages: [
-          {
-            role: 'system',
-            content: customSystemPrompt || `Eres un experto en redacción de documentos legales en Colombia. Tu tarea es mejorar plantillas de documentos legales para hacerlas más completas, precisas y profesionales.
+    // Initialize Supabase client
+    console.log('Initializing Supabase client...');
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Get system configuration for model and prompt
+    console.log('Fetching system configuration...');
+    const { data: configData, error: configError } = await supabase
+      .from('system_config')
+      .select('config_key, config_value')
+      .in('config_key', ['template_optimizer_model', 'template_optimizer_prompt']);
+
+    if (configError) {
+      console.error('Error fetching system config:', configError);
+      throw new Error('Error al obtener configuración del sistema');
+    }
+
+    console.log('Config data retrieved:', configData);
+
+    // Extract model and system prompt from config
+    let selectedModel = 'gpt-4.1-2025-04-14'; // Default model
+    let systemPrompt = null;
+    
+    if (configData && configData.length > 0) {
+      const modelConfig = configData.find(c => c.config_key === 'template_optimizer_model');
+      const promptConfig = configData.find(c => c.config_key === 'template_optimizer_prompt');
+      
+      if (modelConfig?.config_value) {
+        selectedModel = modelConfig.config_value;
+        console.log('Using configured model:', selectedModel);
+      }
+      if (promptConfig?.config_value) {
+        systemPrompt = promptConfig.config_value;
+        console.log('Using configured system prompt');
+      }
+    }
+
+    // Use default system prompt if none configured
+    if (!systemPrompt) {
+      console.log('Using default system prompt');
+      systemPrompt = `Eres un experto en redacción de documentos legales en Colombia. Tu tarea es mejorar plantillas de documentos legales para hacerlas más completas, precisas y profesionales.
 
 PÚBLICO OBJETIVO: ${targetAudience === 'empresas' ? 'Empresas y clientes corporativos' : 'Personas (clientes individuales)'}
 
@@ -100,58 +114,96 @@ REGLAS IMPORTANTES:
 11. NO incluyas encabezados, títulos o secciones explicativas
 12. ${targetAudience === 'empresas' ? 'Usa terminología legal corporativa apropiada y considera aspectos empresariales específicos' : 'Usa lenguaje legal claro pero accesible para personas naturales'}
 
-OBJETIVO: Devolver únicamente la plantilla del documento mejorada en texto plano, adaptada para ${targetAudience === 'empresas' ? 'empresas' : 'personas naturales'}, sin formato adicional.`
-          },
-          {
-            role: 'user',
-            content: `Documento: ${docName} - Categoría: ${docCategory}
+OBJETIVO: Devolver únicamente la plantilla del documento mejorada en texto plano, adaptada para ${targetAudience === 'empresas' ? 'empresas' : 'personas naturales'}, sin formato adicional.`;
+    }
+
+    console.log('Improving template with AI:', {
+      docName,
+      docCategory,
+      templateLength: templateContent?.length || 0,
+      targetAudience,
+      model: selectedModel
+    });
+
+    // Prepare user message
+    const userMessage = `Documento: ${docName} - Categoría: ${docCategory}
 Público objetivo: ${targetAudience === 'empresas' ? 'Empresas' : 'Personas'}
 Descripción: ${docDescription}
 
 ${templateContent}
 
-Mejora esta plantilla manteniendo todos los placeholders {{variable}} existentes y adaptándola para ${targetAudience === 'empresas' ? 'clientes corporativos' : 'personas naturales'}.`
-          }
-        ],
-        temperature: 0.3,
-        max_tokens: 4000,
-      }),
+Mejora esta plantilla manteniendo todos los placeholders {{variable}} existentes y adaptándola para ${targetAudience === 'empresas' ? 'clientes corporativos' : 'personas naturales'}.`;
+
+    // Prepare OpenAI request
+    const openAIRequestBody = {
+      model: selectedModel,
+      messages: [
+        {
+          role: 'system',
+          content: systemPrompt
+        },
+        {
+          role: 'user',
+          content: userMessage
+        }
+      ],
+      temperature: 0.3,
+      max_tokens: 4000,
+    };
+
+    console.log('Making OpenAI API request with model:', selectedModel);
+    
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(openAIRequestBody),
     });
 
+    console.log('OpenAI response status:', response.status);
+
     if (!response.ok) {
-      const errorData = await response.text();
-      console.error('OpenAI API error:', errorData);
-      throw new Error(`Error de OpenAI: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('OpenAI API error:', response.status, errorText);
+      throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
+    console.log('OpenAI response received');
     
     if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-      console.error('Invalid OpenAI response:', data);
+      console.error('Invalid OpenAI response structure:', data);
       throw new Error('Respuesta inválida de OpenAI');
     }
 
     const improvedTemplate = data.choices[0].message.content.trim();
+    console.log('Raw OpenAI response:', improvedTemplate);
 
-    console.log('Template improvement successful:', {
+    console.log('Template improvement successful');
+
+    const finalResponse = {
+      success: true, 
+      improvedTemplate: improvedTemplate,
       originalLength: templateContent.length,
-      improvedLength: improvedTemplate.length
-    });
+      improvedLength: improvedTemplate.length,
+      modelUsed: selectedModel
+    };
+    
+    console.log('Sending final response:', finalResponse);
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        improvedTemplate: improvedTemplate,
-        originalLength: templateContent.length,
-        improvedLength: improvedTemplate.length
-      }),
+      JSON.stringify(finalResponse),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
 
   } catch (error) {
-    console.error('Error in improve-template-ai function:', error);
+    console.error('=== ERROR IN IMPROVE-TEMPLATE-AI ===');
+    console.error('Error message:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     
     return new Response(
       JSON.stringify({ 
