@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,8 +9,6 @@ const corsHeaders = {
 
 serve(async (req) => {
   console.log('=== IMPROVE-DOCUMENT-INFO FUNCTION STARTED ===');
-  console.log('Request method:', req.method);
-  console.log('Request URL:', req.url);
   
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -18,8 +17,6 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Processing improve-document-info request...');
-    
     // Get environment variables
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -32,28 +29,18 @@ serve(async (req) => {
     });
     
     if (!openAIApiKey) {
-      console.error('OpenAI API key not configured');
       throw new Error('OpenAI API key not configured');
     }
 
     if (!supabaseServiceKey || !supabaseUrl) {
-      console.error('Missing Supabase configuration');
       throw new Error('Missing Supabase configuration');
     }
 
     // Parse request body
-    console.log('Reading request body...');
     const requestBody = await req.json();
     console.log('Request body received:', requestBody);
     
     const { docName, docDesc, docCategory, targetAudience } = requestBody;
-
-    console.log('Parsed parameters:', {
-      docName: docName || 'MISSING',
-      docDesc: docDesc || 'MISSING', 
-      docCategory: docCategory || 'MISSING',
-      targetAudience: targetAudience || 'MISSING'
-    });
 
     // Validate required fields
     if (!docName || !docDesc) {
@@ -72,38 +59,44 @@ serve(async (req) => {
 
     // Initialize Supabase client
     console.log('Initializing Supabase client...');
-    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.50.3');
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get system configuration
+    // Get system configuration for model and prompt
     console.log('Fetching system configuration...');
     const { data: configData, error: configError } = await supabase
       .from('system_config')
       .select('config_key, config_value')
       .in('config_key', ['document_description_optimizer_model', 'document_description_optimizer_prompt']);
 
-    console.log('Config fetch result:', { configData, configError });
+    if (configError) {
+      console.error('Error fetching system config:', configError);
+      throw new Error('Error al obtener configuración del sistema');
+    }
 
-    let selectedModel = 'gpt-4.1-2025-04-14';
-    let customSystemPrompt = null;
+    console.log('Config data retrieved:', configData);
+
+    // Extract model and system prompt from config
+    let selectedModel = 'gpt-4.1-2025-04-14'; // Default model
+    let systemPrompt = null;
     
-    if (!configError && configData) {
+    if (configData && configData.length > 0) {
       const modelConfig = configData.find(c => c.config_key === 'document_description_optimizer_model');
       const promptConfig = configData.find(c => c.config_key === 'document_description_optimizer_prompt');
       
-      if (modelConfig?.config_value) selectedModel = modelConfig.config_value;
-      if (promptConfig?.config_value) customSystemPrompt = promptConfig.config_value;
+      if (modelConfig?.config_value) {
+        selectedModel = modelConfig.config_value;
+        console.log('Using configured model:', selectedModel);
+      }
+      if (promptConfig?.config_value) {
+        systemPrompt = promptConfig.config_value;
+        console.log('Using configured system prompt');
+      }
     }
 
-    console.log('Using configuration:', { selectedModel, hasCustomPrompt: !!customSystemPrompt });
-
-    // Prepare OpenAI request
-    const openAIRequestBody = {
-      model: selectedModel,
-      messages: [
-        {
-          role: 'system',
-          content: customSystemPrompt || `Eres un experto en marketing legal y comunicación con usuarios finales en Colombia. Tu tarea es mejorar el nombre y descripción de servicios legales para que sean más atractivos y comprensibles para el usuario final.
+    // Use default system prompt if none configured
+    if (!systemPrompt) {
+      console.log('Using default system prompt');
+      systemPrompt = `Eres un experto en marketing legal y comunicación con usuarios finales en Colombia. Tu tarea es mejorar el nombre y descripción de servicios legales para que sean más atractivos y comprensibles para el usuario final.
 
 PÚBLICO OBJETIVO: ${targetAudience === 'empresas' ? 'Empresas y clientes corporativos' : 'Personas (clientes individuales)'}
 
@@ -123,23 +116,36 @@ FORMATO DE RESPUESTA REQUERIDO:
   "improvedDescription": "descripción mejorada aquí"
 }
 
-OBJETIVO: Mejorar el nombre y descripción para que sean más atractivos y comprensibles para ${targetAudience === 'empresas' ? 'empresas' : 'personas naturales'}.`
-        },
-        {
-          role: 'user',
-          content: `Categoría: ${docCategory}
+OBJETIVO: Mejorar el nombre y descripción para que sean más atractivos y comprensibles para ${targetAudience === 'empresas' ? 'empresas' : 'personas naturales'}.`;
+    }
+
+    // Prepare user message
+    const userMessage = `Categoría: ${docCategory || 'No especificada'}
 Público objetivo: ${targetAudience === 'empresas' ? 'Empresas' : 'Personas'}
 Nombre actual: ${docName}
 Descripción actual: ${docDesc}
 
-Mejora el nombre y descripción para que sean más atractivos y comprensibles para ${targetAudience === 'empresas' ? 'clientes corporativos' : 'usuarios finales individuales'}.`
+Mejora el nombre y descripción para que sean más atractivos y comprensibles para ${targetAudience === 'empresas' ? 'clientes corporativos' : 'usuarios finales individuales'}.`;
+
+    // Prepare OpenAI request
+    const openAIRequestBody = {
+      model: selectedModel,
+      messages: [
+        {
+          role: 'system',
+          content: systemPrompt
+        },
+        {
+          role: 'user',
+          content: userMessage
         }
       ],
       temperature: 0.3,
       max_tokens: 500,
     };
 
-    console.log('Making OpenAI API request...');
+    console.log('Making OpenAI API request with model:', selectedModel);
+    
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -171,7 +177,7 @@ Mejora el nombre y descripción para que sean más atractivos y comprensibles pa
     // Parse the JSON response
     let improvedInfo;
     try {
-      // Try to extract JSON from the response if it contains extra text
+      // Try to extract JSON from the response
       let jsonText = responseText;
       
       // Check if response contains JSON within code blocks or extra text
@@ -193,7 +199,7 @@ Mejora el nombre y descripción para que sean más atractivos y comprensibles pa
       console.error('Error parsing OpenAI response:', parseError);
       console.error('Response that failed to parse:', responseText);
       
-      // Fallback: return original values if AI response is malformed
+      // Fallback: return original values
       console.log('Using fallback - returning original values');
       improvedInfo = {
         improvedName: docName,
@@ -208,7 +214,8 @@ Mejora el nombre y descripción para que sean más atractivos y comprensibles pa
       improvedName: improvedInfo.improvedName,
       improvedDescription: improvedInfo.improvedDescription,
       originalName: docName,
-      originalDescription: docDesc
+      originalDescription: docDesc,
+      modelUsed: selectedModel
     };
     
     console.log('Sending final response:', finalResponse);
@@ -222,7 +229,6 @@ Mejora el nombre y descripción para que sean más atractivos y comprensibles pa
 
   } catch (error) {
     console.error('=== ERROR IN IMPROVE-DOCUMENT-INFO ===');
-    console.error('Error type:', typeof error);
     console.error('Error message:', error instanceof Error ? error.message : 'Unknown error');
     console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     
