@@ -96,13 +96,50 @@ export default function OpenAIAgentManager() {
 
   const loadAgents = async () => {
     try {
+      // Get OpenAI agents with legal agent data
       const { data, error } = await supabase
-        .from('openai_agent_analytics')
-        .select('*')
-        .order('agent_name');
+        .from('openai_agents')
+        .select(`
+          *,
+          legal_agents!inner (
+            id,
+            name,
+            document_name,
+            target_audience,
+            openai_enabled,
+            openai_conversations_count,
+            openai_success_rate,
+            last_openai_activity
+          )
+        `)
+        .eq('status', 'active');
 
       if (error) throw error;
-      setAgents(data || []);
+
+      // Transform data to match expected format
+      const transformedData = data?.map(agent => ({
+        legal_agent_id: agent.legal_agent_id,
+        agent_name: agent.legal_agents?.name || '',
+        document_name: agent.legal_agents?.document_name || '',
+        target_audience: agent.legal_agents?.target_audience || '',
+        openai_enabled: agent.legal_agents?.openai_enabled || false,
+        openai_conversations_count: agent.legal_agents?.openai_conversations_count || 0,
+        openai_success_rate: agent.legal_agents?.openai_success_rate || 0,
+        last_openai_activity: agent.legal_agents?.last_openai_activity,
+        openai_agent_id: agent.id,
+        openai_external_id: agent.openai_agent_id,
+        openai_status: agent.status,
+        openai_created_at: agent.created_at,
+        // Calculate stats from conversations/jobs
+        jobs_completed: 0,
+        jobs_failed: 0, 
+        jobs_pending: 0,
+        total_conversations: agent.legal_agents?.openai_conversations_count || 0,
+        successful_documents: 0,
+        calculated_success_rate: agent.legal_agents?.openai_success_rate || 0
+      })) || [];
+
+      setAgents(transformedData);
     } catch (error) {
       console.error('Error loading agents:', error);
       toast({
