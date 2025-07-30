@@ -63,15 +63,36 @@ export default function LegalConsultationChat() {
 
   const loadLegalAdvisors = async () => {
     try {
+      // Get legal agents that have OpenAI agents created
       const { data, error } = await supabase
-        .from('legal_advisor_agents')
-        .select('*')
-        .eq('status', 'active')
-        .order('specialization', { ascending: true });
+        .from('legal_agents')
+        .select(`
+          id,
+          name,
+          description,
+          category,
+          target_audience,
+          openai_agents!inner (
+            openai_agent_id
+          )
+        `)
+        .eq('status', 'approved')
+        .eq('openai_enabled', true)
+        .order('name', { ascending: true });
 
       if (error) throw error;
 
-      setAgents(data || []);
+      // Transform data to match expected interface
+      const transformedAgents = (data || []).map(agent => ({
+        id: agent.id,
+        name: agent.name,
+        specialization: agent.category || 'general',
+        target_audience: agent.target_audience || 'ambos',
+        openai_agent_id: agent.openai_agents[0]?.openai_agent_id || '',
+        status: 'active'
+      }));
+
+      setAgents(transformedAgents);
     } catch (error) {
       console.error('Error loading legal advisors:', error);
       toast.error('Error al cargar los asesores legales');

@@ -22,11 +22,12 @@ serve(async (req) => {
 
     console.log('Starting workflow orchestration for agent:', agentId);
 
-    // Get the OpenAI agent
+    // Get the OpenAI agent by the external OpenAI agent ID
     const { data: openaiAgent, error: agentError } = await supabase
       .from('openai_agents')
       .select('*, legal_agents(*)')
       .eq('openai_agent_id', agentId)
+      .eq('status', 'active')
       .single();
 
     if (agentError || !openaiAgent) {
