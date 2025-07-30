@@ -78,14 +78,60 @@ serve(async (req) => {
 
     console.log(`Using analysis model: ${analysisModel}`);
 
-    // Call OpenAI API
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    // Check if it's a reasoning model
+    const isReasoningModel = analysisModel.startsWith('o3') || analysisModel.startsWith('o4');
+    
+    console.log(`Model type: ${isReasoningModel ? 'reasoning' : 'standard'}`);
+
+    // Prepare the request body based on model type
+    let requestBody;
+    
+    if (isReasoningModel) {
+      // For reasoning models, we need a simpler structure
+      requestBody = {
+        model: analysisModel,
+        messages: [
+          {
+            role: 'user',
+            content: `${analysisPrompt}
+
+Documento a analizar:
+NOMBRE DEL ARCHIVO: ${fileName || 'Documento'}
+CONTENIDO: ${documentContent}
+
+Instrucciones específicas:
+- Analiza el documento legal proporcionado
+- Identifica el tipo de documento
+- Encuentra cláusulas importantes y evalúa su nivel de riesgo
+- Identifica riesgos potenciales y su severidad
+- Proporciona recomendaciones específicas para mejorar el documento
+
+Responde en formato JSON con la siguiente estructura:
+{
+  "documentType": "Tipo de documento identificado",
+  "clauses": [
+    {
+      "name": "Nombre de la cláusula",
+      "content": "Extracto del contenido",
+      "riskLevel": "low|medium|high",
+      "recommendation": "Recomendación específica (opcional)"
+    }
+  ],
+  "risks": [
+    {
+      "type": "Tipo de riesgo",
+      "description": "Descripción del riesgo",
+      "severity": "low|medium|high"
+    }
+  ],
+  "recommendations": ["Lista", "de", "recomendaciones", "generales"]
+}`
+          }
+        ]
+      };
+    } else {
+      // For standard models, use the existing structure
+      requestBody = {
         model: analysisModel,
         messages: [
           {
@@ -132,7 +178,17 @@ ${documentContent}`
         ],
         temperature: 0.3,
         max_tokens: 3000
-      }),
+      };
+    }
+
+    // Call OpenAI API
+    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
     });
 
     if (!openaiResponse.ok) {

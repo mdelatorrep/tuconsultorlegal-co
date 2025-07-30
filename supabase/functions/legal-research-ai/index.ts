@@ -80,14 +80,48 @@ serve(async (req) => {
 
     console.log(`Using research model: ${researchModel}`);
 
-    // Call OpenAI API
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    // Check if it's a reasoning model
+    const isReasoningModel = researchModel.startsWith('o3') || researchModel.startsWith('o4');
+    const endpoint = isReasoningModel 
+      ? 'https://api.openai.com/v1/chat/completions'  // Reasoning models use same endpoint but different structure
+      : 'https://api.openai.com/v1/chat/completions';
+
+    console.log(`Model type: ${isReasoningModel ? 'reasoning' : 'standard'}`);
+
+    // Prepare the request body based on model type
+    let requestBody;
+    
+    if (isReasoningModel) {
+      // For reasoning models, we need a simpler structure
+      requestBody = {
+        model: researchModel,
+        messages: [
+          {
+            role: 'user',
+            content: `${researchPrompt}
+
+Consulta: ${query}
+
+Instrucciones específicas:
+- Analiza la consulta jurídica del usuario
+- Proporciona hallazgos específicos con referencias a legislación colombiana
+- Incluye jurisprudencia relevante cuando esté disponible
+- Menciona decretos, leyes y artículos específicos
+- Estructura la respuesta de manera profesional y detallada
+- Incluye una conclusión práctica
+
+Responde en formato JSON con la siguiente estructura:
+{
+  "findings": "Análisis detallado con referencias legales",
+  "sources": ["Lista", "de", "fuentes", "específicas"],
+  "conclusion": "Conclusión práctica basada en el análisis"
+}`
+          }
+        ]
+      };
+    } else {
+      // For standard models, use the existing structure
+      requestBody = {
         model: researchModel,
         messages: [
           {
@@ -116,7 +150,17 @@ Responde en formato JSON con la siguiente estructura:
         ],
         temperature: 0.3,
         max_tokens: 2000
-      }),
+      };
+    }
+
+    // Call OpenAI API
+    const openaiResponse = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
     });
 
     if (!openaiResponse.ok) {

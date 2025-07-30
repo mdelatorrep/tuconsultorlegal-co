@@ -78,14 +78,48 @@ serve(async (req) => {
 
     console.log(`Using drafting model: ${draftingModel}`);
 
-    // Call OpenAI API
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    // Check if it's a reasoning model
+    const isReasoningModel = draftingModel.startsWith('o3') || draftingModel.startsWith('o4');
+    
+    console.log(`Model type: ${isReasoningModel ? 'reasoning' : 'standard'}`);
+
+    // Prepare the request body based on model type
+    let requestBody;
+    
+    if (isReasoningModel) {
+      // For reasoning models, we need a simpler structure
+      requestBody = {
+        model: draftingModel,
+        messages: [
+          {
+            role: 'user',
+            content: `${draftingPrompt}
+
+Genera un borrador de: ${documentType}
+Descripción específica: ${prompt}
+
+Instrucciones específicas:
+- Genera un borrador profesional del documento solicitado
+- Sigue la estructura típica del tipo de documento
+- Incluye todas las cláusulas esenciales
+- Usa terminología jurídica apropiada para Colombia
+- Marca con [ESPECIFICAR] los campos que requieren personalización
+- Incluye cláusulas de protección estándar
+
+El documento debe ser apropiado para Colombia y seguir las mejores prácticas legales.
+
+Responde en formato JSON con la siguiente estructura:
+{
+  "content": "Contenido completo del borrador en formato markdown",
+  "sections": ["Lista", "de", "secciones", "incluidas"],
+  "documentType": "Nombre completo del tipo de documento"
+}`
+          }
+        ]
+      };
+    } else {
+      // For standard models, use the existing structure
+      requestBody = {
         model: draftingModel,
         messages: [
           {
@@ -118,7 +152,17 @@ El documento debe ser apropiado para Colombia y seguir las mejores prácticas le
         ],
         temperature: 0.4,
         max_tokens: 4000
-      }),
+      };
+    }
+
+    // Call OpenAI API
+    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
     });
 
     if (!openaiResponse.ok) {

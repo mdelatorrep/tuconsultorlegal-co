@@ -78,14 +78,72 @@ serve(async (req) => {
 
     console.log(`Using strategy model: ${strategyModel}`);
 
-    // Call OpenAI API
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    // Check if it's a reasoning model
+    const isReasoningModel = strategyModel.startsWith('o3') || strategyModel.startsWith('o4');
+    
+    console.log(`Model type: ${isReasoningModel ? 'reasoning' : 'standard'}`);
+
+    // Prepare the request body based on model type
+    let requestBody;
+    
+    if (isReasoningModel) {
+      // For reasoning models, we need a simpler structure
+      requestBody = {
+        model: strategyModel,
+        messages: [
+          {
+            role: 'user',
+            content: `${strategyPrompt}
+
+Caso a analizar: ${caseDescription}
+
+Instrucciones específicas:
+- Analiza el caso legal proporcionado
+- Identifica las mejores vías de acción legal disponibles
+- Proporciona argumentos jurídicos sólidos con fundamentos legales
+- Anticipa posibles contraargumentos y cómo responder
+- Incluye precedentes judiciales relevantes cuando sea posible
+- Proporciona recomendaciones estratégicas específicas
+
+Responde en formato JSON con la siguiente estructura:
+{
+  "legalActions": [
+    {
+      "action": "Nombre de la acción legal",
+      "viability": "high|medium|low",
+      "description": "Descripción de la acción",
+      "requirements": ["Lista", "de", "requisitos"]
+    }
+  ],
+  "legalArguments": [
+    {
+      "argument": "Argumento legal",
+      "foundation": "Base legal (artículos, leyes, etc.)",
+      "strength": "strong|moderate|weak"
+    }
+  ],
+  "counterarguments": [
+    {
+      "argument": "Posible contraargumento",
+      "response": "Cómo responder",
+      "mitigation": "Estrategia de mitigación"
+    }
+  ],
+  "precedents": [
+    {
+      "case": "Nombre del caso/sentencia",
+      "relevance": "Por qué es relevante",
+      "outcome": "Resultado del caso"
+    }
+  ],
+  "recommendations": ["Lista", "de", "recomendaciones", "estratégicas"]
+}`
+          }
+        ]
+      };
+    } else {
+      // For standard models, use the existing structure
+      requestBody = {
         model: strategyModel,
         messages: [
           {
@@ -145,7 +203,17 @@ Proporciona un análisis estratégico completo para el caso.`
         ],
         temperature: 0.3,
         max_tokens: 4000
-      }),
+      };
+    }
+
+    // Call OpenAI API
+    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
     });
 
     if (!openaiResponse.ok) {
