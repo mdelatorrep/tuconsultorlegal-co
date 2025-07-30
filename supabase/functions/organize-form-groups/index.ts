@@ -16,6 +16,30 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
+    // Initialize Supabase client to get system configuration
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    
+    if (!supabaseServiceKey || !supabaseUrl) {
+      throw new Error('Missing Supabase configuration');
+    }
+
+    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.50.3');
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Get configured OpenAI model
+    const { data: configData, error: configError } = await supabase
+      .from('system_config')
+      .select('config_value')
+      .eq('config_key', 'openai_model')
+      .maybeSingle();
+
+    const selectedModel = (configError || !configData) 
+      ? 'gpt-4.1-2025-04-14'  // Default fallback
+      : configData.config_value;
+
+    console.log('Using OpenAI model:', selectedModel);
+
     const { placeholder_fields, ai_prompt } = await req.json();
 
     if (!placeholder_fields || !Array.isArray(placeholder_fields)) {
@@ -65,7 +89,7 @@ Los números en "fields" deben corresponder al índice (0-based) de los campos e
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: selectedModel,
         messages: [
           {
             role: 'system',

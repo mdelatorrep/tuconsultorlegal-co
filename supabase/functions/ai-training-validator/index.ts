@@ -36,6 +36,19 @@ Deno.serve(async (req) => {
       throw new Error('OPENAI_API_KEY is not set')
     }
 
+    // Get configured OpenAI model
+    const { data: configData, error: configError } = await supabase
+      .from('system_config')
+      .select('config_value')
+      .eq('config_key', 'openai_model')
+      .maybeSingle();
+
+    const selectedModel = (configError || !configData) 
+      ? 'gpt-4.1-2025-04-14'  // Default fallback
+      : configData.config_value;
+
+    console.log('Using OpenAI model:', selectedModel);
+
     // Parse request body
     const { 
       moduleId, 
@@ -61,7 +74,7 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4.1-2025-04-14',
+        model: selectedModel,
         messages: [
           {
             role: 'system',
