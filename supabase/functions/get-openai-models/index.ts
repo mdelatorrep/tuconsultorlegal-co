@@ -20,21 +20,27 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Fetching OpenAI models...');
-
+    console.log('=== GET-OPENAI-MODELS FUNCTION START ===');
+    
     // Get OpenAI API key from environment
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+    console.log('API Key status:', openAIApiKey ? 'Found' : 'Not found');
+    console.log('API Key length:', openAIApiKey ? openAIApiKey.length : 0);
+    
     if (!openAIApiKey) {
       console.error('OPENAI_API_KEY not found in environment');
       return new Response(JSON.stringify({ 
         success: false,
-        error: 'OpenAI API key no configurada en el servidor' 
+        error: 'OpenAI API key no configurada en el servidor',
+        debug: 'OPENAI_API_KEY environment variable is missing'
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
+    console.log('Making request to OpenAI API...');
+    
     // Fetch models from OpenAI API
     const response = await fetch('https://api.openai.com/v1/models', {
       method: 'GET',
@@ -43,6 +49,8 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
     });
+    
+    console.log('OpenAI API response status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -50,7 +58,8 @@ serve(async (req) => {
       return new Response(JSON.stringify({ 
         success: false,
         error: `Error de OpenAI API: ${response.status}`,
-        details: errorText 
+        details: errorText,
+        debug: `Status: ${response.status}, Response: ${errorText}`
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
