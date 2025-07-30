@@ -799,39 +799,6 @@ export type Database = {
           },
         ]
       }
-      maturity_diagnoses: {
-        Row: {
-          answers: Json
-          completed_at: string
-          created_at: string
-          current_level: number
-          id: string
-          recommendations: Json | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          answers?: Json
-          completed_at?: string
-          created_at?: string
-          current_level?: number
-          id?: string
-          recommendations?: Json | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          answers?: Json
-          completed_at?: string
-          created_at?: string
-          current_level?: number
-          id?: string
-          recommendations?: Json | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       openai_agent_jobs: {
         Row: {
           completed_at: string | null
