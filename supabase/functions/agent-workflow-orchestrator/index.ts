@@ -141,6 +141,10 @@ serve(async (req) => {
                 );
                 break;
                 
+              case 'normalize_information':
+                output = await handleNormalizeInformation(functionArgs);
+                break;
+                
               case 'request_clarification':
                 output = await handleRequestClarification(functionArgs);
                 break;
@@ -346,6 +350,199 @@ async function handleValidateInformation(args: any, placeholderFields?: any[]) {
   }
   
   return 'Toda la información requerida ha sido recopilada correctamente. Puedes proceder a generar el documento.';
+}
+
+async function handleNormalizeInformation(args: any) {
+  console.log('Normalizing information:', args);
+  
+  try {
+    const rawData = args.rawData || {};
+    const normalizedData: any = {};
+    
+    // Función para normalizar nombres propios a mayúsculas
+    const normalizeNames = (text: string): string => {
+      if (!text) return text;
+      return text.trim().toUpperCase()
+        .replace(/Á/g, 'Á').replace(/É/g, 'É').replace(/Í/g, 'Í')
+        .replace(/Ó/g, 'Ó').replace(/Ú/g, 'Ú').replace(/Ñ/g, 'Ñ');
+    };
+    
+    // Función para normalizar números de documento con puntos
+    const normalizeDocument = (doc: string): string => {
+      if (!doc) return doc;
+      const numbers = doc.replace(/\D/g, '');
+      return numbers.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    };
+    
+    // Función para normalizar fechas al formato colombiano
+    const normalizeDate = (dateStr: string): string => {
+      if (!dateStr) return dateStr;
+      
+      const months = [
+        'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+        'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+      ];
+      
+      // Detectar diferentes formatos de fecha
+      const patterns = [
+        /(\d{1,2})[\/\-\.]\s*(\d{1,2})[\/\-\.]\s*(\d{4})/,
+        /(\d{4})[\/\-\.]\s*(\d{1,2})[\/\-\.]\s*(\d{1,2})/,
+        /(\d{1,2})\s+de\s+(\w+)\s+de\s+(\d{4})/i
+      ];
+      
+      for (const pattern of patterns) {
+        const match = dateStr.match(pattern);
+        if (match) {
+          let day, month, year;
+          if (pattern.source.includes('de')) {
+            // Formato "DD de MMMM de YYYY"
+            [, day, month, year] = match;
+            const monthIndex = months.indexOf(month.toLowerCase());
+            if (monthIndex >= 0) {
+              return `${parseInt(day)} de ${months[monthIndex]} de ${year}`;
+            }
+          } else if (match[1].length === 4) {
+            // Formato YYYY-MM-DD
+            [, year, month, day] = match;
+          } else {
+            // Formato DD-MM-YYYY
+            [, day, month, year] = match;
+          }
+          
+          const monthName = months[parseInt(month) - 1] || 'enero';
+          return `${parseInt(day)} de ${monthName} de ${year}`;
+        }
+      }
+      
+      return dateStr;
+    };
+    
+    // Función para normalizar monedas
+    const normalizeCurrency = (amount: string | number): string => {
+      if (!amount) return '';
+      
+      const numericAmount = typeof amount === 'string' ? 
+        parseFloat(amount.replace(/[^\d.]/g, '')) : amount;
+      
+      if (isNaN(numericAmount)) return amount.toString();
+      
+      // Formatear con puntos como separadores de miles
+      const formatted = numericAmount.toLocaleString('es-CO');
+      
+      // Convertir número a letras (función simplificada)
+      const numberToWords = (num: number): string => {
+        const units = ['', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve'];
+        const tens = ['', '', 'veinte', 'treinta', 'cuarenta', 'cincuenta', 'sesenta', 'setenta', 'ochenta', 'noventa'];
+        const hundreds = ['', 'ciento', 'doscientos', 'trescientos', 'cuatrocientos', 'quinientos', 'seiscientos', 'setecientos', 'ochocientos', 'novecientos'];
+        const thousands = ['', 'mil', 'millón', 'mil millones'];
+        
+        if (num === 0) return 'cero';
+        if (num < 10) return units[num];
+        if (num < 100) return tens[Math.floor(num / 10)] + (num % 10 ? ' y ' + units[num % 10] : '');
+        if (num < 1000) return hundreds[Math.floor(num / 100)] + (num % 100 ? ' ' + numberToWords(num % 100) : '');
+        if (num < 1000000) return numberToWords(Math.floor(num / 1000)) + ' mil' + (num % 1000 ? ' ' + numberToWords(num % 1000) : '');
+        
+        return 'cantidad compleja'; // Para números muy grandes
+      };
+      
+      const wordsAmount = numberToWords(Math.floor(numericAmount));
+      return `${formatted} (${wordsAmount} pesos)`;
+    };
+    
+    // Función para normalizar información geográfica
+    const normalizeGeographic = (location: string): string => {
+      if (!location) return location;
+      
+      const departmentMap: Record<string, string> = {
+        'bogota': 'BOGOTÁ, CUNDINAMARCA',
+        'bogotá': 'BOGOTÁ, CUNDINAMARCA',
+        'medellin': 'MEDELLÍN, ANTIOQUIA',
+        'medellín': 'MEDELLÍN, ANTIOQUIA',
+        'cali': 'CALI, VALLE DEL CAUCA',
+        'barranquilla': 'BARRANQUILLA, ATLÁNTICO',
+        'cartagena': 'CARTAGENA, BOLÍVAR',
+        'cucuta': 'CÚCUTA, NORTE DE SANTANDER',
+        'cúcuta': 'CÚCUTA, NORTE DE SANTANDER',
+        'bucaramanga': 'BUCARAMANGA, SANTANDER',
+        'pereira': 'PEREIRA, RISARALDA',
+        'manizales': 'MANIZALES, CALDAS',
+        'ibague': 'IBAGUÉ, TOLIMA',
+        'ibagué': 'IBAGUÉ, TOLIMA',
+        'santa marta': 'SANTA MARTA, MAGDALENA',
+        'villavicencio': 'VILLAVICENCIO, META',
+        'pasto': 'PASTO, NARIÑO',
+        'monteria': 'MONTERÍA, CÓRDOBA',
+        'montería': 'MONTERÍA, CÓRDOBA',
+        'valledupar': 'VALLEDUPAR, CESAR',
+        'neiva': 'NEIVA, HUILA',
+        'armenia': 'ARMENIA, QUINDÍO',
+        'popayan': 'POPAYÁN, CAUCA',
+        'popayán': 'POPAYÁN, CAUCA',
+        'sincelejo': 'SINCELEJO, SUCRE',
+        'florencia': 'FLORENCIA, CAQUETÁ',
+        'tunja': 'TUNJA, BOYACÁ',
+        'quibdo': 'QUIBDÓ, CHOCÓ',
+        'quibdó': 'QUIBDÓ, CHOCÓ',
+        'riohacha': 'RIOHACHA, LA GUAJIRA',
+        'yopal': 'YOPAL, CASANARE',
+        'mocoa': 'MOCOA, PUTUMAYO',
+        'leticia': 'LETICIA, AMAZONAS'
+      };
+      
+      const normalized = location.toLowerCase().trim();
+      return departmentMap[normalized] || location.toUpperCase() + ', COLOMBIA';
+    };
+    
+    // Función para normalizar direcciones
+    const normalizeAddress = (address: string): string => {
+      if (!address) return address;
+      
+      return address.toUpperCase()
+        .replace(/\bCALLE\b/g, 'CALLE')
+        .replace(/\bCARRERA\b/g, 'CARRERA')
+        .replace(/\bAVENIDA\b/g, 'AVENIDA')
+        .replace(/\bDIAGONAL\b/g, 'DIAGONAL')
+        .replace(/\bTRANSVERSAL\b/g, 'TRANSVERSAL')
+        .replace(/\bCIRCULAR\b/g, 'CIRCULAR')
+        .replace(/\bAPARTAMENTO\b/g, 'APARTAMENTO')
+        .replace(/\bAPTO\b/g, 'APARTAMENTO')
+        .replace(/\bOFICINA\b/g, 'OFICINA')
+        .replace(/\bOF\b/g, 'OFICINA')
+        .replace(/\bLOCAL\b/g, 'LOCAL')
+        .replace(/\bBARRIO\b/g, 'BARRIO')
+        .replace(/\bURBANIZACION\b/g, 'URBANIZACIÓN')
+        .replace(/\bEDIFICIO\b/g, 'EDIFICIO');
+    };
+    
+    // Procesar cada campo del rawData
+    for (const [key, value] of Object.entries(rawData)) {
+      const keyLower = key.toLowerCase();
+      const valueStr = value?.toString() || '';
+      
+      if (keyLower.includes('nombre') || keyLower.includes('apellido')) {
+        normalizedData[key] = normalizeNames(valueStr);
+      } else if (keyLower.includes('cedula') || keyLower.includes('documento') || keyLower.includes('nit')) {
+        normalizedData[key] = normalizeDocument(valueStr);
+      } else if (keyLower.includes('fecha') || keyLower.includes('date')) {
+        normalizedData[key] = normalizeDate(valueStr);
+      } else if (keyLower.includes('ciudad') || keyLower.includes('municipio') || keyLower.includes('ubicacion')) {
+        normalizedData[key] = normalizeGeographic(valueStr);
+      } else if (keyLower.includes('direccion') || keyLower.includes('address')) {
+        normalizedData[key] = normalizeAddress(valueStr);
+      } else if (keyLower.includes('salario') || keyLower.includes('valor') || keyLower.includes('precio') || keyLower.includes('monto')) {
+        normalizedData[key] = normalizeCurrency(valueStr);
+      } else {
+        // Para otros campos, aplicar normalización general
+        normalizedData[key] = valueStr.trim();
+      }
+    }
+    
+    return `Información normalizada exitosamente. Datos estandarizados según formatos colombianos:\n${JSON.stringify(normalizedData, null, 2)}`;
+    
+  } catch (error) {
+    console.error('Error normalizing information:', error);
+    return `Error al normalizar la información: ${error.message}`;
+  }
 }
 
 async function handleRequestClarification(args: any) {

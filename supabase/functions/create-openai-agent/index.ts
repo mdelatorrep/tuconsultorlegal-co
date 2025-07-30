@@ -99,40 +99,14 @@ serve(async (req) => {
           {
             type: "function",
             function: {
-              name: "generate_document",
-              description: "Generate the legal document when all required information has been collected",
-              parameters: {
-                type: "object",
-                properties: {
-                  documentData: {
-                    type: "object",
-                    description: "All collected and validated data for the document"
-                  },
-                  userRequests: {
-                    type: "string",
-                    description: "Any specific user requests or modifications"
-                  }
-                },
-                required: ["documentData"]
-              }
-            }
-          },
-          {
-            type: "function", 
-            function: {
               name: "validate_information",
-              description: "Validate if all required information has been collected",
+              description: "Valida si toda la información requerida ha sido recopilada",
               parameters: {
                 type: "object",
                 properties: {
                   collectedData: {
                     type: "object",
-                    description: "Data collected so far from the conversation"
-                  },
-                  missingFields: {
-                    type: "array",
-                    items: { type: "string" },
-                    description: "List of still missing required fields"
+                    description: "Datos recopilados del usuario"
                   }
                 },
                 required: ["collectedData"]
@@ -143,20 +117,63 @@ serve(async (req) => {
             type: "function",
             function: {
               name: "request_clarification",
-              description: "Request clarification or additional information from the user",
+              description: "Solicita aclaración sobre información específica",
               parameters: {
                 type: "object",
                 properties: {
                   field: {
                     type: "string",
-                    description: "The field that needs clarification"
+                    description: "Campo que necesita aclaración"
                   },
                   question: {
-                    type: "string", 
-                    description: "The specific question to ask the user"
+                    type: "string",
+                    description: "Pregunta específica para aclarar"
                   }
                 },
                 required: ["field", "question"]
+              }
+            }
+          },
+          {
+            type: "function",
+            function: {
+              name: "normalize_information",
+              description: "Normaliza toda la información según estándares colombianos: mayúsculas, direcciones, fechas, monedas y ubicaciones geográficas",
+              parameters: {
+                type: "object",
+                properties: {
+                  rawData: {
+                    type: "object",
+                    description: "Datos sin normalizar que necesitan ser estandarizados"
+                  },
+                  includeGeographicSearch: {
+                    type: "boolean",
+                    description: "Si debe buscar información geográfica en línea",
+                    default: true
+                  }
+                },
+                required: ["rawData"]
+              }
+            }
+          },
+          {
+            type: "function",
+            function: {
+              name: "generate_document",
+              description: "Genera el documento final con la información recopilada y normalizada",
+              parameters: {
+                type: "object",
+                properties: {
+                  documentData: {
+                    type: "object",
+                    description: "Datos normalizados para completar el documento"
+                  },
+                  userRequests: {
+                    type: "string",
+                    description: "Solicitudes específicas del usuario"
+                  }
+                },
+                required: ["documentData"]
               }
             }
           }
@@ -319,21 +336,31 @@ PROTOCOLO DE TRABAJO:
    - Explica por qué necesitas cada información
    - Referencia las fuentes oficiales cuando sea apropiado
 4. **VALIDACIÓN CONTINUA**: Confirma la información recibida y aclara dudas
-5. **SEGUIMIENTO DEL PROGRESO**: Informa al usuario cuánta información falta
-6. **FINALIZACIÓN**: Cuando tengas toda la información, confirma que está listo para generar
+5. **NORMALIZACIÓN**: Antes de generar el documento, normaliza toda la información
+6. **SEGUIMIENTO DEL PROGRESO**: Informa al usuario cuánta información falta
+7. **FINALIZACIÓN**: Cuando tengas toda la información, confirma que está listo para generar
 
 REGLAS IMPORTANTES:
 - Usa la función validate_information para verificar la completitud de la información recopilada
 - Usa request_clarification cuando necesites información adicional específica
-- Usa generate_document SOLO cuando toda la información esté completa y validada
+- USA SIEMPRE normalize_information ANTES de generar el documento para estandarizar todos los datos:
+  * Nombres propios en MAYÚSCULAS
+  * Direcciones en formato estándar colombiano
+  * Ciudades con departamento (ej: BOGOTÁ, CUNDINAMARCA)
+  * Fechas en formato "DD de MMMM de YYYY"
+  * Valores monetarios con puntos separadores y números en letras
+  * Números de cédula con puntos separadores
+- Usa generate_document SOLO cuando toda la información esté completa, validada y normalizada
 - Mantén un tono profesional pero amigable
 - ${legalAgent.target_audience === 'empresas' ? 'Usa terminología empresarial apropiada (razón social, NIT, representante legal)' : 'Usa lenguaje claro y accesible para personas naturales'}
 - Explica términos legales cuando sea necesario
-- NO generes el documento - solo recopila la información
+- NO generes el documento sin antes normalizar - este paso es OBLIGATORIO
 - Pregunta una cosa a la vez para evitar abrumar al usuario
 - Confirma información crítica antes de continuar
 - SOLO usa las fuentes oficiales listadas arriba para cualquier referencia legal
-- Si necesitas información de fuentes no listadas, explica que requiere validación adicional
+
+FLUJO OBLIGATORIO PARA GENERACIÓN:
+1. Recopilar información → 2. Validar completitud → 3. NORMALIZAR información → 4. Generar documento
 
 TONO Y ESTILO:
 - Profesional pero cercano
@@ -349,6 +376,6 @@ Este documento es importante porque [explicar brevemente el propósito]. Para po
 
 ¿Podrías comenzar diciéndome [primera pregunta más importante]?"
 
-¡Recuerda: Tu trabajo es hacer que el proceso sea fácil y comprensible para el usuario, siempre basándote en fuentes oficiales autorizadas!
+¡Recuerda: Tu trabajo es hacer que el proceso sea fácil y comprensible para el usuario, asegurando siempre que toda la información esté correctamente normalizada según los estándares colombianos!
 `;
 }
