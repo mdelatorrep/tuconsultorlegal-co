@@ -79,24 +79,27 @@ serve(async (req) => {
       });
     }
 
-    // Filter for GPT models only (text generation)
-    const gptModels = data.data
-      .filter((model: any) => 
-        model.id && 
-        model.id.includes('gpt') && 
-        !model.id.includes('embedding') &&
-        !model.id.includes('whisper') &&
-        !model.id.includes('tts') &&
-        !model.id.includes('davinci-002') &&
-        !model.id.includes('babbage-002')
-      )
-      .map((model: any) => ({
-        id: model.id,
-        object: model.object || 'model',
-        created: model.created || 0,
-        owned_by: model.owned_by || 'openai'
-      }))
-      .sort((a: any, b: any) => a.id.localeCompare(b.id));
+    // Filter para incluir:
+const selectedModels = data.data
+  .filter((model: any) =>
+    model.id &&
+    (
+      model.id.includes('gpt') ||                // incluye modelos GPT (e.g. gpt-3.5, gpt-4, gpt-4o, gpt-4.1...)
+      model.id.match(/^o1/) ||                    // incluye o1, o1‑mini, o1‑preview, o1‑pro
+      model.id.match(/^o3/) ||                    // incluye o3, o3‑mini, o3‑pro
+      model.id.includes('o4-mini')                // incluye o4-mini / o4-mini-high
+    ) &&
+    !model.id.includes('embedding') &&           // excluir embeddings
+    !model.id.includes('whisper') &&             // excluir Whisper
+    !model.id.includes('tts')                    // excluir TTS
+  )
+  .map((model: any) => ({
+    id: model.id,
+    object: model.object ?? 'model',
+    created: model.created ?? 0,
+    owned_by: model.owned_by ?? 'openai'
+  }))
+  .sort((a: any, b: any) => a.id.localeCompare(b.id));
 
     console.log(`Successfully fetched ${gptModels.length} GPT models from ${data.data.length} total models`);
 
