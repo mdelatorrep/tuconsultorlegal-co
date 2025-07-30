@@ -7,14 +7,51 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const securityHeaders = {
+  ...corsHeaders,
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'X-XSS-Protection': '1; mode=block',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+};
+
+// Function to get system configuration with default fallback
+async function getSystemConfig(supabaseClient: any, configKey: string, defaultValue?: string): Promise<string> {
+  try {
+    const { data, error } = await supabaseClient
+      .from('system_config')
+      .select('config_value')
+      .eq('config_key', configKey)
+      .single();
+
+    if (error) {
+      console.warn(`Failed to get system config for ${configKey}:`, error.message);
+      return defaultValue || '';
+    }
+
+    return data?.config_value || defaultValue || '';
+  } catch (error) {
+    console.warn(`Error fetching system config for ${configKey}:`, error);
+    return defaultValue || '';
+  }
+}
+
 // Function to call OpenAI API with retry logic
 async function callOpenAIWithRetry(requestBody: any, maxRetries = 3) {
+  const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+  
+  if (!openAIApiKey) {
+    throw new Error('OPENAI_API_KEY not configured');
+  }
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
+      console.log(`OpenAI API call attempt ${attempt}/${maxRetries}`);
+      
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+          'Authorization': `Bearer ${openAIApiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(requestBody),
@@ -46,6 +83,7 @@ async function callOpenAIWithRetry(requestBody: any, maxRetries = 3) {
         continue;
       }
 
+      console.log(`OpenAI API call successful on attempt ${attempt}`);
       return data;
     } catch (error) {
       console.error(`OpenAI API call failed (attempt ${attempt}):`, error);
@@ -66,60 +104,67 @@ serve(async (req) => {
   }
 
   try {
-    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+    console.log('=== IMPROVE-PROMPT-AI Function Started ===');
+    
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-    if (!openAIApiKey) {
-      throw new Error('OPENAI_API_KEY not configured');
-    }
-
     if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Missing Supabase configuration');
       throw new Error('Supabase configuration missing');
     }
 
     // Create Supabase client
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    console.log('Supabase client created successfully');
 
     const authHeader = req.headers.get('authorization');
     if (!authHeader) {
+      console.error('Authorization header missing');
       return new Response(JSON.stringify({ error: 'Authorization header missing' }), {
         status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...securityHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     // Verify admin token
+    console.log('Verifying admin token...');
     const { data: verification, error: verificationError } = await supabase.functions.invoke('verify-admin-token', {
       headers: { authorization: authHeader }
     });
 
     if (verificationError || !verification?.valid) {
+      console.error('Invalid admin token:', verificationError);
       return new Response(JSON.stringify({ error: 'Invalid admin token' }), {
         status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...securityHeaders, 'Content-Type': 'application/json' },
       });
     }
+    console.log('Admin token verified successfully');
 
-    const { current_prompt, target_audience, model } = await req.json();
+    const requestBody = await req.json();
+    const { current_prompt, target_audience } = requestBody;
 
-    if (!current_prompt || !target_audience || !model) {
+    if (!current_prompt || !target_audience) {
+      console.error('Missing required parameters:', { current_prompt: !!current_prompt, target_audience: !!target_audience });
       return new Response(JSON.stringify({ 
-        error: 'Faltan parámetros requeridos: current_prompt, target_audience, model' 
+        error: 'Faltan parámetros requeridos: current_prompt, target_audience' 
       }), {
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...securityHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log(`Improving prompt for ${target_audience} using model ${model}`);
+    console.log(`Processing prompt improvement request for target audience: ${target_audience}`);
 
-    // Sistema de prompt optimizado específicamente para generación de documentos legales
-    const systemPrompt = `Eres un experto en optimización de prompts para asistentes de IA especializados en la generación de documentos legales. Tu tarea es mejorar y optimizar prompts para chatbots que recopilan información y generan documentos legales.
+    // Get system configurations
+    console.log('Fetching system configurations...');
+    const [configuredModel, configuredSystemPrompt] = await Promise.all([
+      getSystemConfig(supabase, 'prompt_optimizer_model', 'gpt-4.1-2025-04-14'),
+      getSystemConfig(supabase, 'prompt_optimizer_prompt', `Eres un experto en optimización de prompts para asistentes de IA especializados en la generación de documentos legales. Tu tarea es mejorar y optimizar prompts para chatbots que recopilan información y generan documentos legales.
 
 CONTEXTO ESPECÍFICO PARA GENERACIÓN DE DOCUMENTOS:
 - El prompt será usado por un asistente de IA que genera documentos legales en Colombia
-- El target audience es: ${target_audience}
 - El asistente debe recopilar información de manera estructurada y eficiente
 - Debe mantener un estilo cercano, fácil de entender, profesional y seguro
 
@@ -150,7 +195,6 @@ CRITERIOS DE MEJORA ESPECÍFICOS PARA GENERACIÓN DE DOCUMENTOS:
    - Mencionar confidencialidad y protección de datos
 
 5. ADAPTACIÓN A AUDIENCIA:
-   - Debe estar específicamente adaptado para ${target_audience}
    - Lenguaje apropiado según sea personas naturales o empresas
    - Consideraciones específicas del contexto colombiano
 
@@ -162,14 +206,21 @@ INSTRUCCIONES DE OPTIMIZACIÓN:
 - Asegúrate de que el tono sea cercano pero profesional
 - Incluye validaciones apropiadas para el contexto colombiano
 
-Devuelve SOLO el prompt mejorado, sin explicaciones adicionales.`;
+Devuelve SOLO el prompt mejorado, sin explicaciones adicionales.`)
+    ]);
 
-    const requestBody = {
-      model: model,
+    console.log(`Using model: ${configuredModel}`);
+    console.log('System prompt configured from database');
+
+    // Build dynamic system prompt with target audience
+    const dynamicSystemPrompt = configuredSystemPrompt.replace(/\${target_audience}/g, target_audience);
+
+    const openAIRequestBody = {
+      model: configuredModel,
       messages: [
         {
           role: 'system',
-          content: systemPrompt
+          content: dynamicSystemPrompt
         },
         {
           role: 'user',
@@ -219,18 +270,19 @@ Devuelve el prompt mejorado siguiendo esta estructura y consideraciones.`
     };
 
     console.log('Calling OpenAI API for prompt improvement...');
-    const data = await callOpenAIWithRetry(requestBody);
+    const data = await callOpenAIWithRetry(openAIRequestBody);
 
     const improvedPrompt = data.choices[0].message.content.trim();
 
     console.log('Prompt improvement completed successfully');
+    console.log('=== IMPROVE-PROMPT-AI Function Completed ===');
 
     return new Response(JSON.stringify({ 
       improved_prompt: improvedPrompt,
-      model_used: model,
+      model_used: configuredModel,
       target_audience: target_audience
     }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...securityHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
@@ -239,7 +291,7 @@ Devuelve el prompt mejorado siguiendo esta estructura y consideraciones.`
       error: error.message || 'Error interno del servidor' 
     }), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...securityHeaders, 'Content-Type': 'application/json' },
     });
   }
 });
