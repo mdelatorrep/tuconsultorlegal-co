@@ -21,6 +21,30 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
+    // Initialize Supabase client to get system configuration
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    
+    if (!supabaseServiceKey || !supabaseUrl) {
+      throw new Error('Missing Supabase configuration');
+    }
+
+    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.50.3');
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Get configured OpenAI model
+    const { data: configData, error: configError } = await supabase
+      .from('system_config')
+      .select('config_value')
+      .eq('config_key', 'openai_model')
+      .single();
+
+    const selectedModel = (configError || !configData) 
+      ? 'gpt-4.1-2025-04-14'  // Default fallback
+      : configData.config_value;
+
+    console.log('Using OpenAI model:', selectedModel);
+
     console.log('=== REQUEST BODY PARSING ===');
     const requestBody = await req.json();
     console.log('Raw request body:', requestBody);
@@ -51,7 +75,7 @@ serve(async (req) => {
     console.log('=== CALLING OPENAI API ===');
     
     const openAIRequestBody = {
-      model: 'gpt-4o-mini',
+      model: selectedModel,
       messages: [
         {
           role: 'system',
