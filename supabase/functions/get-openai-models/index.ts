@@ -101,11 +101,11 @@ const selectedModels = data.data
   }))
   .sort((a: any, b: any) => a.id.localeCompare(b.id));
 
-    console.log(`Successfully fetched ${gptModels.length} GPT models from ${data.data.length} total models`);
+    console.log(`Successfully fetched ${selectedModels.length} GPT models from ${data.data.length} total models`);
 
     return new Response(JSON.stringify({
       success: true,
-      models: gptModels,
+      models: selectedModels,
       total_available: data.data.length
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
