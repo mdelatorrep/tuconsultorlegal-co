@@ -41,23 +41,27 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
 
     setIsSearching(true);
     try {
-      // Simulated research - In production, this would call a specialized edge function
-      // that connects to a vector database with Colombian legal documents
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const mockResult: ResearchResult = {
-        query,
-        findings: `Basado en la jurisprudencia colombiana sobre "${query}", se encontraron los siguientes elementos relevantes:\n\n1. **Marco Legal**: El Código de Comercio establece en el artículo 518 las condiciones generales para contratos de arrendamiento comercial.\n\n2. **Jurisprudencia**: La Corte Suprema de Justicia en sentencia del 15 de marzo de 2021 (Rad. 11001-31-03-038-2018-00213-01) estableció criterios específicos sobre terminación por fuerza mayor.\n\n3. **Decretos COVID-19**: El Decreto 579 de 2020 estableció protecciones especiales para arrendatarios comerciales durante la pandemia.\n\n**Conclusión**: Existe precedente favorable para la protección del arrendatario comercial en casos de fuerza mayor debidamente comprobada.`,
-        sources: [
-          "Código de Comercio - Art. 518",
-          "Corte Suprema de Justicia - Rad. 11001-31-03-038-2018-00213-01",
-          "Decreto 579 de 2020",
-          "Concepto DANE sobre fuerza mayor empresarial 2020"
-        ],
-        timestamp: new Date().toISOString()
+      // Call the legal research AI function
+      const { data, error } = await supabase.functions.invoke('legal-research-ai', {
+        body: { query }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (!data.success) {
+        throw new Error(data.error || 'Error en la investigación');
+      }
+
+      const result: ResearchResult = {
+        query: data.query,
+        findings: data.findings,
+        sources: data.sources,
+        timestamp: data.timestamp
       };
 
-      setResults(prev => [mockResult, ...prev]);
+      setResults(prev => [result, ...prev]);
       setQuery("");
       
       toast({
