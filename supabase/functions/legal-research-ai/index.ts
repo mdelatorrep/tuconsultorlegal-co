@@ -5,19 +5,30 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 // Helper function to get system configuration
 async function getSystemConfig(supabaseClient: any, configKey: string, defaultValue?: string): Promise<string> {
   try {
+    console.log(`Fetching config for key: ${configKey}`);
+    
     const { data, error } = await supabaseClient
       .from('system_config')
       .select('config_value')
       .eq('config_key', configKey)
-      .single();
+      .maybeSingle();
 
-    if (error || !data) {
+    console.log(`Config result for ${configKey}:`, { data, error });
+
+    if (error) {
+      console.error(`Error fetching config ${configKey}:`, error);
       return defaultValue || '';
     }
 
+    if (!data) {
+      console.log(`No config found for ${configKey}, using default: ${defaultValue}`);
+      return defaultValue || '';
+    }
+
+    console.log(`Using config ${configKey}: ${data.config_value}`);
     return data.config_value;
   } catch (error) {
-    console.error(`Error fetching config ${configKey}:`, error);
+    console.error(`Exception fetching config ${configKey}:`, error);
     return defaultValue || '';
   }
 }
@@ -34,7 +45,9 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Legal research function called with request method:', req.method);
     const { query } = await req.json();
+    console.log('Received query:', query);
 
     if (!query) {
       return new Response(

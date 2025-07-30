@@ -41,10 +41,14 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
 
     setIsSearching(true);
     try {
+      console.log('Iniciando investigación legal con query:', query);
+      
       // Call the legal research AI function
       const { data, error } = await supabase.functions.invoke('legal-research-ai', {
         body: { query }
       });
+      
+      console.log('Respuesta de legal-research-ai:', { data, error });
 
       if (error) {
         throw error;
