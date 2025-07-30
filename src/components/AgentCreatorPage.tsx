@@ -21,6 +21,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
   const [isProcessing, setIsProcessing] = useState(false);
   const [isImprovingTemplate, setIsImprovingTemplate] = useState(false);
   const [isImprovingDocInfo, setIsImprovingDocInfo] = useState(false);
+  const [isImprovingPrompt, setIsImprovingPrompt] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [isLoadingDrafts, setIsLoadingDrafts] = useState(false);
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
@@ -51,6 +52,13 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
     improvedDescription: "",
     originalName: "",
     originalDescription: "",
+    showImprovement: false,
+    isEditing: false,
+  });
+
+  const [promptImprovement, setPromptImprovement] = useState({
+    improvedPrompt: "",
+    originalPrompt: "",
     showImprovement: false,
     isEditing: false,
   });
@@ -381,6 +389,103 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
     if (stepNumber <= maxStepReached && stepNumber >= 1) {
       setCurrentStep(stepNumber);
     }
+  };
+
+  const improvePromptWithAI = async () => {
+    if (!formData.initialPrompt.trim()) {
+      toast({
+        title: "Prompt requerido",
+        description: "Debes escribir un prompt inicial antes de mejorarlo con IA.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsImprovingPrompt(true);
+    
+    try {
+      console.log('Improving prompt with AI...', {
+        promptLength: formData.initialPrompt.length,
+        targetAudience: formData.targetAudience
+      });
+
+      const { data, error } = await supabase.functions.invoke('improve-prompt-ai', {
+        body: {
+          current_prompt: formData.initialPrompt,
+          target_audience: formData.targetAudience
+        }
+      });
+
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw new Error(error.message || 'Error al mejorar el prompt con IA');
+      }
+
+      if (!data?.improved_prompt) {
+        console.error('AI prompt improvement failed:', data);
+        throw new Error(data?.error || 'Error en la mejora del prompt');
+      }
+
+      console.log('Prompt improvement successful:', {
+        originalLength: data.current_prompt?.length,
+        improvedLength: data.improved_prompt?.length
+      });
+
+      // Show the improvement to the user
+      setPromptImprovement({
+        improvedPrompt: data.improved_prompt,
+        originalPrompt: formData.initialPrompt,
+        showImprovement: true,
+        isEditing: false,
+      });
+
+      setIsImprovingPrompt(false);
+
+      toast({
+        title: "Prompt mejorado exitosamente",
+        description: "Revisa las mejoras sugeridas para el prompt del agente.",
+      });
+
+    } catch (error) {
+      console.error('Error improving prompt with AI:', error);
+      setIsImprovingPrompt(false);
+      
+      toast({
+        title: "Error al mejorar prompt",
+        description: error instanceof Error ? error.message : "No se pudo mejorar el prompt con IA. Intenta nuevamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const acceptPromptImprovement = () => {
+    setFormData(prev => ({
+      ...prev,
+      initialPrompt: promptImprovement.improvedPrompt,
+    }));
+    setPromptImprovement(prev => ({ ...prev, showImprovement: false, isEditing: false }));
+    
+    toast({
+      title: "Mejoras aplicadas",
+      description: "Se actualizó el prompt del agente.",
+    });
+  };
+
+  const rejectPromptImprovement = () => {
+    setPromptImprovement(prev => ({ ...prev, showImprovement: false, isEditing: false }));
+    
+    toast({
+      title: "Mejoras rechazadas",
+      description: "Se mantuvo el prompt original.",
+    });
+  };
+
+  const enableEditingPrompt = () => {
+    setPromptImprovement(prev => ({ ...prev, isEditing: true }));
+  };
+
+  const handlePromptEdit = (value: string) => {
+    setPromptImprovement(prev => ({ ...prev, improvedPrompt: value }));
   };
 
   const processWithAI = async () => {
@@ -863,6 +968,12 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         improvedDescription: "",
         originalName: "",
         originalDescription: "",
+        showImprovement: false,
+        isEditing: false,
+      });
+      setPromptImprovement({
+        improvedPrompt: "",
+        originalPrompt: "",
         showImprovement: false,
         isEditing: false,
       });
@@ -1545,30 +1656,111 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold mb-6">Prompt Inicial para el Agente de IA</h2>
                 
-                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
-                  <h3 className="text-lg font-semibold mb-3 text-blue-800 dark:text-blue-200">📋 Guía para el Prompt</h3>
-                  <div className="space-y-2 text-sm text-blue-700 dark:text-blue-300">
-                    <p><strong>✅ Incluye:</strong></p>
-                    <ul className="list-disc list-inside ml-4 space-y-1">
-                      <li>Rol específico del agente (ej: "asistente legal especializado en...")</li>
-                      <li>Objetivo claro del documento</li>
-                      <li>Información que debe recopilar del usuario</li>
-                      <li>Tono de conversación (profesional, amigable, etc.)</li>
-                      <li>Validaciones especiales (si aplica)</li>
-                    </ul>
-                    <p className="pt-2"><strong>❌ Evita:</strong></p>
-                    <ul className="list-disc list-inside ml-4 space-y-1">
-                      <li>Instrucciones técnicas complejas</li>
-                      <li>Referencias a herramientas específicas</li>
-                      <li>Detalles de formato del documento final</li>
-                    </ul>
+                {/* Loading state while improving with AI */}
+                {isImprovingPrompt && (
+                  <div className="text-center py-12">
+                    <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
+                    <p className="text-lg">Mejorando prompt con IA...</p>
+                    <p className="text-muted-foreground">Esto puede tomar unos segundos</p>
                   </div>
-                </div>
+                )}
+                
+                {/* Show AI improvements */}
+                {promptImprovement.showImprovement && (
+                  <div className="space-y-6">
+                    <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-6">
+                      <h3 className="text-lg font-semibold mb-4 text-green-800 dark:text-green-200">
+                        ✨ Prompt Mejorado por IA
+                      </h3>
+                      
+                      <div className="space-y-4">
+                        <Label className="text-sm font-medium">Prompt del Agente</Label>
+                        {promptImprovement.isEditing ? (
+                          <div className="space-y-2">
+                            <p className="text-xs text-emerald-600 dark:text-emerald-400">Editando mejora:</p>
+                            <Textarea
+                              value={promptImprovement.improvedPrompt}
+                              onChange={(e) => handlePromptEdit(e.target.value)}
+                              className="border-emerald-200 dark:border-emerald-800 focus:border-emerald-300 dark:focus:border-emerald-700"
+                              placeholder="Edita el prompt mejorado"
+                              rows={12}
+                            />
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 gap-4">
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Original:</p>
+                              <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded border text-sm max-h-40 overflow-y-auto">
+                                <pre className="whitespace-pre-wrap">{promptImprovement.originalPrompt}</pre>
+                              </div>
+                            </div>
+                            <div>
+                              <p className="text-xs text-emerald-600 dark:text-emerald-400 mb-1">Mejorado:</p>
+                              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/50 rounded border border-emerald-200 dark:border-emerald-800 text-sm max-h-60 overflow-y-auto">
+                                <pre className="whitespace-pre-wrap">{promptImprovement.improvedPrompt}</pre>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className={`${isMobile ? 'flex flex-col space-y-3' : 'flex justify-end gap-3'} mt-6`}>
+                        <Button 
+                          variant="outline" 
+                          onClick={rejectPromptImprovement}
+                          className={isMobile ? "w-full" : ""}
+                        >
+                          Mantener Original
+                        </Button>
+                        {!promptImprovement.isEditing && (
+                          <Button 
+                            variant="outline" 
+                            onClick={enableEditingPrompt}
+                            className={`text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-950/20 ${isMobile ? "w-full" : ""}`}
+                          >
+                            <Wand2 className="h-4 w-4 mr-2" />
+                            Editar Mejoras
+                          </Button>
+                        )}
+                        <Button 
+                          onClick={acceptPromptImprovement}
+                          className={`bg-emerald-600 hover:bg-emerald-700 ${isMobile ? "w-full" : ""}`}
+                        >
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          {promptImprovement.isEditing ? 'Aplicar Cambios' : 'Aplicar Mejoras'}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-                <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6">
-                  <h3 className="text-lg font-semibold mb-3">💡 Ejemplo de Prompt Efectivo</h3>
-                  <div className="bg-white dark:bg-gray-800 border rounded p-4 text-sm">
-                    <pre className="whitespace-pre-wrap font-mono text-gray-700 dark:text-gray-300">
+                {/* Regular form fields */}
+                {!isImprovingPrompt && !promptImprovement.showImprovement && (
+                  <div className="space-y-6">
+                    <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
+                      <h3 className="text-lg font-semibold mb-3 text-blue-800 dark:text-blue-200">📋 Guía para el Prompt</h3>
+                      <div className="space-y-2 text-sm text-blue-700 dark:text-blue-300">
+                        <p><strong>✅ Incluye:</strong></p>
+                        <ul className="list-disc list-inside ml-4 space-y-1">
+                          <li>Rol específico del agente (ej: "asistente legal especializado en...")</li>
+                          <li>Objetivo claro del documento</li>
+                          <li>Información que debe recopilar del usuario</li>
+                          <li>Tono de conversación (profesional, amigable, etc.)</li>
+                          <li>Validaciones especiales (si aplica)</li>
+                        </ul>
+                        <p className="pt-2"><strong>❌ Evita:</strong></p>
+                        <ul className="list-disc list-inside ml-4 space-y-1">
+                          <li>Instrucciones técnicas complejas</li>
+                          <li>Referencias a herramientas específicas</li>
+                          <li>Detalles de formato del documento final</li>
+                        </ul>
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6">
+                      <h3 className="text-lg font-semibold mb-3">💡 Ejemplo de Prompt Efectivo</h3>
+                      <div className="bg-white dark:bg-gray-800 border rounded p-4 text-sm">
+                        <pre className="whitespace-pre-wrap font-mono text-gray-700 dark:text-gray-300">
 {`Eres un asistente legal especializado en contratos de arrendamiento residencial en Colombia.
 
 TU OBJETIVO: Ayudar a propietarios e inquilinos a crear un contrato de arrendamiento completo y legalmente válido.
@@ -1592,38 +1784,67 @@ VALIDACIONES:
 - Asegúrate de que las cédulas tengan formato válido
 - Confirma que las fechas sean coherentes
 - Verifica que los montos estén en pesos colombianos`}
-                    </pre>
+                        </pre>
+                      </div>
+                    </div>
+
+                    <p className="text-muted-foreground mb-4">
+                      <strong>Instrucción:</strong> Escribe tu prompt inicial siguiendo la guía anterior. Puedes usar el botón "Mejorar con IA" para optimizarlo antes de continuar.
+                    </p>
+                    
+                    <div className="flex gap-2 mb-4">
+                      <Textarea
+                        value={formData.initialPrompt}
+                        onChange={(e) => handleInputChange('initialPrompt', e.target.value)}
+                        placeholder="Escribe aquí tu prompt inicial siguiendo la guía anterior..."
+                        rows={12}
+                        className="text-sm flex-1"
+                      />
+                    </div>
+
+                    {formData.initialPrompt && (
+                      <div className="mb-4">
+                        <Button 
+                          onClick={improvePromptWithAI}
+                          disabled={isImprovingPrompt}
+                          className="bg-purple-600 hover:bg-purple-700 text-white"
+                        >
+                          {isImprovingPrompt ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <Wand2 className="h-4 w-4 mr-2" />
+                          )}
+                          {isImprovingPrompt ? 'Mejorando...' : 'Mejorar con IA'}
+                        </Button>
+                      </div>
+                    )}
+
+                    {formData.initialPrompt && (
+                      <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4 mb-4">
+                        <p className="text-sm text-purple-700 dark:text-purple-300">
+                          <strong>💡 Mejora con IA:</strong> Usa el botón "Mejorar con IA" para que nuestra IA optimice tu prompt con estructura profesional, mejores prácticas de recopilación de información y validaciones específicas para Colombia.
+                        </p>
+                      </div>
+                    )}
+                    
+                    <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                      <p className="text-sm text-amber-700 dark:text-amber-300">
+                        <strong>💡 Tip:</strong> Un buen prompt inicial puede ahorrar tiempo en ajustes posteriores. 
+                        La IA mejorará tu prompt pero una base sólida produce mejores resultados.
+                      </p>
+                    </div>
+
+                    <div className={`${isMobile ? 'flex flex-col space-y-3' : 'flex justify-between'}`}>
+                      <Button variant="outline" onClick={handlePrev} className={isMobile ? "w-full" : ""}>
+                        <ArrowLeft className="h-4 w-4 mr-2" /> Anterior
+                      </Button>
+                      <Button onClick={processWithAI} className={`bg-emerald-600 hover:bg-emerald-700 ${isMobile ? "w-full" : ""}`}>
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Procesar con IA
+                      </Button>
+                    </div>
                   </div>
-                </div>
-
-                <p className="text-muted-foreground mb-4">
-                  <strong>Instrucción:</strong> Escribe tu prompt inicial siguiendo la guía anterior. Nuestra IA lo optimizará automáticamente con estructura profesional y mejores prácticas.
-                </p>
-                
-                <Textarea
-                  value={formData.initialPrompt}
-                  onChange={(e) => handleInputChange('initialPrompt', e.target.value)}
-                  placeholder="Escribe aquí tu prompt inicial siguiendo la guía anterior..."
-                  rows={12}
-                  className="text-sm"
-                />
-                
-                <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
-                  <p className="text-sm text-amber-700 dark:text-amber-300">
-                    <strong>💡 Tip:</strong> Un buen prompt inicial puede ahorrar tiempo en ajustes posteriores. 
-                    La IA mejorará tu prompt pero una base sólida produce mejores resultados.
-                  </p>
-                </div>
-
-                <div className={`${isMobile ? 'flex flex-col space-y-3' : 'flex justify-between'}`}>
-                  <Button variant="outline" onClick={handlePrev} className={isMobile ? "w-full" : ""}>
-                    <ArrowLeft className="h-4 w-4 mr-2" /> Anterior
-                  </Button>
-                  <Button onClick={processWithAI} className={`bg-emerald-600 hover:bg-emerald-700 ${isMobile ? "w-full" : ""}`}>
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Procesar con IA
-                  </Button>
-                </div>
+                )}
               </div>
             )}
 
