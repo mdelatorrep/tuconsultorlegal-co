@@ -494,7 +494,7 @@ export default function SystemConfigManager() {
               <div>
                 <Label htmlFor="config_value">
                   Valor
-                  {(configForm.config_key.includes('model') && (configForm.config_key.includes('ai') || configForm.config_key.includes('openai'))) && (
+                  {(configForm.config_key.includes('model') || configForm.config_key.endsWith('_model')) && (
                     <Button
                       type="button"
                       variant="ghost"
@@ -513,7 +513,7 @@ export default function SystemConfigManager() {
                   )}
                 </Label>
                 
-                {(configForm.config_key.includes('model') && (configForm.config_key.includes('ai') || configForm.config_key.includes('openai'))) ? (
+                {(configForm.config_key.includes('model') || configForm.config_key.endsWith('_model')) ? (
                   <Select
                     value={configForm.config_value}
                     onValueChange={(value) => setConfigForm({ ...configForm, config_value: value })}
