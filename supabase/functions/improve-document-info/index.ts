@@ -7,51 +7,44 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log('=== IMPROVE-DOCUMENT-INFO FUNCTION STARTED ===');
+  console.log('Request method:', req.method);
+  console.log('Request URL:', req.url);
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('Handling CORS preflight request');
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log('=== IMPROVE-DOCUMENT-INFO FUNCTION START ===');
+    console.log('Processing improve-document-info request...');
     
+    // Get environment variables
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    
+    console.log('Environment check:', {
+      hasOpenAIKey: !!openAIApiKey,
+      hasSupabaseKey: !!supabaseServiceKey,
+      hasSupabaseUrl: !!supabaseUrl
+    });
+    
     if (!openAIApiKey) {
       console.error('OpenAI API key not configured');
       throw new Error('OpenAI API key not configured');
     }
 
-    // Initialize Supabase client to get system configuration
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    
     if (!supabaseServiceKey || !supabaseUrl) {
+      console.error('Missing Supabase configuration');
       throw new Error('Missing Supabase configuration');
     }
 
-    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.50.3');
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Get configured OpenAI model and prompt for document description optimization
-    const { data: configData, error: configError } = await supabase
-      .from('system_config')
-      .select('config_key, config_value')
-      .in('config_key', ['document_description_optimizer_model', 'document_description_optimizer_prompt']);
-
-    let selectedModel = 'gpt-4.1-2025-04-14';
-    let customSystemPrompt = null;
-    
-    if (!configError && configData) {
-      const modelConfig = configData.find(c => c.config_key === 'document_description_optimizer_model');
-      const promptConfig = configData.find(c => c.config_key === 'document_description_optimizer_prompt');
-      
-      if (modelConfig?.config_value) selectedModel = modelConfig.config_value;
-      if (promptConfig?.config_value) customSystemPrompt = promptConfig.config_value;
-    }
-
-    console.log('=== REQUEST BODY PARSING ===');
+    // Parse request body
+    console.log('Reading request body...');
     const requestBody = await req.json();
-    console.log('Raw request body:', requestBody);
+    console.log('Request body received:', requestBody);
     
     const { docName, docDesc, docCategory, targetAudience } = requestBody;
 
@@ -62,8 +55,9 @@ serve(async (req) => {
       targetAudience: targetAudience || 'MISSING'
     });
 
+    // Validate required fields
     if (!docName || !docDesc) {
-      console.log('=== VALIDATION FAILED ===');
+      console.log('Validation failed - missing required fields');
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -76,8 +70,34 @@ serve(async (req) => {
       );
     }
 
-    console.log('=== CALLING OPENAI API ===');
+    // Initialize Supabase client
+    console.log('Initializing Supabase client...');
+    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.50.3');
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Get system configuration
+    console.log('Fetching system configuration...');
+    const { data: configData, error: configError } = await supabase
+      .from('system_config')
+      .select('config_key, config_value')
+      .in('config_key', ['document_description_optimizer_model', 'document_description_optimizer_prompt']);
+
+    console.log('Config fetch result:', { configData, configError });
+
+    let selectedModel = 'gpt-4.1-2025-04-14';
+    let customSystemPrompt = null;
     
+    if (!configError && configData) {
+      const modelConfig = configData.find(c => c.config_key === 'document_description_optimizer_model');
+      const promptConfig = configData.find(c => c.config_key === 'document_description_optimizer_prompt');
+      
+      if (modelConfig?.config_value) selectedModel = modelConfig.config_value;
+      if (promptConfig?.config_value) customSystemPrompt = promptConfig.config_value;
+    }
+
+    console.log('Using configuration:', { selectedModel, hasCustomPrompt: !!customSystemPrompt });
+
+    // Prepare OpenAI request
     const openAIRequestBody = {
       model: selectedModel,
       messages: [
@@ -119,7 +139,7 @@ Mejora el nombre y descripción para que sean más atractivos y comprensibles pa
       max_tokens: 500,
     };
 
-    console.log('Making OpenAI request...');
+    console.log('Making OpenAI API request...');
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -138,7 +158,7 @@ Mejora el nombre y descripción para que sean más atractivos y comprensibles pa
     }
 
     const data = await response.json();
-    console.log('OpenAI response data:', data);
+    console.log('OpenAI response received');
     
     if (!data.choices || !data.choices[0] || !data.choices[0].message) {
       console.error('Invalid OpenAI response structure:', data);
@@ -181,21 +201,20 @@ Mejora el nombre y descripción para que sean más atractivos y comprensibles pa
       };
     }
 
-    console.log('Document info improvement successful:', {
-      originalName: docName,
+    console.log('Document info improvement successful');
+
+    const finalResponse = {
+      success: true, 
       improvedName: improvedInfo.improvedName,
-      originalDesc: docDesc,
-      improvedDesc: improvedInfo.improvedDescription
-    });
+      improvedDescription: improvedInfo.improvedDescription,
+      originalName: docName,
+      originalDescription: docDesc
+    };
+    
+    console.log('Sending final response:', finalResponse);
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        improvedName: improvedInfo.improvedName,
-        improvedDescription: improvedInfo.improvedDescription,
-        originalName: docName,
-        originalDescription: docDesc
-      }),
+      JSON.stringify(finalResponse),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
