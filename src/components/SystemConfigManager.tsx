@@ -220,7 +220,7 @@ export default function SystemConfigManager() {
 
   useEffect(() => {
     loadConfigs();
-    loadOpenAIModels();
+    // No cargar modelos automáticamente - solo por demanda del admin
   }, []);
 
   const loadConfigs = async () => {
@@ -513,19 +513,19 @@ export default function SystemConfigManager() {
                     <SelectTrigger>
                       <SelectValue placeholder="Selecciona un modelo de OpenAI" />
                     </SelectTrigger>
-                    <SelectContent>
-                      {openaiModels.length > 0 ? (
-                        openaiModels.map((model) => (
-                          <SelectItem key={model} value={model}>
-                            {model}
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="no-models-available" disabled>
-                          {loadingModels ? 'Cargando modelos...' : 'No hay modelos disponibles'}
-                        </SelectItem>
-                      )}
-                    </SelectContent>
+                     <SelectContent>
+                       {openaiModels.length > 0 ? (
+                         openaiModels.map((model) => (
+                           <SelectItem key={model} value={model}>
+                             {model}
+                           </SelectItem>
+                         ))
+                       ) : (
+                         <SelectItem value="no-models-loaded" disabled>
+                           {loadingModels ? 'Cargando modelos...' : 'Haz clic en "Actualizar modelos" para cargar'}
+                         </SelectItem>
+                       )}
+                     </SelectContent>
                   </Select>
                 ) : configForm.config_key.includes('prompt') || configForm.config_key.includes('system') ? (
                   <Textarea
