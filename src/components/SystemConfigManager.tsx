@@ -250,7 +250,9 @@ export default function SystemConfigManager() {
       setLoadingModels(true);
       console.log('Attempting to load OpenAI models...');
       
-      const { data, error } = await supabase.functions.invoke('get-openai-models');
+      const { data, error } = await supabase.functions.invoke('get-openai-models', {
+        method: 'GET'
+      });
       
       console.log('Response from get-openai-models:', { data, error });
       
