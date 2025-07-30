@@ -109,9 +109,13 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
         .from('legal_agents')
         .select('*')
         .eq('id', agentId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      if (!data) {
+        toast.error('Agente no encontrado');
+        return;
+      }
       setAgent(data);
       
       // Only add initial message if there are no existing messages
@@ -224,7 +228,7 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
           .select('openai_agent_id')
           .eq('legal_agent_id', agentId)
           .eq('status', 'active')
-          .single();
+          .maybeSingle();
 
         if (agentError || !openaiAgent) {
           // Fallback to original chat system if no OpenAI agent exists

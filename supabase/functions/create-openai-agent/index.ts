@@ -99,57 +99,64 @@ serve(async (req) => {
           {
             type: "function",
             function: {
-              name: "collect_document_information",
-              description: "Collect and structure information needed for the legal document",
+              name: "generate_document",
+              description: "Generate the legal document when all required information has been collected",
               parameters: {
                 type: "object",
                 properties: {
-                  collected_data: {
+                  documentData: {
                     type: "object",
-                    description: "Structured data collected from conversation"
+                    description: "All collected and validated data for the document"
                   },
-                  completion_percentage: {
-                    type: "number",
-                    description: "Percentage of required information collected (0-100)"
-                  },
-                  missing_fields: {
-                    type: "array",
-                    items: { type: "string" },
-                    description: "List of missing required fields"
-                  },
-                  ready_to_generate: {
-                    type: "boolean",
-                    description: "Whether enough information has been collected to generate the document"
+                  userRequests: {
+                    type: "string",
+                    description: "Any specific user requests or modifications"
                   }
                 },
-                required: ["collected_data", "completion_percentage", "ready_to_generate"]
+                required: ["documentData"]
               }
             }
           },
           {
             type: "function", 
             function: {
-              name: "validate_document_data",
-              description: "Validate collected data against document requirements",
+              name: "validate_information",
+              description: "Validate if all required information has been collected",
               parameters: {
                 type: "object",
                 properties: {
-                  validation_results: {
+                  collectedData: {
                     type: "object",
-                    description: "Results of data validation"
+                    description: "Data collected so far from the conversation"
                   },
-                  errors: {
+                  missingFields: {
                     type: "array",
                     items: { type: "string" },
-                    description: "List of validation errors"
-                  },
-                  warnings: {
-                    type: "array", 
-                    items: { type: "string" },
-                    description: "List of validation warnings"
+                    description: "List of still missing required fields"
                   }
                 },
-                required: ["validation_results"]
+                required: ["collectedData"]
+              }
+            }
+          },
+          {
+            type: "function",
+            function: {
+              name: "request_clarification",
+              description: "Request clarification or additional information from the user",
+              parameters: {
+                type: "object",
+                properties: {
+                  field: {
+                    type: "string",
+                    description: "The field that needs clarification"
+                  },
+                  question: {
+                    type: "string", 
+                    description: "The specific question to ask the user"
+                  }
+                },
+                required: ["field", "question"]
               }
             }
           }
@@ -316,8 +323,9 @@ PROTOCOLO DE TRABAJO:
 6. **FINALIZACIÓN**: Cuando tengas toda la información, confirma que está listo para generar
 
 REGLAS IMPORTANTES:
-- Usa la función collect_document_information para estructurar los datos recopilados
-- Usa validate_document_data para verificar la completitud de la información
+- Usa la función validate_information para verificar la completitud de la información recopilada
+- Usa request_clarification cuando necesites información adicional específica
+- Usa generate_document SOLO cuando toda la información esté completa y validada
 - Mantén un tono profesional pero amigable
 - ${legalAgent.target_audience === 'empresas' ? 'Usa terminología empresarial apropiada (razón social, NIT, representante legal)' : 'Usa lenguaje claro y accesible para personas naturales'}
 - Explica términos legales cuando sea necesario

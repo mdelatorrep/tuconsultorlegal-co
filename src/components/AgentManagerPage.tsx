@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import OpenAIAgentDebug from "./OpenAIAgentDebug";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -924,6 +925,9 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
             
             {selectedAgent && (
               <div className="space-y-6">
+                {/* OpenAI Agent Debug Component */}
+                <OpenAIAgentDebug legalAgentId={selectedAgent.id} />
+                
                 <div>
                   <h4 className="font-semibold mb-2">Descripción</h4>
                   <p className="text-sm text-muted-foreground">{selectedAgent.description}</p>

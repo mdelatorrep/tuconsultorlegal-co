@@ -28,7 +28,7 @@ serve(async (req) => {
       .select('*, legal_agents(*)')
       .eq('openai_agent_id', agentId)
       .eq('status', 'active')
-      .single();
+      .maybeSingle();
 
     if (agentError || !openaiAgent) {
       throw new Error('OpenAI agent not found');
