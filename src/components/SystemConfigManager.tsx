@@ -252,15 +252,36 @@ export default function SystemConfigManager() {
       
       if (error) {
         console.error('Error loading OpenAI models:', error);
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar los modelos de OpenAI: " + (error.message || 'Error desconocido'),
+          variant: "destructive"
+        });
         return;
       }
 
       if (data?.success && data?.models) {
         const modelIds = data.models.map((model: any) => model.id);
         setOpenaiModels(modelIds);
+        toast({
+          title: "Éxito",
+          description: `Se cargaron ${modelIds.length} modelos de OpenAI`
+        });
+      } else {
+        console.error('Invalid response from get-openai-models:', data);
+        toast({
+          title: "Error",
+          description: data?.error || "No se pudieron cargar los modelos de OpenAI",
+          variant: "destructive"
+        });
       }
     } catch (error: any) {
       console.error('Error loading OpenAI models:', error);
+      toast({
+        title: "Error",
+        description: "Error al cargar modelos: " + (error.message || 'Error desconocido'),
+        variant: "destructive"
+      });
     } finally {
       setLoadingModels(false);
     }
@@ -465,7 +486,7 @@ export default function SystemConfigManager() {
               <div>
                 <Label htmlFor="config_value">
                   Valor
-                  {(configForm.config_key.includes('model') && configForm.config_key.includes('ai')) && (
+                  {(configForm.config_key.includes('model') && (configForm.config_key.includes('ai') || configForm.config_key.includes('openai'))) && (
                     <Button
                       type="button"
                       variant="ghost"
@@ -484,7 +505,7 @@ export default function SystemConfigManager() {
                   )}
                 </Label>
                 
-                {(configForm.config_key.includes('model') && configForm.config_key.includes('ai')) ? (
+                {(configForm.config_key.includes('model') && (configForm.config_key.includes('ai') || configForm.config_key.includes('openai'))) ? (
                   <Select
                     value={configForm.config_value}
                     onValueChange={(value) => setConfigForm({ ...configForm, config_value: value })}
