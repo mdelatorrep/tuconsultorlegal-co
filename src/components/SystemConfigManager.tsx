@@ -248,13 +248,17 @@ export default function SystemConfigManager() {
   const loadOpenAIModels = async () => {
     try {
       setLoadingModels(true);
+      console.log('Attempting to load OpenAI models...');
+      
       const { data, error } = await supabase.functions.invoke('get-openai-models');
       
+      console.log('Response from get-openai-models:', { data, error });
+      
       if (error) {
-        console.error('Error loading OpenAI models:', error);
+        console.error('Supabase function error:', error);
         toast({
-          title: "Error",
-          description: "No se pudieron cargar los modelos de OpenAI: " + (error.message || 'Error desconocido'),
+          title: "Error de configuración",
+          description: "La API key de OpenAI no está configurada en el servidor. Contacta al administrador del sistema.",
           variant: "destructive"
         });
         return;
@@ -263,23 +267,25 @@ export default function SystemConfigManager() {
       if (data?.success && data?.models) {
         const modelIds = data.models.map((model: any) => model.id);
         setOpenaiModels(modelIds);
+        console.log(`Loaded ${modelIds.length} models:`, modelIds);
         toast({
           title: "Éxito",
           description: `Se cargaron ${modelIds.length} modelos de OpenAI`
         });
       } else {
         console.error('Invalid response from get-openai-models:', data);
+        const errorMessage = data?.error || "Error desconocido al cargar modelos";
         toast({
           title: "Error",
-          description: data?.error || "No se pudieron cargar los modelos de OpenAI",
+          description: errorMessage,
           variant: "destructive"
         });
       }
     } catch (error: any) {
-      console.error('Error loading OpenAI models:', error);
+      console.error('Unexpected error loading OpenAI models:', error);
       toast({
-        title: "Error",
-        description: "Error al cargar modelos: " + (error.message || 'Error desconocido'),
+        title: "Error de conexión",
+        description: "Error al conectar con el servidor. Verifica tu conexión e intenta nuevamente.",
         variant: "destructive"
       });
     } finally {
