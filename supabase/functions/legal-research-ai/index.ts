@@ -1,7 +1,26 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { getSystemConfig } from '../system-config-helper/index.ts';
+
+// Helper function to get system configuration
+async function getSystemConfig(supabaseClient: any, configKey: string, defaultValue?: string): Promise<string> {
+  try {
+    const { data, error } = await supabaseClient
+      .from('system_config')
+      .select('config_value')
+      .eq('config_key', configKey)
+      .single();
+
+    if (error || !data) {
+      return defaultValue || '';
+    }
+
+    return data.config_value;
+  } catch (error) {
+    console.error(`Error fetching config ${configKey}:`, error);
+    return defaultValue || '';
+  }
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
