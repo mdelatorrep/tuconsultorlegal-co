@@ -587,13 +587,22 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         setTimeout(() => reject(new Error('Timeout: La mejora de IA tomó demasiado tiempo')), 30000)
       );
       
+      console.log('Calling improve-document-info function...');
+      
       const functionPromise = supabase.functions.invoke('improve-document-info', {
         body: requestBody
       });
       
+      console.log('Function promise created, awaiting response...');
+      
       const { data, error } = await Promise.race([functionPromise, timeoutPromise]) as any;
 
-      console.log('Supabase function response:', { data, error });
+      console.log('=== SUPABASE FUNCTION RESPONSE ===');
+      console.log('Raw response data:', data);
+      console.log('Raw response error:', error);
+      console.log('Response type of data:', typeof data);
+      console.log('Response type of error:', typeof error);
+      console.log('====================================');
 
       if (error) {
         console.error('Supabase function error:', error);
