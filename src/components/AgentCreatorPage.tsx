@@ -581,7 +581,18 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
   };
 
   const improveTemplateWithAI = async () => {
+    console.log('🚀 improveTemplateWithAI INICIADO');
+    console.log('📝 Datos del formulario:', {
+      hasTemplate: !!formData.docTemplate,
+      templateLength: formData.docTemplate?.length || 0,
+      hasDocName: !!formData.docName,
+      docName: formData.docName,
+      docCategory: formData.docCat,
+      targetAudience: formData.targetAudience
+    });
+    
     if (!formData.docTemplate.trim()) {
+      console.log('❌ Validación fallida: plantilla vacía');
       toast({
         title: "Plantilla requerida",
         description: "Debes escribir una plantilla antes de mejorarla con IA.",
@@ -590,54 +601,75 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       return;
     }
 
+    console.log('⏳ Estableciendo estado de mejora a true');
     setIsImprovingTemplate(true);
     
     try {
-      console.log('Improving template with AI...', {
-        templateLength: formData.docTemplate.length,
+      console.log('📡 Preparando llamada a supabase function...');
+      const requestBody = {
+        templateContent: formData.docTemplate,
         docName: formData.docName,
-        docCategory: formData.docCat
+        docCategory: formData.docCat,
+        docDescription: formData.docDesc,
+        targetAudience: formData.targetAudience
+      };
+      
+      console.log('📦 Cuerpo de la petición:', requestBody);
+      console.log('🔄 Invocando improve-template-ai...');
+      
+      const { data, error } = await supabase.functions.invoke('improve-template-ai', {
+        body: requestBody
       });
 
-      const { data, error } = await supabase.functions.invoke('improve-template-ai', {
-        body: {
-          templateContent: formData.docTemplate,
-          docName: formData.docName,
-          docCategory: formData.docCat,
-          docDescription: formData.docDesc,
-          targetAudience: formData.targetAudience
-        }
-      });
+      console.log('📥 Respuesta recibida:', { data, error });
 
       if (error) {
-        console.error('Supabase function error:', error);
+        console.error('❌ Error de la función Supabase:', error);
         throw new Error(error.message || 'Error al mejorar la plantilla con IA');
       }
 
-      if (!data?.success) {
-        console.error('AI template improvement failed:', data);
-        throw new Error(data?.error || 'Error en la mejora de la plantilla');
+      if (!data) {
+        console.error('❌ No se recibió data en la respuesta');
+        throw new Error('No se recibió respuesta del servidor');
       }
 
-      console.log('Template improvement successful:', {
+      if (!data.success) {
+        console.error('❌ La función reportó fallo:', data);
+        throw new Error(data.error || 'Error en la mejora de la plantilla');
+      }
+
+      console.log('✅ Mejora exitosa:', {
         originalLength: data.originalLength,
-        improvedLength: data.improvedLength
+        improvedLength: data.improvedLength,
+        modelUsed: data.modelUsed
       });
 
-      // Update the template with the improved version
+      console.log('📝 Actualizando formulario con plantilla mejorada...');
       setFormData(prev => ({ ...prev, docTemplate: data.improvedTemplate }));
 
+      console.log('⏳ Estableciendo estado de mejora a false');
       setIsImprovingTemplate(false);
 
+      console.log('📢 Mostrando toast de éxito');
       toast({
         title: "Plantilla mejorada exitosamente",
         description: `Se mejoró la plantilla de ${data.originalLength} a ${data.improvedLength} caracteres.`,
       });
 
+      console.log('🎉 Proceso completado exitosamente');
+
     } catch (error) {
-      console.error('Error improving template with AI:', error);
+      console.error('💥 Error capturado en catch:', error);
+      console.error('📋 Detalles del error:', {
+        message: error instanceof Error ? error.message : 'Error desconocido',
+        stack: error instanceof Error ? error.stack : 'No stack',
+        type: typeof error
+      });
+      
+      console.log('⏳ Estableciendo estado de mejora a false por error');
       setIsImprovingTemplate(false);
       
+      console.log('📢 Mostrando toast de error');
       toast({
         title: "Error al mejorar plantilla",
         description: error instanceof Error ? error.message : "No se pudo mejorar la plantilla con IA. Intenta nuevamente.",
