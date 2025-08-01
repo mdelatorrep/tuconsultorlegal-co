@@ -1869,15 +1869,15 @@ VALIDACIONES:
                  </p>
                   <Button 
                     onClick={() => {
-                      console.log('Button clicked! LawyerData permissions:', lawyerData?.can_create_agents);
-                      console.log('Button disabled?', !lawyerData?.can_create_agents);
+                      console.log('Button clicked! LawyerData permissions:', lawyerData?.canCreateAgents);
+                      console.log('Button disabled?', !lawyerData?.canCreateAgents);
                       handlePublish();
                     }} 
                     size={isMobile ? "default" : "lg"} 
                     className={`${isMobile ? "w-full text-base px-6 py-3" : "text-xl px-10 py-4"}`}
-                     disabled={!lawyerData?.can_create_agents}
+                     disabled={!lawyerData?.canCreateAgents}
                    >
-                     {!lawyerData?.can_create_agents ? 'Requiere Permisos de Admin' : 'Enviar a Revisión'}
+                     {!lawyerData?.canCreateAgents ? 'Requiere Permisos de Admin' : 'Enviar a Revisión'}
                   </Button>
               </div>
             )}
