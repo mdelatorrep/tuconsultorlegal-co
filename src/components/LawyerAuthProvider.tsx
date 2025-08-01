@@ -13,6 +13,7 @@ interface LawyerAuthContextType {
   logout: () => Promise<void>;
   checkAuthStatus: () => Promise<void>;
   getAuthHeaders: () => Record<string, string>;
+  refreshUserPermissions: () => Promise<void>;
 }
 
 const LawyerAuthContext = createContext<LawyerAuthContextType | undefined>(undefined);

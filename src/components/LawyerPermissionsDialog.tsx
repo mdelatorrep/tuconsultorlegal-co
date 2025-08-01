@@ -8,6 +8,7 @@ import { Bot, BookOpen, BarChart3, Save, X, Brain } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useLawyerAuthContext } from './LawyerAuthProvider';
 
 interface LawyerPermissions {
   can_create_agents: boolean;
@@ -47,6 +48,7 @@ export default function LawyerPermissionsDialog({
   });
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { refreshUserPermissions } = useLawyerAuthContext();
 
   // Initialize permissions when lawyer changes
   useEffect(() => {
@@ -115,6 +117,12 @@ export default function LawyerPermissionsDialog({
 
       // Actualizar la lista de abogados
       onPermissionsUpdated();
+      
+      // Refrescar permisos del usuario actual si es el mismo que se está editando
+      if (lawyer.id) {
+        await refreshUserPermissions();
+      }
+      
       onClose();
       
     } catch (error) {

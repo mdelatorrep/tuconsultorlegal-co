@@ -19,13 +19,6 @@ interface AgentCreatorPageProps {
 export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPageProps) {
   console.log('=== AGENT CREATOR PAGE LOADED ===');
   console.log('=== LAWYER DATA DEBUG ===');
-  console.log('LawyerData received as prop:', lawyerData);
-  console.log('LawyerData type:', typeof lawyerData);
-  console.log('LawyerData canCreateAgents:', lawyerData?.canCreateAgents);
-  console.log('LawyerData keys:', lawyerData ? Object.keys(lawyerData) : 'no data');
-  console.log('LawyerData received:', lawyerData);
-  console.log('canCreateAgents (camelCase):', lawyerData?.canCreateAgents);
-  console.log('can_create_agents (snake_case):', lawyerData?.can_create_agents);
   const [currentStep, setCurrentStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isImprovingTemplate, setIsImprovingTemplate] = useState(false);
@@ -444,7 +437,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         templateLength: formData.docTemplate.length,
         promptLength: formData.initialPrompt.length,
         lawyerData: lawyerData, // Add this to debug
-        hasPermissions: !!lawyerData?.canCreateAgents // Add this to debug
+        hasPermissions: !!lawyerData?.canCreateAgents
       });
 
       // AI processing doesn't require special permissions, only basic authentication
@@ -1869,15 +1862,6 @@ VALIDACIONES:
             {/* Step 5: Publish */}
             {currentStep === 5 && (
               <div className="text-center py-12">
-                {(() => {
-                  console.log('=== RENDERING STEP 5 ===', {
-                    currentStep,
-                    lawyerData,
-                    canCreateAgents: lawyerData?.canCreateAgents,
-                    buttonDisabled: !lawyerData?.canCreateAgents
-                  });
-                  return null;
-                })()}
                 <CheckCircle className="mx-auto h-24 w-24 text-success mb-6" />
                 <h2 className="text-3xl font-bold mb-4">¡Todo Listo!</h2>
                  <p className="text-muted-foreground mb-8 max-w-lg mx-auto">

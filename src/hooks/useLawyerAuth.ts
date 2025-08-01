@@ -301,6 +301,13 @@ export const useLawyerAuth = () => {
     return session?.access_token ? { 'authorization': `Bearer ${session.access_token}` } : {};
   };
 
+  const refreshUserPermissions = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      await fetchLawyerProfile(session.user);
+    }
+  };
+
   return {
     isAuthenticated,
     isLoading,
@@ -312,6 +319,7 @@ export const useLawyerAuth = () => {
     updatePassword,
     logout,
     checkAuthStatus,
-    getAuthHeaders
+    getAuthHeaders,
+    refreshUserPermissions
   };
 };
