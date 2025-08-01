@@ -582,6 +582,13 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
 
   const improveTemplateWithAI = async () => {
     console.log('🚀 improveTemplateWithAI INICIADO');
+    
+    // Protección adicional para evitar múltiples ejecuciones
+    if (isImprovingTemplate) {
+      console.log('⚠️ Función ya en ejecución, saliendo...');
+      return;
+    }
+    
     console.log('📝 Datos del formulario:', {
       hasTemplate: !!formData.docTemplate,
       templateLength: formData.docTemplate?.length || 0,
@@ -604,6 +611,17 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
     console.log('⏳ Estableciendo estado de mejora a true');
     setIsImprovingTemplate(true);
     
+    // Timeout de seguridad para evitar que se quede colgado
+    const timeoutId = setTimeout(() => {
+      console.log('⏰ TIMEOUT: Función tomó demasiado tiempo, reseteando estado');
+      setIsImprovingTemplate(false);
+      toast({
+        title: "Timeout",
+        description: "La operación tomó demasiado tiempo. Intenta nuevamente.",
+        variant: "destructive",
+      });
+    }, 60000); // 60 segundos timeout
+    
     try {
       console.log('📡 Preparando llamada a supabase function...');
       const requestBody = {
@@ -622,6 +640,9 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       });
 
       console.log('📥 Respuesta recibida:', { data, error });
+
+      // Limpiar timeout si la operación se completó
+      clearTimeout(timeoutId);
 
       if (error) {
         console.error('❌ Error de la función Supabase:', error);
@@ -647,9 +668,6 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       console.log('📝 Actualizando formulario con plantilla mejorada...');
       setFormData(prev => ({ ...prev, docTemplate: data.improvedTemplate }));
 
-      console.log('⏳ Estableciendo estado de mejora a false');
-      setIsImprovingTemplate(false);
-
       console.log('📢 Mostrando toast de éxito');
       toast({
         title: "Plantilla mejorada exitosamente",
@@ -666,8 +684,8 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         type: typeof error
       });
       
-      console.log('⏳ Estableciendo estado de mejora a false por error');
-      setIsImprovingTemplate(false);
+      // Limpiar timeout en caso de error
+      clearTimeout(timeoutId);
       
       console.log('📢 Mostrando toast de error');
       toast({
@@ -675,6 +693,9 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         description: error instanceof Error ? error.message : "No se pudo mejorar la plantilla con IA. Intenta nuevamente.",
         variant: "destructive",
       });
+    } finally {
+      console.log('⏳ Estableciendo estado de mejora a false (finally)');
+      setIsImprovingTemplate(false);
     }
   };
 
@@ -1543,6 +1564,24 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
                           <Wand2 className="h-4 w-4 mr-2" />
                         )}
                         {isImprovingTemplate ? (isMobile ? 'Mejorando...' : 'Mejorando...') : (isMobile ? 'Mejorar IA' : 'Mejorar IA')}
+                      </Button>
+                    )}
+                    {/* Botón de reset si se queda atascado */}
+                    {isImprovingTemplate && (
+                      <Button 
+                        variant="destructive" 
+                        size={isMobile ? "default" : "sm"}
+                        onClick={() => {
+                          console.log('🔄 Reset manual del estado isImprovingTemplate');
+                          setIsImprovingTemplate(false);
+                          toast({
+                            title: "Estado reseteado",
+                            description: "El proceso se ha cancelado manualmente.",
+                          });
+                        }}
+                        className={isMobile ? "w-full justify-center" : "min-w-[100px]"}
+                      >
+                        Cancelar
                       </Button>
                     )}
                   </div>
