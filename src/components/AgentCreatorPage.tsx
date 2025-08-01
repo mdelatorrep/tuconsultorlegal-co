@@ -1893,7 +1893,6 @@ VALIDACIONES:
                        console.log('Current Step:', currentStep);
                        console.log('LawyerData:', lawyerData);
                        console.log('LawyerData permissions (canCreateAgents):', lawyerData?.canCreateAgents);
-                       console.log('Button should be disabled?', !lawyerData?.canCreateAgents);
                        console.log('FormData:', formData);
                        console.log('AIResults:', aiResults);
                        console.log('About to call handlePublish...');
@@ -1902,7 +1901,7 @@ VALIDACIONES:
                      size={isMobile ? "default" : "lg"} 
                      className={`${isMobile ? "w-full text-base px-6 py-3" : "text-xl px-10 py-4"}`}
                    >
-                     {!lawyerData?.canCreateAgents ? 'Requiere Permisos de Admin' : 'Enviar a Revisión'}
+                     Enviar a Revisión
                    </Button>
               </div>
             )}
