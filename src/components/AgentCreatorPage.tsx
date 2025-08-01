@@ -17,6 +17,10 @@ interface AgentCreatorPageProps {
 }
 
 export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPageProps) {
+  console.log('=== AGENT CREATOR PAGE LOADED ===');
+  console.log('LawyerData received:', lawyerData);
+  console.log('canCreateAgents (camelCase):', lawyerData?.canCreateAgents);
+  console.log('can_create_agents (snake_case):', lawyerData?.can_create_agents);
   const [currentStep, setCurrentStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isImprovingTemplate, setIsImprovingTemplate] = useState(false);
