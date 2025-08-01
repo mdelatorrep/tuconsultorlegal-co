@@ -112,6 +112,9 @@ export default function Index() {
     }
   };
 
+  // No mostrar ChatWidget en portal de abogados
+  const shouldShowChatWidget = currentPage !== "abogados";
+
   return (
     <div className="min-h-screen bg-background">
       <Header
@@ -126,11 +129,13 @@ export default function Index() {
 
       <Footer onNavigate={handleNavigate} />
 
-      <ChatWidget
-        isOpen={chatOpen}
-        onToggle={handleToggleChat}
-        initialMessage={chatMessage}
-      />
+      {shouldShowChatWidget && (
+        <ChatWidget
+          isOpen={chatOpen}
+          onToggle={handleToggleChat}
+          initialMessage={chatMessage}
+        />
+      )}
     </div>
   );
 }
