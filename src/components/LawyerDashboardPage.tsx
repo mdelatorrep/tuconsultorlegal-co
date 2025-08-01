@@ -21,6 +21,8 @@ import DraftModule from "./lawyer-modules/DraftModule";
 import StrategizeModule from "./lawyer-modules/StrategizeModule";
 import IntegrationsModule from "./lawyer-modules/IntegrationsModule";
 import PremiumFeatureCard from "./PremiumFeatureCard";
+import LawyerOnboardingCoachmarks from "./LawyerOnboardingCoachmarks";
+import { useLawyerOnboarding } from "@/hooks/useLawyerOnboarding";
 
 interface DocumentToken {
   id: string;
@@ -53,6 +55,14 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const { toast } = useToast();
   const { isAuthenticated, isLoading: authLoading, user, logout, checkAuthStatus } = useLawyerAuth();
   const isMobile = useIsMobile();
+  
+  // Onboarding system
+  const { 
+    shouldShowOnboarding, 
+    isLoading: onboardingLoading, 
+    markOnboardingCompleted, 
+    skipOnboarding 
+  } = useLawyerOnboarding(user?.id);
 
   // Helper functions
   const getStatusVariant = (status: string) => {
@@ -193,7 +203,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   }
 
   // Show loading if auth is still loading
-  if (authLoading) {
+  if (authLoading || onboardingLoading) {
     return (
       <div className="container mx-auto px-6 py-20">
         <div className="flex items-center justify-center min-h-[400px]">
@@ -579,7 +589,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
-        <Sidebar className="w-64">
+        <Sidebar className="w-64" data-tour="lawyer-sidebar">
           <SidebarContent>
             {/* Header del Sidebar */}
             <div className="p-4 border-b">
@@ -589,7 +599,14 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
 
             {/* Menu Items */}
             {menuItems.map((section, index) => (
-              <SidebarGroup key={index}>
+              <SidebarGroup 
+                key={index}
+                data-tour={
+                  section.title === "Herramientas Legales" ? "ai-tools-section" :
+                  section.title === "Gestión IA" ? "agent-management-section" :
+                  section.title === "Estadísticas" ? "stats-section" : undefined
+                }
+              >
                 <SidebarGroupLabel>{section.title}</SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu>
@@ -655,7 +672,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
           <div className="container mx-auto px-6 py-6">
             <div className="max-w-7xl mx-auto">
               {/* Welcome Section */}
-              <div className="mb-8">
+              <div className="mb-8" data-tour="dashboard-welcome">
                 <div className="flex items-center justify-between mb-6">
                   <div>
                     <h1 className="text-3xl font-bold text-foreground">
@@ -674,7 +691,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
 
               <div className={`${isMobile ? 'space-y-8' : 'grid lg:grid-cols-2 gap-8'}`}>
                 {/* Documents List */}
-                <div className="space-y-4">
+                <div className="space-y-4" data-tour="documents-panel">
                   <h2 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-semibold mb-4`}>Documentos Pendientes</h2>
                   
                   {documents.length === 0 ? (
@@ -830,6 +847,13 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
           </div>
         </main>
       </div>
+      
+      {/* Onboarding Coachmarks */}
+      <LawyerOnboardingCoachmarks 
+        isVisible={shouldShowOnboarding && !onboardingLoading}
+        onComplete={() => user?.id && markOnboardingCompleted(user.id)}
+        onSkip={() => user?.id && skipOnboarding(user.id)}
+      />
     </SidebarProvider>
   );
 }
