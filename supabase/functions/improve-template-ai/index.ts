@@ -8,50 +8,37 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  console.log('🚀 === IMPROVE-TEMPLATE-AI FUNCTION STARTED ===');
-  console.log('📋 Request method:', req.method);
-  console.log('📅 Timestamp:', new Date().toISOString());
+  console.log('=== IMPROVE-TEMPLATE-AI FUNCTION STARTED ===');
   
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    console.log('✅ Handling CORS preflight request');
+    console.log('Handling CORS preflight request');
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log('🔧 Getting environment variables...');
+    // Get environment variables
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     
-    console.log('🔍 Environment check:', {
+    console.log('Environment check:', {
       hasOpenAIKey: !!openAIApiKey,
-      openAIKeyLength: openAIApiKey?.length || 0,
       hasSupabaseKey: !!supabaseServiceKey,
-      supabaseKeyLength: supabaseServiceKey?.length || 0,
-      hasSupabaseUrl: !!supabaseUrl,
-      supabaseUrl: supabaseUrl
+      hasSupabaseUrl: !!supabaseUrl
     });
     
     if (!openAIApiKey) {
-      console.error('❌ OpenAI API key not found');
       throw new Error('OpenAI API key not configured');
     }
 
     if (!supabaseServiceKey || !supabaseUrl) {
-      console.error('❌ Missing Supabase configuration');
       throw new Error('Missing Supabase configuration');
     }
 
-    console.log('📥 Parsing request body...');
+    // Parse request body
     const requestBody = await req.json();
-    console.log('📦 Request body received:', {
-      hasTemplateContent: !!requestBody.templateContent,
-      templateLength: requestBody.templateContent?.length || 0,
-      docName: requestBody.docName,
-      docCategory: requestBody.docCategory,
-      targetAudience: requestBody.targetAudience
-    });
+    console.log('Request body received:', requestBody);
     
     const { templateContent, docName, docCategory, docDescription, targetAudience } = requestBody;
 

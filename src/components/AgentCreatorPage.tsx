@@ -581,25 +581,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
   };
 
   const improveTemplateWithAI = async () => {
-    console.log('🚀 improveTemplateWithAI INICIADO');
-    
-    // Protección adicional para evitar múltiples ejecuciones
-    if (isImprovingTemplate) {
-      console.log('⚠️ Función ya en ejecución, saliendo...');
-      return;
-    }
-    
-    console.log('📝 Datos del formulario:', {
-      hasTemplate: !!formData.docTemplate,
-      templateLength: formData.docTemplate?.length || 0,
-      hasDocName: !!formData.docName,
-      docName: formData.docName,
-      docCategory: formData.docCat,
-      targetAudience: formData.targetAudience
-    });
-    
     if (!formData.docTemplate.trim()) {
-      console.log('❌ Validación fallida: plantilla vacía');
       toast({
         title: "Plantilla requerida",
         description: "Debes escribir una plantilla antes de mejorarla con IA.",
@@ -608,94 +590,59 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       return;
     }
 
-    console.log('⏳ Estableciendo estado de mejora a true');
     setIsImprovingTemplate(true);
     
-    // Timeout de seguridad para evitar que se quede colgado
-    const timeoutId = setTimeout(() => {
-      console.log('⏰ TIMEOUT: Función tomó demasiado tiempo, reseteando estado');
-      setIsImprovingTemplate(false);
-      toast({
-        title: "Timeout",
-        description: "La operación tomó demasiado tiempo. Intenta nuevamente.",
-        variant: "destructive",
-      });
-    }, 60000); // 60 segundos timeout
-    
     try {
-      console.log('📡 Preparando llamada a supabase function...');
-      const requestBody = {
-        templateContent: formData.docTemplate,
+      console.log('Improving template with AI...', {
+        templateLength: formData.docTemplate.length,
         docName: formData.docName,
-        docCategory: formData.docCat,
-        docDescription: formData.docDesc,
-        targetAudience: formData.targetAudience
-      };
-      
-      console.log('📦 Cuerpo de la petición:', requestBody);
-      console.log('🔄 Invocando improve-template-ai...');
-      
-      const { data, error } = await supabase.functions.invoke('improve-template-ai', {
-        body: requestBody
+        docCategory: formData.docCat
       });
 
-      console.log('📥 Respuesta recibida:', { data, error });
-
-      // Limpiar timeout si la operación se completó
-      clearTimeout(timeoutId);
+      const { data, error } = await supabase.functions.invoke('improve-template-ai', {
+        body: {
+          templateContent: formData.docTemplate,
+          docName: formData.docName,
+          docCategory: formData.docCat,
+          docDescription: formData.docDesc,
+          targetAudience: formData.targetAudience
+        }
+      });
 
       if (error) {
-        console.error('❌ Error de la función Supabase:', error);
+        console.error('Supabase function error:', error);
         throw new Error(error.message || 'Error al mejorar la plantilla con IA');
       }
 
-      if (!data) {
-        console.error('❌ No se recibió data en la respuesta');
-        throw new Error('No se recibió respuesta del servidor');
+      if (!data?.success) {
+        console.error('AI template improvement failed:', data);
+        throw new Error(data?.error || 'Error en la mejora de la plantilla');
       }
 
-      if (!data.success) {
-        console.error('❌ La función reportó fallo:', data);
-        throw new Error(data.error || 'Error en la mejora de la plantilla');
-      }
-
-      console.log('✅ Mejora exitosa:', {
+      console.log('Template improvement successful:', {
         originalLength: data.originalLength,
-        improvedLength: data.improvedLength,
-        modelUsed: data.modelUsed
+        improvedLength: data.improvedLength
       });
 
-      console.log('📝 Actualizando formulario con plantilla mejorada...');
+      // Update the template with the improved version
       setFormData(prev => ({ ...prev, docTemplate: data.improvedTemplate }));
 
-      console.log('📢 Mostrando toast de éxito');
+      setIsImprovingTemplate(false);
+
       toast({
         title: "Plantilla mejorada exitosamente",
         description: `Se mejoró la plantilla de ${data.originalLength} a ${data.improvedLength} caracteres.`,
       });
 
-      console.log('🎉 Proceso completado exitosamente');
-
     } catch (error) {
-      console.error('💥 Error capturado en catch:', error);
-      console.error('📋 Detalles del error:', {
-        message: error instanceof Error ? error.message : 'Error desconocido',
-        stack: error instanceof Error ? error.stack : 'No stack',
-        type: typeof error
-      });
+      console.error('Error improving template with AI:', error);
+      setIsImprovingTemplate(false);
       
-      // Limpiar timeout en caso de error
-      clearTimeout(timeoutId);
-      
-      console.log('📢 Mostrando toast de error');
       toast({
         title: "Error al mejorar plantilla",
         description: error instanceof Error ? error.message : "No se pudo mejorar la plantilla con IA. Intenta nuevamente.",
         variant: "destructive",
       });
-    } finally {
-      console.log('⏳ Estableciendo estado de mejora a false (finally)');
-      setIsImprovingTemplate(false);
     }
   };
 
@@ -1564,24 +1511,6 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
                           <Wand2 className="h-4 w-4 mr-2" />
                         )}
                         {isImprovingTemplate ? (isMobile ? 'Mejorando...' : 'Mejorando...') : (isMobile ? 'Mejorar IA' : 'Mejorar IA')}
-                      </Button>
-                    )}
-                    {/* Botón de reset si se queda atascado */}
-                    {isImprovingTemplate && (
-                      <Button 
-                        variant="destructive" 
-                        size={isMobile ? "default" : "sm"}
-                        onClick={() => {
-                          console.log('🔄 Reset manual del estado isImprovingTemplate');
-                          setIsImprovingTemplate(false);
-                          toast({
-                            title: "Estado reseteado",
-                            description: "El proceso se ha cancelado manualmente.",
-                          });
-                        }}
-                        className={isMobile ? "w-full justify-center" : "min-w-[100px]"}
-                      >
-                        Cancelar
                       </Button>
                     )}
                   </div>
