@@ -745,10 +745,13 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
 
   const handlePublish = async () => {
     console.log('=== HANDLEPUBLISH STARTED ===');
+    console.log('Current timestamp:', new Date().toISOString());
     console.log('LawyerData:', lawyerData);
     console.log('FormData:', formData);
     console.log('AIResults:', aiResults);
-      try {
+    console.log('currentStep:', currentStep);
+    
+    try {
       if (!formData.docName || !formData.docDesc || !formData.docCat || !formData.docTemplate) {
         toast({
           title: "Campos incompletos",
@@ -1861,24 +1864,42 @@ VALIDACIONES:
             {/* Step 5: Publish */}
             {currentStep === 5 && (
               <div className="text-center py-12">
+                {(() => {
+                  console.log('=== RENDERING STEP 5 ===', {
+                    currentStep,
+                    lawyerData,
+                    canCreateAgents: lawyerData?.canCreateAgents,
+                    buttonDisabled: !lawyerData?.canCreateAgents
+                  });
+                  return null;
+                })()}
                 <CheckCircle className="mx-auto h-24 w-24 text-success mb-6" />
                 <h2 className="text-3xl font-bold mb-4">¡Todo Listo!</h2>
                  <p className="text-muted-foreground mb-8 max-w-lg mx-auto">
                    El nuevo agente para el documento <strong>"{formData.docName}"</strong> está configurado y listo para ser enviado a revisión. 
                    Una vez aprobado por el administrador, estará disponible para todos los clientes en el sitio web.
                  </p>
-                  <Button 
-                    onClick={() => {
-                      console.log('Button clicked! LawyerData permissions:', lawyerData?.canCreateAgents);
-                      console.log('Button disabled?', !lawyerData?.canCreateAgents);
-                      handlePublish();
-                    }} 
-                    size={isMobile ? "default" : "lg"} 
-                    className={`${isMobile ? "w-full text-base px-6 py-3" : "text-xl px-10 py-4"}`}
+                   <Button 
+                     onClick={(e) => {
+                       e.preventDefault();
+                       e.stopPropagation();
+                       console.log('=== BUTTON CLICK EVENT ===');
+                       console.log('Event:', e);
+                       console.log('Current Step:', currentStep);
+                       console.log('LawyerData:', lawyerData);
+                       console.log('LawyerData permissions (canCreateAgents):', lawyerData?.canCreateAgents);
+                       console.log('Button should be disabled?', !lawyerData?.canCreateAgents);
+                       console.log('FormData:', formData);
+                       console.log('AIResults:', aiResults);
+                       console.log('About to call handlePublish...');
+                       handlePublish();
+                     }} 
+                     size={isMobile ? "default" : "lg"} 
+                     className={`${isMobile ? "w-full text-base px-6 py-3" : "text-xl px-10 py-4"}`}
                      disabled={!lawyerData?.canCreateAgents}
                    >
                      {!lawyerData?.canCreateAgents ? 'Requiere Permisos de Admin' : 'Enviar a Revisión'}
-                  </Button>
+                   </Button>
               </div>
             )}
           </CardContent>
