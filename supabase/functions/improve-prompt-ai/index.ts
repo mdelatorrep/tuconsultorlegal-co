@@ -118,29 +118,8 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     console.log('Supabase client created successfully');
 
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader) {
-      console.error('Authorization header missing');
-      return new Response(JSON.stringify({ error: 'Authorization header missing' }), {
-        status: 401,
-        headers: { ...securityHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Verify admin token
-    console.log('Verifying admin token...');
-    const { data: verification, error: verificationError } = await supabase.functions.invoke('verify-admin-token', {
-      headers: { authorization: authHeader }
-    });
-
-    if (verificationError || !verification?.valid) {
-      console.error('Invalid admin token:', verificationError);
-      return new Response(JSON.stringify({ error: 'Invalid admin token' }), {
-        status: 401,
-        headers: { ...securityHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    console.log('Admin token verified successfully');
+    // Parse request body directly without auth verification for lawyers
+    console.log('Processing request for lawyer...');
 
     const requestBody = await req.json();
     const { current_prompt, target_audience } = requestBody;

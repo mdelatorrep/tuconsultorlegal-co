@@ -439,7 +439,6 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         isEditing: false,
       });
 
-      setIsImprovingPrompt(false);
 
       toast({
         title: "Prompt mejorado exitosamente",
@@ -448,13 +447,13 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
 
     } catch (error) {
       console.error('Error improving prompt with AI:', error);
-      setIsImprovingPrompt(false);
-      
       toast({
         title: "Error al mejorar prompt",
         description: error instanceof Error ? error.message : "No se pudo mejorar el prompt con IA. Intenta nuevamente.",
         variant: "destructive",
       });
+    } finally {
+      setIsImprovingPrompt(false);
     }
   };
 
