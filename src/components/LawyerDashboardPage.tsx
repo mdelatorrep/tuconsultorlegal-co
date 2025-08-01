@@ -349,6 +349,10 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
             />
           );
         }
+        console.log('=== PASSING USER TO AGENT CREATOR ===');
+        console.log('User object:', user);
+        console.log('User type:', typeof user);
+        console.log('User canCreateAgents:', user?.canCreateAgents);
         return <AgentCreatorPage onBack={() => setCurrentView('dashboard')} lawyerData={user} />;
       
       case 'agent-manager':

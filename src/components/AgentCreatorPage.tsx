@@ -18,6 +18,11 @@ interface AgentCreatorPageProps {
 
 export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPageProps) {
   console.log('=== AGENT CREATOR PAGE LOADED ===');
+  console.log('=== LAWYER DATA DEBUG ===');
+  console.log('LawyerData received as prop:', lawyerData);
+  console.log('LawyerData type:', typeof lawyerData);
+  console.log('LawyerData canCreateAgents:', lawyerData?.canCreateAgents);
+  console.log('LawyerData keys:', lawyerData ? Object.keys(lawyerData) : 'no data');
   console.log('LawyerData received:', lawyerData);
   console.log('canCreateAgents (camelCase):', lawyerData?.canCreateAgents);
   console.log('can_create_agents (snake_case):', lawyerData?.can_create_agents);
