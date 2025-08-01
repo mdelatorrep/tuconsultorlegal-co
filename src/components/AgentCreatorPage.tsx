@@ -636,13 +636,13 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
 
     } catch (error) {
       console.error('Error improving template with AI:', error);
-      setIsImprovingTemplate(false);
-      
       toast({
         title: "Error al mejorar plantilla",
         description: error instanceof Error ? error.message : "No se pudo mejorar la plantilla con IA. Intenta nuevamente.",
         variant: "destructive",
       });
+    } finally {
+      setIsImprovingTemplate(false);
     }
   };
 
