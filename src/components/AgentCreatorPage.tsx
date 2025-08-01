@@ -740,8 +740,11 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
   };
 
   const handlePublish = async () => {
-    try {
-      // Validate required fields
+    console.log('=== HANDLEPUBLISH STARTED ===');
+    console.log('LawyerData:', lawyerData);
+    console.log('FormData:', formData);
+    console.log('AIResults:', aiResults);
+      try {
       if (!formData.docName || !formData.docDesc || !formData.docCat || !formData.docTemplate) {
         toast({
           title: "Campos incompletos",
@@ -1860,14 +1863,18 @@ VALIDACIONES:
                    El nuevo agente para el documento <strong>"{formData.docName}"</strong> está configurado y listo para ser enviado a revisión. 
                    Una vez aprobado por el administrador, estará disponible para todos los clientes en el sitio web.
                  </p>
-                 <Button 
-                   onClick={handlePublish} 
-                   size={isMobile ? "default" : "lg"} 
-                   className={`${isMobile ? "w-full text-base px-6 py-3" : "text-xl px-10 py-4"}`}
-                    disabled={!lawyerData?.canCreateAgents}
-                  >
-                    {!lawyerData?.canCreateAgents ? 'Requiere Permisos de Admin' : 'Enviar a Revisión'}
-                 </Button>
+                  <Button 
+                    onClick={() => {
+                      console.log('Button clicked! LawyerData permissions:', lawyerData?.canCreateAgents);
+                      console.log('Button disabled?', !lawyerData?.canCreateAgents);
+                      handlePublish();
+                    }} 
+                    size={isMobile ? "default" : "lg"} 
+                    className={`${isMobile ? "w-full text-base px-6 py-3" : "text-xl px-10 py-4"}`}
+                     disabled={!lawyerData?.canCreateAgents}
+                   >
+                     {!lawyerData?.canCreateAgents ? 'Requiere Permisos de Admin' : 'Enviar a Revisión'}
+                  </Button>
               </div>
             )}
           </CardContent>
