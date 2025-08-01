@@ -1038,7 +1038,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
                 loadDrafts();
               }}
               className="flex items-center gap-2"
-              disabled={!lawyerData?.canCreateAgents}
+              
             >
               <FileText className="h-4 w-4" />
               Borradores ({drafts.length})
@@ -1901,7 +1901,6 @@ VALIDACIONES:
                      }} 
                      size={isMobile ? "default" : "lg"} 
                      className={`${isMobile ? "w-full text-base px-6 py-3" : "text-xl px-10 py-4"}`}
-                     disabled={!lawyerData?.canCreateAgents}
                    >
                      {!lawyerData?.canCreateAgents ? 'Requiere Permisos de Admin' : 'Enviar a Revisión'}
                    </Button>
