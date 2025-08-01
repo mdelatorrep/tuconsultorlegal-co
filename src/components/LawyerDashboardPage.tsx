@@ -545,7 +545,13 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
               {/* Logout Button */}
               <div className="p-4 border-t mt-auto">
                 <Button
-                  onClick={logout}
+                  onClick={() => {
+                    console.log('=== LOGOUT BUTTON CLICKED ===');
+                    console.log('User:', user);
+                    console.log('IsAuthenticated:', isAuthenticated);
+                    console.log('About to call logout function...');
+                    logout();
+                  }}
                   variant="outline"
                   className="w-full flex items-center gap-2"
                 >
@@ -617,9 +623,15 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
 
             {/* Logout Button */}
             <div className="p-4 border-t mt-auto">
-              <Button
-                onClick={logout}
-                variant="outline"
+                <Button
+                  onClick={() => {
+                    console.log('=== LOGOUT BUTTON CLICKED (DASHBOARD) ===');
+                    console.log('User:', user);
+                    console.log('IsAuthenticated:', isAuthenticated);
+                    console.log('About to call logout function...');
+                    logout();
+                  }}
+                  variant="outline"
                 className="w-full flex items-center gap-2"
               >
                 <LogOut className="h-4 w-4" />

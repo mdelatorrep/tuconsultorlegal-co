@@ -256,26 +256,36 @@ export const useLawyerAuth = () => {
 
   const logout = async () => {
     try {
-      console.log('Logging out lawyer');
+      console.log('=== LAWYER LOGOUT FUNCTION STARTED ===');
+      console.log('Current user:', user);
+      console.log('Current session:', session);
+      console.log('Current isAuthenticated:', isAuthenticated);
       
       // Check if there's an active session before attempting signOut
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       
+      console.log('Current session found:', !!currentSession);
+      
       if (currentSession) {
+        console.log('Calling supabase.auth.signOut...');
         await supabase.auth.signOut();
+        console.log('Supabase signOut completed');
       } else {
         console.log('No active session found, proceeding with local cleanup');
       }
       
       // Always clear local state regardless of signOut result
+      console.log('Clearing local auth state...');
       setIsAuthenticated(false);
       setUser(null);
       setSession(null);
       
       // Clear any stored auth data
+      console.log('Clearing AuthStorage...');
       AuthStorage.clearLawyerAuth();
       
       // Force navigation to home page after logout
+      console.log('Navigating to home page...');
       window.location.href = '/';
     } catch (error) {
       console.error('Logout error:', error);
