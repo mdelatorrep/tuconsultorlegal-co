@@ -21,7 +21,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
   const [isProcessing, setIsProcessing] = useState(false);
   const [isImprovingTemplate, setIsImprovingTemplate] = useState(false);
   const [isImprovingDocInfo, setIsImprovingDocInfo] = useState(false);
-  const [isImprovingPrompt, setIsImprovingPrompt] = useState(false);
+  
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [isLoadingDrafts, setIsLoadingDrafts] = useState(false);
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
@@ -391,71 +391,6 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
     }
   };
 
-  const improvePromptWithAI = async () => {
-    if (!formData.initialPrompt.trim()) {
-      toast({
-        title: "Prompt requerido",
-        description: "Debes escribir un prompt inicial antes de mejorarlo con IA.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsImprovingPrompt(true);
-    
-    try {
-      console.log('Improving prompt with AI...', {
-        promptLength: formData.initialPrompt.length,
-        targetAudience: formData.targetAudience
-      });
-
-      const { data, error } = await supabase.functions.invoke('improve-prompt-ai', {
-        body: {
-          current_prompt: formData.initialPrompt,
-          target_audience: formData.targetAudience
-        }
-      });
-
-      if (error) {
-        console.error('Supabase function error:', error);
-        throw new Error(error.message || 'Error al mejorar el prompt con IA');
-      }
-
-      if (!data?.improved_prompt) {
-        console.error('AI prompt improvement failed:', data);
-        throw new Error(data?.error || 'Error en la mejora del prompt');
-      }
-
-      console.log('Prompt improvement successful:', {
-        originalLength: data.current_prompt?.length,
-        improvedLength: data.improved_prompt?.length
-      });
-
-      // Show the improvement to the user
-      setPromptImprovement({
-        improvedPrompt: data.improved_prompt,
-        originalPrompt: formData.initialPrompt,
-        showImprovement: true,
-        isEditing: false,
-      });
-
-
-      toast({
-        title: "Prompt mejorado exitosamente",
-        description: "Revisa las mejoras sugeridas para el prompt del agente.",
-      });
-
-    } catch (error) {
-      console.error('Error improving prompt with AI:', error);
-      toast({
-        title: "Error al mejorar prompt",
-        description: error instanceof Error ? error.message : "No se pudo mejorar el prompt con IA. Intenta nuevamente.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsImprovingPrompt(false);
-    }
-  };
 
   const acceptPromptImprovement = () => {
     setFormData(prev => ({
@@ -1655,14 +1590,6 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold mb-6">Prompt Inicial para el Agente de IA</h2>
                 
-                {/* Loading state while improving with AI */}
-                {isImprovingPrompt && (
-                  <div className="text-center py-12">
-                    <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
-                    <p className="text-lg">Mejorando prompt con IA...</p>
-                    <p className="text-muted-foreground">Esto puede tomar unos segundos</p>
-                  </div>
-                )}
                 
                 {/* Show AI improvements */}
                 {promptImprovement.showImprovement && (
@@ -1734,7 +1661,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
                 )}
 
                 {/* Regular form fields */}
-                {!isImprovingPrompt && !promptImprovement.showImprovement && (
+                {!promptImprovement.showImprovement && (
                   <div className="space-y-6">
                     <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
                       <h3 className="text-lg font-semibold mb-3 text-blue-800 dark:text-blue-200">📋 Guía para el Prompt</h3>
@@ -1788,7 +1715,7 @@ VALIDACIONES:
                     </div>
 
                     <p className="text-muted-foreground mb-4">
-                      <strong>Instrucción:</strong> Escribe tu prompt inicial siguiendo la guía anterior. Puedes usar el botón "Mejorar con IA" para optimizarlo antes de continuar.
+                      <strong>Instrucción:</strong> Escribe tu prompt inicial siguiendo la guía anterior. En el siguiente paso, la IA optimizará tu prompt automáticamente junto con el análisis completo del documento.
                     </p>
                     
                     <div className="flex gap-2 mb-4">
@@ -1801,35 +1728,11 @@ VALIDACIONES:
                       />
                     </div>
 
-                    {formData.initialPrompt && (
-                      <div className="mb-4">
-                        <Button 
-                          onClick={improvePromptWithAI}
-                          disabled={isImprovingPrompt}
-                          className="bg-purple-600 hover:bg-purple-700 text-white"
-                        >
-                          {isImprovingPrompt ? (
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          ) : (
-                            <Wand2 className="h-4 w-4 mr-2" />
-                          )}
-                          {isImprovingPrompt ? 'Mejorando...' : 'Mejorar con IA'}
-                        </Button>
-                      </div>
-                    )}
-
-                    {formData.initialPrompt && (
-                      <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4 mb-4">
-                        <p className="text-sm text-purple-700 dark:text-purple-300">
-                          <strong>💡 Mejora con IA:</strong> Usa el botón "Mejorar con IA" para que nuestra IA optimice tu prompt con estructura profesional, mejores prácticas de recopilación de información y validaciones específicas para Colombia.
-                        </p>
-                      </div>
-                    )}
                     
                     <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
                       <p className="text-sm text-amber-700 dark:text-amber-300">
-                        <strong>💡 Tip:</strong> Un buen prompt inicial puede ahorrar tiempo en ajustes posteriores. 
-                        La IA mejorará tu prompt pero una base sólida produce mejores resultados.
+                        <strong>💡 Tip:</strong> Escribe tu prompt inicial siguiendo la guía anterior. 
+                        En el siguiente paso, la IA mejorará automáticamente tu prompt junto con todo el análisis del documento.
                       </p>
                     </div>
 
