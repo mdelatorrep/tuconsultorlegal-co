@@ -46,16 +46,11 @@ export const useLawyerAuth = () => {
 
   const fetchLawyerProfile = async (authUser: User) => {
     try {
-      console.log('=== FETCHING LAWYER PROFILE ===');
-      console.log('Fetching lawyer profile for user:', authUser.id, authUser.email);
-      
       const { data: profile, error } = await supabase
         .from('lawyer_profiles')
-        .select('*')
+        .select('id, email, full_name, can_create_agents, can_create_blogs, can_use_ai_tools')
         .eq('id', authUser.id)
         .single();
-
-      console.log('Profile query result:', { profile, error });
 
       if (error || !profile) {
         console.error('Error fetching lawyer profile:', error);
@@ -63,8 +58,6 @@ export const useLawyerAuth = () => {
         setIsAuthenticated(false);
         return;
       }
-
-      console.log('Lawyer profile found:', profile.full_name);
 
       const lawyerUser: LawyerUser = {
         id: profile.id,
@@ -78,14 +71,16 @@ export const useLawyerAuth = () => {
       setUser(lawyerUser);
       setIsAuthenticated(true);
 
-      // Identify user in LogRocket
-      identifyUser({
-        id: lawyerUser.id,
-        name: lawyerUser.name,
-        email: lawyerUser.email,
-        role: 'lawyer',
-        subscriptionType: lawyerUser.canCreateAgents ? 'lawyer_premium' : 'lawyer_basic'
-      });
+      // Identify user in LogRocket (non-blocking)
+      setTimeout(() => {
+        identifyUser({
+          id: lawyerUser.id,
+          name: lawyerUser.name,
+          email: lawyerUser.email,
+          role: 'lawyer',
+          subscriptionType: lawyerUser.canCreateAgents ? 'lawyer_premium' : 'lawyer_basic'
+        });
+      }, 0);
     } catch (error) {
       console.error('Error fetching lawyer profile:', error);
       setUser(null);
@@ -116,15 +111,10 @@ export const useLawyerAuth = () => {
 
   const loginWithEmailAndPassword = async (email: string, password: string): Promise<boolean> => {
     try {
-      console.log('=== LAWYER LOGIN START ===');
-      console.log('Attempting login with email:', email);
-      
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
         password: password
       });
-
-      console.log('Supabase auth response:', { data, error });
 
       if (error) {
         console.error('Supabase auth error:', error);
@@ -132,13 +122,10 @@ export const useLawyerAuth = () => {
       }
 
       if (data.user) {
-        console.log('User authenticated, fetching profile...');
         await fetchLawyerProfile(data.user);
-        console.log('=== LAWYER LOGIN SUCCESS ===');
         return true;
       }
       
-      console.log('=== LAWYER LOGIN FAILED - NO USER ===');
       return false;
     } catch (error) {
       console.error('Login error:', error);

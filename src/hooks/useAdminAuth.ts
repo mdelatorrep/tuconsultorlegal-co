@@ -82,38 +82,22 @@ export const useAdminAuth = () => {
 
   const checkAuthStatus = async () => {
     try {
-      // Limpieza automática de tokens expirados
+      // Quick cleanup
       AuthStorage.cleanupExpiredTokens();
       
       const adminAuth = AuthStorage.getAdminAuth();
       
-      if (!adminAuth) {
-        console.log('No admin auth data found');
+      if (!adminAuth || (adminAuth.expiresAt && AuthStorage.isTokenExpired(adminAuth.expiresAt))) {
         setIsAuthenticated(false);
         setUser(null);
         setIsLoading(false);
         return;
       }
 
-      // Check if token is expired
-      if (adminAuth.expiresAt && AuthStorage.isTokenExpired(adminAuth.expiresAt)) {
-        console.log('Admin token expired');
-        logout();
-        return;
-      }
-
-      // Verify token with Supabase session instead of edge function
+      // Quick session validation without additional DB queries
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       
-      if (sessionError || !sessionData.session) {
-        console.log('Session validation failed or no session found:', sessionError);
-        logout();
-        return;
-      }
-
-      // Verify the stored token matches the current session
-      if (sessionData.session.access_token !== adminAuth.token) {
-        console.log('Token mismatch, clearing auth');
+      if (sessionError || !sessionData.session || sessionData.session.access_token !== adminAuth.token) {
         logout();
         return;
       }
@@ -121,19 +105,15 @@ export const useAdminAuth = () => {
       setUser(adminAuth.user);
       setIsAuthenticated(true);
 
-      // Set up auto-logout before expiry
+      // Set up auto-logout timer
       if (adminAuth.expiresAt) {
-        const expiryTime = new Date(adminAuth.expiresAt).getTime();
-        const currentTime = Date.now();
-        const timeUntilExpiry = expiryTime - currentTime;
-        
+        const timeUntilExpiry = new Date(adminAuth.expiresAt).getTime() - Date.now();
         if (timeUntilExpiry > 0) {
           const autoLogoutTime = Math.max(timeUntilExpiry - (5 * 60 * 1000), 1000);
           setTimeout(() => {
-            console.log('Auto-logout triggered for admin');
             toast({
               title: "Sesión expirando",
-              description: "Tu sesión de administrador expirará pronto.",
+              description: "Tu sesión expirará pronto.",
               variant: "destructive"
             });
             logout();
@@ -152,96 +132,84 @@ export const useAdminAuth = () => {
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     try {
-      console.log('=== ADMIN LOGIN START ===');
-      console.log('Attempting admin login with:', { email });
+      console.log('Admin login attempt for:', email);
       
-      // Use native Supabase Auth for admin login
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password: password.trim()
-      });
-
-      console.log('Supabase auth response:', { authData, authError });
-
-      if (authError || !authData.user) {
-        console.error('Supabase auth failed:', authError);
-        throw new Error('Invalid credentials');
-      }
-
-      // Verify admin status in admin_accounts table
+      // Single optimized query - check admin status BEFORE auth
       const { data: adminData, error: adminError } = await supabase
         .from('admin_accounts')
-        .select('*')
+        .select('id, email, full_name, is_super_admin, active')
         .eq('email', email.trim().toLowerCase())
         .eq('active', true)
         .single();
 
       if (adminError || !adminData) {
-        // If user authenticated but is not in admin_accounts, sign them out
-        await supabase.auth.signOut();
         throw new Error('Access denied - not an admin user');
       }
 
-      // Store session token in admin_accounts for edge function verification
-      const { error: updateError } = await supabase
+      // Only authenticate if admin check passes
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: password.trim()
+      });
+
+      if (authError || !authData.user) {
+        throw new Error('Invalid credentials');
+      }
+
+      // Update admin record with user_id (fire and forget)
+      supabase
         .from('admin_accounts')
         .update({ 
           user_id: authData.user.id,
           updated_at: new Date().toISOString()
         })
-        .eq('id', adminData.id);
+        .eq('id', adminData.id)
+        .then(({ error }) => {
+          if (error) {
+            console.warn('Failed to update admin record:', error);
+          } else {
+            console.log('Admin record updated successfully');
+          }
+        });
 
-      if (updateError) {
-        console.error('Error updating admin account:', updateError);
-      }
-
-      const data = {
-        success: true,
-        token: authData.session.access_token,
-        expiresAt: new Date(authData.session.expires_at * 1000).toISOString(),
-        user: {
-          id: authData.user.id,
-          email: adminData.email,
-          name: adminData.full_name || adminData.email,
-          isAdmin: true,
-          isSuperAdmin: adminData.is_super_admin || false
-        }
+      const userData = {
+        id: authData.user.id,
+        email: adminData.email,
+        name: adminData.full_name || adminData.email,
+        isAdmin: true,
+        isSuperAdmin: adminData.is_super_admin || false
       };
 
-      console.log('Admin login successful:', data);
+      const authTokenData = {
+        token: authData.session.access_token,
+        user: userData,
+        expiresAt: new Date(authData.session.expires_at * 1000).toISOString()
+      };
 
-      // Store auth data using centralized storage
-      AuthStorage.setAdminAuth({
-        token: data.token,
-        user: data.user,
-        expiresAt: data.expiresAt
-      });
-
-      setUser(data.user);
+      // Store auth data
+      AuthStorage.setAdminAuth(authTokenData);
+      setUser(userData);
       setIsAuthenticated(true);
 
-      // Set up auto-logout before expiry
-      const expiryTime = new Date(data.expiresAt).getTime();
-      const currentTime = Date.now();
-      const timeUntilExpiry = expiryTime - currentTime;
+      // Set up auto-logout timer (non-blocking)
+      const expiryTime = new Date(authTokenData.expiresAt).getTime();
+      const timeUntilExpiry = expiryTime - Date.now();
       
       if (timeUntilExpiry > 0) {
         const autoLogoutTime = Math.max(timeUntilExpiry - (5 * 60 * 1000), 1000);
         setTimeout(() => {
-          console.log('Auto-logout triggered');
           toast({
             title: "Sesión expirando",
-            description: "Tu sesión expirará pronto. Por favor, vuelve a iniciar sesión.",
+            description: "Tu sesión expirará pronto.",
             variant: "destructive"
           });
           logout();
         }, autoLogoutTime);
       }
 
-      console.log('Admin login successful:', data.user);
       toast({
         title: "Acceso concedido",
-        description: `Bienvenido, ${data.user.name}`,
+        description: `Bienvenido, ${userData.name}`,
       });
 
       return true;
@@ -249,7 +217,6 @@ export const useAdminAuth = () => {
     } catch (error: any) {
       console.error('Login error:', error);
       
-      // Handle specific error types with user-friendly messages
       if (error.message === 'Invalid credentials') {
         toast({
           title: "Credenciales inválidas",
@@ -262,22 +229,10 @@ export const useAdminAuth = () => {
           description: "Tu cuenta no tiene permisos de administrador.",
           variant: "destructive"
         });
-      } else if (error.message === 'Account temporarily locked') {
-        toast({
-          title: "Cuenta bloqueada",
-          description: "Tu cuenta está temporalmente bloqueada debido a múltiples intentos fallidos.",
-          variant: "destructive"
-        });
-      } else if (error.message === 'Connection error') {
-        toast({
-          title: "Error de conexión",
-          description: "No se pudo conectar con el servidor. Intenta nuevamente.",
-          variant: "destructive"
-        });
       } else {
         toast({
-          title: "Error inesperado",
-          description: "Ocurrió un error inesperado. Intenta nuevamente.",
+          title: "Error de conexión",
+          description: "Intenta nuevamente.",
           variant: "destructive"
         });
       }
