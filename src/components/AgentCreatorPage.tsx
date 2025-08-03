@@ -559,7 +559,18 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
   };
 
   const improveTemplateWithAI = async () => {
+    console.log('🚀 improveTemplateWithAI CALLED');
+    console.log('📊 FormData state:', {
+      hasTemplate: !!formData.docTemplate?.trim(),
+      templateLength: formData.docTemplate?.length || 0,
+      docName: formData.docName,
+      docCategory: formData.docCat,
+      docDescription: formData.docDesc,
+      targetAudience: formData.targetAudience
+    });
+
     if (!formData.docTemplate.trim()) {
+      console.log('❌ No template provided');
       toast({
         title: "Plantilla requerida",
         description: "Debes escribir una plantilla antes de mejorarla con IA.",
@@ -568,10 +579,11 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       return;
     }
 
+    console.log('✅ Template validation passed, starting improvement...');
     setIsImprovingTemplate(true);
     
     try {
-      console.log('Improving template with AI...', {
+      console.log('🔄 Calling improve-template-ai function...', {
         templateLength: formData.docTemplate.length,
         docName: formData.docName,
         docCategory: formData.docCat
@@ -587,17 +599,19 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         }
       });
 
+      console.log('📥 Function response received:', { data, error });
+
       if (error) {
-        console.error('Supabase function error:', error);
+        console.error('❌ Supabase function error:', error);
         throw new Error(error.message || 'Error al mejorar la plantilla con IA');
       }
 
       if (!data?.success) {
-        console.error('AI template improvement failed:', data);
+        console.error('❌ AI template improvement failed:', data);
         throw new Error(data?.error || 'Error en la mejora de la plantilla');
       }
 
-      console.log('Template improvement successful:', {
+      console.log('✅ Template improvement successful:', {
         originalLength: data.originalLength,
         improvedLength: data.improvedLength
       });
@@ -613,7 +627,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       });
 
     } catch (error) {
-      console.error('Error improving template with AI:', error);
+      console.error('❌ Error improving template with AI:', error);
       toast({
         title: "Error al mejorar plantilla",
         description: error instanceof Error ? error.message : "No se pudo mejorar la plantilla con IA. Intenta nuevamente.",
