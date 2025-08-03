@@ -22,19 +22,30 @@ export const useLawyerAuth = () => {
   const { identifyUser } = useLogRocket();
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    // Set up auth state listener FIRST - but filter events to prevent unnecessary calls
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state change:', event, session);
-        setSession(session);
+        console.log('Auth state change:', event, {
+          hasSession: !!session,
+          hasUser: !!session?.user,
+          userId: session?.user?.id,
+          timestamp: new Date().toISOString()
+        });
         
-        if (session?.user) {
-          await fetchLawyerProfile(session.user);
-        } else {
+        // Only process significant auth changes to prevent unnecessary profile fetches
+        if (event === 'SIGNED_OUT') {
+          setSession(null);
           setUser(null);
           setIsAuthenticated(false);
+          setIsLoading(false);
+        } else if (event === 'SIGNED_IN' && session?.user) {
+          setSession(session);
+          await fetchLawyerProfile(session.user);
+          setIsLoading(false);
+        } else if (event === 'TOKEN_REFRESHED' && session) {
+          // Just update session without refetching profile
+          setSession(session);
         }
-        setIsLoading(false);
       }
     );
 
