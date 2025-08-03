@@ -41,17 +41,24 @@ async function getSystemConfig(supabaseClient: any, configKey: string, defaultVa
 }
 
 serve(async (req) => {
-  console.log('=== PROCESS-AGENT-AI FUNCTION STARTED ===');
+  console.log('🎯 === PROCESS-AGENT-AI FUNCTION STARTED ===', {
+    timestamp: new Date().toISOString(),
+    method: req.method,
+    url: req.url,
+    headers: Object.fromEntries(req.headers.entries())
+  });
   
   if (req.method === 'OPTIONS') {
-    console.log('Handling CORS preflight request');
+    console.log('✅ Handling CORS preflight request');
     return new Response(null, { headers: corsHeaders });
   }
 
   if (req.method !== 'POST') {
-    console.log('Method not allowed:', req.method);
+    console.log('❌ Method not allowed:', req.method);
     return new Response('Method not allowed', { status: 405, headers: securityHeaders });
   }
+
+  console.log('🚀 Processing POST request...');
 
   try {
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');

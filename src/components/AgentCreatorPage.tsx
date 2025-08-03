@@ -514,17 +514,24 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
     setMaxStepReached(Math.max(maxStepReached, 4)); // Update max step reached
     
     try {
-      console.log('Processing with AI...', {
+      console.log('🚀 [DEBUG] Starting AI processing...', {
         docName: formData.docName,
         docDesc: formData.docDesc,
         docCat: formData.docCat,
         templateLength: formData.docTemplate.length,
         promptLength: formData.initialPrompt.length,
-        lawyerData: lawyerData, // Add this to debug
-        hasPermissions: !!lawyerData?.canCreateAgents
+        targetAudience: formData.targetAudience,
+        timestamp: new Date().toISOString()
       });
 
-      // AI processing doesn't require special permissions, only basic authentication
+      console.log('📡 [DEBUG] About to call process-agent-ai function...');
+
+      // First test if function calling works at all
+      console.log('🧪 [DEBUG] Testing with test function first...');
+      const testResult = await supabase.functions.invoke('test-process-agent-ai', {
+        body: { test: 'calling test function' }
+      });
+      console.log('🧪 [DEBUG] Test function result:', testResult);
 
       const { data, error } = await supabase.functions.invoke('process-agent-ai', {
         body: {
@@ -535,6 +542,14 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
           initialPrompt: formData.initialPrompt,
           targetAudience: formData.targetAudience
         }
+      });
+
+      console.log('📥 [DEBUG] Raw function response:', {
+        hasData: !!data,
+        hasError: !!error,
+        dataKeys: data ? Object.keys(data) : null,
+        errorDetails: error,
+        timestamp: new Date().toISOString()
       });
 
       if (error) {
