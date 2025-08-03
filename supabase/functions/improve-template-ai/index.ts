@@ -90,7 +90,7 @@ serve(async (req) => {
     }
 
     // Extract model and system prompt from config
-    let selectedModel = 'gpt-4o-mini'; // Default model
+    let selectedModel = 'gpt-4.1-2025-04-14'; // Default model
     let systemPrompt = null;
     
     if (configData && configData.length > 0) {
@@ -107,7 +107,7 @@ serve(async (req) => {
       }
     }
 
-    // Use default system prompt if none configured
+    // Use default system prompt if none configured, but enhance it with target audience
     if (!systemPrompt) {
       console.log('Using default system prompt');
       systemPrompt = `Eres un experto en redacción de documentos legales en Colombia. Tu tarea es mejorar plantillas de documentos legales para hacerlas más completas, precisas y profesionales.
@@ -129,6 +129,14 @@ REGLAS IMPORTANTES:
 12. ${targetAudience === 'empresas' ? 'Usa terminología legal corporativa apropiada y considera aspectos empresariales específicos' : 'Usa lenguaje legal claro pero accesible para personas naturales'}
 
 OBJETIVO: Devolver únicamente la plantilla del documento mejorada en texto plano, adaptada para ${targetAudience === 'empresas' ? 'empresas' : 'personas naturales'}, sin formato adicional.`;
+    } else {
+      // Enhance the configured prompt with target audience context
+      systemPrompt = `${systemPrompt}
+
+PÚBLICO OBJETIVO ACTUAL: ${targetAudience === 'empresas' ? 'Empresas y clientes corporativos' : 'Personas (clientes individuales)'}
+
+ADAPTACIÓN ESPECÍFICA:
+${targetAudience === 'empresas' ? 'Usa terminología legal corporativa apropiada y considera aspectos empresariales específicos' : 'Usa lenguaje legal claro pero accesible para personas naturales'}`;
     }
 
     console.log('Improving template with AI:', {
