@@ -573,7 +573,9 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         hasData: !!data, 
         hasError: !!error,
         dataType: typeof data,
-        errorType: typeof error
+        errorType: typeof error,
+        rawData: data,
+        rawError: error
       });
 
       // Handle Supabase function errors
