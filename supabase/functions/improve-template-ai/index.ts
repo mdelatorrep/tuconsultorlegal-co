@@ -61,12 +61,12 @@ serve(async (req) => {
     console.log('Initializing Supabase client...');
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get system configuration for model
+    // Get system configuration for model and prompt
     console.log('Fetching system configuration...');
     const { data: configData, error: configError } = await supabase
       .from('system_config')
       .select('config_key, config_value')
-      .in('config_key', ['template_optimizer_model']);
+      .in('config_key', ['template_optimizer_model', 'template_optimizer_prompt']);
 
     if (configError) {
       console.error('Error fetching system config:', configError);
@@ -75,20 +75,28 @@ serve(async (req) => {
 
     console.log('Config data retrieved:', configData);
 
-    // Extract model from config
+    // Extract model and system prompt from config
     let selectedModel = 'gpt-4.1-2025-04-14'; // Default model
+    let systemPrompt = null;
     
     if (configData && configData.length > 0) {
       const modelConfig = configData.find(c => c.config_key === 'template_optimizer_model');
+      const promptConfig = configData.find(c => c.config_key === 'template_optimizer_prompt');
       
       if (modelConfig?.config_value) {
         selectedModel = modelConfig.config_value;
         console.log('Using configured model:', selectedModel);
       }
+      if (promptConfig?.config_value) {
+        systemPrompt = promptConfig.config_value;
+        console.log('Using configured system prompt');
+      }
     }
 
-    // System prompt
-    const systemPrompt = `Eres un experto en redacción de documentos legales en Colombia. Tu tarea es mejorar plantillas de documentos legales para hacerlas más completas, precisas y profesionales.
+    // Use default system prompt if none configured
+    if (!systemPrompt) {
+      console.log('Using default system prompt');
+      systemPrompt = `Eres un experto en redacción de documentos legales en Colombia. Tu tarea es mejorar plantillas de documentos legales para hacerlas más completas, precisas y profesionales.
 
 PÚBLICO OBJETIVO: ${targetAudience === 'empresas' ? 'Empresas y clientes corporativos' : 'Personas (clientes individuales)'}
 
@@ -107,6 +115,7 @@ REGLAS IMPORTANTES:
 12. ${targetAudience === 'empresas' ? 'Usa terminología legal corporativa apropiada y considera aspectos empresariales específicos' : 'Usa lenguaje legal claro pero accesible para personas naturales'}
 
 OBJETIVO: Devolver únicamente la plantilla del documento mejorada en texto plano, adaptada para ${targetAudience === 'empresas' ? 'empresas' : 'personas naturales'}, sin formato adicional.`;
+    }
 
     console.log('Improving template with AI:', {
       docName,
