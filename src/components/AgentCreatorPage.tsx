@@ -97,6 +97,8 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         .order('display_order')
         .order('name');
 
+      console.log('🔍 Raw query response:', { data, error });
+
       if (error) {
         console.error('❌ Error loading categories:', error);
         return;
@@ -104,8 +106,11 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
 
       console.log('✅ Categories loaded:', data);
       const categoryNames = data?.map(cat => cat.name) || [];
-      console.log('📋 Category names:', categoryNames);
+      console.log('📋 Category names extracted:', categoryNames);
+      console.log('📊 Categories count:', categoryNames.length);
+      
       setCategories(categoryNames);
+      console.log('💾 Categories set in state');
     } catch (error) {
       console.error('❌ Error loading categories:', error);
     }
