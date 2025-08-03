@@ -1362,7 +1362,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
                               </SelectItem>
                             ))
                           ) : (
-                            <SelectItem value="" disabled>
+                            <SelectItem value="loading" disabled>
                               Cargando categorías...
                             </SelectItem>
                           )}
