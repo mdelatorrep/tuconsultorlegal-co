@@ -36,19 +36,50 @@ serve(async (req) => {
       throw new Error('Missing Supabase configuration');
     }
 
-    // Parse request body
-    const requestBody = await req.json();
-    console.log('Request body received:', requestBody);
-    
-    const { docName, docDesc, docCategory, targetAudience } = requestBody;
-
-    // Validate required fields
-    if (!docName || !docDesc) {
-      console.log('Validation failed - missing required fields');
+    // Parse request body with error handling
+    let requestBody;
+    try {
+      requestBody = await req.json();
+      console.log('Request body received:', requestBody);
+    } catch (jsonError) {
+      console.error('Invalid JSON in request body:', jsonError);
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'El nombre y descripción del documento son requeridos' 
+          error: 'Formato de datos inválido en la solicitud' 
+        }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+    
+    const { docName, docDesc, docCategory, targetAudience } = requestBody;
+
+    // Validate required fields with detailed logging
+    console.log('Validating required fields:', { docName, docDesc, docCategory, targetAudience });
+    
+    if (!docName || typeof docName !== 'string' || !docName.trim()) {
+      console.log('Validation failed - docName missing or invalid');
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'El nombre del documento es requerido y debe ser válido' 
+        }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+    
+    if (!docDesc || typeof docDesc !== 'string' || !docDesc.trim()) {
+      console.log('Validation failed - docDesc missing or invalid');
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'La descripción del documento es requerida y debe ser válida' 
         }),
         { 
           status: 400,
@@ -57,26 +88,42 @@ serve(async (req) => {
       );
     }
 
-    // Initialize Supabase client
+    // Initialize Supabase client with error handling
     console.log('Initializing Supabase client...');
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    let supabase;
+    try {
+      supabase = createClient(supabaseUrl, supabaseServiceKey);
+    } catch (supabaseError) {
+      console.error('Failed to initialize Supabase client:', supabaseError);
+      throw new Error('Error al conectar con la base de datos');
+    }
 
-    // Get system configuration for model and prompt
+    // Get system configuration for model and prompt with timeout
     console.log('Fetching system configuration...');
-    const { data: configData, error: configError } = await supabase
-      .from('system_config')
-      .select('config_key, config_value')
-      .in('config_key', ['document_description_optimizer_model', 'document_description_optimizer_prompt']);
+    let configData = null;
+    try {
+      const { data, error: configError } = await supabase
+        .from('system_config')
+        .select('config_key, config_value')
+        .in('config_key', ['document_description_optimizer_model', 'document_description_optimizer_prompt']);
 
-    if (configError) {
-      console.error('Error fetching system config:', configError);
-      throw new Error('Error al obtener configuración del sistema');
+      if (configError) {
+        console.error('Error fetching system config:', configError);
+        console.log('Continuing with default configuration...');
+        configData = null; // Will use defaults
+      } else {
+        configData = data;
+      }
+    } catch (configFetchError) {
+      console.error('Exception fetching system config:', configFetchError);
+      console.log('Continuing with default configuration...');
+      configData = null; // Will use defaults
     }
 
     console.log('Config data retrieved:', configData);
 
     // Extract model and system prompt from config
-    let selectedModel = 'gpt-4.1-2025-04-14'; // Default model
+    let selectedModel = 'gpt-4o-mini'; // Default model
     let systemPrompt = null;
     
     if (configData && configData.length > 0) {
