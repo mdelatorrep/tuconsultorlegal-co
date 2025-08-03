@@ -699,10 +699,14 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       console.log('Raw response error:', error);
       console.log('Response type of data:', typeof data);
       console.log('Response type of error:', typeof error);
+      console.log('Data success property:', data?.success);
+      console.log('Data error property:', data?.error);
+      console.log('Data improvedName:', data?.improvedName);
+      console.log('Data improvedDescription:', data?.improvedDescription);
       console.log('====================================');
 
       if (error) {
-        console.error('Supabase function error:', error);
+        console.error('❌ Supabase function error detected:', error);
         setIsImprovingDocInfo(false);
         toast({
           title: "Error al mejorar información",
@@ -716,16 +720,26 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       }
 
       if (!data?.success) {
-        console.error('AI document info improvement failed:', data);
-        throw new Error(data?.error || 'Error en la mejora de información del documento');
+        console.error('❌ AI document info improvement failed:', data);
+        setIsImprovingDocInfo(false);
+        toast({
+          title: "Error al mejorar información",
+          description: data?.error || 'Error en la mejora de información del documento',
+          variant: "destructive",
+        });
+        // Continue to next step with original data
+        setCurrentStep(2);
+        setMaxStepReached(Math.max(maxStepReached, 2));
+        return;
       }
 
-      console.log('Document info improvement successful:', {
+      console.log('✅ Document info improvement successful:', {
         improvedName: data.improvedName,
         improvedDescription: data.improvedDescription
       });
 
       // Show the improvement to the user
+      console.log('📋 Setting docInfoImprovement state...');
       setDocInfoImprovement({
         improvedName: data.improvedName,
         improvedDescription: data.improvedDescription,
@@ -736,6 +750,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       });
 
       setIsImprovingDocInfo(false);
+      console.log('💾 State updated successfully');
 
       toast({
         title: "Mejoras sugeridas por IA",
