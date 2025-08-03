@@ -681,16 +681,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
   };
 
   const improveDocumentInfo = async () => {
-    console.log('=== improveDocumentInfo CALLED ===');
-    console.log('Form data validation:', {
-      docName: formData.docName?.trim(),
-      docDesc: formData.docDesc?.trim(),
-      docCat: formData.docCat,
-      targetAudience: formData.targetAudience
-    });
-
     if (!formData.docName.trim() || !formData.docDesc.trim() || !formData.docCat) {
-      console.log('Validation failed - missing required fields');
       toast({
         title: "Campos requeridos",
         description: "Por favor completa el nombre, descripción y categoría del documento.",
@@ -699,89 +690,28 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       return;
     }
 
-    console.log('Setting isImprovingDocInfo to true');
     setIsImprovingDocInfo(true);
     
     try {
-      console.log('Improving document info with AI...', {
-        docName: formData.docName,
-        docDesc: formData.docDesc,
-        docCategory: formData.docCat,
-        targetAudience: formData.targetAudience
+      const { data, error } = await supabase.functions.invoke('improve-document-info', {
+        body: {
+          docName: formData.docName,
+          docDesc: formData.docDesc,
+          docCategory: formData.docCat,
+          targetAudience: formData.targetAudience
+        }
       });
-
-      console.log('About to call supabase.functions.invoke...');
-      
-      const requestBody = {
-        docName: formData.docName,
-        docDesc: formData.docDesc,
-        docCategory: formData.docCat,
-        targetAudience: formData.targetAudience
-      };
-      
-      console.log('Request body being sent:', requestBody);
-      
-      // Add timeout to prevent hanging
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout: La mejora de IA tomó demasiado tiempo')), 30000)
-      );
-      
-      console.log('Calling improve-document-info function...');
-      
-      const functionPromise = supabase.functions.invoke('improve-document-info', {
-        body: requestBody
-      });
-      
-      console.log('Function promise created, awaiting response...');
-      
-      const { data, error } = await Promise.race([functionPromise, timeoutPromise]) as any;
-
-      console.log('=== SUPABASE FUNCTION RESPONSE ===');
-      console.log('Raw response data:', data);
-      console.log('Raw response error:', error);
-      console.log('Response type of data:', typeof data);
-      console.log('Response type of error:', typeof error);
-      console.log('Data success property:', data?.success);
-      console.log('Data error property:', data?.error);
-      console.log('Data improvedName:', data?.improvedName);
-      console.log('Data improvedDescription:', data?.improvedDescription);
-      console.log('====================================');
 
       if (error) {
-        console.error('❌ Supabase function error detected:', error);
-        setIsImprovingDocInfo(false);
-        toast({
-          title: "Error al mejorar información",
-          description: "No se pudo mejorar la información del documento. Continuando con datos originales.",
-          variant: "destructive",
-        });
-        // Continue to next step with original data
-        setCurrentStep(2);
-        setMaxStepReached(Math.max(maxStepReached, 2));
-        return;
+        console.error('Error al mejorar información:', error);
+        throw error;
       }
 
       if (!data?.success) {
-        console.error('❌ AI document info improvement failed:', data);
-        setIsImprovingDocInfo(false);
-        toast({
-          title: "Error al mejorar información",
-          description: data?.error || 'Error en la mejora de información del documento',
-          variant: "destructive",
-        });
-        // Continue to next step with original data
-        setCurrentStep(2);
-        setMaxStepReached(Math.max(maxStepReached, 2));
-        return;
+        throw new Error(data?.error || 'Error en la mejora de información del documento');
       }
 
-      console.log('✅ Document info improvement successful:', {
-        improvedName: data.improvedName,
-        improvedDescription: data.improvedDescription
-      });
-
       // Show the improvement to the user
-      console.log('📋 Setting docInfoImprovement state...');
       setDocInfoImprovement({
         improvedName: data.improvedName,
         improvedDescription: data.improvedDescription,
@@ -791,31 +721,20 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         isEditing: false,
       });
 
-      setIsImprovingDocInfo(false);
-      console.log('💾 State updated successfully');
-
       toast({
         title: "Mejoras sugeridas por IA",
         description: "Revisa las mejoras sugeridas para el nombre y descripción del documento.",
       });
 
     } catch (error) {
-      console.error('=== ERROR IN improveDocumentInfo ===');
-      console.error('Error type:', typeof error);
-      console.error('Error object:', error);
-      console.error('Error message:', error instanceof Error ? error.message : 'Unknown error');
-      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-      setIsImprovingDocInfo(false);
-      
+      console.error('Error al mejorar información:', error);
       toast({
         title: "Error al mejorar información",
-        description: "No se pudo mejorar la información del documento. Continuando con datos originales.",
+        description: error instanceof Error ? error.message : "No se pudo mejorar la información del documento.",
         variant: "destructive",
       });
-
-      // Continue to next step even if improvement fails
-      setCurrentStep(2);
-      setMaxStepReached(Math.max(maxStepReached, 2));
+    } finally {
+      setIsImprovingDocInfo(false);
     }
   };
 
