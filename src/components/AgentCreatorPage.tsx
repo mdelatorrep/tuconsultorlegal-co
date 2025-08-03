@@ -1877,7 +1877,10 @@ VALIDACIONES:
                         <ArrowLeft className="h-4 w-4 mr-2" /> Anterior
                       </Button>
                       <Button 
-                        onClick={() => {
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
                           console.log('🎯 [BUTTON CLICK] Procesar con IA button clicked!');
                           processWithAI();
                         }} 
