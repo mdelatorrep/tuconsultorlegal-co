@@ -681,7 +681,18 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
   };
 
   const improveDocumentInfo = async () => {
+    console.log('🚀 improveDocumentInfo called');
+    console.log('📋 Form data validation check:', {
+      docName: formData.docName,
+      docNameTrimmed: formData.docName?.trim(),
+      docDesc: formData.docDesc,
+      docDescTrimmed: formData.docDesc?.trim(),
+      docCat: formData.docCat,
+      targetAudience: formData.targetAudience
+    });
+
     if (!formData.docName.trim() || !formData.docDesc.trim() || !formData.docCat) {
+      console.log('❌ Validation failed - missing required fields');
       toast({
         title: "Campos requeridos",
         description: "Por favor completa el nombre, descripción y categoría del documento.",
@@ -690,27 +701,36 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       return;
     }
 
+    console.log('✅ Validation passed, setting loading state');
     setIsImprovingDocInfo(true);
     
     try {
+      console.log('📤 Calling improve-document-info function...');
+      const requestPayload = {
+        docName: formData.docName,
+        docDesc: formData.docDesc,
+        docCategory: formData.docCat,
+        targetAudience: formData.targetAudience
+      };
+      console.log('📦 Request payload:', requestPayload);
+
       const { data, error } = await supabase.functions.invoke('improve-document-info', {
-        body: {
-          docName: formData.docName,
-          docDesc: formData.docDesc,
-          docCategory: formData.docCat,
-          targetAudience: formData.targetAudience
-        }
+        body: requestPayload
       });
 
+      console.log('📥 Function response received:', { data, error });
+
       if (error) {
-        console.error('Error al mejorar información:', error);
+        console.error('❌ Error from Supabase function:', error);
         throw error;
       }
 
       if (!data?.success) {
+        console.error('❌ Function returned unsuccessful response:', data);
         throw new Error(data?.error || 'Error en la mejora de información del documento');
       }
 
+      console.log('✅ Function successful, updating UI with improvements');
       // Show the improvement to the user
       setDocInfoImprovement({
         improvedName: data.improvedName,
@@ -727,13 +747,14 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       });
 
     } catch (error) {
-      console.error('Error al mejorar información:', error);
+      console.error('🔥 Error in improveDocumentInfo:', error);
       toast({
         title: "Error al mejorar información",
         description: error instanceof Error ? error.message : "No se pudo mejorar la información del documento.",
         variant: "destructive",
       });
     } finally {
+      console.log('🏁 Finished improveDocumentInfo, clearing loading state');
       setIsImprovingDocInfo(false);
     }
   };
