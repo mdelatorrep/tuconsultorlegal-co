@@ -124,17 +124,20 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
 
   // Auto-save draft when form data changes (excluding initial load)
   useEffect(() => {
-    // Evitar auto-save en la carga inicial
+    // Evitar auto-save en la carga inicial o cuando no hay datos mínimos
     if (!formData.docName && !formData.docDesc && !formData.docTemplate && !formData.initialPrompt) {
       return;
     }
 
+    // Debounce auto-save para evitar múltiples saves
     const timer = setTimeout(() => {
-      saveDraft();
+      if (!isSavingDraft && lawyerData?.canCreateAgents) {
+        saveDraft();
+      }
     }, 3000); // Auto-save after 3 seconds of inactivity
 
     return () => clearTimeout(timer);
-  }, [formData, currentStep, aiResults]);
+  }, [formData, currentStep, aiResults, isSavingDraft, lawyerData?.canCreateAgents]);
 
   const loadDrafts = async () => {
     if (!lawyerData?.canCreateAgents) {
@@ -175,37 +178,48 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
     
     setIsSavingDraft(true);
     try {
-      const draftName = formData.docName || `Borrador ${new Date().toLocaleDateString()}`;
+      const draftName = formData.docName?.trim() || `Borrador ${new Date().toLocaleDateString()}`;
       
       console.log('Attempting to save draft with lawyerId:', lawyerData.id);
       
       const { data, error } = await supabase.functions.invoke('save-agent-draft', {
         body: {
-          lawyerId: lawyerData.id, // Usar el ID del lawyer profile directamente
+          lawyerId: lawyerData.id,
           draftId: currentDraftId,
           draftName,
           stepCompleted: currentStep,
-          formData,
+          formData: {
+            ...formData,
+            // Ensure clean data
+            docName: formData.docName?.trim() || '',
+            docDesc: formData.docDesc?.trim() || '',
+            docTemplate: formData.docTemplate?.trim() || '',
+            initialPrompt: formData.initialPrompt?.trim() || ''
+          },
           aiResults
         }
       });
 
       if (error) {
         console.error('Error saving draft:', error);
-        toast({
-          title: "Error al guardar borrador",
-          description: error.message || "No se pudo guardar el borrador",
-          variant: "destructive",
-        });
+        // Only show error toast for manual saves, not auto-saves
+        if (!currentDraftId) {
+          toast({
+            title: "Error al guardar borrador",
+            description: error.message || "No se pudo guardar el borrador",
+            variant: "destructive",
+          });
+        }
         return;
       }
 
       if (data?.success) {
         if (!currentDraftId) {
           setCurrentDraftId(data.draftId);
+          console.log('Draft created with ID:', data.draftId);
+        } else {
+          console.log('Draft updated successfully');
         }
-        // Optional: Show subtle indication that draft was saved
-        console.log('Draft saved successfully');
       }
     } catch (error) {
       console.error('Error saving draft:', error);
@@ -216,24 +230,43 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
 
   const loadDraft = async (draft: any) => {
     try {
+      // Validate draft data before loading
+      if (!draft || !draft.id) {
+        throw new Error('Invalid draft data');
+      }
+
       setFormData({
         docName: draft.doc_name || "",
         docDesc: draft.doc_desc || "",
         docCat: draft.doc_cat || "",
-        targetAudience: draft.target_audience || "personas",
+        targetAudience: ['personas', 'empresas'].includes(draft.target_audience) ? draft.target_audience : "personas",
         docTemplate: draft.doc_template || "",
         initialPrompt: draft.initial_prompt || "",
-        slaHours: draft.sla_hours || 4,
+        slaHours: Math.max(1, Math.min(draft.sla_hours || 4, 72)),
         slaEnabled: draft.sla_enabled !== undefined ? draft.sla_enabled : true,
         lawyerSuggestedPrice: draft.lawyer_suggested_price || "",
       });
 
+      // Safely load AI results
       if (draft.ai_results && typeof draft.ai_results === 'object') {
-        setAiResults(draft.ai_results);
+        setAiResults({
+          enhancedPrompt: draft.ai_results.enhancedPrompt || "",
+          extractedPlaceholders: Array.isArray(draft.ai_results.extractedPlaceholders) ? draft.ai_results.extractedPlaceholders : [],
+          calculatedPrice: draft.ai_results.calculatedPrice || "",
+          priceJustification: draft.ai_results.priceJustification || "",
+        });
+      } else {
+        setAiResults({
+          enhancedPrompt: "",
+          extractedPlaceholders: [],
+          calculatedPrice: "",
+          priceJustification: "",
+        });
       }
 
-      setCurrentStep(draft.step_completed || 1);
-      setMaxStepReached(Math.max(maxStepReached, draft.step_completed || 1)); // Update max step reached
+      const stepCompleted = Math.max(1, Math.min(draft.step_completed || 1, 5));
+      setCurrentStep(stepCompleted);
+      setMaxStepReached(Math.max(maxStepReached, stepCompleted));
       setCurrentDraftId(draft.id);
       setShowDrafts(false);
 

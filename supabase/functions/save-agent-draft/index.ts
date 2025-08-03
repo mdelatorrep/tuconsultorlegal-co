@@ -41,21 +41,26 @@ serve(async (req) => {
       stepCompleted
     });
 
-    // Prepare the draft data
+    // Validate required fields
+    if (!lawyerId || !draftName) {
+      throw new Error('lawyerId and draftName are required');
+    }
+
+    // Prepare the draft data with validation
     const draftData = {
       lawyer_id: lawyerId,
-      draft_name: draftName,
-      step_completed: stepCompleted,
-      doc_name: formData.docName || null,
-      doc_desc: formData.docDesc || null,
-      doc_cat: formData.docCat || null,
-      target_audience: formData.targetAudience || 'personas',
-      doc_template: formData.docTemplate || null,
-      initial_prompt: formData.initialPrompt || null,
-      sla_hours: formData.slaHours || 4,
-      sla_enabled: formData.slaEnabled !== undefined ? formData.slaEnabled : true,
-      lawyer_suggested_price: formData.lawyerSuggestedPrice || null,
-      ai_results: aiResults || {},
+      draft_name: draftName.substring(0, 255), // Ensure name doesn't exceed limit
+      step_completed: Math.max(1, Math.min(stepCompleted || 1, 5)), // Ensure valid step
+      doc_name: formData?.docName?.substring(0, 255) || null,
+      doc_desc: formData?.docDesc?.substring(0, 1000) || null,
+      doc_cat: formData?.docCat || null,
+      target_audience: ['personas', 'empresas'].includes(formData?.targetAudience) ? formData.targetAudience : 'personas',
+      doc_template: formData?.docTemplate || null,
+      initial_prompt: formData?.initialPrompt || null,
+      sla_hours: Math.max(1, Math.min(formData?.slaHours || 4, 72)), // Between 1-72 hours
+      sla_enabled: formData?.slaEnabled !== undefined ? formData.slaEnabled : true,
+      lawyer_suggested_price: formData?.lawyerSuggestedPrice?.substring(0, 50) || null,
+      ai_results: aiResults && typeof aiResults === 'object' ? aiResults : {},
       updated_at: new Date().toISOString()
     };
 
@@ -76,19 +81,25 @@ serve(async (req) => {
         throw error;
       }
       
-      // If no data returned, the draft was already deleted (success case)
+      // If no data returned, the draft might not exist or was already deleted
       if (!data) {
-        console.log('Draft was already deleted, skipping update');
-        return new Response(JSON.stringify({
-          success: true,
-          draftId: draftId,
-          message: 'Borrador ya fue procesado exitosamente'
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        console.log('Draft not found for update, creating new one instead');
+        // Try to create a new draft instead
+        const { data: newData, error: createError } = await supabase
+          .from('agent_drafts')
+          .insert(draftData)
+          .select()
+          .single();
+
+        if (createError) {
+          console.error('Error creating draft after update failed:', createError);
+          throw createError;
+        }
+        
+        result = newData;
+      } else {
+        result = data;
       }
-      
-      result = data;
     } else {
       // Create new draft
       const { data, error } = await supabase

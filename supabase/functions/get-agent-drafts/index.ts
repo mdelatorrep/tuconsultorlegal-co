@@ -27,13 +27,35 @@ serve(async (req) => {
 
     const { lawyerId } = await req.json();
 
+    if (!lawyerId) {
+      throw new Error('lawyerId is required');
+    }
+
     console.log('Getting agent drafts for lawyer:', lawyerId);
 
+    // Get drafts with optimized query - only necessary fields
     const { data: drafts, error } = await supabase
       .from('agent_drafts')
-      .select('*')
+      .select(`
+        id, 
+        draft_name, 
+        step_completed, 
+        doc_name, 
+        doc_desc, 
+        doc_cat,
+        target_audience,
+        doc_template,
+        initial_prompt,
+        sla_hours,
+        sla_enabled,
+        lawyer_suggested_price,
+        ai_results,
+        created_at,
+        updated_at
+      `)
       .eq('lawyer_id', lawyerId)
-      .order('updated_at', { ascending: false });
+      .order('updated_at', { ascending: false })
+      .limit(50); // Limit to latest 50 drafts
 
     if (error) {
       console.error('Error fetching drafts:', error);

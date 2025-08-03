@@ -27,20 +27,37 @@ serve(async (req) => {
 
     const { draftId, lawyerId } = await req.json();
 
-    console.log('Deleting agent draft:', draftId);
+    if (!draftId || !lawyerId) {
+      throw new Error('draftId and lawyerId are required');
+    }
 
-    const { error } = await supabase
+    console.log('Deleting agent draft:', draftId, 'for lawyer:', lawyerId);
+
+    // Use returning to confirm deletion
+    const { data, error } = await supabase
       .from('agent_drafts')
       .delete()
       .eq('id', draftId)
-      .eq('lawyer_id', lawyerId);
+      .eq('lawyer_id', lawyerId)
+      .select('id')
+      .maybeSingle();
 
     if (error) {
       console.error('Error deleting draft:', error);
       throw error;
     }
 
-    console.log('Draft deleted successfully');
+    if (!data) {
+      console.log('Draft not found or already deleted');
+      return new Response(JSON.stringify({
+        success: true,
+        message: 'Borrador ya fue eliminado'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log('Draft deleted successfully:', data.id);
 
     return new Response(JSON.stringify({
       success: true,
