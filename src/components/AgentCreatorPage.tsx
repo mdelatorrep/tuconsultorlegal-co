@@ -133,19 +133,43 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
 
   // Auto-save draft when form data changes (excluding initial load)
   useEffect(() => {
+    console.log('🔄 Auto-save effect triggered');
+    console.log('📊 Auto-save conditions check:', {
+      hasDocName: !!formData.docName,
+      hasDocDesc: !!formData.docDesc,
+      hasDocTemplate: !!formData.docTemplate,
+      hasInitialPrompt: !!formData.initialPrompt,
+      isSavingDraft,
+      canCreateAgents: lawyerData?.canCreateAgents,
+      currentStep,
+      lawyerId: lawyerData?.id
+    });
+
     // Evitar auto-save en la carga inicial o cuando no hay datos mínimos
     if (!formData.docName && !formData.docDesc && !formData.docTemplate && !formData.initialPrompt) {
+      console.log('❌ Auto-save skipped - no minimal data present');
       return;
     }
 
+    console.log('✅ Auto-save conditions met, setting timer...');
     // Debounce auto-save para evitar múltiples saves
     const timer = setTimeout(() => {
+      console.log('⏰ Auto-save timer triggered');
       if (!isSavingDraft && lawyerData?.canCreateAgents) {
+        console.log('🚀 Executing auto-save...');
         saveDraft();
+      } else {
+        console.log('❌ Auto-save blocked:', {
+          isSavingDraft,
+          canCreateAgents: lawyerData?.canCreateAgents
+        });
       }
     }, 3000); // Auto-save after 3 seconds of inactivity
 
-    return () => clearTimeout(timer);
+    return () => {
+      console.log('🧹 Clearing auto-save timer');
+      clearTimeout(timer);
+    };
   }, [formData, currentStep, aiResults, isSavingDraft, lawyerData?.canCreateAgents]);
 
   const loadDrafts = async () => {
@@ -177,19 +201,32 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
   };
 
   const saveDraft = async () => {
-    if (isSavingDraft) return; // Prevent multiple simultaneous saves
+    console.log('💾 saveDraft function called');
+    
+    if (isSavingDraft) {
+      console.log('❌ Save blocked - already saving draft');
+      return; // Prevent multiple simultaneous saves
+    }
     
     // Skip auto-save if user doesn't have permissions
     if (!lawyerData?.canCreateAgents) {
-      console.log('Cannot save draft - user does not have agent creation permissions');
+      console.log('❌ Save blocked - user does not have agent creation permissions');
       return;
     }
     
+    console.log('✅ Save conditions met, proceeding...');
     setIsSavingDraft(true);
+    
     try {
       const draftName = formData.docName?.trim() || `Borrador ${new Date().toLocaleDateString()}`;
       
-      console.log('Attempting to save draft with lawyerId:', lawyerData.id);
+      console.log('📤 Attempting to save draft:', {
+        lawyerId: lawyerData.id,
+        currentDraftId,
+        draftName,
+        stepCompleted: currentStep,
+        hasFormData: !!formData
+      });
       
       const { data, error } = await supabase.functions.invoke('save-agent-draft', {
         body: {
@@ -209,8 +246,10 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         }
       });
 
+      console.log('📥 Save function response:', { data, error });
+
       if (error) {
-        console.error('Error saving draft:', error);
+        console.error('❌ Error saving draft:', error);
         // Only show error toast for manual saves, not auto-saves
         if (!currentDraftId) {
           toast({
@@ -225,15 +264,18 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       if (data?.success) {
         if (!currentDraftId) {
           setCurrentDraftId(data.draftId);
-          console.log('Draft created with ID:', data.draftId);
+          console.log('✅ Draft created with ID:', data.draftId);
         } else {
-          console.log('Draft updated successfully');
+          console.log('✅ Draft updated successfully');
         }
+      } else {
+        console.log('⚠️ Save function returned unsuccessful response:', data);
       }
     } catch (error) {
-      console.error('Error saving draft:', error);
+      console.error('❌ Error saving draft:', error);
     } finally {
       setIsSavingDraft(false);
+      console.log('🏁 Save draft process completed');
     }
   };
 
