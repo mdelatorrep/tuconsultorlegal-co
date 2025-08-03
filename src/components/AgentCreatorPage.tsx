@@ -87,6 +87,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
   }, []);
 
   const loadCategories = async () => {
+    console.log('🔄 Loading categories...');
     try {
       const { data, error } = await supabase
         .from('document_categories')
@@ -97,13 +98,16 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         .order('name');
 
       if (error) {
-        console.error('Error loading categories:', error);
+        console.error('❌ Error loading categories:', error);
         return;
       }
 
-      setCategories(data?.map(cat => cat.name) || []);
+      console.log('✅ Categories loaded:', data);
+      const categoryNames = data?.map(cat => cat.name) || [];
+      console.log('📋 Category names:', categoryNames);
+      setCategories(categoryNames);
     } catch (error) {
-      console.error('Error loading categories:', error);
+      console.error('❌ Error loading categories:', error);
     }
   };
 
@@ -1351,11 +1355,17 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
                           <SelectValue placeholder="Selecciona una categoría" />
                         </SelectTrigger>
                         <SelectContent>
-                          {categories.map((category) => (
-                            <SelectItem key={category} value={category}>
-                              {category}
+                          {categories.length > 0 ? (
+                            categories.map((category) => (
+                              <SelectItem key={category} value={category}>
+                                {category}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <SelectItem value="" disabled>
+                              Cargando categorías...
                             </SelectItem>
-                          ))}
+                          )}
                         </SelectContent>
                       </Select>
                      </div>
