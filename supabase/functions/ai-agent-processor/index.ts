@@ -65,15 +65,9 @@ serve(async (req) => {
       hasSupabaseUrl: !!supabaseUrl
     });
 
+    // For now, work without OpenAI (mock processing)
     if (!openAIApiKey) {
-      console.error('❌ Missing OpenAI API key');
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: 'OpenAI API key not configured' 
-      }), {
-        status: 500,
-        headers: securityHeaders
-      });
+      console.log('⚠️ OpenAI API key not configured - using mock processing');
     }
 
     // Initialize Supabase client
@@ -120,11 +114,11 @@ serve(async (req) => {
       hasSystemPrompt: !!systemPrompt
     });
 
-    // Mock processing for now (replace with actual OpenAI calls later)
-    console.log('🤖 Processing with AI...');
+    // Mock processing for now - REPLACE with actual OpenAI calls when API key is available
+    console.log('🤖 Starting mock AI processing (OpenAI integration pending)...');
     
-    // Simulate processing delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Add longer delay to simulate processing
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     // Extract placeholders from template
     const placeholderRegex = /\{\{([^}]+)\}\}/g;
