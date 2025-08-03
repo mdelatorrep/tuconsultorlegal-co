@@ -61,12 +61,12 @@ serve(async (req) => {
     console.log('Initializing Supabase client...');
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get system configuration for model and prompt
+    // Get system configuration for model
     console.log('Fetching system configuration...');
     const { data: configData, error: configError } = await supabase
       .from('system_config')
       .select('config_key, config_value')
-      .in('config_key', ['document_description_optimizer_model', 'document_description_optimizer_prompt']);
+      .in('config_key', ['document_description_optimizer_model']);
 
     if (configError) {
       console.error('Error fetching system config:', configError);
@@ -75,28 +75,20 @@ serve(async (req) => {
 
     console.log('Config data retrieved:', configData);
 
-    // Extract model and system prompt from config
+    // Extract model from config
     let selectedModel = 'gpt-4.1-2025-04-14'; // Default model
-    let systemPrompt = null;
     
     if (configData && configData.length > 0) {
       const modelConfig = configData.find(c => c.config_key === 'document_description_optimizer_model');
-      const promptConfig = configData.find(c => c.config_key === 'document_description_optimizer_prompt');
       
       if (modelConfig?.config_value) {
         selectedModel = modelConfig.config_value;
         console.log('Using configured model:', selectedModel);
       }
-      if (promptConfig?.config_value) {
-        systemPrompt = promptConfig.config_value;
-        console.log('Using configured system prompt');
-      }
     }
 
-    // Use default system prompt if none configured
-    if (!systemPrompt) {
-      console.log('Using default system prompt');
-      systemPrompt = `Eres un experto en marketing legal y comunicación con usuarios finales en Colombia. Tu tarea es mejorar el nombre y descripción de servicios legales para que sean más atractivos y comprensibles para el usuario final.
+    // System prompt
+    const systemPrompt = `Eres un experto en marketing legal y comunicación con usuarios finales en Colombia. Tu tarea es mejorar el nombre y descripción de servicios legales para que sean más atractivos y comprensibles para el usuario final.
 
 PÚBLICO OBJETIVO: ${targetAudience === 'empresas' ? 'Empresas y clientes corporativos' : 'Personas (clientes individuales)'}
 
@@ -117,7 +109,6 @@ FORMATO DE RESPUESTA REQUERIDO:
 }
 
 OBJETIVO: Mejorar el nombre y descripción para que sean más atractivos y comprensibles para ${targetAudience === 'empresas' ? 'empresas' : 'personas naturales'}.`;
-    }
 
     // Prepare user message
     const userMessage = `Categoría: ${docCategory || 'No especificada'}
