@@ -57,26 +57,40 @@ serve(async (req) => {
       );
     }
 
-    // Initialize Supabase client
+    // Initialize Supabase client with error handling
     console.log('Initializing Supabase client...');
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Get system configuration for model and prompt
-    console.log('Fetching system configuration...');
-    const { data: configData, error: configError } = await supabase
-      .from('system_config')
-      .select('config_key, config_value')
-      .in('config_key', ['template_optimizer_model', 'template_optimizer_prompt']);
-
-    if (configError) {
-      console.error('Error fetching system config:', configError);
-      throw new Error('Error al obtener configuración del sistema');
+    let supabase;
+    try {
+      supabase = createClient(supabaseUrl, supabaseServiceKey);
+    } catch (supabaseError) {
+      console.error('Failed to initialize Supabase client:', supabaseError);
+      throw new Error('Error al conectar con la base de datos');
     }
 
-    console.log('Config data retrieved:', configData);
+    // Get system configuration for model and prompt with timeout
+    console.log('Fetching system configuration...');
+    let configData = null;
+    try {
+      const { data, error: configError } = await supabase
+        .from('system_config')
+        .select('config_key, config_value')
+        .in('config_key', ['template_optimizer_model', 'template_optimizer_prompt']);
+
+      if (configError) {
+        console.error('Error fetching system config:', configError);
+        console.log('Continuing with default configuration...');
+        configData = null; // Will use defaults
+      } else {
+        configData = data;
+      }
+    } catch (configFetchError) {
+      console.error('Exception fetching system config:', configFetchError);
+      console.log('Continuing with default configuration...');
+      configData = null; // Will use defaults
+    }
 
     // Extract model and system prompt from config
-    let selectedModel = 'gpt-4.1-2025-04-14'; // Default model
+    let selectedModel = 'gpt-4o-mini'; // Default model
     let systemPrompt = null;
     
     if (configData && configData.length > 0) {
