@@ -509,6 +509,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
   };
 
   const processWithAI = async () => {
+    console.log('🚨 [CRITICAL] processWithAI function called!', { timestamp: new Date().toISOString() });
     setIsProcessing(true);
     setCurrentStep(4);
     setMaxStepReached(Math.max(maxStepReached, 4)); // Update max step reached
@@ -1835,7 +1836,13 @@ VALIDACIONES:
                       <Button variant="outline" onClick={handlePrev} className={isMobile ? "w-full" : ""}>
                         <ArrowLeft className="h-4 w-4 mr-2" /> Anterior
                       </Button>
-                      <Button onClick={processWithAI} className={`bg-emerald-600 hover:bg-emerald-700 ${isMobile ? "w-full" : ""}`}>
+                      <Button 
+                        onClick={() => {
+                          console.log('🎯 [BUTTON CLICK] Procesar con IA button clicked!');
+                          processWithAI();
+                        }} 
+                        className={`bg-emerald-600 hover:bg-emerald-700 ${isMobile ? "w-full" : ""}`}
+                      >
                         <Sparkles className="h-4 w-4 mr-2" />
                         Procesar con IA
                       </Button>
