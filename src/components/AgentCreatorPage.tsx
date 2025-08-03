@@ -509,94 +509,134 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
   };
 
   const processWithAI = async () => {
-    console.log('🚨 [CRITICAL] processWithAI function called!', { timestamp: new Date().toISOString() });
+    console.log('🎯 [PROCESS-AI] Function initiated', { 
+      timestamp: new Date().toISOString(),
+      formData: {
+        docName: formData.docName || 'NOT_SET',
+        docDesc: formData.docDesc || 'NOT_SET', 
+        docTemplate: formData.docTemplate ? 'SET' : 'NOT_SET',
+        docCat: formData.docCat || 'NOT_SET',
+        initialPrompt: formData.initialPrompt || 'EMPTY',
+        targetAudience: formData.targetAudience || 'NOT_SET'
+      }
+    });
+
+    // Validate required fields first
+    if (!formData.docName?.trim()) {
+      toast({
+        title: "Campo requerido",
+        description: "El nombre del documento es obligatorio",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!formData.docTemplate?.trim()) {
+      toast({
+        title: "Campo requerido", 
+        description: "La plantilla del documento es obligatoria",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Set processing state
     setIsProcessing(true);
+    setAiProcessingSuccess(false);
     setCurrentStep(4);
-    setMaxStepReached(Math.max(maxStepReached, 4)); // Update max step reached
-    
+    setMaxStepReached(Math.max(maxStepReached, 4));
+
     try {
-      console.log('🚀 [DEBUG] Starting AI processing...', {
-        docName: formData.docName,
-        docDesc: formData.docDesc,
-        docCat: formData.docCat,
-        templateLength: formData.docTemplate.length,
-        promptLength: formData.initialPrompt.length,
-        targetAudience: formData.targetAudience,
-        timestamp: new Date().toISOString()
+      console.log('📡 [PROCESS-AI] Calling edge function...');
+
+      // Prepare request payload
+      const requestPayload = {
+        docName: formData.docName.trim(),
+        docDesc: formData.docDesc?.trim() || 'Documento legal generado automáticamente',
+        category: formData.docCat || 'General',
+        docTemplate: formData.docTemplate.trim(),
+        initialPrompt: formData.initialPrompt?.trim() || '',
+        targetAudience: formData.targetAudience || 'personas'
+      };
+
+      console.log('📤 [PROCESS-AI] Request payload prepared:', {
+        ...requestPayload,
+        docTemplate: `${requestPayload.docTemplate.length} characters`
       });
 
-      console.log('📡 [DEBUG] About to call process-agent-ai function...');
-
-      // First test if function calling works at all
-      console.log('🧪 [DEBUG] Testing with test function first...');
-      const testResult = await supabase.functions.invoke('test-process-agent-ai', {
-        body: { test: 'calling test function' }
-      });
-      console.log('🧪 [DEBUG] Test function result:', testResult);
-
+      // Call the AI processing function
       const { data, error } = await supabase.functions.invoke('process-agent-ai', {
-        body: {
-          docName: formData.docName,
-          docDesc: formData.docDesc,
-          docCat: formData.docCat,
-          docTemplate: formData.docTemplate,
-          initialPrompt: formData.initialPrompt,
-          targetAudience: formData.targetAudience
-        }
+        body: requestPayload
       });
 
-      console.log('📥 [DEBUG] Raw function response:', {
-        hasData: !!data,
+      console.log('📥 [PROCESS-AI] Response received:', { 
+        hasData: !!data, 
         hasError: !!error,
-        dataKeys: data ? Object.keys(data) : null,
-        errorDetails: error,
-        timestamp: new Date().toISOString()
+        dataType: typeof data,
+        errorType: typeof error
       });
 
+      // Handle Supabase function errors
       if (error) {
-        console.error('Supabase function error:', error);
-        throw new Error(error.message || 'Error al procesar con IA');
+        console.error('❌ [PROCESS-AI] Supabase error:', error);
+        throw new Error(`Error en la función: ${error.message || 'Error desconocido'}`);
       }
 
-      if (!data?.success) {
-        console.error('AI processing failed:', data);
-        throw new Error(data?.error || 'Error en el procesamiento de IA');
+      // Handle missing data
+      if (!data) {
+        console.error('❌ [PROCESS-AI] No data received');
+        throw new Error('No se recibió respuesta de la función de procesamiento');
       }
 
-      console.log('AI processing successful:', {
-        enhancedPromptLength: data.enhancedPrompt?.length,
-        placeholdersCount: data.extractedPlaceholders?.length,
+      // Handle AI processing errors
+      if (!data.success) {
+        console.error('❌ [PROCESS-AI] AI processing failed:', data);
+        throw new Error(data.error || 'Error en el procesamiento con IA');
+      }
+
+      console.log('✅ [PROCESS-AI] Success! Processing results:', {
+        hasEnhancedPrompt: !!data.enhancedPrompt,
+        enhancedPromptLength: data.enhancedPrompt?.length || 0,
+        placeholdersCount: data.placeholders?.length || 0,
+        hasSuggestedPrice: !!data.suggestedPrice,
         suggestedPrice: data.suggestedPrice
       });
 
+      // Update state with results
       setAiResults({
-        enhancedPrompt: data.enhancedPrompt || '',
-        extractedPlaceholders: data.extractedPlaceholders || [],
-        calculatedPrice: data.suggestedPrice || '$ 50,000 COP',
-        priceJustification: data.priceJustification || 'Precio estimado basado en complejidad del documento.'
+        enhancedPrompt: data.enhancedPrompt || formData.initialPrompt || '',
+        extractedPlaceholders: data.placeholders || [],
+        calculatedPrice: data.suggestedPrice || 'Precio por determinar',
+        priceJustification: data.priceJustification || 'Precio estimado basado en la complejidad del documento.'
       });
 
       setAiProcessingSuccess(true);
-      setIsProcessing(false);
 
+      // Show success notification
       toast({
-        title: "Procesamiento completado",
-        description: `Se generó un prompt mejorado y se identificaron ${data.extractedPlaceholders?.length || 0} variables.`,
+        title: "¡Procesamiento completado!",
+        description: `Se generó un prompt mejorado y se identificaron ${data.placeholders?.length || 0} variables.`
       });
 
-    } catch (error) {
-      console.error('Error processing with AI:', error);
-      setIsProcessing(false);
+      console.log('🎉 [PROCESS-AI] Process completed successfully');
+
+    } catch (err) {
+      console.error('💥 [PROCESS-AI] Error caught:', err);
+      
       setAiProcessingSuccess(false);
+      
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido en el procesamiento';
       
       toast({
         title: "Error en el procesamiento",
-        description: error instanceof Error ? error.message : "No se pudo procesar con IA. Intenta nuevamente.",
+        description: errorMessage,
         variant: "destructive",
       });
-
-      // Stay on step 4 to show error and allow retry
-      // setCurrentStep(3); // Commented out to prevent redirect
+      
+      // Don't go back to step 3, stay on step 4 to show error state
+    } finally {
+      console.log('🏁 [PROCESS-AI] Finally block executed');
+      setIsProcessing(false);
     }
   };
 
