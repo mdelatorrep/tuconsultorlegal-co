@@ -202,35 +202,20 @@ function AdminPage() {
     }
   };
 
-  // Función para copiar información del abogado al portapapeles
+  // Función para copiar la clave del abogado al portapapeles
   const handleCopyLawyerInfo = async (lawyer: Lawyer) => {
     try {
-      const lawyerInfo = `
-Información del Abogado:
-========================
-Nombre: ${lawyer.full_name}
-Email: ${lawyer.email}
-Teléfono: ${lawyer.phone_number || 'No especificado'}
-ID: ${lawyer.id}
-Estado: ${lawyer.active ? 'Activo' : 'Inactivo'}
-Puede crear agentes: ${lawyer.can_create_agents ? 'Sí' : 'No'}
-Puede crear blogs: ${lawyer.can_create_blogs ? 'Sí' : 'No'}
-Puede usar herramientas IA: ${lawyer.can_use_ai_tools ? 'Sí' : 'No'}
-Fecha de registro: ${format(new Date(lawyer.created_at), 'dd/MM/yyyy HH:mm', { locale: es })}
-Último login: ${lawyer.last_login_at ? format(new Date(lawyer.last_login_at), 'dd/MM/yyyy HH:mm', { locale: es }) : 'Nunca'}
-      `.trim();
-
-      await navigator.clipboard.writeText(lawyerInfo);
+      await navigator.clipboard.writeText(lawyer.id);
       
       toast({
-        title: "Información copiada",
-        description: `Información de ${lawyer.full_name} copiada al portapapeles`,
+        title: "Clave copiada",
+        description: `Clave de ${lawyer.full_name} copiada al portapapeles`,
       });
     } catch (error) {
-      console.error('Error copying lawyer info:', error);
+      console.error('Error copying lawyer key:', error);
       toast({
         title: "Error",
-        description: "No se pudo copiar la información",
+        description: "No se pudo copiar la clave",
         variant: "destructive",
       });
     }
