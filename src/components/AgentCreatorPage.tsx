@@ -565,7 +565,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       });
 
       // Call the AI processing function
-      const { data, error } = await supabase.functions.invoke('process-agent-ai', {
+      const { data, error } = await supabase.functions.invoke('ai-agent-processor', {
         body: requestPayload
       });
 

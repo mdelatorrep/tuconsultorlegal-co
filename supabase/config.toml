@@ -75,6 +75,9 @@ verify_jwt = false
 [functions.test-process-agent-ai]
 verify_jwt = false
 
+[functions.ai-agent-processor]
+verify_jwt = false
+
 [functions.optimize-consultation-prompts]
 verify_jwt = false
 
