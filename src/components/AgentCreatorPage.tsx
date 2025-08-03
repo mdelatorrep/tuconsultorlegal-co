@@ -631,6 +631,14 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         docCategory: formData.docCat
       });
 
+      console.log('📤 About to invoke improve-template-ai with body:', {
+        templateContent: formData.docTemplate.substring(0, 100) + '...',
+        docName: formData.docName,
+        docCategory: formData.docCat,
+        docDescription: formData.docDesc.substring(0, 100) + '...',
+        targetAudience: formData.targetAudience
+      });
+
       const { data, error } = await supabase.functions.invoke('improve-template-ai', {
         body: {
           templateContent: formData.docTemplate,
@@ -641,7 +649,12 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         }
       });
 
-      console.log('📥 Function response received:', { data, error });
+      console.log('📥 Function response received:', { 
+        data: data ? Object.keys(data) : null, 
+        error: error ? error.message : null,
+        fullData: data,
+        fullError: error
+      });
 
       if (error) {
         console.error('❌ Supabase function error:', error);
