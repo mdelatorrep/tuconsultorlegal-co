@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -18,52 +19,79 @@ const securityHeaders = {
   'Expires': '0'
 };
 
+// Helper function to get system configuration
+async function getSystemConfig(supabaseClient: any, configKey: string, defaultValue?: string): Promise<string> {
+  try {
+    const { data, error } = await supabaseClient
+      .from('system_config')
+      .select('config_value')
+      .eq('config_key', configKey)
+      .single();
+
+    if (error || !data) {
+      console.log(`Config ${configKey} not found, using default: ${defaultValue || 'none'}`);
+      return defaultValue || '';
+    }
+
+    return data.config_value;
+  } catch (error) {
+    console.error(`Error fetching config ${configKey}:`, error);
+    return defaultValue || '';
+  }
+}
+
 serve(async (req) => {
+  console.log('=== PROCESS-AGENT-AI FUNCTION STARTED ===');
+  
   if (req.method === 'OPTIONS') {
+    console.log('Handling CORS preflight request');
     return new Response(null, { headers: corsHeaders });
   }
 
   if (req.method !== 'POST') {
+    console.log('Method not allowed:', req.method);
     return new Response('Method not allowed', { status: 405, headers: securityHeaders });
   }
 
   try {
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    
+    console.log('Environment check:', {
+      hasOpenAIKey: !!openAIApiKey,
+      hasSupabaseUrl: !!supabaseUrl,
+      hasSupabaseKey: !!supabaseServiceKey
+    });
+
     if (!openAIApiKey) {
       throw new Error('OpenAI API key not configured');
     }
-
-    // Initialize Supabase client to get system configuration
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
     
     if (!supabaseServiceKey || !supabaseUrl) {
       throw new Error('Missing Supabase configuration');
     }
 
-    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.50.3');
+    console.log('Initializing Supabase client...');
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get configured OpenAI model and prompt for agent creation
-    const { data: configData, error: configError } = await supabase
-      .from('system_config')
-      .select('config_key, config_value')
-      .in('config_key', ['agent_creation_ai_model', 'agent_creation_system_prompt']);
+    const requestBody = await req.json();
+    console.log('Request body received:', {
+      docName: requestBody.docName,
+      docDesc: requestBody.docDesc?.substring(0, 100) + '...',
+      docCat: requestBody.docCat,
+      templateLength: requestBody.docTemplate?.length,
+      promptLength: requestBody.initialPrompt?.length,
+      targetAudience: requestBody.targetAudience
+    });
 
-    let selectedModel = 'gpt-4.1-2025-04-14';
-    let customSystemPrompt = null;
-    
-    if (!configError && configData) {
-      const modelConfig = configData.find(c => c.config_key === 'agent_creation_ai_model');
-      const promptConfig = configData.find(c => c.config_key === 'agent_creation_system_prompt');
-      
-      if (modelConfig?.config_value) selectedModel = modelConfig.config_value;
-      if (promptConfig?.config_value) customSystemPrompt = promptConfig.config_value;
-    }
+    const { docName, docDesc, docCat, docTemplate, initialPrompt, targetAudience } = requestBody;
 
-    console.log('Using OpenAI model:', selectedModel);
-
-    const { docName, docDesc, docCat, docTemplate, initialPrompt, targetAudience } = await req.json();
+    console.log('Validating required fields:', {
+      docName: !!docName,
+      docTemplate: !!docTemplate,
+      initialPrompt: !!initialPrompt
+    });
 
     if (!docName || !docTemplate || !initialPrompt) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
@@ -72,14 +100,16 @@ serve(async (req) => {
       });
     }
 
-    console.log('Processing with AI...', {
-      docName,
-      docDesc,
-      docCat,
-      templateLength: docTemplate.length,
-      promptLength: initialPrompt.length,
-      targetAudience
-    });
+    console.log('Fetching system configuration...');
+
+    // Get configured OpenAI model and prompt for agent creation
+    const selectedModel = await getSystemConfig(supabase, 'agent_creation_ai_model', 'gpt-4o-mini');
+    const customSystemPrompt = await getSystemConfig(supabase, 'agent_creation_system_prompt', null);
+
+    console.log('Using configured model:', selectedModel);
+    console.log('Using configured system prompt:', !!customSystemPrompt);
+
+    console.log('Making OpenAI API request for prompt enhancement...');
 
     // 1. Enhance the initial prompt
     const enhancePromptResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -130,8 +160,17 @@ ${docTemplate}`
       }),
     });
 
+    console.log('OpenAI prompt enhancement response status:', enhancePromptResponse.status);
+
+    if (!enhancePromptResponse.ok) {
+      throw new Error(`OpenAI API error for prompt enhancement: ${enhancePromptResponse.status}`);
+    }
+
     const enhancedPromptData = await enhancePromptResponse.json();
+    console.log('Prompt enhancement completed');
     const enhancedPrompt = enhancedPromptData.choices[0].message.content;
+
+    console.log('Making OpenAI API request for placeholder extraction...');
 
     // 2. Extract placeholders from template with validation
     const extractPlaceholdersResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -183,7 +222,14 @@ IMPORTANTE: Verifica que identificas TODOS los placeholders presentes en la plan
       }),
     });
 
+    console.log('OpenAI placeholder extraction response status:', extractPlaceholdersResponse.status);
+
+    if (!extractPlaceholdersResponse.ok) {
+      throw new Error(`OpenAI API error for placeholder extraction: ${extractPlaceholdersResponse.status}`);
+    }
+
     const placeholdersData = await extractPlaceholdersResponse.json();
+    console.log('Placeholder extraction completed');
     let extractedPlaceholders = [];
     
     try {
@@ -231,6 +277,8 @@ IMPORTANTE: Verifica que identificas TODOS los placeholders presentes en la plan
         }
       }
     }
+
+    console.log('Making OpenAI API request for price analysis...');
 
     // 3. Calculate suggested price based on complexity
     const priceAnalysisResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -296,7 +344,14 @@ ${docTemplate.substring(0, 1000)}${docTemplate.length > 1000 ? '...' : ''}`
       }),
     });
 
+    console.log('OpenAI price analysis response status:', priceAnalysisResponse.status);
+
+    if (!priceAnalysisResponse.ok) {
+      throw new Error(`OpenAI API error for price analysis: ${priceAnalysisResponse.status}`);
+    }
+
     const priceData = await priceAnalysisResponse.json();
+    console.log('Price analysis completed');
     let priceAnalysis;
     
     try {
