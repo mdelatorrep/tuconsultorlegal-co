@@ -171,7 +171,7 @@ serve(async (req) => {
 
     // Step 1: Get system configuration from database
     console.log('⚙️ === STEP 1: FETCHING SYSTEM CONFIGURATION ===');
-    const model = await getSystemConfig(supabase, 'agent_creation_ai_model', 'gpt-4o-mini');
+    const model = await getSystemConfig(supabase, 'agent_creation_ai_model', 'gpt-4.1-2025-04-14');
     const systemPrompt = await getSystemConfig(supabase, 'agent_creation_system_prompt', 
       'Eres un asistente legal experto en Colombia. Tu tarea es analizar documentos legales y mejorar prompts para agentes conversacionales.'
     );
