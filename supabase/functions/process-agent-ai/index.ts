@@ -90,11 +90,12 @@ serve(async (req) => {
     console.log('Validating required fields:', {
       docName: !!docName,
       docTemplate: !!docTemplate,
-      initialPrompt: !!initialPrompt
+      initialPrompt: initialPrompt?.length || 0
     });
 
-    if (!docName || !docTemplate || !initialPrompt) {
-      return new Response(JSON.stringify({ error: 'Missing required fields' }), {
+    if (!docName || !docTemplate) {
+      console.log('❌ Missing required fields - docName or docTemplate');
+      return new Response(JSON.stringify({ error: 'Missing required fields: docName and docTemplate' }), {
         status: 400,
         headers: securityHeaders
       });
