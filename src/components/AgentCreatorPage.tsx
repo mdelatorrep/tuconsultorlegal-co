@@ -590,6 +590,15 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         throw new Error('No se recibió respuesta de la función de procesamiento');
       }
 
+      console.log('🔍 [PROCESS-AI] Detailed data analysis:', {
+        dataSuccess: data.success,
+        dataSuccessType: typeof data.success,
+        dataSuccessValue: JSON.stringify(data.success),
+        hasEnhancedPrompt: !!data.enhancedPrompt,
+        hasPlaceholders: !!data.placeholders,
+        hasError: !!data.error
+      });
+
       // Handle AI processing errors
       if (data.success !== true) {
         console.error('❌ [PROCESS-AI] AI processing failed:', data);
