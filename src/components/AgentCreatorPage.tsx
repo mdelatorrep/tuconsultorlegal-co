@@ -573,35 +573,55 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         hasData: !!data, 
         hasError: !!error,
         dataType: typeof data,
-        errorType: typeof error,
-        rawData: data,
-        rawError: error
+        errorType: typeof error
       });
+
+      console.log('🔍 [PROCESS-AI] RAW DATA DUMP:', JSON.stringify(data, null, 2));
+      console.log('🔍 [PROCESS-AI] RAW ERROR DUMP:', JSON.stringify(error, null, 2));
 
       // Handle Supabase function errors
       if (error) {
-        console.error('❌ [PROCESS-AI] Supabase error:', error);
+        console.error('❌ [PROCESS-AI] Supabase error detected:', error);
         throw new Error(`Error en la función: ${error.message || 'Error desconocido'}`);
       }
 
       // Handle missing data
       if (!data) {
-        console.error('❌ [PROCESS-AI] No data received');
+        console.error('❌ [PROCESS-AI] No data received - data is null/undefined');
         throw new Error('No se recibió respuesta de la función de procesamiento');
       }
 
-      console.log('🔍 [PROCESS-AI] Detailed data analysis:', {
+      // Deep inspection of data structure
+      console.log('🔍 [PROCESS-AI] Data structure analysis:', {
+        dataKeys: Object.keys(data),
         dataSuccess: data.success,
         dataSuccessType: typeof data.success,
-        dataSuccessValue: JSON.stringify(data.success),
+        dataSuccessExact: data.success === true,
+        dataSuccessLoose: data.success == true,
         hasEnhancedPrompt: !!data.enhancedPrompt,
         hasPlaceholders: !!data.placeholders,
-        hasError: !!data.error
+        hasError: !!data.error,
+        placeholdersType: typeof data.placeholders,
+        placeholdersLength: data.placeholders?.length,
+        enhancedPromptType: typeof data.enhancedPrompt,
+        enhancedPromptLength: data.enhancedPrompt?.length
+      });
+
+      console.log('🔍 [PROCESS-AI] SUCCESS CHECK:', {
+        hasProperty: data.hasOwnProperty('success'),
+        propertyValue: data.success,
+        strictCheck: data.success === true,
+        willPass: data.hasOwnProperty('success') && data.success === true
       });
 
       // Handle AI processing errors - Check if success property exists and is true
       if (!data.hasOwnProperty('success') || data.success !== true) {
-        console.error('❌ [PROCESS-AI] AI processing failed:', data);
+        console.error('❌ [PROCESS-AI] SUCCESS CHECK FAILED:', {
+          hasProperty: data.hasOwnProperty('success'),
+          successValue: data.success,
+          successType: typeof data.success,
+          fullData: data
+        });
         throw new Error(data.error || 'Error en el procesamiento con IA');
       }
 
