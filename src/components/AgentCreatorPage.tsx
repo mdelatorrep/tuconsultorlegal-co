@@ -599,8 +599,8 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         hasError: !!data.error
       });
 
-      // Handle AI processing errors
-      if (data.success !== true) {
+      // Handle AI processing errors - Check if success property exists and is true
+      if (!data.hasOwnProperty('success') || data.success !== true) {
         console.error('❌ [PROCESS-AI] AI processing failed:', data);
         throw new Error(data.error || 'Error en el procesamiento con IA');
       }
