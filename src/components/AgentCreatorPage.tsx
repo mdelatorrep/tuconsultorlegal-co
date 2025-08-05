@@ -10,6 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { Sparkles, ArrowLeft, ArrowRight, CheckCircle, Loader2, Copy, Wand2, Bold, Italic, Underline, Type, AlignLeft, AlignCenter, AlignRight, Save, FileText, Trash2 } from "lucide-react";
+import { ConversationGuideBuilder } from "@/components/ConversationGuideBuilder";
+import { FieldInstructionsManager } from "@/components/FieldInstructionsManager";
 
 interface AgentCreatorPageProps {
   onBack: () => void;
@@ -30,13 +32,29 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
   const [showDrafts, setShowDrafts] = useState(false);
   const [drafts, setDrafts] = useState<any[]>([]);
   
+  // Interfaces for new conversation guide system
+  interface ConversationBlock {
+    id: string;
+    name: string;
+    introduction: string;
+    placeholders: string[];
+  }
+
+  interface FieldInstruction {
+    id: string;
+    fieldName: string;
+    validationRule: string;
+    helpText: string;
+  }
+
   const [formData, setFormData] = useState({
     docName: "",
     docDesc: "",
     docCat: "",
     targetAudience: "personas", // "personas" o "empresas"
     docTemplate: "",
-    initialPrompt: "",
+    conversation_blocks: [] as ConversationBlock[],
+    field_instructions: [] as FieldInstruction[],
     slaHours: 4,
     slaEnabled: true,
     lawyerSuggestedPrice: "",
@@ -138,7 +156,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       hasDocName: !!formData.docName,
       hasDocDesc: !!formData.docDesc,
       hasDocTemplate: !!formData.docTemplate,
-      hasInitialPrompt: !!formData.initialPrompt,
+      hasConversationBlocks: formData.conversation_blocks && formData.conversation_blocks.length > 0,
       isSavingDraft,
       canCreateAgents: lawyerData?.canCreateAgents,
       currentStep,
@@ -146,7 +164,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
     });
 
     // Evitar auto-save en la carga inicial o cuando no hay datos mínimos
-    if (!formData.docName && !formData.docDesc && !formData.docTemplate && !formData.initialPrompt) {
+    if (!formData.docName && !formData.docDesc && !formData.docTemplate && formData.conversation_blocks.length === 0) {
       console.log('❌ Auto-save skipped - no minimal data present');
       return;
     }
@@ -240,7 +258,8 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
             docName: formData.docName?.trim() || '',
             docDesc: formData.docDesc?.trim() || '',
             docTemplate: formData.docTemplate?.trim() || '',
-            initialPrompt: formData.initialPrompt?.trim() || ''
+            conversation_blocks: formData.conversation_blocks || [],
+            field_instructions: formData.field_instructions || []
           },
           aiResults
         }
@@ -292,7 +311,8 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         docCat: draft.doc_cat || "",
         targetAudience: ['personas', 'empresas'].includes(draft.target_audience) ? draft.target_audience : "personas",
         docTemplate: draft.doc_template || "",
-        initialPrompt: draft.initial_prompt || "",
+        conversation_blocks: draft.conversation_blocks || [],
+        field_instructions: draft.field_instructions || [],
         slaHours: Math.max(1, Math.min(draft.sla_hours || 4, 72)),
         slaEnabled: draft.sla_enabled !== undefined ? draft.sla_enabled : true,
         lawyerSuggestedPrice: draft.lawyer_suggested_price || "",
@@ -382,7 +402,8 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       docCat: "",
       targetAudience: "personas",
       docTemplate: "",
-      initialPrompt: "",
+      conversation_blocks: [],
+      field_instructions: [],
       slaHours: 4,
       slaEnabled: true,
       lawyerSuggestedPrice: "",
@@ -425,7 +446,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       setMaxStepReached(Math.max(maxStepReached, nextStep));
     } else if (currentStep === 3) {
       // Validate step 3 fields
-      if (!formData.initialPrompt.trim()) {
+      if (!formData.conversation_blocks || formData.conversation_blocks.length === 0) {
         toast({
           title: "Prompt requerido",
           description: "Por favor ingresa las instrucciones iniciales para el agente.",
@@ -516,7 +537,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         docDesc: formData.docDesc || 'NOT_SET', 
         docTemplate: formData.docTemplate ? 'SET' : 'NOT_SET',
         docCat: formData.docCat || 'NOT_SET',
-        initialPrompt: formData.initialPrompt || 'EMPTY',
+        conversationBlocks: formData.conversation_blocks?.length || 0,
         targetAudience: formData.targetAudience || 'NOT_SET'
       }
     });
@@ -555,7 +576,8 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         docDesc: formData.docDesc?.trim() || 'Documento legal generado automáticamente',
         category: formData.docCat || 'General',
         docTemplate: formData.docTemplate.trim(),
-        initialPrompt: formData.initialPrompt?.trim() || '',
+        conversation_blocks: formData.conversation_blocks || [],
+        field_instructions: formData.field_instructions || [],
         targetAudience: formData.targetAudience || 'personas'
       };
 
@@ -635,7 +657,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
 
       // Update state with results
       setAiResults({
-        enhancedPrompt: data.enhancedPrompt || formData.initialPrompt || '',
+        enhancedPrompt: data.enhancedPrompt || '',
         extractedPlaceholders: data.placeholders || [],
         calculatedPrice: data.suggestedPrice || 'Precio por determinar',
         priceJustification: data.priceJustification || 'Precio estimado basado en la complejidad del documento.'
@@ -1046,7 +1068,8 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         docCat: "",
         targetAudience: "personas",
         docTemplate: "",
-        initialPrompt: "",
+        conversation_blocks: [],
+        field_instructions: [],
         slaHours: 4,
         slaEnabled: true,
         lawyerSuggestedPrice: "",
@@ -1752,177 +1775,47 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
               </div>
             )}
 
-            {/* Step 3: Initial Prompt */}
+            {/* Step 3: Conversation Guide */}
             {currentStep === 3 && (
               <div className="space-y-6">
-                <h2 className="text-2xl font-bold mb-6">Prompt Inicial para el Agente de IA</h2>
-                
-                
-                {/* Show AI improvements */}
-                {promptImprovement.showImprovement && (
-                  <div className="space-y-6">
-                    <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-6">
-                      <h3 className="text-lg font-semibold mb-4 text-green-800 dark:text-green-200">
-                        ✨ Prompt Mejorado por IA
-                      </h3>
-                      
-                      <div className="space-y-4">
-                        <Label className="text-sm font-medium">Prompt del Agente</Label>
-                        {promptImprovement.isEditing ? (
-                          <div className="space-y-2">
-                            <p className="text-xs text-emerald-600 dark:text-emerald-400">Editando mejora:</p>
-                            <Textarea
-                              value={promptImprovement.improvedPrompt}
-                              onChange={(e) => handlePromptEdit(e.target.value)}
-                              className="border-emerald-200 dark:border-emerald-800 focus:border-emerald-300 dark:focus:border-emerald-700"
-                              placeholder="Edita el prompt mejorado"
-                              rows={12}
-                            />
-                          </div>
-                        ) : (
-                          <div className="grid grid-cols-1 gap-4">
-                            <div>
-                              <p className="text-xs text-muted-foreground mb-1">Original:</p>
-                              <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded border text-sm max-h-40 overflow-y-auto">
-                                <pre className="whitespace-pre-wrap">{promptImprovement.originalPrompt}</pre>
-                              </div>
-                            </div>
-                            <div>
-                              <p className="text-xs text-emerald-600 dark:text-emerald-400 mb-1">Mejorado:</p>
-                              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/50 rounded border border-emerald-200 dark:border-emerald-800 text-sm max-h-60 overflow-y-auto">
-                                <pre className="whitespace-pre-wrap">{promptImprovement.improvedPrompt}</pre>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className={`${isMobile ? 'flex flex-col space-y-3' : 'flex justify-end gap-3'} mt-6`}>
-                        <Button 
-                          variant="outline" 
-                          onClick={rejectPromptImprovement}
-                          className={isMobile ? "w-full" : ""}
-                        >
-                          Mantener Original
-                        </Button>
-                        {!promptImprovement.isEditing && (
-                          <Button 
-                            variant="outline" 
-                            onClick={enableEditingPrompt}
-                            className={`text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-950/20 ${isMobile ? "w-full" : ""}`}
-                          >
-                            <Wand2 className="h-4 w-4 mr-2" />
-                            Editar Mejoras
-                          </Button>
-                        )}
-                        <Button 
-                          onClick={acceptPromptImprovement}
-                          className={`bg-emerald-600 hover:bg-emerald-700 ${isMobile ? "w-full" : ""}`}
-                        >
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          {promptImprovement.isEditing ? 'Aplicar Cambios' : 'Aplicar Mejoras'}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                <div className="text-center space-y-2">
+                  <h2 className="text-2xl font-bold text-foreground">Paso 3: Guía de Conversación</h2>
+                  <p className="text-muted-foreground">
+                    Organiza los placeholders en bloques de conversación. Esto definirá el orden en que Lexi le pedirá la información al cliente.
+                  </p>
+                </div>
 
-                {/* Regular form fields */}
-                {!promptImprovement.showImprovement && (
-                  <div className="space-y-6">
-                    <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
-                      <h3 className="text-lg font-semibold mb-3 text-blue-800 dark:text-blue-200">📋 Guía para el Prompt</h3>
-                      <div className="space-y-2 text-sm text-blue-700 dark:text-blue-300">
-                        <p><strong>✅ Incluye:</strong></p>
-                        <ul className="list-disc list-inside ml-4 space-y-1">
-                          <li>Rol específico del agente (ej: "asistente legal especializado en...")</li>
-                          <li>Objetivo claro del documento</li>
-                          <li>Información que debe recopilar del usuario</li>
-                          <li>Tono de conversación (profesional, amigable, etc.)</li>
-                          <li>Validaciones especiales (si aplica)</li>
-                        </ul>
-                        <p className="pt-2"><strong>❌ Evita:</strong></p>
-                        <ul className="list-disc list-inside ml-4 space-y-1">
-                          <li>Instrucciones técnicas complejas</li>
-                          <li>Referencias a herramientas específicas</li>
-                          <li>Detalles de formato del documento final</li>
-                        </ul>
-                      </div>
-                    </div>
+                <ConversationGuideBuilder 
+                  placeholders={aiResults.extractedPlaceholders.map(p => p.placeholder)}
+                  conversationBlocks={formData.conversation_blocks || []}
+                  onBlocksChange={(blocks) => setFormData({ ...formData, conversation_blocks: blocks })}
+                />
 
-                    <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6">
-                      <h3 className="text-lg font-semibold mb-3">💡 Ejemplo de Prompt Efectivo</h3>
-                      <div className="bg-white dark:bg-gray-800 border rounded p-4 text-sm">
-                        <pre className="whitespace-pre-wrap font-mono text-gray-700 dark:text-gray-300">
-{`Eres un asistente legal especializado en contratos de arrendamiento residencial en Colombia.
+                <FieldInstructionsManager
+                  placeholders={aiResults.extractedPlaceholders.map(p => p.placeholder)}
+                  fieldInstructions={formData.field_instructions || []}
+                  onInstructionsChange={(instructions) => setFormData({ ...formData, field_instructions: instructions })}
+                />
 
-TU OBJETIVO: Ayudar a propietarios e inquilinos a crear un contrato de arrendamiento completo y legalmente válido.
-
-INFORMACIÓN A RECOPILAR:
-1. Datos del arrendador (nombre, cédula, dirección)
-2. Datos del arrendatario (nombre, cédula, teléfono, ocupación)
-3. Información del inmueble (dirección completa, estrato, área)
-4. Condiciones económicas (canon, depósito, incrementos)
-5. Duración del contrato y fecha de inicio
-6. Servicios incluidos/excluidos
-7. Condiciones especiales (mascotas, huéspedes, etc.)
-
-ESTILO DE CONVERSACIÓN:
-- Mantén un tono profesional pero cercano
-- Explica brevemente por qué necesitas cada dato
-- Confirma información importante antes de continuar
-- Haz una pregunta a la vez para no abrumar
-
-VALIDACIONES:
-- Asegúrate de que las cédulas tengan formato válido
-- Confirma que las fechas sean coherentes
-- Verifica que los montos estén en pesos colombianos`}
-                        </pre>
-                      </div>
-                    </div>
-
-                    <p className="text-muted-foreground mb-4">
-                      <strong>Instrucción:</strong> Escribe tu prompt inicial siguiendo la guía anterior. En el siguiente paso, la IA optimizará tu prompt automáticamente junto con el análisis completo del documento.
-                    </p>
-                    
-                    <div className="flex gap-2 mb-4">
-                      <Textarea
-                        value={formData.initialPrompt}
-                        onChange={(e) => handleInputChange('initialPrompt', e.target.value)}
-                        placeholder="Escribe aquí tu prompt inicial siguiendo la guía anterior..."
-                        rows={12}
-                        className="text-sm flex-1"
-                      />
-                    </div>
-
-                    
-                    <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
-                      <p className="text-sm text-amber-700 dark:text-amber-300">
-                        <strong>💡 Tip:</strong> Escribe tu prompt inicial siguiendo la guía anterior. 
-                        En el siguiente paso, la IA mejorará automáticamente tu prompt junto con todo el análisis del documento.
-                      </p>
-                    </div>
-
-                    <div className={`${isMobile ? 'flex flex-col space-y-3' : 'flex justify-between'}`}>
-                      <Button variant="outline" onClick={handlePrev} className={isMobile ? "w-full" : ""}>
-                        <ArrowLeft className="h-4 w-4 mr-2" /> Anterior
-                      </Button>
-                      <Button 
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          console.log('🎯 [BUTTON CLICK] Procesar con IA button clicked!');
-                          processWithAI();
-                        }} 
-                        className={`bg-emerald-600 hover:bg-emerald-700 ${isMobile ? "w-full" : ""}`}
-                      >
-                        <Sparkles className="h-4 w-4 mr-2" />
-                        Procesar con IA
-                      </Button>
-                    </div>
-                  </div>
-                )}
+                <div className={`${isMobile ? 'flex flex-col space-y-3' : 'flex justify-between'}`}>
+                  <Button variant="outline" onClick={handlePrev} className={isMobile ? "w-full" : ""}>
+                    <ArrowLeft className="h-4 w-4 mr-2" /> Anterior
+                  </Button>
+                  <Button 
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log('🎯 [BUTTON CLICK] Procesar con IA button clicked!');
+                      processWithAI();
+                    }} 
+                    disabled={!formData.conversation_blocks || formData.conversation_blocks.length === 0}
+                    className={`bg-emerald-600 hover:bg-emerald-700 ${isMobile ? "w-full" : ""}`}
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Procesar con IA
+                  </Button>
+                </div>
               </div>
             )}
 
