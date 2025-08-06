@@ -92,7 +92,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
   const steps = [
     { id: 1, title: "Info Básica", description: "Información del documento" },
     { id: 2, title: "Plantilla", description: "Texto del documento" },
-    { id: 3, title: "Prompt", description: "Instrucciones iniciales" },
+    { id: 3, title: "Guía de Conversación", description: "Estructura de la conversación" },
     { id: 4, title: "Magia IA", description: "Procesamiento automático" },
     { id: 5, title: "Revisar", description: "Envío a revisión" },
   ];
@@ -432,7 +432,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       // For step 1, improve document info with AI first
       improveDocumentInfo();
     } else if (currentStep === 2) {
-      // Validate step 2 fields
+      // Validate step 2 fields and extract placeholders
       if (!formData.docTemplate.trim()) {
         toast({
           title: "Plantilla requerida",
@@ -441,6 +441,10 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         });
         return;
       }
+      
+      // Extract placeholders from template before going to step 3
+      extractPlaceholdersFromTemplate();
+      
       const nextStep = currentStep + 1;
       setCurrentStep(nextStep);
       setMaxStepReached(Math.max(maxStepReached, nextStep));
@@ -448,8 +452,8 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       // Validate step 3 fields
       if (!formData.conversation_blocks || formData.conversation_blocks.length === 0) {
         toast({
-          title: "Prompt requerido",
-          description: "Por favor ingresa las instrucciones iniciales para el agente.",
+          title: "Bloques de conversación requeridos",
+          description: "Por favor organiza los placeholders en bloques de conversación.",
           variant: "destructive",
         });
         return;
@@ -527,6 +531,47 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
 
   const handlePromptEdit = (value: string) => {
     setPromptImprovement(prev => ({ ...prev, improvedPrompt: value }));
+  };
+
+  // Function to extract placeholders from template
+  const extractPlaceholdersFromTemplate = () => {
+    const template = formData.docTemplate;
+    if (!template) return;
+
+    // Extract placeholders using regex {{placeholder_name}}
+    const placeholderRegex = /\{\{([^}]+)\}\}/g;
+    const matches = [];
+    let match;
+    
+    while ((match = placeholderRegex.exec(template)) !== null) {
+      const placeholder = match[1].trim();
+      if (placeholder && !matches.some(m => m.placeholder === placeholder)) {
+        matches.push({
+          placeholder: placeholder,
+          pregunta: `Ingresa ${placeholder.replace(/_/g, ' ')}`
+        });
+      }
+    }
+
+    console.log('Extracted placeholders from template:', matches);
+    
+    setAiResults(prev => ({
+      ...prev,
+      extractedPlaceholders: matches
+    }));
+
+    if (matches.length > 0) {
+      toast({
+        title: "Placeholders extraídos",
+        description: `Se encontraron ${matches.length} placeholders en la plantilla.`,
+      });
+    } else {
+      toast({
+        title: "No se encontraron placeholders",
+        description: "Asegúrate de usar el formato {{nombre_campo}} en tu plantilla.",
+        variant: "destructive",
+      });
+    }
   };
 
   const processWithAI = async () => {
@@ -1761,6 +1806,30 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
                     Los placeholders como <code>{"{{nombre_campo}}"}</code> no se verán afectados por el formateo.
                   </p>
                 </div>
+
+                {/* Preview placeholders if found */}
+                {aiResults.extractedPlaceholders.length > 0 && (
+                  <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                    <h4 className="font-semibold text-green-800 dark:text-green-200 mb-2">
+                      ✅ Placeholders encontrados ({aiResults.extractedPlaceholders.length})
+                    </h4>
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {aiResults.extractedPlaceholders.map((item, index) => (
+                        <Badge key={index} variant="secondary" className="bg-green-100 text-green-800">
+                          {item.placeholder}
+                        </Badge>
+                      ))}
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={extractPlaceholdersFromTemplate}
+                      className="text-xs"
+                    >
+                      🔄 Re-escanear placeholders
+                    </Button>
+                  </div>
+                )}
                 
                 <div className={`${isMobile ? 'flex flex-col space-y-3' : 'flex justify-between'}`}>
                   <Button variant="outline" onClick={handlePrev} className={isMobile ? "w-full" : ""}>
@@ -1783,36 +1852,68 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
                   </p>
                 </div>
 
-                <ConversationGuideBuilder 
-                  placeholders={aiResults.extractedPlaceholders.map(p => p.placeholder)}
-                  conversationBlocks={formData.conversation_blocks || []}
-                  onBlocksChange={(blocks) => setFormData({ ...formData, conversation_blocks: blocks })}
-                />
+                {aiResults.extractedPlaceholders.length === 0 ? (
+                  <div className="text-center py-8">
+                    <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-6">
+                      <h3 className="text-lg font-semibold text-amber-800 dark:text-amber-200 mb-2">
+                        No se encontraron placeholders
+                      </h3>
+                      <p className="text-amber-700 dark:text-amber-300 mb-4">
+                        Para crear la guía de conversación, necesitas agregar placeholders en tu plantilla usando el formato <code>{"{{nombre_campo}}"}</code>
+                      </p>
+                      <Button 
+                        variant="outline" 
+                        onClick={handlePrev}
+                        className="border-amber-300 text-amber-800 hover:bg-amber-100"
+                      >
+                        <ArrowLeft className="h-4 w-4 mr-2" />
+                        Volver a la plantilla
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                      <p className="text-sm text-blue-700 dark:text-blue-300">
+                        <strong>✨ ¡Excelente!</strong> Se encontraron {aiResults.extractedPlaceholders.length} placeholders en tu plantilla. 
+                        Ahora organízalos en bloques de conversación para crear una experiencia fluida para el usuario.
+                      </p>
+                    </div>
 
-                <FieldInstructionsManager
-                  placeholders={aiResults.extractedPlaceholders.map(p => p.placeholder)}
-                  fieldInstructions={formData.field_instructions || []}
-                  onInstructionsChange={(instructions) => setFormData({ ...formData, field_instructions: instructions })}
-                />
+                    <ConversationGuideBuilder 
+                      placeholders={aiResults.extractedPlaceholders.map(p => p.placeholder)}
+                      conversationBlocks={formData.conversation_blocks || []}
+                      onBlocksChange={(blocks) => setFormData({ ...formData, conversation_blocks: blocks })}
+                    />
+
+                    <FieldInstructionsManager
+                      placeholders={aiResults.extractedPlaceholders.map(p => p.placeholder)}
+                      fieldInstructions={formData.field_instructions || []}
+                      onInstructionsChange={(instructions) => setFormData({ ...formData, field_instructions: instructions })}
+                    />
+                  </>
+                )}
 
                 <div className={`${isMobile ? 'flex flex-col space-y-3' : 'flex justify-between'}`}>
                   <Button variant="outline" onClick={handlePrev} className={isMobile ? "w-full" : ""}>
                     <ArrowLeft className="h-4 w-4 mr-2" /> Anterior
                   </Button>
-                  <Button 
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      console.log('🎯 [BUTTON CLICK] Procesar con IA button clicked!');
-                      processWithAI();
-                    }} 
-                    disabled={!formData.conversation_blocks || formData.conversation_blocks.length === 0}
-                    className={`bg-emerald-600 hover:bg-emerald-700 ${isMobile ? "w-full" : ""}`}
-                  >
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Procesar con IA
-                  </Button>
+                  {aiResults.extractedPlaceholders.length > 0 && (
+                    <Button 
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('🎯 [BUTTON CLICK] Procesar con IA button clicked!');
+                        processWithAI();
+                      }} 
+                      disabled={!formData.conversation_blocks || formData.conversation_blocks.length === 0}
+                      className={`bg-emerald-600 hover:bg-emerald-700 ${isMobile ? "w-full" : ""}`}
+                    >
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Procesar con IA
+                    </Button>
+                  )}
                 </div>
               </div>
             )}
