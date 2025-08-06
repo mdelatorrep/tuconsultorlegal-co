@@ -31,35 +31,102 @@ serve(async (req) => {
     const body = await req.json();
 
     const {
+      lawyerId,
+      draftId,
+      draftName,
+      stepCompleted,
       agentData,
       conversationBlocks,
       fieldInstructions
     } = body;
 
     console.log('Saving agent with blocks:', {
-      agentName: agentData.name,
+      lawyerId,
+      draftId,
+      draftName,
+      stepCompleted,
+      agentName: agentData?.doc_name,
       blocksCount: conversationBlocks?.length || 0,
       instructionsCount: fieldInstructions?.length || 0
     });
 
-    // Insert the legal agent
-    const { data: agent, error: agentError } = await supabase
-      .from('legal_agents')
-      .insert(agentData)
-      .select()
-      .single();
+    let agentDraftId = draftId;
 
-    if (agentError) {
-      console.error('Error creating agent:', agentError);
-      throw new Error('Failed to create agent');
+    // If no draftId provided, create new draft or update existing one
+    if (!agentDraftId) {
+      const { data: existingDraft, error: findError } = await supabase
+        .from('agent_drafts')
+        .select('id')
+        .eq('lawyer_id', lawyerId)
+        .eq('draft_name', draftName)
+        .maybeSingle();
+
+      if (findError && findError.code !== 'PGRST116') {
+        console.error('Error finding existing draft:', findError);
+        throw new Error('Failed to check for existing draft');
+      }
+
+      agentDraftId = existingDraft?.id;
     }
 
-    console.log('Agent created successfully:', agent.id);
+    // Update or insert the agent draft
+    let agent;
+    if (agentDraftId) {
+      // Update existing draft
+      const { data: updatedAgent, error: updateError } = await supabase
+        .from('agent_drafts')
+        .update({
+          ...agentData,
+          step_completed: stepCompleted,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', agentDraftId)
+        .select()
+        .single();
 
-    // Insert conversation blocks if provided
+      if (updateError) {
+        console.error('Error updating agent draft:', updateError);
+        throw new Error('Failed to update agent draft');
+      }
+      agent = updatedAgent;
+    } else {
+      // Create new draft
+      const { data: newAgent, error: createError } = await supabase
+        .from('agent_drafts')
+        .insert({
+          lawyer_id: lawyerId,
+          draft_name: draftName,
+          step_completed: stepCompleted,
+          ...agentData
+        })
+        .select()
+        .single();
+
+      if (createError) {
+        console.error('Error creating agent draft:', createError);
+        throw new Error('Failed to create agent draft');
+      }
+      agent = newAgent;
+      agentDraftId = agent.id;
+    }
+
+    console.log('Agent draft saved successfully:', agentDraftId);
+
+    // Handle conversation blocks
     if (conversationBlocks && conversationBlocks.length > 0) {
+      // First, delete existing blocks for this agent
+      const { error: deleteBlocksError } = await supabase
+        .from('conversation_blocks')
+        .delete()
+        .eq('legal_agent_id', agentDraftId);
+
+      if (deleteBlocksError) {
+        console.error('Error deleting existing conversation blocks:', deleteBlocksError);
+      }
+
+      // Insert new conversation blocks
       const blocksToInsert = conversationBlocks.map((block: any, index: number) => ({
-        legal_agent_id: agent.id,
+        legal_agent_id: agentDraftId,
         block_name: block.blockName,
         intro_phrase: block.introPhrase,
         placeholders: block.placeholders,
@@ -72,16 +139,26 @@ serve(async (req) => {
 
       if (blocksError) {
         console.error('Error creating conversation blocks:', blocksError);
-        // Don't fail the entire operation for this
       } else {
         console.log(`Created ${blocksToInsert.length} conversation blocks`);
       }
     }
 
-    // Insert field instructions if provided
+    // Handle field instructions
     if (fieldInstructions && fieldInstructions.length > 0) {
+      // First, delete existing instructions for this agent
+      const { error: deleteInstructionsError } = await supabase
+        .from('field_instructions')
+        .delete()
+        .eq('legal_agent_id', agentDraftId);
+
+      if (deleteInstructionsError) {
+        console.error('Error deleting existing field instructions:', deleteInstructionsError);
+      }
+
+      // Insert new field instructions
       const instructionsToInsert = fieldInstructions.map((instruction: any) => ({
-        legal_agent_id: agent.id,
+        legal_agent_id: agentDraftId,
         field_name: instruction.fieldName,
         validation_rule: instruction.validationRule,
         help_text: instruction.helpText
@@ -93,7 +170,6 @@ serve(async (req) => {
 
       if (instructionsError) {
         console.error('Error creating field instructions:', instructionsError);
-        // Don't fail the entire operation for this
       } else {
         console.log(`Created ${instructionsToInsert.length} field instructions`);
       }
@@ -102,7 +178,8 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       success: true,
       agent: agent,
-      message: 'Agent and conversation structure saved successfully'
+      draftId: agentDraftId,
+      message: 'Agent draft and conversation structure saved successfully'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
