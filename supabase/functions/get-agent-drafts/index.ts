@@ -33,7 +33,7 @@ serve(async (req) => {
 
     console.log('Getting agent drafts for lawyer:', lawyerId);
 
-    // Get drafts with optimized query - only necessary fields
+    // Get drafts with conversation blocks and field instructions
     const { data: drafts, error } = await supabase
       .from('agent_drafts')
       .select(`
@@ -62,11 +62,34 @@ serve(async (req) => {
       throw error;
     }
 
-    console.log(`Found ${drafts?.length || 0} drafts`);
+    // For each draft, get conversation blocks and field instructions
+    const draftsWithBlocks = await Promise.all(
+      (drafts || []).map(async (draft) => {
+        const [conversationBlocks, fieldInstructions] = await Promise.all([
+          supabase
+            .from('conversation_blocks')
+            .select('*')
+            .eq('legal_agent_id', draft.id)
+            .order('block_order'),
+          supabase
+            .from('field_instructions')
+            .select('*')
+            .eq('legal_agent_id', draft.id)
+        ]);
+
+        return {
+          ...draft,
+          conversation_blocks: conversationBlocks.data || [],
+          field_instructions: fieldInstructions.data || []
+        };
+      })
+    );
+
+    console.log(`Found ${draftsWithBlocks?.length || 0} drafts with blocks`);
 
     return new Response(JSON.stringify({
       success: true,
-      drafts: drafts || []
+      drafts: draftsWithBlocks || []
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

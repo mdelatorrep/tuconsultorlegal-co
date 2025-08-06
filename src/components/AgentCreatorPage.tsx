@@ -246,22 +246,26 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         hasFormData: !!formData
       });
       
-      const { data, error } = await supabase.functions.invoke('save-agent-draft', {
+      const { data, error } = await supabase.functions.invoke('save-agent-with-blocks', {
         body: {
           lawyerId: lawyerData.id,
           draftId: currentDraftId,
           draftName,
           stepCompleted: currentStep,
-          formData: {
-            ...formData,
-            // Ensure clean data
-            docName: formData.docName?.trim() || '',
-            docDesc: formData.docDesc?.trim() || '',
-            docTemplate: formData.docTemplate?.trim() || '',
-            conversation_blocks: formData.conversation_blocks || [],
-            field_instructions: formData.field_instructions || []
+          agentData: {
+            doc_name: formData.docName?.trim() || '',
+            doc_desc: formData.docDesc?.trim() || '',
+            doc_cat: formData.docCat || '',
+            target_audience: formData.targetAudience || 'personas',
+            doc_template: formData.docTemplate?.trim() || '',
+            initial_prompt: '',
+            sla_hours: formData.slaHours || 4,
+            sla_enabled: formData.slaEnabled !== undefined ? formData.slaEnabled : true,
+            lawyer_suggested_price: formData.lawyerSuggestedPrice?.trim() || '',
+            ai_results: aiResults
           },
-          aiResults
+          conversationBlocks: formData.conversation_blocks || [],
+          fieldInstructions: formData.field_instructions || []
         }
       });
 
