@@ -645,6 +645,18 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
 
       console.log('🔍 [PROCESS-AI] RAW DATA DUMP:', JSON.stringify(data, null, 2));
       console.log('🔍 [PROCESS-AI] RAW ERROR DUMP:', JSON.stringify(error, null, 2));
+      
+      // Additional debug: check if data has content but success check is failing
+      if (data && !data.success) {
+        console.error('❌ [PROCESS-AI] FUNCTION RETURNED FALSE SUCCESS:', {
+          success: data.success,
+          error: data.error,
+          details: data.details,
+          hasEnhancedPrompt: !!data.enhancedPrompt,
+          hasPlaceholders: !!data.placeholders,
+          fullDataKeys: Object.keys(data)
+        });
+      }
 
       // Handle Supabase function errors
       if (error) {
