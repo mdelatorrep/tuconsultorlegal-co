@@ -324,12 +324,17 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
 
       // Safely load AI results
       if (draft.ai_results && typeof draft.ai_results === 'object') {
-        setAiResults({
+        const aiData = {
           enhancedPrompt: draft.ai_results.enhancedPrompt || "",
           extractedPlaceholders: Array.isArray(draft.ai_results.extractedPlaceholders) ? draft.ai_results.extractedPlaceholders : [],
           calculatedPrice: draft.ai_results.calculatedPrice || "",
           priceJustification: draft.ai_results.priceJustification || "",
-        });
+        };
+        setAiResults(aiData);
+        
+        // Set AI processing success if there are meaningful AI results
+        const hasValidAIResults = aiData.enhancedPrompt || aiData.calculatedPrice || aiData.extractedPlaceholders.length > 0;
+        setAiProcessingSuccess(hasValidAIResults);
       } else {
         setAiResults({
           enhancedPrompt: "",
@@ -337,6 +342,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
           calculatedPrice: "",
           priceJustification: "",
         });
+        setAiProcessingSuccess(false);
       }
 
       const stepCompleted = Math.max(1, Math.min(draft.step_completed || 1, 5));
@@ -688,7 +694,56 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         priceJustification: data.priceJustification || 'Precio estimado basado en la complejidad del documento.'
       });
 
+      const aiResultsData = {
+        enhancedPrompt: data.enhancedPrompt || '',
+        extractedPlaceholders: data.placeholders || [],
+        calculatedPrice: data.suggestedPrice || 'Precio por determinar',
+        priceJustification: data.priceJustification || 'Precio estimado basado en la complejidad del documento.'
+      };
+
+      // Update state with results
+      setAiResults(aiResultsData);
       setAiProcessingSuccess(true);
+
+      // CRITICAL FIX: Immediately save the draft with AI results to prevent data loss
+      console.log('💾 [PROCESS-AI] Saving draft with AI results immediately...');
+      try {
+        const draftName = formData.docName?.trim() || `Borrador ${new Date().toLocaleDateString()}`;
+        
+        const { data: saveData, error: saveError } = await supabase.functions.invoke('save-agent-with-blocks', {
+          body: {
+            lawyerId: lawyerData.id,
+            draftId: currentDraftId,
+            draftName,
+            stepCompleted: 4, // Explicitly set to step 4
+            agentData: {
+              doc_name: formData.docName?.trim() || '',
+              doc_desc: formData.docDesc?.trim() || '',
+              doc_cat: formData.docCat || '',
+              target_audience: formData.targetAudience || 'personas',
+              doc_template: formData.docTemplate?.trim() || '',
+              initial_prompt: '',
+              sla_hours: formData.slaHours || 4,
+              sla_enabled: formData.slaEnabled !== undefined ? formData.slaEnabled : true,
+              lawyer_suggested_price: formData.lawyerSuggestedPrice?.trim() || '',
+              ai_results: aiResultsData // Use the fresh AI results
+            },
+            conversationBlocks: formData.conversation_blocks || [],
+            fieldInstructions: formData.field_instructions || []
+          }
+        });
+
+        if (saveError) {
+          console.error('⚠️ [PROCESS-AI] Failed to save draft with AI results:', saveError);
+        } else {
+          console.log('✅ [PROCESS-AI] Draft saved with AI results successfully:', saveData);
+          if (saveData?.draftId && !currentDraftId) {
+            setCurrentDraftId(saveData.draftId);
+          }
+        }
+      } catch (saveError) {
+        console.error('⚠️ [PROCESS-AI] Exception saving draft:', saveError);
+      }
 
       // Show success notification
       toast({
