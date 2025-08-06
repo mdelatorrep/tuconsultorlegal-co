@@ -93,6 +93,55 @@ async function callOpenAI(apiKey: string, model: string, messages: any[], temper
   return data;
 }
 
+// Helper function to generate system prompt from conversation blocks
+function generateSystemPrompt(docName: string, targetAudience: string, conversationBlocks: any[], fieldInstructions: any[], baseDNA: string) {
+  console.log('🔧 Generating system prompt from conversation blocks...');
+  
+  // Build conversation structure section
+  const conversationStructure = conversationBlocks
+    .sort((a, b) => a.blockOrder - b.blockOrder)
+    .map((block, index) => {
+      const placeholdersList = block.placeholders.map((p: string) => `    * {{${p}}}`).join('\n');
+      return `
+### BLOQUE ${index + 1}: ${block.blockName}
+**Frase de Introducción:** "${block.introPhrase}"
+**Información a Recopilar:**
+${placeholdersList}`;
+    }).join('\n');
+
+  // Build field-specific instructions
+  const fieldSpecificInstructions = fieldInstructions.length > 0 ? `
+
+## INSTRUCCIONES ESPECÍFICAS POR CAMPO
+
+${fieldInstructions.map(instruction => `
+**Para el campo \`${instruction.fieldName}\`:**
+${instruction.validationRule ? `* **Validación:** ${instruction.validationRule}` : ''}
+${instruction.helpText ? `* **Ayuda:** ${instruction.helpText}` : ''}
+`).join('')}` : '';
+
+  // Generate complete system prompt
+  const systemPrompt = `${baseDNA}
+
+## INFORMACIÓN DEL DOCUMENTO
+- **Documento:** ${docName}
+- **Audiencia Objetivo:** ${targetAudience}
+
+## ESTRUCTURA DE RECOPILACIÓN DE INFORMACIÓN (OBLIGATORIA)
+${conversationStructure}
+${fieldSpecificInstructions}
+
+## PROTOCOLO DE EJECUCIÓN
+1. **Saludo Inicial:** Preséntate como Lexi y explica brevemente qué documento van a crear juntos
+2. **Recopilación por Bloques:** Sigue EXACTAMENTE el orden de los bloques definidos arriba
+3. **Validación por Bloque:** Al completar cada bloque, confirma la información antes de continuar
+4. **Resumen Final:** Al terminar todos los bloques, presenta un resumen completo para confirmación
+5. **Generación:** Solo procede a generar el documento cuando toda la información esté confirmada`;
+
+  console.log(`✅ System prompt generated (${systemPrompt.length} characters)`);
+  return systemPrompt;
+}
+
 serve(async (req) => {
   console.log('🎯 === AI-AGENT-PROCESSOR FUNCTION STARTED ===', {
     timestamp: new Date().toISOString(),
@@ -152,10 +201,11 @@ serve(async (req) => {
       hasDocTemplate: !!body.docTemplate,
       category: body.category,
       targetAudience: body.targetAudience,
-      initialPromptLength: body.initialPrompt?.length || 0
+      conversationBlocksCount: body.conversationBlocks?.length || 0,
+      fieldInstructionsCount: body.fieldInstructions?.length || 0
     });
 
-    const { docName, docDesc, category, docTemplate, initialPrompt, targetAudience } = body;
+    const { docName, docDesc, category, docTemplate, targetAudience, conversationBlocks = [], fieldInstructions = [] } = body;
 
     // Validate required fields
     if (!docName || !docTemplate) {
@@ -172,8 +222,27 @@ serve(async (req) => {
     // Step 1: Get system configuration from database
     console.log('⚙️ === STEP 1: FETCHING SYSTEM CONFIGURATION ===');
     const model = await getSystemConfig(supabase, 'agent_creation_ai_model', 'gpt-4.1-2025-04-14');
-    const systemPrompt = await getSystemConfig(supabase, 'agent_creation_system_prompt', 
-      'Eres un asistente legal experto en Colombia. Tu tarea es analizar documentos legales y mejorar prompts para agentes conversacionales.'
+    const baseDNA = await getSystemConfig(supabase, 'tuconsultorlegal_agent_dna', 
+      `## ROL Y OBJETIVO
+Eres "Lexi-Guía", un asistente de IA experto en la creación de documentos legales en Colombia. Tu misión es guiar al usuario de manera amigable, segura y profesional para recopilar toda la información necesaria.
+
+## TONO Y ESTILO DE CONVERSACIÓN
+* **Saludo Inicial:** Comienza siempre con: "¡Hola! Soy Lexi, tu asistente legal. Juntos vamos a crear tu documento paso a paso. No te preocupes, me aseguraré de que toda la información sea correcta..."
+* **Tono:** Profesional pero cercano, como un abogado de confianza
+* **Explicaciones:** Siempre explica brevemente por qué necesitas cada información
+* **Paciencia:** Si el usuario no entiende algo, explícalo de manera más simple
+* **Validación:** Confirma cada respuesta importante antes de continuar
+
+## REGLAS DE FORMATEO Y VALIDACIÓN DE DATOS
+* **Nombres y lugares:** Siempre en formato de título (Primera Letra Mayúscula)
+* **Números de identificación:** Sin puntos ni espacios, solo números
+* **Direcciones:** Formato estándar colombiano
+* **Dinero:** Sin símbolos ni puntos, solo números (ej: 1500000)
+* **Fechas:** Formato DD/MM/AAAA
+
+## CONFIDENCIALIDAD Y REVISIÓN
+* Recuerda al usuario que toda la información es confidencial
+* Al final, menciona: "Un abogado humano revisará el documento antes de la entrega final para garantizar su precisión legal"`
     );
 
     console.log('✅ System configuration loaded successfully');
@@ -182,73 +251,26 @@ serve(async (req) => {
     console.log('⚙️ === STEP 2: EXTRACTING PLACEHOLDERS ===');
     const placeholders = extractPlaceholders(docTemplate);
 
-    // Step 3: Enhance prompt using OpenAI
-    console.log('⚙️ === STEP 3: ENHANCING PROMPT WITH AI ===');
+    // Step 3: Generate enhanced prompt using conversation blocks
+    console.log('⚙️ === STEP 3: GENERATING SYSTEM PROMPT ===');
     
-    let enhancedPrompt = initialPrompt || '';
+    let enhancedPrompt = '';
     
-    try {
-      const promptMessages = [
-        {
-          role: 'system',
-          content: systemPrompt
-        },
-        {
-          role: 'user',
-          content: `Necesito que mejores el siguiente prompt para un agente conversacional que recopila información para generar documentos legales:
-
-INFORMACIÓN DEL DOCUMENTO:
-- Nombre: ${docName}
-- Descripción: ${docDesc || 'Documento legal'}
-- Categoría: ${category}
-- Audiencia objetivo: ${targetAudience}
-- Número de campos a recopilar: ${placeholders.length}
-
-PROMPT INICIAL ACTUAL:
-${initialPrompt || 'No hay prompt inicial definido'}
-
-CAMPOS QUE DEBE RECOPILAR EL AGENTE:
-${placeholders.map(p => `- ${p.label} (${p.field})`).join('\n')}
-
-INSTRUCCIONES:
-1. Mejora el prompt para que el agente conversacional sea más efectivo
-2. Asegúrate de que siga la estructura de bloques establecida en el system prompt
-3. Incluye validaciones específicas para los campos requeridos
-4. Mantén el tono profesional pero cercano
-5. Devuelve ÚNICAMENTE el prompt mejorado, sin explicaciones adicionales
-
-El prompt debe estar optimizado para ${targetAudience} en Colombia.`
-        }
-      ];
-
-      const promptResponse = await callOpenAI(openAIApiKey, model, promptMessages, 0.7, 1500);
-      enhancedPrompt = promptResponse.choices[0]?.message?.content || initialPrompt || '';
+    if (conversationBlocks.length > 0) {
+      // Generate system prompt from conversation blocks
+      enhancedPrompt = generateSystemPrompt(docName, targetAudience, conversationBlocks, fieldInstructions, baseDNA);
+    } else {
+      // Fallback: generate basic structure from placeholders
+      console.log('⚠️ No conversation blocks provided, generating fallback structure...');
       
-      console.log(`✅ Prompt enhanced successfully (${enhancedPrompt.length} characters)`);
+      const fallbackBlocks = [{
+        blockName: 'Información General',
+        introPhrase: 'Empecemos recopilando la información principal para tu documento.',
+        placeholders: placeholders.map(p => p.field),
+        blockOrder: 1
+      }];
       
-    } catch (aiError) {
-      console.error('⚠️ Error enhancing prompt with AI:', aiError);
-      console.log('🔄 Using fallback prompt enhancement...');
-      
-      // Fallback enhancement
-      if (!enhancedPrompt) {
-        enhancedPrompt = `Eres Lexi, un asistente legal especializado en la creación de documentos de ${category} en Colombia.
-
-Tu objetivo es recopilar información para generar: ${docName}
-
-INFORMACIÓN A RECOPILAR:
-${placeholders.map(p => `• ${p.label}`).join('\n')}
-
-INSTRUCCIONES:
-- Mantén un tono profesional pero cercano
-- Explica brevemente por qué necesitas cada información
-- Recopila los datos por bloques lógicos, no todo de una vez
-- Valida y confirma la información antes de continuar
-- Al final, genera un resumen completo para confirmación
-- Asegúrate de que toda la información cumple con las normas colombianas
-
-Tu audiencia objetivo son: ${targetAudience}`;
-      }
+      enhancedPrompt = generateSystemPrompt(docName, targetAudience, fallbackBlocks, fieldInstructions, baseDNA);
     }
 
     // Step 4: Generate intelligent price suggestion
@@ -271,6 +293,7 @@ DOCUMENTO: ${docName}
 CATEGORÍA: ${category}
 DESCRIPCIÓN: ${docDesc || 'No disponible'}
 CAMPOS REQUERIDOS: ${placeholders.length}
+BLOQUES DE CONVERSACIÓN: ${conversationBlocks.length}
 AUDIENCIA: ${targetAudience}
 COMPLEJIDAD ESTIMADA: ${placeholders.length > 15 ? 'Alta' : placeholders.length > 8 ? 'Media' : 'Baja'}
 
@@ -297,11 +320,12 @@ Responde ÚNICAMENTE con el número del precio sin formato (ejemplo: 45000).`
         suggestedPrice = extractedPrice;
         priceJustification = `Precio calculado por IA considerando:
 • Complejidad: ${placeholders.length} campos requeridos
+• Bloques de conversación: ${conversationBlocks.length}
 • Categoría legal: ${category}
 • Audiencia: ${targetAudience}
 • Análisis de mercado colombiano`;
       } else {
-        // Usar cálculo de fallback si el precio de IA está fuera del rango
+        // Usar cálculo de fallback
         const basePrice = 25000;
         const complexityMultiplier = Math.min(placeholders.length * 0.8 + 1, 4);
         const categoryMultiplier = category === 'Comercial' ? 1.3 : category === 'Societario' ? 1.5 : 1;
@@ -346,6 +370,8 @@ Responde ÚNICAMENTE con el número del precio sin formato (ejemplo: 45000).`
       model,
       processingDetails: {
         placeholdersFound: placeholders.length,
+        conversationBlocksProcessed: conversationBlocks.length,
+        fieldInstructionsProcessed: fieldInstructions.length,
         promptLength: enhancedPrompt.length,
         configModel: model,
         timestamp: new Date().toISOString()
@@ -354,6 +380,8 @@ Responde ÚNICAMENTE con el número del precio sin formato (ejemplo: 45000).`
 
     console.log('✅ === PROCESSING COMPLETED SUCCESSFULLY ===', {
       placeholdersCount: placeholders.length,
+      conversationBlocksCount: conversationBlocks.length,
+      fieldInstructionsCount: fieldInstructions.length,
       enhancedPromptLength: enhancedPrompt.length,
       suggestedPrice: response.suggestedPrice,
       model: model

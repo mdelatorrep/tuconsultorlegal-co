@@ -341,6 +341,54 @@ export type Database = {
         }
         Relationships: []
       }
+      conversation_blocks: {
+        Row: {
+          block_name: string
+          block_order: number
+          created_at: string
+          id: string
+          intro_phrase: string
+          legal_agent_id: string | null
+          placeholders: Json
+          updated_at: string
+        }
+        Insert: {
+          block_name: string
+          block_order?: number
+          created_at?: string
+          id?: string
+          intro_phrase: string
+          legal_agent_id?: string | null
+          placeholders?: Json
+          updated_at?: string
+        }
+        Update: {
+          block_name?: string
+          block_order?: number
+          created_at?: string
+          id?: string
+          intro_phrase?: string
+          legal_agent_id?: string | null
+          placeholders?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_blocks_legal_agent_id_fkey"
+            columns: ["legal_agent_id"]
+            isOneToOne: false
+            referencedRelation: "legal_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_blocks_legal_agent_id_fkey"
+            columns: ["legal_agent_id"]
+            isOneToOne: false
+            referencedRelation: "openai_agent_analytics"
+            referencedColumns: ["legal_agent_id"]
+          },
+        ]
+      }
       document_categories: {
         Row: {
           category_type: string | null
@@ -433,6 +481,51 @@ export type Database = {
           user_observations?: string | null
         }
         Relationships: []
+      }
+      field_instructions: {
+        Row: {
+          created_at: string
+          field_name: string
+          help_text: string | null
+          id: string
+          legal_agent_id: string | null
+          updated_at: string
+          validation_rule: string | null
+        }
+        Insert: {
+          created_at?: string
+          field_name: string
+          help_text?: string | null
+          id?: string
+          legal_agent_id?: string | null
+          updated_at?: string
+          validation_rule?: string | null
+        }
+        Update: {
+          created_at?: string
+          field_name?: string
+          help_text?: string | null
+          id?: string
+          legal_agent_id?: string | null
+          updated_at?: string
+          validation_rule?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "field_instructions_legal_agent_id_fkey"
+            columns: ["legal_agent_id"]
+            isOneToOne: false
+            referencedRelation: "legal_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "field_instructions_legal_agent_id_fkey"
+            columns: ["legal_agent_id"]
+            isOneToOne: false
+            referencedRelation: "openai_agent_analytics"
+            referencedColumns: ["legal_agent_id"]
+          },
+        ]
       }
       knowledge_base_urls: {
         Row: {

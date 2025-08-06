@@ -576,8 +576,8 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         docDesc: formData.docDesc?.trim() || 'Documento legal generado automáticamente',
         category: formData.docCat || 'General',
         docTemplate: formData.docTemplate.trim(),
-        conversation_blocks: formData.conversation_blocks || [],
-        field_instructions: formData.field_instructions || [],
+        conversationBlocks: formData.conversation_blocks || [],
+        fieldInstructions: formData.field_instructions || [],
         targetAudience: formData.targetAudience || 'personas'
       };
 
@@ -972,64 +972,62 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         throw new Error('No tienes permisos para crear agentes. Solicita acceso al administrador.');
       }
       
-      const { data, error } = await supabase
-         .from('legal_agents')
-         .insert({
-            name: formData.docName,
-            description: formData.docDesc,
-            category: formData.docCat,
-            template_content: formData.docTemplate,
-            ai_prompt: aiResults.enhancedPrompt,
-            placeholder_fields: aiResults.extractedPlaceholders,
-            price: calculatedPriceValue, // Use the unified price field
-            price_justification: aiResults.priceJustification || 'Precio estimado por el abogado',
-           status: 'pending_review',
-           created_by: lawyerData.id, // Usar el ID del lawyer profile directamente
-           target_audience: formData.targetAudience,
-           sla_hours: formData.slaEnabled ? formData.slaHours : null,
-           sla_enabled: formData.slaEnabled,
-           document_name: formData.docName, // Use the same name as the agent name
-           document_description: formData.docDesc,
-           frontend_icon: 'FileText',
-           button_cta: 'Generar Documento'
-        })
-        .select()
-        .maybeSingle();
+      // Prepare agent data
+      const agentData = {
+        name: formData.docName,
+        description: formData.docDesc,
+        category: formData.docCat,
+        template_content: formData.docTemplate,
+        ai_prompt: aiResults.enhancedPrompt,
+        placeholder_fields: aiResults.extractedPlaceholders,
+        price: calculatedPriceValue,
+        price_justification: aiResults.priceJustification || 'Precio estimado por el abogado',
+        status: 'pending_review',
+        created_by: lawyerData.id,
+        target_audience: formData.targetAudience,
+        sla_hours: formData.slaEnabled ? formData.slaHours : null,
+        sla_enabled: formData.slaEnabled,
+        document_name: formData.docName,
+        document_description: formData.docDesc,
+        frontend_icon: 'FileText',
+        button_cta: 'Generar Documento'
+      };
 
-      if (error) {
-        console.error('Error creating agent:', error);
-        console.error('Error details:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        });
+      // Use the new edge function to save agent with conversation blocks
+      const { data, error } = await supabase.functions.invoke('save-agent-with-blocks', {
+        body: {
+          agentData,
+          conversationBlocks: formData.conversation_blocks || [],
+          fieldInstructions: formData.field_instructions || []
+        }
+      });
+
+      if (error || !data?.success) {
+        console.error('Error creating agent:', error || data);
         
-        let errorMessage = "No se pudo crear el agente. Intenta nuevamente.";
+        let errorMessage = data?.error || "No se pudo crear el agente. Intenta nuevamente.";
         
         // Provide specific error messages for common issues
-        if (error.message?.includes('foreign key')) {
+        if (errorMessage?.includes('foreign key')) {
           errorMessage = "Error de permisos. Por favor cierra sesión e inicia sesión nuevamente.";
-        } else if (error.message?.includes('duplicate')) {
+        } else if (errorMessage?.includes('duplicate')) {
           errorMessage = "Ya existe un agente con este nombre. Usa un nombre diferente.";
-        } else if (error.message?.includes('violates check')) {
+        } else if (errorMessage?.includes('violates check')) {
           errorMessage = "Los datos del agente no son válidos. Revisa todos los campos.";
-        } else if (error.message?.includes('null value')) {
+        } else if (errorMessage?.includes('null value')) {
           errorMessage = "Faltan campos requeridos. Asegúrate de completar todos los pasos correctamente.";
-        } else if (error.code === 'PGRST116') {
-          errorMessage = "No se pudo guardar el agente. Verifica que todos los campos estén completos.";
         }
         
         toast({
           title: "Error al enviar a revisión",
-          description: `${errorMessage} (${error.message})`,
+          description: errorMessage,
           variant: "destructive",
         });
         return;
       }
 
-      if (!data) {
-        console.error('No data returned from insert operation');
+      if (!data?.agent) {
+        console.error('No agent data returned from operation');
         toast({
           title: "Error al enviar a revisión",
           description: "No se pudo crear el agente. Verifica que todos los campos estén completos.",
