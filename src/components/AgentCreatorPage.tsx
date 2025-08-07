@@ -641,9 +641,18 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         docTemplate: `${requestPayload.docTemplate.length} characters`
       });
 
-      // Call the AI processing function
+      // Call the AI processing function with detailed debugging
+      console.log('🚀 [PROCESS-AI] About to invoke function with payload:', JSON.stringify(requestPayload, null, 2));
+      
       const { data, error } = await supabase.functions.invoke('ai-agent-processor', {
         body: requestPayload
+      });
+      
+      console.log('📊 [PROCESS-AI] Function invocation completed:', {
+        hasData: !!data,
+        hasError: !!error,
+        dataKeys: data ? Object.keys(data) : [],
+        errorDetails: error ? JSON.stringify(error) : null
       });
 
       console.log('📥 [PROCESS-AI] Response received:', { 
