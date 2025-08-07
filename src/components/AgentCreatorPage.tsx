@@ -587,14 +587,22 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
   const processWithAI = async () => {
     console.log('🎯 [PROCESS-AI] Function initiated', { 
       timestamp: new Date().toISOString(),
+      lawyerData: {
+        id: lawyerData?.id,
+        email: lawyerData?.email,
+        canCreateAgents: lawyerData?.canCreateAgents
+      },
       formData: {
         docName: formData.docName || 'NOT_SET',
         docDesc: formData.docDesc || 'NOT_SET', 
-        docTemplate: formData.docTemplate ? 'SET' : 'NOT_SET',
+        docTemplate: formData.docTemplate ? `SET (${formData.docTemplate.length} chars)` : 'NOT_SET',
         docCat: formData.docCat || 'NOT_SET',
         conversationBlocks: formData.conversation_blocks?.length || 0,
         targetAudience: formData.targetAudience || 'NOT_SET'
-      }
+      },
+      currentDraftId,
+      currentStep,
+      maxStepReached
     });
 
     // Validate required fields first
@@ -641,29 +649,17 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         docTemplate: `${requestPayload.docTemplate.length} characters`
       });
 
-      // Call the AI processing function with detailed debugging
-      console.log('🚀 [PROCESS-AI] About to invoke function with payload:', JSON.stringify(requestPayload, null, 2));
-      
+      // Call the AI processing function with proper error handling
       const { data, error } = await supabase.functions.invoke('ai-agent-processor', {
         body: requestPayload
       });
-      
+
       console.log('📊 [PROCESS-AI] Function invocation completed:', {
         hasData: !!data,
         hasError: !!error,
         dataKeys: data ? Object.keys(data) : [],
-        errorDetails: error ? JSON.stringify(error) : null
+        errorMessage: error?.message || null
       });
-
-      console.log('📥 [PROCESS-AI] Response received:', { 
-        hasData: !!data, 
-        hasError: !!error,
-        dataType: typeof data,
-        errorType: typeof error
-      });
-
-      console.log('🔍 [PROCESS-AI] RAW DATA DUMP:', JSON.stringify(data, null, 2));
-      console.log('🔍 [PROCESS-AI] RAW ERROR DUMP:', JSON.stringify(error, null, 2));
 
       // Handle Supabase function errors first
       if (error) {
@@ -677,7 +673,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         throw new Error('No se recibió respuesta de la función de procesamiento');
       }
 
-      // CRITICAL FIX: The function returns success correctly, simplified validation
+      // CRITICAL FIX: Check success flag first
       if (data.success !== true) {
         console.error('❌ [PROCESS-AI] AI Processing failed:', {
           success: data.success,
@@ -695,13 +691,14 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         suggestedPrice: data.suggestedPrice
       });
 
-      // Update state with results
-      setAiResults({
-        enhancedPrompt: data.enhancedPrompt || '',
-        extractedPlaceholders: data.placeholders || [],
-        calculatedPrice: data.suggestedPrice || 'Precio por determinar',
-        priceJustification: data.priceJustification || 'Precio estimado basado en la complejidad del documento.'
-      });
+      // CRITICAL FIX: Validate required AI response fields
+      if (!data.enhancedPrompt || !data.placeholders || data.placeholders.length === 0) {
+        console.error('❌ [PROCESS-AI] Invalid AI response - missing required fields:', {
+          hasEnhancedPrompt: !!data.enhancedPrompt,
+          placeholdersCount: data.placeholders?.length || 0
+        });
+        throw new Error('Respuesta incompleta del procesamiento IA. Por favor intenta nuevamente.');
+      }
 
       const aiResultsData = {
         enhancedPrompt: data.enhancedPrompt || '',
@@ -770,8 +767,8 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido en el procesamiento';
       
       toast({
-        title: "Error en el procesamiento",
-        description: errorMessage,
+        title: "Error en el Procesamiento",
+        description: "No se pudo procesar la información con IA. Regresa al paso anterior e intenta nuevamente.",
         variant: "destructive",
       });
       
