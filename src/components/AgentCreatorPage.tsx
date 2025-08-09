@@ -667,7 +667,12 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         docDesc: formData.docDesc?.trim() || 'Documento legal generado automáticamente',
         category: formData.docCat || 'General',
         docTemplate: formData.docTemplate.trim(),
-        conversationBlocks: formData.conversation_blocks || [],
+        conversationBlocks: (formData.conversation_blocks || []).map((b, idx) => ({
+          blockName: b.name?.trim() || '',
+          introPhrase: b.introduction?.trim() || '',
+          placeholders: Array.isArray(b.placeholders) ? b.placeholders : [],
+          blockOrder: idx + 1
+        })),
         fieldInstructions: formData.field_instructions || [],
         targetAudience: formData.targetAudience || 'personas'
       };
@@ -730,7 +735,12 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
 
       const aiResultsData = {
         enhancedPrompt: data.enhancedPrompt || '',
-        extractedPlaceholders: data.placeholders || [],
+        extractedPlaceholders: Array.isArray(data.placeholders)
+          ? data.placeholders.map((p: any) => ({
+              placeholder: p.placeholder || p.field || p.name || p.label || '',
+              pregunta: p.pregunta || p.question || p.description || `Ingresa ${(p.placeholder || p.field || p.name || p.label || 'valor').toString().replace(/_/g, ' ')}`
+            }))
+          : [],
         calculatedPrice: data.suggestedPrice || 'Precio por determinar',
         priceJustification: data.priceJustification || 'Precio estimado basado en la complejidad del documento.'
       };
