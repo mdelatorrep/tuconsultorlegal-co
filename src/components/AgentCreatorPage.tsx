@@ -264,7 +264,12 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
             lawyer_suggested_price: formData.lawyerSuggestedPrice?.trim() || '',
             ai_results: aiResults
           },
-          conversationBlocks: formData.conversation_blocks || [],
+          conversationBlocks: (formData.conversation_blocks || []).map((b, idx) => ({
+            blockName: b.name?.trim() || '',
+            introPhrase: b.introduction?.trim() || '',
+            placeholders: Array.isArray(b.placeholders) ? b.placeholders : [],
+            order: idx + 1
+          })),
           fieldInstructions: formData.field_instructions || []
         }
       });
@@ -309,14 +314,35 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         throw new Error('Invalid draft data');
       }
 
+      // Map server blocks/instructions to UI shape
+      const mappedBlocks = Array.isArray(draft.conversation_blocks)
+        ? [...draft.conversation_blocks]
+            .sort((a: any, b: any) => (a.block_order ?? 0) - (b.block_order ?? 0))
+            .map((b: any) => ({
+              id: b.id || `block-${crypto?.randomUUID?.() || Date.now()}`,
+              name: b.block_name || '',
+              introduction: b.intro_phrase || '',
+              placeholders: Array.isArray(b.placeholders) ? b.placeholders : [],
+            }))
+        : [];
+
+      const mappedInstructions = Array.isArray(draft.field_instructions)
+        ? draft.field_instructions.map((i: any) => ({
+            id: i.id || `instruction-${crypto?.randomUUID?.() || Date.now()}`,
+            fieldName: i.field_name || '',
+            validationRule: i.validation_rule || '',
+            helpText: i.help_text || '',
+          }))
+        : [];
+
       setFormData({
         docName: draft.doc_name || "",
         docDesc: draft.doc_desc || "",
         docCat: draft.doc_cat || "",
         targetAudience: ['personas', 'empresas'].includes(draft.target_audience) ? draft.target_audience : "personas",
         docTemplate: draft.doc_template || "",
-        conversation_blocks: draft.conversation_blocks || [],
-        field_instructions: draft.field_instructions || [],
+        conversation_blocks: mappedBlocks,
+        field_instructions: mappedInstructions,
         slaHours: Math.max(1, Math.min(draft.sla_hours || 4, 72)),
         slaEnabled: draft.sla_enabled !== undefined ? draft.sla_enabled : true,
         lawyerSuggestedPrice: draft.lawyer_suggested_price || "",
@@ -631,6 +657,8 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
     setMaxStepReached(Math.max(maxStepReached, 4));
 
     try {
+      // Ensure latest conversation structure is saved as draft before AI
+      try { await saveDraft(); } catch (e) { console.warn('⚠️ [PROCESS-AI] Auto-save before AI failed', e); }
       console.log('📡 [PROCESS-AI] Calling edge function...');
 
       // Prepare request payload
@@ -734,7 +762,12 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
               lawyer_suggested_price: formData.lawyerSuggestedPrice?.trim() || '',
               ai_results: aiResultsData // Use the fresh AI results
             },
-            conversationBlocks: formData.conversation_blocks || [],
+            conversationBlocks: (formData.conversation_blocks || []).map((b, idx) => ({
+              blockName: b.name?.trim() || '',
+              introPhrase: b.introduction?.trim() || '',
+              placeholders: Array.isArray(b.placeholders) ? b.placeholders : [],
+              order: idx + 1
+            })),
             fieldInstructions: formData.field_instructions || []
           }
         });
@@ -1083,7 +1116,12 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       const { data, error } = await supabase.functions.invoke('save-agent-with-blocks', {
         body: {
           agentData,
-          conversationBlocks: formData.conversation_blocks || [],
+          conversationBlocks: (formData.conversation_blocks || []).map((b, idx) => ({
+            blockName: b.name?.trim() || '',
+            introPhrase: b.introduction?.trim() || '',
+            placeholders: Array.isArray(b.placeholders) ? b.placeholders : [],
+            order: idx + 1
+          })),
           fieldInstructions: formData.field_instructions || []
         }
       });
