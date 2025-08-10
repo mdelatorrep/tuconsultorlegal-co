@@ -2178,26 +2178,42 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
                    Una vez aprobado por el administrador, estará disponible para todos los clientes en el sitio web.
                  </p>
                    {!autoSubmitAfterAI && (
-                     <Button 
-                       onClick={(e) => {
-                         e.preventDefault();
-                         e.stopPropagation();
-                         console.log('=== BUTTON CLICK EVENT ===');
-                         console.log('Event:', e);
-                         console.log('Current Step:', currentStep);
-                         console.log('LawyerData:', lawyerData);
-                         console.log('LawyerData permissions (canCreateAgents):', lawyerData?.canCreateAgents);
-                         console.log('FormData:', formData);
-                         console.log('AIResults:', aiResults);
-                         console.log('About to call handlePublish...');
-                         handlePublish();
-                       }} 
-                       size={isMobile ? "default" : "lg"} 
-                       className={`${isMobile ? "w-full text-base px-6 py-3" : "text-xl px-10 py-4"}`}
-                     >
-                       Enviar a Revisión
-                     </Button>
+                     <div className={isMobile ? "space-y-3" : "flex items-center justify-center gap-4"}>
+                       <Button 
+                         onClick={(e) => {
+                           e.preventDefault();
+                           e.stopPropagation();
+                           console.log('=== BUTTON CLICK EVENT ===');
+                           console.log('Event:', e);
+                           console.log('Current Step:', currentStep);
+                           console.log('LawyerData:', lawyerData);
+                           console.log('LawyerData permissions (canCreateAgents):', lawyerData?.canCreateAgents);
+                           console.log('FormData:', formData);
+                           console.log('AIResults:', aiResults);
+                           console.log('About to call handlePublish...');
+                           handlePublish();
+                         }} 
+                         size={isMobile ? "default" : "lg"} 
+                         className={`${isMobile ? "w-full text-base px-6 py-3" : "text-xl px-10 py-4"}`}
+                       >
+                         Enviar a Revisión
+                       </Button>
+
+                       <Button
+                         variant="outline"
+                         size={isMobile ? "default" : "lg"}
+                         className={`${isMobile ? "w-full text-base px-6 py-3" : "text-xl px-10 py-4"}`}
+                         onClick={() => {
+                           window.location.hash = 'abogados';
+                           window.scrollTo({ top: 0, behavior: 'smooth' });
+                         }}
+                         aria-label="Ir al Dashboard de Abogado"
+                       >
+                         Ir al Dashboard de Abogado
+                       </Button>
+                     </div>
                    )}
+
               </div>
             )}
           </CardContent>
