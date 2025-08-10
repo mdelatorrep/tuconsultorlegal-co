@@ -83,6 +83,19 @@ serve(async (req) => {
     // Generate enhanced instructions for the OpenAI agent
     const agentInstructions = await generateDocumentAgentInstructions(legalAgent, supabase);
 
+    // Resolve model from system config (fallback to default)
+    let model = 'gpt-4.1-2025-04-14';
+    try {
+      const { data: modelRow } = await supabase
+        .from('system_config')
+        .select('config_value')
+        .eq('config_key', 'agent_creation_ai_model')
+        .maybeSingle();
+      if (modelRow?.config_value) model = modelRow.config_value;
+    } catch (e) {
+      console.warn('Could not read agent_creation_ai_model, using default');
+    }
+
     // Create new OpenAI Agent
     const openAIResponse = await fetch('https://api.openai.com/v1/assistants', {
       method: 'POST',
@@ -92,10 +105,33 @@ serve(async (req) => {
         'OpenAI-Beta': 'assistants=v2'
       },
       body: JSON.stringify({
-        model: 'gpt-4.1-2025-04-14',
+        model: model,
         name: `${legalAgent.name} - Asistente de Documentos`,
         instructions: agentInstructions,
         tools: [
+          { type: "web_search" },
+          {
+            type: "function",
+            function: {
+              name: "store_collected_data",
+              description: "Guarda/actualiza en base de datos los placeholders recopilados para esta conversación",
+              parameters: {
+                type: "object",
+                properties: {
+                  data: {
+                    type: "object",
+                    description: "Objeto clave-valor con placeholders y respuestas del usuario"
+                  },
+                  merge: {
+                    type: "boolean",
+                    description: "Si se debe mezclar con datos existentes (true) o sobrescribir (false)",
+                    default: true
+                  }
+                },
+                required: ["data"]
+              }
+            }
+          },
           {
             type: "function",
             function: {
@@ -204,7 +240,7 @@ serve(async (req) => {
         openai_agent_id: openAIAgent.id,
         name: openAIAgent.name,
         instructions: agentInstructions,
-        model: 'gpt-4.1-2025-04-14',
+        model: model,
         tools: openAIAgent.tools,
         tool_resources: openAIAgent.tool_resources || {},
         metadata: openAIAgent.metadata,

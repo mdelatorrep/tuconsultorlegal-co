@@ -144,7 +144,16 @@ serve(async (req) => {
               case 'normalize_information':
                 output = await handleNormalizeInformation(functionArgs);
                 break;
-                
+              
+              case 'store_collected_data':
+                output = await handleStoreCollectedData(
+                  supabase,
+                  functionArgs,
+                  openaiAgent.id,
+                  currentThreadId
+                );
+                break;
+              
               case 'request_clarification':
                 output = await handleRequestClarification(functionArgs);
                 break;
@@ -549,4 +558,60 @@ async function handleRequestClarification(args: any) {
   console.log('Requesting clarification:', args);
   
   return `Necesito una aclaración sobre ${args.field || 'un campo'}: ${args.question}`;
+}
+
+async function handleStoreCollectedData(
+  supabase: any,
+  args: any,
+  openaiAgentId: string,
+  threadId: string
+) {
+  console.log('Storing collected data:', { threadId, keys: Object.keys(args?.data || {}) });
+  try {
+    const merge = args?.merge !== false; // default true
+    const newData = args?.data || {};
+
+    // Get existing conversation for this thread
+    const { data: existing, error: fetchErr } = await supabase
+      .from('agent_conversations')
+      .select('id, conversation_data')
+      .eq('openai_agent_id', openaiAgentId)
+      .eq('thread_id', threadId)
+      .maybeSingle();
+
+    if (fetchErr) {
+      console.warn('Could not fetch existing conversation, continuing:', fetchErr.message);
+    }
+
+    const existingData = existing?.conversation_data?.collected_data || {};
+    const collected_data = merge ? { ...existingData, ...newData } : newData;
+
+    const conversation_data = {
+      ...(existing?.conversation_data || {}),
+      collected_data
+    };
+
+    if (existing?.id) {
+      const { error: upErr } = await supabase
+        .from('agent_conversations')
+        .update({ conversation_data, status: 'active', updated_at: new Date().toISOString() })
+        .eq('id', existing.id);
+      if (upErr) throw upErr;
+    } else {
+      const { error: insErr } = await supabase
+        .from('agent_conversations')
+        .insert({
+          openai_agent_id: openaiAgentId,
+          thread_id: threadId,
+          conversation_data,
+          status: 'active'
+        });
+      if (insErr) throw insErr;
+    }
+
+    return `Datos guardados (${Object.keys(collected_data).length} campos).`;
+  } catch (error) {
+    console.error('Error storing collected data:', error);
+    return `Error al guardar datos: ${error.message}`;
+  }
 }
