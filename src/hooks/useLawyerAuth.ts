@@ -22,32 +22,31 @@ export const useLawyerAuth = () => {
   const { identifyUser } = useLogRocket();
 
   useEffect(() => {
-    // Set up auth state listener FIRST - but filter events to prevent unnecessary calls
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state change:', event, {
-          hasSession: !!session,
-          hasUser: !!session?.user,
-          userId: session?.user?.id,
-          timestamp: new Date().toISOString()
-        });
-        
-        // Only process significant auth changes to prevent unnecessary profile fetches
-        if (event === 'SIGNED_OUT') {
-          setSession(null);
-          setUser(null);
-          setIsAuthenticated(false);
+    // Set up auth state listener FIRST (sync callback to avoid deadlocks)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state change:', event, {
+        hasSession: !!session,
+        hasUser: !!session?.user,
+        userId: session?.user?.id,
+        timestamp: new Date().toISOString()
+      });
+
+      if (event === 'SIGNED_OUT') {
+        setSession(null);
+        setUser(null);
+        setIsAuthenticated(false);
+        setIsLoading(false);
+      } else if (event === 'SIGNED_IN' && session?.user) {
+        setSession(session);
+        // Defer any Supabase calls to avoid blocking the callback
+        setTimeout(() => {
+          fetchLawyerProfile(session.user);
           setIsLoading(false);
-        } else if (event === 'SIGNED_IN' && session?.user) {
-          setSession(session);
-          await fetchLawyerProfile(session.user);
-          setIsLoading(false);
-        } else if (event === 'TOKEN_REFRESHED' && session) {
-          // Just update session without refetching profile
-          setSession(session);
-        }
+        }, 0);
+      } else if (event === 'TOKEN_REFRESHED' && session) {
+        setSession(session);
       }
-    );
+    });
 
     // THEN check for existing session
     checkAuthStatus();
@@ -253,45 +252,21 @@ export const useLawyerAuth = () => {
   };
 
   const logout = async () => {
+    console.log('=== LAWYER LOGOUT FUNCTION STARTED ===');
     try {
-      console.log('=== LAWYER LOGOUT FUNCTION STARTED ===');
-      console.log('Current user:', user);
-      console.log('Current session:', session);
-      console.log('Current isAuthenticated:', isAuthenticated);
-      
-      // Check if there's an active session before attempting signOut
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      
-      console.log('Current session found:', !!currentSession);
-      
-      if (currentSession) {
-        console.log('Calling supabase.auth.signOut...');
-        await supabase.auth.signOut();
-        console.log('Supabase signOut completed');
-      } else {
-        console.log('No active session found, proceeding with local cleanup');
-      }
-      
-      // Always clear local state regardless of signOut result
-      console.log('Clearing local auth state...');
-      setIsAuthenticated(false);
-      setUser(null);
-      setSession(null);
-      
-      // Clear any stored auth data
-      console.log('Clearing AuthStorage...');
-      AuthStorage.clearLawyerAuth();
-      
-      // Force navigation to home page after logout
-      console.log('Navigating to home page...');
-      window.location.href = '/';
+      // Try to sign out (non-blocking cleanup in finally)
+      await supabase.auth.signOut();
+      console.log('Supabase signOut completed');
     } catch (error) {
-      console.error('Logout error:', error);
-      // Even if logout fails, clear local state
+      console.warn('Supabase signOut error (continuing with local cleanup):', error);
+    } finally {
+      // Local cleanup regardless of signOut result
       setIsAuthenticated(false);
       setUser(null);
       setSession(null);
-      window.location.href = '/';
+      AuthStorage.clearLawyerAuth();
+      // Navigate to home hash route to ensure proper landing
+      window.location.replace('/#home');
     }
   };
 
