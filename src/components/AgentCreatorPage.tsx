@@ -925,6 +925,11 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       targetAudience: formData.targetAudience
     });
 
+    if (isImprovingTemplate) {
+      console.warn('⏳ improveTemplateWithAI already running, ignoring click');
+      return;
+    }
+
     if (!formData.docTemplate.trim()) {
       console.log('❌ No template provided');
       toast({
@@ -946,10 +951,10 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       });
 
       console.log('📤 About to invoke improve-template-ai with body:', {
-        templateContent: formData.docTemplate.substring(0, 100) + '...',
+        templateContent: String(formData.docTemplate || '').slice(0, 100) + '...',
         docName: formData.docName,
         docCategory: formData.docCat,
-        docDescription: formData.docDesc.substring(0, 100) + '...',
+        docDescription: String(formData.docDesc || '').slice(0, 100) + '...',
         targetAudience: formData.targetAudience
       });
 
@@ -997,6 +1002,13 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
 
       // Update the template with the improved version
       setFormData(prev => ({ ...prev, docTemplate: data.improvedTemplate }));
+
+      try {
+        await saveDraft(2);
+        console.log('💾 Draft saved after template improvement');
+      } catch (e) {
+        console.warn('⚠️ Failed to auto-save draft after improvement:', e);
+      }
 
       setIsImprovingTemplate(false);
 
