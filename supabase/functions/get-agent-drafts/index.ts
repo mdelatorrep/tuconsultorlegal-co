@@ -67,14 +67,14 @@ serve(async (req) => {
       (drafts || []).map(async (draft) => {
         const [conversationBlocks, fieldInstructions] = await Promise.all([
           supabase
-            .from('conversation_blocks')
+            .from('agent_draft_blocks')
             .select('*')
-            .eq('legal_agent_id', draft.id)
+            .eq('agent_draft_id', draft.id)
             .order('block_order'),
           supabase
-            .from('field_instructions')
+            .from('agent_draft_field_instructions')
             .select('*')
-            .eq('legal_agent_id', draft.id)
+            .eq('agent_draft_id', draft.id)
         ]);
 
         return {

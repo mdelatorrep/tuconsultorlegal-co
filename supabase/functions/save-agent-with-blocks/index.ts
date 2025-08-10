@@ -112,74 +112,74 @@ serve(async (req) => {
 
     console.log('Agent draft saved successfully:', agentDraftId);
 
-    // Handle conversation blocks
+    // Handle conversation blocks (store in draft-specific table)
     if (conversationBlocks) {
-      // First, delete existing blocks for this agent
+      // First, delete existing blocks for this draft
       const { error: deleteBlocksError } = await supabase
-        .from('conversation_blocks')
+        .from('agent_draft_blocks')
         .delete()
-        .eq('legal_agent_id', agentDraftId);
+        .eq('agent_draft_id', agentDraftId);
 
       if (deleteBlocksError) {
-        console.error('Error deleting existing conversation blocks:', deleteBlocksError);
+        console.error('Error deleting existing draft conversation blocks:', deleteBlocksError);
       }
 
       if (conversationBlocks.length > 0) {
-        // Insert new conversation blocks
+        // Insert new draft conversation blocks
         const blocksToInsert = conversationBlocks.map((block: any, index: number) => ({
-          legal_agent_id: agentDraftId,
+          agent_draft_id: agentDraftId,
           block_name: block.blockName,
           intro_phrase: block.introPhrase,
           placeholders: block.placeholders,
-          block_order: index + 1
+          block_order: (block.blockOrder || block.order || index + 1)
         }));
 
         const { error: blocksError } = await supabase
-          .from('conversation_blocks')
+          .from('agent_draft_blocks')
           .insert(blocksToInsert);
 
         if (blocksError) {
-          console.error('Error creating conversation blocks:', blocksError);
+          console.error('Error creating draft conversation blocks:', blocksError);
         } else {
-          console.log(`Created ${blocksToInsert.length} conversation blocks`);
+          console.log(`Created ${blocksToInsert.length} draft conversation blocks`);
         }
       } else {
-        console.log('No conversation blocks provided; existing blocks cleared.');
+        console.log('No draft conversation blocks provided; existing draft blocks cleared.');
       }
     }
 
-    // Handle field instructions
+    // Handle field instructions (store in draft-specific table)
     if (fieldInstructions) {
-      // First, delete existing instructions for this agent
+      // First, delete existing instructions for this draft
       const { error: deleteInstructionsError } = await supabase
-        .from('field_instructions')
+        .from('agent_draft_field_instructions')
         .delete()
-        .eq('legal_agent_id', agentDraftId);
+        .eq('agent_draft_id', agentDraftId);
 
       if (deleteInstructionsError) {
-        console.error('Error deleting existing field instructions:', deleteInstructionsError);
+        console.error('Error deleting existing draft field instructions:', deleteInstructionsError);
       }
 
       if (fieldInstructions.length > 0) {
-        // Insert new field instructions
+        // Insert new draft field instructions
         const instructionsToInsert = fieldInstructions.map((instruction: any) => ({
-          legal_agent_id: agentDraftId,
+          agent_draft_id: agentDraftId,
           field_name: instruction.fieldName,
           validation_rule: instruction.validationRule,
           help_text: instruction.helpText
         }));
 
         const { error: instructionsError } = await supabase
-          .from('field_instructions')
+          .from('agent_draft_field_instructions')
           .insert(instructionsToInsert);
 
         if (instructionsError) {
-          console.error('Error creating field instructions:', instructionsError);
+          console.error('Error creating draft field instructions:', instructionsError);
         } else {
-          console.log(`Created ${instructionsToInsert.length} field instructions`);
+          console.log(`Created ${instructionsToInsert.length} draft field instructions`);
         }
       } else {
-        console.log('No field instructions provided; existing instructions cleared.');
+        console.log('No draft field instructions provided; existing draft instructions cleared.');
       }
     }
 

@@ -138,6 +138,85 @@ export type Database = {
           },
         ]
       }
+      agent_draft_blocks: {
+        Row: {
+          agent_draft_id: string
+          block_name: string
+          block_order: number
+          created_at: string
+          id: string
+          intro_phrase: string
+          placeholders: Json
+          updated_at: string
+        }
+        Insert: {
+          agent_draft_id: string
+          block_name: string
+          block_order?: number
+          created_at?: string
+          id?: string
+          intro_phrase: string
+          placeholders?: Json
+          updated_at?: string
+        }
+        Update: {
+          agent_draft_id?: string
+          block_name?: string
+          block_order?: number
+          created_at?: string
+          id?: string
+          intro_phrase?: string
+          placeholders?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_draft_blocks_agent_draft_id_fkey"
+            columns: ["agent_draft_id"]
+            isOneToOne: false
+            referencedRelation: "agent_drafts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_draft_field_instructions: {
+        Row: {
+          agent_draft_id: string
+          created_at: string
+          field_name: string
+          help_text: string | null
+          id: string
+          updated_at: string
+          validation_rule: string | null
+        }
+        Insert: {
+          agent_draft_id: string
+          created_at?: string
+          field_name: string
+          help_text?: string | null
+          id?: string
+          updated_at?: string
+          validation_rule?: string | null
+        }
+        Update: {
+          agent_draft_id?: string
+          created_at?: string
+          field_name?: string
+          help_text?: string | null
+          id?: string
+          updated_at?: string
+          validation_rule?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_draft_field_instructions_agent_draft_id_fkey"
+            columns: ["agent_draft_id"]
+            isOneToOne: false
+            referencedRelation: "agent_drafts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_drafts: {
         Row: {
           ai_results: Json | null
