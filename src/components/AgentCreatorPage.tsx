@@ -248,12 +248,29 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         hasFormData: !!formData
       });
       
+      const stepToSave = stepOverride ?? currentStep;
+      const includeBlocks = stepToSave >= 3 && Array.isArray(formData.conversation_blocks);
+      const includeInstructions = stepToSave >= 3 && Array.isArray(formData.field_instructions);
+
+      const conversationBlocksPayload = includeBlocks && (formData.conversation_blocks?.length || 0) > 0
+        ? (formData.conversation_blocks || []).map((b, idx) => ({
+            blockName: b.name?.trim() || '',
+            introPhrase: b.introduction?.trim() || '',
+            placeholders: Array.isArray(b.placeholders) ? b.placeholders : [],
+            order: idx + 1
+          }))
+        : undefined; // Avoid sending empty array to prevent unintended clearing
+
+      const fieldInstructionsPayload = includeInstructions && (formData.field_instructions?.length || 0) > 0
+        ? formData.field_instructions
+        : undefined; // Avoid sending empty array to prevent unintended clearing
+
       const { data, error } = await supabase.functions.invoke('save-agent-with-blocks', {
         body: {
           lawyerId: lawyerData.id,
           draftId: currentDraftId,
           draftName,
-          stepCompleted: stepOverride ?? currentStep,
+          stepCompleted: stepToSave,
           agentData: {
             doc_name: formData.docName?.trim() || '',
             doc_desc: formData.docDesc?.trim() || '',
@@ -266,13 +283,8 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
             lawyer_suggested_price: formData.lawyerSuggestedPrice?.trim() || '',
             ai_results: aiResults
           },
-          conversationBlocks: (formData.conversation_blocks || []).map((b, idx) => ({
-            blockName: b.name?.trim() || '',
-            introPhrase: b.introduction?.trim() || '',
-            placeholders: Array.isArray(b.placeholders) ? b.placeholders : [],
-            order: idx + 1
-          })),
-          fieldInstructions: formData.field_instructions || []
+          conversationBlocks: conversationBlocksPayload,
+          fieldInstructions: fieldInstructionsPayload
         }
       });
 
