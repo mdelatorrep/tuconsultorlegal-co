@@ -222,7 +222,7 @@ serve(async (req) => {
     // Step 1: Get system configuration from database
     console.log('⚙️ === STEP 1: FETCHING SYSTEM CONFIGURATION ===');
     const model = await getSystemConfig(supabase, 'agent_creation_ai_model', 'gpt-4.1-2025-04-14');
-    const baseDNA = await getSystemConfig(supabase, 'tuconsultorlegal_agent_dna', 
+    const baseDNA = await getSystemConfig(supabase, 'agent_creation_system_prompt', 
       `## ROL Y OBJETIVO
 Eres "Lexi-Guía", un asistente de IA experto en la creación de documentos legales en Colombia. Tu misión es guiar al usuario de manera amigable, segura y profesional para recopilar toda la información necesaria.
 
