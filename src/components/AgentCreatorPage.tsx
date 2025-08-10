@@ -85,6 +85,9 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
   
   const [aiProcessingSuccess, setAiProcessingSuccess] = useState(false);
   const [maxStepReached, setMaxStepReached] = useState(1); // Track the highest step reached
+  // Auto-publicación tras IA y control de envío
+  const [autoSubmitAfterAI, setAutoSubmitAfterAI] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
 
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -650,7 +653,32 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       return;
     }
 
-    // Set processing state
+    // Validate placeholder coverage in conversation blocks
+    const extracted = (aiResults.extractedPlaceholders || []).map((p) => p.placeholder);
+    if (!extracted.length) {
+      toast({
+        title: "Placeholders no detectados",
+        description: "Debes extraer los placeholders de la plantilla antes de procesar con IA.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const assigned = new Set<string>();
+    (formData.conversation_blocks || []).forEach((b) => {
+      (b.placeholders || []).forEach((ph) => assigned.add(ph));
+    });
+    const missing = extracted.filter((ph) => !assigned.has(ph));
+    if (missing.length > 0) {
+      toast({
+        title: "Faltan placeholders por asignar",
+        description: `Asigna todos los placeholders a bloques de conversación. Pendientes: ${missing.slice(0,5).join(', ')}${missing.length>5?'…':''}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Set processing state (mostrar loader breve)
     setIsProcessing(true);
     setAiProcessingSuccess(false);
     setCurrentStep(4);
@@ -827,11 +855,18 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         console.error('⚠️ [PROCESS-AI] Exception saving draft:', saveError);
       }
 
-      // Show success notification
+      // Tras procesar con IA, enviar automáticamente a revisión del admin
       toast({
-        title: "¡Procesamiento completado!",
-        description: `Se generó un prompt mejorado y se identificaron ${data.placeholders?.length || 0} variables.`
+        title: "Procesamiento completado",
+        description: "Enviando el agente a revisión del administrador…",
       });
+      setAutoSubmitAfterAI(true);
+      setCurrentStep(5);
+      try {
+        await handlePublish();
+      } catch (e) {
+        console.error('⚠️ [PROCESS-AI] Auto publish failed:', e);
+      }
 
       console.log('🎉 [PROCESS-AI] Process completed successfully');
 
@@ -1105,20 +1140,10 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         return;
       }
 
-      // Validate lawyer suggested price is provided
-      if (!formData.lawyerSuggestedPrice || formData.lawyerSuggestedPrice.trim() === '') {
-        toast({
-          title: "Precio requerido",
-          description: "Por favor ingresa un precio sugerido para el documento.",
-          variant: "destructive",
-        });
-        return;
-      }
+      // El precio sugerido por el abogado es opcional: usar sugerencia de IA o un mínimo por defecto
 
-      // Convert lawyer suggested price to integer (remove $ and commas), ensure it's a valid number
-      const lawyerPriceValue = parseInt(formData.lawyerSuggestedPrice.replace(/[^0-9]/g, '')) || 50000; // Default minimum
-      // Convert calculated price to integer (for admin review), default to lawyer price if invalid
-      const calculatedPriceValue = parseInt(aiResults.calculatedPrice.replace(/[^0-9]/g, '')) || lawyerPriceValue;
+      const lawyerPriceValue = parseInt((formData.lawyerSuggestedPrice || '').replace(/[^0-9]/g, '')) || parseInt((aiResults.calculatedPrice || '').replace(/[^0-9]/g, '')) || 50000; // Fallback mínimo
+      const calculatedPriceValue = parseInt((aiResults.calculatedPrice || '').replace(/[^0-9]/g, '')) || lawyerPriceValue;
       
       console.log('Publishing agent with data:', {
         name: formData.docName,
@@ -1226,42 +1251,47 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         }
       }
 
-      // Reset form and go back
-      setFormData({
-        docName: "",
-        docDesc: "",
-        docCat: "",
-        targetAudience: "personas",
-        docTemplate: "",
-        conversation_blocks: [],
-        field_instructions: [],
-        slaHours: 4,
-        slaEnabled: true,
-        lawyerSuggestedPrice: "",
-      });
-      setAiResults({
-        enhancedPrompt: "",
-        extractedPlaceholders: [],
-        calculatedPrice: "",
-        priceJustification: "",
-      });
-      setCurrentDraftId(null); // Reset draft ID
-      setDocInfoImprovement({
-        improvedName: "",
-        improvedDescription: "",
-        originalName: "",
-        originalDescription: "",
-        showImprovement: false,
-        isEditing: false,
-      });
-      setPromptImprovement({
-        improvedPrompt: "",
-        originalPrompt: "",
-        showImprovement: false,
-        isEditing: false,
-      });
-      setCurrentStep(1);
-      onBack();
+      // Reset form and go back (solo si no fue auto-enviado tras IA)
+      if (!autoSubmitAfterAI) {
+        setFormData({
+          docName: "",
+          docDesc: "",
+          docCat: "",
+          targetAudience: "personas",
+          docTemplate: "",
+          conversation_blocks: [],
+          field_instructions: [],
+          slaHours: 4,
+          slaEnabled: true,
+          lawyerSuggestedPrice: "",
+        });
+        setAiResults({
+          enhancedPrompt: "",
+          extractedPlaceholders: [],
+          calculatedPrice: "",
+          priceJustification: "",
+        });
+        setCurrentDraftId(null); // Reset draft ID
+        setDocInfoImprovement({
+          improvedName: "",
+          improvedDescription: "",
+          originalName: "",
+          originalDescription: "",
+          showImprovement: false,
+          isEditing: false,
+        });
+        setPromptImprovement({
+          improvedPrompt: "",
+          originalPrompt: "",
+          showImprovement: false,
+          isEditing: false,
+        });
+        setCurrentStep(1);
+        onBack();
+      } else {
+        // Mantener en paso 5 mostrando confirmación de envío
+        setCurrentStep(5);
+      }
     } catch (error) {
       console.error('Error publishing agent:', error);
       toast({
@@ -2150,25 +2180,27 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
                    El nuevo agente para el documento <strong>"{formData.docName}"</strong> está configurado y listo para ser enviado a revisión. 
                    Una vez aprobado por el administrador, estará disponible para todos los clientes en el sitio web.
                  </p>
-                   <Button 
-                     onClick={(e) => {
-                       e.preventDefault();
-                       e.stopPropagation();
-                       console.log('=== BUTTON CLICK EVENT ===');
-                       console.log('Event:', e);
-                       console.log('Current Step:', currentStep);
-                       console.log('LawyerData:', lawyerData);
-                       console.log('LawyerData permissions (canCreateAgents):', lawyerData?.canCreateAgents);
-                       console.log('FormData:', formData);
-                       console.log('AIResults:', aiResults);
-                       console.log('About to call handlePublish...');
-                       handlePublish();
-                     }} 
-                     size={isMobile ? "default" : "lg"} 
-                     className={`${isMobile ? "w-full text-base px-6 py-3" : "text-xl px-10 py-4"}`}
-                   >
-                     Enviar a Revisión
-                   </Button>
+                   {!autoSubmitAfterAI && (
+                     <Button 
+                       onClick={(e) => {
+                         e.preventDefault();
+                         e.stopPropagation();
+                         console.log('=== BUTTON CLICK EVENT ===');
+                         console.log('Event:', e);
+                         console.log('Current Step:', currentStep);
+                         console.log('LawyerData:', lawyerData);
+                         console.log('LawyerData permissions (canCreateAgents):', lawyerData?.canCreateAgents);
+                         console.log('FormData:', formData);
+                         console.log('AIResults:', aiResults);
+                         console.log('About to call handlePublish...');
+                         handlePublish();
+                       }} 
+                       size={isMobile ? "default" : "lg"} 
+                       className={`${isMobile ? "w-full text-base px-6 py-3" : "text-xl px-10 py-4"}`}
+                     >
+                       Enviar a Revisión
+                     </Button>
+                   )}
               </div>
             )}
           </CardContent>
