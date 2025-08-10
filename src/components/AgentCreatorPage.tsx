@@ -645,29 +645,19 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       return;
     }
 
-    // Validate placeholder coverage in conversation blocks
+    // Soft-check placeholder coverage; proceed anyway, AI can extract/placeholders
     const extracted = (aiResults.extractedPlaceholders || []).map((p) => p.placeholder);
     if (!extracted.length) {
-      toast({
-        title: "Placeholders no detectados",
-        description: "Debes extraer los placeholders de la plantilla antes de procesar con IA.",
-        variant: "destructive",
+      console.warn('[PROCESS-AI] No placeholders extracted yet; proceeding to let AI extract them.');
+    } else {
+      const assigned = new Set<string>();
+      (formData.conversation_blocks || []).forEach((b) => {
+        (b.placeholders || []).forEach((ph) => assigned.add(ph));
       });
-      return;
-    }
-
-    const assigned = new Set<string>();
-    (formData.conversation_blocks || []).forEach((b) => {
-      (b.placeholders || []).forEach((ph) => assigned.add(ph));
-    });
-    const missing = extracted.filter((ph) => !assigned.has(ph));
-    if (missing.length > 0) {
-      toast({
-        title: "Faltan placeholders por asignar",
-        description: `Asigna todos los placeholders a bloques de conversación. Pendientes: ${missing.slice(0,5).join(', ')}${missing.length>5?'…':''}`,
-        variant: "destructive",
-      });
-      return;
+      const missing = extracted.filter((ph) => !assigned.has(ph));
+      if (missing.length > 0) {
+        console.warn('[PROCESS-AI] Missing placeholder assignments; proceeding anyway.', { missing });
+      }
     }
 
     // Set processing state (sin cambiar de paso para no mostrar un paso intermedio)
@@ -2068,33 +2058,31 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
                   <Button variant="outline" onClick={handlePrev} className={isMobile ? "w-full" : ""}>
                     <ArrowLeft className="h-4 w-4 mr-2" /> Anterior
                   </Button>
-                  {aiResults.extractedPlaceholders.length > 0 && (
-                    <Button 
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (isProcessing) return;
-                        console.log('🎯 [BUTTON CLICK] Procesar con IA button clicked!');
-                        processWithAI();
-                      }} 
-                      disabled={isProcessing || !formData.conversation_blocks || formData.conversation_blocks.length === 0}
-                      aria-busy={isProcessing}
-                      className={`bg-emerald-600 hover:bg-emerald-700 ${isMobile ? "w-full" : ""}`}
-                    >
-                      {isProcessing ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Procesando...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="h-4 w-4 mr-2" />
-                          Procesar con IA
-                        </>
-                      )}
-                    </Button>
-                  )}
+                  <Button 
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (isProcessing) return;
+                      console.log('🎯 [BUTTON CLICK] Procesar con IA button clicked!');
+                      processWithAI();
+                    }} 
+                    disabled={isProcessing}
+                    aria-busy={isProcessing}
+                    className={`bg-emerald-600 hover:bg-emerald-700 ${isMobile ? "w-full" : ""}`}
+                  >
+                    {isProcessing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Procesando...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Procesar con IA
+                      </>
+                    )}
+                  </Button>
                 </div>
               </div>
             )}
