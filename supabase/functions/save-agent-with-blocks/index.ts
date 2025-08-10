@@ -113,7 +113,7 @@ serve(async (req) => {
     console.log('Agent draft saved successfully:', agentDraftId);
 
     // Handle conversation blocks
-    if (conversationBlocks && conversationBlocks.length > 0) {
+    if (conversationBlocks) {
       // First, delete existing blocks for this agent
       const { error: deleteBlocksError } = await supabase
         .from('conversation_blocks')
@@ -124,28 +124,32 @@ serve(async (req) => {
         console.error('Error deleting existing conversation blocks:', deleteBlocksError);
       }
 
-      // Insert new conversation blocks
-      const blocksToInsert = conversationBlocks.map((block: any, index: number) => ({
-        legal_agent_id: agentDraftId,
-        block_name: block.blockName,
-        intro_phrase: block.introPhrase,
-        placeholders: block.placeholders,
-        block_order: index + 1
-      }));
+      if (conversationBlocks.length > 0) {
+        // Insert new conversation blocks
+        const blocksToInsert = conversationBlocks.map((block: any, index: number) => ({
+          legal_agent_id: agentDraftId,
+          block_name: block.blockName,
+          intro_phrase: block.introPhrase,
+          placeholders: block.placeholders,
+          block_order: index + 1
+        }));
 
-      const { error: blocksError } = await supabase
-        .from('conversation_blocks')
-        .insert(blocksToInsert);
+        const { error: blocksError } = await supabase
+          .from('conversation_blocks')
+          .insert(blocksToInsert);
 
-      if (blocksError) {
-        console.error('Error creating conversation blocks:', blocksError);
+        if (blocksError) {
+          console.error('Error creating conversation blocks:', blocksError);
+        } else {
+          console.log(`Created ${blocksToInsert.length} conversation blocks`);
+        }
       } else {
-        console.log(`Created ${blocksToInsert.length} conversation blocks`);
+        console.log('No conversation blocks provided; existing blocks cleared.');
       }
     }
 
     // Handle field instructions
-    if (fieldInstructions && fieldInstructions.length > 0) {
+    if (fieldInstructions) {
       // First, delete existing instructions for this agent
       const { error: deleteInstructionsError } = await supabase
         .from('field_instructions')
@@ -156,22 +160,26 @@ serve(async (req) => {
         console.error('Error deleting existing field instructions:', deleteInstructionsError);
       }
 
-      // Insert new field instructions
-      const instructionsToInsert = fieldInstructions.map((instruction: any) => ({
-        legal_agent_id: agentDraftId,
-        field_name: instruction.fieldName,
-        validation_rule: instruction.validationRule,
-        help_text: instruction.helpText
-      }));
+      if (fieldInstructions.length > 0) {
+        // Insert new field instructions
+        const instructionsToInsert = fieldInstructions.map((instruction: any) => ({
+          legal_agent_id: agentDraftId,
+          field_name: instruction.fieldName,
+          validation_rule: instruction.validationRule,
+          help_text: instruction.helpText
+        }));
 
-      const { error: instructionsError } = await supabase
-        .from('field_instructions')
-        .insert(instructionsToInsert);
+        const { error: instructionsError } = await supabase
+          .from('field_instructions')
+          .insert(instructionsToInsert);
 
-      if (instructionsError) {
-        console.error('Error creating field instructions:', instructionsError);
+        if (instructionsError) {
+          console.error('Error creating field instructions:', instructionsError);
+        } else {
+          console.log(`Created ${instructionsToInsert.length} field instructions`);
+        }
       } else {
-        console.log(`Created ${instructionsToInsert.length} field instructions`);
+        console.log('No field instructions provided; existing instructions cleared.');
       }
     }
 

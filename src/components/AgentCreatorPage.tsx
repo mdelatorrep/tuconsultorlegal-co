@@ -220,7 +220,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
     }
   };
 
-  const saveDraft = async () => {
+  const saveDraft = async (stepOverride?: number) => {
     console.log('💾 saveDraft function called');
     
     if (isSavingDraft) {
@@ -244,7 +244,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         lawyerId: lawyerData.id,
         currentDraftId,
         draftName,
-        stepCompleted: currentStep,
+        stepCompleted: stepOverride ?? currentStep,
         hasFormData: !!formData
       });
       
@@ -253,7 +253,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
           lawyerId: lawyerData.id,
           draftId: currentDraftId,
           draftName,
-          stepCompleted: currentStep,
+          stepCompleted: stepOverride ?? currentStep,
           agentData: {
             doc_name: formData.docName?.trim() || '',
             doc_desc: formData.docDesc?.trim() || '',
@@ -373,7 +373,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         setAiProcessingSuccess(false);
       }
 
-      const stepCompleted = Math.max(1, Math.min(draft.step_completed || 1, 5));
+      const stepCompleted = Math.max(1, Math.min(draft.step_completed || 1, 4));
       setCurrentStep(stepCompleted);
       setMaxStepReached(Math.max(maxStepReached, stepCompleted));
       setCurrentDraftId(draft.id);
@@ -456,7 +456,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
     setCurrentDraftId(null);
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentStep === 1) {
       // Validate step 1 fields before proceeding
       if (!formData.docName.trim() || !formData.docDesc.trim() || !formData.docCat) {
@@ -486,6 +486,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       const nextStep = currentStep + 1;
       setCurrentStep(nextStep);
       setMaxStepReached(Math.max(maxStepReached, nextStep));
+      await saveDraft(nextStep);
     } else if (currentStep === 3) {
       // Validate step 3 fields
       if (!formData.conversation_blocks || formData.conversation_blocks.length === 0) {
@@ -499,13 +500,14 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       const nextStep = currentStep + 1;
       setCurrentStep(nextStep);
       setMaxStepReached(Math.max(maxStepReached, nextStep));
+      await saveDraft(nextStep);
     } else if (currentStep < 4) {
       const nextStep = currentStep + 1;
       setCurrentStep(nextStep);
       setMaxStepReached(Math.max(maxStepReached, nextStep));
+      await saveDraft(nextStep);
     }
   };
-
   const handlePrev = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
@@ -1358,7 +1360,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
             {/* Save Draft Button */}
             <Button 
               variant="outline" 
-              onClick={saveDraft}
+              onClick={() => saveDraft()}
               disabled={isSavingDraft || !lawyerData?.canCreateAgents}
               className="flex items-center gap-2"
             >
