@@ -2034,14 +2034,25 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        if (isProcessing) return;
                         console.log('🎯 [BUTTON CLICK] Procesar con IA button clicked!');
                         processWithAI();
                       }} 
-                      disabled={!formData.conversation_blocks || formData.conversation_blocks.length === 0}
+                      disabled={isProcessing || !formData.conversation_blocks || formData.conversation_blocks.length === 0}
+                      aria-busy={isProcessing}
                       className={`bg-emerald-600 hover:bg-emerald-700 ${isMobile ? "w-full" : ""}`}
                     >
-                      <Sparkles className="h-4 w-4 mr-2" />
-                      Procesar con IA
+                      {isProcessing ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Procesando...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-4 w-4 mr-2" />
+                          Procesar con IA
+                        </>
+                      )}
                     </Button>
                   )}
                 </div>
