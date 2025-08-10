@@ -67,30 +67,10 @@ export default function OpenAIAgentManager() {
 
   useEffect(() => {
     loadData();
-    
-    // Set up real-time subscription for jobs
-    const channel = supabase
-      .channel('openai-jobs-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'openai_agent_jobs'
-        },
-        () => {
-          loadJobs();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
 
   const loadData = async () => {
-    await Promise.all([loadAgents(), loadJobs()]);
+    await loadAgents();
     setLoading(false);
   };
 
@@ -277,7 +257,6 @@ export default function OpenAIAgentManager() {
   const avgSuccessRate = agents.length > 0 
     ? agents.reduce((sum, a) => sum + a.calculated_success_rate, 0) / agents.length 
     : 0;
-  const pendingJobs = jobs.filter(j => j.status === 'pending').length;
 
   return (
     <div className="space-y-6">
@@ -292,10 +271,6 @@ export default function OpenAIAgentManager() {
             Administra la integración de OpenAI para experiencias conversacionales avanzadas
           </p>
         </div>
-        <Button onClick={processJobs} disabled={processing} className="flex items-center gap-2">
-          <RefreshCw className={`w-4 h-4 ${processing ? 'animate-spin' : ''}`} />
-          {processing ? 'Procesando...' : 'Procesar Jobs'}
-        </Button>
       </div>
 
       {/* Stats Cards */}
@@ -339,24 +314,11 @@ export default function OpenAIAgentManager() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Clock className="w-5 h-5 text-orange-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Jobs Pendientes</p>
-                <p className="text-2xl font-bold">{pendingJobs}</p>
-                <p className="text-xs text-muted-foreground">en cola</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       <Tabs defaultValue="agents" className="space-y-4">
         <TabsList>
           <TabsTrigger value="agents">Agentes ({agents.length})</TabsTrigger>
-          <TabsTrigger value="jobs">Jobs ({jobs.length})</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
 
@@ -428,56 +390,6 @@ export default function OpenAIAgentManager() {
           ))}
         </TabsContent>
 
-        <TabsContent value="jobs" className="space-y-4">
-          {jobs.length === 0 ? (
-            <Alert>
-              <CheckCircle className="h-4 w-4" />
-              <AlertDescription>
-                No hay trabajos de OpenAI en el sistema. Los trabajos aparecerán aquí cuando se aprueben nuevos agentes.
-              </AlertDescription>
-            </Alert>
-          ) : (
-            jobs.map((job) => (
-              <Card key={job.id}>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      {getStatusIcon(job.status)}
-                      <div>
-                        <p className="font-medium">{job.legal_agents?.name}</p>
-                        <p className="text-sm text-muted-foreground">{job.legal_agents?.document_name}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <Badge className={`${getStatusColor(job.status)} text-white`}>
-                        {job.status}
-                      </Badge>
-                      {job.retry_count > 0 && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Reintentos: {job.retry_count}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {job.error_message && (
-                    <Alert className="mt-3" variant="destructive">
-                      <AlertTriangle className="h-4 w-4" />
-                      <AlertDescription>{job.error_message}</AlertDescription>
-                    </Alert>
-                  )}
-                  
-                  <div className="flex justify-between text-xs text-muted-foreground mt-2">
-                    <span>Creado: {new Date(job.created_at).toLocaleString()}</span>
-                    {job.completed_at && (
-                      <span>Completado: {new Date(job.completed_at).toLocaleString()}</span>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </TabsContent>
 
         <TabsContent value="analytics" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

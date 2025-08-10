@@ -263,16 +263,14 @@ function AdminPage() {
         throw new Error(response.data.error);
       }
 
-      // Si estamos aprobando (cambiando a 'active'), crear el agente de OpenAI
-      if (newStatus === 'active' && agent.status === 'pending_review') {
+      // Si estamos aprobando, crear el agente de OpenAI de forma síncrona
+      if (newStatus === 'approved') {
         try {
           console.log('Creating OpenAI agent for approved agent:', agentId);
           const { data: openaiAgentResult, error: openaiError } = await supabase.functions.invoke('create-openai-agent', {
             body: {
-              legalAgentId: agentId,
-              agentConfig: {
-                model: 'gpt-4o'
-              }
+              legal_agent_id: agentId,
+              force_recreate: false
             },
             headers: authHeaders
           });
@@ -287,8 +285,8 @@ function AdminPage() {
           } else {
             console.log('OpenAI agent created successfully:', openaiAgentResult);
             toast({
-              title: "¡Agente aprobado y activado!",
-              description: "El agente fue aprobado exitosamente y el agente de IA fue configurado correctamente.",
+              title: "¡Agente aprobado!",
+              description: "El agente fue aprobado y el agente de IA fue creado correctamente.",
             });
           }
         } catch (error) {

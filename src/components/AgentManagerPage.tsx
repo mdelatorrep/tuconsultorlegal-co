@@ -196,7 +196,7 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
           agent_id: agentId,
           user_id: lawyerData.id,
           is_admin: lawyerData.is_admin,
-          status: 'active',
+          status: 'approved',
           document_name: agent.name // Copiar el nombre del agente al nombre del documento
         },
         headers: {
@@ -215,10 +215,8 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
         console.log('Creating OpenAI agent for approved agent:', agentId);
         const { data: openaiAgentResult, error: openaiError } = await supabase.functions.invoke('create-openai-agent', {
           body: {
-            legalAgentId: agentId,
-            agentConfig: {
-              model: 'gpt-4o'
-            }
+            legal_agent_id: agentId,
+            force_recreate: false
           }
         });
 
@@ -232,8 +230,8 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
         } else {
           console.log('OpenAI agent created successfully:', openaiAgentResult);
           toast({
-            title: "¡Agente aprobado y activado!",
-            description: "El agente fue aprobado exitosamente y el agente de IA fue configurado correctamente.",
+            title: "¡Agente aprobado!",
+            description: "El agente fue aprobado y el agente de IA fue creado correctamente.",
             variant: "default",
           });
         }
@@ -259,7 +257,7 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
       setAgents(agents.map(agent => 
         agent.id === agentId ? { 
           ...agent, 
-          status: 'active',
+          status: 'approved',
           price_approved_by: lawyerData.id,
           price_approved_at: new Date().toISOString()
         } : agent
