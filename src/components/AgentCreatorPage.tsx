@@ -700,13 +700,34 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
 
       let data: any = null;
       let error: any = null;
+      let usedFallback = false;
+
+      // Try primary function with timeout
       try {
         ({ data, error } = await invokeWithTimeout(
           supabase.functions.invoke('ai-agent-processor', { body: requestPayload }),
           60000
         ));
       } catch (e) {
-        console.warn('⏳ [PROCESS-AI] ai-agent-processor timeout/exception, falling back to process-agent-ai', e);
+        console.warn('⏳ [PROCESS-AI] ai-agent-processor timeout/exception, preparing fallback...', e);
+        // Treat as error to trigger fallback below
+        error = error || e;
+      }
+
+      // Decide if we should fallback: network/HTTP error OR missing required fields
+      const hasPlaceholdersArray = Array.isArray((data as any)?.placeholders) || Array.isArray((data as any)?.extractedPlaceholders);
+      const needFallback = !!error || !data || !data.enhancedPrompt || !hasPlaceholdersArray;
+
+      if (needFallback) {
+        console.warn('🔄 [PROCESS-AI] Falling back to process-agent-ai due to error/invalid response', {
+          hasData: !!data,
+          hasError: !!error,
+          hasEnhancedPrompt: !!data?.enhancedPrompt,
+          placeholdersCount: Array.isArray((data as any)?.placeholders)
+            ? (data as any).placeholders.length
+            : (Array.isArray((data as any)?.extractedPlaceholders) ? (data as any).extractedPlaceholders.length : 0)
+        });
+        usedFallback = true;
         ({ data, error } = await supabase.functions.invoke('process-agent-ai', {
           body: {
             docName: requestPayload.docName,
@@ -724,12 +745,13 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         hasData: !!data,
         hasError: !!error,
         dataKeys: data ? Object.keys(data) : [],
-        errorMessage: error?.message || null
+        errorMessage: error?.message || null,
+        usedFallback
       });
 
       // Handle Supabase function errors first
       if (error) {
-        console.error('❌ [PROCESS-AI] Supabase error detected:', error);
+        console.error('❌ [PROCESS-AI] Supabase error detected after fallback check:', error);
         throw new Error(`Error en la función: ${error.message || 'Error desconocido'}`);
       }
 
@@ -742,8 +764,6 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       // Some functions (like ai-agent-processor) might not include a success flag
       // We'll rely on the presence of required fields instead of strict success === true
       // If the backend provided an explicit error, we will handle it below with field validation
-
-
       console.log('✅ [PROCESS-AI] Success! Processing results:', {
         hasEnhancedPrompt: !!data.enhancedPrompt,
         enhancedPromptLength: data.enhancedPrompt?.length || 0,
