@@ -953,15 +953,25 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         targetAudience: formData.targetAudience
       });
 
-      const { data, error } = await supabase.functions.invoke('improve-template-ai', {
-        body: {
-          templateContent: formData.docTemplate,
-          docName: formData.docName,
-          docCategory: formData.docCat,
-          docDescription: formData.docDesc,
-          targetAudience: formData.targetAudience
-        }
-      });
+      const timeoutMs = 45000; // 45s timeout to avoid indefinite spinner
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error(`Tiempo de espera agotado (${timeoutMs/1000}s) mejorando plantilla`)), timeoutMs)
+      );
+
+      const result: any = await Promise.race([
+        supabase.functions.invoke('improve-template-ai', {
+          body: {
+            templateContent: formData.docTemplate,
+            docName: formData.docName,
+            docCategory: formData.docCat,
+            docDescription: formData.docDesc,
+            targetAudience: formData.targetAudience
+          }
+        }),
+        timeoutPromise
+      ]);
+
+      const { data, error } = result || {};
 
       console.log('📥 Function response received:', { 
         data: data ? Object.keys(data) : null, 
