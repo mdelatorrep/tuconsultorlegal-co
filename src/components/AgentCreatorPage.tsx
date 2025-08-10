@@ -96,8 +96,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
     { id: 1, title: "Info Básica", description: "Información del documento" },
     { id: 2, title: "Plantilla", description: "Texto del documento" },
     { id: 3, title: "Guía de Conversación", description: "Estructura de la conversación" },
-    { id: 4, title: "Magia IA", description: "Procesamiento automático" },
-    { id: 5, title: "Revisar", description: "Envío a revisión" },
+    { id: 4, title: "Revisar", description: "Envío a revisión" },
   ];
 
   const [categories, setCategories] = useState<string[]>([]);
@@ -500,28 +499,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       const nextStep = currentStep + 1;
       setCurrentStep(nextStep);
       setMaxStepReached(Math.max(maxStepReached, nextStep));
-    } else if (currentStep === 4) {
-      // Validate step 4 fields (AI processing and price)
-      if (!aiResults.enhancedPrompt || aiResults.extractedPlaceholders.length === 0) {
-        toast({
-          title: "Procesamiento IA incompleto",
-          description: "Debes completar el procesamiento de IA antes de continuar.",
-          variant: "destructive",
-        });
-        return;
-      }
-      if (!formData.lawyerSuggestedPrice || formData.lawyerSuggestedPrice.trim() === '') {
-        toast({
-          title: "Precio requerido",
-          description: "Por favor ingresa un precio sugerido para el documento.",
-          variant: "destructive",
-        });
-        return;
-      }
-      const nextStep = currentStep + 1;
-      setCurrentStep(nextStep);
-      setMaxStepReached(Math.max(maxStepReached, nextStep));
-    } else if (currentStep < 5) {
+    } else if (currentStep < 4) {
       const nextStep = currentStep + 1;
       setCurrentStep(nextStep);
       setMaxStepReached(Math.max(maxStepReached, nextStep));
@@ -678,11 +656,9 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       return;
     }
 
-    // Set processing state (mostrar loader breve)
+    // Set processing state (sin cambiar de paso para no mostrar un paso intermedio)
     setIsProcessing(true);
     setAiProcessingSuccess(false);
-    setCurrentStep(4);
-    setMaxStepReached(Math.max(maxStepReached, 4));
 
     try {
       // Ensure latest conversation structure is saved as draft before AI
@@ -861,7 +837,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         description: "Enviando el agente a revisión del administrador…",
       });
       setAutoSubmitAfterAI(true);
-      setCurrentStep(5);
+      setCurrentStep(4);
       try {
         await handlePublish();
       } catch (e) {
@@ -1134,7 +1110,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       if (!aiResults.enhancedPrompt || aiResults.extractedPlaceholders.length === 0) {
         toast({
           title: "Procesamiento IA incompleto",
-          description: "Debes completar el procesamiento de IA en el paso 4 antes de enviar a revisión.",
+          description: "Debes completar el procesamiento de IA antes de enviar a revisión.",
           variant: "destructive",
         });
         return;
@@ -2071,7 +2047,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
             )}
 
             {/* Step 4: AI Processing & Review */}
-            {currentStep === 4 && (
+            {false && currentStep === 4 && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold mb-6">Procesando con IA…</h2>
                 <p className="text-muted-foreground mb-6">
@@ -2109,8 +2085,8 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
               </div>
             )}
 
-            {/* Step 5: Publish */}
-            {currentStep === 5 && (
+            {/* Step 4: Publish (antes era Paso 5) */}
+            {currentStep === 4 && (
               <div className="text-center py-12">
                 <CheckCircle className="mx-auto h-24 w-24 text-success mb-6" />
                 <h2 className="text-3xl font-bold mb-4">¡Todo Listo!</h2>
