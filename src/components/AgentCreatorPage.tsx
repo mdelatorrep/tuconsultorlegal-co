@@ -688,10 +688,35 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         docTemplate: `${requestPayload.docTemplate.length} characters`
       });
 
-      // Call the AI processing function with proper error handling
-      const { data, error } = await supabase.functions.invoke('ai-agent-processor', {
-        body: requestPayload
-      });
+      // Call the AI processing function with timeout and fallback
+      const invokeWithTimeout = async <T,>(p: Promise<T>, ms = 60000): Promise<T> => {
+        return await Promise.race([
+          p,
+          new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))
+        ]) as T;
+      };
+
+      let data: any = null;
+      let error: any = null;
+      try {
+        ({ data, error } = await invokeWithTimeout(
+          supabase.functions.invoke('ai-agent-processor', { body: requestPayload }),
+          60000
+        ));
+      } catch (e) {
+        console.warn('⏳ [PROCESS-AI] ai-agent-processor timeout/exception, falling back to process-agent-ai', e);
+        ({ data, error } = await supabase.functions.invoke('process-agent-ai', {
+          body: {
+            docName: requestPayload.docName,
+            docDesc: requestPayload.docDesc,
+            docDescription: requestPayload.docDesc,
+            category: requestPayload.category,
+            docTemplate: requestPayload.docTemplate,
+            initialPrompt: '',
+            targetAudience: requestPayload.targetAudience
+          }
+        }));
+      }
 
       console.log('📊 [PROCESS-AI] Function invocation completed:', {
         hasData: !!data,
@@ -720,28 +745,31 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       console.log('✅ [PROCESS-AI] Success! Processing results:', {
         hasEnhancedPrompt: !!data.enhancedPrompt,
         enhancedPromptLength: data.enhancedPrompt?.length || 0,
-        placeholdersCount: data.placeholders?.length || 0,
+        placeholdersCount: (Array.isArray((data as any).placeholders) ? (data as any).placeholders.length : (Array.isArray((data as any).extractedPlaceholders) ? (data as any).extractedPlaceholders.length : 0)),
         hasSuggestedPrice: !!data.suggestedPrice,
         suggestedPrice: data.suggestedPrice
       });
 
+      // Normalize placeholders from different function variants
+      const placeholderListRaw: any[] = Array.isArray((data as any).placeholders)
+        ? (data as any).placeholders
+        : (Array.isArray((data as any).extractedPlaceholders) ? (data as any).extractedPlaceholders : []);
+
       // CRITICAL FIX: Validate required AI response fields
-      if (!data.enhancedPrompt || !data.placeholders || data.placeholders.length === 0) {
+      if (!data.enhancedPrompt || placeholderListRaw.length === 0) {
         console.error('❌ [PROCESS-AI] Invalid AI response - missing required fields:', {
           hasEnhancedPrompt: !!data.enhancedPrompt,
-          placeholdersCount: data.placeholders?.length || 0
+          placeholdersCount: placeholderListRaw.length
         });
         throw new Error('Respuesta incompleta del procesamiento IA. Por favor intenta nuevamente.');
       }
 
       const aiResultsData = {
         enhancedPrompt: data.enhancedPrompt || '',
-        extractedPlaceholders: Array.isArray(data.placeholders)
-          ? data.placeholders.map((p: any) => ({
-              placeholder: p.placeholder || p.field || p.name || p.label || '',
-              pregunta: p.pregunta || p.question || p.description || `Ingresa ${(p.placeholder || p.field || p.name || p.label || 'valor').toString().replace(/_/g, ' ')}`
-            }))
-          : [],
+        extractedPlaceholders: placeholderListRaw.map((p: any) => ({
+          placeholder: p.placeholder || p.field || p.name || p.label || '',
+          pregunta: p.pregunta || p.question || p.description || `Ingresa ${(p.placeholder || p.field || p.name || p.label || 'valor').toString().replace(/_/g, ' ')}`
+        })),
         calculatedPrice: data.suggestedPrice || 'Precio por determinar',
         priceJustification: data.priceJustification || 'Precio estimado basado en la complejidad del documento.'
       };
