@@ -2073,9 +2073,9 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
             {/* Step 4: AI Processing & Review */}
             {currentStep === 4 && (
               <div className="space-y-6">
-                <h2 className="text-2xl font-bold mb-6">Revisión y Mejora por IA</h2>
+                <h2 className="text-2xl font-bold mb-6">Procesando con IA…</h2>
                 <p className="text-muted-foreground mb-6">
-                  Nuestra plataforma ha analizado tus insumos y ha generado una configuración optimizada para el nuevo agente. Por favor, revisa y aprueba.
+                  Estamos preparando el agente con la información suministrada. Este paso es automático y no requiere tu intervención.
                 </p>
 
                 {isProcessing ? (
@@ -2085,72 +2085,10 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
                     <p className="text-muted-foreground">Esto puede tomar unos segundos</p>
                   </div>
                  ) : aiProcessingSuccess ? (
-                   <div className="space-y-8">
-                      {/* Enhanced Prompt */}
-                      <div>
-                        <h3 className="text-xl font-bold mb-2">1. Prompt del Agente (Mejorado)</h3>
-                        <Textarea
-                          value={aiResults.enhancedPrompt}
-                          onChange={(e) => setAiResults(prev => ({ ...prev, enhancedPrompt: e.target.value }))}
-                          rows={15}
-                          className="text-sm"
-                          placeholder="Prompt del agente mejorado por IA..."
-                        />
-                      </div>
-
-                     {/* Extracted Placeholders */}
-                     <div>
-                       <h3 className="text-xl font-bold mb-2">2. Variables Identificadas en la Plantilla</h3>
-                       <div className="p-4 bg-muted rounded-md border">
-                         <div className="flex flex-wrap gap-2">
-                           {aiResults.extractedPlaceholders.map((item, index) => (
-                             <Badge key={index} variant="secondary">
-                               {item.placeholder}
-                             </Badge>
-                           ))}
-                         </div>
-                       </div>
-                     </div>
-
-                      {/* Lawyer Price Input */}
-                      <div>
-                        <h3 className="text-xl font-bold mb-2">3. Precio para el Cliente Final</h3>
-                        <p className="text-sm text-muted-foreground mb-3">
-                          Ingresa el precio que consideras justo para cobrar al cliente final por este documento.
-                        </p>
-                        <div className="space-y-2">
-                          <Label htmlFor="lawyerPrice" className="text-base font-medium">
-                            Precio Sugerido (COP) - Requerido *
-                          </Label>
-                          <Input
-                            id="lawyerPrice"
-                            type="text"
-                            placeholder="Ej: $ 80,000 COP"
-                            value={formData.lawyerSuggestedPrice}
-                            onChange={(e) => handleInputChange('lawyerSuggestedPrice', e.target.value)}
-                            className={`text-lg font-semibold ${!formData.lawyerSuggestedPrice ? 'border-red-300 focus:border-red-500' : ''}`}
-                          />
-                          {!formData.lawyerSuggestedPrice && (
-                            <p className="text-sm text-red-600">Este campo es requerido para continuar al paso 5</p>
-                          )}
-                        </div>
-                        <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-md">
-                          <p className="text-sm text-blue-700 dark:text-blue-300">
-                            💡 <strong>Sugerencia del sistema:</strong> {aiResults.calculatedPrice}<br/>
-                            <span className="text-xs">{aiResults.priceJustification}</span>
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className={`${isMobile ? 'flex flex-col space-y-3' : 'flex justify-between'}`}>
-                        <Button variant="outline" onClick={handlePrev} className={isMobile ? "w-full" : ""}>
-                          <ArrowLeft className="h-4 w-4 mr-2" /> Anterior
-                        </Button>
-                        <Button onClick={handleNext} className={isMobile ? "w-full" : ""}>
-                          Siguiente <ArrowRight className="h-4 w-4 ml-2" />
-                        </Button>
-                      </div>
-                   </div>
+                  <div className="text-center py-12">
+                    <CheckCircle className="mx-auto h-12 w-12 text-success mb-4" />
+                    <p className="text-lg">Listo. Redirigiendo al paso 5…</p>
+                  </div>
                  ) : (
                    <div className="text-center py-12">
                      <div className="mb-6">
