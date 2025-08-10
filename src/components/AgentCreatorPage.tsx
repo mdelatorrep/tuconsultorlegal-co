@@ -706,15 +706,10 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         throw new Error('No se recibió respuesta de la función de procesamiento');
       }
 
-      // CRITICAL FIX: Check success flag first
-      if (data.success !== true) {
-        console.error('❌ [PROCESS-AI] AI Processing failed:', {
-          success: data.success,
-          error: data.error,
-          details: data.details || 'No details provided'
-        });
-        throw new Error(data.error || 'Error en el procesamiento con IA');
-      }
+      // Some functions (like ai-agent-processor) might not include a success flag
+      // We'll rely on the presence of required fields instead of strict success === true
+      // If the backend provided an explicit error, we will handle it below with field validation
+
 
       console.log('✅ [PROCESS-AI] Success! Processing results:', {
         hasEnhancedPrompt: !!data.enhancedPrompt,
