@@ -740,6 +740,49 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         priceJustification: data.priceJustification || 'Precio estimado basado en la complejidad del documento.'
       };
 
+      // Map optional AI-optimized conversation blocks and field instructions back into UI shape
+      const rawOptimizedBlocks = (data as any).optimizedConversationBlocks || (data as any).optimized_conversation_blocks || (data as any).optimizedConversation?.blocks || (data as any).conversationBlocksOptimized || [];
+      const optimizedBlocksUI = Array.isArray(rawOptimizedBlocks)
+        ? rawOptimizedBlocks.map((b: any, idx: number) => ({
+            id: b.id || `block-${crypto?.randomUUID?.() || Date.now()}-${idx}`,
+            name: b.blockName || b.block_name || b.name || '',
+            introduction: b.introPhrase || b.intro_phrase || b.introduction || '',
+            placeholders: Array.isArray(b.placeholders) ? b.placeholders : []
+          }))
+        : [];
+
+      const rawOptimizedInstructions = (data as any).optimizedFieldInstructions || (data as any).optimized_field_instructions || (data as any).fieldInstructions || (data as any).field_instructions || [];
+      const optimizedInstructionsUI = Array.isArray(rawOptimizedInstructions)
+        ? rawOptimizedInstructions.map((i: any, idx: number) => ({
+            id: i.id || `instruction-${crypto?.randomUUID?.() || Date.now()}-${idx}`,
+            fieldName: i.fieldName || i.field_name || i.name || '',
+            validationRule: i.validationRule || i.validation_rule || '',
+            helpText: i.helpText || i.help_text || i.description || ''
+          }))
+        : [];
+
+      if (optimizedBlocksUI.length || optimizedInstructionsUI.length) {
+        console.log('✨ [PROCESS-AI] Applying AI-optimized conversation/data definitions', {
+          optimizedBlocks: optimizedBlocksUI.length,
+          optimizedInstructions: optimizedInstructionsUI.length
+        });
+        setFormData(prev => ({
+          ...prev,
+          conversation_blocks: optimizedBlocksUI.length ? optimizedBlocksUI : prev.conversation_blocks,
+          field_instructions: optimizedInstructionsUI.length ? optimizedInstructionsUI : prev.field_instructions
+        }));
+      }
+
+      // Precompute the structures we'll persist (prefer AI-optimized versions when present)
+      const blocksSource: any[] = optimizedBlocksUI.length ? optimizedBlocksUI : (formData.conversation_blocks || []);
+      const blocksToSave = blocksSource.map((b: any, idx: number) => ({
+        blockName: b.name?.trim() || '',
+        introPhrase: b.introduction?.trim() || '',
+        placeholders: Array.isArray(b.placeholders) ? b.placeholders : [],
+        order: (b.blockOrder || b.order || (idx + 1))
+      }));
+      const instructionsToSave = optimizedInstructionsUI.length ? optimizedInstructionsUI : (formData.field_instructions || []);
+
       // Update state with results
       setAiResults(aiResultsData);
       setAiProcessingSuccess(true);
@@ -767,13 +810,8 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
               lawyer_suggested_price: formData.lawyerSuggestedPrice?.trim() || '',
               ai_results: aiResultsData // Use the fresh AI results
             },
-            conversationBlocks: (formData.conversation_blocks || []).map((b, idx) => ({
-              blockName: b.name?.trim() || '',
-              introPhrase: b.introduction?.trim() || '',
-              placeholders: Array.isArray(b.placeholders) ? b.placeholders : [],
-              order: idx + 1
-            })),
-            fieldInstructions: formData.field_instructions || []
+            conversationBlocks: blocksToSave,
+            fieldInstructions: instructionsToSave
           }
         });
 
