@@ -75,6 +75,23 @@ interface Agent {
   price_justification?: string;
 }
 
+interface ConversationBlock {
+  id: string;
+  block_name: string;
+  intro_phrase: string;
+  block_order: number;
+  placeholders: any[];
+  legal_agent_id?: string;
+}
+
+interface FieldInstruction {
+  id?: string;
+  field_name: string;
+  validation_rule?: string | null;
+  help_text?: string | null;
+  legal_agent_id?: string;
+}
+
 interface ContactMessage {
   id: string;
   name: string;
@@ -146,6 +163,10 @@ function AdminPage() {
   const [selectedLawyerForPermissions, setSelectedLawyerForPermissions] = useState<Lawyer | null>(null);
   const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
 
+  // Conversación del agente (Guía)
+  const [convBlocks, setConvBlocks] = useState<ConversationBlock[]>([]);
+  const [fieldInstructions, setFieldInstructions] = useState<FieldInstruction[]>([]);
+  const [isConvLoading, setIsConvLoading] = useState(false);
   const [newLawyer, setNewLawyer] = useState({
     name: "",
     email: "",
@@ -167,6 +188,12 @@ function AdminPage() {
     // This will trigger the useEffect to reload data
   };
 
+  // Cargar guía de conversación al abrir el detalle
+  useEffect(() => {
+    if (showAgentDetails && selectedAgent?.id) {
+      loadConversationGuide(selectedAgent.id);
+    }
+  }, [showAgentDetails, selectedAgent?.id]);
   const loadData = async () => {
     setIsLoading(true);
     try {
@@ -555,6 +582,28 @@ function AdminPage() {
     }
   };
 
+  // Carga la guía de conversación de un agente (bloques e instrucciones)
+  const loadConversationGuide = async (agentId: string) => {
+    try {
+      setIsConvLoading(true);
+      setConvBlocks([]);
+      setFieldInstructions([]);
+
+      const { data, error } = await supabase.functions.invoke('get-agent-conversation', {
+        body: { legal_agent_id: agentId },
+        headers: getAuthHeaders()
+      });
+
+      if (error) throw error;
+
+      setConvBlocks(data?.conversation_blocks || []);
+      setFieldInstructions(data?.field_instructions || []);
+    } catch (error) {
+      console.error('Error loading conversation guide:', error);
+    } finally {
+      setIsConvLoading(false);
+    }
+  };
 
   const loadContactMessages = async () => {
     try {
@@ -1481,6 +1530,70 @@ function AdminPage() {
                 <div className="p-4 bg-muted rounded-md text-xs font-mono max-h-40 overflow-y-auto">
                   {selectedAgent.ai_prompt}
                 </div>
+              </div>
+
+              <div>
+                <h4 className="font-semibold mb-2">Guía de Conversación</h4>
+                {isConvLoading ? (
+                  <div className="text-sm text-muted-foreground flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" /> Cargando guía...
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div>
+                      <h5 className="text-sm font-medium mb-2">Bloques</h5>
+                      {convBlocks.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No hay bloques configurados.</p>
+                      ) : (
+                        <div className="space-y-3">
+                          {convBlocks.sort((a, b) => a.block_order - b.block_order).map((b) => (
+                            <div key={b.id} className="p-3 border rounded-md">
+                              <div className="flex items-center justify-between">
+                                <div className="font-medium">{b.block_order}. {b.block_name}</div>
+                                <Badge variant="outline">Placeholders: {Array.isArray(b.placeholders) ? b.placeholders.length : 0}</Badge>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1">{b.intro_phrase}</p>
+                              {Array.isArray(b.placeholders) && b.placeholders.length > 0 && (
+                                <div className="mt-2">
+                                  <div className="text-xs font-medium mb-1">Campos:</div>
+                                  <ul className="list-disc pl-5 text-xs space-y-0.5">
+                                    {b.placeholders.map((ph: any, idx: number) => (
+                                      <li key={idx}>
+                                        <span className="font-medium">{ph.fieldName || ph.field_name || ph.name}</span>
+                                        {(ph.helpText || ph.help_text) && (
+                                          <span className="text-muted-foreground"> — {ph.helpText || ph.help_text}</span>
+                                        )}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <Separator />
+                    <div>
+                      <h5 className="text-sm font-medium mb-2">Instrucciones por Campo</h5>
+                      {fieldInstructions.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No hay instrucciones específicas.</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {fieldInstructions.map((fi) => (
+                            <div key={fi.field_name} className="p-3 border rounded-md">
+                              <div className="font-medium text-sm">{fi.field_name}</div>
+                              {fi.help_text && <p className="text-xs text-muted-foreground mt-1">{fi.help_text}</p>}
+                              {fi.validation_rule && (
+                                <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">Regla: {fi.validation_rule}</p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
