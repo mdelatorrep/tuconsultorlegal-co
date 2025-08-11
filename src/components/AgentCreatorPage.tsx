@@ -883,17 +883,23 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         console.error('⚠️ [PROCESS-AI] Exception saving draft:', saveError);
       }
 
-      // Tras procesar con IA, enviar automáticamente a revisión del admin
+      // Tras procesar con IA, enviar a revisión del admin
       toast({
         title: "Procesamiento completado",
-        description: "Enviando el agente a revisión del administrador…",
+        description: "Preparando envío a revisión del administrador…",
       });
-      setAutoSubmitAfterAI(true);
       setCurrentStep(4);
       try {
         await handlePublish();
+        setAutoSubmitAfterAI(true);
       } catch (e) {
         console.error('⚠️ [PROCESS-AI] Auto publish failed:', e);
+        setAutoSubmitAfterAI(false);
+        toast({
+          title: "No se pudo enviar automáticamente",
+          description: "Puedes enviarlo manualmente desde este paso.",
+          variant: "destructive",
+        });
       }
 
       console.log('🎉 [PROCESS-AI] Process completed successfully');
