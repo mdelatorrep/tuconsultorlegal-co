@@ -286,110 +286,19 @@ IMPORTANTE: Verifica que identificas TODOS los placeholders presentes en la plan
       }
     }
 
-    console.log('Making OpenAI API request for price analysis...');
-
-    // 3. Calculate suggested price based on complexity
-    const priceAnalysisResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: selectedModel,
-        messages: [
-          {
-            role: 'system',
-            content: `Eres un experto en pricing de servicios legales en Colombia. Tu trabajo es analizar la complejidad de un documento legal y sugerir un precio justo en pesos colombianos.
-
-PÚBLICO OBJETIVO: ${targetAudience === 'empresas' ? 'Empresas y clientes corporativos' : 'Personas (clientes individuales)'}
-
-FACTORES A CONSIDERAR:
-- Número de variables/campos a completar
-- Complejidad legal del documento
-- Tiempo estimado de procesamiento
-- Valor de mercado en Colombia para ${targetAudience === 'empresas' ? 'servicios corporativos' : 'servicios a personas'}
-- Categoría del documento
-- ${targetAudience === 'empresas' ? 'Valor agregado empresarial y riesgo corporativo' : 'Accesibilidad para personas naturales'}
-
-RANGOS DE PRECIOS CONSERVADORES PARA ELABORACIÓN (${targetAudience === 'empresas' ? 'EMPRESAS' : 'PERSONAS'}):
-${targetAudience === 'empresas' ? `
-- Documentos simples (1-5 variables): $25,000 - $50,000 COP
-- Documentos moderados (6-15 variables): $50,000 - $120,000 COP  
-- Documentos complejos (16+ variables): $120,000 - $250,000 COP
-- Documentos muy complejos (societarios, etc.): $250,000 - $400,000 COP
-` : `
-- Documentos simples (1-5 variables): $15,000 - $30,000 COP
-- Documentos moderados (6-15 variables): $30,000 - $70,000 COP  
-- Documentos complejos (16+ variables): $70,000 - $150,000 COP
-- Documentos muy complejos (societarios, etc.): $150,000 - $250,000 COP
-`}
-
-NOTA: Estos son precios conservadores para la elaboración del documento, no el precio final al cliente.
-
-FORMATO DE RESPUESTA:
-{
-  "precio_sugerido": "$ 85,000 COP",
-  "justificacion": "Explicación detallada del precio basada en los factores analizados para ${targetAudience === 'empresas' ? 'empresas' : 'personas'}"
-}`
-          },
-          {
-            role: 'user',
-            content: `Analiza este documento legal y sugiere un precio:
-
-DOCUMENTO: ${docName}
-CATEGORÍA: ${docCat}
-DESCRIPCIÓN: ${docDesc}
-PÚBLICO OBJETIVO: ${targetAudience === 'empresas' ? 'Empresas' : 'Personas'}
-NÚMERO DE VARIABLES: ${extractedPlaceholders.length}
-
-PLANTILLA:
-${docTemplate.substring(0, 1000)}${docTemplate.length > 1000 ? '...' : ''}`
-          }
-        ],
-        temperature: 0.3,
-        max_tokens: 500,
-      }),
-    });
-
-    console.log('OpenAI price analysis response status:', priceAnalysisResponse.status);
-
-    if (!priceAnalysisResponse.ok) {
-      throw new Error(`OpenAI API error for price analysis: ${priceAnalysisResponse.status}`);
-    }
-
-    const priceData = await priceAnalysisResponse.json();
-    console.log('Price analysis completed');
-    let priceAnalysis;
-    
-    try {
-      priceAnalysis = JSON.parse(priceData.choices[0].message.content);
-    } catch (error) {
-      console.error('Error parsing price analysis:', error);
-      // Fallback pricing logic - more conservative and audience-aware
-      const baseMultiplier = targetAudience === 'empresas' ? 8000 : 5000;
-      const minPrice = targetAudience === 'empresas' ? 25000 : 15000;
-      const maxPrice = targetAudience === 'empresas' ? 400000 : 250000;
-      
-      const basePrice = Math.min(Math.max(extractedPlaceholders.length * baseMultiplier, minPrice), maxPrice);
-      priceAnalysis = {
-        precio_sugerido: `$ ${basePrice.toLocaleString()} COP`,
-        justificacion: `Precio conservador de elaboración basado en ${extractedPlaceholders.length} variables identificadas y complejidad del documento para ${targetAudience === 'empresas' ? 'empresas' : 'personas naturales'}.`
-      };
-    }
+    console.log('⏭️ Skipping price analysis: pricing will be set by admin on approval');
 
     // Log successful processing
     console.log(`AI processing completed for document: ${docName}`);
     console.log(`- Enhanced prompt length: ${enhancedPrompt.length} chars`);
     console.log(`- Placeholders extracted: ${extractedPlaceholders.length}`);
-    console.log(`- Suggested price: ${priceAnalysis.precio_sugerido}`);
-
+    console.log('- Suggested price: skipped (admin-defined on approval)');
     return new Response(JSON.stringify({
       success: true,
       enhancedPrompt,
       extractedPlaceholders,
-      suggestedPrice: priceAnalysis.precio_sugerido,
-      priceJustification: priceAnalysis.justificacion
+      suggestedPrice: null,
+      priceJustification: null
     }), {
       headers: securityHeaders
     });

@@ -792,8 +792,8 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
           placeholder: p.placeholder || p.field || p.name || p.label || '',
           pregunta: p.pregunta || p.question || p.description || `Ingresa ${(p.placeholder || p.field || p.name || p.label || 'valor').toString().replace(/_/g, ' ')}`
         })),
-        calculatedPrice: data.suggestedPrice || 'Precio por determinar',
-        priceJustification: data.priceJustification || 'Precio estimado basado en la complejidad del documento.'
+        calculatedPrice: '',
+        priceJustification: ''
       };
 
       // Map optional AI-optimized conversation blocks and field instructions back into UI shape
@@ -1190,10 +1190,9 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         return;
       }
 
-      // El precio sugerido por el abogado es opcional: usar sugerencia de IA o un mínimo por defecto
-
-      const lawyerPriceValue = parseInt((formData.lawyerSuggestedPrice || '').replace(/[^0-9]/g, '')) || parseInt((aiResults.calculatedPrice || '').replace(/[^0-9]/g, '')) || 50000; // Fallback mínimo
-      const calculatedPriceValue = parseInt((aiResults.calculatedPrice || '').replace(/[^0-9]/g, '')) || lawyerPriceValue;
+      // El precio será definido por el administrador al aprobar
+      const lawyerPriceValue = 0;
+      const calculatedPriceValue = 0;
       
       console.log('Publishing agent with data:', {
         name: formData.docName,
@@ -1217,8 +1216,8 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         template_content: formData.docTemplate,
         ai_prompt: aiResults.enhancedPrompt,
         placeholder_fields: aiResults.extractedPlaceholders,
-        price: calculatedPriceValue,
-        price_justification: aiResults.priceJustification || 'Precio estimado por el abogado',
+        price: 0,
+        price_justification: '',
         status: 'pending_review',
         created_by: lawyerData.id,
         target_audience: formData.targetAudience,
