@@ -67,6 +67,42 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
   const { toast } = useToast();
   const { getAuthHeaders } = useAuthManager();
 
+  // Detalles y Guía de Conversación
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [convBlocks, setConvBlocks] = useState<any[]>([]);
+  const [convLoading, setConvLoading] = useState(false);
+
+  const fetchConversationBlocks = async (legalAgentId: string) => {
+    setConvLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('conversation_blocks')
+        .select('id, block_name, intro_phrase, placeholders, block_order')
+        .eq('legal_agent_id', legalAgentId)
+        .order('block_order', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching conversation blocks:', error);
+        setConvBlocks([]);
+      } else {
+        setConvBlocks(data || []);
+      }
+    } catch (e) {
+      console.error('Unexpected error loading conversation blocks:', e);
+      setConvBlocks([]);
+    } finally {
+      setConvLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedAgent?.id) {
+      fetchConversationBlocks(selectedAgent.id);
+    } else {
+      setConvBlocks([]);
+    }
+  }, [selectedAgent?.id]);
+
   useEffect(() => {
     fetchAgents();
   }, []);
@@ -548,75 +584,17 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                         {/* Actions */}
                         <div className="flex flex-wrap gap-2 pt-4 border-t">
                           {/* View Details */}
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => setSelectedAgent(agent)}
-                              >
-                                <Eye className="h-4 w-4 mr-1" />
-                                Ver
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                              <DialogHeader>
-                                <DialogTitle>{selectedAgent?.name}</DialogTitle>
-                                <DialogDescription>
-                                  Detalles completos del agente legal
-                                </DialogDescription>
-                              </DialogHeader>
-                              
-                              {selectedAgent && (
-                                <div className="space-y-6">
-                                  <div>
-                                    <h4 className="font-semibold mb-2">Descripción</h4>
-                                    <p className="text-sm text-muted-foreground">{selectedAgent.description}</p>
-                                  </div>
-                                  
-                                  <div>
-                                    <h4 className="font-semibold mb-2">Plantilla del Documento</h4>
-                                    <div className="p-4 bg-muted rounded-md text-xs font-mono max-h-40 overflow-y-auto">
-                                      {selectedAgent.template_content}
-                                    </div>
-                                  </div>
-                                  
-                                  <div>
-                                    <h4 className="font-semibold mb-2">Prompt de IA</h4>
-                                    <div className="p-4 bg-muted rounded-md text-xs font-mono max-h-40 overflow-y-auto">
-                                      {selectedAgent.ai_prompt}
-                                    </div>
-                                  </div>
-                                  
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                      <h4 className="font-semibold mb-2">Información General</h4>
-                                      <div className="space-y-2 text-sm">
-                                        <div><strong>Categoría:</strong> {selectedAgent.category}</div>
-                                        <div><strong>Precio:</strong> {selectedAgent.price === 0 ? 'GRATIS' : `$${selectedAgent.price.toLocaleString()} COP`}</div>
-                                         <div><strong>Estado:</strong> {getStatusText(selectedAgent.status)}</div>
-                                        <div><strong>Creado:</strong> {new Date(selectedAgent.created_at).toLocaleDateString()}</div>
-                                      </div>
-                                    </div>
-                                    
-                                    <div>
-                                      <h4 className="font-semibold mb-2">Variables ({selectedAgent.placeholder_fields.length})</h4>
-                                      <div className="space-y-1 text-sm max-h-40 overflow-y-auto">
-                                         {selectedAgent.placeholder_fields.map((field: any, index: number) => (
-                                           <div key={index} className="p-2 bg-muted rounded">
-                                             <div className="flex items-center gap-2 mb-1">
-                                               <Badge variant="outline" className="text-xs">{field.placeholder || field.name}</Badge>
-                                             </div>
-                                             <p className="text-xs text-muted-foreground">{field.pregunta || field.description}</p>
-                                           </div>
-                                         ))}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
-                            </DialogContent>
-                          </Dialog>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              setSelectedAgent(agent);
+                              setIsDetailsOpen(true);
+                            }}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            Ver
+                          </Button>
 
                           {/* Edit */}
                           <Button 
@@ -712,19 +690,17 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
 
                         {/* Actions */}
                         <div className="flex flex-wrap gap-2 pt-4 border-t">
-                          {/* View Details */}
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => setSelectedAgent(agent)}
-                              >
-                                <Eye className="h-4 w-4 mr-1" />
-                                Ver
-                              </Button>
-                            </DialogTrigger>
-                          </Dialog>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              setSelectedAgent(agent);
+                              setIsDetailsOpen(true);
+                            }}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            Ver
+                          </Button>
 
                           {/* Edit */}
                           <Button 
@@ -841,19 +817,17 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
 
                         {/* Actions */}
                         <div className="flex flex-wrap gap-2 pt-4 border-t">
-                          {/* View Details */}
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => setSelectedAgent(agent)}
-                              >
-                                <Eye className="h-4 w-4 mr-1" />
-                                Ver
-                              </Button>
-                            </DialogTrigger>
-                          </Dialog>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              setSelectedAgent(agent);
+                              setIsDetailsOpen(true);
+                            }}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            Ver
+                          </Button>
 
                           {/* Edit */}
                           <Button 
@@ -912,7 +886,10 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
         )}
 
         {/* Dialog for viewing agent details */}
-        <Dialog>
+        <Dialog open={isDetailsOpen} onOpenChange={(open) => {
+          setIsDetailsOpen(open);
+          if (!open) setSelectedAgent(null);
+        }}>
           <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{selectedAgent?.name}</DialogTitle>
@@ -943,6 +920,40 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                   <div className="p-4 bg-muted rounded-md text-xs font-mono max-h-40 overflow-y-auto">
                     {selectedAgent.ai_prompt}
                   </div>
+                </div>
+                
+                {/* Guía de Conversación */}
+                <div>
+                  <h4 className="font-semibold mb-2">Guía de Conversación</h4>
+                  {convLoading ? (
+                    <p className="text-sm text-muted-foreground">Cargando guía...</p>
+                  ) : convBlocks.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No hay bloques de conversación configurados.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="text-sm text-muted-foreground">
+                        Bloques: {convBlocks.length} • Placeholders: {convBlocks.reduce((acc, b) => acc + (Array.isArray(b.placeholders) ? b.placeholders.length : 0), 0)}
+                      </div>
+                      <div className="space-y-2 max-h-60 overflow-y-auto">
+                        {convBlocks.map((b) => (
+                          <div key={b.id} className="p-3 bg-muted rounded">
+                            <div className="flex items-center justify-between">
+                              <div className="font-medium">{b.block_order}. {b.block_name}</div>
+                              <Badge variant="outline" className="text-xs">{Array.isArray(b.placeholders) ? b.placeholders.length : 0} campos</Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1">{b.intro_phrase}</p>
+                            {Array.isArray(b.placeholders) && b.placeholders.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-2">
+                                {b.placeholders.map((ph: string, idx: number) => (
+                                  <Badge key={idx} variant="secondary" className="text-xs">{ph}</Badge>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
