@@ -732,10 +732,9 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
           body: {
             docName: requestPayload.docName,
             docDesc: requestPayload.docDesc,
-            docDescription: requestPayload.docDesc,
-            category: requestPayload.category,
+            docCat: requestPayload.category,
             docTemplate: requestPayload.docTemplate,
-            initialPrompt: '',
+            initialPrompt: `Eres un asistente legal. Prepara un prompt óptimo para generar el documento "${requestPayload.docName}" para "${requestPayload.targetAudience}" usando la plantilla dada. Extrae placeholders y formula preguntas necesarias para completarlos.`,
             targetAudience: requestPayload.targetAudience
           }
         }));
