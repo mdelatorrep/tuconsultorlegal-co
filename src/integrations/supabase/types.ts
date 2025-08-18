@@ -1451,6 +1451,15 @@ export type Database = {
       }
     }
     Functions: {
+      check_rate_limit: {
+        Args: {
+          action_type: string
+          max_attempts?: number
+          time_window_minutes?: number
+          user_identifier: string
+        }
+        Returns: boolean
+      }
       create_admin_profile: {
         Args: {
           admin_email: string
@@ -1487,6 +1496,14 @@ export type Database = {
       migrate_admin_accounts_to_profiles: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      sanitize_input: {
+        Args: { input_text: string }
+        Returns: string
+      }
+      validate_password_strength: {
+        Args: { password: string }
+        Returns: boolean
       }
     }
     Enums: {
