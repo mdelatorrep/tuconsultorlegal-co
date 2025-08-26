@@ -57,7 +57,7 @@ export const useBoldCheckout = (documentData: any) => {
 
   // Create Bold Checkout instance when document is loaded
   useEffect(() => {
-    if (documentData && !boldCheckoutInstance) {
+    if (documentData && !boldCheckoutInstance && documentData.price > 0) {
       console.log('Initializing Bold Checkout for document:', documentData.id);
       initBoldCheckout();
 
@@ -69,6 +69,12 @@ export const useBoldCheckout = (documentData: any) => {
             
             // Generate payment configuration securely through backend
             console.log('Creating Bold Checkout instance with orderId:', orderId);
+            console.log('Document data for payment:', {
+              id: documentData.id,
+              token: documentData.token,
+              price: documentData.price,
+              document_type: documentData.document_type
+            });
             
             // Get secure payment configuration from backend
             const { data: paymentConfig, error: configError } = await supabase.functions.invoke('create-payment-config', {
@@ -80,11 +86,15 @@ export const useBoldCheckout = (documentData: any) => {
               }
             });
             
+            console.log('Payment config response:', { data: paymentConfig, error: configError });
+            
             if (configError || !paymentConfig) {
               console.error('Error getting payment configuration:', configError);
-              throw new Error('Failed to initialize payment system');
+              console.error('PaymentConfig data:', paymentConfig);
+              throw new Error(`Failed to initialize payment system: ${configError?.message || 'No config returned'}`);
             }
             
+            console.log('Creating BoldCheckout instance with config:', paymentConfig);
             const checkout = new window.BoldCheckout(paymentConfig);
             
             console.log('Bold Checkout instance created successfully:', !!checkout);
@@ -97,9 +107,10 @@ export const useBoldCheckout = (documentData: any) => {
             });
           } catch (error) {
             console.error('Error creating Bold Checkout instance:', error);
+            console.error('Error details:', error instanceof Error ? error.message : error);
             toast({
               title: "Error en sistema de pagos",
-              description: "No se pudo inicializar la pasarela de pagos. Intenta recargar la página.",
+              description: `No se pudo inicializar la pasarela de pagos: ${error instanceof Error ? error.message : 'Error desconocido'}`,
               variant: "destructive",
             });
           }

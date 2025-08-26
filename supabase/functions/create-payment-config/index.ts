@@ -21,7 +21,10 @@ Deno.serve(async (req) => {
   try {
     const { orderId, amount, documentType, token } = await req.json()
     
+    console.log('Received payment config request:', { orderId, amount, documentType, token });
+    
     if (!orderId || !amount || !documentType || !token) {
+      console.error('Missing required parameters:', { orderId: !!orderId, amount: !!amount, documentType: !!documentType, token: !!token });
       return new Response(JSON.stringify({ error: 'Missing required parameters' }), { 
         status: 400, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -33,9 +36,16 @@ Deno.serve(async (req) => {
     const boldSecretKey = Deno.env.get('BOLD_SECRET_KEY')
     const boldMerchantId = Deno.env.get('BOLD_MERCHANT_ID')
 
+    console.log('Bold credentials check:', {
+      hasApiKey: !!boldApiKey,
+      hasSecretKey: !!boldSecretKey,
+      hasMerchantId: !!boldMerchantId
+    });
+
     if (!boldApiKey || !boldSecretKey || !boldMerchantId) {
       console.error('Missing Bold credentials in environment variables')
-      return new Response(JSON.stringify({ error: 'Payment system not configured' }), { 
+      console.error('Required env vars: BOLD_API_KEY, BOLD_SECRET_KEY, BOLD_MERCHANT_ID')
+      return new Response(JSON.stringify({ error: 'Payment system not configured - missing credentials' }), { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })

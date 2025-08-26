@@ -240,6 +240,49 @@ export default function UnifiedDocumentPage({ onOpenChat }: UnifiedDocumentPageP
   const handlePayment = async () => {
     if (!documentData) return;
 
+    // Handle free documents (price = 0)
+    if (documentData.price === 0) {
+      setIsProcessingPayment(true);
+      
+      try {
+        // Directly mark free documents as paid
+        const { error } = await supabase
+          .from('document_tokens')
+          .update({ 
+            status: 'pagado',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', documentData.id);
+
+        if (error) {
+          console.error('Error updating free document status:', error);
+          toast({
+            title: "Error",
+            description: "No se pudo procesar el documento gratuito. Intenta nuevamente.",
+            variant: "destructive",
+          });
+        } else {
+          setPaymentCompleted(true);
+          setDocumentData({ ...documentData, status: 'pagado' });
+          toast({
+            title: "¡Documento listo!",
+            description: "El documento gratuito está disponible para descarga.",
+          });
+        }
+      } catch (error) {
+        console.error('Error processing free document:', error);
+        toast({
+          title: "Error",
+          description: "Ocurrió un error al procesar el documento gratuito.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsProcessingPayment(false);
+      }
+      return;
+    }
+
+    // Regular payment flow for paid documents
     setIsProcessingPayment(true);
     
     const success = openCheckout();
