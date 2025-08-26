@@ -776,23 +776,32 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         ? (data as any).placeholders
         : (Array.isArray((data as any).extractedPlaceholders) ? (data as any).extractedPlaceholders : []);
 
-      // CRITICAL FIX: Validate required AI response fields
-      if (!data.enhancedPrompt || placeholderListRaw.length === 0) {
-        console.error('❌ [PROCESS-AI] Invalid AI response - missing required fields:', {
-          hasEnhancedPrompt: !!data.enhancedPrompt,
-          placeholdersCount: placeholderListRaw.length
-        });
-        throw new Error('Respuesta incompleta del procesamiento IA. Por favor intenta nuevamente.');
+      // CRITICAL FIX: Validate required AI response fields with better error handling
+      if (!data.enhancedPrompt) {
+        console.error('❌ [PROCESS-AI] Missing enhancedPrompt in AI response');
+        throw new Error('Error: La IA no pudo generar el prompt mejorado. Verifica que la plantilla tenga placeholders válidos como {{nombre_campo}}.');
+      }
+      
+      if (placeholderListRaw.length === 0) {
+        console.error('❌ [PROCESS-AI] No placeholders found in AI response');
+        // Try to extract from template as fallback
+        const templatePlaceholders = extractPlaceholdersFromTemplate();
+        if (aiResults.extractedPlaceholders.length === 0) {
+          throw new Error('Error: No se encontraron campos (placeholders) en la plantilla. Asegúrate de usar el formato {{nombre_del_campo}}.');
+        }
+        console.log('✅ [PROCESS-AI] Using template-extracted placeholders as fallback');
       }
 
       const aiResultsData = {
         enhancedPrompt: data.enhancedPrompt || '',
-        extractedPlaceholders: placeholderListRaw.map((p: any) => ({
-          placeholder: p.placeholder || p.field || p.name || p.label || '',
-          pregunta: p.pregunta || p.question || p.description || `Ingresa ${(p.placeholder || p.field || p.name || p.label || 'valor').toString().replace(/_/g, ' ')}`
-        })),
-        calculatedPrice: '',
-        priceJustification: ''
+        extractedPlaceholders: placeholderListRaw.length > 0 
+          ? placeholderListRaw.map((p: any) => ({
+              placeholder: p.placeholder || p.field || p.name || p.label || '',
+              pregunta: p.pregunta || p.question || p.description || `Ingresa ${(p.placeholder || p.field || p.name || p.label || 'valor').toString().replace(/_/g, ' ')}`
+            }))
+          : aiResults.extractedPlaceholders, // Use existing placeholders if AI didn't return any
+        calculatedPrice: data.suggestedPrice || '',
+        priceJustification: data.priceJustification || ''
       };
 
       // Map optional AI-optimized conversation blocks and field instructions back into UI shape
@@ -882,24 +891,13 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         console.error('⚠️ [PROCESS-AI] Exception saving draft:', saveError);
       }
 
-      // Tras procesar con IA, enviar a revisión del admin
+      // Show success message and move to step 4 for manual submission
       toast({
-        title: "Procesamiento completado",
-        description: "Preparando envío a revisión del administrador…",
+        title: "¡Procesamiento completado!",
+        description: "Tu agente ha sido procesado correctamente. Ahora puedes enviarlo a revisión.",
       });
       setCurrentStep(4);
-      try {
-        await handlePublish();
-        setAutoSubmitAfterAI(true);
-      } catch (e) {
-        console.error('⚠️ [PROCESS-AI] Auto publish failed:', e);
-        setAutoSubmitAfterAI(false);
-        toast({
-          title: "No se pudo enviar automáticamente",
-          description: "Puedes enviarlo manualmente desde este paso.",
-          variant: "destructive",
-        });
-      }
+      setMaxStepReached(Math.max(maxStepReached, 4));
 
       console.log('🎉 [PROCESS-AI] Process completed successfully');
 
@@ -1189,8 +1187,13 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       if (!aiResults.enhancedPrompt || aiResults.extractedPlaceholders.length === 0) {
         toast({
           title: "Procesamiento IA incompleto",
-          description: "Debes completar el procesamiento de IA antes de enviar a revisión.",
+          description: "Debes completar el procesamiento de IA en el paso anterior antes de enviar a revisión.",
           variant: "destructive",
+        });
+        console.error('❌ [HANDLE-PUBLISH] Missing AI results:', {
+          hasEnhancedPrompt: !!aiResults.enhancedPrompt,
+          placeholdersCount: aiResults.extractedPlaceholders.length,
+          currentStep
         });
         return;
       }
@@ -1353,6 +1356,8 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         description: "No se pudo enviar el agente a revisión. Intenta nuevamente.",
         variant: "destructive",
       });
+    } finally {
+      setIsPublishing(false);
     }
   };
 
@@ -2100,7 +2105,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
                   </>
                 )}
 
-                <div className={`${isMobile ? 'flex flex-col space-y-3' : 'flex justify-between'}`}>
+                 <div className={`${isMobile ? 'flex flex-col space-y-3' : 'flex justify-between'}`}>
                   <Button variant="outline" onClick={handlePrev} className={isMobile ? "w-full" : ""}>
                     <ArrowLeft className="h-4 w-4 mr-2" /> Anterior
                   </Button>
@@ -2111,11 +2116,17 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
                       e.stopPropagation();
                       if (isProcessing) return;
                       console.log('🎯 [BUTTON CLICK] Procesar con IA button clicked!');
+                      console.log('Current form data:', {
+                        docName: formData.docName,
+                        hasTemplate: !!formData.docTemplate,
+                        conversationBlocks: formData.conversation_blocks?.length || 0,
+                        userId: lawyerData?.id
+                      });
                       processWithAI();
                     }} 
-                    disabled={isProcessing}
+                    disabled={isProcessing || !formData.docName?.trim() || !formData.docTemplate?.trim()}
                     aria-busy={isProcessing}
-                    className={`bg-emerald-600 hover:bg-emerald-700 ${isMobile ? "w-full" : ""}`}
+                    className={`bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed ${isMobile ? "w-full" : ""}`}
                   >
                     {isProcessing ? (
                       <>
@@ -2130,6 +2141,14 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
                     )}
                   </Button>
                 </div>
+                
+                {(!formData.docName?.trim() || !formData.docTemplate?.trim()) && (
+                  <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mt-4">
+                    <p className="text-sm text-amber-700 dark:text-amber-300">
+                      <strong>⚠️ Campos requeridos:</strong> Asegúrate de haber completado el nombre del documento y la plantilla antes de procesar con IA.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
@@ -2175,13 +2194,31 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
             {/* Step 4: Publish (antes era Paso 5) */}
             {currentStep === 4 && (
               <div className="text-center py-12">
-                <CheckCircle className="mx-auto h-24 w-24 text-success mb-6" />
-                <h2 className="text-3xl font-bold mb-4">¡Todo Listo!</h2>
-                 <p className="text-muted-foreground mb-8 max-w-lg mx-auto">
-                   El nuevo agente para el documento <strong>"{formData.docName}"</strong> está configurado y listo para ser enviado a revisión. 
-                   Una vez aprobado por el administrador, estará disponible para todos los clientes en el sitio web.
-                 </p>
-                   {!autoSubmitAfterAI && (
+                {aiProcessingSuccess ? (
+                  <>
+                    <CheckCircle className="mx-auto h-24 w-24 text-success mb-6" />
+                    <h2 className="text-3xl font-bold mb-4">¡Todo Listo!</h2>
+                    <p className="text-muted-foreground mb-8 max-w-lg mx-auto">
+                      El nuevo agente para el documento <strong>"{formData.docName}"</strong> está configurado y listo para ser enviado a revisión. 
+                      Una vez aprobado por el administrador, estará disponible para todos los clientes en el sitio web.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="h-16 w-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <span className="text-2xl">⚠️</span>
+                    </div>
+                    <h2 className="text-2xl font-bold mb-4">Procesamiento Pendiente</h2>
+                    <p className="text-muted-foreground mb-8 max-w-lg mx-auto">
+                      Debes completar el procesamiento con IA en el paso anterior antes de poder enviar a revisión.
+                    </p>
+                    <Button onClick={() => setCurrentStep(3)} variant="outline" className="mb-4">
+                      <ArrowLeft className="h-4 w-4 mr-2" />
+                      Volver al Paso Anterior
+                    </Button>
+                  </>
+                )}
+                   {aiProcessingSuccess && !autoSubmitAfterAI && (
                      <div className={isMobile ? "space-y-3" : "flex items-center justify-center gap-4"}>
                        <Button 
                          onClick={(e) => {
@@ -2199,8 +2236,16 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
                          }} 
                          size={isMobile ? "default" : "lg"} 
                          className={`${isMobile ? "w-full text-base px-6 py-3" : "text-xl px-10 py-4"}`}
+                         disabled={isPublishing}
                        >
-                         Enviar a Revisión
+                         {isPublishing ? (
+                           <>
+                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                             Enviando...
+                           </>
+                         ) : (
+                           'Enviar a Revisión'
+                         )}
                        </Button>
 
                        <Button
