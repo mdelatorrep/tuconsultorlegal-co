@@ -231,6 +231,8 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
         .from('document_tokens')
         .update({ 
           document_content: editedContent,
+          reviewed_by_lawyer_id: user?.id,
+          reviewed_by_lawyer_name: user?.name,
           updated_at: new Date().toISOString()
         })
         .eq('id', selectedDocument.id);

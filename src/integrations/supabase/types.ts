@@ -514,6 +514,8 @@ export type Database = {
           document_type: string
           id: string
           price: number
+          reviewed_by_lawyer_id: string | null
+          reviewed_by_lawyer_name: string | null
           sla_deadline: string | null
           sla_hours: number | null
           sla_status: string | null
@@ -531,6 +533,8 @@ export type Database = {
           document_type: string
           id?: string
           price: number
+          reviewed_by_lawyer_id?: string | null
+          reviewed_by_lawyer_name?: string | null
           sla_deadline?: string | null
           sla_hours?: number | null
           sla_status?: string | null
@@ -548,6 +552,8 @@ export type Database = {
           document_type?: string
           id?: string
           price?: number
+          reviewed_by_lawyer_id?: string | null
+          reviewed_by_lawyer_name?: string | null
           sla_deadline?: string | null
           sla_hours?: number | null
           sla_status?: string | null
@@ -559,7 +565,15 @@ export type Database = {
           user_observation_date?: string | null
           user_observations?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "document_tokens_reviewed_by_lawyer_id_fkey"
+            columns: ["reviewed_by_lawyer_id"]
+            isOneToOne: false
+            referencedRelation: "lawyer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       field_instructions: {
         Row: {

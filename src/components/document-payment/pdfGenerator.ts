@@ -37,7 +37,7 @@ const addHeader = (doc: jsPDF, pageNumber: number) => {
   doc.line(MARGIN_LEFT, MARGIN_TOP + 12, PAGE_WIDTH - MARGIN_RIGHT, MARGIN_TOP + 12);
 };
 
-const addFooter = (doc: jsPDF, token: string) => {
+const addFooter = (doc: jsPDF, token: string, reviewedByLawyer?: string) => {
   const footerY = PAGE_HEIGHT - MARGIN_BOTTOM;
   
   // Línea separadora superior
@@ -63,12 +63,21 @@ const addFooter = (doc: jsPDF, token: string) => {
   const webTextWidth = doc.getTextWidth(webText);
   doc.text(webText, PAGE_WIDTH - MARGIN_RIGHT - webTextWidth, footerY + 6);
   
+  // Información del abogado revisor (si está disponible)
+  if (reviewedByLawyer) {
+    doc.setTextColor(80, 80, 80);
+    doc.setFontSize(9);
+    const reviewText = `Documento revisado por: ${reviewedByLawyer}`;
+    const reviewTextWidth = doc.getTextWidth(reviewText);
+    doc.text(reviewText, MARGIN_LEFT, footerY + 12);
+  }
+  
   // Línea de autenticidad
   doc.setTextColor(80, 80, 80);
   doc.setFontSize(8);
   const authText = 'Documento generado digitalmente por Tu Consultor Legal - Válido sin firma física';
   const authTextWidth = doc.getTextWidth(authText);
-  doc.text(authText, (PAGE_WIDTH - authTextWidth) / 2, footerY + 12);
+  doc.text(authText, (PAGE_WIDTH - authTextWidth) / 2, footerY + (reviewedByLawyer ? 18 : 12));
 };
 
 // Función para añadir texto justificado
@@ -202,7 +211,7 @@ export const generatePDFDownload = (documentData: any, toast?: (options: any) =>
         
         if (currentY + requiredHeight > PAGE_HEIGHT - MARGIN_BOTTOM - FOOTER_HEIGHT) {
           // Añadir pie de página a la página actual
-          addFooter(doc, documentData.token);
+          addFooter(doc, documentData.token, documentData.reviewed_by_lawyer_name);
           
           // Nueva página
           doc.addPage();
@@ -222,7 +231,7 @@ export const generatePDFDownload = (documentData: any, toast?: (options: any) =>
     });
     
     // Añadir pie de página a la última página
-    addFooter(doc, documentData.token);
+    addFooter(doc, documentData.token, documentData.reviewed_by_lawyer_name);
     
     // Generar nombre de archivo
     const sanitizedDocType = documentData.document_type?.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_') || 'Documento';
