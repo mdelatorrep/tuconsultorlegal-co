@@ -195,11 +195,7 @@ FORMATO DE RESPUESTA: Devuelve únicamente el documento final usando la plantill
     }
 
     // Now create the document token with the generated content
-    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    // Reuse the existing supabase client already created above
 
     // Generate unique token
     const token = crypto.randomUUID().replace(/-/g, '').substring(0, 12).toUpperCase();
