@@ -199,32 +199,84 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   };
 
   const handleSave = async () => {
-    if (!selectedDocument) return;
+    if (!selectedDocument) {
+      console.error('No document selected for saving');
+      toast({
+        title: "Error",
+        description: "No hay documento seleccionado para guardar",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    console.log('Saving document:', {
+      id: selectedDocument.id,
+      originalContent: selectedDocument.document_content.substring(0, 100) + '...',
+      editedContent: editedContent.substring(0, 100) + '...',
+      hasChanges: selectedDocument.document_content !== editedContent
+    });
+
+    if (selectedDocument.document_content === editedContent) {
+      toast({
+        title: "Sin cambios",
+        description: "No hay cambios que guardar",
+      });
+      return;
+    }
 
     try {
+      setIsLoading(true);
+      
       const { error } = await supabase
         .from('document_tokens')
-        .update({ document_content: editedContent })
+        .update({ 
+          document_content: editedContent,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', selectedDocument.id);
 
       if (error) {
         console.error('Error saving document:', error);
         toast({
           title: "Error",
-          description: "No se pudo guardar el documento",
+          description: `No se pudo guardar el documento: ${error.message}`,
           variant: "destructive",
         });
         return;
       }
+
+      console.log('Document saved successfully');
+
+      // Update local state immediately
+      setDocuments(prev => prev.map(doc => 
+        doc.id === selectedDocument.id 
+          ? { ...doc, document_content: editedContent, updated_at: new Date().toISOString() }
+          : doc
+      ));
+
+      // Update selected document state
+      setSelectedDocument(prev => prev ? { 
+        ...prev, 
+        document_content: editedContent,
+        updated_at: new Date().toISOString()
+      } : null);
 
       toast({
         title: "Documento guardado",
         description: "Los cambios han sido guardados exitosamente",
       });
 
+      // Refresh from server to ensure consistency
       await fetchDocuments();
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error saving document:', error);
+      toast({
+        title: "Error",
+        description: "Ocurrió un error inesperado al guardar el documento",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
