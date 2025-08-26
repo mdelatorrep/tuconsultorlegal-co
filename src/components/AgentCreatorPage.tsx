@@ -1237,45 +1237,58 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
         button_cta: 'Generar Documento'
       };
 
-      // Use the new edge function to save agent with conversation blocks
-      const { data, error } = await supabase.functions.invoke('save-agent-with-blocks', {
-        body: {
-          agentData,
-          conversationBlocks: (formData.conversation_blocks || []).map((b, idx) => ({
-            blockName: b.name?.trim() || '',
-            introPhrase: b.introduction?.trim() || '',
-            placeholders: Array.isArray(b.placeholders) ? b.placeholders : [],
-            order: idx + 1
-          })),
-          fieldInstructions: formData.field_instructions || []
-        }
-      });
+      // Create final agent in legal_agents table directly
+      const { data, error } = await supabase
+        .from('legal_agents')
+        .insert(agentData)
+        .select()
+        .single();
 
-      if (error || !data?.success) {
-        console.error('Error creating agent:', error || data);
-        
-        let errorMessage = data?.error || "No se pudo crear el agente. Intenta nuevamente.";
-        
-        // Provide specific error messages for common issues
-        if (errorMessage?.includes('foreign key')) {
-          errorMessage = "Error de permisos. Por favor cierra sesión e inicia sesión nuevamente.";
-        } else if (errorMessage?.includes('duplicate')) {
-          errorMessage = "Ya existe un agente con este nombre. Usa un nombre diferente.";
-        } else if (errorMessage?.includes('violates check')) {
-          errorMessage = "Los datos del agente no son válidos. Revisa todos los campos.";
-        } else if (errorMessage?.includes('null value')) {
-          errorMessage = "Faltan campos requeridos. Asegúrate de completar todos los pasos correctamente.";
-        }
-        
-        toast({
-          title: "Error al enviar a revisión",
-          description: errorMessage,
-          variant: "destructive",
-        });
-        return;
+      if (error) {
+        console.error('Error creating legal agent:', error);
+        throw new Error(`Failed to create agent: ${error.message}`);
       }
 
-      if (!data?.agent) {
+      // Now handle conversation blocks for the final agent
+      if (formData.conversation_blocks && formData.conversation_blocks.length > 0) {
+        const blocksToInsert = formData.conversation_blocks.map((b, idx) => ({
+          agent_id: data.id,
+          block_name: b.name?.trim() || '',
+          intro_phrase: b.introduction?.trim() || '',
+          placeholders: Array.isArray(b.placeholders) ? b.placeholders : [],
+          block_order: idx + 1
+        }));
+
+        const { error: blocksError } = await supabase
+          .from('conversation_blocks')
+          .insert(blocksToInsert);
+
+        if (blocksError) {
+          console.error('Error creating conversation blocks:', blocksError);
+          // Don't fail the whole operation for block errors
+        }
+      }
+
+      // Handle field instructions for the final agent
+      if (formData.field_instructions && formData.field_instructions.length > 0) {
+        const instructionsToInsert = formData.field_instructions.map((instruction) => ({
+          agent_id: data.id,
+          field_name: instruction.fieldName,
+          validation_rule: instruction.validationRule,
+          help_text: instruction.helpText
+        }));
+
+        const { error: instructionsError } = await supabase
+          .from('field_instructions')
+          .insert(instructionsToInsert);
+
+        if (instructionsError) {
+          console.error('Error creating field instructions:', instructionsError);
+          // Don't fail the whole operation for instruction errors
+        }
+      }
+
+      if (!data) {
         console.error('No agent data returned from operation');
         toast({
           title: "Error al enviar a revisión",
