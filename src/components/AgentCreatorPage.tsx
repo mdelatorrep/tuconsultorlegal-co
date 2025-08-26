@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, ArrowLeft, ArrowRight, CheckCircle, Loader2, Copy, Wand2, Bold, Italic, Underline, Type, AlignLeft, AlignCenter, AlignRight, Save, FileText, Trash2 } from "lucide-react";
+import { Sparkles, ArrowLeft, ArrowRight, CheckCircle, Loader2, Copy, Wand2, Bold, Italic, Underline, Type, AlignLeft, AlignCenter, AlignRight, AlignJustify, List, ListOrdered, Quote, Indent, Outdent, Save, FileText, Trash2 } from "lucide-react";
 import { ConversationGuideBuilder } from "@/components/ConversationGuideBuilder";
 import { FieldInstructionsManager } from "@/components/FieldInstructionsManager";
 
@@ -1403,11 +1403,40 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       case 'h3':
         formattedText = `### ${selectedText}`;
         break;
+      case 'left':
+        formattedText = `<div align="left">${selectedText}</div>`;
+        break;
       case 'center':
         formattedText = `<center>${selectedText}</center>`;
         break;
       case 'right':
         formattedText = `<div align="right">${selectedText}</div>`;
+        break;
+      case 'justify':
+        formattedText = `<div align="justify">${selectedText}</div>`;
+        break;
+      case 'list':
+        const listItems = selectedText.split('\n').filter(line => line.trim())
+          .map(item => `• ${item.trim()}`).join('\n');
+        formattedText = listItems;
+        break;
+      case 'orderedList':
+        const orderedItems = selectedText.split('\n').filter(line => line.trim())
+          .map((item, index) => `${index + 1}. ${item.trim()}`).join('\n');
+        formattedText = orderedItems;
+        break;
+      case 'quote':
+        formattedText = `> ${selectedText}`;
+        break;
+      case 'indent':
+        const indentedText = selectedText.split('\n')
+          .map(line => `    ${line}`).join('\n');
+        formattedText = indentedText;
+        break;
+      case 'outdent':
+        const outdentedText = selectedText.split('\n')
+          .map(line => line.replace(/^    /, '')).join('\n');
+        formattedText = outdentedText;
         break;
       default:
         formattedText = selectedText;
@@ -1988,7 +2017,17 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
                     </div>
                     
                     {/* Alignment */}
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 border-r border-input pr-2 mr-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleTextFormat('left')}
+                        className="h-8 w-8 p-0"
+                        title="Alinear a la izquierda"
+                      >
+                        <AlignLeft className="h-4 w-4" />
+                      </Button>
                       <Button
                         type="button"
                         variant="ghost"
@@ -2009,6 +2048,74 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
                       >
                         <AlignRight className="h-4 w-4" />
                       </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleTextFormat('justify')}
+                        className="h-8 w-8 p-0"
+                        title="Justificar texto"
+                      >
+                        <AlignJustify className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    {/* Lists and Indentation */}
+                    <div className="flex gap-1 border-r border-input pr-2 mr-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleTextFormat('list')}
+                        className="h-8 w-8 p-0"
+                        title="Lista con viñetas"
+                      >
+                        <List className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleTextFormat('orderedList')}
+                        className="h-8 w-8 p-0"
+                        title="Lista numerada"
+                      >
+                        <ListOrdered className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleTextFormat('quote')}
+                        className="h-8 w-8 p-0"
+                        title="Cita"
+                      >
+                        <Quote className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    {/* Indentation */}
+                    <div className="flex gap-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleTextFormat('indent')}
+                        className="h-8 w-8 p-0"
+                        title="Aumentar sangría"
+                      >
+                        <Indent className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleTextFormat('outdent')}
+                        className="h-8 w-8 p-0"
+                        title="Disminuir sangría"
+                      >
+                        <Outdent className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                   
@@ -2025,10 +2132,16 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
                 
                 {/* Help text for formatting */}
                 <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-                  <p className="text-xs text-blue-700 dark:text-blue-300">
-                    <strong>💡 Cómo usar el editor:</strong> Selecciona el texto que deseas formatear y luego haz clic en los botones de formato. 
-                    Los placeholders como <code>{"{{nombre_campo}}"}</code> no se verán afectados por el formateo.
+                  <p className="text-xs text-blue-700 dark:text-blue-300 mb-2">
+                    <strong>💡 Cómo usar el editor:</strong> Selecciona el texto que deseas formatear y luego haz clic en los botones de formato.
                   </p>
+                  <div className="text-xs text-blue-600 dark:text-blue-400 space-y-1">
+                    <p><strong>Formato disponible:</strong> Negrita, cursiva, subrayado, títulos (H1-H3)</p>
+                    <p><strong>Alineación:</strong> Izquierda, centro, derecha, <strong>justificado</strong></p>
+                    <p><strong>Listas:</strong> Con viñetas, numeradas, citas</p>
+                    <p><strong>Sangría:</strong> Aumentar o disminuir sangría de texto</p>
+                    <p>Los placeholders como <code>{"{{nombre_campo}}"}</code> no se verán afectados por el formateo.</p>
+                  </div>
                 </div>
 
                 {/* Preview placeholders if found */}
