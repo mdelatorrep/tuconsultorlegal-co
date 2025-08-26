@@ -165,30 +165,6 @@ export const generatePDFDownload = (documentData: any, toast?: (options: any) =>
     
     currentY += 10; // Espacio después del título
     
-    // Información del documento
-    doc.setTextColor(80, 80, 80);
-    doc.setFont('Arial', 'normal');
-    doc.setFontSize(11);
-    
-    const now = new Date();
-    const documentInfo = [
-      `Fecha de emisión: ${now.toLocaleDateString('es-ES', { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-      })}`,
-      `Token de verificación: ${documentData.token}`,
-      `Estado: ${documentData.status || 'Documento final'}`
-    ];
-    
-    documentInfo.forEach(info => {
-      doc.text(info, MARGIN_LEFT, currentY);
-      currentY += 6;
-    });
-    
-    currentY += 8; // Espacio antes del contenido
-    
     // Línea separadora antes del contenido
     doc.setDrawColor(220, 220, 220);
     doc.setLineWidth(0.3);
