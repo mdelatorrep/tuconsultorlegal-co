@@ -86,7 +86,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const getSlaStatusVariant = (slaStatus?: string) => {
     switch (slaStatus) {
       case 'on_time': return 'default';
-      case 'at_risk': return 'outline';
+      case 'at_risk': return 'secondary';
       case 'overdue': return 'destructive';
       default: return 'secondary';
     }
@@ -101,10 +101,33 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
     }
   };
 
-  // Fetch documents when authenticated
+  // Fetch documents when authenticated and setup real-time updates
   useEffect(() => {
     if (isAuthenticated) {
       fetchDocuments();
+      
+      // Setup real-time updates for document changes
+      const channel = supabase
+        .channel('document-tokens-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'document_tokens',
+            filter: 'status=in.(solicitado,revision_usuario)'
+          },
+          (payload) => {
+            console.log('Document real-time update:', payload);
+            // Refresh documents when changes occur
+            fetchDocuments();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [isAuthenticated]);
 
@@ -143,7 +166,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
     try {
       const { error } = await supabase
         .from('document_tokens')
-        .update({ status: 'revisado' })
+        .update({ status: 'revision_usuario' })
         .eq('id', documentId);
 
       if (error) {
@@ -158,9 +181,17 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
 
       toast({
         title: "Documento actualizado",
-        description: "El documento ha sido marcado como revisado",
+        description: "El documento ha sido marcado como listo para revisión del usuario",
       });
 
+      // Update local state immediately for better UX
+      setDocuments(prev => prev.map(doc => 
+        doc.id === documentId 
+          ? { ...doc, status: 'revision_usuario' as any }
+          : doc
+      ));
+
+      // Also refresh from server
       await fetchDocuments();
     } catch (error) {
       console.error('Error:', error);
@@ -703,7 +734,14 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                     </Card>
                   ) : (
                     documents.map((doc) => (
-                      <Card key={doc.id} className="border border-border hover:border-primary transition-colors">
+                       <Card 
+                         key={doc.id} 
+                         className={`border border-border hover:border-primary transition-colors ${
+                           doc.sla_status === 'at_risk' ? 'border-l-4 border-l-yellow-400' :
+                           doc.sla_status === 'overdue' ? 'border-l-4 border-l-red-500' :
+                           ''
+                         }`}
+                       >
                         <CardHeader className="pb-2">
                           <CardTitle className="text-lg flex items-center justify-between">
                             <span className="truncate">{doc.document_type}</span>
@@ -751,18 +789,32 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                           
                           {/* SLA Information */}
                           {(doc.sla_hours) && (
-                            <div className="mt-3 p-2 bg-muted rounded-lg">
+                            <div className={`mt-3 p-2 rounded-lg ${
+                              doc.sla_status === 'at_risk' ? 'bg-yellow-50 border border-yellow-200' :
+                              doc.sla_status === 'overdue' ? 'bg-red-50 border border-red-200' :
+                              'bg-muted'
+                            }`}>
                               <div className="flex items-center justify-between text-xs">
-                                <span>SLA: {doc.sla_hours}h</span>
+                                <span className={doc.sla_status === 'at_risk' || doc.sla_status === 'overdue' ? 'font-medium' : ''}>
+                                  SLA: {doc.sla_hours}h
+                                </span>
                                 <Badge 
                                   variant={getSlaStatusVariant(doc.sla_status)}
-                                  className="text-xs"
+                                  className={`text-xs ${
+                                    doc.sla_status === 'at_risk' ? 'bg-yellow-100 text-yellow-800 border-yellow-300' :
+                                    doc.sla_status === 'overdue' ? 'bg-red-100 text-red-800 border-red-300' :
+                                    ''
+                                  }`}
                                 >
                                   {getSlaStatusText(doc.sla_status)}
                                 </Badge>
                               </div>
                               {doc.sla_deadline && (
-                                <div className="text-xs text-muted-foreground mt-1">
+                                <div className={`text-xs mt-1 ${
+                                  doc.sla_status === 'at_risk' ? 'text-yellow-700' :
+                                  doc.sla_status === 'overdue' ? 'text-red-700' :
+                                  'text-muted-foreground'
+                                }`}>
                                   Vence: {new Date(doc.sla_deadline).toLocaleString()}
                                 </div>
                               )}
