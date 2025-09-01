@@ -7,6 +7,8 @@ import { Progress } from "./ui/progress";
 import { Textarea } from "./ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import { Input } from "./ui/input";
+import { ScrollArea } from "./ui/scroll-area";
 import { toast } from "sonner";
 import { 
   Brain, 
@@ -24,7 +26,10 @@ import {
   Zap,
   Lock,
   Unlock,
-  Star
+  Star,
+  Send,
+  Bot,
+  User
 } from "lucide-react";
 
 interface ModuleData {
@@ -73,6 +78,13 @@ interface LawyerTrainingSystemProps {
   onBack: () => void;
 }
 
+interface ChatMessage {
+  id: string;
+  type: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+}
+
 export default function AILegalTrainingSystem({ lawyerId, lawyerData, onBack }: LawyerTrainingSystemProps) {
   const [modules, setModules] = useState<ModuleData[]>([]);
   const [progress, setProgress] = useState<ModuleProgress[]>([]);
@@ -81,6 +93,10 @@ export default function AILegalTrainingSystem({ lawyerId, lawyerData, onBack }: 
   const [validationAnswers, setValidationAnswers] = useState<Record<string, any>>({});
   const [isValidating, setIsValidating] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [currentMessage, setCurrentMessage] = useState('');
+  const [isAIResponding, setIsAIResponding] = useState(false);
+  const [showAIAssistant, setShowAIAssistant] = useState(false);
 
   // Definición de módulos de certificación
   const certificationModules: ModuleData[] = [
@@ -384,6 +400,7 @@ export default function AILegalTrainingSystem({ lawyerId, lawyerData, onBack }: 
   const startModule = (module: ModuleData) => {
     setCurrentModule(module);
     updateModuleStatus(module.id, 'in_progress');
+    initializeAIAssistant(module);
   };
 
   const updateModuleStatus = (moduleId: string, status: ModuleProgress['status']) => {
@@ -474,6 +491,84 @@ export default function AILegalTrainingSystem({ lawyerId, lawyerData, onBack }: 
   const getCompletionPercentage = () => {
     const validatedModules = progress.filter(p => p.status === 'validated').length;
     return Math.round((validatedModules / modules.length) * 100);
+  };
+
+  const initializeAIAssistant = (module: ModuleData) => {
+    const welcomeMessage: ChatMessage = {
+      id: Date.now().toString(),
+      type: 'assistant',
+      content: `¡Hola! Soy tu asistente especializado en IA Legal. Te acompañaré durante el módulo "${module.title}". 
+
+Estoy aquí para:
+• Explicarte conceptos complejos
+• Responder preguntas específicas
+• Ayudarte con ejemplos prácticos
+• Prepararte para la validación
+
+¿Tienes alguna pregunta antes de comenzar o te gustaría que te guíe a través del contenido?`,
+      timestamp: new Date()
+    };
+    
+    setChatMessages([welcomeMessage]);
+    setShowAIAssistant(true);
+  };
+
+  const sendMessageToAI = async () => {
+    if (!currentMessage.trim() || !currentModule) return;
+
+    const userMessage: ChatMessage = {
+      id: Date.now().toString(),
+      type: 'user',
+      content: currentMessage,
+      timestamp: new Date()
+    };
+
+    setChatMessages(prev => [...prev, userMessage]);
+    setCurrentMessage('');
+    setIsAIResponding(true);
+
+    try {
+      const response = await supabase.functions.invoke('legal-training-assistant', {
+        body: {
+          message: currentMessage,
+          moduleId: currentModule.id,
+          moduleContent: currentModule,
+          lawyerId: lawyerId,
+          chatHistory: chatMessages
+        }
+      });
+
+      if (response.error) {
+        throw response.error;
+      }
+
+      const aiMessage: ChatMessage = {
+        id: Date.now().toString() + '_ai',
+        type: 'assistant',
+        content: response.data?.response || 'Lo siento, hubo un error al procesar tu consulta.',
+        timestamp: new Date()
+      };
+
+      setChatMessages(prev => [...prev, aiMessage]);
+    } catch (error) {
+      console.error('Error sending message to AI:', error);
+      const errorMessage: ChatMessage = {
+        id: Date.now().toString() + '_error',
+        type: 'assistant',
+        content: 'Disculpa, estoy experimentando dificultades técnicas. Por favor, intenta de nuevo en unos momentos.',
+        timestamp: new Date()
+      };
+      setChatMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsAIResponding(false);
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessageToAI();
+    }
   };
 
   if (loading) {
@@ -625,12 +720,13 @@ export default function AILegalTrainingSystem({ lawyerId, lawyerData, onBack }: 
                 </DialogDescription>
               </DialogHeader>
               
-              <Tabs defaultValue="content" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="content">Contenido</TabsTrigger>
-                  <TabsTrigger value="objectives">Objetivos</TabsTrigger>
-                  <TabsTrigger value="exercise">Ejercicio Práctico</TabsTrigger>
-                </TabsList>
+               <Tabs defaultValue="content" className="w-full">
+                 <TabsList className="grid w-full grid-cols-4">
+                   <TabsTrigger value="content">Contenido</TabsTrigger>
+                   <TabsTrigger value="objectives">Objetivos</TabsTrigger>
+                   <TabsTrigger value="exercise">Ejercicio Práctico</TabsTrigger>
+                   <TabsTrigger value="assistant">Asistente IA</TabsTrigger>
+                 </TabsList>
                 
                 <TabsContent value="content" className="space-y-4">
                   <div className="prose prose-sm max-w-none">
@@ -656,47 +752,112 @@ export default function AILegalTrainingSystem({ lawyerId, lawyerData, onBack }: 
                   </div>
                 </TabsContent>
                 
-                <TabsContent value="exercise" className="space-y-4">
-                  <div>
-                    <h4 className="font-medium mb-2">{currentModule.practicalExercise.title}</h4>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      {currentModule.practicalExercise.description}
-                    </p>
-                    
-                    <div className="bg-blue-50 p-4 rounded border border-blue-200">
-                      <h5 className="font-medium text-blue-800 mb-2">Ejercicio:</h5>
-                      <p className="text-sm text-blue-700">
-                        {currentModule.practicalExercise.prompt}
-                      </p>
-                    </div>
-                    
-                    <div className="grid md:grid-cols-2 gap-4 mt-4">
-                      <div>
-                        <h5 className="font-medium mb-2">Resultados Esperados:</h5>
-                        <ul className="text-sm space-y-1">
-                          {currentModule.practicalExercise.expectedOutputs.map((output, index) => (
-                            <li key={index} className="flex items-start gap-2">
-                              <CheckCircle className="w-3 h-3 mt-0.5 text-green-500 flex-shrink-0" />
-                              {output}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                      
-                      <div>
-                        <h5 className="font-medium mb-2">Criterios de Evaluación:</h5>
-                        <ul className="text-sm space-y-1">
-                          {currentModule.practicalExercise.evaluationCriteria.map((criteria, index) => (
-                            <li key={index} className="flex items-start gap-2">
-                              <Star className="w-3 h-3 mt-0.5 text-yellow-500 flex-shrink-0" />
-                              {criteria}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                </TabsContent>
+                 <TabsContent value="exercise" className="space-y-4">
+                   <div>
+                     <h4 className="font-medium mb-2">{currentModule.practicalExercise.title}</h4>
+                     <p className="text-sm text-muted-foreground mb-4">
+                       {currentModule.practicalExercise.description}
+                     </p>
+                     
+                     <div className="bg-blue-50 p-4 rounded border border-blue-200">
+                       <h5 className="font-medium text-blue-800 mb-2">Ejercicio:</h5>
+                       <p className="text-sm text-blue-700">
+                         {currentModule.practicalExercise.prompt}
+                       </p>
+                     </div>
+                     
+                     <div className="grid md:grid-cols-2 gap-4 mt-4">
+                       <div>
+                         <h5 className="font-medium mb-2">Resultados Esperados:</h5>
+                         <ul className="text-sm space-y-1">
+                           {currentModule.practicalExercise.expectedOutputs.map((output, index) => (
+                             <li key={index} className="flex items-start gap-2">
+                               <CheckCircle className="w-3 h-3 mt-0.5 text-green-500 flex-shrink-0" />
+                               {output}
+                             </li>
+                           ))}
+                         </ul>
+                       </div>
+                       
+                       <div>
+                         <h5 className="font-medium mb-2">Criterios de Evaluación:</h5>
+                         <ul className="text-sm space-y-1">
+                           {currentModule.practicalExercise.evaluationCriteria.map((criteria, index) => (
+                             <li key={index} className="flex items-start gap-2">
+                               <Star className="w-3 h-3 mt-0.5 text-yellow-500 flex-shrink-0" />
+                               {criteria}
+                             </li>
+                           ))}
+                         </ul>
+                       </div>
+                     </div>
+                   </div>
+                 </TabsContent>
+                 
+                 <TabsContent value="assistant" className="space-y-4">
+                   <div className="h-96 flex flex-col">
+                     <div className="flex items-center gap-2 mb-4 p-3 bg-blue-50 rounded border border-blue-200">
+                       <Bot className="w-5 h-5 text-blue-600" />
+                       <div>
+                         <h4 className="font-medium text-blue-800">Asistente IA Legal</h4>
+                         <p className="text-sm text-blue-600">Especializado en {currentModule.title}</p>
+                       </div>
+                     </div>
+                     
+                     <ScrollArea className="flex-1 p-3 border rounded bg-background">
+                       <div className="space-y-3">
+                         {chatMessages.map((message) => (
+                           <div key={message.id} className={`flex gap-2 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+                             <div className={`flex gap-2 max-w-[85%] ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+                               <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${message.type === 'user' ? 'bg-primary text-primary-foreground' : 'bg-blue-100 text-blue-600'}`}>
+                                 {message.type === 'user' ? <User className="w-3 h-3" /> : <Bot className="w-3 h-3" />}
+                               </div>
+                               <div className={`p-3 rounded-lg ${message.type === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                                 <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                                 <p className="text-xs opacity-70 mt-1">
+                                   {message.timestamp.toLocaleTimeString()}
+                                 </p>
+                               </div>
+                             </div>
+                           </div>
+                         ))}
+                         {isAIResponding && (
+                           <div className="flex gap-2 justify-start">
+                             <div className="flex gap-2 max-w-[85%]">
+                               <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 bg-blue-100 text-blue-600">
+                                 <Bot className="w-3 h-3" />
+                               </div>
+                               <div className="p-3 rounded-lg bg-muted">
+                                 <div className="flex items-center gap-2">
+                                   <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
+                                   <p className="text-sm">El asistente está escribiendo...</p>
+                                 </div>
+                               </div>
+                             </div>
+                           </div>
+                         )}
+                       </div>
+                     </ScrollArea>
+                     
+                     <div className="flex gap-2 mt-3">
+                       <Input
+                         placeholder="Escribe tu pregunta sobre el módulo..."
+                         value={currentMessage}
+                         onChange={(e) => setCurrentMessage(e.target.value)}
+                         onKeyPress={handleKeyPress}
+                         disabled={isAIResponding}
+                         className="flex-1"
+                       />
+                       <Button 
+                         onClick={sendMessageToAI} 
+                         disabled={!currentMessage.trim() || isAIResponding}
+                         size="sm"
+                       >
+                         <Send className="w-4 h-4" />
+                       </Button>
+                     </div>
+                   </div>
+                 </TabsContent>
               </Tabs>
               
               <div className="flex justify-end gap-2 pt-4 border-t">
