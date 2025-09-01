@@ -1240,6 +1240,36 @@ export type Database = {
         }
         Relationships: []
       }
+      training_interactions: {
+        Row: {
+          assistant_response: string
+          created_at: string
+          id: string
+          lawyer_id: string
+          module_id: string
+          session_id: string
+          user_message: string
+        }
+        Insert: {
+          assistant_response: string
+          created_at?: string
+          id?: string
+          lawyer_id: string
+          module_id: string
+          session_id: string
+          user_message: string
+        }
+        Update: {
+          assistant_response?: string
+          created_at?: string
+          id?: string
+          lawyer_id?: string
+          module_id?: string
+          session_id?: string
+          user_message?: string
+        }
+        Relationships: []
+      }
       training_validations: {
         Row: {
           ai_evaluation: Json

@@ -637,35 +637,73 @@ Estoy aquí para:
                     </div>
                   </div>
                   
-                  <div className="flex flex-col gap-2">
-                    {moduleProgress?.status === 'available' && (
-                      <Button onClick={() => startModule(module)}>
-                        <Play className="w-4 h-4 mr-2" />
-                        Comenzar
-                      </Button>
-                    )}
-                    
-                    {moduleProgress?.status === 'in_progress' && (
-                      <Button onClick={() => startModule(module)} variant="outline">
-                        <BookOpen className="w-4 h-4 mr-2" />
-                        Continuar
-                      </Button>
-                    )}
-                    
-                    {moduleProgress?.status === 'completed' && (
-                      <Button onClick={() => startValidation(module)} className="bg-green-600 hover:bg-green-700">
-                        <Target className="w-4 h-4 mr-2" />
-                        Validar Conocimientos
-                      </Button>
-                    )}
-                    
-                    {moduleProgress?.status === 'validated' && (
-                      <Badge className="bg-yellow-500 text-yellow-50">
-                        <Award className="w-3 h-3 mr-1" />
-                        Validado
-                      </Badge>
-                    )}
-                  </div>
+                   <div className="flex flex-col gap-2">
+                     {moduleProgress?.status === 'available' && (
+                       <>
+                         <Button onClick={() => startModule(module)}>
+                           <Play className="w-4 h-4 mr-2" />
+                           Comenzar
+                         </Button>
+                         <Button 
+                           variant="outline" 
+                           size="sm"
+                           className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                         >
+                           <Brain className="w-3 h-3 mr-1" />
+                           Vista Previa IA
+                         </Button>
+                       </>
+                     )}
+                     
+                     {moduleProgress?.status === 'in_progress' && (
+                       <>
+                         <Button onClick={() => startModule(module)} variant="outline">
+                           <BookOpen className="w-4 h-4 mr-2" />
+                           Continuar
+                         </Button>
+                         <Button 
+                           onClick={() => {
+                             setCurrentModule(module);
+                             initializeAIAssistant(module);
+                           }}
+                           variant="secondary"
+                           size="sm"
+                           className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                         >
+                           <Bot className="w-3 h-3 mr-1" />
+                           Asistente IA
+                         </Button>
+                       </>
+                     )}
+                     
+                     {moduleProgress?.status === 'completed' && (
+                       <>
+                         <Button onClick={() => startValidation(module)} className="bg-green-600 hover:bg-green-700">
+                           <Target className="w-4 h-4 mr-2" />
+                           Validar Conocimientos
+                         </Button>
+                         <Button 
+                           onClick={() => {
+                             setCurrentModule(module);
+                             initializeAIAssistant(module);
+                           }}
+                           variant="outline"
+                           size="sm"
+                           className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                         >
+                           <Brain className="w-3 h-3 mr-1" />
+                           Revisar con IA
+                         </Button>
+                       </>
+                     )}
+                     
+                     {moduleProgress?.status === 'validated' && (
+                       <Badge className="bg-yellow-500 text-yellow-50">
+                         <Award className="w-3 h-3 mr-1" />
+                         Validado
+                       </Badge>
+                     )}
+                   </div>
                 </div>
               </CardHeader>
               
@@ -860,15 +898,25 @@ Estoy aquí para:
                  </TabsContent>
               </Tabs>
               
-              <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button variant="outline" onClick={() => setCurrentModule(null)}>
-                  Cerrar
-                </Button>
-                <Button onClick={() => completeModule(currentModule.id)}>
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Marcar como Completado
-                </Button>
-              </div>
+               <div className="flex justify-between gap-2 pt-4 border-t">
+                 <div className="flex gap-2">
+                   <Button variant="outline" onClick={() => setCurrentModule(null)}>
+                     Cerrar
+                   </Button>
+                   <Button onClick={() => completeModule(currentModule.id)}>
+                     <CheckCircle className="w-4 h-4 mr-2" />
+                     Marcar como Completado
+                   </Button>
+                 </div>
+                 <Button 
+                   onClick={() => setShowAIAssistant(true)} 
+                   variant="secondary"
+                   className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                 >
+                   <Bot className="w-4 h-4 mr-2" />
+                   Consultar Asistente IA
+                 </Button>
+               </div>
             </div>
           )}
         </DialogContent>
