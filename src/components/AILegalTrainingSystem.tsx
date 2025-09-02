@@ -10,11 +10,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Input } from "./ui/input";
 import { ScrollArea } from "./ui/scroll-area";
 import { toast } from "sonner";
-import { 
-  Brain, 
-  BookOpen, 
-  Target, 
-  CheckCircle, 
+import {
+  Brain,
+  BookOpen,
+  Target,
+  CheckCircle,
   Clock,
   Play,
   Award,
@@ -98,7 +98,8 @@ export default function AILegalTrainingSystem({ lawyerId, lawyerData, onBack }: 
   const [isAIResponding, setIsAIResponding] = useState(false);
   const [showAIAssistant, setShowAIAssistant] = useState(false);
 
-  // Definición de módulos de certificación con contenido profundo
+  // Module definitions and functions
+
   const certificationModules: ModuleData[] = [
     {
       id: "foundations-ai-law",
@@ -177,776 +178,631 @@ export default function AILegalTrainingSystem({ lawyerId, lawyerData, onBack }: 
         ]
       }
     },
-    // Agregar más módulos con contenido expandido...
     {
-      id: "prompt-engineering-legal",
-      title: "Ingeniería de Prompts para Abogados",
-      description: "Técnicas avanzadas para crear instrucciones efectivas de IA en contextos legales",
+      id: "advanced-ai-applications",
+      title: "Aplicaciones Avanzadas de IA en Derecho",
+      description: "Exploración de técnicas avanzadas y su impacto en la práctica legal moderna",
       content: [
-        "**1. Anatomía de un Prompt Legal Efectivo**\n\nUn prompt legal efectivo debe contener elementos específicos que garanticen resultados precisos y útiles:\n\n**Estructura fundamental**:\n- **Contexto de rol**: Definir claramente el rol de la IA ('Eres un abogado especialista en derecho comercial colombiano')\n- **Contexto situacional**: Describir el escenario específico\n- **Tarea específica**: Instrucción clara y precisa de lo que se requiere\n- **Formato de salida**: Especificar cómo debe presentarse el resultado\n- **Restricciones**: Límites y consideraciones especiales\n\n**Ejemplo de prompt bien estructurado**:\n```\nRol: Eres un abogado especialista en derecho laboral colombiano con 15 años de experiencia.\n\nContexto: Una empresa de tecnología en Bogotá necesita actualizar sus contratos de trabajo para incluir modalidades de teletrabajo según la Ley 2088 de 2021.\n\nTarea: Redacta una cláusula específica sobre teletrabajo que incluya:\n- Modalidades permitidas (autónomo, suplementario)\n- Obligaciones del empleador\n- Derechos del trabajador\n- Medidas de desconexión digital\n\nFormato: Cláusula contractual numerada con subcláusulas\n\nRestricciones: Debe cumplir con la legislación colombiana vigente y ser aplicable para empresas de tecnología\n```",
-        
-        "**2. Técnicas Avanzadas de Prompt Engineering**\n\n**Chain of Thought (Cadena de Pensamiento)**:\nTécnica que instruye a la IA a mostrar su razonamiento paso a paso.\n\n*Ejemplo práctico*:\n```\n'Analiza este contrato de arrendamiento paso a paso:\n1. Identifica las partes involucradas\n2. Revisa las cláusulas de duración y renovación\n3. Evalúa las condiciones de terminación\n4. Analiza las obligaciones de cada parte\n5. Identifica posibles cláusulas abusivas\n6. Propón mejoras específicas'\n```\n\n**Few-Shot Learning (Aprendizaje con Pocos Ejemplos)**:\nProporcionar ejemplos específicos para que la IA entienda el patrón deseado.\n\n*Ejemplo con contratos*:\n```\n'Genera cláusulas de confidencialidad siguiendo estos ejemplos:\n\nEjemplo 1: Para consultoría tecnológica:\n\"El CONSULTOR se obliga a mantener...\"\n\nEjemplo 2: Para fusión empresarial:\n\"Las partes acuerdan que toda información...\"\n\nAhora genera una cláusula similar para un contrato de distribución comercial.'\n```\n\n**Role Playing avanzado**:\nAsignar roles específicos y contextuales a la IA.\n\n*Ejemplo*:\n```\n'Actúa como un magistrado de la Corte Constitucional colombiana revisando una tutela sobre derecho a la educación. Analiza:\n- Procedencia de la acción\n- Derechos fundamentales involucrados\n- Precedentes constitucionales aplicables\n- Decisión motivada'\n```",
-        
-        "**3. Manejo de Contexto y Variables en Documentos Legales**\n\n**Variables dinámicas**: Elementos que cambian según el caso específico.\n\n**Sistema de variables estructurado**:\n```\n{{TIPO_CONTRATO}} - Naturaleza del acuerdo\n{{PARTES_CONTRACTUALES}} - Identificación completa\n{{LEGISLACION_APLICABLE}} - Marco normativo específico\n{{JURISDICCION}} - Competencia territorial\n{{VALOR_CONTRACTUAL}} - Cuantía y forma de pago\n{{VIGENCIA}} - Duración y renovación\n{{CAUSALES_TERMINACION}} - Condiciones de finalización\n```\n\n**Contexto jurisprudencial**:\n```\n'Considera estos precedentes del Consejo de Estado:\nSentencia 12345 de 2023: Sobre contratos de obra pública\nSentencia 67890 de 2022: Sobre responsabilidad estatal\n\nBasa tu análisis en estos precedentes para evaluar el siguiente caso...'\n```\n\n**Contexto regulatorio dinámico**:\n```\n'Teniendo en cuenta las siguientes normas vigentes:\n- Ley 2088 de 2021 (Teletrabajo)\n- Decreto 1072 de 2015 (Trabajo)\n- Circular 021 de 2020 del Mintrabajo\n\nAnaliza la legalidad de esta política de trabajo remoto...'\n```",
-        
-        "**4. Optimización de Resultados Mediante Iteración**\n\n**Metodología de refinamiento iterativo**:\n\n**Iteración 1 - Prompt básico**:\n```\n'Redacta un contrato de compraventa de vehículo'\n```\n*Resultado*: Contrato genérico, poco específico\n\n**Iteración 2 - Contexto específico**:\n```\n'Redacta un contrato de compraventa de vehículo usado en Colombia, incluyendo garantías legales y responsabilidades del vendedor según el Código de Comercio'\n```\n*Resultado*: Mejor especificidad legal\n\n**Iteración 3 - Detalles técnicos**:\n```\n'Redacta un contrato de compraventa de vehículo usado en Colombia para un automóvil particular (no comercial), incluyendo:\n- Cláusulas de garantía según Art. 932 del Código de Comercio\n- Responsabilidad por vicios ocultos\n- Transferencia de seguros\n- Procedimiento de traspaso en tránsito\n- Cláusula de saneamiento por evicción'\n```\n*Resultado*: Contrato específico y completo\n\n**Técnicas de refinamiento**:\n- **Feedback específico**: 'Mejora la cláusula de garantía incluyendo plazos específicos'\n- **Expansión selectiva**: 'Desarrolla más la sección de obligaciones del comprador'\n- **Corrección dirigida**: 'Ajusta la terminología para cumplir con la Ley 1480 de 2011'",
-        
-        "**5. Prompts Especializados por Tipo de Documento**\n\n**Para Contratos Comerciales**:\n```\nRol: Abogado especialista en derecho comercial colombiano\nContexto: Empresa exportadora necesita contrato con distribuidor internacional\nEstructura requerida:\n1. Identificación de partes con domicilios\n2. Objeto del contrato y productos específicos\n3. Territorio de distribución exclusiva/no exclusiva\n4. Obligaciones de cada parte\n5. Condiciones comerciales (precios, pagos, garantías)\n6. Duración y renovación\n7. Causales de terminación\n8. Solución de controversias (arbitraje/jurisdicción)\n9. Ley aplicable y jurisdicción\n10. Cláusulas especiales (fuerza mayor, hardship)\n\nConsideraciones: Incluir protección cambiaria, repatriación de divisas (DECEX), y compliance con regulación antilavado\n```\n\n**Para Demandas Ejecutivas**:\n```\nRol: Abogado litigante especializado en cobro ejecutivo\nContexto: Cobro de pagaré vencido y no pagado\nEstructura de demanda:\n1. Encabezado con identificación del juzgado competente\n2. Identificación de partes (demandante/deudor y codeudores)\n3. Fundamentos de hecho cronológicamente ordenados\n4. Fundamentos de derecho con citas normativas precisas\n5. Pretensiones específicas y cuantificadas\n6. Anexos (título ejecutivo, cuenta de cobro)\n\nConsideraciones: Verificar prescripción (3 años), competencia territorial, capacidad procesal\n```\n\n**Para Derechos de Petición**:\n```\nRol: Abogado constitucionalista experto en derecho administrativo\nContexto: Ciudadano requiere información de entidad pública\nEstructura:\n1. Identificación del peticionario\n2. Identificación de la entidad\n3. Fundamento constitucional (Art. 23 CN)\n4. Solicitud específica y clara\n5. Fundamentos normativos\n6. Solicitud de respuesta en término legal (15 días)\n\nConsideraciones: Ley 1755 de 2015, excepciones de reserva, habeas data si aplica\n```"
+        "**1. IA y Big Data en el Derecho**\n\nLa integración de IA con Big Data permite analizar grandes volúmenes de información legal para identificar patrones y tendencias que no son evidentes a simple vista.\n\n**2. Automatización de Contratos Inteligentes**\n\nUso de blockchain y IA para crear contratos autoejecutables que garantizan cumplimiento automático de cláusulas.\n\n**3. Análisis Predictivo y Toma de Decisiones**\n\nModelos que predicen resultados judiciales basados en datos históricos y variables contextuales.\n\n**4. Ética y Gobernanza en IA Legal**\n\nConsideraciones sobre transparencia, responsabilidad y equidad en sistemas automatizados."
       ],
       learningObjectives: [
-        "Dominar la estructura y componentes de prompts legales efectivos",
-        "Aplicar técnicas avanzadas de prompt engineering en contextos jurídicos específicos",
-        "Desarrollar metodologías de optimización iterativa para mejores resultados",
-        "Crear bibliotecas especializadas de prompts por área de práctica legal",
-        "Implementar sistemas de variables dinámicas para automatización de documentos"
+        "Comprender la integración de IA con Big Data en el ámbito legal",
+        "Analizar el funcionamiento y beneficios de contratos inteligentes",
+        "Evaluar modelos predictivos y su aplicación en la toma de decisiones legales",
+        "Reflexionar sobre aspectos éticos y de gobernanza en IA legal"
       ],
       estimatedTime: "120 minutos",
-      difficulty: "Intermedio",
-      prerequisites: ["foundations-ai-law"],
+      difficulty: "Avanzado",
       validationQuestions: [
         {
-          id: "q3",
-          question: "Redacte un prompt optimizado para generar un contrato de arrendamiento comercial que incluya variables específicas y consideraciones legales colombianas.",
-          type: "practical",
-          rubric: "Debe incluir estructura de rol clara, contexto específico colombiano, variables claramente definidas, referencias al marco legal aplicable (Código de Comercio, Ley de Arrendamientos), y formato de salida estructurado",
-          points: 30
-        },
-        {
-          id: "q4",
-          question: "¿Qué es la técnica 'Few-Shot Learning' y cuándo es más efectiva en contextos legales colombianos?",
+          id: "q1",
+          question: "¿Qué ventajas ofrece la combinación de IA y Big Data en el análisis legal?",
           type: "multiple_choice",
           options: [
-            "Proporcionar pocos ejemplos específicos para que la IA aprenda el patrón deseado, efectiva para documentos con formato estándar",
-            "Hacer muchas preguntas seguidas para obtener mejor información legal",
-            "Usar prompts muy cortos para ahorrar tokens y reducir costos",
-            "Combinar múltiples modelos de IA simultáneamente para mejor precisión"
+            "Permite análisis manual más detallado",
+            "Facilita la identificación de patrones y tendencias en grandes volúmenes de datos",
+            "Reduce la necesidad de abogados en todos los casos",
+            "Garantiza resultados judiciales exactos"
           ],
-          correctAnswer: 0,
+          correctAnswer: 1,
           points: 15
         },
         {
-          id: "q5",
-          question: "Desarrolle un sistema de variables dinámicas para automatizar contratos laborales en Colombia, considerando las reformas recientes.",
+          id: "q2",
+          question: "Describa cómo los contratos inteligentes pueden transformar la práctica legal y mencione posibles riesgos asociados.",
           type: "open_ended",
-          rubric: "Debe incluir variables específicas del derecho laboral colombiano, considerar Ley 2088 de 2021, modalidades de contratación, y sistema de validación de variables",
-          points: 25
+          rubric: "Debe explicar el concepto, beneficios y riesgos técnicos, legales y de seguridad",
+          points: 30
         }
       ],
       practicalExercise: {
-        title: "Biblioteca Especializada de Prompts Legales",
-        description: "Desarrolle una colección completa de prompts optimizados para diferentes documentos legales colombianos",
-        prompt: "Cree una biblioteca de prompts especializados para un bufete que maneja derecho corporativo, laboral y civil. Desarrolle 8 prompts optimizados para: 1) Contrato de sociedad SAS, 2) Contrato laboral indefinido, 3) Demanda de responsabilidad civil contractual, 4) Análisis de due diligence, 5) Carta de cobranza pre-jurídica, 6) Derecho de petición administrativo, 7) Tutela por protección de datos, 8) Contrato de prestación de servicios profesionales. Cada prompt debe incluir estructura completa, variables dinámicas, marco legal específico y ejemplos de uso.",
+        title: "Diseño de Contrato Inteligente para una Firma Legal",
+        description: "Desarrolle un prototipo de contrato inteligente que automatice cláusulas comunes en contratos laborales",
+        prompt: "Imagine que debe diseñar un contrato inteligente para una firma legal que automatice pagos, renovaciones y penalizaciones. Describa las cláusulas automatizadas, tecnologías involucradas y plan de implementación.",
         expectedOutputs: [
-          "8 prompts completamente estructurados con metodología clara",
-          "Sistema de variables dinámicas con validaciones",
-          "Referencias específicas al marco legal colombiano vigente",
-          "Ejemplos prácticos de aplicación para cada prompt",
-          "Metodología de optimización y mejora continua",
-          "Protocolo de verificación y control de calidad"
+          "Especificación de cláusulas automatizadas",
+          "Diagrama de flujo del contrato inteligente",
+          "Plan de integración tecnológica",
+          "Análisis de riesgos y mitigaciones"
         ],
         evaluationCriteria: [
-          "Especificidad técnica y claridad de instrucciones en cada prompt",
-          "Uso apropiado de variables dinámicas y contexto legal colombiano",
-          "Aplicabilidad práctica inmediata en ejercicio profesional real",
-          "Consideración exhaustiva del marco legal y jurisprudencial relevante",
-          "Innovación en técnicas de prompt engineering aplicadas al derecho",
-          "Completitud del sistema de control de calidad propuesto"
+          "Claridad y precisión en la especificación",
+          "Viabilidad técnica del diseño",
+          "Consideración de aspectos legales y regulatorios",
+          "Innovación y aplicabilidad práctica"
         ]
       }
     }
-    // Continuar con los otros módulos...
   ];
 
   useEffect(() => {
-    initializeTraining();
+    // Load modules and progress from supabase or local data
+    async function loadData() {
+      setLoading(true);
+      try {
+        // For demo, we use the certificationModules as modules
+        setModules(certificationModules);
+
+        // Initialize progress with first module available, rest locked
+        const initialProgress: ModuleProgress[] = certificationModules.map((mod, idx) => ({
+          moduleId: mod.id,
+          status: idx === 0 ? 'available' as const : 'locked' as const,
+          attempts: 0
+        }));
+        setProgress(initialProgress);
+      } catch (error) {
+        toast.error("Error cargando datos del sistema de formación.");
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
   }, [lawyerId]);
 
-  const initializeTraining = async () => {
-    setLoading(true);
-    try {
-      setModules(certificationModules);
-      await loadProgress();
-    } catch (error) {
-      console.error('Error initializing training:', error);
-      toast.error('Error al cargar el sistema de formación');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadProgress = async () => {
-    // Inicializar progreso si no existe
-    const initialProgress: ModuleProgress[] = certificationModules.map((module, index) => ({
-      moduleId: module.id,
-      status: index === 0 ? 'available' : 'locked',
-      attempts: 0
-    }));
+  const calculateProgress = () => {
+    const completed = progress.filter(p => p.status === 'completed' || p.status === 'validated').length;
+    const total = modules.length;
+    const overallProgress = total > 0 ? Math.round((completed / total) * 100) : 0;
+    const averageScore = progress
+      .filter(p => p.score !== undefined)
+      .reduce((acc, p) => acc + (p.score || 0), 0) / Math.max(completed, 1);
     
-    setProgress(initialProgress);
-  };
-
-  const startModule = (module: ModuleData) => {
-    setCurrentModule(module);
-    updateModuleStatus(module.id, 'in_progress');
-    initializeAIAssistant(module);
-  };
-
-  const updateModuleStatus = (moduleId: string, status: ModuleProgress['status']) => {
-    setProgress(prev => prev.map(p => 
-      p.moduleId === moduleId ? { ...p, status } : p
-    ));
-  };
-
-  const completeModule = (moduleId: string) => {
-    setCurrentModule(null);
-    updateModuleStatus(moduleId, 'completed');
-    
-    // Desbloquear siguiente módulo
-    const currentIndex = modules.findIndex(m => m.id === moduleId);
-    if (currentIndex < modules.length - 1) {
-      const nextModuleId = modules[currentIndex + 1].id;
-      updateModuleStatus(nextModuleId, 'available');
-    }
-    
-    toast.success('Módulo completado. ¡Procede con la validación!');
-  };
-
-  const startValidation = (module: ModuleData) => {
-    setCurrentModule(module);
-    setShowValidation(true);
-    setValidationAnswers({});
-  };
-
-  const submitValidation = async () => {
-    if (!currentModule) return;
-    
-    setIsValidating(true);
-    try {
-      // Aquí llamaremos al agente de IA especializado en formación
-      const validationResult = await validateModuleCompletion();
-      
-      if (validationResult.passed) {
-        updateModuleStatus(currentModule.id, 'validated');
-        toast.success(`¡Validación exitosa! Puntuación: ${validationResult.score}/100`);
-        
-        // Verificar si se completó toda la certificación
-        checkCertificationCompletion();
-      } else {
-        toast.error('Validación no superada. Revisa el feedback y vuelve a intentar.');
-      }
-      
-      setShowValidation(false);
-      setCurrentModule(null);
-    } catch (error) {
-      console.error('Error in validation:', error);
-      toast.error('Error durante la validación');
-    } finally {
-      setIsValidating(false);
-    }
-  };
-
-  const validateModuleCompletion = async () => {
-    // Simular llamada al agente de IA especializado
-    // En implementación real, aquí se llamaría al edge function
-    return new Promise<{passed: boolean, score: number, feedback: string}>((resolve) => {
-      setTimeout(() => {
-        resolve({
-          passed: Math.random() > 0.3, // 70% de probabilidad de pasar
-          score: Math.floor(Math.random() * 40) + 60, // Score entre 60-100
-          feedback: "Evaluación completada por agente especializado en formación legal"
-        });
-      }, 2000);
-    });
-  };
-
-  const checkCertificationCompletion = () => {
-    const allValidated = progress.every(p => p.status === 'validated');
-    if (allValidated) {
-      toast.success('¡Felicitaciones! Has completado toda la certificación IA Lawyer Fundamentals');
-      // Aquí se activaría la emisión del certificado
-    }
-  };
-
-  const getModuleProgress = (moduleId: string) => {
-    return progress.find(p => p.moduleId === moduleId);
-  };
-
-  const isModuleAccessible = (module: ModuleData) => {
-    const moduleProgress = getModuleProgress(module.id);
-    return moduleProgress?.status !== 'locked';
-  };
-
-  const getCompletionPercentage = () => {
-    const validatedModules = progress.filter(p => p.status === 'validated').length;
-    return Math.round((validatedModules / modules.length) * 100);
-  };
-
-  const initializeAIAssistant = (module: ModuleData) => {
-    const welcomeMessage: ChatMessage = {
-      id: Date.now().toString(),
-      type: 'assistant',
-      content: `¡Hola! Soy tu **Asistente Especializado en IA Legal** para el módulo "${module.title}". 
-
-🎯 **Mi función es guiarte y evaluarte durante todo el proceso de aprendizaje.**
-
-**¿Cómo funciona el sistema de evaluación?**
-• Te acompañaré mientras estudias el contenido
-• Responderé todas tus consultas y dudas
-• Al final, realizaré un **examen interactivo** para validar tu comprensión
-• Solo yo puedo marcar el módulo como completado una vez que demuestres dominio del tema
-• Si no apruebas, te ayudaré a reforzar los conceptos que necesites
-
-**Estoy aquí para:**
-• Explicarte conceptos complejos con ejemplos prácticos
-• Resolver dudas específicas sobre el contenido
-• Proporcionarte casos de uso del contexto legal colombiano
-• Prepararte para la evaluación final
-• Reforzar áreas donde necesites más práctica
-
-**¿Estás listo para comenzar? Puedes:**
-1. Preguntarme sobre cualquier concepto del módulo
-2. Solicitar ejemplos prácticos específicos
-3. Pedirme que te guíe paso a paso por el contenido
-4. Cuando te sientas preparado, solicitar la **evaluación final**
-
-¿Cómo te gustaría empezar tu aprendizaje?`,
-      timestamp: new Date()
+    return {
+      overallProgress,
+      completedModules: completed,
+      averageScore: Math.round(averageScore || 0),
+      totalHours: completed * 1.5 // Estimated hours per module
     };
-    
-    setChatMessages([welcomeMessage]);
-    setShowAIAssistant(true);
   };
 
-  const sendMessageToAI = async () => {
-    if (!currentMessage.trim() || !currentModule) return;
-
-    const userMessage: ChatMessage = {
-      id: Date.now().toString(),
-      type: 'user',
-      content: currentMessage,
-      timestamp: new Date()
-    };
-
-    setChatMessages(prev => [...prev, userMessage]);
-    setCurrentMessage('');
-    setIsAIResponding(true);
-
-    try {
-      const response = await supabase.functions.invoke('legal-training-assistant', {
-        body: {
-          message: currentMessage,
-          moduleId: currentModule.id,
-          moduleContent: currentModule,
-          lawyerId: lawyerId,
-          chatHistory: chatMessages,
-          moduleProgress: getModuleProgress(currentModule.id)
-        }
-      });
-
-      if (response.error) {
-        throw response.error;
-      }
-
-      const aiMessage: ChatMessage = {
-        id: Date.now().toString() + '_ai',
-        type: 'assistant',
-        content: response.data?.response || 'Lo siento, hubo un error al procesar tu consulta.',
-        timestamp: new Date()
-      };
-
-      setChatMessages(prev => [...prev, aiMessage]);
-
-      // Si el asistente aprobó el módulo, actualizar el estado
-      if (response.data?.moduleCompleted) {
-        updateModuleStatus(currentModule.id, 'validated');
-        toast.success(`¡Felicitaciones! Has completado exitosamente el módulo "${currentModule.title}"`);
-        
-        // Desbloquear siguiente módulo
-        const currentIndex = modules.findIndex(m => m.id === currentModule.id);
-        if (currentIndex < modules.length - 1) {
-          const nextModuleId = modules[currentIndex + 1].id;
-          updateModuleStatus(nextModuleId, 'available');
-        }
-        
-        checkCertificationCompletion();
-      }
-    } catch (error) {
-      console.error('Error sending message to AI:', error);
-      const errorMessage: ChatMessage = {
-        id: Date.now().toString() + '_error',
-        type: 'assistant',
-        content: 'Disculpa, estoy experimentando dificultades técnicas. Por favor, intenta de nuevo en unos momentos.',
-        timestamp: new Date()
-      };
-      setChatMessages(prev => [...prev, errorMessage]);
-    } finally {
-      setIsAIResponding(false);
-    }
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessageToAI();
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        <span className="ml-2">Cargando sistema de formación...</span>
-      </div>
-    );
-  }
+  const { overallProgress, completedModules, averageScore, totalHours } = calculateProgress();
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <Button variant="ghost" onClick={onBack} className="mb-4">
-            <ChevronRight className="w-4 h-4 mr-2 rotate-180" />
+    <div className="min-h-screen bg-gradient-subtle">
+      <div className="container mx-auto px-6 py-8">
+        <div className="flex items-center justify-between mb-12">
+          <div className="space-y-4">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-gradient-primary shadow-lg">
+                <Brain className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                  Sistema de Certificación en IA Legal
+                </h1>
+                <p className="text-lg text-muted-foreground mt-2">
+                  Programa completo de formación para abogados en inteligencia artificial aplicada al derecho
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-6 text-sm">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-primary" />
+                <span className="text-muted-foreground">+500 abogados certificados</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Award className="w-4 h-4 text-primary" />
+                <span className="text-muted-foreground">Certificación oficial</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Zap className="w-4 h-4 text-primary" />
+                <span className="text-muted-foreground">Tecnología de vanguardia</span>
+              </div>
+            </div>
+          </div>
+          <Button onClick={onBack} variant="outline" size="lg" className="shadow-soft hover:shadow-lg transition-all">
             Volver al Dashboard
           </Button>
-          <h1 className="text-2xl font-bold text-primary flex items-center gap-2">
-            <Brain className="w-6 h-6" />
-            Centro de Formación IA Legal
-          </h1>
-          <p className="text-muted-foreground">
-            Certificación IA Lawyer Fundamentals - {lawyerData?.full_name || 'Abogado'}
-          </p>
         </div>
-        <div className="text-right">
-          <div className="text-2xl font-bold text-primary">{getCompletionPercentage()}%</div>
-          <div className="text-sm text-muted-foreground">Progreso Total</div>
-          <Progress value={getCompletionPercentage()} className="w-32 mt-2" />
-        </div>
-      </div>
 
-      {/* Modules Grid */}
-      <div className="grid gap-6">
-        {modules.map((module, index) => {
-          const moduleProgress = getModuleProgress(module.id);
-          const isAccessible = isModuleAccessible(module);
+        {/* Estadísticas de progreso */}
+        <div className="grid md:grid-cols-4 gap-6 mb-12">
+          <Card className="border-0 shadow-elegant hover:shadow-2xl transition-all duration-300 bg-gradient-to-br from-primary/5 to-primary/10">
+            <CardContent className="p-8">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Progreso Total</p>
+                  <p className="text-3xl font-bold text-primary">{overallProgress}%</p>
+                </div>
+                <div className="p-4 bg-primary/20 rounded-xl shadow-inner">
+                  <Target className="w-8 h-8 text-primary" />
+                </div>
+              </div>
+              <Progress value={overallProgress} className="h-2 bg-primary/20" />
+              <p className="text-xs text-muted-foreground mt-2">
+                {overallProgress < 30 ? "¡Sigue adelante!" : overallProgress < 70 ? "¡Excelente progreso!" : "¡Casi lo logras!"}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-elegant hover:shadow-2xl transition-all duration-300 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/20 dark:to-green-900/20">
+            <CardContent className="p-8">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Módulos Completados</p>
+                  <p className="text-3xl font-bold text-green-600">{completedModules}/{modules.length}</p>
+                </div>
+                <div className="p-4 bg-green-500/20 rounded-xl shadow-inner">
+                  <CheckCircle className="w-8 h-8 text-green-600" />
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 bg-green-200 dark:bg-green-800 rounded-full h-2">
+                  <div 
+                    className="bg-green-500 h-2 rounded-full transition-all duration-500"
+                    style={{ width: `${(completedModules / modules.length) * 100}%` }}
+                  ></div>
+                </div>
+                <span className="text-xs text-green-600 font-medium">
+                  {Math.round((completedModules / modules.length) * 100)}%
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-elegant hover:shadow-2xl transition-all duration-300 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/20 dark:to-blue-900/20">
+            <CardContent className="p-8">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Puntuación Promedio</p>
+                  <p className="text-3xl font-bold text-blue-600">{averageScore}%</p>
+                </div>
+                <div className="p-4 bg-blue-500/20 rounded-xl shadow-inner">
+                  <Award className="w-8 h-8 text-blue-600" />
+                </div>
+              </div>
+              <div className="flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star 
+                    key={star} 
+                    className={`w-4 h-4 ${averageScore >= star * 20 ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
+                  />
+                ))}
+                <span className="ml-2 text-xs text-muted-foreground">
+                  {averageScore >= 90 ? "Excelente" : averageScore >= 70 ? "Muy bien" : "En progreso"}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-elegant hover:shadow-2xl transition-all duration-300 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/20 dark:to-purple-900/20">
+            <CardContent className="p-8">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Tiempo Invertido</p>
+                  <p className="text-3xl font-bold text-purple-600">{totalHours}h</p>
+                </div>
+                <div className="p-4 bg-purple-500/20 rounded-xl shadow-inner">
+                  <Clock className="w-8 h-8 text-purple-600" />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Promedio: {Math.round(totalHours / Math.max(completedModules, 1))}h por módulo
+              </p>
+              <div className="mt-2 w-full bg-purple-200 dark:bg-purple-800 rounded-full h-1">
+                <div 
+                  className="bg-purple-500 h-1 rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min((totalHours / 20) * 100, 100)}%` }}
+                ></div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Lista de módulos */}
+        <div className="space-y-8">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-foreground mb-2">Módulos de Certificación</h2>
+            <p className="text-muted-foreground">Completa cada módulo en orden para obtener tu certificación</p>
+          </div>
           
-          return (
-            <Card key={module.id} className={`transition-all ${!isAccessible ? 'opacity-60' : ''}`}>
-              <CardHeader className="pb-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="flex items-center gap-2">
-                      {moduleProgress?.status === 'locked' && <Lock className="w-4 h-4 text-muted-foreground" />}
-                      {moduleProgress?.status === 'available' && <Unlock className="w-4 h-4 text-blue-500" />}
-                      {moduleProgress?.status === 'in_progress' && <Clock className="w-4 h-4 text-orange-500" />}
-                      {moduleProgress?.status === 'completed' && <CheckCircle className="w-4 h-4 text-green-500" />}
-                      {moduleProgress?.status === 'validated' && <Star className="w-4 h-4 text-yellow-500" />}
-                      
-                      {module.title}
-                    </CardTitle>
-                    <p className="text-muted-foreground text-sm mt-1">{module.description}</p>
-                    
-                    <div className="flex gap-2 mt-2">
-                      <Badge variant="outline">{module.difficulty}</Badge>
-                      <Badge variant="secondary">{module.estimatedTime}</Badge>
-                      {module.prerequisites && (
-                        <Badge variant="outline">
-                          Prerequisitos: {module.prerequisites.length}
-                        </Badge>
-                      )}
-                    </div>
+          <div className="grid gap-8">
+            {modules.map((module, index) => {
+              const moduleProgress = progress.find(p => p.moduleId === module.id);
+              const isLocked = moduleProgress?.status === 'locked';
+              const isCompleted = moduleProgress?.status === 'completed' || moduleProgress?.status === 'validated';
+              const isInProgress = moduleProgress?.status === 'in_progress';
+              
+              return (
+                <Card key={module.id} className={`group relative border-0 shadow-elegant hover:shadow-2xl transition-all duration-500 overflow-hidden ${
+                  isCompleted ? 'bg-gradient-to-r from-green-50 to-green-100 dark:from-green-950/20 dark:to-green-900/20' :
+                  isInProgress ? 'bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-950/20 dark:to-blue-900/20' :
+                  isLocked ? 'bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-950/20 dark:to-gray-900/20 opacity-60' :
+                  'bg-gradient-to-r from-background to-background/50 hover:from-primary/5 hover:to-secondary/5'
+                }`}>
+                  
+                  {/* Número del módulo */}
+                  <div className="absolute top-6 left-6 w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                    {index + 1}
                   </div>
                   
-                   <div className="flex flex-col gap-2">
-                     {moduleProgress?.status === 'available' && (
-                       <>
-                         <Button onClick={() => startModule(module)}>
-                           <Play className="w-4 h-4 mr-2" />
-                           Comenzar
-                         </Button>
-                         <Button 
-                           variant="outline" 
-                           size="sm"
-                           className="text-blue-600 border-blue-200 hover:bg-blue-50"
-                         >
-                           <Brain className="w-3 h-3 mr-1" />
-                           Vista Previa IA
-                         </Button>
-                       </>
-                     )}
-                     
-                     {moduleProgress?.status === 'in_progress' && (
-                       <>
-                         <Button onClick={() => startModule(module)} variant="outline">
-                           <BookOpen className="w-4 h-4 mr-2" />
-                           Continuar
-                         </Button>
-                         <Button 
-                           onClick={() => {
-                             setCurrentModule(module);
-                             initializeAIAssistant(module);
-                           }}
-                           variant="secondary"
-                           size="sm"
-                           className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
-                         >
-                           <Bot className="w-3 h-3 mr-1" />
-                           Asistente IA
-                         </Button>
-                       </>
-                     )}
-                     
-                     {moduleProgress?.status === 'completed' && (
-                       <>
-                         <Button onClick={() => startValidation(module)} className="bg-green-600 hover:bg-green-700">
-                           <Target className="w-4 h-4 mr-2" />
-                           Validar Conocimientos
-                         </Button>
-                         <Button 
-                           onClick={() => {
-                             setCurrentModule(module);
-                             initializeAIAssistant(module);
-                           }}
-                           variant="outline"
-                           size="sm"
-                           className="text-blue-600 border-blue-200 hover:bg-blue-50"
-                         >
-                           <Brain className="w-3 h-3 mr-1" />
-                           Revisar con IA
-                         </Button>
-                       </>
-                     )}
-                     
-                     {moduleProgress?.status === 'validated' && (
-                       <Badge className="bg-yellow-500 text-yellow-50">
-                         <Award className="w-3 h-3 mr-1" />
-                         Validado
-                       </Badge>
-                     )}
-                   </div>
-                </div>
-              </CardHeader>
-              
-              <CardContent>
-                <div className="space-y-3">
-                  <div>
-                    <h4 className="font-medium text-sm mb-2">Objetivos de Aprendizaje:</h4>
-                    <ul className="text-sm text-muted-foreground space-y-1">
-                      {module.learningObjectives.slice(0, 2).map((objective, i) => (
-                        <li key={i} className="flex items-start gap-2">
-                          <Lightbulb className="w-3 h-3 mt-0.5 text-yellow-500 flex-shrink-0" />
-                          {objective}
-                        </li>
-                      ))}
-                      {module.learningObjectives.length > 2 && (
-                        <li className="text-xs text-muted-foreground">
-                          +{module.learningObjectives.length - 2} objetivos más...
-                        </li>
-                      )}
-                    </ul>
-                  </div>
+                  {/* Indicador de progreso visual */}
+                  <div className={`absolute top-0 left-0 h-2 w-full ${
+                    isCompleted ? 'bg-gradient-to-r from-green-400 to-green-500' :
+                    isInProgress ? 'bg-gradient-to-r from-blue-400 to-blue-500' :
+                    'bg-gradient-to-r from-primary/20 to-secondary/20'
+                  }`}></div>
                   
-                  {moduleProgress?.score && (
-                    <div className="bg-green-50 p-3 rounded border border-green-200">
-                      <div className="flex items-center gap-2">
-                        <Award className="w-4 h-4 text-green-600" />
-                        <span className="text-sm font-medium text-green-800">
-                          Puntuación: {moduleProgress.score}/100
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Module Content Dialog */}
-      <Dialog open={!!currentModule && !showValidation} onOpenChange={() => setCurrentModule(null)}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-          {currentModule && (
-            <div className="space-y-6">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <BookOpen className="w-5 h-5" />
-                  {currentModule.title}
-                </DialogTitle>
-                <DialogDescription>
-                  {currentModule.description} • {currentModule.estimatedTime}
-                </DialogDescription>
-              </DialogHeader>
-              
-               <Tabs defaultValue="content" className="w-full">
-                 <TabsList className="grid w-full grid-cols-4">
-                   <TabsTrigger value="content">Contenido</TabsTrigger>
-                   <TabsTrigger value="objectives">Objetivos</TabsTrigger>
-                   <TabsTrigger value="exercise">Ejercicio Práctico</TabsTrigger>
-                   <TabsTrigger value="assistant">Asistente IA</TabsTrigger>
-                 </TabsList>
-                
-                <TabsContent value="content" className="space-y-4">
-                  <div className="prose prose-sm max-w-none">
-                    {currentModule.content.map((section, index) => (
-                      <div key={index} className="mb-4">
-                        <p className="text-sm leading-relaxed">{section}</p>
-                      </div>
-                    ))}
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="objectives" className="space-y-4">
-                  <div>
-                    <h4 className="font-medium mb-3">Al completar este módulo, podrás:</h4>
-                    <ul className="space-y-2">
-                      {currentModule.learningObjectives.map((objective, index) => (
-                        <li key={index} className="flex items-start gap-2">
-                          <Target className="w-4 h-4 mt-0.5 text-blue-500 flex-shrink-0" />
-                          <span className="text-sm">{objective}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </TabsContent>
-                
-                 <TabsContent value="exercise" className="space-y-4">
-                   <div>
-                     <h4 className="font-medium mb-2">{currentModule.practicalExercise.title}</h4>
-                     <p className="text-sm text-muted-foreground mb-4">
-                       {currentModule.practicalExercise.description}
-                     </p>
-                     
-                     <div className="bg-blue-50 p-4 rounded border border-blue-200">
-                       <h5 className="font-medium text-blue-800 mb-2">Ejercicio:</h5>
-                       <p className="text-sm text-blue-700">
-                         {currentModule.practicalExercise.prompt}
-                       </p>
-                     </div>
-                     
-                     <div className="grid md:grid-cols-2 gap-4 mt-4">
-                       <div>
-                         <h5 className="font-medium mb-2">Resultados Esperados:</h5>
-                         <ul className="text-sm space-y-1">
-                           {currentModule.practicalExercise.expectedOutputs.map((output, index) => (
-                             <li key={index} className="flex items-start gap-2">
-                               <CheckCircle className="w-3 h-3 mt-0.5 text-green-500 flex-shrink-0" />
-                               {output}
-                             </li>
-                           ))}
-                         </ul>
-                       </div>
-                       
-                       <div>
-                         <h5 className="font-medium mb-2">Criterios de Evaluación:</h5>
-                         <ul className="text-sm space-y-1">
-                           {currentModule.practicalExercise.evaluationCriteria.map((criteria, index) => (
-                             <li key={index} className="flex items-start gap-2">
-                               <Star className="w-3 h-3 mt-0.5 text-yellow-500 flex-shrink-0" />
-                               {criteria}
-                             </li>
-                           ))}
-                         </ul>
-                       </div>
-                     </div>
-                   </div>
-                 </TabsContent>
-                 
-                 <TabsContent value="assistant" className="space-y-4">
-                   <div className="h-96 flex flex-col">
-                     <div className="flex items-center gap-2 mb-4 p-3 bg-blue-50 rounded border border-blue-200">
-                       <Bot className="w-5 h-5 text-blue-600" />
-                       <div>
-                         <h4 className="font-medium text-blue-800">Asistente IA Legal</h4>
-                         <p className="text-sm text-blue-600">Especializado en {currentModule.title}</p>
-                       </div>
-                     </div>
-                     
-                     <ScrollArea className="flex-1 p-3 border rounded bg-background">
-                       <div className="space-y-3">
-                         {chatMessages.map((message) => (
-                           <div key={message.id} className={`flex gap-2 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                             <div className={`flex gap-2 max-w-[85%] ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-                               <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${message.type === 'user' ? 'bg-primary text-primary-foreground' : 'bg-blue-100 text-blue-600'}`}>
-                                 {message.type === 'user' ? <User className="w-3 h-3" /> : <Bot className="w-3 h-3" />}
-                               </div>
-                               <div className={`p-3 rounded-lg ${message.type === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
-                                 <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                                 <p className="text-xs opacity-70 mt-1">
-                                   {message.timestamp.toLocaleTimeString()}
-                                 </p>
-                               </div>
-                             </div>
-                           </div>
-                         ))}
-                         {isAIResponding && (
-                           <div className="flex gap-2 justify-start">
-                             <div className="flex gap-2 max-w-[85%]">
-                               <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 bg-blue-100 text-blue-600">
-                                 <Bot className="w-3 h-3" />
-                               </div>
-                               <div className="p-3 rounded-lg bg-muted">
-                                 <div className="flex items-center gap-2">
-                                   <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
-                                   <p className="text-sm">El asistente está escribiendo...</p>
-                                 </div>
-                               </div>
-                             </div>
-                           </div>
-                         )}
-                       </div>
-                     </ScrollArea>
-                     
-                     <div className="flex gap-2 mt-3">
-                       <Input
-                         placeholder="Escribe tu pregunta sobre el módulo..."
-                         value={currentMessage}
-                         onChange={(e) => setCurrentMessage(e.target.value)}
-                         onKeyPress={handleKeyPress}
-                         disabled={isAIResponding}
-                         className="flex-1"
-                       />
-                       <Button 
-                         onClick={sendMessageToAI} 
-                         disabled={!currentMessage.trim() || isAIResponding}
-                         size="sm"
-                       >
-                         <Send className="w-4 h-4" />
-                       </Button>
-                     </div>
-                   </div>
-                 </TabsContent>
-              </Tabs>
-              
-               <div className="flex justify-between gap-2 pt-4 border-t">
-                 <div className="flex gap-2">
-                   <Button variant="outline" onClick={() => setCurrentModule(null)}>
-                     Cerrar
-                   </Button>
-                 </div>
-                 <div className="flex gap-2">
-                   <Button 
-                     onClick={() => {
-                       setCurrentModule(currentModule);
-                       initializeAIAssistant(currentModule);
-                     }}
-                     variant="secondary"
-                     className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
-                   >
-                     <Bot className="w-4 h-4 mr-2" />
-                     Consultar Asistente IA
-                   </Button>
-                   <div className="text-sm text-muted-foreground flex items-center">
-                     <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">
-                       ⚠️ Solo el Asistente IA puede completar módulos
-                     </span>
-                   </div>
-                 </div>
-               </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Validation Dialog */}
-      <Dialog open={showValidation} onOpenChange={() => setShowValidation(false)}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-          {currentModule && (
-            <div className="space-y-6">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <MessageSquare className="w-5 h-5" />
-                  Validación de Conocimientos - {currentModule.title}
-                </DialogTitle>
-                <DialogDescription>
-                  Responde todas las preguntas para validar tu comprensión del módulo
-                </DialogDescription>
-              </DialogHeader>
-              
-              <div className="space-y-6">
-                {currentModule.validationQuestions.map((question, index) => (
-                  <Card key={question.id}>
-                    <CardContent className="pt-6">
-                      <div className="space-y-4">
-                        <div className="flex items-start justify-between">
-                          <h4 className="font-medium">
-                            Pregunta {index + 1} ({question.points} puntos)
-                          </h4>
-                          <Badge variant="outline">{question.type.replace('_', ' ')}</Badge>
+                  <CardContent className="p-8 pl-24">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-4 mb-4">
+                          <div className={`p-3 rounded-xl shadow-inner ${
+                            isCompleted ? 'bg-green-500/20 text-green-600' : 
+                            isLocked ? 'bg-gray-300/20 text-gray-400' : 
+                            'bg-primary/20 text-primary'
+                          }`}>
+                            {isCompleted ? <CheckCircle className="w-8 h-8" /> :
+                             isLocked ? <Lock className="w-8 h-8" /> :
+                             <BookOpen className="w-8 h-8" />}
+                          </div>
+                          
+                          <div>
+                            <h3 className="text-2xl font-bold text-foreground mb-2">{module.title}</h3>
+                            <div className="flex items-center gap-3">
+                              <Badge variant={
+                                module.difficulty === 'Básico' ? 'secondary' :
+                                module.difficulty === 'Intermedio' ? 'default' : 'destructive'
+                              } className="text-xs px-3 py-1">
+                                {module.difficulty}
+                              </Badge>
+                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                isCompleted ? 'bg-green-500/20 text-green-600' :
+                                isInProgress ? 'bg-blue-500/20 text-blue-600' :
+                                isLocked ? 'bg-gray-300/20 text-gray-500' :
+                                'bg-primary/20 text-primary'
+                              }`}>
+                                {isCompleted ? 'Completado' :
+                                 isInProgress ? 'En progreso' :
+                                 isLocked ? 'Bloqueado' : 'Disponible'}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                         
-                        <p className="text-sm">{question.question}</p>
+                        <p className="text-muted-foreground text-lg leading-relaxed mb-6 max-w-4xl">
+                          {module.description}
+                        </p>
                         
-                        {question.type === 'multiple_choice' && question.options && (
-                          <div className="space-y-2">
-                            {question.options.map((option, optIndex) => (
-                              <label key={optIndex} className="flex items-center space-x-2 cursor-pointer">
-                                <input
-                                  type="radio"
-                                  name={question.id}
-                                  value={optIndex}
-                                  onChange={(e) => setValidationAnswers(prev => ({
-                                    ...prev,
-                                    [question.id]: Number(e.target.value)
-                                  }))}
-                                  className="w-4 h-4"
-                                />
-                                <span className="text-sm">{option}</span>
-                              </label>
+                        <div className="flex items-center gap-8 text-sm">
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <Clock className="w-5 h-5 text-primary" />
+                            <span className="font-medium">{module.estimatedTime}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <Target className="w-5 h-5 text-primary" />
+                            <span className="font-medium">{module.learningObjectives.length} objetivos</span>
+                          </div>
+                          {moduleProgress?.score && (
+                            <div className="flex items-center gap-2">
+                              <Award className="w-5 h-5 text-yellow-500" />
+                              <span className="font-bold text-yellow-600">Puntuación: {moduleProgress.score}%</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col items-end gap-4 ml-8">
+                        {!isLocked && (
+                          <Button
+                            onClick={() => setShowAIAssistant(true)}
+                            variant="outline"
+                            size="lg"
+                            className="flex items-center gap-3 px-6 py-3 hover:shadow-lg transition-all"
+                          >
+                            <Bot className="w-5 h-5" />
+                            Asistente IA
+                          </Button>
+                        )}
+                        
+                        <Button
+                          onClick={() => setCurrentModule(module)}
+                          disabled={isLocked}
+                          size="lg"
+                          className={`flex items-center gap-3 px-8 py-3 text-lg font-semibold transition-all ${
+                            isCompleted ? 'bg-green-500 hover:bg-green-600' :
+                            isInProgress ? 'bg-blue-500 hover:bg-blue-600' :
+                            'bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl'
+                          }`}
+                        >
+                          {isCompleted ? (
+                            <>
+                              <CheckCircle className="w-5 h-5" />
+                              Revisar Módulo
+                            </>
+                          ) : (
+                            <>
+                              <Play className="w-5 h-5" />
+                              {isLocked ? 'Bloqueado' : isInProgress ? 'Continuar' : 'Comenzar'}
+                            </>
+                          )}
+                          <ChevronRight className="w-5 h-5" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Module Detail Dialog */}
+        {currentModule && (
+          <Dialog open={true} onOpenChange={() => setCurrentModule(null)}>
+            <DialogContent className="max-w-7xl max-h-[95vh] overflow-hidden bg-gradient-subtle border-0 shadow-2xl">
+              <DialogHeader className="pb-6 border-b border-border/50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <BookOpen className="w-6 h-6 text-primary" />
+                    </div>
+                    <div>
+                      <DialogTitle className="text-2xl font-bold text-foreground">
+                        {currentModule.title}
+                      </DialogTitle>
+                      <DialogDescription className="flex items-center gap-4 mt-1">
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          {currentModule.estimatedTime}
+                        </span>
+                        <Badge variant="secondary" className="text-xs">
+                          {currentModule.difficulty}
+                        </Badge>
+                      </DialogDescription>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm text-muted-foreground">Progreso del módulo</div>
+                    <div className="text-lg font-bold text-primary">0%</div>
+                  </div>
+                </div>
+              </DialogHeader>
+              
+              <Tabs defaultValue="content" className="flex-1 h-full">
+                <TabsList className="grid w-full grid-cols-3 bg-muted/30 p-1 rounded-lg">
+                  <TabsTrigger value="content" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                    📚 Contenido
+                  </TabsTrigger>
+                  <TabsTrigger value="objectives" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                    🎯 Objetivos
+                  </TabsTrigger>
+                  <TabsTrigger value="assistant" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                    🤖 Asistente IA
+                  </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="content" className="mt-6 h-[65vh]">
+                  <ScrollArea className="h-full pr-4">
+                    <div className="space-y-8">
+                      {currentModule.content.map((section, index) => (
+                        <Card key={index} className="border-l-4 border-l-primary/50 shadow-soft hover:shadow-lg transition-all duration-300">
+                          <CardContent className="p-8">
+                            <div className="prose prose-lg max-w-none">
+                              <div 
+                                className="whitespace-pre-wrap leading-relaxed text-foreground/90"
+                                style={{
+                                  fontFamily: 'Inter, system-ui, sans-serif',
+                                  lineHeight: '1.7'
+                                }}
+                              >
+                                {section.split('\n').map((paragraph, pIndex) => {
+                                  if (paragraph.startsWith('**') && paragraph.endsWith('**')) {
+                                    return (
+                                      <h3 key={pIndex} className="text-xl font-bold text-primary mt-6 mb-4 flex items-center gap-2">
+                                        <div className="w-2 h-6 bg-gradient-primary rounded-full"></div>
+                                        {paragraph.replace(/\*\*/g, '')}
+                                      </h3>
+                                    );
+                                  }
+                                  if (paragraph.trim().startsWith('-')) {
+                                    return (
+                                      <div key={pIndex} className="flex items-start gap-3 my-2">
+                                        <div className="w-2 h-2 bg-primary/60 rounded-full mt-3 flex-shrink-0"></div>
+                                        <span className="text-foreground/80">{paragraph.substring(1).trim()}</span>
+                                      </div>
+                                    );
+                                  }
+                                  if (paragraph.trim().startsWith('```')) {
+                                    return (
+                                      <div key={pIndex} className="bg-muted/50 border border-border/50 rounded-lg p-4 my-4 font-mono text-sm">
+                                        <code className="text-foreground/90">{paragraph.replace(/```/g, '')}</code>
+                                      </div>
+                                    );
+                                  }
+                                  if (paragraph.trim()) {
+                                    return (
+                                      <p key={pIndex} className="text-foreground/80 mb-4 leading-relaxed">
+                                        {paragraph}
+                                      </p>
+                                    );
+                                  }
+                                  return <br key={pIndex} />;
+                                })}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </TabsContent>
+
+                <TabsContent value="objectives" className="mt-6 h-[65vh]">
+                  <ScrollArea className="h-full pr-4">
+                    <div className="space-y-8">
+                      <Card className="border-0 bg-gradient-to-br from-primary/5 to-secondary/5 shadow-soft">
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-3 text-xl">
+                            <div className="p-2 rounded-lg bg-primary/10">
+                              <Target className="w-5 h-5 text-primary" />
+                            </div>
+                            Objetivos de Aprendizaje
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid gap-4">
+                            {currentModule.learningObjectives.map((objective, index) => (
+                              <div key={index} className="flex items-start gap-4 p-4 bg-background/50 rounded-lg border border-border/30 hover:border-primary/30 transition-colors">
+                                <div className="flex items-center justify-center w-8 h-8 bg-primary/10 rounded-full flex-shrink-0 mt-1">
+                                  <span className="text-sm font-bold text-primary">{index + 1}</span>
+                                </div>
+                                <span className="text-foreground/80 leading-relaxed">{objective}</span>
+                              </div>
                             ))}
                           </div>
-                        )}
-                        
-                        {(question.type === 'open_ended' || question.type === 'practical') && (
-                          <div className="space-y-2">
-                            <Textarea
-                              placeholder="Escribe tu respuesta aquí..."
-                              value={validationAnswers[question.id] || ''}
-                              onChange={(e) => setValidationAnswers(prev => ({
-                                ...prev,
-                                [question.id]: e.target.value
-                              }))}
-                              className="min-h-[120px]"
-                            />
-                            {question.rubric && (
-                              <p className="text-xs text-muted-foreground">
-                                <strong>Criterios de evaluación:</strong> {question.rubric}
-                              </p>
-                            )}
+                        </CardContent>
+                      </Card>
+                      
+                      <Card className="border-0 bg-gradient-to-br from-secondary/5 to-accent/5 shadow-soft">
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-3 text-xl">
+                            <div className="p-2 rounded-lg bg-secondary/10">
+                              <Lightbulb className="w-5 h-5 text-secondary" />
+                            </div>
+                            Ejercicio Práctico
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                          <div>
+                            <h4 className="text-lg font-semibold text-primary mb-2">
+                              {currentModule.practicalExercise.title}
+                            </h4>
+                            <p className="text-muted-foreground leading-relaxed">
+                              {currentModule.practicalExercise.description}
+                            </p>
                           </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-              
-              <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button variant="outline" onClick={() => setShowValidation(false)}>
-                  Cancelar
-                </Button>
-                <Button 
-                  onClick={submitValidation} 
-                  disabled={isValidating}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  {isValidating ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Validando con IA...
-                    </>
-                  ) : (
-                    <>
-                      <Target className="w-4 h-4 mr-2" />
-                      Enviar para Validación
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+                          
+                          <div className="p-6 bg-background/50 rounded-lg border border-border/30">
+                            <h5 className="font-semibold mb-3 text-foreground flex items-center gap-2">
+                              <FileText className="w-4 h-4" />
+                              Enunciado del Ejercicio:
+                            </h5>
+                            <p className="leading-relaxed text-foreground/80">
+                              {currentModule.practicalExercise.prompt}
+                            </p>
+                          </div>
+                          
+                          <div className="grid md:grid-cols-2 gap-6">
+                            <div>
+                              <h5 className="font-semibold mb-3 text-foreground flex items-center gap-2">
+                                <CheckCircle className="w-4 h-4 text-green-500" />
+                                Resultados Esperados:
+                              </h5>
+                              <ul className="space-y-2">
+                                {currentModule.practicalExercise.expectedOutputs.map((output, index) => (
+                                  <li key={index} className="flex items-start gap-2 text-sm">
+                                    <div className="w-1.5 h-1.5 bg-green-500/60 rounded-full mt-2 flex-shrink-0"></div>
+                                    <span className="text-foreground/70">{output}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                            
+                            <div>
+                              <h5 className="font-semibold mb-3 text-foreground flex items-center gap-2">
+                                <Star className="w-4 h-4 text-yellow-500" />
+                                Criterios de Evaluación:
+                              </h5>
+                              <ul className="space-y-2">
+                                {currentModule.practicalExercise.evaluationCriteria.map((criteria, index) => (
+                                  <li key={index} className="flex items-start gap-2 text-sm">
+                                    <div className="w-1.5 h-1.5 bg-yellow-500/60 rounded-full mt-2 flex-shrink-0"></div>
+                                    <span className="text-foreground/70">{criteria}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </ScrollArea>
+                </TabsContent>
+
+                {/* Assistant tab content */}
+                <TabsContent value="assistant" className="mt-6 h-[65vh] flex flex-col">
+                  <ScrollArea className="flex-1 pr-4 mb-4">
+                    <div className="space-y-4">
+                      {chatMessages.length === 0 && (
+                        <p className="text-muted-foreground text-center mt-10">Inicia una conversación con el asistente IA para resolver dudas.</p>
+                      )}
+                      {chatMessages.map((msg) => (
+                        <div key={msg.id} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`max-w-xs p-3 rounded-lg shadow ${msg.type === 'user' ? 'bg-primary text-white' : 'bg-muted text-foreground'}`}>
+                            {msg.content}
+                            <div className="text-xs text-muted-foreground mt-1 text-right">{msg.timestamp.toLocaleTimeString()}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      if (!currentMessage.trim()) return;
+                      const userMsg: ChatMessage = {
+                        id: Date.now().toString(),
+                        type: 'user',
+                        content: currentMessage.trim(),
+                        timestamp: new Date()
+                      };
+                      setChatMessages((prev) => [...prev, userMsg]);
+                      setCurrentMessage('');
+                      setIsAIResponding(true);
+
+                      // Simulate AI response (replace with real API call)
+                      setTimeout(() => {
+                        const aiMsg: ChatMessage = {
+                          id: (Date.now() + 1).toString(),
+                          type: 'assistant',
+                          content: "Esta es una respuesta simulada del asistente IA basada en tu consulta.",
+                          timestamp: new Date()
+                        };
+                        setChatMessages((prev) => [...prev, aiMsg]);
+                        setIsAIResponding(false);
+                      }, 1500);
+                    }}
+                    className="flex gap-2"
+                  >
+                    <Input
+                      placeholder="Escribe tu pregunta..."
+                      value={currentMessage}
+                      onChange={(e) => setCurrentMessage(e.target.value)}
+                      disabled={isAIResponding}
+                    />
+                    <Button type="submit" disabled={isAIResponding || !currentMessage.trim()}>
+                      <Send className="w-5 h-5" />
+                    </Button>
+                  </form>
+                </TabsContent>
+              </Tabs>
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {/* Additional dialogs like validation, practical exercise submission, etc. could be here */}
+      </div>
     </div>
   );
 }
