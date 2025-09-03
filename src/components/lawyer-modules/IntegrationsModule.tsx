@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Mail, FolderOpen, Calendar, Settings, Bot, Loader2, CheckCircle } from "lucide-react";
+import { Mail, FolderOpen, Calendar, Settings, Bot, Loader2, CheckCircle, Sparkles, Target, TrendingUp, Clock, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import UnifiedSidebar from "../UnifiedSidebar";
@@ -257,7 +257,7 @@ export default function IntegrationsModule({ user, currentView, onViewChange, on
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
+      <div className="min-h-screen flex w-full bg-gradient-to-br from-background via-background to-emerald-500/5">
         <UnifiedSidebar 
           user={user}
           currentView={currentView}
@@ -267,24 +267,76 @@ export default function IntegrationsModule({ user, currentView, onViewChange, on
 
         {/* Main Content */}
         <main className="flex-1">
-          {/* Header with Sidebar Toggle */}
-          <header className="h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="flex h-14 items-center px-4">
-              <SidebarTrigger className="mr-4" />
-              <h1 className="text-lg font-semibold">Integraciones IA</h1>
+          {/* Enhanced Header */}
+          <header className="h-16 border-b bg-gradient-to-r from-background/95 to-emerald-500/10 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 to-transparent opacity-50"></div>
+            <div className="relative flex h-16 items-center px-6">
+              <SidebarTrigger className="mr-4 hover:bg-emerald-500/10 rounded-lg p-2 transition-all duration-200" />
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg">
+                  <Zap className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-500 bg-clip-text text-transparent">
+                    Automatización IA
+                  </h1>
+                  <p className="text-sm text-muted-foreground">Integraciones inteligentes para el bufete</p>
+                </div>
+              </div>
             </div>
           </header>
 
-          <div className="container mx-auto px-6 py-6">
-            <div className="max-w-6xl mx-auto">
-              <div className="space-y-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <Settings className="h-8 w-8 text-primary" />
-                  <div>
-                    <h2 className="text-2xl font-bold text-primary">Integraciones IA</h2>
-                    <p className="text-muted-foreground">
-                      Automatiza tareas administrativas y organizacionales
-                    </p>
+          <div className="container mx-auto px-6 py-8">
+            <div className="max-w-7xl mx-auto">
+              <div className="space-y-8">
+                {/* Hero Section */}
+                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent border border-emerald-500/20 p-8">
+                  <div className="absolute inset-0 bg-grid-pattern opacity-10"></div>
+                  <div className="relative">
+                    <div className="flex items-center gap-4 mb-6">
+                      <div className="p-4 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl shadow-2xl">
+                        <Settings className="h-10 w-10 text-white" />
+                      </div>
+                      <div>
+                        <h2 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-400 bg-clip-text text-transparent">
+                          Centro de Automatización
+                        </h2>
+                        <p className="text-lg text-muted-foreground mt-2">
+                          Herramientas inteligentes para optimizar flujos de trabajo administrativos
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Stats Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+                      <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                        <div className="flex items-center gap-3">
+                          <Target className="h-8 w-8 text-emerald-600" />
+                          <div>
+                            <p className="text-2xl font-bold text-emerald-600">{results.length}</p>
+                            <p className="text-sm text-muted-foreground">Tareas automatizadas</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                        <div className="flex items-center gap-3">
+                          <TrendingUp className="h-8 w-8 text-blue-600" />
+                          <div>
+                            <p className="text-2xl font-bold text-blue-600">80%</p>
+                            <p className="text-sm text-muted-foreground">Ahorro de tiempo</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                        <div className="flex items-center gap-3">
+                          <Clock className="h-8 w-8 text-purple-600" />
+                          <div>
+                            <p className="text-2xl font-bold text-purple-600">10 seg</p>
+                            <p className="text-sm text-muted-foreground">Procesamiento</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 

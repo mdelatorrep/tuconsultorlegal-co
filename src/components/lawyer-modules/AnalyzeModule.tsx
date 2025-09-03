@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Upload, FileText, AlertTriangle, CheckCircle, Eye, Loader2 } from "lucide-react";
+import { Upload, FileText, AlertTriangle, CheckCircle, Eye, Loader2, Sparkles, Shield, TrendingUp, Clock, Scan, Target } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -113,7 +113,7 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
+      <div className="min-h-screen flex w-full bg-gradient-to-br from-background via-background to-orange-500/5">
         <UnifiedSidebar 
           user={user}
           currentView={currentView}
@@ -123,70 +123,146 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
 
         {/* Main Content */}
         <main className="flex-1">
-          {/* Header with Sidebar Toggle */}
-          <header className="h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="flex h-14 items-center px-4">
-              <SidebarTrigger className="mr-4" />
-              <h1 className="text-lg font-semibold">Análisis de Documentos</h1>
+          {/* Enhanced Header */}
+          <header className="h-16 border-b bg-gradient-to-r from-background/95 to-orange-500/10 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 to-transparent opacity-50"></div>
+            <div className="relative flex h-16 items-center px-6">
+              <SidebarTrigger className="mr-4 hover:bg-orange-500/10 rounded-lg p-2 transition-all duration-200" />
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg">
+                  <Scan className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold bg-gradient-to-r from-orange-600 to-orange-500 bg-clip-text text-transparent">
+                    Análisis Documental IA
+                  </h1>
+                  <p className="text-sm text-muted-foreground">Revisión inteligente de documentos legales</p>
+                </div>
+              </div>
             </div>
           </header>
 
-          <div className="container mx-auto px-6 py-6">
-            <div className="max-w-6xl mx-auto">
-              <div className="space-y-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <Eye className="h-8 w-8 text-primary" />
-                  <div>
-                    <h2 className="text-2xl font-bold text-primary">Análisis de Documentos</h2>
-                    <p className="text-muted-foreground">
-                      Análisis automático de contratos y documentos legales
-                    </p>
+          <div className="container mx-auto px-6 py-8">
+            <div className="max-w-7xl mx-auto">
+              <div className="space-y-8">
+                {/* Hero Section */}
+                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-orange-500/10 via-orange-500/5 to-transparent border border-orange-500/20 p-8">
+                  <div className="absolute inset-0 bg-grid-pattern opacity-10"></div>
+                  <div className="relative">
+                    <div className="flex items-center gap-4 mb-6">
+                      <div className="p-4 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl shadow-2xl">
+                        <Eye className="h-10 w-10 text-white" />
+                      </div>
+                      <div>
+                        <h2 className="text-3xl font-bold bg-gradient-to-r from-orange-600 via-orange-500 to-orange-400 bg-clip-text text-transparent">
+                          Análisis Inteligente de Documentos
+                        </h2>
+                        <p className="text-lg text-muted-foreground mt-2">
+                          Revisión automatizada de contratos, detección de riesgos y recomendaciones expertas
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Stats Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+                      <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                        <div className="flex items-center gap-3">
+                          <Target className="h-8 w-8 text-orange-600" />
+                          <div>
+                            <p className="text-2xl font-bold text-orange-600">{analysis ? 1 : 0}</p>
+                            <p className="text-sm text-muted-foreground">Documentos analizados</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                        <div className="flex items-center gap-3">
+                          <Shield className="h-8 w-8 text-red-600" />
+                          <div>
+                            <p className="text-2xl font-bold text-red-600">{analysis?.risks.length || 0}</p>
+                            <p className="text-sm text-muted-foreground">Riesgos detectados</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                        <div className="flex items-center gap-3">
+                          <CheckCircle className="h-8 w-8 text-emerald-600" />
+                          <div>
+                            <p className="text-2xl font-bold text-emerald-600">{analysis?.recommendations.length || 0}</p>
+                            <p className="text-sm text-muted-foreground">Recomendaciones</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-      {/* Upload Interface */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5" />
-            Subir Documento
-          </CardTitle>
-          <CardDescription>
-            Sube un contrato o documento legal para obtener un análisis detallado
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileUpload}
-            accept=".pdf,.doc,.docx"
-            className="hidden"
-          />
-          <Button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isAnalyzing}
-            className="w-full"
-            variant="outline"
-            size="lg"
-          >
-            {isAnalyzing ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Analizando documento...
-              </>
-            ) : (
-              <>
-                <Upload className="h-4 w-4 mr-2" />
-                Seleccionar Documento
-              </>
-            )}
-          </Button>
-          <p className="text-xs text-muted-foreground mt-2 text-center">
-            Formatos soportados: PDF, DOC, DOCX
-          </p>
-        </CardContent>
-      </Card>
+                {/* Enhanced Upload Interface */}
+                <Card className="border-0 shadow-2xl bg-gradient-to-br from-white via-white to-orange-500/5 overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 via-transparent to-orange-500/10 opacity-50"></div>
+                  <CardHeader className="relative pb-6">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg">
+                        <Upload className="h-6 w-6 text-white" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-orange-500 bg-clip-text text-transparent">
+                          Análisis de Documento Legal
+                        </CardTitle>
+                        <CardDescription className="text-base mt-2">
+                          Sube un contrato o documento legal para obtener análisis completo de riesgos y recomendaciones
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="relative space-y-6">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileUpload}
+                      accept=".pdf,.doc,.docx"
+                      className="hidden"
+                    />
+                    
+                    <div className="border-2 border-dashed border-orange-200 rounded-xl p-8 text-center bg-gradient-to-br from-orange-50/50 to-white hover:border-orange-300 transition-colors duration-200">
+                      <div className="space-y-4">
+                        <div className="relative">
+                          <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 to-orange-400/10 rounded-full blur-xl"></div>
+                          <div className="relative p-4 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-xl mx-auto w-fit">
+                            <FileText className="h-12 w-12 text-white" />
+                          </div>
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2">Arrastra tu documento aquí</h3>
+                          <p className="text-muted-foreground">o haz clic para seleccionar</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <Button
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isAnalyzing}
+                      className="w-full h-14 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-500 shadow-xl hover:shadow-2xl transition-all duration-300 text-lg font-semibold"
+                    >
+                      {isAnalyzing ? (
+                        <>
+                          <Loader2 className="h-5 w-5 mr-3 animate-spin" />
+                          <span className="animate-pulse">Analizando documento...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-5 w-5 mr-3" />
+                          Iniciar Análisis Inteligente
+                        </>
+                      )}
+                    </Button>
+                    
+                    <div className="bg-gradient-to-r from-orange-500/10 to-orange-400/5 rounded-xl p-4">
+                      <p className="text-sm text-orange-700 font-medium text-center">
+                        📄 Formatos soportados: PDF, DOC, DOCX | 🔒 Análisis seguro y confidencial
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
 
       {/* Analysis Results */}
       {analysis && (
@@ -279,16 +355,31 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
         </div>
       )}
 
-      {!analysis && !isAnalyzing && (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">
-              Sube un documento para comenzar el análisis
-            </p>
-          </CardContent>
-        </Card>
-      )}
+                {!analysis && !isAnalyzing && (
+                  <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-gray-50 to-gray-100 overflow-hidden">
+                    <CardContent className="p-12 text-center">
+                      <div className="space-y-6">
+                        <div className="relative">
+                          <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 to-orange-400/10 rounded-full blur-2xl"></div>
+                          <div className="relative p-6 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl shadow-2xl mx-auto w-fit">
+                            <Scan className="h-16 w-16 text-white" />
+                          </div>
+                        </div>
+                        <div>
+                          <h3 className="text-2xl font-bold text-gray-900 mb-2">¡Inicia tu análisis legal!</h3>
+                          <p className="text-lg text-muted-foreground max-w-md mx-auto">
+                            Sube cualquier documento legal para obtener un análisis completo de riesgos, cláusulas y recomendaciones
+                          </p>
+                        </div>
+                        <div className="bg-gradient-to-r from-orange-500/10 to-orange-400/5 rounded-xl p-4 max-w-lg mx-auto">
+                          <p className="text-sm text-orange-700 font-medium">
+                            🔍 Análisis automático de cláusulas, detección de riesgos y recomendaciones de mejora
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             </div>
           </div>

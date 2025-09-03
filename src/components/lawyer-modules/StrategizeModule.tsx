@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Brain, Target, AlertTriangle, CheckCircle, Scale, Loader2 } from "lucide-react";
+import { Brain, Target, AlertTriangle, CheckCircle, Scale, Loader2, Sparkles, TrendingUp, Clock, Lightbulb, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -127,7 +127,7 @@ export default function StrategizeModule({ user, currentView, onViewChange, onLo
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
+      <div className="min-h-screen flex w-full bg-gradient-to-br from-background via-background to-purple-500/5">
         <UnifiedSidebar 
           user={user}
           currentView={currentView}
@@ -137,65 +137,131 @@ export default function StrategizeModule({ user, currentView, onViewChange, onLo
 
         {/* Main Content */}
         <main className="flex-1">
-          {/* Header with Sidebar Toggle */}
-          <header className="h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="flex h-14 items-center px-4">
-              <SidebarTrigger className="mr-4" />
-              <h1 className="text-lg font-semibold">Asistente Estratégico</h1>
+          {/* Enhanced Header */}
+          <header className="h-16 border-b bg-gradient-to-r from-background/95 to-purple-500/10 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-transparent opacity-50"></div>
+            <div className="relative flex h-16 items-center px-6">
+              <SidebarTrigger className="mr-4 hover:bg-purple-500/10 rounded-lg p-2 transition-all duration-200" />
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg">
+                  <Lightbulb className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent">
+                    Estrategia Legal IA
+                  </h1>
+                  <p className="text-sm text-muted-foreground">Planificación inteligente de casos</p>
+                </div>
+              </div>
             </div>
           </header>
 
-          <div className="container mx-auto px-6 py-6">
-            <div className="max-w-6xl mx-auto">
-              <div className="space-y-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <Brain className="h-8 w-8 text-primary" />
-                  <div>
-                    <h2 className="text-2xl font-bold text-primary">Asistente Estratégico</h2>
-                    <p className="text-muted-foreground">
-                      Análisis estratégico integral de casos legales con IA
-                    </p>
+          <div className="container mx-auto px-6 py-8">
+            <div className="max-w-7xl mx-auto">
+              <div className="space-y-8">
+                {/* Hero Section */}
+                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-purple-500/10 via-purple-500/5 to-transparent border border-purple-500/20 p-8">
+                  <div className="absolute inset-0 bg-grid-pattern opacity-10"></div>
+                  <div className="relative">
+                    <div className="flex items-center gap-4 mb-6">
+                      <div className="p-4 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl shadow-2xl">
+                        <Brain className="h-10 w-10 text-white" />
+                      </div>
+                      <div>
+                        <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-purple-500 to-purple-400 bg-clip-text text-transparent">
+                          Centro de Estrategia Legal
+                        </h2>
+                        <p className="text-lg text-muted-foreground mt-2">
+                          Análisis estratégico avanzado, planificación de casos y desarrollo de argumentos
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Stats Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+                      <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                        <div className="flex items-center gap-3">
+                          <Target className="h-8 w-8 text-purple-600" />
+                          <div>
+                            <p className="text-2xl font-bold text-purple-600">{analyses.length}</p>
+                            <p className="text-sm text-muted-foreground">Estrategias desarrolladas</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                        <div className="flex items-center gap-3">
+                          <TrendingUp className="h-8 w-8 text-emerald-600" />
+                          <div>
+                            <p className="text-2xl font-bold text-emerald-600">92%</p>
+                            <p className="text-sm text-muted-foreground">Éxito estratégico</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                        <div className="flex items-center gap-3">
+                          <Clock className="h-8 w-8 text-blue-600" />
+                          <div>
+                            <p className="text-2xl font-bold text-blue-600">5 min</p>
+                            <p className="text-sm text-muted-foreground">Análisis completo</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-      {/* Analysis Interface */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Target className="h-5 w-5" />
-            Nuevo Análisis Estratégico
-          </CardTitle>
-          <CardDescription>
-            Describe los hechos del caso para obtener un análisis estratégico completo
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Textarea
-            placeholder="Describe detalladamente los hechos del caso, las partes involucradas, el problema legal y cualquier información relevante que permita un análisis estratégico completo..."
-            value={caseDescription}
-            onChange={(e) => setCaseDescription(e.target.value)}
-            rows={6}
-            className="resize-none"
-          />
-          <Button
-            onClick={handleStrategicAnalysis}
-            disabled={isAnalyzing}
-            className="w-full"
-          >
-            {isAnalyzing ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Analizando estrategia...
-              </>
-            ) : (
-              <>
-                <Brain className="h-4 w-4 mr-2" />
-                Generar Análisis Estratégico
-              </>
-            )}
-          </Button>
-        </CardContent>
-      </Card>
+                {/* Enhanced Analysis Interface */}
+                <Card className="border-0 shadow-2xl bg-gradient-to-br from-white via-white to-purple-500/5 overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-purple-500/10 opacity-50"></div>
+                  <CardHeader className="relative pb-6">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg">
+                        <Target className="h-6 w-6 text-white" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent">
+                          Análisis Estratégico de Caso
+                        </CardTitle>
+                        <CardDescription className="text-base mt-2">
+                          Describe los hechos del caso para obtener un análisis estratégico integral con argumentos y tácticas
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="relative space-y-6">
+                    <div className="space-y-3">
+                      <label className="text-sm font-semibold text-purple-700">Descripción detallada del caso</label>
+                      <Textarea
+                        placeholder="Proporciona un análisis detallado incluyendo: hechos relevantes, partes involucradas, problema jurídico central, pretensiones, marco normativo aplicable, y cualquier circunstancia especial que pueda influir en la estrategia legal..."
+                        value={caseDescription}
+                        onChange={(e) => setCaseDescription(e.target.value)}
+                        rows={7}
+                        className="resize-none border-purple-200 focus:border-purple-400 rounded-xl bg-white/80 backdrop-blur-sm text-base"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        💡 Incluye información sobre precedentes, evidencias disponibles y objetivos del cliente para un análisis más preciso
+                      </p>
+                    </div>
+                    
+                    <Button
+                      onClick={handleStrategicAnalysis}
+                      disabled={isAnalyzing}
+                      className="w-full h-14 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-500 shadow-xl hover:shadow-2xl transition-all duration-300 text-lg font-semibold"
+                    >
+                      {isAnalyzing ? (
+                        <>
+                          <Loader2 className="h-5 w-5 mr-3 animate-spin" />
+                          <span className="animate-pulse">Desarrollando estrategia...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-5 w-5 mr-3" />
+                          Generar Estrategia Integral
+                        </>
+                      )}
+                    </Button>
+                  </CardContent>
+                </Card>
 
       {/* Analysis Results */}
       {analyses.length > 0 && (
@@ -345,16 +411,31 @@ export default function StrategizeModule({ user, currentView, onViewChange, onLo
         </div>
       )}
 
-      {analyses.length === 0 && (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <Brain className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">
-              Inicia tu primer análisis estratégico de caso
-            </p>
-          </CardContent>
-        </Card>
-      )}
+                {analyses.length === 0 && !isAnalyzing && (
+                  <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-gray-50 to-gray-100 overflow-hidden">
+                    <CardContent className="p-12 text-center">
+                      <div className="space-y-6">
+                        <div className="relative">
+                          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-purple-400/10 rounded-full blur-2xl"></div>
+                          <div className="relative p-6 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl shadow-2xl mx-auto w-fit">
+                            <Brain className="h-16 w-16 text-white" />
+                          </div>
+                        </div>
+                        <div>
+                          <h3 className="text-2xl font-bold text-gray-900 mb-2">¡Desarrolla tu estrategia legal!</h3>
+                          <p className="text-lg text-muted-foreground max-w-md mx-auto">
+                            Obtén análisis estratégicos completos con argumentos, precedentes y tácticas para maximizar tus posibilidades de éxito
+                          </p>
+                        </div>
+                        <div className="bg-gradient-to-r from-purple-500/10 to-purple-400/5 rounded-xl p-4 max-w-lg mx-auto">
+                          <p className="text-sm text-purple-700 font-medium">
+                            🎯 Análisis de viabilidad, argumentos jurídicos y estrategias de negociación
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             </div>
           </div>
