@@ -65,6 +65,25 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
         timestamp: data.timestamp
       };
 
+      // Save to database
+      const { error: dbError } = await supabase
+        .from('legal_tools_results')
+        .insert({
+          lawyer_id: user.id,
+          tool_type: 'research',
+          input_data: { query: data.query },
+          output_data: { 
+            findings: data.findings, 
+            sources: data.sources,
+            conclusion: data.conclusion 
+          },
+          metadata: { timestamp: data.timestamp }
+        });
+
+      if (dbError) {
+        console.error('Error saving to database:', dbError);
+      }
+
       setResults(prev => [result, ...prev]);
       setQuery("");
       
@@ -76,7 +95,7 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
       console.error("Error en investigación:", error);
       toast({
         title: "Error en la investigación",
-        description: "Hubo un problema al procesar tu consulta.",
+        description: "Hubo un problema al procesar tu consulta. Verifica tu conexión.",
         variant: "destructive",
       });
     } finally {

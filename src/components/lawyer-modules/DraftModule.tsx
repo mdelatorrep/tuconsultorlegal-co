@@ -78,6 +78,27 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout 
         timestamp: data.timestamp
       };
 
+      // Save to database
+      const { error: dbError } = await supabase
+        .from('legal_tools_results')
+        .insert({
+          lawyer_id: user.id,
+          tool_type: 'draft',
+          input_data: { 
+            prompt: data.prompt,
+            documentType: data.documentType
+          },
+          output_data: {
+            content: data.content,
+            sections: data.sections
+          },
+          metadata: { timestamp: data.timestamp }
+        });
+
+      if (dbError) {
+        console.error('Error saving to database:', dbError);
+      }
+
       setDrafts(prev => [draftResult, ...prev]);
       setPrompt("");
       setDocumentType("");
@@ -90,7 +111,7 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout 
       console.error("Error generando borrador:", error);
       toast({
         title: "Error en la generación",
-        description: "Hubo un problema al generar el borrador.",
+        description: "Hubo un problema al generar el borrador. Verifica tu conexión.",
         variant: "destructive",
       });
     } finally {
@@ -284,12 +305,17 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout 
                   </div>
                 </div>
                 
-                <div className="bg-muted/30 p-4 rounded-lg">
-                  <h4 className="font-semibold mb-2">Contenido del Borrador</h4>
-                  <div className="bg-white p-4 rounded border max-h-96 overflow-y-auto">
-                    <pre className="whitespace-pre-wrap text-sm font-mono">
+                <div className="bg-gradient-to-br from-white via-white to-blue-50 border border-blue-200/60 p-6 rounded-xl shadow-inner">
+                  <h4 className="font-bold mb-4 flex items-center gap-3 text-lg text-gray-900">
+                    <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg">
+                      <FileText className="h-4 w-4 text-white" />
+                    </div>
+                    Contenido del Borrador
+                  </h4>
+                  <div className="bg-white border border-gray-200 p-6 rounded-lg max-h-[500px] overflow-y-auto shadow-sm">
+                    <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed whitespace-pre-wrap font-serif">
                       {draft.content}
-                    </pre>
+                    </div>
                   </div>
                 </div>
                 

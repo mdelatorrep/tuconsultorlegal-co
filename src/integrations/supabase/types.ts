@@ -985,6 +985,39 @@ export type Database = {
           },
         ]
       }
+      legal_tools_results: {
+        Row: {
+          created_at: string
+          id: string
+          input_data: Json
+          lawyer_id: string | null
+          metadata: Json | null
+          output_data: Json
+          tool_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          input_data?: Json
+          lawyer_id?: string | null
+          metadata?: Json | null
+          output_data?: Json
+          tool_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          input_data?: Json
+          lawyer_id?: string | null
+          metadata?: Json | null
+          output_data?: Json
+          tool_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       openai_agent_jobs: {
         Row: {
           completed_at: string | null

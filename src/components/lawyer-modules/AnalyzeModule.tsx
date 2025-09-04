@@ -82,6 +82,29 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
         timestamp: data.timestamp
       };
 
+      // Save to database
+      const { error: dbError } = await supabase
+        .from('legal_tools_results')
+        .insert({
+          lawyer_id: user.id,
+          tool_type: 'analysis',
+          input_data: { 
+            fileName: data.fileName,
+            documentContent: fileContent.substring(0, 1000) + '...' // Store truncated content for privacy
+          },
+          output_data: {
+            documentType: data.documentType,
+            clauses: data.clauses,
+            risks: data.risks,
+            recommendations: data.recommendations
+          },
+          metadata: { timestamp: data.timestamp }
+        });
+
+      if (dbError) {
+        console.error('Error saving to database:', dbError);
+      }
+
       setAnalysis(analysisResult);
       
       toast({
@@ -92,7 +115,7 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
       console.error("Error en análisis:", error);
       toast({
         title: "Error en el análisis",
-        description: "Hubo un problema al procesar el documento.",
+        description: "Hubo un problema al procesar el documento. Verifica el formato del archivo.",
         variant: "destructive",
       });
     } finally {
