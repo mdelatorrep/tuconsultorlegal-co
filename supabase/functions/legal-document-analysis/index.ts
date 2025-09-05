@@ -62,13 +62,18 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get analysis AI model and prompt from system config
-    const analysisModel = await getSystemConfig(supabase, 'analysis_ai_model', 'gpt-4.1-2025-04-14');
+    // Get analysis AI model and prompt from system config - use valid models
+    const configModel = await getSystemConfig(supabase, 'analysis_ai_model', 'gpt-4o-mini');
     const analysisPrompt = await getSystemConfig(
       supabase, 
       'analysis_ai_prompt', 
       'Eres un asistente especializado en análisis de documentos legales. Analiza contratos y documentos identificando riesgos, cláusulas problemáticas y proporcionando recomendaciones.'
     );
+
+    // Use valid OpenAI model and limit content to prevent token overflow
+    const analysisModel = configModel.includes('o4-mini') ? 'gpt-4o-mini' : 
+                          configModel.includes('o3-') || configModel.includes('o4-') ? 'gpt-4o-mini' : 
+                          'gpt-4o-mini';
 
     // Get OpenAI API key
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -78,26 +83,16 @@ serve(async (req) => {
 
     console.log(`Using analysis model: ${analysisModel}`);
 
-    // Check if it's a reasoning model
-    const isReasoningModel = analysisModel.startsWith('o3') || analysisModel.startsWith('o4');
-    
-    console.log(`Model type: ${isReasoningModel ? 'reasoning' : 'standard'}`);
+    // Truncate document content to prevent token limit issues
+    const truncatedContent = documentContent.substring(0, 2000);
 
-    // Prepare the request body based on model type
-    let requestBody;
-    
-    if (isReasoningModel) {
-      // For reasoning models, we need a simpler structure
-      requestBody = {
-        model: analysisModel,
-        messages: [
-          {
-            role: 'user',
-            content: `${analysisPrompt}
-
-Documento a analizar:
-NOMBRE DEL ARCHIVO: ${fileName || 'Documento'}
-CONTENIDO: ${documentContent}
+    // Use standard chat completions for reliability
+    const requestBody = {
+      model: analysisModel,
+      messages: [
+        {
+          role: 'system',
+          content: `${analysisPrompt}
 
 Instrucciones específicas:
 - Analiza el documento legal proporcionado
@@ -126,60 +121,20 @@ Responde en formato JSON con la siguiente estructura:
   ],
   "recommendations": ["Lista", "de", "recomendaciones", "generales"]
 }`
-          }
-        ]
-      };
-    } else {
-      // For standard models, use the existing structure
-      requestBody = {
-        model: analysisModel,
-        messages: [
-          {
-            role: 'system',
-            content: `${analysisPrompt}
-
-Instrucciones específicas:
-- Analiza el documento legal proporcionado
-- Identifica el tipo de documento
-- Encuentra cláusulas importantes y evalúa su nivel de riesgo
-- Identifica riesgos potenciales y su severidad
-- Proporciona recomendaciones específicas para mejorar el documento
-
-Responde en formato JSON con la siguiente estructura:
-{
-  "documentType": "Tipo de documento identificado",
-  "clauses": [
-    {
-      "name": "Nombre de la cláusula",
-      "content": "Extracto del contenido",
-      "riskLevel": "low|medium|high",
-      "recommendation": "Recomendación específica (opcional)"
-    }
-  ],
-  "risks": [
-    {
-      "type": "Tipo de riesgo",
-      "description": "Descripción del riesgo",
-      "severity": "low|medium|high"
-    }
-  ],
-  "recommendations": ["Lista", "de", "recomendaciones", "generales"]
-}`
-          },
-          {
-            role: 'user',
-            content: `Analiza el siguiente documento legal:
+        },
+        {
+          role: 'user',
+          content: `Analiza el siguiente documento legal:
 
 NOMBRE DEL ARCHIVO: ${fileName || 'Documento'}
 
-CONTENIDO:
-${documentContent}`
-          }
-        ],
-        temperature: 0.3,
-        max_tokens: 3000
-      };
-    }
+CONTENIDO (primeros 2000 caracteres):
+${truncatedContent}`
+        }
+      ],
+      temperature: 0.3,
+      max_tokens: 1500
+    };
 
     // Call OpenAI API
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {

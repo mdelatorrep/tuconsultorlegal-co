@@ -33,7 +33,7 @@ serve(async (req) => {
 
     // Use a smaller model for email processing
     const requestBody = {
-      model: 'gpt-4.1-mini-2025-04-14',
+      model: 'gpt-4o-mini',
       messages: [
         {
           role: 'system',

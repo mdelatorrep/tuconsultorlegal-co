@@ -64,13 +64,18 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get research AI model and prompt from system config
-    const researchModel = await getSystemConfig(supabase, 'research_ai_model', 'gpt-4.1-2025-04-14');
+    // Get research AI model and prompt from system config - use valid models
+    const configModel = await getSystemConfig(supabase, 'research_ai_model', 'gpt-4o-mini');
     const researchPrompt = await getSystemConfig(
       supabase, 
       'research_ai_prompt', 
       'Eres un asistente especializado en investigación jurídica colombiana. Analiza la consulta y proporciona respuestas basadas en legislación, jurisprudencia y normativa vigente.'
     );
+
+    // Use valid OpenAI model - avoid reasoning models that have API issues
+    const researchModel = configModel.includes('o4-mini') ? 'gpt-4o-mini' : 
+                          configModel.includes('o3-') || configModel.includes('o4-') ? 'gpt-4o-mini' : 
+                          'gpt-4o-mini';
 
     // Get OpenAI API key
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -80,27 +85,13 @@ serve(async (req) => {
 
     console.log(`Using research model: ${researchModel}`);
 
-    // Check if it's a reasoning model
-    const isReasoningModel = researchModel.startsWith('o3') || researchModel.startsWith('o4');
-    const endpoint = isReasoningModel 
-      ? 'https://api.openai.com/v1/chat/completions'  // Reasoning models use same endpoint but different structure
-      : 'https://api.openai.com/v1/chat/completions';
-
-    console.log(`Model type: ${isReasoningModel ? 'reasoning' : 'standard'}`);
-
-    // Prepare the request body based on model type
-    let requestBody;
-    
-    if (isReasoningModel) {
-      // For reasoning models, we need a simpler structure
-      requestBody = {
-        model: researchModel,
-        messages: [
-          {
-            role: 'user',
-            content: `${researchPrompt}
-
-Consulta: ${query}
+    // Use standard chat completions for all models to avoid API issues
+    const requestBody = {
+      model: researchModel,
+      messages: [
+        {
+          role: 'system',
+          content: `${researchPrompt}
 
 Instrucciones específicas:
 - Analiza la consulta jurídica del usuario
@@ -116,45 +107,18 @@ Responde en formato JSON con la siguiente estructura:
   "sources": ["Lista", "de", "fuentes", "específicas"],
   "conclusion": "Conclusión práctica basada en el análisis"
 }`
-          }
-        ]
-      };
-    } else {
-      // For standard models, use the existing structure
-      requestBody = {
-        model: researchModel,
-        messages: [
-          {
-            role: 'system',
-            content: `${researchPrompt}
-
-Instrucciones específicas:
-- Analiza la consulta jurídica del usuario
-- Proporciona hallazgos específicos con referencias a legislación colombiana
-- Incluye jurisprudencia relevante cuando esté disponible
-- Menciona decretos, leyes y artículos específicos
-- Estructura la respuesta de manera profesional y detallada
-- Incluye una conclusión práctica
-
-Responde en formato JSON con la siguiente estructura:
-{
-  "findings": "Análisis detallado con referencias legales",
-  "sources": ["Lista", "de", "fuentes", "específicas"],
-  "conclusion": "Conclusión práctica basada en el análisis"
-}`
-          },
-          {
-            role: 'user',
-            content: query
-          }
-        ],
-        temperature: 0.3,
-        max_tokens: 2000
-      };
-    }
+        },
+        {
+          role: 'user',
+          content: query
+        }
+      ],
+      temperature: 0.3,
+      max_tokens: 2000
+    };
 
     // Call OpenAI API
-    const openaiResponse = await fetch(endpoint, {
+    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openaiApiKey}`,

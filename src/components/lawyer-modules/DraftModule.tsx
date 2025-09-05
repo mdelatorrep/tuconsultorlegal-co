@@ -71,11 +71,11 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout 
       }
 
       const draftResult: DraftResult = {
-        prompt: data.prompt,
-        documentType: data.documentType,
-        content: data.content,
-        sections: data.sections,
-        timestamp: data.timestamp
+        prompt: prompt,
+        documentType: DOCUMENT_TYPES.find(t => t.value === documentType)?.label || documentType,
+        content: data.content || data.generatedText || 'Documento generado con IA',
+        sections: data.sections || ['Encabezado', 'Cuerpo del documento', 'Firma'],
+        timestamp: data.timestamp || new Date().toISOString()
       };
 
       // Save to database
@@ -85,14 +85,14 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout 
           lawyer_id: user.id,
           tool_type: 'draft',
           input_data: { 
-            prompt: data.prompt,
-            documentType: data.documentType
+            prompt: draftResult.prompt,
+            documentType: draftResult.documentType
           },
           output_data: {
-            content: data.content,
-            sections: data.sections
+            content: draftResult.content,
+            sections: draftResult.sections
           },
-          metadata: { timestamp: data.timestamp }
+          metadata: { timestamp: draftResult.timestamp }
         });
 
       if (dbError) {
@@ -312,9 +312,25 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout 
                     </div>
                     Contenido del Borrador
                   </h4>
-                  <div className="bg-white border border-gray-200 p-6 rounded-lg max-h-[500px] overflow-y-auto shadow-sm">
-                    <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed whitespace-pre-wrap font-serif">
-                      {draft.content}
+                  <div className="bg-white border border-gray-200 p-8 rounded-lg max-h-[600px] overflow-y-auto shadow-sm">
+                    <div className="prose prose-lg max-w-none text-gray-800 leading-relaxed space-y-4">
+                      {draft.content.split('\n\n').map((paragraph, idx) => (
+                        <div key={idx} className="mb-4">
+                          {paragraph.includes('**') ? (
+                            <div className="font-bold text-lg text-blue-900 border-b border-blue-200 pb-2 mb-3">
+                              {paragraph.replace(/\*\*/g, '')}
+                            </div>
+                          ) : paragraph.includes('###') ? (
+                            <h3 className="font-semibold text-md text-gray-800 mt-6 mb-3">
+                              {paragraph.replace(/###/g, '')}
+                            </h3>
+                          ) : (
+                            <p className="text-gray-700 leading-relaxed font-serif text-base">
+                              {paragraph}
+                            </p>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>

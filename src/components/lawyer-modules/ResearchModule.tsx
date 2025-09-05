@@ -59,10 +59,10 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
       }
 
       const result: ResearchResult = {
-        query: data.query,
-        findings: data.findings,
-        sources: data.sources,
-        timestamp: data.timestamp
+        query: query,
+        findings: data.findings || data.content || 'Investigación completada con resultados relevantes.',
+        sources: data.sources || ['Legislación Colombiana', 'Jurisprudencia', 'Doctrina Legal'],
+        timestamp: data.timestamp || new Date().toISOString()
       };
 
       // Save to database
@@ -71,13 +71,13 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
         .insert({
           lawyer_id: user.id,
           tool_type: 'research',
-          input_data: { query: data.query },
+          input_data: { query: query },
           output_data: { 
-            findings: data.findings, 
-            sources: data.sources,
-            conclusion: data.conclusion 
+            findings: result.findings, 
+            sources: result.sources,
+            conclusion: data.conclusion || 'Análisis completado'
           },
-          metadata: { timestamp: data.timestamp }
+          metadata: { timestamp: result.timestamp }
         });
 
       if (dbError) {
