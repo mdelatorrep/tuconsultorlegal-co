@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useLawyerAuth } from '@/hooks/useLawyerAuth';
 import { Scale, Lock, Mail, User, Eye, EyeOff, ArrowLeft } from 'lucide-react';
@@ -24,6 +25,8 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [dataProcessingConsent, setDataProcessingConsent] = useState(false);
+  const [intellectualPropertyConsent, setIntellectualPropertyConsent] = useState(false);
   
   const { loginWithEmailAndPassword, signUpWithEmailAndPassword, resetPassword, updatePassword } = useLawyerAuth();
   const { toast } = useToast();
@@ -70,6 +73,16 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
     
     if (!email || !password || !confirmPassword || !fullName) {
       setErrorMessage('Por favor completa todos los campos');
+      return;
+    }
+
+    if (!dataProcessingConsent) {
+      setErrorMessage('Debes aceptar el tratamiento de datos personales');
+      return;
+    }
+
+    if (!intellectualPropertyConsent) {
+      setErrorMessage('Debes aceptar los términos de propiedad intelectual');
       return;
     }
 
@@ -411,6 +424,51 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
                   required
                   disabled={isLoading}
                 />
+              </div>
+
+              {/* Consentimientos de Datos y Propiedad Intelectual */}
+              <div className="space-y-4 pt-4 border-t border-gray-200">
+                <div className="flex items-start space-x-3">
+                  <Checkbox
+                    id="dataProcessingConsent"
+                    checked={dataProcessingConsent}
+                    onCheckedChange={(checked) => setDataProcessingConsent(checked as boolean)}
+                    disabled={isLoading}
+                    className="mt-1"
+                  />
+                  <div className="space-y-1">
+                    <Label 
+                      htmlFor="dataProcessingConsent" 
+                      className="text-sm font-medium cursor-pointer"
+                    >
+                      Tratamiento de Datos Personales *
+                    </Label>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Acepto el tratamiento de mis datos personales conforme a la Ley 1581 de 2012 (Ley de Habeas Data en Colombia) y autorizo a tuconsultorlegal.co para recopilar, almacenar, usar y circular mi información personal para los fines relacionados con el servicio de la plataforma.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-3">
+                  <Checkbox
+                    id="intellectualPropertyConsent"
+                    checked={intellectualPropertyConsent}
+                    onCheckedChange={(checked) => setIntellectualPropertyConsent(checked as boolean)}
+                    disabled={isLoading}
+                    className="mt-1"
+                  />
+                  <div className="space-y-1">
+                    <Label 
+                      htmlFor="intellectualPropertyConsent" 
+                      className="text-sm font-medium cursor-pointer"
+                    >
+                      Propiedad Intelectual *
+                    </Label>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Reconozco y acepto que todos los contenidos, metodologías, algoritmos y tecnologías desarrolladas en la plataforma son propiedad exclusiva de tuconsultorlegal.co, conforme a la legislación colombiana de propiedad intelectual y derechos de autor.
+                    </p>
+                  </div>
+                </div>
               </div>
               
               <Button 
