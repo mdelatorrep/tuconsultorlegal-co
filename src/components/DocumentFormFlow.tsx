@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+import { Checkbox } from "./ui/checkbox";
 import { Textarea } from "./ui/textarea";
 import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -51,6 +52,7 @@ export default function DocumentFormFlow({ agentId, onBack, onComplete }: Docume
   const [loadingGroups, setLoadingGroups] = useState(false);
   const [processingClause, setProcessingClause] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [dataProcessingConsent, setDataProcessingConsent] = useState(false);
 
   useEffect(() => {
     loadAgent();
@@ -153,6 +155,12 @@ export default function DocumentFormFlow({ agentId, onBack, onComplete }: Docume
 
   const createDocumentToken = async () => {
     if (!agent) return;
+
+    // Validar consentimiento de datos
+    if (!dataProcessingConsent) {
+      toast.error('Debes aceptar el tratamiento de datos personales para continuar');
+      return;
+    }
 
     setCreating(true);
     try {
@@ -541,6 +549,30 @@ export default function DocumentFormFlow({ agentId, onBack, onComplete }: Docume
               </div>
             </div>
 
+            {/* Consentimiento de Tratamiento de Datos */}
+            <div className="space-y-4 pt-4 border-t border-border">
+              <div className="flex items-start space-x-3">
+                <Checkbox
+                  id="dataProcessingConsent"
+                  checked={dataProcessingConsent}
+                  onCheckedChange={(checked) => setDataProcessingConsent(checked as boolean)}
+                  disabled={creating}
+                  className="mt-1"
+                />
+                <div className="space-y-1">
+                  <Label 
+                    htmlFor="dataProcessingConsent" 
+                    className="text-sm font-medium cursor-pointer"
+                  >
+                    Tratamiento de Datos Personales *
+                  </Label>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Acepto el tratamiento de mis datos personales conforme a la Ley 1581 de 2012 (Ley de Habeas Data en Colombia) y autorizo a tuconsultorlegal.co para recopilar, almacenar, usar y circular mi información personal para los fines relacionados con la gestión y seguimiento de este documento legal.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div className="bg-muted rounded-lg p-4">
               <h4 className="font-medium mb-2 text-sm">Resumen del documento:</h4>
               <p className="text-sm text-muted-foreground mb-2">{agent.document_name}</p>
@@ -560,7 +592,7 @@ export default function DocumentFormFlow({ agentId, onBack, onComplete }: Docume
               </Button>
               <Button
                 onClick={createDocumentToken}
-                disabled={!userInfo.name.trim() || !userInfo.email.trim() || creating}
+                disabled={!userInfo.name.trim() || !userInfo.email.trim() || !dataProcessingConsent || creating}
                 className="flex-1"
               >
                 {creating ? 'Creando...' : 'Crear Documento'}

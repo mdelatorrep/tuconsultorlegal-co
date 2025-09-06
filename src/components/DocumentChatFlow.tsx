@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Checkbox } from "./ui/checkbox";
 import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Send, User, Bot, FileText } from "lucide-react";
@@ -40,6 +42,7 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
   const [userInfo, setUserInfo] = useState({ name: '', email: '' });
   const [showUserForm, setShowUserForm] = useState(false);
   const [collectedData, setCollectedData] = useState<Record<string, any>>({});
+  const [dataProcessingConsent, setDataProcessingConsent] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -351,6 +354,12 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
   const generateDocument = async () => {
     if (!userInfo.name.trim() || !userInfo.email.trim() || !agent) return;
 
+    // Validar consentimiento de datos
+    if (!dataProcessingConsent) {
+      toast.error('Debes aceptar el tratamiento de datos personales para continuar');
+      return;
+    }
+
     setGenerating(true);
     try {
       // Procesar y extraer información estructurada de la conversación
@@ -503,6 +512,30 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
                 </div>
               </div>
 
+              {/* Consentimiento de Tratamiento de Datos */}
+              <div className="space-y-4 pt-4 border-t border-border">
+                <div className="flex items-start space-x-3">
+                  <Checkbox
+                    id="dataProcessingConsent"
+                    checked={dataProcessingConsent}
+                    onCheckedChange={(checked) => setDataProcessingConsent(checked as boolean)}
+                    disabled={generating}
+                    className="mt-1"
+                  />
+                  <div className="space-y-1">
+                    <Label 
+                      htmlFor="dataProcessingConsent" 
+                      className="text-sm font-medium cursor-pointer"
+                    >
+                      Tratamiento de Datos Personales *
+                    </Label>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Acepto el tratamiento de mis datos personales conforme a la Ley 1581 de 2012 (Ley de Habeas Data en Colombia) y autorizo a tuconsultorlegal.co para recopilar, almacenar, usar y circular mi información personal para los fines relacionados con la gestión y seguimiento de este documento legal.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <div className="bg-muted rounded-lg p-4 space-y-3">
                 <h4 className="font-medium mb-2 text-sm">Resumen del documento:</h4>
                 <p className="text-sm text-muted-foreground mb-2">{agent.document_name}</p>
@@ -536,7 +569,7 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
                 </Button>
                 <Button
                   onClick={generateDocument}
-                  disabled={!userInfo.name.trim() || !userInfo.email.trim() || generating}
+                  disabled={!userInfo.name.trim() || !userInfo.email.trim() || !dataProcessingConsent || generating}
                   className="flex-1"
                 >
                   {generating ? 'Generando...' : 'Generar Documento'}
