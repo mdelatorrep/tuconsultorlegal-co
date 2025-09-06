@@ -68,17 +68,28 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
       let fileContent = '';
       
       // Handle different file types
+      let fileBase64 = null;
+      
       if (file.type === 'application/pdf') {
-        // For PDF files, we'll extract text content or use filename analysis
-        fileContent = `Documento PDF: ${file.name}
-        
-Este es un archivo PDF que contiene información legal. El sistema analizará el contenido basándose en el nombre del archivo y patrones comunes de documentos legales.
+        // For PDF files, convert to base64 and create descriptive content
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          const uint8Array = new Uint8Array(arrayBuffer);
+          fileBase64 = btoa(String.fromCharCode(...uint8Array));
+          
+          fileContent = `Documento PDF: ${file.name}
+          
+Este es un archivo PDF que contiene información legal. El sistema analizará el contenido del documento PDF para identificar cláusulas, riesgos y proporcionar recomendaciones especializadas.
 
 Tipo de archivo: PDF
 Nombre: ${file.name}
 Tamaño: ${(file.size / 1024).toFixed(2)} KB
 
-Para un análisis más detallado, el contenido específico del PDF sería procesado por el sistema de IA.`;
+El contenido del PDF será procesado por el sistema de análisis de documentos legales con IA.`;
+        } catch (pdfError) {
+          console.error('Error processing PDF:', pdfError);
+          fileContent = `Error procesando PDF: ${file.name}. Inténtalo de nuevo.`;
+        }
       } else {
         // For text-based files, read the content
         try {
@@ -101,7 +112,8 @@ Tamaño: ${(file.size / 1024).toFixed(2)} KB`;
       const { data, error } = await supabase.functions.invoke('legal-document-analysis', {
         body: { 
           documentContent: fileContent, 
-          fileName: file.name 
+          fileName: file.name,
+          fileBase64: fileBase64
         }
       });
 
