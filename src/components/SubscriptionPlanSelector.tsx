@@ -106,9 +106,9 @@ export const SubscriptionPlanSelector: React.FC<SubscriptionPlanSelectorProps> =
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {plans.map((plan) => {
-          const pricing = formatPrice(plan.price_monthly, plan.price_yearly);
+          const pricing = formatPrice(plan.monthlyPrice, plan.yearlyPrice);
           const isPopular = isPlanPopular(plan.name);
-          const isFree = plan.price_monthly === 0;
+          const isFree = plan.monthlyPrice === 0;
 
           return (
             <Card 
@@ -160,7 +160,7 @@ export const SubscriptionPlanSelector: React.FC<SubscriptionPlanSelectorProps> =
                 </ul>
 
                 <Button
-                  onClick={() => handleSelectPlan(plan.id)}
+                  onClick={() => handleSelectPlan(plan.id.toString())}
                   className={`w-full ${
                     isPopular 
                       ? 'bg-primary hover:bg-primary/90' 

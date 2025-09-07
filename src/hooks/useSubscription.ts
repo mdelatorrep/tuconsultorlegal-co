@@ -3,14 +3,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 interface SubscriptionPlan {
-  id: string;
+  id: string | number;
   name: string;
   description: string;
-  price_monthly: number;
-  price_yearly: number;
+  monthlyPrice: number;
+  yearlyPrice: number;
   features: string[];
-  dlocal_plan_id?: string;
-  is_active: boolean;
+  isPopular?: boolean;
+  planToken?: string;
+  currency?: string;
+  active?: boolean;
 }
 
 interface LawyerSubscription {
@@ -31,24 +33,32 @@ export const useSubscription = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  // Fetch available subscription plans
+  // Fetch available subscription plans from dLocal API
   const fetchPlans = async () => {
     try {
-      const { data, error } = await supabase
-        .from('subscription_plans' as any)
-        .select('*')
-        .eq('is_active', true)
-        .order('display_order', { ascending: true });
+      setIsLoading(true);
+      const { data, error } = await supabase.functions.invoke('dlocal-get-plans');
+      
+      if (error) {
+        console.error('Error fetching subscription plans:', error);
+        setPlans([]);
+        return;
+      }
 
-      if (error) throw error;
-      setPlans((data as unknown as SubscriptionPlan[]) || []);
+      console.log('Fetched dLocal plans:', data);
+      // Filter only active plans
+      const activePlans = (data.plans || []).filter((plan: SubscriptionPlan) => plan.active !== false);
+      setPlans(activePlans);
     } catch (error) {
-      console.error('Error fetching subscription plans:', error);
+      console.error('Error fetching plans:', error);
+      setPlans([]);
       toast({
         title: "Error",
         description: "No se pudieron cargar los planes de suscripción",
         variant: "destructive"
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -70,7 +80,7 @@ export const useSubscription = () => {
   };
 
   // Create a new subscription
-  const createSubscription = async (planId: string, billingCycle: 'monthly' | 'yearly') => {
+  const createSubscription = async (planId: string | number, billingCycle: 'monthly' | 'yearly') => {
     setIsLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -87,9 +97,14 @@ export const useSubscription = () => {
 
       if (error) throw error;
 
+      // If there's a redirect URL (for dLocal checkout), open it
+      if (data.redirectUrl) {
+        window.open(data.redirectUrl, '_blank');
+      }
+
       toast({
-        title: "Suscripción creada",
-        description: data.message || "Tu suscripción ha sido activada exitosamente"
+        title: "Redirigiendo a pago",
+        description: "Te hemos redirigido a la plataforma de pago segura",
       });
 
       // Refresh current subscription

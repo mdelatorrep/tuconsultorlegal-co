@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,28 +12,62 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    // Get dLocal API credentials
+    const apiKey = Deno.env.get('DLOCAL_API_KEY');
+    const secretKey = Deno.env.get('DLOCAL_SECRET_KEY');
 
-    // Get all active subscription plans
-    const { data: plans, error } = await supabase
-      .from('subscription_plans')
-      .select('*')
-      .eq('is_active', true)
-      .order('display_order', { ascending: true });
-
-    if (error) {
-      console.error('Error fetching plans:', error);
+    if (!apiKey || !secretKey) {
+      console.error('Missing dLocal API credentials');
       return new Response(
-        JSON.stringify({ error: 'Failed to fetch plans' }),
+        JSON.stringify({ error: 'API credentials not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    // Call dLocal API to get plans
+    const auth = btoa(`${apiKey}:${secretKey}`);
+    const response = await fetch('https://api.dlocalgo.com/v1/subscription/plan/all', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${auth}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      console.error('dLocal API error:', response.status, response.statusText);
+      const errorText = await response.text();
+      console.error('Error details:', errorText);
+      return new Response(
+        JSON.stringify({ error: 'Failed to fetch plans from dLocal' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const data = await response.json();
+    console.log('dLocal plans response:', data);
+
+    // Transform dLocal plans to our format
+    const transformedPlans = data.data?.map((plan: any) => ({
+      id: plan.id,
+      name: plan.name,
+      description: plan.description,
+      monthlyPrice: plan.amount,
+      yearlyPrice: plan.amount * 10, // Assuming 2 months free for yearly
+      currency: plan.currency,
+      features: [
+        'Acceso a herramientas IA',
+        'Gestión de documentos',
+        'Soporte técnico',
+        'Estadísticas avanzadas'
+      ],
+      planToken: plan.plan_token,
+      active: plan.active,
+      isPopular: plan.name.toLowerCase().includes('premium') || plan.name.toLowerCase().includes('pro')
+    })) || [];
+
     return new Response(
-      JSON.stringify({ plans }),
+      JSON.stringify({ plans: transformedPlans }),
       { 
         status: 200, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 

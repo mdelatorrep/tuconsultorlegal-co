@@ -968,12 +968,14 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
         </main>
       </div>
       
-      {/* Onboarding Coachmarks */}
-      <LawyerOnboardingCoachmarks 
-        isVisible={shouldShowOnboarding && !onboardingLoading}
-        onComplete={() => user?.id && markOnboardingCompleted(user.id)}
-        onSkip={() => user?.id && skipOnboarding(user.id)}
-      />
+      {/* Onboarding Coachmarks - Only show on dashboard, not on subscription page */}
+      {currentView === 'dashboard' && (
+        <LawyerOnboardingCoachmarks 
+          isVisible={shouldShowOnboarding && !onboardingLoading}
+          onComplete={() => user?.id && markOnboardingCompleted(user.id)}
+          onSkip={() => user?.id && skipOnboarding(user.id)}
+        />
+      )}
     </SidebarProvider>
   );
 }

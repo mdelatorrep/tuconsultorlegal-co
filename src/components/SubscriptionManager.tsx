@@ -113,8 +113,8 @@ export const SubscriptionManager: React.FC = () => {
                 <div className="mt-2">
                   <span className="text-2xl font-bold">
                     ${currentSubscription.billing_cycle === 'yearly' 
-                      ? (currentPlan.price_yearly / 12).toLocaleString('es-CO', { maximumFractionDigits: 0 })
-                      : currentPlan.price_monthly.toLocaleString('es-CO', { maximumFractionDigits: 0 })
+                      ? (currentPlan.yearlyPrice / 12).toLocaleString('es-CO', { maximumFractionDigits: 0 })
+                      : currentPlan.monthlyPrice.toLocaleString('es-CO', { maximumFractionDigits: 0 })
                     }
                   </span>
                   <span className="text-muted-foreground">/mes</span>
