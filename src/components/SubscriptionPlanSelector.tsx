@@ -64,6 +64,7 @@ export const SubscriptionPlanSelector: React.FC<SubscriptionPlanSelectorProps> =
   };
 
   if (isLoading) {
+    console.log('SubscriptionPlanSelector: Loading plans...');
     return (
       <div className={`grid gap-6 md:grid-cols-2 lg:grid-cols-3 ${className}`}>
         {[1, 2, 3].map((i) => (
@@ -80,6 +81,8 @@ export const SubscriptionPlanSelector: React.FC<SubscriptionPlanSelectorProps> =
       </div>
     );
   }
+
+  console.log('SubscriptionPlanSelector: Rendering plans:', plans);
 
   return (
     <div className={`space-y-6 ${className}`}>

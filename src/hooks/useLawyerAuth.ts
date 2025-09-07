@@ -201,6 +201,9 @@ export const useLawyerAuth = () => {
 
       console.log('=== LAWYER SIGNUP SUCCESS ===');
       console.log('User created with ID:', data.user.id);
+      
+      // Even if email confirmation is required, we can still show the subscription plans
+      // The user will complete the subscription flow and then confirm their email
       return true;
     } catch (error) {
       console.error('=== SIGNUP CATCH ERROR ===');
