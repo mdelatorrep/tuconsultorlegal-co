@@ -23,6 +23,7 @@ import IntegrationsModule from "./lawyer-modules/IntegrationsModule";
 import PremiumFeatureCard from "./PremiumFeatureCard";
 import LawyerOnboardingCoachmarks from "./LawyerOnboardingCoachmarks";
 import { useLawyerOnboarding } from "@/hooks/useLawyerOnboarding";
+import { SubscriptionManager } from "./SubscriptionManager";
 
 interface DocumentToken {
   id: string;
@@ -51,7 +52,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const [selectedDocument, setSelectedDocument] = useState<DocumentToken | null>(null);
   const [editedContent, setEditedContent] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager' | 'research' | 'analyze' | 'draft' | 'strategize' | 'integrations'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager' | 'research' | 'analyze' | 'draft' | 'strategize' | 'integrations' | 'subscription'>('dashboard');
   const { toast } = useToast();
   const { isAuthenticated, isLoading: authLoading, user, logout, checkAuthStatus } = useLawyerAuth();
   const isMobile = useIsMobile();
@@ -411,7 +412,17 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
           isPremium: true
         }
       ]
-    }]),
+     }]),
+    {
+      title: "Cuenta",
+      items: [
+        {
+          title: "Suscripción",
+          icon: Crown,
+          view: "subscription" as const
+        }
+      ]
+    },
     {
       title: "Estadísticas",
       items: [
@@ -584,6 +595,9 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
       
       case 'stats':
         return <LawyerStatsSection />;
+      
+      case 'subscription':
+        return <SubscriptionManager />;
       
       default:
         return null;

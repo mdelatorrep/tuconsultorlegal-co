@@ -8,12 +8,14 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useLawyerAuth } from '@/hooks/useLawyerAuth';
 import { Scale, Lock, Mail, User, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { SubscriptionPlanSelector } from './SubscriptionPlanSelector';
+import { useSubscription } from '@/hooks/useSubscription';
 
 interface LawyerLoginProps {
   onLoginSuccess: () => void;
 }
 
-type ViewMode = 'login' | 'register' | 'forgot-password' | 'change-password';
+type ViewMode = 'login' | 'register' | 'forgot-password' | 'change-password' | 'select-plan';
 
 export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('login');
@@ -30,6 +32,7 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
   
   const { loginWithEmailAndPassword, signUpWithEmailAndPassword, resetPassword, updatePassword } = useLawyerAuth();
   const { toast } = useToast();
+  const { createSubscription } = useSubscription();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,16 +118,12 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
       console.log('Signup result:', success);
       
       if (success) {
-        console.log('=== REGISTRATION SUCCESS - SHOWING SUCCESS MESSAGE ===');
+        console.log('=== REGISTRATION SUCCESS - MOVING TO PLAN SELECTION ===');
         toast({
           title: "¡Registro exitoso!",
-          description: "Revisa tu email para confirmar tu cuenta.",
+          description: "Ahora selecciona tu plan de suscripción.",
         });
-        setViewMode('login');
-        setEmail('');
-        setPassword('');
-        setConfirmPassword('');
-        setFullName('');
+        setViewMode('select-plan');
       } else {
         console.log('=== REGISTRATION FAILED - SHOWING ERROR MESSAGE ===');
         setErrorMessage('Error al registrar la cuenta. Intenta nuevamente.');
@@ -228,6 +227,28 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
     }
   };
 
+  const handlePlanSelection = async (planId: string, billingCycle: 'monthly' | 'yearly') => {
+    setIsLoading(true);
+    try {
+      await createSubscription(planId, billingCycle);
+      toast({
+        title: "¡Bienvenido!",
+        description: "Tu cuenta ha sido configurada exitosamente.",
+      });
+      onLoginSuccess();
+    } catch (error) {
+      console.error('Error creating subscription:', error);
+      // Don't block user from continuing, just log them in
+      toast({
+        title: "¡Bienvenido!",
+        description: "Tu cuenta ha sido creada exitosamente.",
+      });
+      onLoginSuccess();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const getTitle = () => {
     switch (viewMode) {
       case 'register':
@@ -236,6 +257,8 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
         return 'Recuperar Contraseña';
       case 'change-password':
         return 'Cambiar Contraseña';
+      case 'select-plan':
+        return 'Selecciona tu Plan';
       default:
         return 'Portal del Abogado';
     }
@@ -249,6 +272,8 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
         return 'Ingresa tu email para recibir instrucciones de recuperación.';
       case 'change-password':
         return 'Ingresa tu nueva contraseña.';
+      case 'select-plan':
+        return 'Elige el plan que mejor se adapte a tus necesidades.';
       default:
         return 'Ingresa tu email y contraseña para gestionar documentos legales.';
     }
@@ -626,6 +651,45 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
                 </Button>
               </div>
             </form>
+          )}
+
+          {viewMode === 'select-plan' && (
+            <div className="space-y-6">
+              <div className="text-center space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  ¡Felicidades! Tu cuenta ha sido creada exitosamente.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Ahora selecciona el plan que mejor se adapte a tus necesidades:
+                </p>
+              </div>
+              
+              <SubscriptionPlanSelector 
+                onPlanSelected={handlePlanSelection}
+                showCycleToggle={true}
+                defaultCycle="monthly"
+                className="max-w-4xl mx-auto"
+              />
+
+              <div className="text-center pt-4">
+                <Button 
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    // Skip plan selection and go directly to dashboard
+                    toast({
+                      title: "¡Bienvenido!",
+                      description: "Puedes seleccionar un plan más tarde desde tu dashboard.",
+                    });
+                    onLoginSuccess();
+                  }}
+                  disabled={isLoading}
+                >
+                  Saltar por ahora
+                </Button>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
