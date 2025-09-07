@@ -165,12 +165,12 @@ export const SubscriptionPlanSelector: React.FC<SubscriptionPlanSelectorProps> =
                     isPopular 
                       ? 'bg-primary hover:bg-primary/90' 
                       : isFree 
-                      ? 'variant-outline' 
-                      : 'variant-secondary'
+                      ? 'bg-secondary hover:bg-secondary/90' 
+                      : 'bg-secondary hover:bg-secondary/90'
                   }`}
                   disabled={isLoading}
                 >
-                  {isFree ? 'Plan Actual' : 'Seleccionar Plan'}
+                  {isFree ? 'Seleccionar Plan Gratuito' : 'Seleccionar Plan'}
                 </Button>
               </CardContent>
             </Card>

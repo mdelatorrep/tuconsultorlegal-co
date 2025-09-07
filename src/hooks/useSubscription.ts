@@ -73,16 +73,29 @@ export const useSubscription = () => {
   const createSubscription = async (planId: string, billingCycle: 'monthly' | 'yearly') => {
     setIsLoading(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No authenticated user');
+      }
+
       const { data, error } = await supabase.functions.invoke('dlocal-create-subscription', {
-        body: { planId, billingCycle }
+        body: { planId, billingCycle },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
       });
 
       if (error) throw error;
 
       toast({
         title: "Suscripción creada",
-        description: "Tu suscripción ha sido activada exitosamente"
+        description: data.message || "Tu suscripción ha sido activada exitosamente"
       });
+
+      // Refresh current subscription
+      if (session.user) {
+        await fetchCurrentSubscription(session.user.id);
+      }
 
       return data;
     } catch (error) {

@@ -752,6 +752,59 @@ export type Database = {
         }
         Relationships: []
       }
+      lawyer_subscriptions: {
+        Row: {
+          billing_cycle: string
+          cancel_at_period_end: boolean
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          dlocal_subscription_id: string | null
+          id: string
+          lawyer_id: string
+          payment_method_info: Json | null
+          plan_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          billing_cycle?: string
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          dlocal_subscription_id?: string | null
+          id?: string
+          lawyer_id: string
+          payment_method_info?: Json | null
+          plan_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          billing_cycle?: string
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          dlocal_subscription_id?: string | null
+          id?: string
+          lawyer_id?: string
+          payment_method_info?: Json | null
+          plan_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lawyer_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lawyer_training_progress: {
         Row: {
           certificate_id: string | null
@@ -1243,6 +1296,51 @@ export type Database = {
           service_name?: string
           status?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      subscription_plans: {
+        Row: {
+          created_at: string
+          description: string
+          display_order: number
+          dlocal_plan_id: string | null
+          enables_legal_tools: boolean
+          features: Json
+          id: string
+          is_active: boolean
+          name: string
+          price_monthly: number
+          price_yearly: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          display_order?: number
+          dlocal_plan_id?: string | null
+          enables_legal_tools?: boolean
+          features?: Json
+          id?: string
+          is_active?: boolean
+          name: string
+          price_monthly?: number
+          price_yearly?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          display_order?: number
+          dlocal_plan_id?: string | null
+          enables_legal_tools?: boolean
+          features?: Json
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_monthly?: number
+          price_yearly?: number
+          updated_at?: string
         }
         Relationships: []
       }

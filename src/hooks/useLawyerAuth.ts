@@ -41,8 +41,8 @@ export const useLawyerAuth = () => {
         // Defer any Supabase calls to avoid blocking the callback
         setTimeout(() => {
           fetchLawyerProfile(session.user);
-          setIsLoading(false);
         }, 0);
+        setIsLoading(false);
       } else if (event === 'TOKEN_REFRESHED' && session) {
         setSession(session);
       }

@@ -12,6 +12,7 @@ import BlogPage from "@/components/BlogPage";
 import BlogArticlePage from "@/components/BlogArticlePage";
 import PrivacyPolicyPage from "@/components/PrivacyPolicyPage";
 import TermsAndConditionsPage from "@/components/TermsAndConditionsPage";
+import { LawyerAuthProvider } from "@/components/LawyerAuthProvider";
 
 import PricingPage from "@/components/PricingPage";
 import ContactPage from "@/components/ContactPage";
@@ -102,7 +103,11 @@ export default function Index() {
       case "estado-documento":
         return <UnifiedDocumentPage onOpenChat={handleOpenChat} />;
       case "abogados":
-        return <LawyerDashboardPage onOpenChat={handleOpenChat} />;
+        return (
+          <LawyerAuthProvider>
+            <LawyerDashboardPage onOpenChat={handleOpenChat} />
+          </LawyerAuthProvider>
+        );
       case "terminos":
         return <TermsAndConditionsPage onOpenChat={handleOpenChat} />;
       case "privacidad":
