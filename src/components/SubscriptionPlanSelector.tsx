@@ -24,26 +24,34 @@ export const SubscriptionPlanSelector: React.FC<SubscriptionPlanSelectorProps> =
   const { plans, isLoading, createSubscription } = useSubscription();
 
   const handleSelectPlan = async (plan: any) => {
-    console.log('🎯 Plan selected:', plan);
-    console.log('💰 Plan ID:', plan.id, 'Type:', typeof plan.id);
-    
-    // Handle free plan selection
-    if (plan.id === 'free') {
-      console.log('📄 Free plan selected');
-      if (onPlanSelected) {
-        onPlanSelected(plan.id, billingCycle);
-      }
-      return;
-    }
-    
-    // For premium plans, use the create subscription flow
-    console.log('💎 Premium plan selected, creating subscription...');
     try {
+      console.log('🎯 Plan selected:', plan);
+      console.log('💰 Plan ID:', plan.id, 'Type:', typeof plan.id);
+      
+      // Handle free plan selection
+      if (plan.id === 'free') {
+        console.log('📄 Free plan selected');
+        if (onPlanSelected) {
+          onPlanSelected(plan.id, billingCycle);
+        }
+        return;
+      }
+      
+      // For premium plans with subscribeUrl, redirect directly
+      if (plan.subscribeUrl) {
+        console.log('🔗 Redirecting to dLocal subscribe URL:', plan.subscribeUrl);
+        window.open(plan.subscribeUrl, '_blank');
+        return;
+      }
+      
+      // Fallback: use the create subscription flow
+      console.log('💎 Premium plan selected, creating subscription...');
       console.log('🔄 Calling createSubscription with plan ID:', plan.id, 'cycle:', billingCycle);
       const result = await createSubscription(plan.id, billingCycle);
       console.log('✅ Subscription result:', result);
+      
     } catch (error) {
-      console.error('❌ Error creating subscription:', error);
+      console.error('❌ Error in handleSelectPlan:', error);
     }
   };
 
@@ -168,7 +176,11 @@ export const SubscriptionPlanSelector: React.FC<SubscriptionPlanSelectorProps> =
                 </ul>
 
                 <Button
-                  onClick={() => handleSelectPlan(plan)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    console.log('🖱️ Button clicked!');
+                    handleSelectPlan(plan);
+                  }}
                   className={`w-full ${
                     isPopular 
                       ? 'bg-primary hover:bg-primary/90' 
