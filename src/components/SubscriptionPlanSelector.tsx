@@ -24,8 +24,12 @@ export const SubscriptionPlanSelector: React.FC<SubscriptionPlanSelectorProps> =
   const { plans, isLoading, createSubscription } = useSubscription();
 
   const handleSelectPlan = async (plan: any) => {
+    console.log('🎯 Plan selected:', plan);
+    console.log('💰 Plan ID:', plan.id, 'Type:', typeof plan.id);
+    
     // Handle free plan selection
     if (plan.id === 'free') {
+      console.log('📄 Free plan selected');
       if (onPlanSelected) {
         onPlanSelected(plan.id, billingCycle);
       }
@@ -33,10 +37,13 @@ export const SubscriptionPlanSelector: React.FC<SubscriptionPlanSelectorProps> =
     }
     
     // For premium plans, use the create subscription flow
+    console.log('💎 Premium plan selected, creating subscription...');
     try {
-      await createSubscription(plan.id, billingCycle);
+      console.log('🔄 Calling createSubscription with plan ID:', plan.id, 'cycle:', billingCycle);
+      const result = await createSubscription(plan.id, billingCycle);
+      console.log('✅ Subscription result:', result);
     } catch (error) {
-      console.error('Error creating subscription:', error);
+      console.error('❌ Error creating subscription:', error);
     }
   };
 
