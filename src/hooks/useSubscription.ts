@@ -51,20 +51,33 @@ export const useSubscription = () => {
   const fetchPlans = async () => {
     try {
       setIsLoading(true);
+      console.log('🔄 Fetching dLocal plans...');
+      
       const { data, error } = await supabase.functions.invoke('dlocal-get-plans');
       
       if (error) {
-        console.error('Error fetching subscription plans:', error);
+        console.error('❌ Error fetching subscription plans:', error);
         setPlans([]);
         return;
       }
 
-      console.log('Fetched dLocal plans:', data);
+      console.log('✅ Raw dLocal API response:', data);
+      console.log('📊 Available plans in response:', data?.data);
       
+      // Verify we have data
+      if (!data || !data.data || !Array.isArray(data.data)) {
+        console.error('❌ Invalid dLocal response structure:', data);
+        throw new Error('Invalid response from dLocal API');
+      }
+
+      console.log('🔍 Filtering active plans...');
+      const activePlans = data.data.filter((plan: any) => plan.active === true);
+      console.log('✅ Active plans found:', activePlans);
+
       // Map dLocal plans to our format
-      const mappedPlans = (data.data || [])
-        .filter((plan: any) => plan.active === true)
-        .map((plan: any) => ({
+      const mappedPlans = activePlans.map((plan: any) => {
+        console.log('🗺️ Mapping plan:', plan);
+        return {
           id: plan.id,
           name: plan.name,
           description: plan.description,
@@ -80,7 +93,10 @@ export const useSubscription = () => {
           active: plan.active,
           planToken: plan.plan_token,
           currency: plan.currency
-        }));
+        };
+      });
+
+      console.log('🎯 Mapped plans:', mappedPlans);
 
       const freePlan = {
         id: 'free',
@@ -96,9 +112,20 @@ export const useSubscription = () => {
         active: true
       };
       
-      setPlans([freePlan, ...mappedPlans]);
+      const finalPlans = [freePlan, ...mappedPlans];
+      console.log('📋 Final plans to set:', finalPlans);
+      setPlans(finalPlans);
+      
+      if (mappedPlans.length === 0) {
+        console.warn('⚠️ No active premium plans found, showing only free plan');
+        toast({
+          title: "Información",
+          description: "Actualmente solo está disponible el plan gratuito. Los planes premium están siendo configurados.",
+          variant: "default"
+        });
+      }
     } catch (error) {
-      console.error('Error fetching plans:', error);
+      console.error('💥 Error fetching plans:', error);
       // Keep the free plan even if API fails
       const freePlan = {
         id: 'free',
@@ -115,9 +142,9 @@ export const useSubscription = () => {
       };
       setPlans([freePlan]);
       toast({
-        title: "Información",
-        description: "Se cargó el plan gratuito. Los planes premium no están disponibles temporalmente.",
-        variant: "default"
+        title: "Error",
+        description: "Error al cargar los planes de suscripción. Solo se muestra el plan gratuito.",
+        variant: "destructive"
       });
     } finally {
       setIsLoading(false);

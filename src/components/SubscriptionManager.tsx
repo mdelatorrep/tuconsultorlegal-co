@@ -14,6 +14,7 @@ export const SubscriptionManager: React.FC = () => {
     plans, 
     currentSubscription, 
     isLoading, 
+    fetchPlans,
     fetchCurrentSubscription,
     createSubscription,
     cancelSubscription,
@@ -204,10 +205,25 @@ export const SubscriptionManager: React.FC = () => {
       {/* Available Plans */}
       <Card>
         <CardHeader>
-          <CardTitle>Planes Disponibles</CardTitle>
-          <CardDescription>
-            Cambia tu plan en cualquier momento
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Planes Disponibles</CardTitle>
+              <CardDescription>
+                Cambia tu plan en cualquier momento
+              </CardDescription>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={async () => {
+                console.log('🔄 Manually refreshing plans...');
+                await fetchPlans();
+              }}
+              disabled={isLoading}
+            >
+              Actualizar Planes
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <SubscriptionPlanSelector 

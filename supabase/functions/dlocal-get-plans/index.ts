@@ -47,27 +47,15 @@ serve(async (req) => {
     const data = await response.json();
     console.log('dLocal plans response:', data);
 
-    // Transform dLocal plans to our format
-    const transformedPlans = data.data?.map((plan: any) => ({
-      id: plan.id,
-      name: plan.name,
-      description: plan.description,
-      monthlyPrice: plan.amount,
-      yearlyPrice: plan.amount * 10, // Assuming 2 months free for yearly
-      currency: plan.currency,
-      features: [
-        'Acceso a herramientas IA',
-        'Gestión de documentos',
-        'Soporte técnico',
-        'Estadísticas avanzadas'
-      ],
-      planToken: plan.plan_token,
-      active: plan.active,
-      isPopular: plan.name.toLowerCase().includes('premium') || plan.name.toLowerCase().includes('pro')
-    })) || [];
+    // Return the original dLocal response structure but log for debugging
+    console.log('Returning dLocal plans data:', {
+      total_plans: data.data?.length || 0,
+      active_plans: data.data?.filter((p: any) => p.active).length || 0,
+      plan_names: data.data?.map((p: any) => p.name) || []
+    });
 
     return new Response(
-      JSON.stringify({ plans: transformedPlans }),
+      JSON.stringify(data), // Return original dLocal response structure
       { 
         status: 200, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 

@@ -82,7 +82,19 @@ export const SubscriptionPlanSelector: React.FC<SubscriptionPlanSelectorProps> =
     );
   }
 
-  console.log('SubscriptionPlanSelector: Rendering plans:', plans);
+  console.log('📊 SubscriptionPlanSelector: Rendering plans:', plans);
+  console.log('📊 Plans count:', plans.length);
+  console.log('📊 isLoading:', isLoading);
+
+  // Show message if no plans are available
+  if (!isLoading && plans.length === 0) {
+    return (
+      <div className={`text-center p-8 ${className}`}>
+        <p className="text-muted-foreground">No hay planes disponibles en este momento.</p>
+        <p className="text-sm text-muted-foreground mt-2">Por favor, intenta nuevamente más tarde.</p>
+      </div>
+    );
+  }
 
   return (
     <div className={`space-y-6 ${className}`}>
