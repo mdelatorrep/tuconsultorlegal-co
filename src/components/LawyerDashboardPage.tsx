@@ -349,7 +349,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
           isPremium: !user?.canUseAiTools
         },
         {
-          title: "CRM",
+          title: "Gestión de Clientes",
           icon: Users,
           view: "crm" as const,
           isPremium: !user?.canUseAiTools
@@ -610,10 +610,10 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
         if (!user?.canUseAiTools) {
           return (
             <PremiumFeatureCard
-              title="CRM Legal"
-              description="Gestiona clientes, casos y comunicaciones con herramientas avanzadas de CRM"
+              title="Gestión de Clientes"
+              description="Sistema integral para gestionar clientes, casos y comunicaciones de manera profesional"
               icon={Users}
-              featureName="el módulo CRM"
+              featureName="el sistema de gestión de clientes"
               onUpgrade={() => {
                 toast({
                   title: "Funcionalidad Premium",
@@ -623,7 +623,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
             />
           );
         }
-        return <CRMModule lawyerData={user} />;
+        return <CRMModule user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as any)} onLogout={logout} />;
       
       default:
         return null;
