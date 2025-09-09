@@ -583,7 +583,6 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
     );
   }
 
-
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
@@ -680,130 +679,6 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                       Bienvenido, {user?.name}
                     </h1>
                     <p className="text-muted-foreground mt-1">
-                      Gestiona tus documentos legales y herramientas de IA
-                    </p>
-                  </div>
-                  <Badge variant="outline" className="flex items-center gap-2">
-                    <Scale className="h-4 w-4" />
-                    Portal Legal
-                  </Badge>
-                </div>
-              </div>
-
-              <div className={`${isMobile ? 'space-y-8' : 'grid lg:grid-cols-2 gap-8'}`}>
-                {/* Documents List */}
-                <div className="space-y-4" data-tour="documents-panel">
-                  <h2 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-semibold mb-4`}>Documentos Pendientes</h2>
-                  
-                  {documents.length === 0 ? (
-                    <Card>
-                      <CardContent className="p-8 text-center">
-                        <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                        <p className="text-muted-foreground">No hay documentos pendientes de revisión</p>
-                      </CardContent>
-                    </Card>
-                  ) : (
-                    documents.map((doc) => (
-                       <Card 
-                         key={doc.id} 
-                         className={`border border-border hover:border-primary transition-colors ${
-                           doc.sla_status === 'at_risk' ? 'border-l-4 border-l-yellow-400' :
-                           doc.sla_status === 'overdue' ? 'border-l-4 border-l-red-500' :
-                           ''
-                         }`}
-                       >
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-lg flex items-center justify-between">
-                            <span className="truncate">{doc.document_type}</span>
-                            <Badge variant={getStatusVariant(doc.status)}>
-                              {getStatusText(doc.status)}
-                            </Badge>
-                          </CardTitle>
-                          <CardDescription className="text-sm text-muted-foreground">
-                            <div className="flex items-center gap-4">
-                              <span className="flex items-center gap-1">
-                                <User className="h-3 w-3" />
-                                {doc.user_name || 'Usuario anónimo'}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Calendar className="h-3 w-3" />
-                                {new Date(doc.created_at).toLocaleDateString()}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <DollarSign className="h-3 w-3" />
-                                ${doc.price.toLocaleString()}
-                              </span>
-                            </div>
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="flex justify-between items-center">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDocumentClick(doc)}
-                            >
-                              {selectedDocument?.id === doc.id ? 'Ocultar' : 'Ver Detalles'}
-                            </Button>
-                            {doc.status === 'solicitado' && (
-                              <Button
-                                size="sm"
-                                onClick={() => handleReviewDocument(doc.id)}
-                                disabled={isLoading}
-                              >
-                                <CheckCircle className="h-4 w-4 mr-2" />
-                                Marcar como Revisado
-                              </Button>
-                            )}
-                          </div>
-                          
-                          {/* SLA Information */}
-                          {(doc.sla_hours) && (
-                            <div className={`mt-3 p-2 rounded-lg ${
-                              doc.sla_status === 'at_risk' ? 'bg-yellow-50 border border-yellow-200' :
-                              doc.sla_status === 'overdue' ? 'bg-red-50 border border-red-200' :
-                              'bg-muted'
-                            }`}>
-                              <div className="flex items-center justify-between text-xs">
-                                <span className={doc.sla_status === 'at_risk' || doc.sla_status === 'overdue' ? 'font-medium' : ''}>
-                                  SLA: {doc.sla_hours}h
-                                </span>
-                                <Badge 
-                                  variant={getSlaStatusVariant(doc.sla_status)}
-                                  className={`text-xs ${
-                                    doc.sla_status === 'at_risk' ? 'bg-yellow-100 text-yellow-800 border-yellow-300' :
-                                    doc.sla_status === 'overdue' ? 'bg-red-100 text-red-800 border-red-300' :
-                                    ''
-                                  }`}
-                                >
-                                  {getSlaStatusText(doc.sla_status)}
-                                </Badge>
-                              </div>
-                              {doc.sla_deadline && (
-                                <div className={`text-xs mt-1 ${
-                                  doc.sla_status === 'at_risk' ? 'text-yellow-700' :
-                                  doc.sla_status === 'overdue' ? 'text-red-700' :
-                                  'text-muted-foreground'
-                                }`}>
-                                  Vence: {new Date(doc.sla_deadline).toLocaleString()}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    ))
-          {/* Dashboard Content */}
-          <div className="container mx-auto px-6 py-6">
-            <div className="max-w-7xl mx-auto">
-              {/* Welcome Section */}
-              <div className="mb-8" data-tour="dashboard-welcome">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h1 className="text-3xl font-bold text-foreground">
-                      Bienvenido, {user?.name}
-                    </h1>
-                    <p className="text-muted-foreground mt-1">
                       Tu suite completa de herramientas legales con IA
                     </p>
                   </div>
@@ -817,7 +692,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                 </div>
               </div>
 
-              {/* Quick Access - Herramientas IA Premium */}
+              {/* Premium Tools Section */}
               {user?.canUseAiTools && (
                 <div className="mb-8">
                   <div className="flex items-center gap-2 mb-4">
@@ -1153,6 +1028,77 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                         >
                           Actualizar ahora
                         </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+
+              {/* Document Details Panel */}
+              {selectedDocument && (
+                <div className="space-y-4" data-tour="document-details">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between">
+                        <span>Detalles del Documento</span>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            setSelectedDocument(null);
+                            setEditedContent("");
+                          }}
+                        >
+                          Cerrar
+                        </Button>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium">Tipo:</label>
+                          <p className="text-sm text-muted-foreground">{selectedDocument.document_type}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Cliente:</label>
+                          <p className="text-sm text-muted-foreground">{selectedDocument.user_name || 'Usuario anónimo'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Email:</label>
+                          <p className="text-sm text-muted-foreground">{selectedDocument.user_email || 'No disponible'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Precio:</label>
+                          <p className="text-sm text-muted-foreground">${selectedDocument.price.toLocaleString()}</p>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">Contenido del Documento:</label>
+                        <Textarea
+                          value={editedContent}
+                          onChange={(e) => setEditedContent(e.target.value)}
+                          placeholder="Contenido del documento..."
+                          className="min-h-[200px]"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          onClick={handleSave}
+                          disabled={isLoading || selectedDocument.document_content === editedContent}
+                        >
+                          <Save className="h-4 w-4 mr-2" />
+                          Guardar Cambios
+                        </Button>
+                        {selectedDocument.status === 'solicitado' && (
+                          <Button
+                            variant="outline"
+                            onClick={() => handleReviewDocument(selectedDocument.id)}
+                            disabled={isLoading}
+                          >
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            Marcar como Revisado
+                          </Button>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
