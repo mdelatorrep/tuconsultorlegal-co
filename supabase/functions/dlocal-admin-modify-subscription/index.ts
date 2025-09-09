@@ -104,7 +104,7 @@ serve(async (req) => {
       method,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authString}`
+        'Authorization': `Basic ${authString}`
       },
       body: method !== 'DELETE' ? JSON.stringify(body) : undefined
     });

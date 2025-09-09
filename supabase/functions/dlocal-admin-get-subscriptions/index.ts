@@ -79,7 +79,7 @@ serve(async (req) => {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authString}`
+          'Authorization': `Basic ${authString}`
         }
       });
       
@@ -97,7 +97,7 @@ serve(async (req) => {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authString}`
+          'Authorization': `Basic ${authString}`
         }
       });
       
@@ -117,7 +117,7 @@ serve(async (req) => {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${authString}`
+          'Authorization': `Basic ${authString}`
             }
           });
           
