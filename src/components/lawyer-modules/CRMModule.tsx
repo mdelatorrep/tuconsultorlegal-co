@@ -13,6 +13,7 @@ import CRMClientsView from "./crm/CRMClientsView";
 import CRMCasesView from "./crm/CRMCasesView";
 import CRMCommunicationsView from "./crm/CRMCommunicationsView";
 import CRMDocumentsView from "./crm/CRMDocumentsView";
+import CRMTasksView from "./crm/CRMTasksView";
 import CRMAutomationView from "./crm/CRMAutomationView";
 import CRMAnalyticsView from "./crm/CRMAnalyticsView";
 
@@ -31,7 +32,7 @@ interface CRMStats {
 }
 
 export default function CRMModule({ user, currentView, onViewChange, onLogout }: CRMModuleProps) {
-  const [activeTab, setActiveTab] = useState<'clients' | 'cases' | 'communications' | 'documents' | 'automation' | 'analytics'>('clients');
+  const [activeTab, setActiveTab] = useState<'clients' | 'cases' | 'communications' | 'documents' | 'tasks' | 'automation' | 'analytics'>('clients');
   const [searchTerm, setSearchTerm] = useState("");
   const [stats, setStats] = useState<CRMStats>({ clients: 0, cases: 0, tasks: 0, communications: 0 });
   const [isLoadingAI, setIsLoadingAI] = useState(false);
@@ -107,6 +108,8 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
         return <CRMCommunicationsView {...commonProps} />;
       case 'documents':
         return <CRMDocumentsView {...commonProps} />;
+      case 'tasks':
+        return <CRMTasksView {...commonProps} />;
       case 'automation':
         return <CRMAutomationView {...commonProps} />;
       case 'analytics':
@@ -320,6 +323,9 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
                           {renderTabContent()}
                         </TabsContent>
                         <TabsContent value="documents" className="mt-0">
+                          {renderTabContent()}
+                        </TabsContent>
+                        <TabsContent value="tasks" className="mt-0">
                           {renderTabContent()}
                         </TabsContent>
                         <TabsContent value="automation" className="mt-0">
