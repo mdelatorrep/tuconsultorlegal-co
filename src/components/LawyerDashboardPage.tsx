@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Bot, Plus, Settings, LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Lock, Crown, Users } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import LawyerStatsSection from "./LawyerStatsSection";
-import LawyerLogin from "./LawyerLogin";
+import LawyerLandingPage from "./LawyerLandingPage";
 import AgentCreatorPage from "./AgentCreatorPage";
 import AgentManagerPage from "./AgentManagerPage";
 import LawyerTrainingPage from "./LawyerTrainingPage";
@@ -284,9 +284,9 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
     }
   };
 
-  // Show login form if not authenticated
+  // Show landing page if not authenticated
   if (!isAuthenticated) {
-    return <LawyerLogin onLoginSuccess={checkAuthStatus} />;
+    return <LawyerLandingPage onOpenChat={onOpenChat} />;
   }
 
   // Show loading if auth is still loading

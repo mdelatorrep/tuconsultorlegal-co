@@ -469,7 +469,17 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
                       Tratamiento de Datos Personales *
                     </Label>
                     <p className="text-xs text-muted-foreground leading-relaxed">
-                      Acepto el tratamiento de mis datos personales conforme a la Ley 1581 de 2012 (Ley de Habeas Data en Colombia) y autorizo a tuconsultorlegal.co para recopilar, almacenar, usar y circular mi información personal para los fines relacionados con el servicio de la plataforma.
+                      Acepto el tratamiento de mis datos personales conforme a la Ley 1581 de 2012 (Ley de Habeas Data en Colombia) y autorizo a tuconsultorlegal.co para recopilar, almacenar, usar y circular mi información personal para los fines relacionados con el servicio de la plataforma. 
+                      <a 
+                        href="#privacidad" 
+                        className="text-primary hover:underline ml-1"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          window.location.hash = 'privacidad';
+                        }}
+                      >
+                        Ver Política de Privacidad
+                      </a>
                     </p>
                   </div>
                 </div>
@@ -491,6 +501,16 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
                     </Label>
                     <p className="text-xs text-muted-foreground leading-relaxed">
                       Reconozco y acepto que todos los contenidos, metodologías, algoritmos y tecnologías desarrolladas en la plataforma son propiedad exclusiva de tuconsultorlegal.co, conforme a la legislación colombiana de propiedad intelectual y derechos de autor.
+                      <a 
+                        href="#terminos" 
+                        className="text-primary hover:underline ml-1"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          window.location.hash = 'terminos';
+                        }}
+                      >
+                        Ver Términos y Condiciones
+                      </a>
                     </p>
                   </div>
                 </div>
