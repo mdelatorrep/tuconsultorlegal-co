@@ -17,6 +17,7 @@ import SystemConfigManager from "./SystemConfigManager";
 import KnowledgeBaseManager from "./KnowledgeBaseManager";
 import LawyerTrainingManager from "./LawyerTrainingManager";
 import CategoryManager from "./CategoryManager";
+import SubscriptionAdminManager from "./admin/SubscriptionAdminManager";
 import { 
   Copy, Users, Bot, BarChart3, Clock, CheckCircle, Lock, Unlock, Trash2, Check, X, Plus, 
   Loader2, MessageCircle, BookOpen, Settings, Zap, Mail, Phone, Bell, LogOut, UserCheck, 
@@ -702,6 +703,7 @@ function AdminPage() {
       items: [
         { id: 'knowledge', label: 'Base de Conocimiento', icon: Database, count: 0 },
         { id: 'categories', label: 'Categorías', icon: Tag, count: 0 },
+        { id: 'subscriptions', label: 'Gestión Suscripciones', icon: CreditCard, count: 0 },
         { id: 'stats', label: 'Estadísticas Avanzadas', icon: BarChart3, count: 0 },
         { id: 'config', label: 'Configuración Sistema', icon: Settings, count: 0 },
       ]
@@ -1346,6 +1348,8 @@ function AdminPage() {
       case 'categories':
         return <CategoryManager />;
         
+      case 'subscriptions':
+        return <SubscriptionAdminManager authHeaders={getAuthHeaders()} />;
         
       default:
         return (
@@ -1382,6 +1386,7 @@ function AdminPage() {
                      currentView === 'knowledge' ? 'Administra la base de conocimiento' :
                      currentView === 'stats' ? 'Visualiza estadísticas del sistema' :
                      currentView === 'categories' ? 'Configura categorías de documentos' :
+                     currentView === 'subscriptions' ? 'Administra planes y suscripciones de dLocal' :
                      currentView === 'config' ? 'Configuración avanzada del sistema' :
                      'Gestiona el portal administrativo'}
                   </p>
