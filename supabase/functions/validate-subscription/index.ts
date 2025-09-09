@@ -89,8 +89,26 @@ serve(async (req) => {
       console.error(`Error checking subscription for user ${user.id}:`, error);
     }
 
-    // Update user's AI tools permission based on subscription status
-    const canUseAiTools = hasActiveSubscription;
+    // Check if admin has enabled AI tools independent of subscription
+    let aiToolsIndependentEnabled = false;
+    try {
+      const { data: config, error: configError } = await supabaseAdmin
+        .from('system_config')
+        .select('config_value')
+        .eq('config_key', 'ai_tools_independent_subscription')
+        .eq('is_active', true)
+        .single();
+
+      if (config && !configError) {
+        aiToolsIndependentEnabled = config.config_value?.enabled === true;
+        console.log(`AI tools independent of subscription enabled: ${aiToolsIndependentEnabled}`);
+      }
+    } catch (error) {
+      console.warn(`Could not check system config for AI tools independence:`, error);
+    }
+
+    // Update user's AI tools permission based on subscription status OR admin configuration
+    const canUseAiTools = hasActiveSubscription || aiToolsIndependentEnabled;
     
     console.log(`Updating AI tools permission for user ${user.id}: ${canUseAiTools}`);
     
@@ -120,12 +138,14 @@ serve(async (req) => {
 
     console.log(`Successfully updated permissions for user ${user.id}:`, {
       canUseAiTools: profile.can_use_ai_tools,
-      hasActiveSubscription
+      hasActiveSubscription,
+      aiToolsIndependentEnabled
     });
 
     return new Response(JSON.stringify({
       success: true,
       hasActiveSubscription,
+      aiToolsIndependentEnabled,
       profile: {
         id: profile.id,
         email: profile.email,

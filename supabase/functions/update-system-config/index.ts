@@ -1,95 +1,109 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3';
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-const securityHeaders = {
-  ...corsHeaders,
-  'Content-Type': 'application/json',
-  'X-Content-Type-Options': 'nosniff',
-  'X-Frame-Options': 'DENY',
-  'X-XSS-Protection': '1; mode=block',
-  'Referrer-Policy': 'strict-origin-when-cross-origin',
-  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-  'Pragma': 'no-cache',
-  'Expires': '0'
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
-  if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405, headers: securityHeaders });
-  }
+  const supabaseAdmin = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    { auth: { persistSession: false } }
+  );
+
+  const supabaseClient = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+  );
 
   try {
-    // Initialize Supabase client with service role key for admin operations
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    // Verify admin authentication
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      throw new Error("No authorization header provided");
+    }
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
     
-    if (!supabaseServiceKey || !supabaseUrl) {
-      throw new Error('Missing Supabase configuration');
+    if (userError || !userData.user) {
+      throw new Error("User not authenticated");
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // Verify user is admin
+    const { data: adminProfile, error: adminError } = await supabaseAdmin
+      .from('admin_profiles')
+      .select('*')
+      .eq('user_id', userData.user.id)
+      .eq('active', true)
+      .single();
 
-    const { config_key, config_value, description } = await req.json();
-
-    if (!config_key || !config_value) {
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: 'config_key y config_value son requeridos' 
-      }), {
-        status: 400,
-        headers: securityHeaders
-      });
+    if (adminError || !adminProfile) {
+      throw new Error("User is not an authorized admin");
     }
 
-    console.log('Updating system config:', { config_key, config_value, description });
+    const { configKey, configValue } = await req.json();
 
-    // Upsert the configuration
-    const { data, error } = await supabase
+    if (!configKey || configValue === undefined) {
+      throw new Error("Missing configKey or configValue in request body");
+    }
+
+    console.log(`Admin ${adminProfile.email} updating config: ${configKey}`, configValue);
+
+    // Update the system configuration
+    const { data: updatedConfig, error: updateError } = await supabaseAdmin
       .from('system_config')
-      .upsert({
-        config_key,
-        config_value,
-        description,
+      .update({
+        config_value: configValue,
         updated_at: new Date().toISOString()
-      }, {
-        onConflict: 'config_key'
       })
+      .eq('config_key', configKey)
       .select()
       .single();
 
-    if (error) {
-      console.error('Database error:', error);
-      throw new Error(`Error de base de datos: ${error.message}`);
+    if (updateError) {
+      console.error('Error updating system config:', updateError);
+      throw updateError;
     }
 
-    console.log('System config updated successfully:', data);
+    // Log the configuration change
+    await supabaseAdmin
+      .from('security_audit_log')
+      .insert({
+        event_type: 'system_config_updated',
+        user_identifier: adminProfile.email,
+        details: {
+          config_key: configKey,
+          new_value: configValue,
+          admin_id: adminProfile.id
+        },
+        created_at: new Date().toISOString()
+      });
+
+    console.log(`Successfully updated system config: ${configKey}`);
 
     return new Response(JSON.stringify({
       success: true,
-      config: data
+      config: updatedConfig
     }), {
-      headers: securityHeaders
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200,
     });
 
   } catch (error) {
-    console.error('Error updating system config:', error);
+    console.error("Error updating system config:", error);
     return new Response(JSON.stringify({ 
       success: false,
-      error: 'Error actualizando configuración del sistema',
-      details: error instanceof Error ? error.message : 'Error desconocido'
+      error: error.message 
     }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
-      headers: securityHeaders
     });
   }
 });
