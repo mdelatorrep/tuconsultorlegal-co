@@ -57,7 +57,26 @@ export const useSubscription = () => {
       
       if (error) {
         console.error('❌ Error fetching subscription plans:', error);
-        setPlans([]);
+        toast({
+          title: "Error",
+          description: "Error al cargar los planes de suscripción",
+          variant: "destructive"
+        });
+        // Set only the free plan if there's an error
+        const freePlan = {
+          id: 'free',
+          name: 'Plan Gratuito',
+          description: 'Acceso básico a documentos legales',
+          monthlyPrice: 0,
+          yearlyPrice: 0,
+          features: [
+            'Acceso a documentos básicos',
+            'Soporte por email',
+            'Dashboard básico'
+          ],
+          active: true
+        };
+        setPlans([freePlan]);
         return;
       }
 
@@ -65,9 +84,14 @@ export const useSubscription = () => {
       console.log('📊 Available plans in response:', data?.data);
       
       // Verify we have data
-      if (!data || !data.data || !Array.isArray(data.data)) {
+      if (!data) {
+        console.error('❌ No data received from dLocal API');
+        throw new Error('No data received from dLocal API');
+      }
+      
+      if (!data.data || !Array.isArray(data.data)) {
         console.error('❌ Invalid dLocal response structure:', data);
-        throw new Error('Invalid response from dLocal API');
+        throw new Error('Invalid response from dLocal API - missing data array');
       }
 
       console.log('🔍 Filtering active plans...');
@@ -305,7 +329,10 @@ export const useSubscription = () => {
   };
 
   useEffect(() => {
-    fetchPlans();
+    console.log('🎯 useSubscription: useEffect triggered, calling fetchPlans...');
+    fetchPlans().catch(error => {
+      console.error('💥 fetchPlans failed in useEffect:', error);
+    });
   }, []);
 
   return {
