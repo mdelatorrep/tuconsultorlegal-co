@@ -32,13 +32,11 @@ export const SubscriptionPlanSelector: React.FC<SubscriptionPlanSelectorProps> =
       return;
     }
     
-    // For premium plans, redirect to dLocal subscribe URL
-    if (plan.subscribeUrl) {
-      console.log('🔗 Redirecting to dLocal subscribe URL:', plan.subscribeUrl);
-      window.open(plan.subscribeUrl, '_blank');
-    } else if (onPlanSelected) {
-      // Fallback to custom handler if no subscribe URL
-      onPlanSelected(plan.id, billingCycle);
+    // For premium plans, use the create subscription flow
+    try {
+      await createSubscription(plan.id, billingCycle);
+    } catch (error) {
+      console.error('Error creating subscription:', error);
     }
   };
 

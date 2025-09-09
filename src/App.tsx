@@ -7,6 +7,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AdminPage from "./components/AdminPage";
+import { SubscriptionSuccessPage } from "./components/SubscriptionSuccessPage";
+import { SubscriptionErrorPage } from "./components/SubscriptionErrorPage";
 import { useAuthManager } from "@/hooks/useAuthManager";
 import { useLogRocket } from "@/hooks/useLogRocket";
 import { useUserTracking } from "@/hooks/useUserTracking";
@@ -44,6 +46,8 @@ const AppContent = () => {
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/admin" element={<AdminPage />} />
+          <Route path="/subscription-success" element={<SubscriptionSuccessPage />} />
+          <Route path="/subscription-error" element={<SubscriptionErrorPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -47,72 +47,79 @@ serve(async (req) => {
     
     console.log(`Creating subscription for user ${user.id}, plan ${planId}, cycle ${billingCycle}`);
 
-    // Get the plan details
-    const { data: plan, error: planError } = await supabase
-      .from('subscription_plans')
-      .select('*')
-      .eq('id', planId)
-      .single();
+    // Get dLocal API credentials
+    const apiKey = Deno.env.get('DLOCAL_API_KEY');
+    const secretKey = Deno.env.get('DLOCAL_SECRET_KEY');
 
-    if (planError || !plan) {
+    if (!apiKey || !secretKey) {
       return new Response(
-        JSON.stringify({ error: 'Plan not found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'dLocal credentials not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // For now, create a simple subscription record without dLocal integration
-    // In a real implementation, you would integrate with dLocal API here
-    const price = billingCycle === 'yearly' ? plan.price_yearly : plan.price_monthly;
+    // Base URLs for callbacks
+    const baseUrl = 'https://ebc42f7b-d0e5-428f-849a-2403f4cd72c2.sandbox.lovable.dev';
     
-    // Check if user already has an active subscription
-    const { data: existingSubscription } = await supabase
-      .from('lawyer_subscriptions')
-      .select('*')
-      .eq('lawyer_id', user.id)
-      .eq('status', 'active')
-      .single();
+    // Prepare subscription data for dLocal
+    const subscriptionData = {
+      plan_id: planId,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.user_metadata?.full_name || user.email
+      },
+      // Configure the important callback URLs
+      notification_url: `https://tkaezookvtpulfpaffes.supabase.co/functions/v1/dlocal-webhook`,
+      success_url: `${baseUrl}/subscription-success?subscription_id={subscription_id}&plan_name={plan_name}`,
+      back_url: `${baseUrl}/#abogados?tab=subscription`,
+      error_url: `${baseUrl}/subscription-error?error={error}&error_description={error_description}`
+    };
 
-    if (existingSubscription) {
+    // Call dLocal API to create subscription
+    const auth = btoa(`${apiKey}:${secretKey}`);
+    const dLocalResponse = await fetch('https://api.dlocalgo.com/v1/subscription/create', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(subscriptionData)
+    });
+
+    if (!dLocalResponse.ok) {
+      console.error('dLocal API error:', dLocalResponse.status, dLocalResponse.statusText);
+      const errorText = await dLocalResponse.text();
+      console.error('Error details:', errorText);
       return new Response(
-        JSON.stringify({ error: 'User already has an active subscription' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Failed to create subscription with dLocal' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Create subscription record
+    const dLocalResult = await dLocalResponse.json();
+    console.log('dLocal subscription response:', dLocalResult);
+
+    // Save subscription record in our database
     const { data: subscription, error: subscriptionError } = await supabase
       .from('lawyer_subscriptions')
       .insert({
         lawyer_id: user.id,
         plan_id: planId,
         billing_cycle: billingCycle,
-        status: price === 0 ? 'active' : 'pending', // Free plans are active immediately
-        current_period_start: new Date().toISOString(),
-        current_period_end: new Date(Date.now() + (billingCycle === 'yearly' ? 365 : 30) * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'pending', // Will be updated via webhook
+        dlocal_subscription_id: dLocalResult.subscription_id,
         cancel_at_period_end: false
       })
       .select()
       .single();
 
     if (subscriptionError) {
-      console.error('Error creating subscription:', subscriptionError);
+      console.error('Error creating subscription record:', subscriptionError);
       return new Response(
-        JSON.stringify({ error: 'Failed to create subscription' }),
+        JSON.stringify({ error: 'Failed to create subscription record' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
-    }
-
-    // If it's a free plan, update lawyer permissions immediately
-    if (price === 0) {
-      await supabase
-        .from('lawyer_profiles')
-        .update({
-          can_create_agents: plan.enables_legal_tools ? true : false,
-          can_create_blogs: plan.enables_legal_tools ? true : false,
-          can_use_ai_tools: plan.enables_legal_tools
-        })
-        .eq('id', user.id);
     }
 
     console.log(`Subscription created successfully:`, subscription);
@@ -121,7 +128,8 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         subscription,
-        message: price === 0 ? 'Free plan activated successfully' : 'Subscription created, payment required'
+        redirectUrl: dLocalResult.redirect_url || dLocalResult.checkout_url,
+        message: 'Subscription created, redirecting to payment'
       }),
       { 
         status: 200, 
