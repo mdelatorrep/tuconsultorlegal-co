@@ -46,12 +46,6 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
           view: "strategize" as const
         },
         {
-          title: "Integraciones",
-          icon: Settings,
-          view: "integrations" as const,
-          isPremium: !user?.canUseAiTools
-        },
-        {
           title: "Gestión de Clientes",
           icon: Users,
           view: "crm" as const,
