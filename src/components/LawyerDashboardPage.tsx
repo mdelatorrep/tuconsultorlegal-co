@@ -793,78 +793,371 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                         </CardContent>
                       </Card>
                     ))
-                  )}
-                </div>
-
-                {/* Document Details */}
-                <div className="space-y-4">
-                  <h2 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-semibold mb-4`}>
-                    {selectedDocument ? 'Detalles del Documento' : 'Selecciona un Documento'}
-                  </h2>
-                  
-                  {selectedDocument ? (
-                    <Card className="border-2 border-primary">
-                      <CardHeader>
-                        <CardTitle className="text-xl">{selectedDocument.document_type}</CardTitle>
-                        <CardDescription>
-                          Token: {selectedDocument.token}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Contenido del Documento:</label>
-                          <Textarea
-                            value={editedContent}
-                            onChange={(e) => setEditedContent(e.target.value)}
-                            className="min-h-[200px] resize-none"
-                            placeholder="Contenido del documento..."
-                          />
-                        </div>
-
-                        {selectedDocument.user_observations && (
-                          <div className="p-4 bg-muted rounded-lg">
-                            <h4 className="font-medium text-sm mb-2">Observaciones del Usuario:</h4>
-                            <p className="text-sm text-muted-foreground">
-                              {selectedDocument.user_observations}
-                            </p>
-                            {selectedDocument.user_observation_date && (
-                              <p className="text-xs text-muted-foreground mt-2">
-                                Fecha: {new Date(selectedDocument.user_observation_date).toLocaleString()}
-                              </p>
-                            )}
-                          </div>
-                        )}
-
-                        <div className="flex gap-2">
-                          <Button 
-                            onClick={handleSave}
-                            disabled={isLoading}
-                            className="flex-1"
-                          >
-                            <Save className="h-4 w-4 mr-2" />
-                            Guardar Cambios
-                          </Button>
-                          <Button
-                            variant="outline"
-                            onClick={() => setSelectedDocument(null)}
-                          >
-                            Cerrar
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ) : (
-                    <Card className="h-64 flex items-center justify-center">
-                      <CardContent className="text-center">
-                        <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                        <p className="text-muted-foreground">
-                          Selecciona un documento para ver sus detalles
-                        </p>
-                      </CardContent>
-                    </Card>
-                  )}
+          {/* Dashboard Content */}
+          <div className="container mx-auto px-6 py-6">
+            <div className="max-w-7xl mx-auto">
+              {/* Welcome Section */}
+              <div className="mb-8" data-tour="dashboard-welcome">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h1 className="text-3xl font-bold text-foreground">
+                      Bienvenido, {user?.name}
+                    </h1>
+                    <p className="text-muted-foreground mt-1">
+                      Tu suite completa de herramientas legales con IA
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <SubscriptionStatusIndicator />
+                    <Badge variant="outline" className="flex items-center gap-2">
+                      <Scale className="h-4 w-4" />
+                      Portal Legal
+                    </Badge>
+                  </div>
                 </div>
               </div>
+
+              {/* Quick Access - Herramientas IA Premium */}
+              {user?.canUseAiTools && (
+                <div className="mb-8">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Crown className="h-5 w-5 text-amber-500" />
+                    <h2 className="text-xl font-semibold">Herramientas IA Premium</h2>
+                    <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs">
+                      ACTIVO
+                    </Badge>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {[
+                      {
+                        title: "Investigación",
+                        description: "Análisis legal profundo con IA",
+                        icon: Search,
+                        view: "research",
+                        gradient: "from-blue-500 to-cyan-500",
+                        bgPattern: "from-blue-50 to-cyan-50"
+                      },
+                      {
+                        title: "Análisis",
+                        description: "Evaluación inteligente de documentos",
+                        icon: Eye,
+                        view: "analyze",
+                        gradient: "from-purple-500 to-pink-500",
+                        bgPattern: "from-purple-50 to-pink-50"
+                      },
+                      {
+                        title: "Redacción",
+                        description: "Creación automática de documentos",
+                        icon: PenTool,
+                        view: "draft",
+                        gradient: "from-green-500 to-emerald-500",
+                        bgPattern: "from-green-50 to-emerald-50"
+                      },
+                      {
+                        title: "Estrategia",
+                        description: "Planificación legal estratégica",
+                        icon: Target,
+                        view: "strategize",
+                        gradient: "from-orange-500 to-red-500",
+                        bgPattern: "from-orange-50 to-red-50"
+                      }
+                    ].map((tool, index) => (
+                      <Card 
+                        key={tool.view} 
+                        className={`group cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg border-0 bg-gradient-to-br ${tool.bgPattern} dark:from-gray-800 dark:to-gray-900`}
+                        onClick={() => setCurrentView(tool.view as any)}
+                      >
+                        <CardContent className="p-6">
+                          <div className={`w-12 h-12 rounded-lg bg-gradient-to-r ${tool.gradient} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                            <tool.icon className="h-6 w-6 text-white" />
+                          </div>
+                          <h3 className="font-semibold text-lg mb-2">{tool.title}</h3>
+                          <p className="text-sm text-muted-foreground">{tool.description}</p>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* CRM Module */}
+              {user?.canUseAiTools && (
+                <div className="mb-8">
+                  <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <Users className="h-5 w-5 text-blue-500" />
+                    Gestión de Clientes
+                  </h2>
+                  <Card 
+                    className="group cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-xl border-0 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20"
+                    onClick={() => setCurrentView('crm')}
+                  >
+                    <CardContent className="p-8">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="w-16 h-16 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                            <Users className="h-8 w-8 text-white" />
+                          </div>
+                          <div>
+                            <h3 className="text-xl font-bold mb-2">Sistema CRM Inteligente</h3>
+                            <p className="text-muted-foreground">Gestiona clientes, casos y comunicaciones con IA avanzada</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                            <Bot className="h-4 w-4" />
+                            IA Habilitada
+                          </div>
+                          <Badge variant="outline">Acceso completo</Badge>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+
+              {/* Gestión IA */}
+              {user?.canCreateAgents && (
+                <div className="mb-8">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Bot className="h-5 w-5 text-purple-500" />
+                    <h2 className="text-xl font-semibold">Gestión IA</h2>
+                    <Badge variant="secondary" className="text-xs">ADMIN</Badge>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {[
+                      {
+                        title: "Crear Agente",
+                        description: "Desarrolla nuevos agentes de IA especializados",
+                        icon: Bot,
+                        view: "agent-creator",
+                        color: "purple"
+                      },
+                      {
+                        title: "Gestionar Agentes",
+                        description: "Administra tus agentes existentes",
+                        icon: Settings,
+                        view: "agent-manager",
+                        color: "indigo"
+                      },
+                      {
+                        title: "Métricas",
+                        description: "Estadísticas de rendimiento",
+                        icon: BarChart3,
+                        view: "stats",
+                        color: "emerald"
+                      }
+                    ].map((item, index) => (
+                      <Card 
+                        key={item.view}
+                        className="group cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                        onClick={() => setCurrentView(item.view as any)}
+                      >
+                        <CardContent className="p-6 text-center">
+                          <div className={`w-12 h-12 rounded-full bg-${item.color}-100 dark:bg-${item.color}-900/30 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                            <item.icon className={`h-6 w-6 text-${item.color}-600 dark:text-${item.color}-400`} />
+                          </div>
+                          <h3 className="font-semibold mb-2">{item.title}</h3>
+                          <p className="text-sm text-muted-foreground">{item.description}</p>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Blog Management */}
+              {user?.canCreateBlogs && (
+                <div className="mb-8">
+                  <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <BookOpen className="h-5 w-5 text-green-500" />
+                    Gestión de Contenido
+                  </h2>
+                  <Card 
+                    className="group cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
+                    onClick={() => setCurrentView('blog-manager')}
+                  >
+                    <CardContent className="p-6">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                          <BookOpen className="h-6 w-6 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-lg mb-1">Gestión de Blog</h3>
+                          <p className="text-sm text-muted-foreground">Crea y administra contenido legal profesional</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+
+              {/* Training & Certification */}
+              <div className="mb-8">
+                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                  <Brain className="h-5 w-5 text-pink-500" />
+                  Desarrollo Profesional
+                </h2>
+                <Card 
+                  className="group cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-lg border-0 bg-gradient-to-br from-pink-50 to-rose-50 dark:from-pink-900/20 dark:to-rose-900/20"
+                  onClick={() => setCurrentView('training')}
+                >
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-pink-500 to-rose-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                        <Brain className="h-6 w-6 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-lg mb-1">Formación IA</h3>
+                        <p className="text-sm text-muted-foreground">Certifícate en el uso de herramientas de IA legal</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Documents Section */}
+              <div className="mb-8">
+                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-blue-500" />
+                  Documentos Pendientes
+                  {documents.length > 0 && (
+                    <Badge variant="secondary" className="ml-2">
+                      {documents.length}
+                    </Badge>
+                  )}
+                </h2>
+                
+                {documents.length === 0 ? (
+                  <Card className="border-dashed border-2">
+                    <CardContent className="p-12 text-center">
+                      <FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
+                      <h3 className="text-lg font-medium mb-2">No hay documentos pendientes</h3>
+                      <p className="text-muted-foreground">Los documentos que requieren revisión aparecerán aquí</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="grid gap-4">
+                    {documents.slice(0, 3).map((doc) => (
+                      <Card 
+                        key={doc.id} 
+                        className={`border border-border hover:border-primary transition-colors cursor-pointer ${
+                          doc.sla_status === 'at_risk' ? 'border-l-4 border-l-yellow-400' :
+                          doc.sla_status === 'overdue' ? 'border-l-4 border-l-red-500' :
+                          ''
+                        }`}
+                        onClick={() => handleDocumentClick(doc)}
+                      >
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-lg flex items-center justify-between">
+                            <span className="truncate">{doc.document_type}</span>
+                            <div className="flex items-center gap-2">
+                              <Badge variant={getStatusVariant(doc.status)}>
+                                {getStatusText(doc.status)}
+                              </Badge>
+                              {doc.sla_status && (
+                                <Badge variant={getSlaStatusVariant(doc.sla_status)}>
+                                  {getSlaStatusText(doc.sla_status)}
+                                </Badge>
+                              )}
+                            </div>
+                          </CardTitle>
+                          <CardDescription className="text-sm text-muted-foreground">
+                            <div className="flex items-center gap-4">
+                              <span className="flex items-center gap-1">
+                                <User className="h-3 w-3" />
+                                {doc.user_name || 'Usuario anónimo'}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                {new Date(doc.created_at).toLocaleDateString()}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <DollarSign className="h-3 w-3" />
+                                ${doc.price.toLocaleString()}
+                              </span>
+                            </div>
+                          </CardDescription>
+                        </CardHeader>
+                      </Card>
+                    ))}
+                    {documents.length > 3 && (
+                      <div className="text-center">
+                        <Button variant="outline">
+                          Ver todos los documentos ({documents.length - 3} más)
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Quick Actions */}
+              <div className="mb-8">
+                <h2 className="text-xl font-semibold mb-4">Acciones Rápidas</h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Card 
+                    className="group cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                    onClick={() => setCurrentView('subscription')}
+                  >
+                    <CardContent className="p-6 text-center">
+                      <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                        <Crown className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                      </div>
+                      <h3 className="font-semibold mb-2">Suscripción</h3>
+                      <p className="text-sm text-muted-foreground">Gestiona tu plan y facturación</p>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="group cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg">
+                    <CardContent className="p-6 text-center">
+                      <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                        <Settings className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <h3 className="font-semibold mb-2">Configuración</h3>
+                      <p className="text-sm text-muted-foreground">Personaliza tu experiencia</p>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="group cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg">
+                    <CardContent className="p-6 text-center">
+                      <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                        <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
+                      </div>
+                      <h3 className="font-semibold mb-2">Soporte</h3>
+                      <p className="text-sm text-muted-foreground">Obtén ayuda cuando la necesites</p>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+
+              {/* Upgrade CTA for Free Users */}
+              {!user?.canUseAiTools && (
+                <div className="mb-8">
+                  <Card className="border-0 bg-gradient-to-r from-amber-500 to-orange-500 text-white">
+                    <CardContent className="p-8">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center">
+                            <Crown className="h-8 w-8 text-white" />
+                          </div>
+                          <div>
+                            <h3 className="text-2xl font-bold mb-2">Desbloquea todo tu potencial</h3>
+                            <p className="text-white/90">Accede a herramientas IA avanzadas y transforma tu práctica legal</p>
+                          </div>
+                        </div>
+                        <Button 
+                          size="lg" 
+                          variant="secondary" 
+                          className="bg-white text-orange-600 hover:bg-white/90"
+                          onClick={() => setCurrentView('subscription')}
+                        >
+                          Actualizar ahora
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
             </div>
           </div>
         </main>
@@ -880,4 +1173,4 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
       )}
     </SidebarProvider>
   );
-}
+};
