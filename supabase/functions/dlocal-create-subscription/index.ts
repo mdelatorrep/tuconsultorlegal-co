@@ -78,6 +78,9 @@ serve(async (req) => {
 
     // Call dLocal API to create subscription
     const auth = btoa(`${apiKey}:${secretKey}`);
+    
+    console.log('🔗 Calling dLocal API with data:', JSON.stringify(subscriptionData, null, 2));
+    
     const dLocalResponse = await fetch('https://api.dlocalgo.com/v1/subscription/create', {
       method: 'POST',
       headers: {
@@ -87,10 +90,37 @@ serve(async (req) => {
       body: JSON.stringify(subscriptionData)
     });
 
+    console.log('📡 dLocal API response status:', dLocalResponse.status);
+    
     if (!dLocalResponse.ok) {
-      console.error('dLocal API error:', dLocalResponse.status, dLocalResponse.statusText);
+      console.error('❌ dLocal API error:', dLocalResponse.status, dLocalResponse.statusText);
       const errorText = await dLocalResponse.text();
-      console.error('Error details:', errorText);
+      console.error('❌ Error details:', errorText);
+      
+      // For now, let's redirect directly to the plan's subscribe_url as fallback
+      console.log('🔄 Falling back to direct plan subscribe_url');
+      
+      // Get the plan from our dlocal-get-plans to get the subscribe_url
+      const { data: plansData, error: plansError } = await supabase.functions.invoke('dlocal-get-plans');
+      
+      if (!plansError && plansData?.data) {
+        const selectedPlan = plansData.data.find((p: any) => p.id == planId);
+        if (selectedPlan?.subscribe_url) {
+          console.log('✅ Using plan subscribe_url:', selectedPlan.subscribe_url);
+          return new Response(
+            JSON.stringify({ 
+              success: true, 
+              redirectUrl: selectedPlan.subscribe_url,
+              message: 'Redirecting to plan subscription page'
+            }),
+            { 
+              status: 200, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
+        }
+      }
+      
       return new Response(
         JSON.stringify({ error: 'Failed to create subscription with dLocal' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
