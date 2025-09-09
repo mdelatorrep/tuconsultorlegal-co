@@ -9,14 +9,17 @@ const corsHeaders = {
 interface PlanData {
   name: string;
   description: string;
-  amount: number;
+  country?: string;
   currency: string;
+  amount: number;
   frequency_type: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
   frequency_value?: number;
+  day_of_month?: number;
   max_periods?: number;
   notification_url?: string;
   success_url?: string;
-  cancel_url?: string;
+  back_url?: string;
+  error_url?: string;
 }
 
 serve(async (req) => {
@@ -82,14 +85,17 @@ serve(async (req) => {
       body: JSON.stringify({
         name: planData.name,
         description: planData.description,
-        amount: planData.amount,
+        country: planData.country,
         currency: planData.currency,
+        amount: planData.amount,
         frequency_type: planData.frequency_type,
         frequency_value: planData.frequency_value || 1,
+        day_of_month: planData.day_of_month,
         max_periods: planData.max_periods,
         notification_url: planData.notification_url,
         success_url: planData.success_url,
-        cancel_url: planData.cancel_url
+        back_url: planData.back_url,
+        error_url: planData.error_url
       })
     });
 

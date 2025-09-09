@@ -82,14 +82,17 @@ export default function SubscriptionAdminManager({ authHeaders }: SubscriptionAd
   const [newPlan, setNewPlan] = useState({
     name: '',
     description: '',
-    amount: 0,
+    country: '',
     currency: 'USD',
+    amount: 0,
     frequency_type: 'MONTHLY' as 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY',
     frequency_value: 1,
+    day_of_month: undefined,
     max_periods: undefined,
     notification_url: '',
     success_url: '',
-    cancel_url: ''
+    back_url: '',
+    error_url: ''
   });
 
   const { toast } = useToast();
@@ -114,14 +117,17 @@ export default function SubscriptionAdminManager({ authHeaders }: SubscriptionAd
       setNewPlan({
         name: '',
         description: '',
-        amount: 0,
+        country: '',
         currency: 'USD',
+        amount: 0,
         frequency_type: 'MONTHLY',
         frequency_value: 1,
+        day_of_month: undefined,
         max_periods: undefined,
         notification_url: '',
         success_url: '',
-        cancel_url: ''
+        back_url: '',
+        error_url: ''
       });
       fetchPlans();
     } catch (error) {
@@ -248,13 +254,23 @@ export default function SubscriptionAdminManager({ authHeaders }: SubscriptionAd
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="amount">Precio</Label>
-                      <Input
-                        id="amount"
-                        type="number"
-                        value={newPlan.amount}
-                        onChange={(e) => setNewPlan({ ...newPlan, amount: Number(e.target.value) })}
-                      />
+                      <Label htmlFor="country">País (opcional)</Label>
+                      <Select value={newPlan.country} onValueChange={(value) => setNewPlan({ ...newPlan, country: value })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar país" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">Sin especificar</SelectItem>
+                          <SelectItem value="US">Estados Unidos</SelectItem>
+                          <SelectItem value="CO">Colombia</SelectItem>
+                          <SelectItem value="MX">México</SelectItem>
+                          <SelectItem value="AR">Argentina</SelectItem>
+                          <SelectItem value="CL">Chile</SelectItem>
+                          <SelectItem value="PE">Perú</SelectItem>
+                          <SelectItem value="BR">Brasil</SelectItem>
+                          <SelectItem value="UY">Uruguay</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
                       <Label htmlFor="currency">Moneda</Label>
@@ -263,12 +279,28 @@ export default function SubscriptionAdminManager({ authHeaders }: SubscriptionAd
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="USD">USD</SelectItem>
-                          <SelectItem value="COP">COP</SelectItem>
-                          <SelectItem value="EUR">EUR</SelectItem>
+                          <SelectItem value="USD">USD - Dólar americano</SelectItem>
+                          <SelectItem value="COP">COP - Peso colombiano</SelectItem>
+                          <SelectItem value="MXN">MXN - Peso mexicano</SelectItem>
+                          <SelectItem value="ARS">ARS - Peso argentino</SelectItem>
+                          <SelectItem value="CLP">CLP - Peso chileno</SelectItem>
+                          <SelectItem value="PEN">PEN - Sol peruano</SelectItem>
+                          <SelectItem value="BRL">BRL - Real brasileño</SelectItem>
+                          <SelectItem value="UYU">UYU - Peso uruguayo</SelectItem>
+                          <SelectItem value="EUR">EUR - Euro</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="amount">Precio</Label>
+                    <Input
+                      id="amount"
+                      type="number"
+                      step="0.01"
+                      value={newPlan.amount}
+                      onChange={(e) => setNewPlan({ ...newPlan, amount: Number(e.target.value) })}
+                    />
                   </div>
                   <div>
                     <Label htmlFor="frequency_type">Frecuencia</Label>
@@ -302,6 +334,67 @@ export default function SubscriptionAdminManager({ authHeaders }: SubscriptionAd
                         value={newPlan.max_periods || ''}
                         onChange={(e) => setNewPlan({ ...newPlan, max_periods: e.target.value ? Number(e.target.value) : undefined })}
                       />
+                    </div>
+                    {newPlan.frequency_type === 'MONTHLY' && (
+                      <div>
+                        <Label htmlFor="day_of_month">Día del mes (opcional)</Label>
+                        <Input
+                          id="day_of_month"
+                          type="number"
+                          min="1"
+                          max="31"
+                          value={newPlan.day_of_month || ''}
+                          onChange={(e) => setNewPlan({ ...newPlan, day_of_month: e.target.value ? Number(e.target.value) : undefined })}
+                          placeholder="Día específico del mes para cobrar"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* URLs de configuración */}
+                  <div className="space-y-4">
+                    <h4 className="font-medium text-sm">URLs de configuración (opcionales)</h4>
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <Label htmlFor="notification_url">URL de notificaciones</Label>
+                        <Input
+                          id="notification_url"
+                          type="url"
+                          value={newPlan.notification_url}
+                          onChange={(e) => setNewPlan({ ...newPlan, notification_url: e.target.value })}
+                          placeholder="https://example.com/webhook"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="success_url">URL de éxito</Label>
+                        <Input
+                          id="success_url"
+                          type="url"
+                          value={newPlan.success_url}
+                          onChange={(e) => setNewPlan({ ...newPlan, success_url: e.target.value })}
+                          placeholder="https://example.com/success"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="back_url">URL de retorno</Label>
+                        <Input
+                          id="back_url"
+                          type="url"
+                          value={newPlan.back_url}
+                          onChange={(e) => setNewPlan({ ...newPlan, back_url: e.target.value })}
+                          placeholder="https://example.com/back"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="error_url">URL de error</Label>
+                        <Input
+                          id="error_url"
+                          type="url"
+                          value={newPlan.error_url}
+                          onChange={(e) => setNewPlan({ ...newPlan, error_url: e.target.value })}
+                          placeholder="https://example.com/error"
+                        />
+                      </div>
                     </div>
                   </div>
                   <Button onClick={handleCreatePlan} disabled={isLoading} className="w-full">

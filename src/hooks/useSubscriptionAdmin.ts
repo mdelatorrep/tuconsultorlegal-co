@@ -44,14 +44,17 @@ interface Execution {
 interface CreatePlanData {
   name: string;
   description: string;
-  amount: number;
+  country?: string;
   currency: string;
+  amount: number;
   frequency_type: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
   frequency_value?: number;
+  day_of_month?: number;
   max_periods?: number;
   notification_url?: string;
   success_url?: string;
-  cancel_url?: string;
+  back_url?: string;
+  error_url?: string;
 }
 
 interface UpdatePlanData {
