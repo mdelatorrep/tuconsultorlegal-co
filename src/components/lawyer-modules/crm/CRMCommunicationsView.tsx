@@ -23,7 +23,7 @@ interface Communication {
   direction: string;
   scheduled_for?: string;
   sent_at?: string;
-  status: 'draft' | 'scheduled' | 'sent' | 'delivered' | 'failed';
+  status: string;
   created_at: string;
   client?: {
     name: string;
@@ -53,7 +53,7 @@ const CRMCommunicationsView: React.FC<CRMCommunicationsViewProps> = ({ lawyerDat
     type: 'email',
     subject: '',
     content: '',
-    direction: 'outbound' as 'inbound' | 'outbound',
+    direction: 'outbound',
     scheduled_for: '',
     status: 'draft'
   });
@@ -388,7 +388,7 @@ const CRMCommunicationsView: React.FC<CRMCommunicationsViewProps> = ({ lawyerDat
                 <Label htmlFor="direction">Dirección</Label>
                 <Select
                   value={formData.direction}
-                  onValueChange={(value: 'inbound' | 'outbound') => setFormData({ ...formData, direction: value })}
+                  onValueChange={(value) => setFormData({ ...formData, direction: value })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecciona la dirección" />

@@ -19,7 +19,7 @@ interface Client {
   company?: string;
   address?: string;
   client_type: string;
-  status: 'active' | 'inactive' | 'prospect';
+  status: string;
   tags: string[];
   notes?: string;
   created_at: string;
@@ -42,8 +42,8 @@ const CRMClientsView: React.FC<CRMClientsViewProps> = ({ lawyerData, searchTerm,
     phone: '',
     company: '',
     address: '',
-    client_type: 'individual' as 'individual' | 'company',
-    status: 'active' as 'active' | 'inactive' | 'prospect',
+    client_type: 'individual',
+    status: 'active',
     tags: [] as string[],
     notes: ''
   });
@@ -281,7 +281,7 @@ const CRMClientsView: React.FC<CRMClientsViewProps> = ({ lawyerData, searchTerm,
                 <Label htmlFor="client_type">Tipo de Cliente</Label>
                 <Select
                   value={formData.client_type}
-                  onValueChange={(value: 'individual' | 'company') => 
+                  onValueChange={(value) => 
                     setFormData({ ...formData, client_type: value })
                   }
                 >
@@ -299,7 +299,7 @@ const CRMClientsView: React.FC<CRMClientsViewProps> = ({ lawyerData, searchTerm,
                 <Label htmlFor="status">Estado</Label>
                 <Select
                   value={formData.status}
-                  onValueChange={(value: 'active' | 'inactive' | 'prospect') => 
+                  onValueChange={(value) => 
                     setFormData({ ...formData, status: value })
                   }
                 >
