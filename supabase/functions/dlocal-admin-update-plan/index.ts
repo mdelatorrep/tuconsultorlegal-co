@@ -77,12 +77,12 @@ serve(async (req) => {
         'Authorization': `Bearer ${authString}`
       },
       body: JSON.stringify({
-        name: updateData.name,
-        description: updateData.description,
-        amount: updateData.amount,
-        notification_url: updateData.notification_url,
-        success_url: updateData.success_url,
-        error_url: updateData.error_url
+        ...(updateData.name && { name: updateData.name }),
+        ...(updateData.description && { description: updateData.description }),
+        ...(updateData.amount && { amount: updateData.amount }),
+        ...(updateData.notification_url && { notification_url: updateData.notification_url }),
+        ...(updateData.success_url && { success_url: updateData.success_url }),
+        ...(updateData.error_url && { error_url: updateData.error_url })
       })
     });
 
