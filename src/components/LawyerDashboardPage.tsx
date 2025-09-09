@@ -606,6 +606,25 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
       case 'subscription':
         return <SubscriptionManager />;
       
+      case 'crm':
+        if (!user?.canUseAiTools) {
+          return (
+            <PremiumFeatureCard
+              title="CRM Legal"
+              description="Gestiona clientes, casos y comunicaciones con herramientas avanzadas de CRM"
+              icon={Users}
+              featureName="el módulo CRM"
+              onUpgrade={() => {
+                toast({
+                  title: "Funcionalidad Premium",
+                  description: "Contacta al administrador para activar las herramientas de IA",
+                });
+              }}
+            />
+          );
+        }
+        return <CRMModule lawyerData={user} />;
+      
       default:
         return null;
     }

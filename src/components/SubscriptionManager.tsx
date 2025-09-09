@@ -6,10 +6,10 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Calendar, CreditCard, AlertTriangle, CheckCircle } from 'lucide-react';
 import { useSubscription } from '@/hooks/useSubscription';
 import { SubscriptionPlanSelector } from './SubscriptionPlanSelector';
-import { useLawyerAuthContext } from './LawyerAuthProvider';
+import { useLawyerAuth } from '@/hooks/useLawyerAuth';
 
 export const SubscriptionManager: React.FC = () => {
-  const { user } = useLawyerAuthContext();
+  const { user } = useLawyerAuth();
   const { 
     plans, 
     currentSubscription, 

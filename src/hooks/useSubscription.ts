@@ -28,7 +28,21 @@ interface LawyerSubscription {
 }
 
 export const useSubscription = () => {
-  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([
+    {
+      id: 'free',
+      name: 'Plan Gratuito',
+      description: 'Acceso básico a documentos legales',
+      monthlyPrice: 0,
+      yearlyPrice: 0,
+      features: [
+        'Acceso a documentos básicos',
+        'Soporte por email',
+        'Dashboard básico'
+      ],
+      active: true
+    }
+  ]);
   const [currentSubscription, setCurrentSubscription] = useState<LawyerSubscription | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -46,15 +60,42 @@ export const useSubscription = () => {
       }
 
       console.log('Fetched dLocal plans:', data);
-      // Filter only active plans
+      // Filter only active plans and add free plan
       const activePlans = (data.plans || []).filter((plan: SubscriptionPlan) => plan.active !== false);
-      setPlans(activePlans);
+      const freePlan = {
+        id: 'free',
+        name: 'Plan Gratuito',
+        description: 'Acceso básico a documentos legales',
+        monthlyPrice: 0,
+        yearlyPrice: 0,
+        features: [
+          'Acceso a documentos básicos',
+          'Soporte por email',
+          'Dashboard básico'
+        ],
+        active: true
+      };
+      setPlans([freePlan, ...activePlans]);
     } catch (error) {
       console.error('Error fetching plans:', error);
-      setPlans([]);
+      // Keep the free plan even if API fails
+      const freePlan = {
+        id: 'free',
+        name: 'Plan Gratuito',
+        description: 'Acceso básico a documentos legales',
+        monthlyPrice: 0,
+        yearlyPrice: 0,
+        features: [
+          'Acceso a documentos básicos',
+          'Soporte por email',
+          'Dashboard básico'
+        ],
+        active: true
+      };
+      setPlans([freePlan]);
       toast({
         title: "Error",
-        description: "No se pudieron cargar los planes de suscripción",
+        description: "No se pudieron cargar algunos planes de suscripción",
         variant: "destructive"
       });
     } finally {
