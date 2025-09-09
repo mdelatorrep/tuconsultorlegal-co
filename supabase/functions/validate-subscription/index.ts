@@ -89,35 +89,43 @@ serve(async (req) => {
       console.error(`Error checking subscription for user ${user.id}:`, error);
     }
 
-    // Check if admin has enabled AI tools independent of subscription
-    let aiToolsIndependentEnabled = false;
-    try {
-      const { data: config, error: configError } = await supabaseAdmin
-        .from('system_config')
-        .select('config_value')
-        .eq('config_key', 'ai_tools_independent_subscription')
-        .eq('is_active', true)
-        .single();
+    // Get current lawyer profile to check if AI tools are manually enabled
+    const { data: currentProfile, error: profileFetchError } = await supabaseAdmin
+      .from('lawyer_profiles')
+      .select('can_use_ai_tools')
+      .eq('id', user.id)
+      .single();
 
-      if (config && !configError) {
-        aiToolsIndependentEnabled = config.config_value?.enabled === true;
-        console.log(`AI tools independent of subscription enabled: ${aiToolsIndependentEnabled}`);
-      }
-    } catch (error) {
-      console.warn(`Could not check system config for AI tools independence:`, error);
+    let manualAiToolsEnabled = false;
+    if (currentProfile && !profileFetchError) {
+      manualAiToolsEnabled = currentProfile.can_use_ai_tools === true;
+      console.log(`Manual AI tools enabled for user ${user.id}: ${manualAiToolsEnabled}`);
     }
 
-    // Update user's AI tools permission based on subscription status OR admin configuration
-    const canUseAiTools = hasActiveSubscription || aiToolsIndependentEnabled;
+    // AI tools are enabled if:
+    // 1. User has active subscription, OR
+    // 2. Admin has manually enabled AI tools for this lawyer
+    const canUseAiTools = hasActiveSubscription || manualAiToolsEnabled;
     
-    console.log(`Updating AI tools permission for user ${user.id}: ${canUseAiTools}`);
+    console.log(`Updating AI tools permission for user ${user.id}: ${canUseAiTools} (subscription: ${hasActiveSubscription}, manual: ${manualAiToolsEnabled})`);
     
+    // Only update can_use_ai_tools if it's based on subscription status
+    // Don't overwrite manual admin settings
+    const updateData: any = {
+      updated_at: new Date().toISOString()
+    };
+
+    // Only update can_use_ai_tools if it should be enabled by subscription and isn't already manually enabled
+    if (hasActiveSubscription && !manualAiToolsEnabled) {
+      updateData.can_use_ai_tools = true;
+    } else if (!hasActiveSubscription && !manualAiToolsEnabled) {
+      updateData.can_use_ai_tools = false;
+    }
+    // If manualAiToolsEnabled is true, don't change the can_use_ai_tools field
+
     const { error: updateError } = await supabaseAdmin
       .from('lawyer_profiles')
-      .update({
-        can_use_ai_tools: canUseAiTools,
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('id', user.id);
 
     if (updateError) {
@@ -136,16 +144,16 @@ serve(async (req) => {
       throw new Error("Error fetching updated profile");
     }
 
-    console.log(`Successfully updated permissions for user ${user.id}:`, {
+    console.log(`Successfully validated permissions for user ${user.id}:`, {
       canUseAiTools: profile.can_use_ai_tools,
       hasActiveSubscription,
-      aiToolsIndependentEnabled
+      manualAiToolsEnabled
     });
 
     return new Response(JSON.stringify({
       success: true,
       hasActiveSubscription,
-      aiToolsIndependentEnabled,
+      manualAiToolsEnabled,
       profile: {
         id: profile.id,
         email: profile.email,
