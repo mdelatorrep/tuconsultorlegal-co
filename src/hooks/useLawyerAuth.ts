@@ -56,6 +56,9 @@ export const useLawyerAuth = () => {
 
   const fetchLawyerProfile = async (authUser: User) => {
     try {
+      // First, validate subscription and update permissions
+      await validateSubscriptionStatus(authUser);
+      
       const { data: profile, error } = await supabase
         .from('lawyer_profiles')
         .select('id, email, full_name, can_create_agents, can_create_blogs, can_use_ai_tools')
@@ -88,13 +91,37 @@ export const useLawyerAuth = () => {
           name: lawyerUser.name,
           email: lawyerUser.email,
           role: 'lawyer',
-          subscriptionType: lawyerUser.canCreateAgents ? 'lawyer_premium' : 'lawyer_basic'
+          subscriptionType: lawyerUser.canUseAiTools ? 'lawyer_premium' : 'lawyer_basic'
         });
       }, 0);
     } catch (error) {
       console.error('Error fetching lawyer profile:', error);
       setUser(null);
       setIsAuthenticated(false);
+    }
+  };
+
+  const validateSubscriptionStatus = async (authUser: User) => {
+    try {
+      console.log('Validating subscription status for user:', authUser.id);
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data, error } = await supabase.functions.invoke('validate-subscription', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (error) {
+        console.error('Error validating subscription:', error);
+        return;
+      }
+
+      console.log('Subscription validation result:', data);
+    } catch (error) {
+      console.error('Error in subscription validation:', error);
     }
   };
 
@@ -284,6 +311,14 @@ export const useLawyerAuth = () => {
     }
   };
 
+  const validateAndRefreshSubscription = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      await validateSubscriptionStatus(session.user);
+      await fetchLawyerProfile(session.user);
+    }
+  };
+
   return {
     isAuthenticated,
     isLoading,
@@ -296,6 +331,7 @@ export const useLawyerAuth = () => {
     logout,
     checkAuthStatus,
     getAuthHeaders,
-    refreshUserPermissions
+    refreshUserPermissions,
+    validateAndRefreshSubscription
   };
 };
