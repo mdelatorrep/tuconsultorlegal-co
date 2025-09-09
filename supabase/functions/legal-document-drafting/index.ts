@@ -38,6 +38,34 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper function to save results to legal_tools_results table
+async function saveToolResult(supabase: any, lawyerId: string, toolType: string, inputData: any, outputData: any, metadata: any = {}) {
+  try {
+    console.log(`Saving ${toolType} result for lawyer: ${lawyerId}`);
+    
+    const { error } = await supabase
+      .from('legal_tools_results')
+      .insert({
+        lawyer_id: lawyerId,
+        tool_type: toolType,
+        input_data: inputData,
+        output_data: outputData,
+        metadata: {
+          ...metadata,
+          timestamp: new Date().toISOString()
+        }
+      });
+
+    if (error) {
+      console.error('Error saving tool result:', error);
+    } else {
+      console.log(`✅ Successfully saved ${toolType} result`);
+    }
+  } catch (error) {
+    console.error('Exception saving tool result:', error);
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -45,6 +73,21 @@ serve(async (req) => {
   }
 
   try {
+    // Get authentication header and verify user
+    const authHeader = req.headers.get('authorization');
+    let lawyerId = null;
+    
+    if (authHeader) {
+      const supabaseClient = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_ANON_KEY')!
+      );
+      
+      const token = authHeader.replace('Bearer ', '');
+      const { data: userData } = await supabaseClient.auth.getUser(token);
+      lawyerId = userData.user?.id;
+    }
+    
     const { prompt, documentType } = await req.json();
 
     if (!prompt || !documentType) {
@@ -187,13 +230,27 @@ El documento debe ser apropiado para Colombia y seguir las mejores prácticas le
       };
     }
 
+    const resultData = {
+      success: true,
+      prompt,
+      ...draftResult,
+      timestamp: new Date().toISOString()
+    };
+
+    // Save result to database if user is authenticated
+    if (lawyerId) {
+      await saveToolResult(
+        supabase,
+        lawyerId,
+        'drafting',
+        { prompt, documentType },
+        draftResult,
+        { timestamp: new Date().toISOString() }
+      );
+    }
+
     return new Response(
-      JSON.stringify({
-        success: true,
-        prompt,
-        ...draftResult,
-        timestamp: new Date().toISOString()
-      }),
+      JSON.stringify(resultData),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
