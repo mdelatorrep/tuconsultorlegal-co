@@ -453,12 +453,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
               description="Crea y personaliza agentes de inteligencia artificial especializados en derecho"
               icon={Bot}
               featureName="la creación de agentes"
-              onUpgrade={() => {
-                toast({
-                  title: "Funcionalidad Premium",
-                  description: "Contacta al administrador para activar la creación de agentes",
-                });
-              }}
+              onRedirectToSubscription={() => setCurrentView('subscription')}
             />
           );
         }
@@ -472,12 +467,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
               description="Administra y optimiza tus agentes de IA existentes"
               icon={Settings}
               featureName="la gestión de agentes"
-              onUpgrade={() => {
-                toast({
-                  title: "Funcionalidad Premium",
-                  description: "Contacta al administrador para activar la gestión de agentes",
-                });
-              }}
+              onRedirectToSubscription={() => setCurrentView('subscription')}
             />
           );
         }
@@ -491,12 +481,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
               description="Crea y administra contenido legal para tu blog profesional"
               icon={BookOpen}
               featureName="la gestión del blog"
-              onUpgrade={() => {
-                toast({
-                  title: "Funcionalidad Premium",
-                  description: "Contacta al administrador para activar la gestión del blog",
-                });
-              }}
+              onRedirectToSubscription={() => setCurrentView('subscription')}
             />
           );
         }
@@ -513,12 +498,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
               description="Realiza investigaciones avanzadas con IA especializada en derecho"
               icon={Search}
               featureName="las herramientas de investigación"
-              onUpgrade={() => {
-                toast({
-                  title: "Funcionalidad Premium",
-                  description: "Contacta al administrador para activar las herramientas de IA",
-                });
-              }}
+              onRedirectToSubscription={() => setCurrentView('subscription')}
             />
           );
         }
@@ -532,12 +512,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
               description="Analiza documentos y casos con inteligencia artificial avanzada"
               icon={Eye}
               featureName="las herramientas de análisis"
-              onUpgrade={() => {
-                toast({
-                  title: "Funcionalidad Premium",
-                  description: "Contacta al administrador para activar las herramientas de IA",
-                });
-              }}
+              onRedirectToSubscription={() => setCurrentView('subscription')}
             />
           );
         }
@@ -551,12 +526,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
               description="Redacta documentos legales con asistencia de inteligencia artificial"
               icon={PenTool}
               featureName="las herramientas de redacción"
-              onUpgrade={() => {
-                toast({
-                  title: "Funcionalidad Premium",
-                  description: "Contacta al administrador para activar las herramientas de IA",
-                });
-              }}
+              onRedirectToSubscription={() => setCurrentView('subscription')}
             />
           );
         }
@@ -570,12 +540,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
               description="Desarrolla estrategias legales con análisis predictivo de IA"
               icon={Target}
               featureName="las herramientas de estrategia"
-              onUpgrade={() => {
-                toast({
-                  title: "Funcionalidad Premium",
-                  description: "Contacta al administrador para activar las herramientas de IA",
-                });
-              }}
+              onRedirectToSubscription={() => setCurrentView('subscription')}
             />
           );
         }
@@ -589,12 +554,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
               description="Conecta y automatiza workflows con herramientas externas"
               icon={Settings}
               featureName="las integraciones avanzadas"
-              onUpgrade={() => {
-                toast({
-                  title: "Funcionalidad Premium",
-                  description: "Contacta al administrador para activar las herramientas de IA",
-                });
-              }}
+              onRedirectToSubscription={() => setCurrentView('subscription')}
             />
           );
         }
@@ -614,12 +574,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
               description="Sistema integral para gestionar clientes, casos y comunicaciones de manera profesional"
               icon={Users}
               featureName="el sistema de gestión de clientes"
-              onUpgrade={() => {
-                toast({
-                  title: "Funcionalidad Premium",
-                  description: "Contacta al administrador para activar las herramientas de IA",
-                });
-              }}
+              onRedirectToSubscription={() => setCurrentView('subscription')}
             />
           );
         }

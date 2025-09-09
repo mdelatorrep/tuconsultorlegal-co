@@ -9,6 +9,7 @@ interface PremiumFeatureCardProps {
   icon?: React.ComponentType<any>;
   featureName: string;
   onUpgrade?: () => void;
+  onRedirectToSubscription?: () => void;
 }
 
 export default function PremiumFeatureCard({ 
@@ -16,8 +17,17 @@ export default function PremiumFeatureCard({
   description, 
   icon: Icon = Crown, 
   featureName,
-  onUpgrade 
+  onUpgrade,
+  onRedirectToSubscription
 }: PremiumFeatureCardProps) {
+  
+  const handleUpgradeClick = () => {
+    if (onRedirectToSubscription) {
+      onRedirectToSubscription();
+    } else if (onUpgrade) {
+      onUpgrade();
+    }
+  };
   return (
     <div className="flex-1 flex items-center justify-center p-8">
       <Card className="max-w-md w-full">
@@ -63,15 +73,18 @@ export default function PremiumFeatureCard({
           </div>
           
           <Button 
-            onClick={onUpgrade}
+            onClick={handleUpgradeClick}
             className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
           >
             <Crown className="w-4 h-4 mr-2" />
-            Actualizar a Premium
+            {onRedirectToSubscription ? 'Ver Planes de Suscripción' : 'Actualizar a Premium'}
           </Button>
           
           <p className="text-xs text-muted-foreground">
-            Contacta al administrador para activar esta funcionalidad
+            {onRedirectToSubscription 
+              ? 'Selecciona el plan que mejor se adapte a tus necesidades' 
+              : 'Contacta al administrador para activar esta funcionalidad'
+            }
           </p>
         </CardContent>
       </Card>
