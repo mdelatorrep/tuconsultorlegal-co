@@ -7,6 +7,9 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log(`🌐 Webhook request received: ${req.method} ${req.url}`);
+  console.log('📋 Headers:', Object.fromEntries(req.headers.entries()));
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -20,7 +23,7 @@ serve(async (req) => {
 
     // Parse the webhook payload from dLocal
     const payload = await req.json();
-    console.log('🔔 dLocal webhook received:', payload);
+    console.log('🔔 dLocal webhook received:', JSON.stringify(payload, null, 2));
 
     // Verify webhook signature (implement according to dLocal docs)
     const signature = req.headers.get('x-signature');

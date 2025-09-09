@@ -245,9 +245,24 @@ export const useSubscription = () => {
         });
       }
 
-      // Refresh current subscription
+      // Refresh current subscription after a delay to allow webhook processing
       if (session.user) {
+        // Immediate refresh
         await fetchCurrentSubscription(session.user.id);
+        
+        // Set up periodic refresh for webhook updates
+        let attempts = 0;
+        const maxAttempts = 12; // 12 attempts over 2 minutes
+        const refreshInterval = setInterval(async () => {
+          attempts++;
+          console.log(`🔄 Refreshing subscription status - attempt ${attempts}`);
+          await fetchCurrentSubscription(session.user.id);
+          
+          if (attempts >= maxAttempts) {
+            clearInterval(refreshInterval);
+            console.log('⏰ Stopped refreshing subscription status');
+          }
+        }, 10000); // Every 10 seconds
       }
 
       return data;
