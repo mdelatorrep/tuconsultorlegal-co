@@ -137,7 +137,7 @@ export default function SubscriptionAdminManager({ authHeaders }: SubscriptionAd
         planId: selectedPlan.id,
         name: selectedPlan.name,
         description: selectedPlan.description,
-        status: selectedPlan.status as 'ACTIVE' | 'INACTIVE'
+        amount: selectedPlan.amount
       });
       setShowEditPlanDialog(false);
       setSelectedPlan(null);

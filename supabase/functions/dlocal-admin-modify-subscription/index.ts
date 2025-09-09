@@ -96,12 +96,15 @@ serve(async (req) => {
         throw new Error('Invalid action');
     }
 
+    const apiKey = Deno.env.get('DLOCAL_API_KEY') ?? '';
+    const secretKey = Deno.env.get('DLOCAL_SECRET_KEY') ?? '';
+    const authString = btoa(`${apiKey}:${secretKey}`);
+
     dlocalResponse = await fetch(endpoint, {
       method,
       headers: {
         'Content-Type': 'application/json',
-        'X-API-KEY': Deno.env.get('DLOCAL_API_KEY') ?? '',
-        'X-SECRET-KEY': Deno.env.get('DLOCAL_SECRET_KEY') ?? ''
+        'Authorization': `Bearer ${authString}`
       },
       body: method !== 'DELETE' ? JSON.stringify(body) : undefined
     });

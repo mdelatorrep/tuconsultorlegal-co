@@ -55,13 +55,16 @@ serve(async (req) => {
     
     console.log('Canceling dLocal plan:', planId);
 
-    // Cancel plan in dLocal
-    const dlocalResponse = await fetch(`https://api.dlocalgo.com/v1/plans/${planId}`, {
-      method: 'DELETE',
+    // Cancel plan in dLocal  
+    const apiKey = Deno.env.get('DLOCAL_API_KEY') ?? '';
+    const secretKey = Deno.env.get('DLOCAL_SECRET_KEY') ?? '';
+    const authString = btoa(`${apiKey}:${secretKey}`);
+    
+    const dlocalResponse = await fetch(`https://api.dlocalgo.com/v1/subscription/plan/${planId}/deactivate`, {
+      method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        'X-API-KEY': Deno.env.get('DLOCAL_API_KEY') ?? '',
-        'X-SECRET-KEY': Deno.env.get('DLOCAL_SECRET_KEY') ?? ''
+        'Authorization': `Bearer ${authString}`
       }
     });
 

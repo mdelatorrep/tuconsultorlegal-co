@@ -53,8 +53,8 @@ serve(async (req) => {
 
     const url = new URL(req.url);
     const subscriptionId = url.searchParams.get('subscriptionId');
+    const planId = url.searchParams.get('planId');
     const limit = url.searchParams.get('limit') || '50';
-    const offset = url.searchParams.get('offset') || '0';
 
     if (!subscriptionId) {
       return new Response(
@@ -63,17 +63,27 @@ serve(async (req) => {
       );
     }
 
-    console.log('Getting executions for subscription:', subscriptionId);
+    if (!planId) {
+      return new Response(
+        JSON.stringify({ error: 'Plan ID is required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('Getting executions for subscription:', subscriptionId, 'plan:', planId);
 
     // Get subscription executions from dLocal
+    const apiKey = Deno.env.get('DLOCAL_API_KEY') ?? '';
+    const secretKey = Deno.env.get('DLOCAL_SECRET_KEY') ?? '';
+    const authString = btoa(`${apiKey}:${secretKey}`);
+    
     const dlocalResponse = await fetch(
-      `https://api.dlocalgo.com/v1/subscriptions/${subscriptionId}/executions?limit=${limit}&offset=${offset}`,
+      `https://api.dlocalgo.com/v1/subscription/plan/${planId}/subscription/${subscriptionId}/execution/all?page=1&page_size=${limit}`,
       {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-KEY': Deno.env.get('DLOCAL_API_KEY') ?? '',
-          'X-SECRET-KEY': Deno.env.get('DLOCAL_SECRET_KEY') ?? ''
+          'Authorization': `Bearer ${authString}`
         }
       }
     );

@@ -58,9 +58,10 @@ interface UpdatePlanData {
   planId: string;
   name?: string;
   description?: string;
-  status?: 'ACTIVE' | 'INACTIVE';
-  trial_period_days?: number;
-  max_billing_cycles?: number;
+  amount?: number;
+  notification_url?: string;
+  success_url?: string;
+  error_url?: string;
 }
 
 export const useSubscriptionAdmin = (authHeaders: Record<string, string>) => {

@@ -10,9 +10,10 @@ interface UpdatePlanData {
   planId: string;
   name?: string;
   description?: string;
-  status?: 'ACTIVE' | 'INACTIVE';
-  trial_period_days?: number;
-  max_billing_cycles?: number;
+  amount?: number;
+  notification_url?: string;
+  success_url?: string;
+  error_url?: string;
 }
 
 serve(async (req) => {
@@ -65,19 +66,23 @@ serve(async (req) => {
     console.log('Updating dLocal plan:', updateData);
 
     // Update plan in dLocal
-    const dlocalResponse = await fetch(`https://api.dlocalgo.com/v1/plans/${updateData.planId}`, {
-      method: 'PUT',
+    const apiKey = Deno.env.get('DLOCAL_API_KEY') ?? '';
+    const secretKey = Deno.env.get('DLOCAL_SECRET_KEY') ?? '';
+    const authString = btoa(`${apiKey}:${secretKey}`);
+    
+    const dlocalResponse = await fetch(`https://api.dlocalgo.com/v1/subscription/plan/${updateData.planId}`, {
+      method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        'X-API-KEY': Deno.env.get('DLOCAL_API_KEY') ?? '',
-        'X-SECRET-KEY': Deno.env.get('DLOCAL_SECRET_KEY') ?? ''
+        'Authorization': `Bearer ${authString}`
       },
       body: JSON.stringify({
         name: updateData.name,
         description: updateData.description,
-        status: updateData.status,
-        trial_period_days: updateData.trial_period_days,
-        max_billing_cycles: updateData.max_billing_cycles
+        amount: updateData.amount,
+        notification_url: updateData.notification_url,
+        success_url: updateData.success_url,
+        error_url: updateData.error_url
       })
     });
 
@@ -91,12 +96,15 @@ serve(async (req) => {
     console.log('dLocal plan updated successfully:', dlocalData);
 
     // Update plan in local database if exists
-    if (updateData.name || updateData.description || updateData.status) {
+    if (updateData.name || updateData.description || updateData.amount) {
       const updateFields: any = {};
       
       if (updateData.name) updateFields.name = updateData.name;
       if (updateData.description) updateFields.description = updateData.description;
-      if (updateData.status) updateFields.is_active = updateData.status === 'ACTIVE';
+      if (updateData.amount) {
+        updateFields.price_monthly = updateData.amount;
+        updateFields.price_yearly = updateData.amount * 12;
+      }
 
       await supabase
         .from('subscription_plans')

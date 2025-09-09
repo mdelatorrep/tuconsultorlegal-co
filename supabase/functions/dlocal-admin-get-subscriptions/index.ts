@@ -58,28 +58,73 @@ serve(async (req) => {
 
     console.log('Getting dLocal subscriptions, planId:', planId);
 
-    let dlocalUrl = `https://api.dlocalgo.com/v1/subscriptions?limit=${limit}&offset=${offset}`;
-    if (planId) {
-      dlocalUrl += `&plan_id=${planId}`;
-    }
-
     // Get subscriptions from dLocal
-    const dlocalResponse = await fetch(dlocalUrl, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-KEY': Deno.env.get('DLOCAL_API_KEY') ?? '',
-        'X-SECRET-KEY': Deno.env.get('DLOCAL_SECRET_KEY') ?? ''
+    const apiKey = Deno.env.get('DLOCAL_API_KEY') ?? '';
+    const secretKey = Deno.env.get('DLOCAL_SECRET_KEY') ?? '';
+    const authString = btoa(`${apiKey}:${secretKey}`);
+    
+    let dlocalData;
+    if (planId) {
+      // Get subscriptions for a specific plan
+      const dlocalUrl = `https://api.dlocalgo.com/v1/subscription/plan/${planId}/subscription/all?page=1&page_size=${limit}`;
+      const dlocalResponse = await fetch(dlocalUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authString}`
+        }
+      });
+      
+      if (!dlocalResponse.ok) {
+        const errorText = await dlocalResponse.text();
+        console.error('dLocal API error:', errorText);
+        throw new Error(`dLocal API error: ${dlocalResponse.status} - ${errorText}`);
       }
-    });
-
-    if (!dlocalResponse.ok) {
-      const errorText = await dlocalResponse.text();
-      console.error('dLocal API error:', errorText);
-      throw new Error(`dLocal API error: ${dlocalResponse.status} - ${errorText}`);
+      
+      dlocalData = await dlocalResponse.json();
+    } else {
+      // If no planId specified, we'll need to get plans first and then get subscriptions for each
+      // For now, let's get all plans and combine their subscriptions
+      const plansResponse = await fetch('https://api.dlocalgo.com/v1/subscription/plan/all', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authString}`
+        }
+      });
+      
+      if (!plansResponse.ok) {
+        const errorText = await plansResponse.text();
+        console.error('dLocal Plans API error:', errorText);
+        throw new Error(`dLocal Plans API error: ${plansResponse.status} - ${errorText}`);
+      }
+      
+      const plansData = await plansResponse.json();
+      const allSubscriptions: any[] = [];
+      
+      // Get subscriptions for each plan
+      for (const plan of plansData.data || []) {
+        try {
+          const subResponse = await fetch(`https://api.dlocalgo.com/v1/subscription/plan/${plan.id}/subscription/all?page=1&page_size=50`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${authString}`
+            }
+          });
+          
+          if (subResponse.ok) {
+            const subData = await subResponse.json();
+            allSubscriptions.push(...(subData.data || []));
+          }
+        } catch (error) {
+          console.log(`Failed to get subscriptions for plan ${plan.id}:`, error);
+        }
+      }
+      
+      dlocalData = { data: allSubscriptions };
     }
 
-    const dlocalData = await dlocalResponse.json();
     console.log('dLocal subscriptions retrieved successfully');
 
     // Get local subscription data with lawyer info
@@ -96,7 +141,7 @@ serve(async (req) => {
     }
 
     // Merge dLocal and local data
-    const mergedSubscriptions = dlocalData.subscriptions?.map((dLocalSub: any) => {
+    const mergedSubscriptions = dlocalData.data?.map((dLocalSub: any) => {
       const localSub = localSubscriptions?.find(ls => ls.dlocal_subscription_id === dLocalSub.id);
       return {
         ...dLocalSub,
