@@ -1,15 +1,15 @@
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
-import { Badge } from '../ui/badge';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useSubscriptionAdmin } from '@/hooks/useSubscriptionAdmin';
-import { Plus, Edit, Trash, Eye, CreditCard, DollarSign, Users, Clock, AlertCircle } from 'lucide-react';
+import { Plus, Edit, Trash, CreditCard, Users, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -87,8 +87,8 @@ export default function SubscriptionAdminManager({ authHeaders }: SubscriptionAd
     amount: 0,
     frequency_type: 'MONTHLY' as 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY',
     frequency_value: 1,
-    day_of_month: undefined,
-    max_periods: undefined,
+    day_of_month: undefined as number | undefined,
+    max_periods: undefined as number | undefined,
     notification_url: '',
     success_url: '',
     back_url: '',
@@ -98,10 +98,27 @@ export default function SubscriptionAdminManager({ authHeaders }: SubscriptionAd
   const { toast } = useToast();
 
   useEffect(() => {
+    console.log('SubscriptionAdminManager mounted, currentView:', currentView);
     if (currentView === 'plans') {
-      fetchPlans();
+      console.log('Loading plans...');
+      fetchPlans().catch(error => {
+        console.error('Error loading plans:', error);
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar los planes",
+          variant: "destructive"
+        });
+      });
     } else if (currentView === 'subscriptions') {
-      fetchSubscriptions();
+      console.log('Loading subscriptions...');
+      fetchSubscriptions().catch(error => {
+        console.error('Error loading subscriptions:', error);
+        toast({
+          title: "Error", 
+          description: "No se pudieron cargar las suscripciones",
+          variant: "destructive"
+        });
+      });
     }
   }, [currentView]);
 
@@ -129,13 +146,15 @@ export default function SubscriptionAdminManager({ authHeaders }: SubscriptionAd
         back_url: '',
         error_url: ''
       });
-      fetchPlans();
+      // Recargar los planes después de crear uno nuevo
+      await fetchPlans();
     } catch (error) {
-      // Error already handled in hook
+      console.error('Error creating plan:', error);
+      // Error already handled in hook with toast
     }
   };
 
-  const handleUpdatePlan = async () => {
+  const handleEditPlan = async () => {
     if (!selectedPlan) return;
     
     try {
@@ -153,35 +172,12 @@ export default function SubscriptionAdminManager({ authHeaders }: SubscriptionAd
     }
   };
 
-  const handleCancelPlan = async (planId: string) => {
-    if (!confirm('¿Estás seguro de que quieres cancelar este plan? Esta acción no se puede deshacer.')) {
-      return;
-    }
-
-    try {
-      await cancelPlan(planId);
-      fetchPlans();
-    } catch (error) {
-      // Error already handled in hook
-    }
-  };
-
-  const handleModifySubscription = async (subscriptionId: string, action: string, planId?: string) => {
-    try {
-      await modifySubscription(subscriptionId, action as any, planId);
-      fetchSubscriptions();
-    } catch (error) {
-      // Error already handled in hook
-    }
-  };
-
   const getStatusBadge = (status: string) => {
     const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-      'ACTIVE': 'default',
-      'INACTIVE': 'secondary',
-      'CANCELED': 'destructive',
-      'PAUSED': 'outline',
-      'PENDING': 'outline'
+      'active': 'default',
+      'inactive': 'secondary',
+      'cancelled': 'destructive',
+      'pending': 'outline'
     };
 
     return <Badge variant={variants[status] || 'outline'}>{status}</Badge>;
@@ -228,12 +224,9 @@ export default function SubscriptionAdminManager({ authHeaders }: SubscriptionAd
                   Crear Plan
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Crear Nuevo Plan</DialogTitle>
-                  <DialogDescription>
-                    Crea un nuevo plan de suscripción en dLocal
-                  </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
@@ -417,36 +410,44 @@ export default function SubscriptionAdminManager({ authHeaders }: SubscriptionAd
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {plans.map((plan) => (
-                  <TableRow key={plan.id}>
-                    <TableCell className="font-medium">{plan.name}</TableCell>
-                    <TableCell>{plan.description}</TableCell>
-                    <TableCell>{plan.amount} {plan.currency}</TableCell>
-                    <TableCell>{plan.frequency}</TableCell>
-                    <TableCell>{getStatusBadge(plan.status)}</TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setSelectedPlan(plan);
-                            setShowEditPlanDialog(true);
-                          }}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleCancelPlan(plan.id)}
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </div>
+                {plans.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      {isLoading ? 'Cargando planes...' : 'No hay planes disponibles'}
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  plans.map((plan) => (
+                    <TableRow key={plan.id}>
+                      <TableCell className="font-medium">{plan.name}</TableCell>
+                      <TableCell>{plan.description}</TableCell>
+                      <TableCell>{plan.amount} {plan.currency}</TableCell>
+                      <TableCell>{plan.frequency}</TableCell>
+                      <TableCell>{getStatusBadge(plan.status)}</TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedPlan(plan);
+                              setShowEditPlanDialog(true);
+                            }}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => cancelPlan(plan.id)}
+                          >
+                            <Trash className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </CardContent>
@@ -472,42 +473,46 @@ export default function SubscriptionAdminManager({ authHeaders }: SubscriptionAd
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {subscriptions.map((subscription) => (
-                  <TableRow key={subscription.id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{subscription.lawyer_name}</div>
-                        <div className="text-sm text-muted-foreground">{subscription.lawyer_email}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{subscription.plan_name}</TableCell>
-                    <TableCell>{getStatusBadge(subscription.status)}</TableCell>
-                    <TableCell>
-                      {format(new Date(subscription.current_period_start), 'dd/MM/yyyy', { locale: es })}
-                    </TableCell>
-                    <TableCell>
-                      {format(new Date(subscription.current_period_end), 'dd/MM/yyyy', { locale: es })}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => loadExecutions(subscription.id)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleModifySubscription(subscription.id, 'cancel')}
-                        >
-                          Cancelar
-                        </Button>
-                      </div>
+                {subscriptions.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      {isLoading ? 'Cargando suscripciones...' : 'No hay suscripciones disponibles'}
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  subscriptions.map((subscription) => (
+                    <TableRow key={subscription.id}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{subscription.lawyer_name || 'N/A'}</div>
+                          <div className="text-sm text-muted-foreground">{subscription.lawyer_email || 'N/A'}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{subscription.plan_name || 'N/A'}</TableCell>
+                      <TableCell>{getStatusBadge(subscription.status)}</TableCell>
+                      <TableCell>{format(new Date(subscription.current_period_start), 'dd/MM/yyyy', { locale: es })}</TableCell>
+                      <TableCell>{format(new Date(subscription.current_period_end), 'dd/MM/yyyy', { locale: es })}</TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => loadExecutions(subscription.id)}
+                          >
+                            Ver Ejecuciones
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => modifySubscription(subscription.id, 'cancel')}
+                          >
+                            Cancelar
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </CardContent>
@@ -527,31 +532,30 @@ export default function SubscriptionAdminManager({ authHeaders }: SubscriptionAd
                   <TableHead>ID</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Monto</TableHead>
+                  <TableHead>Método</TableHead>
                   <TableHead>Fecha</TableHead>
-                  <TableHead>Método de Pago</TableHead>
-                  <TableHead>Detalles</TableHead>
+                  <TableHead>Error</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {executions.map((execution) => (
-                  <TableRow key={execution.id}>
-                    <TableCell className="font-mono text-sm">{execution.id}</TableCell>
-                    <TableCell>{getStatusBadge(execution.status)}</TableCell>
-                    <TableCell>{execution.amount} {execution.currency}</TableCell>
-                    <TableCell>
-                      {format(new Date(execution.executed_at), 'dd/MM/yyyy HH:mm', { locale: es })}
-                    </TableCell>
-                    <TableCell>{execution.payment_method || '-'}</TableCell>
-                    <TableCell>
-                      {execution.failure_reason && (
-                        <div className="flex items-center text-red-600">
-                          <AlertCircle className="h-4 w-4 mr-1" />
-                          {execution.failure_reason}
-                        </div>
-                      )}
+                {executions.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      {isLoading ? 'Cargando ejecuciones...' : 'No hay ejecuciones disponibles'}
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  executions.map((execution) => (
+                    <TableRow key={execution.id}>
+                      <TableCell className="font-medium">{execution.id}</TableCell>
+                      <TableCell>{getStatusBadge(execution.status)}</TableCell>
+                      <TableCell>{execution.amount} {execution.currency}</TableCell>
+                      <TableCell>{execution.payment_method || 'N/A'}</TableCell>
+                      <TableCell>{format(new Date(execution.executed_at), 'dd/MM/yyyy HH:mm', { locale: es })}</TableCell>
+                      <TableCell>{execution.failure_reason || '-'}</TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </CardContent>
@@ -563,9 +567,6 @@ export default function SubscriptionAdminManager({ authHeaders }: SubscriptionAd
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Editar Plan</DialogTitle>
-            <DialogDescription>
-              Modifica los detalles del plan seleccionado
-            </DialogDescription>
           </DialogHeader>
           {selectedPlan && (
             <div className="space-y-4">
@@ -586,21 +587,15 @@ export default function SubscriptionAdminManager({ authHeaders }: SubscriptionAd
                 />
               </div>
               <div>
-                <Label htmlFor="edit-status">Estado</Label>
-                <Select
-                  value={selectedPlan.status}
-                  onValueChange={(value) => setSelectedPlan({ ...selectedPlan, status: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ACTIVE">ACTIVO</SelectItem>
-                    <SelectItem value="INACTIVE">INACTIVO</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="edit-amount">Precio</Label>
+                <Input
+                  id="edit-amount"
+                  type="number"
+                  value={selectedPlan.amount}
+                  onChange={(e) => setSelectedPlan({ ...selectedPlan, amount: Number(e.target.value) })}
+                />
               </div>
-              <Button onClick={handleUpdatePlan} disabled={isLoading} className="w-full">
+              <Button onClick={handleEditPlan} disabled={isLoading} className="w-full">
                 {isLoading ? 'Actualizando...' : 'Actualizar Plan'}
               </Button>
             </div>

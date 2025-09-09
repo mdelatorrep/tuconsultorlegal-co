@@ -58,9 +58,17 @@ serve(async (req) => {
       .select('*')
       .eq('user_id', user.id)
       .eq('active', true)
-      .single();
+      .maybeSingle();
 
-    if (adminError || !adminProfile) {
+    if (adminError) {
+      console.error('Database error checking admin:', adminError);
+      return new Response(
+        JSON.stringify({ error: 'Database error' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!adminProfile) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized: Admin access required' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -126,7 +134,7 @@ serve(async (req) => {
         is_active: true
       })
       .select()
-      .single();
+      .maybeSingle();
 
     if (dbError) {
       console.error('Database error:', dbError);
