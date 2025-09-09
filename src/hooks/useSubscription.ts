@@ -14,6 +14,7 @@ interface SubscriptionPlan {
   currency?: string;
   country?: string;
   active?: boolean;
+  subscribeUrl?: string;
 }
 
 interface LawyerSubscription {
@@ -103,6 +104,7 @@ export const useSubscription = () => {
       const mappedPlans = activePlans.map((plan: any) => {
         console.log('🗺️ Mapping plan:', plan);
         console.log('💰 Plan currency:', plan.currency, 'Amount:', plan.amount);
+        console.log('🔗 Subscribe URL:', plan.subscribe_url);
         return {
           id: plan.id,
           name: plan.name,
@@ -119,7 +121,8 @@ export const useSubscription = () => {
           active: plan.active,
           planToken: plan.plan_token,
           currency: plan.currency || 'USD', // Default to USD if not specified
-          country: plan.country || 'CO'
+          country: plan.country || 'CO',
+          subscribeUrl: plan.subscribe_url
         };
       });
 

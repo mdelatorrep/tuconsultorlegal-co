@@ -23,16 +23,22 @@ export const SubscriptionPlanSelector: React.FC<SubscriptionPlanSelectorProps> =
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>(defaultCycle);
   const { plans, isLoading, createSubscription } = useSubscription();
 
-  const handleSelectPlan = async (planId: string) => {
-    if (onPlanSelected) {
-      onPlanSelected(planId, billingCycle);
-    } else {
-      // Default behavior: create subscription directly
-      try {
-        await createSubscription(planId, billingCycle);
-      } catch (error) {
-        console.error('Error selecting plan:', error);
+  const handleSelectPlan = async (plan: any) => {
+    // Handle free plan selection
+    if (plan.id === 'free') {
+      if (onPlanSelected) {
+        onPlanSelected(plan.id, billingCycle);
       }
+      return;
+    }
+    
+    // For premium plans, redirect to dLocal subscribe URL
+    if (plan.subscribeUrl) {
+      console.log('🔗 Redirecting to dLocal subscribe URL:', plan.subscribeUrl);
+      window.open(plan.subscribeUrl, '_blank');
+    } else if (onPlanSelected) {
+      // Fallback to custom handler if no subscribe URL
+      onPlanSelected(plan.id, billingCycle);
     }
   };
 
@@ -157,7 +163,7 @@ export const SubscriptionPlanSelector: React.FC<SubscriptionPlanSelectorProps> =
                 </ul>
 
                 <Button
-                  onClick={() => handleSelectPlan(plan.id.toString())}
+                  onClick={() => handleSelectPlan(plan)}
                   className={`w-full ${
                     isPopular 
                       ? 'bg-primary hover:bg-primary/90' 
