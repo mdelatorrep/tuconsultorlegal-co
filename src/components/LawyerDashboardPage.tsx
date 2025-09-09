@@ -372,23 +372,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
           isPremium: false
         }
       ]
-    }] : [{
-      title: "Gestión IA",
-      items: [
-        {
-          title: "Crear Agente",
-          icon: Bot,
-          view: "agent-creator" as const,
-          isPremium: true
-        },
-        {
-          title: "Gestionar Agentes",
-          icon: Settings,
-          view: "agent-manager" as const,
-          isPremium: true
-        }
-      ]
-    }]),
+    }] : []),
     {
       title: "Desarrollo",
       items: [
@@ -409,17 +393,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
           isPremium: false
         }
       ]
-    }] : [{
-      title: "Contenido",
-      items: [
-        {
-          title: "Gestión Blog",
-          icon: BookOpen,
-          view: "blog-manager" as const,
-          isPremium: true
-        }
-      ]
-     }]),
+    }] : []),
     {
       title: "Cuenta",
       items: [
@@ -446,45 +420,12 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const renderModuleContent = () => {
     switch (currentView) {
       case 'agent-creator':
-        if (!user?.canCreateAgents) {
-          return (
-            <PremiumFeatureCard
-              title="Crear Agentes de IA"
-              description="Crea y personaliza agentes de inteligencia artificial especializados en derecho"
-              icon={Bot}
-              featureName="la creación de agentes"
-              onRedirectToSubscription={() => setCurrentView('subscription')}
-            />
-          );
-        }
         return <AgentCreatorPage onBack={() => setCurrentView('dashboard')} lawyerData={user} />;
       
       case 'agent-manager':
-        if (!user?.canCreateAgents) {
-          return (
-            <PremiumFeatureCard
-              title="Gestionar Agentes"
-              description="Administra y optimiza tus agentes de IA existentes"
-              icon={Settings}
-              featureName="la gestión de agentes"
-              onRedirectToSubscription={() => setCurrentView('subscription')}
-            />
-          );
-        }
         return <AgentManagerPage onBack={() => setCurrentView('dashboard')} lawyerData={user} />;
       
       case 'blog-manager':
-        if (!user?.canCreateBlogs) {
-          return (
-            <PremiumFeatureCard
-              title="Gestión de Blog"
-              description="Crea y administra contenido legal para tu blog profesional"
-              icon={BookOpen}
-              featureName="la gestión del blog"
-              onRedirectToSubscription={() => setCurrentView('subscription')}
-            />
-          );
-        }
         return <LawyerBlogManager onBack={() => setCurrentView('dashboard')} lawyerData={user} />;
       
       case 'training':
