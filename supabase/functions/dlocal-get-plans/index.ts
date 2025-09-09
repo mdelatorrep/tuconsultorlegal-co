@@ -29,7 +29,7 @@ serve(async (req) => {
     const response = await fetch('https://api.dlocalgo.com/v1/subscription/plan/all', {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${auth}`,
+        'Authorization': `Basic ${auth}`,
         'Content-Type': 'application/json',
       },
     });
