@@ -371,6 +371,12 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
           icon: Settings,
           view: "agent-manager" as const,
           isPremium: false
+        },
+        {
+          title: "Métricas",
+          icon: BarChart3,
+          view: "stats" as const,
+          isPremium: false
         }
       ]
     }] : []),
@@ -402,16 +408,6 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
           title: "Suscripción",
           icon: Crown,
           view: "subscription" as const
-        }
-      ]
-    },
-    {
-      title: "Estadísticas",
-      items: [
-        {
-          title: "Métricas",
-          icon: BarChart3,
-          view: "stats" as const
         }
       ]
     }

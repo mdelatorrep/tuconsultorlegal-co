@@ -71,6 +71,11 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
           title: "Gestionar Agentes",
           icon: Settings,
           view: "agent-manager" as const
+        },
+        {
+          title: "Métricas",
+          icon: BarChart3,
+          view: "stats" as const
         }
       ]
     }] : []),
@@ -101,16 +106,6 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
           title: "Suscripción",
           icon: Crown,
           view: "subscription" as const
-        }
-      ]
-    },
-    {
-      title: "Estadísticas",
-      items: [
-        {
-          title: "Métricas",
-          icon: BarChart3,
-          view: "stats" as const
         }
       ]
     }
