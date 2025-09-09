@@ -88,22 +88,22 @@ serve(async (req) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authString}`
+        'Authorization': `Basic ${authString}`
       },
       body: JSON.stringify({
         name: planData.name,
         description: planData.description,
-        country: planData.country,
+        ...(planData.country && { country: planData.country }),
         currency: planData.currency,
         amount: planData.amount,
         frequency_type: planData.frequency_type,
         frequency_value: planData.frequency_value || 1,
-        day_of_month: planData.day_of_month,
-        max_periods: planData.max_periods,
-        notification_url: planData.notification_url,
-        success_url: planData.success_url,
-        back_url: planData.back_url,
-        error_url: planData.error_url
+        ...(planData.day_of_month && { day_of_month: planData.day_of_month }),
+        ...(planData.max_periods && planData.max_periods >= 1 && { max_periods: planData.max_periods }),
+        ...(planData.notification_url && { notification_url: planData.notification_url }),
+        ...(planData.success_url && { success_url: planData.success_url }),
+        ...(planData.back_url && { back_url: planData.back_url }),
+        ...(planData.error_url && { error_url: planData.error_url })
       })
     });
 
