@@ -60,8 +60,28 @@ export const useSubscription = () => {
       }
 
       console.log('Fetched dLocal plans:', data);
-      // Filter only active plans and add free plan
-      const activePlans = (data.plans || []).filter((plan: SubscriptionPlan) => plan.active !== false);
+      
+      // Map dLocal plans to our format
+      const mappedPlans = (data.data || [])
+        .filter((plan: any) => plan.active === true)
+        .map((plan: any) => ({
+          id: plan.id,
+          name: plan.name,
+          description: plan.description,
+          monthlyPrice: plan.amount,
+          yearlyPrice: plan.amount * 12, // Assuming yearly is 12x monthly for now
+          features: [
+            'Acceso a todas las herramientas de IA',
+            'CRM avanzado',
+            'Soporte prioritario',
+            'Análisis legal',
+            'Redacción automatizada'
+          ],
+          active: plan.active,
+          planToken: plan.plan_token,
+          currency: plan.currency
+        }));
+
       const freePlan = {
         id: 'free',
         name: 'Plan Gratuito',
@@ -75,7 +95,8 @@ export const useSubscription = () => {
         ],
         active: true
       };
-      setPlans([freePlan, ...activePlans]);
+      
+      setPlans([freePlan, ...mappedPlans]);
     } catch (error) {
       console.error('Error fetching plans:', error);
       // Keep the free plan even if API fails
@@ -94,9 +115,9 @@ export const useSubscription = () => {
       };
       setPlans([freePlan]);
       toast({
-        title: "Error",
-        description: "No se pudieron cargar algunos planes de suscripción",
-        variant: "destructive"
+        title: "Información",
+        description: "Se cargó el plan gratuito. Los planes premium no están disponibles temporalmente.",
+        variant: "default"
       });
     } finally {
       setIsLoading(false);
@@ -123,11 +144,24 @@ export const useSubscription = () => {
   // Create a new subscription
   const createSubscription = async (planId: string | number, billingCycle: 'monthly' | 'yearly') => {
     setIsLoading(true);
+    
+    // Handle free plan selection
+    if (planId === 'free') {
+      toast({
+        title: "Plan Gratuito Seleccionado",
+        description: "Ya tienes acceso al plan gratuito con funcionalidades básicas",
+      });
+      setIsLoading(false);
+      return;
+    }
+    
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         throw new Error('No authenticated user');
       }
+
+      console.log('Creating subscription for plan:', planId, 'billing cycle:', billingCycle);
 
       const { data, error } = await supabase.functions.invoke('dlocal-create-subscription', {
         body: { planId, billingCycle },
@@ -138,15 +172,21 @@ export const useSubscription = () => {
 
       if (error) throw error;
 
+      console.log('Subscription creation response:', data);
+
       // If there's a redirect URL (for dLocal checkout), open it
       if (data.redirectUrl) {
         window.open(data.redirectUrl, '_blank');
+        toast({
+          title: "Redirigiendo a pago",
+          description: "Te hemos redirigido a la plataforma de pago segura",
+        });
+      } else {
+        toast({
+          title: "Procesando suscripción",
+          description: "Tu suscripción está siendo procesada",
+        });
       }
-
-      toast({
-        title: "Redirigiendo a pago",
-        description: "Te hemos redirigido a la plataforma de pago segura",
-      });
 
       // Refresh current subscription
       if (session.user) {

@@ -15,6 +15,7 @@ export const SubscriptionManager: React.FC = () => {
     currentSubscription, 
     isLoading, 
     fetchCurrentSubscription,
+    createSubscription,
     cancelSubscription,
     reactivateSubscription 
   } = useSubscription();
@@ -197,9 +198,13 @@ export const SubscriptionManager: React.FC = () => {
         </CardHeader>
         <CardContent>
           <SubscriptionPlanSelector 
-            onPlanSelected={(planId, billingCycle) => {
-              // Handle plan selection - could redirect to upgrade flow
+            onPlanSelected={async (planId, billingCycle) => {
               console.log('Plan selected:', { planId, billingCycle });
+              try {
+                await createSubscription(planId, billingCycle);
+              } catch (error) {
+                console.error('Error selecting plan:', error);
+              }
             }}
           />
         </CardContent>
