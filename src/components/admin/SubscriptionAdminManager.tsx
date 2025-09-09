@@ -253,7 +253,7 @@ export default function SubscriptionAdminManager({ authHeaders }: SubscriptionAd
                           <SelectValue placeholder="Seleccionar país" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Sin especificar</SelectItem>
+                          <SelectItem value="none">Sin especificar</SelectItem>
                           <SelectItem value="US">Estados Unidos</SelectItem>
                           <SelectItem value="CO">Colombia</SelectItem>
                           <SelectItem value="MX">México</SelectItem>
