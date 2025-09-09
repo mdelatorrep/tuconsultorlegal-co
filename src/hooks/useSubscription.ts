@@ -184,6 +184,8 @@ export const useSubscription = () => {
   // Fetch current lawyer subscription
   const fetchCurrentSubscription = async (lawyerId: string) => {
     try {
+      console.log(`🔍 Fetching subscription for lawyer: ${lawyerId}`);
+      
       const { data, error } = await supabase
         .from('lawyer_subscriptions' as any)
         .select('*')
@@ -191,10 +193,35 @@ export const useSubscription = () => {
         .eq('status', 'active')
         .single();
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching subscription:', error);
+        throw error;
+      }
+      
+      console.log(`📋 Current subscription found:`, data);
       setCurrentSubscription(data as unknown as LawyerSubscription);
     } catch (error) {
       console.error('Error fetching current subscription:', error);
+      setCurrentSubscription(null);
+    }
+  };
+
+  // Sync subscriptions from dLocal (useful after payments)
+  const syncSubscriptions = async () => {
+    try {
+      console.log('🔄 Syncing subscriptions from dLocal...');
+      const { data, error } = await supabase.functions.invoke('dlocal-admin-sync-subscriptions');
+      
+      if (error) {
+        console.error('❌ Error syncing subscriptions:', error);
+        return false;
+      }
+      
+      console.log('✅ Subscription sync completed:', data);
+      return true;
+    } catch (error) {
+      console.error('💥 Sync subscriptions failed:', error);
+      return false;
     }
   };
 
@@ -250,12 +277,19 @@ export const useSubscription = () => {
         // Immediate refresh
         await fetchCurrentSubscription(session.user.id);
         
-        // Set up periodic refresh for webhook updates
+        // Set up periodic refresh for webhook updates with sync
         let attempts = 0;
         const maxAttempts = 12; // 12 attempts over 2 minutes
         const refreshInterval = setInterval(async () => {
           attempts++;
           console.log(`🔄 Refreshing subscription status - attempt ${attempts}`);
+          
+          // Every 3rd attempt, try to sync from dLocal
+          if (attempts % 3 === 0) {
+            console.log(`🔄 Attempting dLocal sync on attempt ${attempts}`);
+            await syncSubscriptions();
+          }
+          
           await fetchCurrentSubscription(session.user.id);
           
           if (attempts >= maxAttempts) {
@@ -364,6 +398,7 @@ export const useSubscription = () => {
     fetchCurrentSubscription,
     createSubscription,
     cancelSubscription,
-    reactivateSubscription
+    reactivateSubscription,
+    syncSubscriptions
   };
 };
