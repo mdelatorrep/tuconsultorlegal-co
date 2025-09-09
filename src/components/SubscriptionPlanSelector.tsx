@@ -98,26 +98,6 @@ export const SubscriptionPlanSelector: React.FC<SubscriptionPlanSelectorProps> =
 
   return (
     <div className={`space-y-6 ${className}`}>
-      {showCycleToggle && (
-        <div className="flex items-center justify-center space-x-4 bg-muted/20 p-4 rounded-lg">
-          <Label htmlFor="billing-cycle" className="text-sm font-medium">
-            Mensual
-          </Label>
-          <Switch
-            id="billing-cycle"
-            checked={billingCycle === 'yearly'}
-            onCheckedChange={(checked) => setBillingCycle(checked ? 'yearly' : 'monthly')}
-          />
-          <Label htmlFor="billing-cycle" className="text-sm font-medium">
-            Anual
-          </Label>
-          {billingCycle === 'yearly' && (
-            <Badge variant="secondary" className="ml-2">
-              Ahorra hasta 2 meses
-            </Badge>
-          )}
-        </div>
-      )}
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {plans.map((plan) => {
