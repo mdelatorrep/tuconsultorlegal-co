@@ -20,6 +20,7 @@ import AnalyzeModule from "./lawyer-modules/AnalyzeModule";
 import DraftModule from "./lawyer-modules/DraftModule";
 import StrategizeModule from "./lawyer-modules/StrategizeModule";
 import IntegrationsModule from "./lawyer-modules/IntegrationsModule";
+import CRMModule from "./lawyer-modules/CRMModule";
 import PremiumFeatureCard from "./PremiumFeatureCard";
 import LawyerOnboardingCoachmarks from "./LawyerOnboardingCoachmarks";
 import { useLawyerOnboarding } from "@/hooks/useLawyerOnboarding";
@@ -52,7 +53,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const [selectedDocument, setSelectedDocument] = useState<DocumentToken | null>(null);
   const [editedContent, setEditedContent] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager' | 'research' | 'analyze' | 'draft' | 'strategize' | 'integrations' | 'subscription'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager' | 'research' | 'analyze' | 'draft' | 'strategize' | 'integrations' | 'subscription' | 'crm'>('dashboard');
   const { toast } = useToast();
   const { isAuthenticated, isLoading: authLoading, user, logout, checkAuthStatus } = useLawyerAuth();
   const isMobile = useIsMobile();
@@ -345,6 +346,12 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
           title: "Integraciones",
           icon: Settings,
           view: "integrations" as const,
+          isPremium: !user?.canUseAiTools
+        },
+        {
+          title: "CRM",
+          icon: Users,
+          view: "crm" as const,
           isPremium: !user?.canUseAiTools
         }
       ]

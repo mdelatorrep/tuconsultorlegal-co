@@ -468,6 +468,398 @@ export type Database = {
           },
         ]
       }
+      crm_automation_rules: {
+        Row: {
+          actions: Json
+          created_at: string
+          description: string | null
+          execution_count: number | null
+          id: string
+          is_active: boolean | null
+          last_execution: string | null
+          lawyer_id: string
+          name: string
+          trigger_conditions: Json | null
+          trigger_event: string
+          updated_at: string
+        }
+        Insert: {
+          actions?: Json
+          created_at?: string
+          description?: string | null
+          execution_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_execution?: string | null
+          lawyer_id: string
+          name: string
+          trigger_conditions?: Json | null
+          trigger_event: string
+          updated_at?: string
+        }
+        Update: {
+          actions?: Json
+          created_at?: string
+          description?: string | null
+          execution_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_execution?: string | null
+          lawyer_id?: string
+          name?: string
+          trigger_conditions?: Json | null
+          trigger_event?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      crm_cases: {
+        Row: {
+          actual_hours: number | null
+          billing_rate: number | null
+          case_number: string | null
+          case_type: string
+          client_id: string
+          created_at: string
+          description: string | null
+          end_date: string | null
+          estimated_hours: number | null
+          id: string
+          lawyer_id: string
+          priority: string
+          start_date: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          actual_hours?: number | null
+          billing_rate?: number | null
+          case_number?: string | null
+          case_type: string
+          client_id: string
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          estimated_hours?: number | null
+          id?: string
+          lawyer_id: string
+          priority?: string
+          start_date?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          actual_hours?: number | null
+          billing_rate?: number | null
+          case_number?: string | null
+          case_type?: string
+          client_id?: string
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          estimated_hours?: number | null
+          id?: string
+          lawyer_id?: string
+          priority?: string
+          start_date?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_cases_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "crm_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_client_segments: {
+        Row: {
+          ai_generated: boolean | null
+          created_at: string
+          criteria: Json
+          description: string | null
+          id: string
+          is_active: boolean | null
+          lawyer_id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          ai_generated?: boolean | null
+          created_at?: string
+          criteria?: Json
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          lawyer_id: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          ai_generated?: boolean | null
+          created_at?: string
+          criteria?: Json
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          lawyer_id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      crm_clients: {
+        Row: {
+          address: string | null
+          client_type: string
+          company: string | null
+          created_at: string
+          email: string
+          id: string
+          lawyer_id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          status: string
+          tags: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          client_type?: string
+          company?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          lawyer_id: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          status?: string
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          client_type?: string
+          company?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          lawyer_id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          status?: string
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      crm_communications: {
+        Row: {
+          case_id: string | null
+          client_id: string
+          content: string
+          created_at: string
+          direction: string
+          id: string
+          lawyer_id: string
+          metadata: Json | null
+          scheduled_for: string | null
+          sent_at: string | null
+          status: string
+          subject: string | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          case_id?: string | null
+          client_id: string
+          content: string
+          created_at?: string
+          direction?: string
+          id?: string
+          lawyer_id: string
+          metadata?: Json | null
+          scheduled_for?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          case_id?: string | null
+          client_id?: string
+          content?: string
+          created_at?: string
+          direction?: string
+          id?: string
+          lawyer_id?: string
+          metadata?: Json | null
+          scheduled_for?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_communications_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "crm_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_communications_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "crm_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_documents: {
+        Row: {
+          case_id: string | null
+          client_id: string
+          created_at: string
+          description: string | null
+          document_type: string
+          file_size: number | null
+          file_url: string | null
+          id: string
+          is_confidential: boolean | null
+          lawyer_id: string
+          name: string
+          tags: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          case_id?: string | null
+          client_id: string
+          created_at?: string
+          description?: string | null
+          document_type: string
+          file_size?: number | null
+          file_url?: string | null
+          id?: string
+          is_confidential?: boolean | null
+          lawyer_id: string
+          name: string
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          case_id?: string | null
+          client_id?: string
+          created_at?: string
+          description?: string | null
+          document_type?: string
+          file_size?: number | null
+          file_url?: string | null
+          id?: string
+          is_confidential?: boolean | null
+          lawyer_id?: string
+          name?: string
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_documents_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "crm_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_documents_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "crm_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_tasks: {
+        Row: {
+          assigned_to: string | null
+          case_id: string | null
+          client_id: string | null
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          lawyer_id: string
+          metadata: Json | null
+          priority: string
+          status: string
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          case_id?: string | null
+          client_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          lawyer_id: string
+          metadata?: Json | null
+          priority?: string
+          status?: string
+          title: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          case_id?: string | null
+          client_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          lawyer_id?: string
+          metadata?: Json | null
+          priority?: string
+          status?: string
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_tasks_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "crm_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_tasks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "crm_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_categories: {
         Row: {
           category_type: string | null
