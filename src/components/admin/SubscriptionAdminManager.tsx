@@ -22,8 +22,9 @@ interface Plan {
   frequency: string;
   status: string;
   created_at: string;
-  trial_period_days?: number;
-  max_billing_cycles?: number;
+  frequency_type?: string;
+  frequency_value?: number;
+  max_periods?: number;
 }
 
 interface Subscription {
@@ -83,10 +84,12 @@ export default function SubscriptionAdminManager({ authHeaders }: SubscriptionAd
     description: '',
     amount: 0,
     currency: 'USD',
-    frequency: 'MONTH' as 'MONTH' | 'YEAR',
-    frequency_count: 1,
-    trial_period_days: 0,
-    max_billing_cycles: 0
+    frequency_type: 'MONTHLY' as 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY',
+    frequency_value: 1,
+    max_periods: undefined,
+    notification_url: '',
+    success_url: '',
+    cancel_url: ''
   });
 
   const { toast } = useToast();
@@ -113,10 +116,12 @@ export default function SubscriptionAdminManager({ authHeaders }: SubscriptionAd
         description: '',
         amount: 0,
         currency: 'USD',
-        frequency: 'MONTH',
-        frequency_count: 1,
-        trial_period_days: 0,
-        max_billing_cycles: 0
+        frequency_type: 'MONTHLY',
+        frequency_value: 1,
+        max_periods: undefined,
+        notification_url: '',
+        success_url: '',
+        cancel_url: ''
       });
       fetchPlans();
     } catch (error) {
@@ -266,34 +271,36 @@ export default function SubscriptionAdminManager({ authHeaders }: SubscriptionAd
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="frequency">Frecuencia</Label>
-                    <Select value={newPlan.frequency} onValueChange={(value) => setNewPlan({ ...newPlan, frequency: value as 'MONTH' | 'YEAR' })}>
+                    <Label htmlFor="frequency_type">Frecuencia</Label>
+                    <Select value={newPlan.frequency_type} onValueChange={(value) => setNewPlan({ ...newPlan, frequency_type: value as 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY' })}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="MONTH">Mensual</SelectItem>
-                        <SelectItem value="YEAR">Anual</SelectItem>
+                        <SelectItem value="DAILY">Diario</SelectItem>
+                        <SelectItem value="WEEKLY">Semanal</SelectItem>
+                        <SelectItem value="MONTHLY">Mensual</SelectItem>
+                        <SelectItem value="YEARLY">Anual</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="trial">Días de prueba</Label>
+                      <Label htmlFor="frequency_value">Valor de frecuencia</Label>
                       <Input
-                        id="trial"
+                        id="frequency_value"
                         type="number"
-                        value={newPlan.trial_period_days}
-                        onChange={(e) => setNewPlan({ ...newPlan, trial_period_days: Number(e.target.value) })}
+                        value={newPlan.frequency_value}
+                        onChange={(e) => setNewPlan({ ...newPlan, frequency_value: Number(e.target.value) })}
                       />
                     </div>
                     <div>
-                      <Label htmlFor="cycles">Ciclos máximos</Label>
+                      <Label htmlFor="max_periods">Períodos máximos</Label>
                       <Input
-                        id="cycles"
+                        id="max_periods"
                         type="number"
-                        value={newPlan.max_billing_cycles}
-                        onChange={(e) => setNewPlan({ ...newPlan, max_billing_cycles: Number(e.target.value) })}
+                        value={newPlan.max_periods || ''}
+                        onChange={(e) => setNewPlan({ ...newPlan, max_periods: e.target.value ? Number(e.target.value) : undefined })}
                       />
                     </div>
                   </div>

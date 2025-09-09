@@ -46,10 +46,12 @@ interface CreatePlanData {
   description: string;
   amount: number;
   currency: string;
-  frequency: 'MONTH' | 'YEAR';
-  frequency_count: number;
-  trial_period_days?: number;
-  max_billing_cycles?: number;
+  frequency_type: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
+  frequency_value?: number;
+  max_periods?: number;
+  notification_url?: string;
+  success_url?: string;
+  cancel_url?: string;
 }
 
 interface UpdatePlanData {

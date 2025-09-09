@@ -11,10 +11,12 @@ interface PlanData {
   description: string;
   amount: number;
   currency: string;
-  frequency: 'MONTH' | 'YEAR';
-  frequency_count: number;
-  trial_period_days?: number;
-  max_billing_cycles?: number;
+  frequency_type: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
+  frequency_value?: number;
+  max_periods?: number;
+  notification_url?: string;
+  success_url?: string;
+  cancel_url?: string;
 }
 
 serve(async (req) => {
@@ -67,23 +69,27 @@ serve(async (req) => {
     console.log('Creating dLocal plan:', planData);
 
     // Create plan in dLocal
-    const dlocalResponse = await fetch('https://api.dlocalgo.com/v1/plans', {
+    const apiKey = Deno.env.get('DLOCAL_API_KEY') ?? '';
+    const secretKey = Deno.env.get('DLOCAL_SECRET_KEY') ?? '';
+    const authString = btoa(`${apiKey}:${secretKey}`);
+    
+    const dlocalResponse = await fetch('https://api.dlocalgo.com/v1/subscription/plan', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-API-KEY': Deno.env.get('DLOCAL_API_KEY') ?? '',
-        'X-SECRET-KEY': Deno.env.get('DLOCAL_SECRET_KEY') ?? ''
+        'Authorization': `Bearer ${authString}`
       },
       body: JSON.stringify({
         name: planData.name,
         description: planData.description,
         amount: planData.amount,
         currency: planData.currency,
-        frequency: planData.frequency,
-        frequency_count: planData.frequency_count,
-        trial_period_days: planData.trial_period_days || 0,
-        max_billing_cycles: planData.max_billing_cycles || 0,
-        payment_method_types: ['CARD', 'BANK_TRANSFER']
+        frequency_type: planData.frequency_type,
+        frequency_value: planData.frequency_value || 1,
+        max_periods: planData.max_periods,
+        notification_url: planData.notification_url,
+        success_url: planData.success_url,
+        cancel_url: planData.cancel_url
       })
     });
 
@@ -97,13 +103,17 @@ serve(async (req) => {
     console.log('dLocal plan created successfully:', dlocalData);
 
     // Save plan to local database
+    const isMonthly = planData.frequency_type === 'MONTHLY';
+    const isYearly = planData.frequency_type === 'YEARLY';
+    const baseAmount = planData.amount;
+    
     const { data: dbPlan, error: dbError } = await supabase
       .from('subscription_plans')
       .insert({
         name: planData.name,
         description: planData.description,
-        price_monthly: planData.frequency === 'MONTH' ? planData.amount : planData.amount / 12,
-        price_yearly: planData.frequency === 'YEAR' ? planData.amount : planData.amount * 12,
+        price_monthly: isMonthly ? baseAmount : (isYearly ? baseAmount / 12 : baseAmount),
+        price_yearly: isYearly ? baseAmount : (isMonthly ? baseAmount * 12 : baseAmount * 12),
         dlocal_plan_id: dlocalData.id,
         features: [],
         enables_legal_tools: false,
