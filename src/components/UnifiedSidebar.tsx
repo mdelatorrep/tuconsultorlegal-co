@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Bot, Settings } from "lucide-react";
+import { LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Bot, Settings, Users, Crown, Lock } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 
 interface UnifiedSidebarProps {
@@ -48,7 +48,14 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
         {
           title: "Integraciones",
           icon: Settings,
-          view: "integrations" as const
+          view: "integrations" as const,
+          isPremium: !user?.canUseAiTools
+        },
+        {
+          title: "Gestión de Clientes",
+          icon: Users,
+          view: "crm" as const,
+          isPremium: !user?.canUseAiTools
         }
       ]
     },
@@ -88,6 +95,16 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
       ]
     }] : []),
     {
+      title: "Cuenta",
+      items: [
+        {
+          title: "Suscripción",
+          icon: Crown,
+          view: "subscription" as const
+        }
+      ]
+    },
+    {
       title: "Estadísticas",
       items: [
         {
@@ -118,14 +135,22 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
                   <SidebarMenuItem key={item.view}>
                     <SidebarMenuButton 
                       onClick={() => onViewChange(item.view)}
-                      className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                      className={`flex items-center justify-between gap-3 px-3 py-2 rounded-lg transition-colors ${
                         currentView === item.view 
                           ? 'bg-primary text-primary-foreground' 
                           : 'hover:bg-muted'
-                      }`}
+                      } ${(item as any).isPremium ? 'opacity-75' : ''}`}
                     >
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
+                      <div className="flex items-center gap-3">
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </div>
+                      {(item as any).isPremium && (
+                        <div className="flex items-center gap-1">
+                          <Crown className="h-3 w-3 text-amber-500" />
+                          <Lock className="h-3 w-3 text-muted-foreground" />
+                        </div>
+                      )}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
