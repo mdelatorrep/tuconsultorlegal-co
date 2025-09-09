@@ -36,17 +36,19 @@ export const SubscriptionPlanSelector: React.FC<SubscriptionPlanSelectorProps> =
     }
   };
 
-  const formatPrice = (monthlyPrice: number, yearlyPrice: number) => {
+  const formatPrice = (monthlyPrice: number, yearlyPrice: number, currency = 'USD') => {
+    const currencySymbol = currency === 'USD' ? 'USD $' : '$';
+    
     if (billingCycle === 'yearly') {
       const monthlyEquivalent = yearlyPrice / 12;
       return {
-        price: `$${monthlyEquivalent.toLocaleString('es-CO', { maximumFractionDigits: 0 })}`,
+        price: `${currencySymbol}${monthlyEquivalent.toLocaleString('es-CO', { maximumFractionDigits: 0 })}`,
         period: '/mes',
-        savings: monthlyPrice > monthlyEquivalent ? `Ahorra $${((monthlyPrice - monthlyEquivalent) * 12).toLocaleString('es-CO', { maximumFractionDigits: 0 })} al año` : null
+        savings: monthlyPrice > monthlyEquivalent ? `Ahorra ${currencySymbol}${((monthlyPrice - monthlyEquivalent) * 12).toLocaleString('es-CO', { maximumFractionDigits: 0 })} al año` : null
       };
     }
     return {
-      price: `$${monthlyPrice.toLocaleString('es-CO', { maximumFractionDigits: 0 })}`,
+      price: `${currencySymbol}${monthlyPrice.toLocaleString('es-CO', { maximumFractionDigits: 0 })}`,
       period: '/mes',
       savings: null
     };
@@ -101,7 +103,7 @@ export const SubscriptionPlanSelector: React.FC<SubscriptionPlanSelectorProps> =
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {plans.map((plan) => {
-          const pricing = formatPrice(plan.monthlyPrice, plan.yearlyPrice);
+          const pricing = formatPrice(plan.monthlyPrice, plan.yearlyPrice, plan.currency);
           const isPopular = isPlanPopular(plan.name);
           const isFree = plan.monthlyPrice === 0;
 

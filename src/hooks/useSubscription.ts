@@ -12,6 +12,7 @@ interface SubscriptionPlan {
   isPopular?: boolean;
   planToken?: string;
   currency?: string;
+  country?: string;
   active?: boolean;
 }
 
@@ -101,6 +102,7 @@ export const useSubscription = () => {
       // Map dLocal plans to our format
       const mappedPlans = activePlans.map((plan: any) => {
         console.log('🗺️ Mapping plan:', plan);
+        console.log('💰 Plan currency:', plan.currency, 'Amount:', plan.amount);
         return {
           id: plan.id,
           name: plan.name,
@@ -116,7 +118,8 @@ export const useSubscription = () => {
           ],
           active: plan.active,
           planToken: plan.plan_token,
-          currency: plan.currency
+          currency: plan.currency || 'USD', // Default to USD if not specified
+          country: plan.country || 'CO'
         };
       });
 
