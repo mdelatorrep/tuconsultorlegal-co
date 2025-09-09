@@ -25,6 +25,7 @@ import PremiumFeatureCard from "./PremiumFeatureCard";
 import LawyerOnboardingCoachmarks from "./LawyerOnboardingCoachmarks";
 import { useLawyerOnboarding } from "@/hooks/useLawyerOnboarding";
 import { SubscriptionManager } from "./SubscriptionManager";
+import { SubscriptionStatusIndicator } from "./SubscriptionStatusIndicator";
 
 interface DocumentToken {
   id: string;
@@ -683,9 +684,12 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
         <main className="flex-1">
           {/* Header with Sidebar Toggle */}
           <header className="h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="flex h-14 items-center px-4">
-              <SidebarTrigger className="mr-4" />
-              <h1 className="text-lg font-semibold">Dashboard Legal</h1>
+            <div className="flex h-14 items-center justify-between px-4">
+              <div className="flex items-center gap-4">
+                <SidebarTrigger className="mr-4" />
+                <h1 className="text-lg font-semibold">Dashboard Legal</h1>
+              </div>
+              <SubscriptionStatusIndicator compact={true} />
             </div>
           </header>
 

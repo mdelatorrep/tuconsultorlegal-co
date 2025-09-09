@@ -9,7 +9,7 @@ import { SubscriptionPlanSelector } from './SubscriptionPlanSelector';
 import { useLawyerAuth } from '@/hooks/useLawyerAuth';
 
 export const SubscriptionManager: React.FC = () => {
-  const { user } = useLawyerAuth();
+  const { user, validateAndRefreshSubscription } = useLawyerAuth();
   const { 
     plans, 
     currentSubscription, 
@@ -23,8 +23,21 @@ export const SubscriptionManager: React.FC = () => {
   useEffect(() => {
     if (user?.id) {
       fetchCurrentSubscription(user.id);
+      // Also validate subscription status on component mount
+      validateAndRefreshSubscription();
     }
-  }, [user?.id, fetchCurrentSubscription]);
+  }, [user?.id, fetchCurrentSubscription, validateAndRefreshSubscription]);
+
+  // Refresh subscription validation every 30 seconds
+  useEffect(() => {
+    if (!user?.id) return;
+    
+    const interval = setInterval(() => {
+      validateAndRefreshSubscription();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, [user?.id, validateAndRefreshSubscription]);
 
   const getCurrentPlan = () => {
     if (!currentSubscription) return null;
@@ -202,6 +215,10 @@ export const SubscriptionManager: React.FC = () => {
               console.log('Plan selected:', { planId, billingCycle });
               try {
                 await createSubscription(planId, billingCycle);
+                // Refresh subscription status after plan selection
+                setTimeout(() => {
+                  validateAndRefreshSubscription();
+                }, 2000); // Wait 2 seconds for dLocal to process
               } catch (error) {
                 console.error('Error selecting plan:', error);
               }
