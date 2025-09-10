@@ -277,8 +277,7 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
         <main className="flex-1">
           {/* Modern Header */}
           <header className="h-16 border-b bg-gradient-to-r from-background/95 to-primary/10 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-50"></div>
-            <div className="relative flex h-16 items-center px-6">
+            <div className="flex h-16 items-center px-6 relative z-10">
               <SidebarTrigger className="mr-4 hover:bg-primary/10 rounded-lg p-2 transition-all duration-200" />
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-gradient-to-br from-primary to-primary/80 rounded-xl shadow-lg">
@@ -299,8 +298,7 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
               <div className="space-y-8">
                 {/* Hero Section */}
                 <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20 p-8">
-                  <div className="absolute inset-0 bg-grid-pattern opacity-10"></div>
-                  <div className="relative">
+                  <div className="relative z-10">
                     <div className="flex items-center gap-4 mb-6">
                       <div className="p-4 bg-gradient-to-br from-primary to-primary/80 rounded-2xl shadow-2xl">
                         <Sparkles className="h-10 w-10 text-primary-foreground" />
@@ -349,9 +347,8 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
                 </div>
 
                 {/* Enhanced Search Interface */}
-                <Card className="border-0 shadow-2xl bg-gradient-to-br from-white via-white to-primary/5 overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 opacity-50"></div>
-                  <CardHeader className="relative pb-6">
+                <Card className="border-0 shadow-2xl bg-gradient-to-br from-white via-white to-primary/5 overflow-hidden relative">
+                  <CardHeader className="relative z-10 pb-6">
                     <div className="flex items-center gap-4">
                       <div className="p-3 bg-gradient-to-br from-primary to-primary/80 rounded-xl shadow-lg">
                         <BookOpen className="h-6 w-6 text-primary-foreground" />
@@ -366,7 +363,7 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
                       </div>
                     </div>
                   </CardHeader>
-                  <CardContent className="relative space-y-6">
+                  <CardContent className="relative z-10 space-y-6">
                     <div className="space-y-3">
                       <label htmlFor="research-query" className="text-sm font-semibold text-primary">
                         Descripción de la consulta jurídica
@@ -382,10 +379,16 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
                         }}
                         onFocus={() => console.log('Textarea focused')}
                         onBlur={() => console.log('Textarea blurred')}
+                        onMouseDown={() => console.log('Textarea mouse down')}
+                        onClick={() => console.log('Textarea clicked')}
                         rows={5}
                         disabled={isSearching}
-                        className="resize-none border-primary/20 focus:border-primary/40 rounded-xl bg-white text-base min-h-[120px] focus:ring-2 focus:ring-primary/20"
-                        style={{ pointerEvents: 'auto' }}
+                        className="resize-none border-primary/20 focus:border-primary/40 rounded-xl bg-white text-base min-h-[120px] focus:ring-2 focus:ring-primary/20 relative z-20 cursor-text"
+                        style={{ 
+                          pointerEvents: 'auto',
+                          position: 'relative',
+                          zIndex: 20
+                        }}
                       />
                       <p className="text-xs text-muted-foreground">
                         💡 Tip: Sé específico sobre el área del derecho, jurisdicción y tipo de análisis que necesitas
@@ -407,7 +410,12 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
                     <Button
                       onClick={handleSearch}
                       disabled={isSearching}
-                      className="w-full h-14 rounded-xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-xl hover:shadow-2xl transition-all duration-300 text-lg font-semibold"
+                      className="w-full h-14 rounded-xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-xl hover:shadow-2xl transition-all duration-300 text-lg font-semibold relative z-20 cursor-pointer"
+                      style={{
+                        pointerEvents: 'auto',
+                        position: 'relative',
+                        zIndex: 20
+                      }}
                     >
                       {isSearching ? (
                         <>
