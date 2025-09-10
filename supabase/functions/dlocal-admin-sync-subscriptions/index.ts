@@ -66,7 +66,7 @@ serve(async (req) => {
           .from('lawyer_subscriptions')
           .select('*')
           .eq('dlocal_subscription_id', dLocalSub.id)
-          .single();
+          .maybeSingle();
 
         if (existingSub) {
           // Update existing subscription
@@ -96,7 +96,7 @@ serve(async (req) => {
               .from('lawyer_profiles')
               .select('id, email')
               .eq('id', dLocalSub.user.external_id)
-              .single();
+              .maybeSingle();
             lawyer = foundLawyer;
           }
           
@@ -106,50 +106,47 @@ serve(async (req) => {
               .from('lawyer_profiles')
               .select('id')
               .eq('email', dLocalSub.user.email)
-              .single();
+              .maybeSingle();
             lawyer = foundLawyer;
           }
 
           if (lawyer) {
-              // Create new subscription record
-              const { error: insertError } = await supabase
-                .from('lawyer_subscriptions')
-                .insert({
-                  lawyer_id: lawyer.id,
-                  plan_id: dLocalSub.plan_id || 'unknown',
-                  billing_cycle: 'monthly', // Default, can be updated
-                  status: dLocalSub.status || 'active',
-                  dlocal_subscription_id: dLocalSub.id,
-                  current_period_start: dLocalSub.current_period_start ? new Date(dLocalSub.current_period_start).toISOString() : null,
-                  current_period_end: dLocalSub.current_period_end ? new Date(dLocalSub.current_period_end).toISOString() : null,
-                  cancel_at_period_end: false
-                });
+            // Create new subscription record
+            const { error: insertError } = await supabase
+              .from('lawyer_subscriptions')
+              .insert({
+                lawyer_id: lawyer.id,
+                plan_id: dLocalSub.plan_id || 'unknown',
+                billing_cycle: 'monthly', // Default, can be updated
+                status: dLocalSub.status || 'active',
+                dlocal_subscription_id: dLocalSub.id,
+                current_period_start: dLocalSub.current_period_start ? new Date(dLocalSub.current_period_start).toISOString() : null,
+                current_period_end: dLocalSub.current_period_end ? new Date(dLocalSub.current_period_end).toISOString() : null,
+                cancel_at_period_end: false
+              });
 
-              if (!insertError) {
-                syncedCount++;
-                console.log(`✅ Created new subscription record for: ${dLocalSub.user.email}`);
-                
-                // Update lawyer permissions if subscription is active
-                if (dLocalSub.status === 'active') {
-                  await supabase
-                    .from('lawyer_profiles')
-                    .update({
-                      can_create_agents: true,
-                      can_create_blogs: true,
-                      can_use_ai_tools: true
-                    })
-                    .eq('id', lawyer.id);
-                    
-                  console.log(`✅ Updated permissions for lawyer: ${lawyer.id}`);
-                }
-              } else {
-                console.error(`❌ Error creating subscription ${dLocalSub.id}:`, insertError);
+            if (!insertError) {
+              syncedCount++;
+              console.log(`✅ Created new subscription record for: ${dLocalSub.user.email || dLocalSub.user.external_id}`);
+              
+              // Update lawyer permissions if subscription is active
+              if (dLocalSub.status === 'active') {
+                await supabase
+                  .from('lawyer_profiles')
+                  .update({
+                    can_create_agents: true,
+                    can_create_blogs: true,
+                    can_use_ai_tools: true
+                  })
+                  .eq('id', lawyer.id);
+                  
+                console.log(`✅ Updated permissions for lawyer: ${lawyer.id}`);
               }
             } else {
-              console.log(`⚠️ No lawyer found for email: ${dLocalSub.user.email}`);
+              console.error(`❌ Error creating subscription ${dLocalSub.id}:`, insertError);
             }
           } else {
-            console.log(`⚠️ Subscription ${dLocalSub.id} has no user email`);
+            console.log(`⚠️ No lawyer found for subscription ${dLocalSub.id} (email: ${dLocalSub.user?.email}, external_id: ${dLocalSub.user?.external_id})`);
           }
         }
       }

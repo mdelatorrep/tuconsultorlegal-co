@@ -57,7 +57,7 @@ serve(async (req) => {
         .from('lawyer_profiles')
         .select('id, email')
         .eq('id', externalId)
-        .single();
+        .maybeSingle();
       
       if (lawyer) {
         lawyerId = lawyer.id;
@@ -73,7 +73,7 @@ serve(async (req) => {
         .from('lawyer_profiles')
         .select('id')
         .eq('email', userEmail)
-        .single();
+        .maybeSingle();
       
       if (lawyer) {
         lawyerId = lawyer.id;
