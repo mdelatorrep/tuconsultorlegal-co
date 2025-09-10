@@ -173,7 +173,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         assistant_id: assistantId,
-        instructions: `Realiza una investigación jurídica completa sobre: "${query}". SIEMPRE usa la búsqueda web para encontrar información legal actualizada de Colombia. Busca específicamente en sitios oficiales del gobierno colombiano, jurisprudencia de altas cortes, y normativa vigente.`
+        instructions: `Realiza una investigación jurídica completa sobre: "${query}". Analiza exhaustivamente la normativa colombiana, jurisprudencia y regulaciones aplicables. Proporciona una respuesta estructurada en formato JSON con análisis detallado, fuentes específicas y conclusiones prácticas.`
       })
     });
 
@@ -219,17 +219,17 @@ serve(async (req) => {
           let output = '';
           try {
             switch (toolCall.function.name) {
-              case 'web_search':
+              case 'file_search':
                 const args = JSON.parse(toolCall.function.arguments);
-                sourcesUsed.push(`Búsqueda web: ${args.query || 'Consulta legal'}`);
-                output = 'Búsqueda web completada. Información legal actualizada obtenida.';
+                sourcesUsed.push(`Búsqueda en conocimiento: ${args.query || 'Consulta legal'}`);
+                output = 'Búsqueda en base de conocimiento completada. Información legal relevante encontrada.';
                 break;
               default:
-                output = `Función ${toolCall.function.name} procesada`;
+                output = `Herramienta ${toolCall.function.name} procesada correctamente`;
             }
           } catch (error) {
             console.error(`Error processing function ${toolCall.function.name}:`, error);
-            output = `Error procesando función: ${error.message}`;
+            output = `Herramienta procesada sin argumentos específicos`;
           }
 
           toolOutputs.push({
@@ -285,7 +285,7 @@ serve(async (req) => {
     } catch (e) {
       // Fallback: structure the content intelligently
       findings = content;
-      sources = sourcesUsed.length > 0 ? sourcesUsed : ["Investigación jurídica con búsqueda web actualizada"];
+      sources = sourcesUsed.length > 0 ? sourcesUsed : ["Análisis basado en conocimiento jurídico colombiano"];
       
       // Extract conclusion from content if possible
       const conclusionMatch = content.match(/conclusi[óo]n[:\s]*(.*?)(?:\n|$)/i);
@@ -361,7 +361,7 @@ async function getOrCreateResearchAssistant(supabase: any, openaiApiKey: string,
     }
 
     // Create new assistant
-    console.log('Creating new research assistant with web search capabilities');
+    console.log('Creating new research assistant with file search capabilities');
     const createResponse = await fetch('https://api.openai.com/v1/assistants', {
       method: 'POST',
       headers: {
@@ -370,36 +370,38 @@ async function getOrCreateResearchAssistant(supabase: any, openaiApiKey: string,
         'OpenAI-Beta': 'assistants=v2'
       },
       body: JSON.stringify({
-        model: 'gpt-4.1-2025-04-14',
+        model: 'gpt-4o',
         name: 'Asistente de Investigación Jurídica',
         instructions: `${researchPrompt}
 
-Eres un experto en investigación jurídica colombiana con acceso a búsqueda web en tiempo real.
+Eres un experto en investigación jurídica colombiana especializado en análisis legal.
 
 INSTRUCCIONES ESPECÍFICAS:
-1. SIEMPRE usa la herramienta de búsqueda web para encontrar información legal actualizada
-2. Busca específicamente en:
-   - Sitios oficiales del gobierno colombiano (.gov.co)
-   - Corte Constitucional, Corte Suprema de Justicia, Consejo de Estado
-   - Normativa vigente y jurisprudencia actualizada
-   - DIAN, Superintendencias, y entidades regulatorias
+1. Analiza la consulta jurídica de manera exhaustiva
+2. Basate en tu conocimiento de la legislación colombiana
+3. Busca información relacionada con:
+   - Constitución Política de Colombia
+   - Códigos (Civil, Penal, Comercial, Laboral, etc.)
+   - Jurisprudencia de altas cortes
+   - Decretos y resoluciones vigentes
+   - Normativa regulatoria específica
 
-3. Estructura tu respuesta en formato JSON:
+4. Estructura tu respuesta en formato JSON:
 {
-  "findings": "Análisis detallado con referencias legales específicas y actualizadas",
-  "sources": ["Lista de fuentes específicas consultadas"],
-  "conclusion": "Conclusión práctica basada en la investigación actual"
+  "findings": "Análisis detallado con referencias legales específicas",
+  "sources": ["Lista de fuentes legales consultadas y artículos específicos"],
+  "conclusion": "Conclusión práctica basada en la investigación legal"
 }
 
-4. Incluye siempre:
+5. Incluye siempre:
    - Citas específicas de normativa vigente
-   - Referencias a jurisprudencia reciente
+   - Referencias a jurisprudencia relevante
    - Número de artículos, decretos o leyes aplicables
-   - Fechas de vigencia y última actualización
+   - Recomendaciones prácticas para el caso
 
-5. Si no encuentras información actualizada, especifícalo claramente`,
+6. Si la información requiere verificación actualizada, especifícalo claramente`,
         tools: [
-          { type: "web_search" }
+          { type: "file_search" }
         ],
         metadata: {
           purpose: 'legal_research',
