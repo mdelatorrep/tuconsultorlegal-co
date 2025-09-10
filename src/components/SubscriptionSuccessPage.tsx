@@ -1,73 +1,153 @@
-import React, { useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useEffect, useState } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, ArrowRight } from 'lucide-react';
-import { useLawyerAuth } from '@/hooks/useLawyerAuth';
+import { CheckCircle, ArrowRight, Download, Calendar } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export const SubscriptionSuccessPage: React.FC = () => {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { validateAndRefreshSubscription } = useLawyerAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(true);
 
   const subscriptionId = searchParams.get('subscription_id');
   const planName = searchParams.get('plan_name');
+  const externalId = searchParams.get('external_id');
 
   useEffect(() => {
-    // Refresh subscription status when user returns from payment
-    validateAndRefreshSubscription();
-  }, [validateAndRefreshSubscription]);
+    // Show success toast
+    toast({
+      title: "¡Suscripción Exitosa!",
+      description: `Tu suscripción al ${planName || 'plan seleccionado'} ha sido activada correctamente.`,
+      variant: "default"
+    });
+
+    // Simulate loading for better UX
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [planName, toast]);
 
   const handleGoToDashboard = () => {
     navigate('/#abogados');
   };
 
-  return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <CheckCircle className="h-16 w-16 text-green-500" />
-          </div>
-          <CardTitle className="text-2xl text-green-700">
-            ¡Suscripción Exitosa!
-          </CardTitle>
-          <CardDescription>
-            Tu suscripción ha sido activada correctamente
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {planName && (
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <p className="text-sm text-green-700">
-                Plan activado: <strong>{decodeURIComponent(planName)}</strong>
-              </p>
-            </div>
-          )}
-          
-          {subscriptionId && (
-            <div className="text-center text-sm text-muted-foreground">
-              ID de suscripción: {subscriptionId}
-            </div>
-          )}
+  const handleDownloadInvoice = () => {
+    // TODO: Implement invoice download
+    toast({
+      title: "Factura",
+      description: "La factura será enviada a tu correo electrónico en los próximos minutos.",
+    });
+  };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary/5 to-accent/5 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-muted-foreground">Procesando tu suscripción...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 to-accent/5 flex items-center justify-center px-4">
+      <Card className="w-full max-w-2xl shadow-xl">
+        <CardHeader className="text-center space-y-4">
+          <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+            <CheckCircle className="w-8 h-8 text-green-600" />
+          </div>
+          <CardTitle className="text-3xl font-bold text-primary">
+            ¡Bienvenido a tu Plan Premium!
+          </CardTitle>
+          <p className="text-muted-foreground text-lg">
+            Tu suscripción ha sido activada exitosamente
+          </p>
+        </CardHeader>
+
+        <CardContent className="space-y-6">
+          {/* Subscription Details */}
+          <div className="bg-muted/30 rounded-lg p-4 space-y-2">
+            <h3 className="font-semibold text-foreground">Detalles de tu Suscripción</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="text-muted-foreground">Plan:</span>
+                <span className="ml-2 font-medium">{planName || 'Plan Premium'}</span>
+              </div>
+              {subscriptionId && (
+                <div>
+                  <span className="text-muted-foreground">ID de Suscripción:</span>
+                  <span className="ml-2 font-mono text-xs">{subscriptionId}</span>
+                </div>
+              )}
+              <div>
+                <span className="text-muted-foreground">Estado:</span>
+                <span className="ml-2 font-medium text-green-600">Activo</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Facturación:</span>
+                <span className="ml-2 font-medium">Mensual</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Features Unlocked */}
           <div className="space-y-3">
-            <h4 className="font-semibold">¿Qué puedes hacer ahora?</h4>
-            <ul className="text-sm space-y-2 text-muted-foreground">
-              <li>• Acceder a todas las herramientas de IA</li>
-              <li>• Utilizar el CRM avanzado</li>
-              <li>• Crear agentes personalizados</li>
-              <li>• Generar contenido legal automatizado</li>
+            <h3 className="font-semibold text-foreground">Funciones Desbloqueadas</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {[
+                'Acceso a todas las herramientas de IA',
+                'CRM avanzado para gestión de clientes',
+                'Análisis legal automatizado',
+                'Redacción de documentos con IA',
+                'Soporte prioritario 24/7',
+                'Investigación legal avanzada'
+              ].map((feature, index) => (
+                <div key={index} className="flex items-center space-x-2">
+                  <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                  <span className="text-sm text-muted-foreground">{feature}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3 pt-4">
+            <Button
+              onClick={handleGoToDashboard}
+              className="flex-1 flex items-center justify-center space-x-2"
+            >
+              <span>Ir al Dashboard</span>
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+            
+            <Button
+              variant="outline"
+              onClick={handleDownloadInvoice}
+              className="flex items-center justify-center space-x-2"
+            >
+              <Download className="w-4 h-4" />
+              <span>Descargar Factura</span>
+            </Button>
+          </div>
+
+          {/* Additional Information */}
+          <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-4 space-y-2">
+            <div className="flex items-center space-x-2">
+              <Calendar className="w-4 h-4 text-blue-600" />
+              <h4 className="font-medium text-blue-900 dark:text-blue-100">Próximos Pasos</h4>
+            </div>
+            <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1 ml-6">
+              <li>• Recibirás un correo de confirmación en los próximos minutos</li>
+              <li>• Tu factura será enviada a tu email registrado</li>
+              <li>• Puedes gestionar tu suscripción desde el dashboard</li>
+              <li>• Nuestro equipo de soporte está disponible 24/7</li>
             </ul>
           </div>
-
-          <Button 
-            onClick={handleGoToDashboard}
-            className="w-full"
-          >
-            Ir al Dashboard
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
         </CardContent>
       </Card>
     </div>

@@ -225,6 +225,39 @@ export const useSubscription = () => {
     }
   };
 
+  // Validate subscription with dLocal
+  const validateSubscription = async (subscriptionId: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No authenticated user');
+      }
+
+      console.log('🔍 Validating subscription with dLocal:', subscriptionId);
+
+      const { data, error } = await supabase.functions.invoke('dlocal-admin-validate-subscription', {
+        body: { subscriptionId },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (error) throw error;
+
+      console.log('✅ Subscription validation result:', data);
+      
+      // Refresh current subscription
+      if (session.user) {
+        await fetchCurrentSubscription(session.user.id);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('❌ Error validating subscription:', error);
+      throw error;
+    }
+  };
+
   // Create a new subscription
   const createSubscription = async (planId: string | number, billingCycle: 'monthly' | 'yearly') => {
     setIsLoading(true);
@@ -263,7 +296,7 @@ export const useSubscription = () => {
         window.open(data.redirectUrl, '_blank');
         toast({
           title: "Redirigiendo a pago",
-          description: "Te hemos redirigido a la plataforma de pago segura",
+          description: "Te hemos redirigido a la plataforma de pago segura. La ventana se abrirá automáticamente.",
         });
       } else {
         toast({
@@ -272,29 +305,35 @@ export const useSubscription = () => {
         });
       }
 
-      // Refresh current subscription after a delay to allow webhook processing
-      if (session.user) {
+      // Enhanced subscription status monitoring
+      if (session.user && data.subscription?.dlocal_subscription_id) {
         // Immediate refresh
         await fetchCurrentSubscription(session.user.id);
         
-        // Set up periodic refresh for webhook updates with sync
+        // Set up intelligent monitoring with validation
         let attempts = 0;
-        const maxAttempts = 12; // 12 attempts over 2 minutes
+        const maxAttempts = 15; // Extended to 2.5 minutes
         const refreshInterval = setInterval(async () => {
           attempts++;
-          console.log(`🔄 Refreshing subscription status - attempt ${attempts}`);
+          console.log(`🔄 Monitoring subscription status - attempt ${attempts}`);
           
-          // Every 3rd attempt, try to sync from dLocal
-          if (attempts % 3 === 0) {
-            console.log(`🔄 Attempting dLocal sync on attempt ${attempts}`);
-            await syncSubscriptions();
+          try {
+            // Every 2nd attempt, validate directly with dLocal
+            if (attempts % 2 === 0 && data.subscription?.dlocal_subscription_id) {
+              console.log(`🔍 Direct validation with dLocal on attempt ${attempts}`);
+              await validateSubscription(data.subscription.dlocal_subscription_id);
+            } else {
+              // Regular sync on odd attempts
+              await syncSubscriptions();
+              await fetchCurrentSubscription(session.user.id);
+            }
+          } catch (error) {
+            console.error(`❌ Error in subscription monitoring attempt ${attempts}:`, error);
           }
-          
-          await fetchCurrentSubscription(session.user.id);
           
           if (attempts >= maxAttempts) {
             clearInterval(refreshInterval);
-            console.log('⏰ Stopped refreshing subscription status');
+            console.log('⏰ Subscription monitoring completed');
           }
         }, 10000); // Every 10 seconds
       }
@@ -399,6 +438,7 @@ export const useSubscription = () => {
     createSubscription,
     cancelSubscription,
     reactivateSubscription,
-    syncSubscriptions
+    syncSubscriptions,
+    validateSubscription
   };
 };

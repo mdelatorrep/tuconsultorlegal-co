@@ -6,6 +6,8 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Check, Star, Crown } from 'lucide-react';
 import { useSubscription } from '@/hooks/useSubscription';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface SubscriptionPlanSelectorProps {
   onPlanSelected?: (planId: string, billingCycle: 'monthly' | 'yearly') => void;
@@ -22,6 +24,7 @@ export const SubscriptionPlanSelector: React.FC<SubscriptionPlanSelectorProps> =
 }) => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>(defaultCycle);
   const { plans, isLoading, createSubscription } = useSubscription();
+  const { toast } = useToast();
 
   const handleSelectPlan = async (plan: any) => {
     try {
@@ -37,10 +40,29 @@ export const SubscriptionPlanSelector: React.FC<SubscriptionPlanSelectorProps> =
         return;
       }
       
-      // For premium plans with subscribeUrl, redirect directly
+      // Get current user for personalization
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // For premium plans with subscribeUrl, create personalized URL
       if (plan.subscribeUrl) {
-        console.log('🔗 Redirecting to dLocal subscribe URL:', plan.subscribeUrl);
-        window.open(plan.subscribeUrl, '_blank');
+        console.log('🔗 Creating personalized dLocal subscribe URL:', plan.subscribeUrl);
+        
+        let personalizedUrl = plan.subscribeUrl;
+        
+        // Add email parameter if user is authenticated
+        if (user?.email) {
+          const separator = personalizedUrl.includes('?') ? '&' : '?';
+          personalizedUrl += `${separator}email=${encodeURIComponent(user.email)}`;
+        }
+        
+        // Add external_id for tracking
+        if (user?.id) {
+          const separator = personalizedUrl.includes('?') ? '&' : '?';
+          personalizedUrl += `${separator}external_id=${user.id}`;
+        }
+        
+        console.log('🚀 Opening personalized URL:', personalizedUrl);
+        window.open(personalizedUrl, '_blank');
         return;
       }
       
@@ -52,6 +74,11 @@ export const SubscriptionPlanSelector: React.FC<SubscriptionPlanSelectorProps> =
       
     } catch (error) {
       console.error('❌ Error in handleSelectPlan:', error);
+      toast({
+        title: "Error",
+        description: "Ocurrió un error al seleccionar el plan. Por favor, intenta nuevamente.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -181,16 +208,23 @@ export const SubscriptionPlanSelector: React.FC<SubscriptionPlanSelectorProps> =
                     console.log('🖱️ Button clicked!');
                     handleSelectPlan(plan);
                   }}
-                  className={`w-full ${
+                  className={`w-full transition-all duration-200 ${
                     isPopular 
-                      ? 'bg-primary hover:bg-primary/90' 
+                      ? 'bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl' 
                       : isFree 
                       ? 'bg-secondary hover:bg-secondary/90' 
-                      : 'bg-secondary hover:bg-secondary/90'
+                      : 'bg-accent hover:bg-accent/90 hover:shadow-md'
                   }`}
                   disabled={isLoading}
                 >
-                  {isFree ? 'Seleccionar Plan Gratuito' : 'Seleccionar Plan'}
+                  {isLoading ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Procesando...</span>
+                    </div>
+                  ) : (
+                    isFree ? 'Seleccionar Plan Gratuito' : 'Seleccionar Plan'
+                  )}
                 </Button>
               </CardContent>
             </Card>

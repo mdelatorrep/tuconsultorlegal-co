@@ -61,19 +61,27 @@ serve(async (req) => {
     // Base URLs for callbacks
     const baseUrl = 'https://ebc42f7b-d0e5-428f-849a-2403f4cd72c2.sandbox.lovable.dev';
     
-    // Prepare subscription data for dLocal
+    // Prepare subscription data for dLocal with enhanced user experience
     const subscriptionData = {
       plan_id: planId,
       user: {
         id: user.id,
         email: user.email,
-        name: user.user_metadata?.full_name || user.email
+        name: user.user_metadata?.full_name || user.email,
+        external_id: user.id // For tracking and linking back to our system
       },
-      // Configure the important callback URLs
+      // Configure the important callback URLs for smooth UX
       notification_url: `https://tkaezookvtpulfpaffes.supabase.co/functions/v1/dlocal-webhook`,
-      success_url: `${baseUrl}/subscription-success?subscription_id={subscription_id}&plan_name={plan_name}`,
-      back_url: `${baseUrl}/#abogados?tab=subscription`,
-      error_url: `${baseUrl}/subscription-error?error={error}&error_description={error_description}`
+      success_url: `${baseUrl}/subscription-success?subscription_id={subscription_id}&plan_name={plan_name}&external_id=${user.id}`,
+      back_url: `${baseUrl}/#abogados?tab=subscription&message=cancelled`,
+      error_url: `${baseUrl}/subscription-error?error={error}&error_description={error_description}&external_id=${user.id}`,
+      // Enhanced metadata for better tracking
+      metadata: {
+        source: 'web_platform',
+        billing_cycle: billingCycle,
+        user_agent: req.headers.get('user-agent') || 'unknown',
+        timestamp: new Date().toISOString()
+      }
     };
 
     // Call dLocal API to create subscription
@@ -97,8 +105,8 @@ serve(async (req) => {
       const errorText = await dLocalResponse.text();
       console.error('❌ Error details:', errorText);
       
-      // For now, let's redirect directly to the plan's subscribe_url as fallback
-      console.log('🔄 Falling back to direct plan subscribe_url');
+      // Fallback: redirect directly to the plan's subscribe_url with personalization
+      console.log('🔄 Falling back to direct plan subscribe_url with personalization');
       
       // Get the plan from our dlocal-get-plans to get the subscribe_url
       const { data: plansData, error: plansError } = await supabase.functions.invoke('dlocal-get-plans');
@@ -106,12 +114,25 @@ serve(async (req) => {
       if (!plansError && plansData?.data) {
         const selectedPlan = plansData.data.find((p: any) => p.id == planId);
         if (selectedPlan?.subscribe_url) {
-          console.log('✅ Using plan subscribe_url:', selectedPlan.subscribe_url);
+          // Create personalized subscribe URL
+          let personalizedUrl = selectedPlan.subscribe_url;
+          
+          // Add email parameter for auto-completion
+          if (user.email) {
+            const separator = personalizedUrl.includes('?') ? '&' : '?';
+            personalizedUrl += `${separator}email=${encodeURIComponent(user.email)}`;
+          }
+          
+          // Add external_id for tracking
+          const separator = personalizedUrl.includes('?') ? '&' : '?';
+          personalizedUrl += `${separator}external_id=${user.id}`;
+          
+          console.log('✅ Using personalized plan subscribe_url:', personalizedUrl);
           return new Response(
             JSON.stringify({ 
               success: true, 
-              redirectUrl: selectedPlan.subscribe_url,
-              message: 'Redirecting to plan subscription page'
+              redirectUrl: personalizedUrl,
+              message: 'Redirecting to personalized subscription page'
             }),
             { 
               status: 200, 
