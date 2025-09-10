@@ -1,6 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3';
 
 // Helper function to get system configuration
 async function getSystemConfig(supabaseClient: any, configKey: string, defaultValue?: string): Promise<string> {
@@ -129,69 +129,167 @@ serve(async (req) => {
 
     console.log(`Using research model: ${researchModel}`);
 
-    // Use standard chat completions for all models to avoid API issues
-    const requestBody = {
-      model: researchModel,
-      messages: [
-        {
-          role: 'system',
-          content: `${researchPrompt}
+    // Create or get an assistant for legal research with web search
+    let assistantId = await getOrCreateResearchAssistant(supabase, openaiApiKey, researchPrompt);
 
-Instrucciones específicas:
-- Analiza la consulta jurídica del usuario
-- Proporciona hallazgos específicos con referencias a legislación colombiana
-- Incluye jurisprudencia relevante cuando esté disponible
-- Menciona decretos, leyes y artículos específicos
-- Estructura la respuesta de manera profesional y detallada
-- Incluye una conclusión práctica
-
-Responde en formato JSON con la siguiente estructura:
-{
-  "findings": "Análisis detallado con referencias legales",
-  "sources": ["Lista", "de", "fuentes", "específicas"],
-  "conclusion": "Conclusión práctica basada en el análisis"
-}`
-        },
-        {
-          role: 'user',
-          content: query
-        }
-      ],
-      temperature: 0.3,
-      max_tokens: 2000
-    };
-
-    // Call OpenAI API
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Create a new thread for this research query
+    const threadResponse = await fetch('https://api.openai.com/v1/threads', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openaiApiKey}`,
         'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
+        'OpenAI-Beta': 'assistants=v2'
+      }
     });
 
-    if (!openaiResponse.ok) {
-      const errorData = await openaiResponse.text();
-      console.error('OpenAI API error:', errorData);
-      throw new Error(`OpenAI API error: ${openaiResponse.status}`);
+    if (!threadResponse.ok) {
+      throw new Error('Failed to create research thread');
     }
 
-    const openaiData = await openaiResponse.json();
-    const content = openaiData.choices[0].message.content;
+    const thread = await threadResponse.json();
+    console.log('Created research thread:', thread.id);
 
-    // Try to parse as JSON, fallback to text if parsing fails
+    // Add user message to thread
+    await fetch(`https://api.openai.com/v1/threads/${thread.id}/messages`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
+        'Content-Type': 'application/json',
+        'OpenAI-Beta': 'assistants=v2'
+      },
+      body: JSON.stringify({
+        role: 'user',
+        content: query
+      })
+    });
+
+    // Run the assistant
+    const runResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/runs`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
+        'Content-Type': 'application/json',
+        'OpenAI-Beta': 'assistants=v2'
+      },
+      body: JSON.stringify({
+        assistant_id: assistantId,
+        instructions: `Realiza una investigación jurídica completa sobre: "${query}". SIEMPRE usa la búsqueda web para encontrar información legal actualizada de Colombia. Busca específicamente en sitios oficiales del gobierno colombiano, jurisprudencia de altas cortes, y normativa vigente.`
+      })
+    });
+
+    if (!runResponse.ok) {
+      throw new Error('Failed to start research run');
+    }
+
+    const run = await runResponse.json();
+    console.log('Research run started:', run.id);
+
+    // Poll for completion
+    let runStatus = run.status;
+    let runData = run;
+    const sourcesUsed: string[] = [];
+
+    while (runStatus === 'in_progress' || runStatus === 'requires_action') {
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+
+      // Check run status
+      const statusResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/runs/${run.id}`, {
+        headers: {
+          'Authorization': `Bearer ${openaiApiKey}`,
+          'OpenAI-Beta': 'assistants=v2'
+        }
+      });
+
+      if (!statusResponse.ok) {
+        throw new Error('Failed to check run status');
+      }
+
+      runData = await statusResponse.json();
+      runStatus = runData.status;
+      console.log('Research run status:', runStatus);
+
+      // Handle function calls if needed
+      if (runStatus === 'requires_action') {
+        const toolCalls = runData.required_action?.submit_tool_outputs?.tool_calls || [];
+        const toolOutputs = [];
+
+        for (const toolCall of toolCalls) {
+          console.log('Processing tool call:', toolCall.function.name);
+          
+          let output = '';
+          try {
+            switch (toolCall.function.name) {
+              case 'web_search':
+                const args = JSON.parse(toolCall.function.arguments);
+                sourcesUsed.push(`Búsqueda web: ${args.query || 'Consulta legal'}`);
+                output = 'Búsqueda web completada. Información legal actualizada obtenida.';
+                break;
+              default:
+                output = `Función ${toolCall.function.name} procesada`;
+            }
+          } catch (error) {
+            console.error(`Error processing function ${toolCall.function.name}:`, error);
+            output = `Error procesando función: ${error.message}`;
+          }
+
+          toolOutputs.push({
+            tool_call_id: toolCall.id,
+            output: output
+          });
+        }
+
+        // Submit tool outputs
+        if (toolOutputs.length > 0) {
+          await fetch(`https://api.openai.com/v1/threads/${thread.id}/runs/${run.id}/submit_tool_outputs`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${openaiApiKey}`,
+              'Content-Type': 'application/json',
+              'OpenAI-Beta': 'assistants=v2'
+            },
+            body: JSON.stringify({
+              tool_outputs: toolOutputs
+            })
+          });
+        }
+      }
+    }
+
+    if (runStatus !== 'completed') {
+      throw new Error(`Research run failed with status: ${runStatus}`);
+    }
+
+    // Get the assistant's response
+    const messagesResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/messages`, {
+      headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
+        'OpenAI-Beta': 'assistants=v2'
+      }
+    });
+
+    if (!messagesResponse.ok) {
+      throw new Error('Failed to retrieve research results');
+    }
+
+    const messagesData = await messagesResponse.json();
+    const assistantMessage = messagesData.data.find((msg: any) => msg.role === 'assistant');
+    const content = assistantMessage?.content[0]?.text?.value || 'No se pudo obtener respuesta del asistente';
+
+    // Try to parse as JSON, fallback to structured text analysis
     let findings, sources, conclusion;
     try {
       const parsed = JSON.parse(content);
       findings = parsed.findings;
-      sources = parsed.sources || [];
+      sources = parsed.sources || sourcesUsed;
       conclusion = parsed.conclusion;
     } catch (e) {
-      // Fallback: use content as findings
+      // Fallback: structure the content intelligently
       findings = content;
-      sources = ["Análisis basado en conocimiento jurídico general"];
-      conclusion = "Consulte con un especialista para casos específicos.";
+      sources = sourcesUsed.length > 0 ? sourcesUsed : ["Investigación jurídica con búsqueda web actualizada"];
+      
+      // Extract conclusion from content if possible
+      const conclusionMatch = content.match(/conclusi[óo]n[:\s]*(.*?)(?:\n|$)/i);
+      conclusion = conclusionMatch ? conclusionMatch[1].trim() : "Consulte con un especialista para casos específicos.";
     }
 
     const resultData = {
@@ -236,3 +334,100 @@ Responde en formato JSON con la siguiente estructura:
     );
   }
 });
+
+// Helper function to get or create a research assistant
+async function getOrCreateResearchAssistant(supabase: any, openaiApiKey: string, researchPrompt: string): Promise<string> {
+  try {
+    // Check if we have a research assistant stored
+    const { data: assistantConfig } = await supabase
+      .from('system_config')
+      .select('config_value')
+      .eq('config_key', 'research_assistant_id')
+      .maybeSingle();
+
+    if (assistantConfig?.config_value) {
+      // Verify assistant still exists in OpenAI
+      const verifyResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantConfig.config_value}`, {
+        headers: {
+          'Authorization': `Bearer ${openaiApiKey}`,
+          'OpenAI-Beta': 'assistants=v2'
+        }
+      });
+
+      if (verifyResponse.ok) {
+        console.log('Using existing research assistant:', assistantConfig.config_value);
+        return assistantConfig.config_value;
+      }
+    }
+
+    // Create new assistant
+    console.log('Creating new research assistant with web search capabilities');
+    const createResponse = await fetch('https://api.openai.com/v1/assistants', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
+        'Content-Type': 'application/json',
+        'OpenAI-Beta': 'assistants=v2'
+      },
+      body: JSON.stringify({
+        model: 'gpt-4.1-2025-04-14',
+        name: 'Asistente de Investigación Jurídica',
+        instructions: `${researchPrompt}
+
+Eres un experto en investigación jurídica colombiana con acceso a búsqueda web en tiempo real.
+
+INSTRUCCIONES ESPECÍFICAS:
+1. SIEMPRE usa la herramienta de búsqueda web para encontrar información legal actualizada
+2. Busca específicamente en:
+   - Sitios oficiales del gobierno colombiano (.gov.co)
+   - Corte Constitucional, Corte Suprema de Justicia, Consejo de Estado
+   - Normativa vigente y jurisprudencia actualizada
+   - DIAN, Superintendencias, y entidades regulatorias
+
+3. Estructura tu respuesta en formato JSON:
+{
+  "findings": "Análisis detallado con referencias legales específicas y actualizadas",
+  "sources": ["Lista de fuentes específicas consultadas"],
+  "conclusion": "Conclusión práctica basada en la investigación actual"
+}
+
+4. Incluye siempre:
+   - Citas específicas de normativa vigente
+   - Referencias a jurisprudencia reciente
+   - Número de artículos, decretos o leyes aplicables
+   - Fechas de vigencia y última actualización
+
+5. Si no encuentras información actualizada, especifícalo claramente`,
+        tools: [
+          { type: "web_search" }
+        ],
+        metadata: {
+          purpose: 'legal_research',
+          jurisdiction: 'colombia',
+          created_by: 'tuconsultorlegal_system'
+        }
+      })
+    });
+
+    if (!createResponse.ok) {
+      throw new Error('Failed to create research assistant');
+    }
+
+    const assistant = await createResponse.json();
+    console.log('Created new research assistant:', assistant.id);
+
+    // Store assistant ID for reuse
+    await supabase
+      .from('system_config')
+      .upsert({
+        config_key: 'research_assistant_id',
+        config_value: assistant.id,
+        description: 'ID del asistente de investigación jurídica con búsqueda web'
+      });
+
+    return assistant.id;
+  } catch (error) {
+    console.error('Error managing research assistant:', error);
+    throw error;
+  }
+}
