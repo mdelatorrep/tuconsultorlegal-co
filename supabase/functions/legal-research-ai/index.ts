@@ -38,6 +38,140 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Handle webhook notifications from OpenAI when background research completes
+async function handleWebhook(req: Request): Promise<Response> {
+  try {
+    console.log('Webhook received for research completion');
+    
+    const webhookData = await req.json();
+    console.log('Webhook data:', JSON.stringify(webhookData, null, 2));
+    
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    
+    // Extract research ID from headers
+    const researchId = req.headers.get('x-research-id');
+    const lawyerId = researchId?.split('-')[0];
+    
+    if (webhookData.status === 'completed' && webhookData.response) {
+      console.log('Processing completed research task');
+      
+      // Extract the final content using helper
+      const content = extractFinalContent(webhookData.response);
+      
+      // Extract sources and metadata
+      const finalOutput = webhookData.response.output?.[webhookData.response.output.length - 1];
+      const annotations = finalOutput?.content?.[0]?.annotations || [];
+      const webSearchCalls = webhookData.response.output?.filter(item => item.type === 'web_search_call') || [];
+      const reasoningSteps = webhookData.response.output?.filter(item => item.type === 'reasoning') || [];
+      
+      // Process sources
+      const sources = [];
+      
+      // Add sources from annotations
+      annotations.forEach((annotation, index) => {
+        if (annotation.url && annotation.title) {
+          sources.push({
+            title: annotation.title,
+            url: annotation.url,
+            type: 'citation',
+            index: index + 1
+          });
+        }
+      });
+      
+      // Add sources from web search calls
+      webSearchCalls.forEach((searchCall, index) => {
+        if (searchCall.action?.query) {
+          sources.push({
+            title: `Búsqueda: "${searchCall.action.query}"`,
+            type: 'search',
+            status: searchCall.status || 'completed',
+            index: sources.length + 1
+          });
+        }
+      });
+      
+      // Extract conclusion
+      let conclusion = "Consulte con un especialista para casos específicos.";
+      const conclusionMatch = content.match(/conclusi[óo]n[:\s]*(.*?)(?:\n|$)/i);
+      if (conclusionMatch) {
+        conclusion = conclusionMatch[1].trim();
+      } else if (content.length > 500) {
+        const paragraphs = content.split('\n\n').filter(p => p.trim());
+        if (paragraphs.length > 1) {
+          conclusion = paragraphs[paragraphs.length - 1].trim();
+        }
+      }
+      
+      // Save completed research results
+      if (lawyerId && lawyerId !== 'anonymous') {
+        await saveToolResult(
+          supabase,
+          lawyerId,
+          'research_completed',
+          { 
+            task_id: webhookData.id,
+            original_query: webhookData.metadata?.query || 'N/A'
+          },
+          { 
+            findings: content,
+            sources,
+            conclusion
+          },
+          { 
+            timestamp: new Date().toISOString(),
+            model: webhookData.model || 'o4-mini-deep-research-2025-06-26',
+            citations_count: annotations.length,
+            searches_count: webSearchCalls.length,
+            reasoning_steps: reasoningSteps.length,
+            completion_time: new Date().toISOString(),
+            background_mode: true
+          }
+        );
+        
+        console.log(`✅ Research results saved for lawyer: ${lawyerId}`);
+      }
+    } else if (webhookData.status === 'failed') {
+      console.error('Research task failed:', webhookData.error);
+      
+      // Save failure record
+      if (lawyerId && lawyerId !== 'anonymous') {
+        await saveToolResult(
+          supabase,
+          lawyerId,
+          'research_failed',
+          { 
+            task_id: webhookData.id,
+            error: webhookData.error
+          },
+          { 
+            error: webhookData.error,
+            failed_at: new Date().toISOString()
+          },
+          { 
+            timestamp: new Date().toISOString(),
+            background_mode: true
+          }
+        );
+      }
+    }
+    
+    return new Response(JSON.stringify({ received: true }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+    
+  } catch (error) {
+    console.error('Error processing webhook:', error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+}
+
 // Helper function to save results to legal_tools_results table
 async function saveToolResult(supabase: any, lawyerId: string, toolType: string, inputData: any, outputData: any, metadata: any = {}): Promise<boolean> {
   try {
@@ -154,6 +288,13 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const url = new URL(req.url);
+  
+  // Handle webhook endpoint for background completion
+  if (url.pathname.endsWith('/webhook') && req.method === 'POST') {
+    return handleWebhook(req);
+  }
+
   try {
     console.log('Legal research function called with request method:', req.method);
     
@@ -240,8 +381,11 @@ Estructura tu respuesta con:
 
 Sé analítico, evita generalidades y asegúrate de que cada sección respalde el razonamiento con datos verificables que puedan informar decisiones jurídicas.`;
 
-    // Use OpenAI Responses API with Deep Research and web search
-    console.log('Starting deep research task...');
+    // Use OpenAI Responses API with Deep Research and web search in background mode
+    console.log('Starting deep research task in background mode...');
+    
+    // Generate webhook URL for completion notification
+    const webhookUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/legal-research-ai/webhook`;
     
     const response = await makeRequestWithRetry('https://api.openai.com/v1/responses', {
       method: 'POST',
@@ -252,6 +396,14 @@ Sé analítico, evita generalidades y asegúrate de que cada sección respalde e
       body: JSON.stringify({
         model: researchModel,
         max_output_tokens: 1500, // Reduced for Tier 1 to avoid TPM limits
+        background: true, // Enable background mode for long-running tasks
+        webhook: {
+          url: webhookUrl,
+          headers: {
+            'authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+            'x-research-id': `${lawyerId || 'anonymous'}-${Date.now()}`
+          }
+        },
         input: [
           {
             role: 'developer',
@@ -272,7 +424,6 @@ Sé analítico, evita generalidades y asegúrate de que cada sección respalde e
             ]
           }
         ],
-        // reasoning: { summary: 'auto' }, // Removed - requires verified organization
         tools: [
           {
             type: 'web_search_preview'
@@ -288,10 +439,47 @@ Sé analítico, evita generalidades y asegúrate de que cada sección respalde e
     }
 
     const data = await response.json();
-    console.log('Deep research response received, processing results...');
-    console.log('Response structure:', JSON.stringify(data, null, 2));
+    console.log('Background research task initiated:', JSON.stringify(data, null, 2));
 
-    // Extract the final report from the responses format using helper
+    // For background mode, OpenAI returns a response ID and status
+    if (data.id && data.status) {
+      console.log(`Research task ${data.id} started with status: ${data.status}`);
+      
+      // Save initial task to database for tracking
+      if (lawyerId) {
+        await saveToolResult(
+          supabase,
+          lawyerId,
+          'research_initiated',
+          { query, task_id: data.id },
+          { status: data.status, started_at: new Date().toISOString() },
+          { 
+            timestamp: new Date().toISOString(),
+            model: researchModel,
+            background_mode: true,
+            task_id: data.id
+          }
+        );
+      }
+
+      // Return immediate response indicating task has started
+      return new Response(
+        JSON.stringify({
+          success: true,
+          task_id: data.id,
+          status: data.status,
+          message: 'Investigación jurídica iniciada. Recibirás los resultados cuando estén listos.',
+          query,
+          estimated_time: '5-30 minutos',
+          timestamp: new Date().toISOString()
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Fallback: if not background mode, process immediately
     const content = extractFinalContent(data);
     
     // Extract citations/annotations if available
