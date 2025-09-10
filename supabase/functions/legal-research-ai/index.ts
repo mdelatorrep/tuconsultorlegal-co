@@ -90,8 +90,8 @@ function extractFinalContent(responseData: any): string {
   return 'No se pudo obtener respuesta del asistente de investigación';
 }
 
-// Helper function to implement exponential backoff for rate limits
-async function makeRequestWithRetry(url: string, options: any, maxRetries: number = 3): Promise<Response> {
+// Helper function to implement exponential backoff for rate limits (optimized for Tier 1)
+async function makeRequestWithRetry(url: string, options: any, maxRetries: number = 2): Promise<Response> {
   let lastError: Error | null = null;
   
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -103,15 +103,33 @@ async function makeRequestWithRetry(url: string, options: any, maxRetries: numbe
         const retryAfter = response.headers.get('retry-after');
         const remainingTokens = response.headers.get('x-ratelimit-remaining-tokens');
         const resetTime = response.headers.get('x-ratelimit-reset-tokens');
+        const limitTokens = response.headers.get('x-ratelimit-limit-tokens');
         
-        console.log(`Rate limit hit (attempt ${attempt + 1}/${maxRetries + 1}). Retry-After: ${retryAfter}, Remaining: ${remainingTokens}, Reset: ${resetTime}`);
+        console.log(`Rate limit hit (attempt ${attempt + 1}/${maxRetries + 1})`);
+        console.log(`Retry-After: ${retryAfter}s, Remaining: ${remainingTokens}, Limit: ${limitTokens}, Reset: ${resetTime}`);
         
         if (attempt < maxRetries) {
-          // Calculate delay: use retry-after header or exponential backoff
-          const delay = retryAfter ? parseInt(retryAfter) * 1000 : Math.pow(2, attempt) * 1000;
-          console.log(`Waiting ${delay}ms before retry...`);
+          // For Tier 1: more conservative delays
+          let delay: number;
+          
+          if (retryAfter) {
+            // Use the exact retry-after time from headers (convert to ms)
+            delay = parseInt(retryAfter) * 1000;
+          } else {
+            // Tier 1 optimized exponential backoff: start with 2s, then 8s
+            delay = attempt === 0 ? 2000 : 8000;
+          }
+          
+          // Cap maximum delay at 30 seconds for Tier 1
+          delay = Math.min(delay, 30000);
+          
+          console.log(`Tier 1 rate limit - waiting ${delay}ms before retry...`);
           await new Promise(resolve => setTimeout(resolve, delay));
           continue;
+        } else {
+          // Final attempt failed - provide detailed error for Tier 1
+          const errorText = await response.text();
+          throw new Error(`Rate limit exceeded after ${maxRetries + 1} attempts. Tier 1 limits reached. ${errorText}`);
         }
       }
       
@@ -119,7 +137,8 @@ async function makeRequestWithRetry(url: string, options: any, maxRetries: numbe
     } catch (error) {
       lastError = error as Error;
       if (attempt < maxRetries) {
-        const delay = Math.pow(2, attempt) * 1000;
+        // Tier 1: shorter delays for non-rate-limit errors
+        const delay = attempt === 0 ? 1000 : 3000;
         console.log(`Request failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay}ms...`, error);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
@@ -232,7 +251,7 @@ Sé analítico, evita generalidades y asegúrate de que cada sección respalde e
       },
       body: JSON.stringify({
         model: researchModel,
-        max_output_tokens: 2000,
+        max_output_tokens: 1500, // Reduced for Tier 1 to avoid TPM limits
         input: [
           {
             role: 'developer',
