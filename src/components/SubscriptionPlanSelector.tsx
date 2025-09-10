@@ -8,6 +8,7 @@ import { Check, Star, Crown } from 'lucide-react';
 import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import AILegalPaymentLoader from './AILegalPaymentLoader';
 
 interface SubscriptionPlanSelectorProps {
   onPlanSelected?: (planId: string, billingCycle: 'monthly' | 'yearly') => void;
@@ -23,6 +24,7 @@ export const SubscriptionPlanSelector: React.FC<SubscriptionPlanSelectorProps> =
   className = ''
 }) => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>(defaultCycle);
+  const [isCreating, setIsCreating] = useState(false);
   const { plans, isLoading, createSubscription } = useSubscription();
   const { toast } = useToast();
 
@@ -39,6 +41,8 @@ export const SubscriptionPlanSelector: React.FC<SubscriptionPlanSelectorProps> =
         }
         return;
       }
+      
+      setIsCreating(true);
       
       // Get current user for personalization
       const { data: { user } } = await supabase.auth.getUser();
@@ -79,6 +83,8 @@ export const SubscriptionPlanSelector: React.FC<SubscriptionPlanSelectorProps> =
         description: "Ocurrió un error al seleccionar el plan. Por favor, intenta nuevamente.",
         variant: "destructive"
       });
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -110,6 +116,17 @@ export const SubscriptionPlanSelector: React.FC<SubscriptionPlanSelectorProps> =
   const isPlanPopular = (planName: string) => {
     return planName.toLowerCase().includes('premium') || planName.toLowerCase().includes('pro');
   };
+
+  // Show payment loader when creating subscription
+  if (isCreating) {
+    return (
+      <AILegalPaymentLoader 
+        stage="processing"
+        message="Configurando tu suscripción con dLocal..."
+        progress={25}
+      />
+    );
+  }
 
   if (isLoading) {
     console.log('SubscriptionPlanSelector: Loading plans...');
@@ -215,9 +232,9 @@ export const SubscriptionPlanSelector: React.FC<SubscriptionPlanSelectorProps> =
                       ? 'bg-secondary hover:bg-secondary/90' 
                       : 'bg-accent hover:bg-accent/90 hover:shadow-md'
                   }`}
-                  disabled={isLoading}
+                  disabled={isLoading || isCreating}
                 >
-                  {isLoading ? (
+                  {(isLoading || isCreating) ? (
                     <div className="flex items-center space-x-2">
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                       <span>Procesando...</span>

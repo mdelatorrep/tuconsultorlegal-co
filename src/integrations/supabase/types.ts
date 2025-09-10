@@ -2036,6 +2036,19 @@ export type Database = {
         }
         Returns: string
       }
+      find_subscription_by_external_id: {
+        Args: { search_external_id: string }
+        Returns: {
+          created_at: string
+          dlocal_subscription_id: string
+          lawyer_email: string
+          lawyer_id: string
+          lawyer_name: string
+          subscription_id: string
+          subscription_status: string
+          updated_at: string
+        }[]
+      }
       generate_secure_lawyer_token: {
         Args: Record<PropertyKey, never>
         Returns: string

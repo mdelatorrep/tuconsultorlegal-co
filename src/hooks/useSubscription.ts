@@ -429,6 +429,79 @@ export const useSubscription = () => {
     });
   }, []);
 
+  // Track payment for specific user
+  const trackPayment = async (customerEmail: string, customerId?: string) => {
+    setIsLoading(true);
+    
+    try {
+      console.log(`🔍 Tracking payment for email: ${customerEmail}, ID: ${customerId}`);
+      
+      // 1. Check our local database first
+      const { data: localSub } = await supabase
+        .from('lawyer_subscriptions')
+        .select(`
+          *,
+          lawyer_profiles!inner (email, full_name)
+        `)
+        .eq('lawyer_profiles.email', customerEmail)
+        .maybeSingle();
+
+      if (localSub?.status === 'active') {
+        console.log('✅ Active subscription found locally:', localSub);
+        return {
+          found: true,
+          subscription: localSub,
+          nextStep: 'Suscripción ya activa en sistema local'
+        };
+      }
+
+      // 2. Sync with dLocal to get latest data
+      console.log('🔄 Syncing with dLocal...');
+      const syncResult = await syncSubscriptions();
+      
+      if (syncResult) {
+        // Check again after sync
+        const { data: updatedSub } = await supabase
+          .from('lawyer_subscriptions')
+          .select(`
+            *,
+            lawyer_profiles!inner (email, full_name)
+          `)
+          .eq('lawyer_profiles.email', customerEmail)
+          .maybeSingle();
+
+        if (updatedSub) {
+          console.log('✅ Subscription found after sync:', updatedSub);
+          return {
+            found: true,
+            subscription: updatedSub,
+            nextStep: 'Suscripción sincronizada exitosamente'
+          };
+        }
+      }
+
+      console.log('❌ No subscription found for user');
+      return {
+        found: false,
+        nextStep: 'No se encontró pago exitoso. Verificar estado en panel dLocal o contactar soporte.'
+      };
+
+    } catch (error) {
+      console.error('💥 Error tracking payment:', error);
+      toast({
+        title: "Error",
+        description: "Error al rastrear el pago",
+        variant: "destructive",
+      });
+      return {
+        found: false,
+        nextStep: 'Error en el sistema de trazabilidad'
+      };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return {
     plans,
     currentSubscription,
@@ -439,6 +512,7 @@ export const useSubscription = () => {
     cancelSubscription,
     reactivateSubscription,
     syncSubscriptions,
-    validateSubscription
+    validateSubscription,
+    trackPayment
   };
 };
