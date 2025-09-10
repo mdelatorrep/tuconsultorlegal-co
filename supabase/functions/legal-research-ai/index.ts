@@ -428,9 +428,6 @@ Incluye citas específicas y fuentes verificables. Enfócate en análisis concre
     // Use OpenAI Responses API with Deep Research and web search in background mode
     console.log('Starting deep research task in background mode...');
     
-    // Generate webhook URL for completion notification
-    const webhookUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/legal-research-ai/webhook`;
-    
     const response = await makeRequestWithRetry('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
@@ -441,13 +438,6 @@ Incluye citas específicas y fuentes verificables. Enfócate en análisis concre
         model: researchModel,
         max_output_tokens: 1000, // Optimized for TPM efficiency on Tier 1
         background: true, // Enable background mode for long-running tasks (5-30 min)
-        webhook: {
-          url: webhookUrl,
-          headers: {
-            'x-webhook-secret': Deno.env.get('WEBHOOK_SECRET') || 'default-secret',
-            'x-research-id': `${lawyerId || 'anon'}|${Date.now()}`
-          }
-        },
         input: [
           {
             role: 'developer',
@@ -485,162 +475,362 @@ Incluye citas específicas y fuentes verificables. Enfócate en análisis concre
     const data = await response.json();
     console.log('Background research task initiated:', JSON.stringify(data, null, 2));
 
-    // For background mode, OpenAI returns a response ID and status
-    if (data.id && data.status) {
-      console.log(`Research task ${data.id} started with status: ${data.status}`);
+    // Handle the background task response
+    if (data.id) {
+      console.log(`✅ Background research task started with ID: ${data.id}`);
       
-      // Save initial task to database for tracking
+      // Save the initiation record for tracking
       if (lawyerId) {
         await saveToolResult(
           supabase,
           lawyerId,
           'research_initiated',
-          { query, task_id: data.id },
-          { status: data.status, started_at: new Date().toISOString() },
+          { 
+            query,
+            task_id: data.id
+          },
+          { 
+            status: 'initiated',
+            estimated_completion_time: 30 // minutes
+          },
+          { 
+            task_id: data.id,
+            timestamp: new Date().toISOString(),
+            model: researchModel,
+            background_mode: true
+          }
+        );
+        
+        console.log(`✅ Research initiation saved for lawyer: ${lawyerId}`);
+      }
+      
+      // Set up background polling to check for completion
+      EdgeRuntime.waitUntil(pollForCompletion(data.id, lawyerId, query, supabase));
+      
+      return new Response(JSON.stringify({
+        success: true,
+        task_id: data.id,
+        status: 'initiated',
+        estimated_time: '5-30 minutos',
+        message: 'La investigación se está procesando en background. Recibirás una notificación cuando esté completa.'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Fallback: if not background mode, handle immediate response
+    if (data.response) {
+      const content = extractFinalContent(data.response);
+      
+      // Extract citations/annotations if available
+      const finalOutput = data.response.output?.[data.response.output.length - 1];
+      const annotations = finalOutput?.content?.[0]?.annotations || [];
+      const webSearchCalls = data.response.output?.filter(item => item.type === 'web_search_call') || [];
+      const reasoningSteps = data.response.output?.filter(item => item.type === 'reasoning') || [];
+      
+      console.log(`Deep research completed with:
+      - ${annotations.length} citations
+      - ${webSearchCalls.length} web searches  
+      - ${reasoningSteps.length} reasoning steps`);
+
+      // Process sources from annotations and web search calls
+      const sources = [];
+      
+      // Add sources from annotations (inline citations)
+      annotations.forEach((annotation, index) => {
+        if (annotation.url && annotation.title) {
+          sources.push({
+            title: annotation.title,
+            url: annotation.url,
+            type: 'citation',
+            index: index + 1
+          });
+        }
+      });
+      
+      // Add sources from web search calls
+      webSearchCalls.forEach((searchCall, index) => {
+        if (searchCall.action?.query) {
+          sources.push({
+            title: `Búsqueda: "${searchCall.action.query}"`,
+            type: 'search',
+            status: searchCall.status || 'completed',
+            index: sources.length + 1
+          });
+        }
+      });
+      
+      // Fallback sources if none found
+      if (sources.length === 0) {
+        sources.push({
+          title: "Investigación jurídica colombiana con búsqueda web",
+          type: 'general',
+          index: 1
+        });
+      }
+
+      // Structure the findings and conclusion
+      let findings = content;
+      let conclusion = "Consulte con un especialista para casos específicos.";
+      
+      // Try to extract conclusion from content if possible
+      const conclusionMatch = content.match(/conclusi[óo]n[:\s]*(.*?)(?:\n|$)/i);
+      if (conclusionMatch) {
+        conclusion = conclusionMatch[1].trim();
+      } else if (content.length > 500) {
+        // Use last paragraph as conclusion for long responses
+        const paragraphs = content.split('\n\n').filter(p => p.trim());
+        if (paragraphs.length > 1) {
+          conclusion = paragraphs[paragraphs.length - 1].trim();
+        }
+      }
+
+      const resultData = {
+        success: true,
+        findings,
+        sources,
+        conclusion,
+        query,
+        timestamp: new Date().toISOString(),
+        metadata: {
+          model: researchModel,
+          citations_count: annotations.length,
+          searches_count: webSearchCalls.length,
+          reasoning_steps: reasoningSteps.length
+        }
+      };
+
+      // Save result to database if user is authenticated
+      if (lawyerId) {
+        await saveToolResult(
+          supabase,
+          lawyerId,
+          'research',
+          { query },
+          { findings, sources, conclusion },
           { 
             timestamp: new Date().toISOString(),
             model: researchModel,
-            background_mode: true,
-            task_id: data.id
+            citations_count: annotations.length,
+            searches_count: webSearchCalls.length
           }
         );
       }
 
-      // Return immediate response indicating task has started
       return new Response(
-        JSON.stringify({
-          success: true,
-          task_id: data.id,
-          status: data.status,
-          message: 'Investigación jurídica iniciada. Recibirás los resultados cuando estén listos.',
-          query,
-          estimated_time: '5-30 minutos',
-          timestamp: new Date().toISOString()
-        }),
+        JSON.stringify(resultData),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
     }
 
-    // Fallback: if not background mode, process immediately
-    const content = extractFinalContent(data);
-    
-    // Extract citations/annotations if available
-    const annotations = finalOutput?.content?.[0]?.annotations || [];
-    const webSearchCalls = data.output?.filter(item => item.type === 'web_search_call') || [];
-    const reasoningSteps = data.output?.filter(item => item.type === 'reasoning') || [];
-    
-    console.log(`Deep research completed with:
-    - ${annotations.length} citations
-    - ${webSearchCalls.length} web searches  
-    - ${reasoningSteps.length} reasoning steps`);
-
-    // Process sources from annotations and web search calls
-    const sources = [];
-    
-    // Add sources from annotations (inline citations)
-    annotations.forEach((annotation, index) => {
-      if (annotation.url && annotation.title) {
-        sources.push({
-          title: annotation.title,
-          url: annotation.url,
-          type: 'citation',
-          index: index + 1
-        });
-      }
+    // If no valid response
+    console.log('❌ No valid response from OpenAI API');
+    return new Response(JSON.stringify({
+      success: false,
+      error: 'No se recibió una respuesta válida del servicio de investigación'
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
-    
-    // Add sources from web search calls
-    webSearchCalls.forEach((searchCall, index) => {
-      if (searchCall.action?.query) {
-        sources.push({
-          title: `Búsqueda: "${searchCall.action.query}"`,
-          type: 'search',
-          status: searchCall.status || 'completed',
-          index: sources.length + 1
-        });
-      }
-    });
-    
-    // Fallback sources if none found
-    if (sources.length === 0) {
-      sources.push({
-        title: "Investigación jurídica colombiana con búsqueda web",
-        type: 'general',
-        index: 1
-      });
-    }
-
-    // Structure the findings and conclusion
-    let findings = content;
-    let conclusion = "Consulte con un especialista para casos específicos.";
-    
-    // Try to extract conclusion from content if possible
-    const conclusionMatch = content.match(/conclusi[óo]n[:\s]*(.*?)(?:\n|$)/i);
-    if (conclusionMatch) {
-      conclusion = conclusionMatch[1].trim();
-    } else if (content.length > 500) {
-      // Use last paragraph as conclusion for long responses
-      const paragraphs = content.split('\n\n').filter(p => p.trim());
-      if (paragraphs.length > 1) {
-        conclusion = paragraphs[paragraphs.length - 1].trim();
-      }
-    }
-
-    const resultData = {
-      success: true,
-      findings,
-      sources,
-      conclusion,
-      query,
-      timestamp: new Date().toISOString(),
-      metadata: {
-        model: researchModel,
-        citations_count: annotations.length,
-        searches_count: webSearchCalls.length,
-        reasoning_steps: reasoningSteps.length
-      }
-    };
-
-    // Save result to database if user is authenticated
-    if (lawyerId) {
-      await saveToolResult(
-        supabase,
-        lawyerId,
-        'research',
-        { query },
-        { findings, sources, conclusion },
-        { 
-          timestamp: new Date().toISOString(),
-          model: researchModel,
-          citations_count: annotations.length,
-          searches_count: webSearchCalls.length
-        }
-      );
-    }
-
-    return new Response(
-      JSON.stringify(resultData),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
 
   } catch (error) {
     console.error('Error in legal-research-ai function:', error);
-    return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error.message || 'Internal server error' 
-      }),
+    
+    // Enhanced error handling for rate limits and token issues
+    let errorMessage = 'Error interno del servidor';
+    let statusCode = 500;
+    
+    if (error.message.includes('rate limit') || error.message.includes('429')) {
+      errorMessage = 'Límite de velocidad alcanzado. Intenta nuevamente en unos minutos.';
+      statusCode = 429;
+    } else if (error.message.includes('token')) {
+      errorMessage = 'Error de autenticación con el servicio de IA. Contacta al administrador.';
+      statusCode = 401;
+    } else if (error.message.includes('timeout')) {
+      errorMessage = 'Tiempo de espera agotado. La consulta puede ser muy compleja.';
+      statusCode = 408;
+    }
+    
+    return new Response(JSON.stringify({
+      success: false,
+      error: errorMessage,
+      details: error.message
+    }), {
+      status: statusCode,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+});
+
+// Background polling function to check task completion
+async function pollForCompletion(taskId: string, lawyerId: string | null, query: string, supabase: any): Promise<void> {
+  const maxPollingTime = 35 * 60 * 1000; // 35 minutes
+  const pollInterval = 30 * 1000; // 30 seconds
+  const startTime = Date.now();
+  const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+  
+  console.log(`Starting background polling for task: ${taskId}`);
+  
+  while (Date.now() - startTime < maxPollingTime) {
+    try {
+      // Check if task is completed via OpenAI API
+      const response = await fetch(`https://api.openai.com/v1/responses/${taskId}`, {
+        headers: {
+          'Authorization': `Bearer ${openaiApiKey}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        if (data.status === 'completed' && data.response) {
+          console.log(`✅ Task ${taskId} completed successfully`);
+          
+          // Extract the final content
+          const content = extractFinalContent(data.response);
+          
+          // Extract sources and metadata
+          const finalOutput = data.response.output?.[data.response.output.length - 1];
+          const annotations = finalOutput?.content?.[0]?.annotations || [];
+          const webSearchCalls = data.response.output?.filter(item => item.type === 'web_search_call') || [];
+          const reasoningSteps = data.response.output?.filter(item => item.type === 'reasoning') || [];
+          
+          // Process sources
+          const sources = [];
+          
+          // Add sources from annotations
+          annotations.forEach((annotation, index) => {
+            if (annotation.url && annotation.title) {
+              sources.push({
+                title: annotation.title,
+                url: annotation.url,
+                type: 'citation',
+                index: index + 1
+              });
+            }
+          });
+          
+          // Add sources from web search calls
+          webSearchCalls.forEach((searchCall, index) => {
+            if (searchCall.action?.query) {
+              sources.push({
+                title: `Búsqueda: "${searchCall.action.query}"`,
+                type: 'search',
+                status: searchCall.status || 'completed',
+                index: sources.length + 1
+              });
+            }
+          });
+          
+          // Extract conclusion
+          let conclusion = "Consulte con un especialista para casos específicos.";
+          const conclusionMatch = content.match(/conclusi[óo]n[:\s]*(.*?)(?:\n|$)/i);
+          if (conclusionMatch) {
+            conclusion = conclusionMatch[1].trim();
+          } else if (content.length > 500) {
+            const paragraphs = content.split('\n\n').filter(p => p.trim());
+            if (paragraphs.length > 1) {
+              conclusion = paragraphs[paragraphs.length - 1].trim();
+            }
+          }
+          
+          // Save completed research results
+          if (lawyerId && lawyerId !== 'anonymous') {
+            await saveToolResult(
+              supabase,
+              lawyerId,
+              'research_completed',
+              { 
+                task_id: taskId,
+                original_query: query
+              },
+              { 
+                findings: content,
+                sources,
+                conclusion
+              },
+              { 
+                timestamp: new Date().toISOString(),
+                model: data.model || 'o4-mini-deep-research-2025-06-26',
+                citations_count: annotations.length,
+                searches_count: webSearchCalls.length,
+                reasoning_steps: reasoningSteps.length,
+                completion_time: new Date().toISOString(),
+                background_mode: true
+              }
+            );
+            
+            console.log(`✅ Research results saved for lawyer: ${lawyerId}`);
+          }
+          
+          return; // Task completed successfully
+          
+        } else if (data.status === 'failed') {
+          console.error(`❌ Task ${taskId} failed:`, data.error);
+          
+          // Save failure record
+          if (lawyerId && lawyerId !== 'anonymous') {
+            await saveToolResult(
+              supabase,
+              lawyerId,
+              'research_failed',
+              { 
+                task_id: taskId,
+                error: data.error
+              },
+              { 
+                error: data.error,
+                failed_at: new Date().toISOString()
+              },
+              { 
+                timestamp: new Date().toISOString(),
+                background_mode: true
+              }
+            );
+          }
+          
+          return; // Task failed
+        }
+        
+        // Task still in progress, continue polling
+        console.log(`📡 Task ${taskId} still in progress (${data.status})`);
+      }
+      
+    } catch (error) {
+      console.error(`Error polling task ${taskId}:`, error);
+    }
+    
+    // Wait before next poll
+    await sleep(pollInterval);
+  }
+  
+  // Polling timeout
+  console.warn(`⏰ Polling timeout for task ${taskId} after ${maxPollingTime / 60000} minutes`);
+  
+  // Save timeout record
+  if (lawyerId && lawyerId !== 'anonymous') {
+    await saveToolResult(
+      supabase,
+      lawyerId,
+      'research_failed',
       { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        task_id: taskId,
+        error: 'Polling timeout'
+      },
+      { 
+        error: 'Task polling timeout after 35 minutes',
+        failed_at: new Date().toISOString()
+      },
+      { 
+        timestamp: new Date().toISOString(),
+        background_mode: true
       }
     );
   }
-});
+}
 
 // Note: Using OpenAI Deep Research API with Responses endpoint for enhanced web search capabilities
 // Background mode enabled for long-running research tasks with web search and citation support
