@@ -39,7 +39,7 @@ const corsHeaders = {
 };
 
 // Helper function to save results to legal_tools_results table
-async function saveToolResult(supabase: any, lawyerId: string, toolType: string, inputData: any, outputData: any, metadata: any = {}) {
+async function saveToolResult(supabase: any, lawyerId: string, toolType: string, inputData: any, outputData: any, metadata: any = {}): Promise<boolean> {
   try {
     console.log(`Saving ${toolType} result for lawyer: ${lawyerId}`);
     
@@ -58,12 +58,75 @@ async function saveToolResult(supabase: any, lawyerId: string, toolType: string,
 
     if (error) {
       console.error('Error saving tool result:', error);
+      throw new Error(`Failed to save tool result: ${error.message}`);
     } else {
       console.log(`✅ Successfully saved ${toolType} result`);
+      return true;
     }
   } catch (error) {
     console.error('Exception saving tool result:', error);
+    throw error;
   }
+}
+
+// Helper function to extract the last text content from OpenAI response
+function extractFinalContent(responseData: any): string {
+  if (!responseData.output || !Array.isArray(responseData.output)) {
+    return 'No se pudo obtener respuesta del asistente de investigación';
+  }
+  
+  // Find the last output item with text content
+  for (let i = responseData.output.length - 1; i >= 0; i--) {
+    const item = responseData.output[i];
+    if (item.content && Array.isArray(item.content)) {
+      for (const content of item.content) {
+        if (content.type === 'text' && content.text) {
+          return content.text;
+        }
+      }
+    }
+  }
+  
+  return 'No se pudo obtener respuesta del asistente de investigación';
+}
+
+// Helper function to implement exponential backoff for rate limits
+async function makeRequestWithRetry(url: string, options: any, maxRetries: number = 3): Promise<Response> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, options);
+      
+      if (response.status === 429) {
+        // Rate limit hit - check headers for retry info
+        const retryAfter = response.headers.get('retry-after');
+        const remainingTokens = response.headers.get('x-ratelimit-remaining-tokens');
+        const resetTime = response.headers.get('x-ratelimit-reset-tokens');
+        
+        console.log(`Rate limit hit (attempt ${attempt + 1}/${maxRetries + 1}). Retry-After: ${retryAfter}, Remaining: ${remainingTokens}, Reset: ${resetTime}`);
+        
+        if (attempt < maxRetries) {
+          // Calculate delay: use retry-after header or exponential backoff
+          const delay = retryAfter ? parseInt(retryAfter) * 1000 : Math.pow(2, attempt) * 1000;
+          console.log(`Waiting ${delay}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
+      }
+      
+      return response;
+    } catch (error) {
+      lastError = error as Error;
+      if (attempt < maxRetries) {
+        const delay = Math.pow(2, attempt) * 1000;
+        console.log(`Request failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay}ms...`, error);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  
+  throw lastError || new Error('Request failed after all retries');
 }
 
 serve(async (req) => {
@@ -161,7 +224,7 @@ Sé analítico, evita generalidades y asegúrate de que cada sección respalde e
     // Use OpenAI Responses API with Deep Research and web search
     console.log('Starting deep research task...');
     
-    const response = await fetch('https://api.openai.com/v1/responses', {
+    const response = await makeRequestWithRetry('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openaiApiKey}`,
@@ -169,6 +232,7 @@ Sé analítico, evita generalidades y asegúrate de que cada sección respalde e
       },
       body: JSON.stringify({
         model: researchModel,
+        max_output_tokens: 2000,
         input: [
           {
             role: 'developer',
@@ -189,9 +253,7 @@ Sé analítico, evita generalidades y asegúrate de que cada sección respalde e
             ]
           }
         ],
-        reasoning: {
-          summary: 'auto'
-        },
+        // reasoning: { summary: 'auto' }, // Removed - requires verified organization
         tools: [
           {
             type: 'web_search_preview'
@@ -210,9 +272,8 @@ Sé analítico, evita generalidades y asegúrate de que cada sección respalde e
     console.log('Deep research response received, processing results...');
     console.log('Response structure:', JSON.stringify(data, null, 2));
 
-    // Extract the final report from the responses format - get the last content item
-    const finalOutput = data.output ? data.output[data.output.length - 1] : null;
-    const content = finalOutput?.content?.[0]?.text || 'No se pudo obtener respuesta del asistente de investigación';
+    // Extract the final report from the responses format using helper
+    const content = extractFinalContent(data);
     
     // Extract citations/annotations if available
     const annotations = finalOutput?.content?.[0]?.annotations || [];
