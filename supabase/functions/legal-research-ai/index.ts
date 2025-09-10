@@ -1,8 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3';
-import { Agent, run } from 'https://esm.sh/@openai/agents@latest';
-import { z } from 'https://esm.sh/zod@3';
 
 // Helper function to get system configuration
 async function getSystemConfig(supabaseClient: any, configKey: string, defaultValue?: string): Promise<string> {
@@ -118,10 +116,11 @@ serve(async (req) => {
       'Eres un asistente especializado en investigación jurídica colombiana. Analiza la consulta y proporciona respuestas basadas en legislación, jurisprudencia y normativa vigente.'
     );
 
-    // Use valid OpenAI model - avoid reasoning models that have API issues
-    const researchModel = configModel.includes('o4-mini') ? 'gpt-4o-mini' : 
-                          configModel.includes('o3-') || configModel.includes('o4-') ? 'gpt-4o-mini' : 
-                          'gpt-4o-mini';
+    // Use valid OpenAI model - map config to supported models
+    let researchModel = 'gpt-4o-mini'; // Default fallback
+    if (configModel === 'gpt-5-2025-08-07') researchModel = 'gpt-5-2025-08-07';
+    else if (configModel === 'gpt-4.1-2025-04-14') researchModel = 'gpt-4.1-2025-04-14';
+    else if (configModel === 'gpt-4o') researchModel = 'gpt-4o';
 
     // Get OpenAI API key
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -131,70 +130,80 @@ serve(async (req) => {
 
     console.log(`Using research model: ${researchModel}`);
 
-    // Create legal research agent using the new OpenAI Agents SDK
-    const legalResearchAgent = new Agent({
-      name: 'Asistente de Investigación Jurídica',
-      model: researchModel,
-      instructions: `${researchPrompt}
+    // Use the OpenAI API directly since the Agents SDK is not available in Deno
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: researchModel,
+        messages: [
+          {
+            role: 'system',
+            content: `${researchPrompt}
 
-Eres un experto en investigación jurídica colombiana con acceso a búsqueda web en tiempo real.
+Eres un experto en investigación jurídica colombiana.
 
 INSTRUCCIONES ESPECÍFICAS:
-1. SIEMPRE usa la herramienta de búsqueda web para encontrar información legal actualizada
-2. Busca específicamente en:
-   - Sitios oficiales del gobierno colombiano (.gov.co)
-   - Corte Constitucional, Corte Suprema de Justicia, Consejo de Estado
-   - Normativa vigente y jurisprudencia actualizada
-   - DIAN, Superintendencias, y entidades regulatorias
+1. Analiza la consulta jurídica del usuario sobre derecho colombiano
+2. Proporciona información basada en:
+   - Constitución Política de Colombia
+   - Códigos (Civil, Comercial, Penal, Laboral, etc.)
+   - Jurisprudencia de altas cortes
+   - Normativa vigente y reglamentaria
 
 3. Estructura tu respuesta en formato JSON:
 {
-  "findings": "Análisis detallado con referencias legales específicas y actualizadas",
-  "sources": ["Lista de fuentes específicas consultadas con URLs y referencias exactas"],
-  "conclusion": "Conclusión práctica basada en la investigación actual"
+  "findings": "Análisis detallado con referencias legales específicas",
+  "sources": ["Lista de fuentes jurídicas consultadas"],
+  "conclusion": "Conclusión práctica basada en la normativa vigente"
 }
 
 4. Incluye siempre:
-   - Citas específicas de normativa vigente
-   - Referencias a jurisprudencia reciente
-   - Número de artículos, decretos o leyes aplicables
-   - Fechas de vigencia y última actualización
-   - URLs de fuentes oficiales consultadas
+   - Referencias específicas de normativa
+   - Artículos aplicables
+   - Jurisprudencia relevante
+   - Recomendaciones prácticas
 
-5. Si no encuentras información actualizada, especifícalo claramente y menciona las limitaciones`,
-      tools: [
-        // Web search tool function
-        function webSearch(searchQuery: string) {
-          console.log(`Searching web for: ${searchQuery}`);
-          // The SDK handles the actual web search implementation
-          return `Búsqueda completada para: ${searchQuery}. Información legal actualizada obtenida de fuentes oficiales colombianas.`;
-        }
-      ]
+5. Si la consulta requiere información muy específica, indica claramente las limitaciones`
+          },
+          {
+            role: 'user',
+            content: `Consulta jurídica: ${query}`
+          }
+        ],
+        // Use appropriate parameters based on model
+        ...(researchModel.startsWith('gpt-5') || researchModel.startsWith('gpt-4.1') ? 
+          { max_completion_tokens: 2000 } : 
+          { max_tokens: 2000, temperature: 0.3 }
+        )
+      }),
     });
 
-    // Run the agent with the research query
-    console.log('Starting legal research with OpenAI Agents SDK...');
-    const result = await run(legalResearchAgent, query);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('OpenAI API error:', errorText);
+      throw new Error(`OpenAI API error: ${response.status} ${errorText}`);
+    }
+
+    const data = await response.json();
+    const content = data.choices[0]?.message?.content || 'No se pudo obtener respuesta del asistente';
     
     console.log('Research completed, processing results...');
-
-    // Extract the final output
-    const content = result.finalOutput || 'No se pudo obtener respuesta del asistente';
-    const sourcesUsed = result.toolCalls?.map((call: any) => 
-      `Búsqueda web: ${call.args?.searchQuery || 'Consulta legal colombia'}`
-    ) || [];
 
     // Try to parse as JSON, fallback to structured text analysis
     let findings, sources, conclusion;
     try {
       const parsed = JSON.parse(content);
       findings = parsed.findings;
-      sources = parsed.sources || sourcesUsed;
+      sources = parsed.sources || ["Normativa jurídica colombiana"];
       conclusion = parsed.conclusion;
     } catch (e) {
       // Fallback: structure the content intelligently
       findings = content;
-      sources = sourcesUsed.length > 0 ? sourcesUsed : ["Investigación jurídica con búsqueda web actualizada"];
+      sources = ["Análisis jurídico basado en normativa colombiana"];
       
       // Extract conclusion from content if possible
       const conclusionMatch = content.match(/conclusi[óo]n[:\s]*(.*?)(?:\n|$)/i);
@@ -244,5 +253,5 @@ INSTRUCCIONES ESPECÍFICAS:
   }
 });
 
-// Note: With the new OpenAI Agents SDK, we no longer need to manually manage assistants
-// The SDK handles agent creation and lifecycle automatically
+// Note: Using OpenAI Chat Completions API directly as it's more reliable in Deno edge functions
+// The Agents SDK requires Node.js runtime features not available in Deno
