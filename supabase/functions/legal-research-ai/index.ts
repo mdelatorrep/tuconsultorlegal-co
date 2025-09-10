@@ -108,19 +108,18 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get research AI model and prompt from system config - use valid models
-    const configModel = await getSystemConfig(supabase, 'research_ai_model', 'gpt-4o-mini');
+    // Get research AI model and prompt from system config - use deep research models
+    const configModel = await getSystemConfig(supabase, 'research_ai_model', 'o4-mini-deep-research-2025-06-26');
     const researchPrompt = await getSystemConfig(
       supabase, 
       'research_ai_prompt', 
-      'Eres un asistente especializado en investigación jurídica colombiana. Analiza la consulta y proporciona respuestas basadas en legislación, jurisprudencia y normativa vigente.'
+      'Eres un especialista en investigación jurídica colombiana. Analiza la consulta y proporciona respuestas detalladas basadas en legislación, jurisprudencia y normativa vigente con fuentes actualizadas.'
     );
 
-    // Use valid OpenAI model - map config to supported models
-    let researchModel = 'gpt-4o-mini'; // Default fallback
-    if (configModel === 'gpt-5-2025-08-07') researchModel = 'gpt-5-2025-08-07';
-    else if (configModel === 'gpt-4.1-2025-04-14') researchModel = 'gpt-4.1-2025-04-14';
-    else if (configModel === 'gpt-4o') researchModel = 'gpt-4o';
+    // Use deep research models
+    let researchModel = 'o4-mini-deep-research-2025-06-26'; // Default fallback
+    if (configModel === 'o3-deep-research-2025-06-26') researchModel = 'o3-deep-research-2025-06-26';
+    else if (configModel === 'o4-mini-deep-research-2025-06-26') researchModel = 'o4-mini-deep-research-2025-06-26';
 
     // Get OpenAI API key
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -128,10 +127,36 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    console.log(`Using research model: ${researchModel}`);
+    console.log(`Using deep research model: ${researchModel}`);
 
-    // Use the OpenAI API directly since the Agents SDK is not available in Deno
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    // System message for Colombian legal research
+    const systemMessage = `${researchPrompt}
+
+Eres un experto investigador jurídico especializado en derecho colombiano. Tu tarea es producir un informe estructurado y respaldado por datos sobre la consulta jurídica del usuario.
+
+INSTRUCCIONES ESPECÍFICAS:
+
+Debes:
+- Enfocarte en análisis ricos en datos: incluye figuras específicas, tendencias, estadísticas y resultados medibles (ej., cambios en la jurisprudencia, evolución normativa, impacto de reformas).
+- Priorizar fuentes confiables y actualizadas: jurisprudencia reciente, normativa vigente, doctrina especializada, conceptos de organismos oficiales.
+- Incluir citas en línea y devolver todos los metadatos de las fuentes.
+- Analizar la consulta desde múltiples perspectivas del derecho colombiano:
+  * Constitución Política de Colombia
+  * Códigos (Civil, Comercial, Penal, Laboral, Procedimiento, etc.)
+  * Jurisprudencia de Corte Constitucional, Corte Suprema de Justicia, Consejo de Estado
+  * Normativa reglamentaria vigente
+  * Conceptos de superintendencias y entidades regulatorias
+
+Estructura tu respuesta con:
+1. Análisis normativo detallado
+2. Jurisprudencia aplicable con citas específicas
+3. Implicaciones prácticas
+4. Recomendaciones basadas en el marco jurídico vigente
+
+Sé analítico, evita generalidades y asegúrate de que cada sección respalde el razonamiento con datos verificables que puedan informar decisiones jurídicas.`;
+
+    // Use OpenAI Responses API with Deep Research and web search
+    const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openaiApiKey}`,
@@ -139,75 +164,93 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: researchModel,
-        messages: [
+        input: [
           {
-            role: 'system',
-            content: `${researchPrompt}
-
-Eres un experto en investigación jurídica colombiana.
-
-INSTRUCCIONES ESPECÍFICAS:
-1. Analiza la consulta jurídica del usuario sobre derecho colombiano
-2. Proporciona información basada en:
-   - Constitución Política de Colombia
-   - Códigos (Civil, Comercial, Penal, Laboral, etc.)
-   - Jurisprudencia de altas cortes
-   - Normativa vigente y reglamentaria
-
-3. Estructura tu respuesta en formato JSON:
-{
-  "findings": "Análisis detallado con referencias legales específicas",
-  "sources": ["Lista de fuentes jurídicas consultadas"],
-  "conclusion": "Conclusión práctica basada en la normativa vigente"
-}
-
-4. Incluye siempre:
-   - Referencias específicas de normativa
-   - Artículos aplicables
-   - Jurisprudencia relevante
-   - Recomendaciones prácticas
-
-5. Si la consulta requiere información muy específica, indica claramente las limitaciones`
+            role: 'developer',
+            content: [
+              {
+                type: 'input_text',
+                text: systemMessage
+              }
+            ]
           },
           {
             role: 'user',
-            content: `Consulta jurídica: ${query}`
+            content: [
+              {
+                type: 'input_text',
+                text: `Consulta jurídica para investigación: ${query}`
+              }
+            ]
           }
         ],
-        // Use appropriate parameters based on model
-        ...(researchModel.startsWith('gpt-5') || researchModel.startsWith('gpt-4.1') ? 
-          { max_completion_tokens: 2000 } : 
-          { max_tokens: 2000, temperature: 0.3 }
-        )
+        reasoning: {
+          summary: 'auto'
+        },
+        tools: [
+          {
+            type: 'web_search_preview'
+          }
+        ],
+        background: true
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI API error:', errorText);
-      throw new Error(`OpenAI API error: ${response.status} ${errorText}`);
+      console.error('OpenAI Deep Research API error:', errorText);
+      throw new Error(`OpenAI Deep Research API error: ${response.status} ${errorText}`);
     }
 
     const data = await response.json();
-    const content = data.choices[0]?.message?.content || 'No se pudo obtener respuesta del asistente';
-    
-    console.log('Research completed, processing results...');
+    console.log('Deep research response received, processing results...');
 
-    // Try to parse as JSON, fallback to structured text analysis
-    let findings, sources, conclusion;
-    try {
-      const parsed = JSON.parse(content);
-      findings = parsed.findings;
-      sources = parsed.sources || ["Normativa jurídica colombiana"];
-      conclusion = parsed.conclusion;
-    } catch (e) {
-      // Fallback: structure the content intelligently
-      findings = content;
-      sources = ["Análisis jurídico basado en normativa colombiana"];
-      
-      // Extract conclusion from content if possible
-      const conclusionMatch = content.match(/conclusi[óo]n[:\s]*(.*?)(?:\n|$)/i);
-      conclusion = conclusionMatch ? conclusionMatch[1].trim() : "Consulte con un especialista para casos específicos.";
+    // Extract the final report from the responses format
+    const finalOutput = data.output ? data.output[data.output.length - 1] : null;
+    const content = finalOutput?.content?.[0]?.text || 'No se pudo obtener respuesta del asistente de investigación';
+    
+    // Extract citations/annotations if available
+    const annotations = finalOutput?.content?.[0]?.annotations || [];
+    const webSearchCalls = data.output?.filter(item => item.type === 'web_search_call') || [];
+    
+    console.log(`Deep research completed with ${annotations.length} citations and ${webSearchCalls.length} web searches`);
+
+    // Process sources from annotations and web search calls
+    const sources = [];
+    
+    // Add sources from annotations (inline citations)
+    annotations.forEach(annotation => {
+      if (annotation.url && annotation.title) {
+        sources.push(`${annotation.title} - ${annotation.url}`);
+      }
+    });
+    
+    // Add sources from web search calls
+    webSearchCalls.forEach(searchCall => {
+      if (searchCall.action?.query) {
+        sources.push(`Búsqueda web: "${searchCall.action.query}"`);
+      }
+    });
+    
+    // Fallback sources if none found
+    if (sources.length === 0) {
+      sources.push("Investigación jurídica colombiana con búsqueda web");
+    }
+
+    // Structure the findings and conclusion
+    let findings = content;
+    let conclusion = "Consulte con un especialista para casos específicos.";
+    
+    // Try to extract conclusion from content if possible
+    const conclusionMatch = content.match(/conclusi[óo]n[:\s]*(.*?)(?:\n|$)/i);
+    if (conclusionMatch) {
+      conclusion = conclusionMatch[1].trim();
+    } else if (content.length > 500) {
+      // Use last paragraph as conclusion for long responses
+      const paragraphs = content.split('\n\n').filter(p => p.trim());
+      if (paragraphs.length > 1) {
+        conclusion = paragraphs[paragraphs.length - 1].trim();
+      }
     }
 
     const resultData = {
@@ -253,5 +296,5 @@ INSTRUCCIONES ESPECÍFICAS:
   }
 });
 
-// Note: Using OpenAI Chat Completions API directly as it's more reliable in Deno edge functions
-// The Agents SDK requires Node.js runtime features not available in Deno
+// Note: Using OpenAI Deep Research API with Responses endpoint for enhanced web search capabilities
+// Background mode enabled for long-running research tasks with web search and citation support
