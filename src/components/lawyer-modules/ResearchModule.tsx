@@ -43,6 +43,9 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
   const [progress, setProgress] = useState(0);
   const { toast } = useToast();
 
+  // Debug logs
+  console.log('ResearchModule state:', { query, isSearching, results: results.length, pendingTasks: pendingTasks.length });
+
   // Effect to load pending tasks and completed results on mount
   useEffect(() => {
     loadPendingTasks();
@@ -365,13 +368,24 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
                   </CardHeader>
                   <CardContent className="relative space-y-6">
                     <div className="space-y-3">
-                      <label className="text-sm font-semibold text-primary">Descripción de la consulta jurídica</label>
+                      <label htmlFor="research-query" className="text-sm font-semibold text-primary">
+                        Descripción de la consulta jurídica
+                      </label>
                       <Textarea
+                        id="research-query"
+                        name="research-query"
                         placeholder="Ejemplo: Analiza la línea jurisprudencial más reciente de la Corte Suprema sobre terminación anticipada de contratos de arrendamiento comercial por fuerza mayor o caso fortuito en Colombia, incluyendo criterios de aplicación y requisitos..."
                         value={query}
-                        onChange={(e) => setQuery(e.target.value)}
+                        onChange={(e) => {
+                          console.log('Textarea onChange triggered:', e.target.value);
+                          setQuery(e.target.value);
+                        }}
+                        onFocus={() => console.log('Textarea focused')}
+                        onBlur={() => console.log('Textarea blurred')}
                         rows={5}
-                        className="resize-none border-primary/20 focus:border-primary/40 rounded-xl bg-white/80 backdrop-blur-sm text-base"
+                        disabled={isSearching}
+                        className="resize-none border-primary/20 focus:border-primary/40 rounded-xl bg-white text-base min-h-[120px] focus:ring-2 focus:ring-primary/20"
+                        style={{ pointerEvents: 'auto' }}
                       />
                       <p className="text-xs text-muted-foreground">
                         💡 Tip: Sé específico sobre el área del derecho, jurisdicción y tipo de análisis que necesitas
