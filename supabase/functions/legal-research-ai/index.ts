@@ -43,17 +43,48 @@ async function handleWebhook(req: Request): Promise<Response> {
   try {
     console.log('Webhook received for research completion');
     
+    // Verify webhook secret for security
+    const webhookSecret = req.headers.get('x-webhook-secret');
+    const expectedSecret = Deno.env.get('WEBHOOK_SECRET') || 'default-secret';
+    
+    if (webhookSecret !== expectedSecret) {
+      console.error('Unauthorized webhook request - invalid secret');
+      return new Response('Unauthorized', { status: 401 });
+    }
+    
     const webhookData = await req.json();
     console.log('Webhook data:', JSON.stringify(webhookData, null, 2));
+    
+    // Check for duplicate processing (idempotency)
+    const taskId = webhookData.id;
+    if (!taskId) {
+      console.error('Webhook missing task ID');
+      return new Response('Bad Request: Missing task ID', { status: 400 });
+    }
     
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
     
+    // Check if this task was already processed
+    const { data: existingResult } = await supabase
+      .from('legal_tools_results')
+      .select('id')
+      .eq('metadata->>task_id', taskId)
+      .in('tool_type', ['research_completed', 'research_failed'])
+      .limit(1);
+    
+    if (existingResult && existingResult.length > 0) {
+      console.log(`Task ${taskId} already processed, ignoring duplicate webhook`);
+      return new Response(JSON.stringify({ received: true, duplicate: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
     // Extract research ID from headers
     const researchId = req.headers.get('x-research-id');
-    const lawyerId = researchId?.split('-')[0];
+    const lawyerId = researchId?.split('|')[0]; // Updated delimiter
     
     if (webhookData.status === 'completed' && webhookData.response) {
       console.log('Processing completed research task');
@@ -203,20 +234,24 @@ async function saveToolResult(supabase: any, lawyerId: string, toolType: string,
   }
 }
 
-// Helper function to extract the last text content from OpenAI response
+// Enhanced function to extract content from various OpenAI response formats
 function extractFinalContent(responseData: any): string {
-  if (!responseData.output || !Array.isArray(responseData.output)) {
+  if (!responseData || !responseData.output || !Array.isArray(responseData.output)) {
     return 'No se pudo obtener respuesta del asistente de investigación';
   }
   
-  // Find the last output item with text content
+  // Find the last output item with text content (support multiple formats)
   for (let i = responseData.output.length - 1; i >= 0; i--) {
     const item = responseData.output[i];
-    if (item.content && Array.isArray(item.content)) {
-      for (const content of item.content) {
-        if (content.type === 'text' && content.text) {
-          return content.text;
-        }
+    if (!item.content) continue;
+    
+    for (const content of item.content) {
+      // Support various content types
+      if (content.type === 'message' && content.text) {
+        return content.text;
+      }
+      if ((content.type === 'text' || content.type === 'input_text') && (content.text || content.value)) {
+        return content.text || content.value;
       }
     }
   }
@@ -224,8 +259,30 @@ function extractFinalContent(responseData: any): string {
   return 'No se pudo obtener respuesta del asistente de investigación';
 }
 
-// Helper function to implement exponential backoff for rate limits (optimized for Tier 1)
-async function makeRequestWithRetry(url: string, options: any, maxRetries: number = 2): Promise<Response> {
+// Helper function to check TPM usage and decide if request should proceed
+function analyzeTokenUsage(errorText: string): { limit: number, used: number, requested: number, shouldQueue: boolean } {
+  const limitMatch = errorText.match(/Limit\s+(\d+)/);
+  const usedMatch = errorText.match(/Used\s+(\d+)/);
+  const requestedMatch = errorText.match(/Requested\s+(\d+)/);
+  
+  const limit = limitMatch ? parseInt(limitMatch[1]) : 200000; // Default Tier 1 limit
+  const used = usedMatch ? parseInt(usedMatch[1]) : 0;
+  const requested = requestedMatch ? parseInt(requestedMatch[1]) : 0;
+  
+  const shouldQueue = (used + requested) > limit;
+  
+  console.log(`Token analysis: Limit=${limit}, Used=${used}, Requested=${requested}, ShouldQueue=${shouldQueue}`);
+  return { limit, used, requested, shouldQueue };
+}
+
+// Sleep utility with jitter
+function sleep(ms: number): Promise<void> {
+  const jitter = Math.random() * 1000; // Add up to 1s jitter
+  return new Promise(resolve => setTimeout(resolve, ms + jitter));
+}
+
+// Enhanced retry function with improved rate limit handling
+async function makeRequestWithRetry(url: string, options: any, maxRetries: number = 5): Promise<Response> {
   let lastError: Error | null = null;
   
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -233,48 +290,55 @@ async function makeRequestWithRetry(url: string, options: any, maxRetries: numbe
       const response = await fetch(url, options);
       
       if (response.status === 429) {
-        // Rate limit hit - check headers for retry info
+        const errorText = await response.text();
+        const tokenAnalysis = analyzeTokenUsage(errorText);
+        
+        // Get headers for smart retry timing
         const retryAfter = response.headers.get('retry-after');
+        const resetTokens = response.headers.get('x-ratelimit-reset-tokens');
         const remainingTokens = response.headers.get('x-ratelimit-remaining-tokens');
-        const resetTime = response.headers.get('x-ratelimit-reset-tokens');
         const limitTokens = response.headers.get('x-ratelimit-limit-tokens');
         
-        console.log(`Rate limit hit (attempt ${attempt + 1}/${maxRetries + 1})`);
-        console.log(`Retry-After: ${retryAfter}s, Remaining: ${remainingTokens}, Limit: ${limitTokens}, Reset: ${resetTime}`);
+        console.log(`Rate limit 429 (attempt ${attempt + 1}/${maxRetries + 1})`);
+        console.log(`Headers - Retry-After: ${retryAfter}s, Remaining: ${remainingTokens}, Limit: ${limitTokens}, Reset: ${resetTokens}`);
+        console.log(`Token analysis:`, tokenAnalysis);
         
-        if (attempt < maxRetries) {
-          // For Tier 1: more conservative delays
-          let delay: number;
-          
-          if (retryAfter) {
-            // Use the exact retry-after time from headers (convert to ms)
-            delay = parseInt(retryAfter) * 1000;
-          } else {
-            // Tier 1 optimized exponential backoff: start with 2s, then 8s
-            delay = attempt === 0 ? 2000 : 8000;
-          }
-          
-          // Cap maximum delay at 30 seconds for Tier 1
-          delay = Math.min(delay, 30000);
-          
-          console.log(`Tier 1 rate limit - waiting ${delay}ms before retry...`);
-          await new Promise(resolve => setTimeout(resolve, delay));
-          continue;
-        } else {
-          // Final attempt failed - provide detailed error for Tier 1
-          const errorText = await response.text();
-          throw new Error(`Rate limit exceeded after ${maxRetries + 1} attempts. Tier 1 limits reached. ${errorText}`);
+        if (attempt === maxRetries) {
+          throw new Error(`Rate limit exceeded after ${maxRetries + 1} attempts. ${errorText}`);
         }
+        
+        // Calculate optimal wait time
+        let waitMs = 0;
+        
+        if (retryAfter) {
+          // Prefer retry-after header (in seconds)
+          waitMs = parseInt(retryAfter, 10) * 1000;
+        } else if (resetTokens) {
+          // Calculate wait time from reset timestamp
+          const nowSec = Math.floor(Date.now() / 1000);
+          const resetSec = parseInt(resetTokens, 10);
+          waitMs = Math.max(1000, (resetSec - nowSec) * 1000);
+        } else {
+          // Exponential backoff with jitter for deep research (longer delays)
+          waitMs = Math.min(60000, (2 ** attempt) * 2000); // Start at 2s, cap at 60s
+        }
+        
+        console.log(`Rate limit - waiting ${waitMs}ms before retry (attempt ${attempt + 1})`);
+        await sleep(waitMs);
+        continue;
       }
       
+      // For other statuses, return the response (caller checks .ok)
       return response;
+      
     } catch (error) {
       lastError = error as Error;
       if (attempt < maxRetries) {
-        // Tier 1: shorter delays for non-rate-limit errors
-        const delay = attempt === 0 ? 1000 : 3000;
-        console.log(`Request failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay}ms...`, error);
-        await new Promise(resolve => setTimeout(resolve, delay));
+        // Shorter waits for non-rate-limit errors
+        const waitMs = attempt === 0 ? 1000 : 3000;
+        console.log(`Request error, attempt ${attempt + 1}/${maxRetries + 1}. Retrying in ${waitMs}ms`, error);
+        await sleep(waitMs);
+        continue;
       }
     }
   }
@@ -339,13 +403,8 @@ serve(async (req) => {
       'Eres un especialista en investigación jurídica colombiana. Analiza la consulta y proporciona respuestas detalladas basadas en legislación, jurisprudencia y normativa vigente con fuentes actualizadas.'
     );
 
-    // Use only valid deep research models
-    let researchModel = 'o4-mini-deep-research-2025-06-26'; // Default fallback
-    if (configModel === 'o3-deep-research-2025-06-26') {
-      researchModel = 'o3-deep-research-2025-06-26';
-    } else if (configModel === 'o4-mini-deep-research-2025-06-26') {
-      researchModel = 'o4-mini-deep-research-2025-06-26';
-    }
+    // Force use of o4-mini-deep-research as recommended
+    const researchModel = 'o4-mini-deep-research-2025-06-26';
 
     // Get OpenAI API key
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -355,31 +414,16 @@ serve(async (req) => {
 
     console.log(`Using deep research model: ${researchModel}`);
 
-    // System message for Colombian legal research
+    // Optimized system message (reduced tokens for TPM efficiency)
     const systemMessage = `${researchPrompt}
 
-Eres un experto investigador jurídico especializado en derecho colombiano. Tu tarea es producir un informe estructurado y respaldado por datos sobre la consulta jurídica del usuario.
+Experto en derecho colombiano. Produce informe estructurado con:
 
-INSTRUCCIONES ESPECÍFICAS:
+1. Marco normativo (Constitución, códigos, decretos vigentes)
+2. Jurisprudencia reciente (Corte Constitucional, CSJ, Consejo de Estado)  
+3. Aplicación práctica y recomendaciones
 
-Debes:
-- Enfocarte en análisis ricos en datos: incluye figuras específicas, tendencias, estadísticas y resultados medibles (ej., cambios en la jurisprudencia, evolución normativa, impacto de reformas).
-- Priorizar fuentes confiables y actualizadas: jurisprudencia reciente, normativa vigente, doctrina especializada, conceptos de organismos oficiales.
-- Incluir citas en línea y devolver todos los metadatos de las fuentes.
-- Analizar la consulta desde múltiples perspectivas del derecho colombiano:
-  * Constitución Política de Colombia
-  * Códigos (Civil, Comercial, Penal, Laboral, Procedimiento, etc.)
-  * Jurisprudencia de Corte Constitucional, Corte Suprema de Justicia, Consejo de Estado
-  * Normativa reglamentaria vigente
-  * Conceptos de superintendencias y entidades regulatorias
-
-Estructura tu respuesta con:
-1. Análisis normativo detallado
-2. Jurisprudencia aplicable con citas específicas
-3. Implicaciones prácticas
-4. Recomendaciones basadas en el marco jurídico vigente
-
-Sé analítico, evita generalidades y asegúrate de que cada sección respalde el razonamiento con datos verificables que puedan informar decisiones jurídicas.`;
+Incluye citas específicas y fuentes verificables. Enfócate en análisis concreto con datos medibles.`;
 
     // Use OpenAI Responses API with Deep Research and web search in background mode
     console.log('Starting deep research task in background mode...');
@@ -395,13 +439,13 @@ Sé analítico, evita generalidades y asegúrate de que cada sección respalde e
       },
       body: JSON.stringify({
         model: researchModel,
-        max_output_tokens: 1500, // Reduced for Tier 1 to avoid TPM limits
-        background: true, // Enable background mode for long-running tasks
+        max_output_tokens: 1000, // Optimized for TPM efficiency on Tier 1
+        background: true, // Enable background mode for long-running tasks (5-30 min)
         webhook: {
           url: webhookUrl,
           headers: {
-            'authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-            'x-research-id': `${lawyerId || 'anonymous'}-${Date.now()}`
+            'x-webhook-secret': Deno.env.get('WEBHOOK_SECRET') || 'default-secret',
+            'x-research-id': `${lawyerId || 'anon'}|${Date.now()}`
           }
         },
         input: [
@@ -426,7 +470,7 @@ Sé analítico, evita generalidades y asegúrate de que cada sección respalde e
         ],
         tools: [
           {
-            type: 'web_search_preview'
+            type: 'web_search' // Use stable web_search instead of preview
           }
         ]
       }),
