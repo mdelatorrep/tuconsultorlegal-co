@@ -116,10 +116,13 @@ serve(async (req) => {
       'Eres un especialista en investigación jurídica colombiana. Analiza la consulta y proporciona respuestas detalladas basadas en legislación, jurisprudencia y normativa vigente con fuentes actualizadas.'
     );
 
-    // Use deep research models
+    // Use only valid deep research models
     let researchModel = 'o4-mini-deep-research-2025-06-26'; // Default fallback
-    if (configModel === 'o3-deep-research-2025-06-26') researchModel = 'o3-deep-research-2025-06-26';
-    else if (configModel === 'o4-mini-deep-research-2025-06-26') researchModel = 'o4-mini-deep-research-2025-06-26';
+    if (configModel === 'o3-deep-research-2025-06-26') {
+      researchModel = 'o3-deep-research-2025-06-26';
+    } else if (configModel === 'o4-mini-deep-research-2025-06-26') {
+      researchModel = 'o4-mini-deep-research-2025-06-26';
+    }
 
     // Get OpenAI API key
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -156,6 +159,8 @@ Estructura tu respuesta con:
 Sé analítico, evita generalidades y asegúrate de que cada sección respalde el razonamiento con datos verificables que puedan informar decisiones jurídicas.`;
 
     // Use OpenAI Responses API with Deep Research and web search
+    console.log('Starting deep research task...');
+    
     const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
@@ -191,8 +196,7 @@ Sé analítico, evita generalidades y asegúrate de que cada sección respalde e
           {
             type: 'web_search_preview'
           }
-        ],
-        background: true
+        ]
       }),
     });
 
@@ -204,37 +208,56 @@ Sé analítico, evita generalidades y asegúrate de que cada sección respalde e
 
     const data = await response.json();
     console.log('Deep research response received, processing results...');
+    console.log('Response structure:', JSON.stringify(data, null, 2));
 
-    // Extract the final report from the responses format
+    // Extract the final report from the responses format - get the last content item
     const finalOutput = data.output ? data.output[data.output.length - 1] : null;
     const content = finalOutput?.content?.[0]?.text || 'No se pudo obtener respuesta del asistente de investigación';
     
     // Extract citations/annotations if available
     const annotations = finalOutput?.content?.[0]?.annotations || [];
     const webSearchCalls = data.output?.filter(item => item.type === 'web_search_call') || [];
+    const reasoningSteps = data.output?.filter(item => item.type === 'reasoning') || [];
     
-    console.log(`Deep research completed with ${annotations.length} citations and ${webSearchCalls.length} web searches`);
+    console.log(`Deep research completed with:
+    - ${annotations.length} citations
+    - ${webSearchCalls.length} web searches  
+    - ${reasoningSteps.length} reasoning steps`);
 
     // Process sources from annotations and web search calls
     const sources = [];
     
     // Add sources from annotations (inline citations)
-    annotations.forEach(annotation => {
+    annotations.forEach((annotation, index) => {
       if (annotation.url && annotation.title) {
-        sources.push(`${annotation.title} - ${annotation.url}`);
+        sources.push({
+          title: annotation.title,
+          url: annotation.url,
+          type: 'citation',
+          index: index + 1
+        });
       }
     });
     
     // Add sources from web search calls
-    webSearchCalls.forEach(searchCall => {
+    webSearchCalls.forEach((searchCall, index) => {
       if (searchCall.action?.query) {
-        sources.push(`Búsqueda web: "${searchCall.action.query}"`);
+        sources.push({
+          title: `Búsqueda: "${searchCall.action.query}"`,
+          type: 'search',
+          status: searchCall.status || 'completed',
+          index: sources.length + 1
+        });
       }
     });
     
     // Fallback sources if none found
     if (sources.length === 0) {
-      sources.push("Investigación jurídica colombiana con búsqueda web");
+      sources.push({
+        title: "Investigación jurídica colombiana con búsqueda web",
+        type: 'general',
+        index: 1
+      });
     }
 
     // Structure the findings and conclusion
@@ -259,7 +282,13 @@ Sé analítico, evita generalidades y asegúrate de que cada sección respalde e
       sources,
       conclusion,
       query,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      metadata: {
+        model: researchModel,
+        citations_count: annotations.length,
+        searches_count: webSearchCalls.length,
+        reasoning_steps: reasoningSteps.length
+      }
     };
 
     // Save result to database if user is authenticated
@@ -270,7 +299,12 @@ Sé analítico, evita generalidades y asegúrate de que cada sección respalde e
         'research',
         { query },
         { findings, sources, conclusion },
-        { timestamp: new Date().toISOString() }
+        { 
+          timestamp: new Date().toISOString(),
+          model: researchModel,
+          citations_count: annotations.length,
+          searches_count: webSearchCalls.length
+        }
       );
     }
 
