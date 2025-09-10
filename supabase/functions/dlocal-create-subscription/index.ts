@@ -72,9 +72,9 @@ serve(async (req) => {
       },
       // Configure the important callback URLs for smooth UX
       notification_url: `https://tkaezookvtpulfpaffes.supabase.co/functions/v1/dlocal-webhook`,
-      success_url: `${baseUrl}/subscription-success?subscription_id={subscription_id}&plan_name={plan_name}&external_id=${user.id}`,
+      success_url: `${baseUrl}/subscription-success?subscription_id={subscription_id}&plan_name={plan_name}&external_id=${user.id}&email=${encodeURIComponent(user.email || '')}`,
       back_url: `${baseUrl}/#abogados?tab=subscription&message=cancelled`,
-      error_url: `${baseUrl}/subscription-error?error={error}&error_description={error_description}&external_id=${user.id}`,
+      error_url: `${baseUrl}/subscription-error?error={error}&error_description={error_description}&external_id=${user.id}&email=${encodeURIComponent(user.email || '')}`,
       // Enhanced metadata for better tracking
       metadata: {
         source: 'web_platform',

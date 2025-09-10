@@ -87,15 +87,30 @@ serve(async (req) => {
             console.error(`❌ Error updating subscription ${dLocalSub.id}:`, updateError);
           }
         } else {
-          // Try to match by user email if we have it
-          if (dLocalSub.user && dLocalSub.user.email) {
-            const { data: lawyer } = await supabase
+          // Try to match by external_id first, then email
+          let lawyer = null;
+          
+          // First try external_id
+          if (dLocalSub.user && dLocalSub.user.external_id) {
+            const { data: foundLawyer } = await supabase
+              .from('lawyer_profiles')
+              .select('id, email')
+              .eq('id', dLocalSub.user.external_id)
+              .single();
+            lawyer = foundLawyer;
+          }
+          
+          // Fallback to email if external_id didn't work
+          if (!lawyer && dLocalSub.user && dLocalSub.user.email) {
+            const { data: foundLawyer } = await supabase
               .from('lawyer_profiles')
               .select('id')
               .eq('email', dLocalSub.user.email)
               .single();
+            lawyer = foundLawyer;
+          }
 
-            if (lawyer) {
+          if (lawyer) {
               // Create new subscription record
               const { error: insertError } = await supabase
                 .from('lawyer_subscriptions')

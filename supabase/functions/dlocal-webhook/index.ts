@@ -29,13 +29,14 @@ serve(async (req) => {
     const signature = req.headers.get('x-signature');
     // TODO: Implement signature verification
 
-    // Extract subscription information from dLocal payload
-    const subscriptionId = payload.subscription?.id || payload.id;
-    const status = payload.subscription?.status || payload.status;
-    const userEmail = payload.subscription?.user?.email || payload.user?.email;
-    const planId = payload.subscription?.plan_id || payload.plan_id;
-    const amount = payload.subscription?.amount || payload.amount;
-    const currency = payload.subscription?.currency || payload.currency;
+    // Extract subscription information from dLocal payload - handle multiple payload formats
+    const subscriptionId = payload.subscription_id || payload.subscription?.id || payload.id;
+    const status = payload.status || payload.subscription?.status;
+    const userEmail = payload.user?.email || payload.subscription?.user?.email || payload.email;
+    const externalId = payload.user?.external_id || payload.external_id;
+    const planId = payload.plan_id || payload.subscription?.plan_id;
+    const amount = payload.amount || payload.subscription?.amount;
+    const currency = payload.currency || payload.subscription?.currency;
     
     console.log(`📱 Processing subscription: ${subscriptionId}, status: ${status}, email: ${userEmail}`);
 
@@ -47,9 +48,27 @@ serve(async (req) => {
       );
     }
 
-    // First, try to find the lawyer by email
+    // First, try to find the lawyer by external_id (preferred) or email
     let lawyerId = null;
-    if (userEmail) {
+    
+    // Try external_id first (most reliable for linking)
+    if (externalId) {
+      const { data: lawyer } = await supabase
+        .from('lawyer_profiles')
+        .select('id, email')
+        .eq('id', externalId)
+        .single();
+      
+      if (lawyer) {
+        lawyerId = lawyer.id;
+        console.log(`✅ Found lawyer by external_id: ${lawyerId} (${lawyer.email})`);
+      } else {
+        console.log(`⚠️ No lawyer found for external_id: ${externalId}`);
+      }
+    }
+    
+    // Fallback to email if external_id didn't work
+    if (!lawyerId && userEmail) {
       const { data: lawyer } = await supabase
         .from('lawyer_profiles')
         .select('id')
@@ -58,7 +77,7 @@ serve(async (req) => {
       
       if (lawyer) {
         lawyerId = lawyer.id;
-        console.log(`✅ Found lawyer: ${lawyerId} for email: ${userEmail}`);
+        console.log(`✅ Found lawyer by email: ${lawyerId} for email: ${userEmail}`);
       } else {
         console.log(`⚠️ No lawyer found for email: ${userEmail}`);
       }
@@ -91,12 +110,34 @@ serve(async (req) => {
     }
 
     // Try to update existing subscription first
-    const { data: existingSubscription, error: updateError } = await supabase
+    let { data: existingSubscription, error: updateError } = await supabase
       .from('lawyer_subscriptions')
       .update(updateData)
       .eq('dlocal_subscription_id', subscriptionId)
       .select()
       .single();
+    
+    // If no subscription found by dlocal_subscription_id, try by lawyer_id for pending subscriptions
+    if (updateError && updateError.code === 'PGRST116' && lawyerId) {
+      console.log(`🔍 No subscription found by dlocal_subscription_id, trying by lawyer_id for pending...`);
+      const { data: pendingSubscription, error: pendingError } = await supabase
+        .from('lawyer_subscriptions')
+        .update({
+          ...updateData,
+          dlocal_subscription_id: subscriptionId
+        })
+        .eq('lawyer_id', lawyerId)
+        .eq('status', 'pending')
+        .is('dlocal_subscription_id', null)
+        .select()
+        .single();
+      
+      if (!pendingError && pendingSubscription) {
+        existingSubscription = pendingSubscription;
+        updateError = null;
+        console.log(`✅ Updated pending subscription: ${pendingSubscription.id}`);
+      }
+    }
 
     let subscription = existingSubscription;
 
