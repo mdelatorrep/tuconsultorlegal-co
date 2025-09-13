@@ -156,24 +156,50 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
           isComplex: isComplex
         });
         
-        const advisorResponse = await supabase.functions.invoke('legal-consultation-advisor', {
-          body: {
-            messages: [{ role: 'user', content: messageContent }],
-            agentId: await getAdvisorAgent(specialization),
-            consultationTopic: messageContent.substring(0, 100),
-            legalArea: specialization
+        // Get advisor agent ID and check if exists
+        const agentId = await getAdvisorAgent(specialization);
+        
+        if (agentId === 'default_agent') {
+          // No specialized advisor found, fallback to general Lexi
+          console.log(`No specialized advisor found for ${specialization}, using general assistant`);
+          
+          const lexiResponse = await supabase.functions.invoke('document-chat', {
+            body: {
+              message: messageContent,
+              sessionId: generateSessionId(),
+              agentType: 'lexi',
+              context: 'specialized_legal_assistance'
+            }
+          });
+
+          if (lexiResponse.error) {
+            throw new Error(lexiResponse.error.message || 'Error en la respuesta');
           }
-        });
 
-        if (advisorResponse.error) {
-          throw new Error('Error en la consulta especializada');
+          finalResponse = {
+            response: lexiResponse.data.response + '\n\n💡 Esta consulta requiere asesoría especializada. Te recomiendo contactar directamente con un abogado especialista.',
+            isSpecialized: false
+          };
+        } else {
+          const advisorResponse = await supabase.functions.invoke('legal-consultation-advisor', {
+            body: {
+              messages: [{ role: 'user', content: messageContent }],
+              agentId: agentId,
+              consultationTopic: messageContent.substring(0, 100),
+              legalArea: specialization
+            }
+          });
+
+          if (advisorResponse.error) {
+            throw new Error('Error en la consulta especializada');
+          }
+
+          finalResponse = {
+            response: advisorResponse.data.message,
+            specialization: advisorResponse.data.specialization,
+            isSpecialized: true
+          };
         }
-
-        finalResponse = {
-          response: advisorResponse.data.message,
-          specialization: advisorResponse.data.specialization,
-          isSpecialized: true
-        };
       } else {
         // Use general Lexi assistant
         trackAgentInteraction('lexi', 'chat', {
