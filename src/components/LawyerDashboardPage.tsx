@@ -609,12 +609,12 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
+      <div className="min-h-screen flex w-full bg-background overflow-hidden">
         <Sidebar 
-          className={`${isMobile ? 'w-14' : 'w-64'} transition-all duration-300`}
+          className={`${isMobile ? 'w-14' : 'w-64'} transition-all duration-300 border-r flex-shrink-0`}
           data-tour="lawyer-sidebar"
-          collapsible="icon"
-          variant={isMobile ? "floating" : "sidebar"}
+          collapsible={isMobile ? "icon" : "none"}
+          variant="sidebar"
           side="left"
         >
           <SidebarContent>
@@ -699,35 +699,37 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
         </Sidebar>
 
         {/* Main Content */}
-        <main className="flex-1">
+        <main className="flex-1 min-w-0 overflow-auto">
           {/* Header with Sidebar Toggle */}
-          <header className="h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="flex h-14 items-center justify-between px-4">
-              <div className="flex items-center gap-4">
-                <SidebarTrigger className="mr-4" />
-                <h1 className="text-lg font-semibold">Dashboard Legal</h1>
+          <header className="h-12 md:h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40 flex-shrink-0">
+            <div className="flex h-12 md:h-14 items-center justify-between px-3 md:px-4">
+              <div className="flex items-center gap-2 md:gap-4 min-w-0 flex-1">
+                <SidebarTrigger className="flex-shrink-0" />
+                <h1 className="font-semibold truncate text-sm md:text-base lg:text-lg">Dashboard Legal</h1>
               </div>
-              <SubscriptionStatusIndicator compact={true} />
+              <div className="flex-shrink-0">
+                <SubscriptionStatusIndicator compact={true} />
+              </div>
             </div>
           </header>
 
           {/* Dashboard Content */}
-          <div className="container mx-auto px-4 md:px-6 py-4 md:py-6">
-            <div className="max-w-7xl mx-auto">
+          <div className="container mx-auto px-3 md:px-4 lg:px-6 py-3 md:py-4 lg:py-6">
+            <div className="max-w-7xl mx-auto space-y-4 md:space-y-6 lg:space-y-8">
               {/* Welcome Section */}
-              <div className="mb-6 md:mb-8" data-tour="dashboard-welcome">
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4 md:mb-6 gap-4 lg:gap-6">
+              <div className="mb-4 md:mb-6 lg:mb-8" data-tour="dashboard-welcome">
+                <div className="flex flex-col space-y-3 md:space-y-4 lg:space-y-0 lg:flex-row lg:items-center lg:justify-between">
                   <div className="flex-1 min-w-0">
-                    <h1 className="text-2xl md:text-3xl font-bold text-foreground truncate">
+                    <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground truncate">
                       Bienvenido, {user?.name}
                     </h1>
                     <p className="text-muted-foreground mt-1 text-sm md:text-base">
                       Tu suite completa de herramientas legales con IA
                     </p>
                   </div>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
+                  <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-3 lg:items-center">
                     <SubscriptionStatusIndicator />
-                    <Badge variant="outline" className="flex items-center gap-2 text-xs md:text-sm">
+                    <Badge variant="outline" className="flex items-center gap-2 text-xs md:text-sm w-fit">
                       <Scale className="h-3 w-3 md:h-4 md:w-4" />
                       Portal Legal
                     </Badge>
@@ -737,11 +739,11 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
 
               {/* Premium Tools Section */}
               {user?.canUseAiTools && (
-                <div className="mb-6 md:mb-8">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-2 mb-4">
+                <div className="mb-4 md:mb-6 lg:mb-8">
+                  <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:items-center sm:space-x-3 mb-3 md:mb-4">
                     <div className="flex items-center gap-2">
-                      <Crown className="h-4 w-4 md:h-5 md:w-5 text-amber-500" />
-                      <h2 className="text-lg md:text-xl font-semibold">Herramientas IA Premium</h2>
+                      <Crown className="h-4 w-4 md:h-5 md:w-5 text-amber-500 flex-shrink-0" />
+                      <h2 className="text-base md:text-lg lg:text-xl font-semibold">Herramientas IA Premium</h2>
                     </div>
                     <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs w-fit">
                       ACTIVO
