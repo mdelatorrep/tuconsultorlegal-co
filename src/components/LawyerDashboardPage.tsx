@@ -508,18 +508,29 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
     return (
       <SidebarProvider>
         <div className="min-h-screen flex w-full">
-          <Sidebar className="w-64">
+          <Sidebar 
+            className={`${isMobile ? 'w-16 lg:w-64' : 'w-64'} transition-all duration-300`}
+            collapsible="icon"
+            variant={isMobile ? "floating" : "sidebar"}
+            side="left"
+          >
             <SidebarContent>
               {/* Header del Sidebar */}
               <div className="p-4 border-b">
-                <h2 className="text-lg font-semibold text-foreground">Portal Abogados</h2>
-                <p className="text-sm text-muted-foreground">{user?.name}</p>
+                <h2 className={`text-lg font-semibold text-foreground ${isMobile ? 'hidden lg:block' : ''}`}>
+                  Portal Abogados
+                </h2>
+                <p className={`text-sm text-muted-foreground ${isMobile ? 'hidden lg:block' : ''}`}>
+                  {user?.name}
+                </p>
               </div>
 
               {/* Menu Items */}
               {menuItems.map((section, index) => (
                 <SidebarGroup key={index}>
-                  <SidebarGroupLabel>{section.title}</SidebarGroupLabel>
+                  <SidebarGroupLabel className={isMobile ? 'hidden lg:block' : ''}>
+                    {section.title}
+                  </SidebarGroupLabel>
                   <SidebarGroupContent>
                     <SidebarMenu>
                       {section.items.map((item) => (
@@ -530,10 +541,11 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                               currentView === item.view 
                                 ? 'bg-primary text-primary-foreground' 
                                 : 'hover:bg-muted'
-                            }`}
+                            } ${isMobile ? 'justify-center lg:justify-start' : ''}`}
+                            title={isMobile ? item.title : undefined}
                           >
-                            <item.icon className="h-4 w-4" />
-                            <span className="flex items-center gap-2">
+                            <item.icon className="h-4 w-4 flex-shrink-0" />
+                            <span className={`flex items-center gap-2 ${isMobile ? 'hidden lg:flex' : ''}`}>
                               {item.title}
                               {item.isPremium && (
                                 <>
@@ -542,6 +554,12 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                                 </>
                               )}
                             </span>
+                            {/* Mobile premium indicators */}
+                            {isMobile && item.isPremium && (
+                              <div className="absolute top-1 right-1 lg:hidden">
+                                <Crown className="h-2 w-2 text-amber-500" />
+                              </div>
+                            )}
                           </SidebarMenuButton>
                         </SidebarMenuItem>
                       ))}
@@ -561,20 +579,26 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                     logout();
                   }}
                   variant="outline"
-                  className="w-full flex items-center gap-2"
+                  className={`w-full flex items-center gap-2 ${isMobile ? 'justify-center lg:justify-start px-2 lg:px-4' : ''}`}
+                  title={isMobile ? 'Cerrar Sesión' : undefined}
                 >
                   <LogOut className="h-4 w-4" />
-                  Cerrar Sesión
+                  <span className={isMobile ? 'hidden lg:inline' : ''}>Cerrar Sesión</span>
                 </Button>
               </div>
             </SidebarContent>
           </Sidebar>
 
-          <main className="flex-1">
-            <header className="h-12 flex items-center border-b px-4">
-              <SidebarTrigger />
+          <main className="flex-1 min-w-0">
+            <header className="h-12 lg:h-14 flex items-center border-b px-2 lg:px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+              <SidebarTrigger className="mr-2 lg:mr-4" />
+              <h1 className="text-base lg:text-lg font-semibold truncate">
+                {menuItems
+                  .flatMap((section: any) => section.items)
+                  .find((item: any) => item.view === currentView)?.title || 'Panel'}
+              </h1>
             </header>
-            <div className="flex-1">
+            <div className="flex-1 overflow-hidden">
               {renderModuleContent()}
             </div>
           </main>
@@ -586,12 +610,22 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
-        <Sidebar className="w-64" data-tour="lawyer-sidebar">
+        <Sidebar 
+          className={`${isMobile ? 'w-16 lg:w-64' : 'w-64'} transition-all duration-300`}
+          data-tour="lawyer-sidebar"
+          collapsible="icon"
+          variant={isMobile ? "floating" : "sidebar"}
+          side="left"
+        >
           <SidebarContent>
             {/* Header del Sidebar */}
             <div className="p-4 border-b">
-              <h2 className="text-lg font-semibold text-foreground">Portal Abogados</h2>
-              <p className="text-sm text-muted-foreground">{user?.name}</p>
+              <h2 className={`text-lg font-semibold text-foreground ${isMobile ? 'hidden lg:block' : ''}`}>
+                Portal Abogados
+              </h2>
+              <p className={`text-sm text-muted-foreground ${isMobile ? 'hidden lg:block' : ''}`}>
+                {user?.name}
+              </p>
             </div>
 
             {/* Menu Items */}
@@ -702,7 +736,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                       ACTIVO
                     </Badge>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
                     {[
                       {
                         title: "Investigación",
@@ -742,12 +776,12 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                         className={`group cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg border-0 bg-gradient-to-br ${tool.bgPattern} dark:from-gray-800 dark:to-gray-900`}
                         onClick={() => setCurrentView(tool.view as any)}
                       >
-                        <CardContent className="p-6">
+                        <CardContent className="p-3 lg:p-6">
                           <div className={`w-12 h-12 rounded-lg bg-gradient-to-r ${tool.gradient} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
                             <tool.icon className="h-6 w-6 text-white" />
                           </div>
-                          <h3 className="font-semibold text-lg mb-2">{tool.title}</h3>
-                          <p className="text-sm text-muted-foreground">{tool.description}</p>
+                           <h3 className="font-semibold text-sm lg:text-lg mb-1 lg:mb-2">{tool.title}</h3>
+                           <p className="text-xs lg:text-sm text-muted-foreground line-clamp-2">{tool.description}</p>
                         </CardContent>
                       </Card>
                     ))}
@@ -798,7 +832,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                     <h2 className="text-xl font-semibold">Gestión IA</h2>
                     <Badge variant="secondary" className="text-xs">ADMIN</Badge>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
                     {[
                       {
                         title: "Crear Agente",
@@ -827,12 +861,12 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                         className="group cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg"
                         onClick={() => setCurrentView(item.view as any)}
                       >
-                        <CardContent className="p-6 text-center">
+                         <CardContent className="p-4 lg:p-6 text-center">
                           <div className={`w-12 h-12 rounded-full bg-${item.color}-100 dark:bg-${item.color}-900/30 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300`}>
                             <item.icon className={`h-6 w-6 text-${item.color}-600 dark:text-${item.color}-400`} />
                           </div>
-                          <h3 className="font-semibold mb-2">{item.title}</h3>
-                          <p className="text-sm text-muted-foreground">{item.description}</p>
+                           <h3 className="font-semibold text-sm lg:text-base mb-1 lg:mb-2">{item.title}</h3>
+                           <p className="text-xs lg:text-sm text-muted-foreground line-clamp-2">{item.description}</p>
                         </CardContent>
                       </Card>
                     ))}

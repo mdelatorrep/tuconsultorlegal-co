@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Bot, Settings, Users, Crown, Lock } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface UnifiedSidebarProps {
   user: any;
@@ -10,6 +11,8 @@ interface UnifiedSidebarProps {
 }
 
 export default function UnifiedSidebar({ user, currentView, onViewChange, onLogout }: UnifiedSidebarProps) {
+  const isMobile = useIsMobile();
+  
   // Sidebar menu configuration
   const menuItems = [
     {
@@ -106,18 +109,29 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
   ];
 
   return (
-    <Sidebar className="w-64">
+    <Sidebar 
+      className={`${isMobile ? 'w-16 lg:w-64' : 'w-64'} transition-all duration-300`}
+      collapsible="icon"
+      variant={isMobile ? "floating" : "sidebar"}
+      side="left"
+    >
       <SidebarContent>
         {/* Header del Sidebar */}
         <div className="p-4 border-b">
-          <h2 className="text-lg font-semibold text-foreground">Portal Abogados</h2>
-          <p className="text-sm text-muted-foreground">{user?.name}</p>
+          <h2 className={`text-lg font-semibold text-foreground ${isMobile ? 'hidden lg:block' : ''}`}>
+            Portal Abogados
+          </h2>
+          <p className={`text-sm text-muted-foreground ${isMobile ? 'hidden lg:block' : ''}`}>
+            {user?.name}
+          </p>
         </div>
 
         {/* Menu Items */}
         {menuItems.map((section, index) => (
           <SidebarGroup key={index}>
-            <SidebarGroupLabel>{section.title}</SidebarGroupLabel>
+            <SidebarGroupLabel className={isMobile ? 'hidden lg:block' : ''}>
+              {section.title}
+            </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {section.items.map((item) => (
@@ -128,16 +142,19 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
                         currentView === item.view 
                           ? 'bg-primary text-primary-foreground' 
                           : 'hover:bg-muted'
-                      } ${(item as any).isPremium ? 'opacity-75' : ''}`}
+                      } ${(item as any).isPremium ? 'opacity-75' : ''} ${
+                        isMobile ? 'justify-center lg:justify-between' : ''
+                      }`}
+                      title={isMobile ? item.title : undefined}
                     >
-                      <div className="flex items-center gap-3">
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
+                      <div className={`flex items-center gap-3 ${isMobile ? 'lg:flex' : ''}`}>
+                        <item.icon className="h-4 w-4 flex-shrink-0" />
+                        <span className={isMobile ? 'hidden lg:inline' : ''}>{item.title}</span>
                       </div>
                       {(item as any).isPremium && (
-                        <div className="flex items-center gap-1">
-                          <Crown className="h-3 w-3 text-amber-500" />
-                          <Lock className="h-3 w-3 text-muted-foreground" />
+                        <div className={`flex items-center gap-1 ${isMobile ? 'absolute top-1 right-1 lg:relative lg:top-auto lg:right-auto' : ''}`}>
+                          <Crown className={`h-3 w-3 text-amber-500 ${isMobile ? 'h-2 w-2 lg:h-3 lg:w-3' : ''}`} />
+                          <Lock className={`h-3 w-3 text-muted-foreground ${isMobile ? 'hidden lg:block' : ''}`} />
                         </div>
                       )}
                     </SidebarMenuButton>
@@ -153,10 +170,11 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
           <Button
             onClick={onLogout}
             variant="outline"
-            className="w-full flex items-center gap-2"
+            className={`w-full flex items-center gap-2 ${isMobile ? 'justify-center lg:justify-start px-2 lg:px-4' : ''}`}
+            title={isMobile ? 'Cerrar Sesión' : undefined}
           >
             <LogOut className="h-4 w-4" />
-            Cerrar Sesión
+            <span className={isMobile ? 'hidden lg:inline' : ''}>Cerrar Sesión</span>
           </Button>
         </div>
       </SidebarContent>

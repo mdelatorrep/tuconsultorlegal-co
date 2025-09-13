@@ -293,11 +293,11 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
             </div>
           </header>
 
-          <div className="container mx-auto px-6 py-8">
+          <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 lg:py-8">
             <div className="max-w-7xl mx-auto">
-              <div className="space-y-8">
+              <div className="space-y-4 lg:space-y-8">
                 {/* Hero Section */}
-                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20 p-8">
+                <div className="relative overflow-hidden rounded-2xl lg:rounded-3xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20 p-4 lg:p-8">
                   <div className="relative z-10">
                     <div className="flex items-center gap-4 mb-6">
                       <div className="p-4 bg-gradient-to-br from-primary to-primary/80 rounded-2xl shadow-2xl">
@@ -314,7 +314,7 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
                     </div>
                     
                     {/* Stats Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4 mt-6 lg:mt-8">
                       <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
                         <div className="flex items-center gap-3">
                           <Target className="h-8 w-8 text-primary" />
