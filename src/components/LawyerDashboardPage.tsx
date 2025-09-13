@@ -292,11 +292,11 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   // Show loading if auth is still loading
   if (authLoading || onboardingLoading) {
     return (
-      <div className="container mx-auto px-6 py-20">
-        <div className="flex items-center justify-center min-h-[400px]">
+      <div className="container mx-auto px-4 py-8 min-h-screen">
+        <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Cargando...</p>
+            <div className="animate-spin rounded-full h-10 w-10 md:h-12 md:w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground text-sm md:text-base">Cargando...</p>
           </div>
         </div>
       </div>
@@ -703,23 +703,23 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
           </header>
 
           {/* Dashboard Content */}
-          <div className="container mx-auto px-6 py-6">
+          <div className="container mx-auto px-4 md:px-6 py-4 md:py-6">
             <div className="max-w-7xl mx-auto">
               {/* Welcome Section */}
-              <div className="mb-8" data-tour="dashboard-welcome">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h1 className="text-3xl font-bold text-foreground">
+              <div className="mb-6 md:mb-8" data-tour="dashboard-welcome">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4 md:mb-6 gap-4 lg:gap-6">
+                  <div className="flex-1 min-w-0">
+                    <h1 className="text-2xl md:text-3xl font-bold text-foreground truncate">
                       Bienvenido, {user?.name}
                     </h1>
-                    <p className="text-muted-foreground mt-1">
+                    <p className="text-muted-foreground mt-1 text-sm md:text-base">
                       Tu suite completa de herramientas legales con IA
                     </p>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
                     <SubscriptionStatusIndicator />
-                    <Badge variant="outline" className="flex items-center gap-2">
-                      <Scale className="h-4 w-4" />
+                    <Badge variant="outline" className="flex items-center gap-2 text-xs md:text-sm">
+                      <Scale className="h-3 w-3 md:h-4 md:w-4" />
                       Portal Legal
                     </Badge>
                   </div>
@@ -728,15 +728,17 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
 
               {/* Premium Tools Section */}
               {user?.canUseAiTools && (
-                <div className="mb-8">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Crown className="h-5 w-5 text-amber-500" />
-                    <h2 className="text-xl font-semibold">Herramientas IA Premium</h2>
-                    <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs">
+                <div className="mb-6 md:mb-8">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-2 mb-4">
+                    <div className="flex items-center gap-2">
+                      <Crown className="h-4 w-4 md:h-5 md:w-5 text-amber-500" />
+                      <h2 className="text-lg md:text-xl font-semibold">Herramientas IA Premium</h2>
+                    </div>
+                    <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs w-fit">
                       ACTIVO
                     </Badge>
                   </div>
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                     {[
                       {
                         title: "Investigación",
@@ -773,15 +775,15 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                     ].map((tool, index) => (
                       <Card 
                         key={tool.view} 
-                        className={`group cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg border-0 bg-gradient-to-br ${tool.bgPattern} dark:from-gray-800 dark:to-gray-900`}
+                        className={`group cursor-pointer transition-all duration-300 hover:scale-[1.02] md:hover:scale-105 hover:shadow-lg border-0 bg-gradient-to-br ${tool.bgPattern} dark:from-gray-800 dark:to-gray-900`}
                         onClick={() => setCurrentView(tool.view as any)}
                       >
-                        <CardContent className="p-3 lg:p-6">
-                          <div className={`w-12 h-12 rounded-lg bg-gradient-to-r ${tool.gradient} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                            <tool.icon className="h-6 w-6 text-white" />
+                        <CardContent className="p-4 md:p-6">
+                          <div className={`w-10 h-10 md:w-12 md:h-12 rounded-lg bg-gradient-to-r ${tool.gradient} flex items-center justify-center mb-3 md:mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                            <tool.icon className="h-5 w-5 md:h-6 md:w-6 text-white" />
                           </div>
-                           <h3 className="font-semibold text-sm lg:text-lg mb-1 lg:mb-2">{tool.title}</h3>
-                           <p className="text-xs lg:text-sm text-muted-foreground line-clamp-2">{tool.description}</p>
+                           <h3 className="font-semibold text-sm md:text-base lg:text-lg mb-1 md:mb-2">{tool.title}</h3>
+                           <p className="text-xs md:text-sm text-muted-foreground line-clamp-2">{tool.description}</p>
                         </CardContent>
                       </Card>
                     ))}
@@ -791,32 +793,32 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
 
               {/* CRM Module */}
               {user?.canUseAiTools && (
-                <div className="mb-8">
-                  <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                    <Users className="h-5 w-5 text-blue-500" />
+                <div className="mb-6 md:mb-8">
+                  <h2 className="text-lg md:text-xl font-semibold mb-4 flex items-center gap-2">
+                    <Users className="h-4 w-4 md:h-5 md:w-5 text-blue-500" />
                     Gestión de Clientes
                   </h2>
                   <Card 
-                    className="group cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-xl border-0 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20"
+                    className="group cursor-pointer transition-all duration-300 hover:scale-[1.01] md:hover:scale-[1.02] hover:shadow-xl border-0 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20"
                     onClick={() => setCurrentView('crm')}
                   >
-                    <CardContent className="p-8">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className="w-16 h-16 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                            <Users className="h-8 w-8 text-white" />
+                    <CardContent className="p-4 md:p-6 lg:p-8">
+                      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                        <div className="flex items-center gap-3 md:gap-4">
+                          <div className="w-12 h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                            <Users className="h-6 w-6 md:h-7 md:w-7 lg:h-8 lg:w-8 text-white" />
                           </div>
                           <div>
-                            <h3 className="text-xl font-bold mb-2">Sistema CRM Inteligente</h3>
-                            <p className="text-muted-foreground">Gestiona clientes, casos y comunicaciones con IA avanzada</p>
+                            <h3 className="text-lg md:text-xl font-bold mb-1 md:mb-2">Sistema CRM Inteligente</h3>
+                            <p className="text-sm md:text-base text-muted-foreground">Gestiona clientes, casos y comunicaciones con IA avanzada</p>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                            <Bot className="h-4 w-4" />
+                        <div className="flex flex-row lg:flex-col items-start lg:items-end lg:text-right gap-2 lg:gap-1">
+                          <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground">
+                            <Bot className="h-3 w-3 md:h-4 md:w-4" />
                             IA Habilitada
                           </div>
-                          <Badge variant="outline">Acceso completo</Badge>
+                          <Badge variant="outline" className="text-xs">Acceso completo</Badge>
                         </div>
                       </div>
                     </CardContent>
@@ -826,13 +828,15 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
 
               {/* Gestión IA */}
               {user?.canCreateAgents && (
-                <div className="mb-8">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Bot className="h-5 w-5 text-purple-500" />
-                    <h2 className="text-xl font-semibold">Gestión IA</h2>
-                    <Badge variant="secondary" className="text-xs">ADMIN</Badge>
+                <div className="mb-6 md:mb-8">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-4">
+                    <div className="flex items-center gap-2">
+                      <Bot className="h-4 w-4 md:h-5 md:w-5 text-purple-500" />
+                      <h2 className="text-lg md:text-xl font-semibold">Gestión IA</h2>
+                    </div>
+                    <Badge variant="secondary" className="text-xs w-fit">ADMIN</Badge>
                   </div>
-                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
+                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                     {[
                       {
                         title: "Crear Agente",
@@ -858,15 +862,15 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                     ].map((item, index) => (
                       <Card 
                         key={item.view}
-                        className="group cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                        className="group cursor-pointer transition-all duration-300 hover:scale-[1.02] md:hover:scale-105 hover:shadow-lg"
                         onClick={() => setCurrentView(item.view as any)}
                       >
-                         <CardContent className="p-4 lg:p-6 text-center">
-                          <div className={`w-12 h-12 rounded-full bg-${item.color}-100 dark:bg-${item.color}-900/30 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                            <item.icon className={`h-6 w-6 text-${item.color}-600 dark:text-${item.color}-400`} />
+                         <CardContent className="p-4 md:p-6 text-center">
+                          <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full bg-${item.color}-100 dark:bg-${item.color}-900/30 flex items-center justify-center mx-auto mb-3 md:mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                            <item.icon className={`h-5 w-5 md:h-6 md:w-6 text-${item.color}-600 dark:text-${item.color}-400`} />
                           </div>
-                           <h3 className="font-semibold text-sm lg:text-base mb-1 lg:mb-2">{item.title}</h3>
-                           <p className="text-xs lg:text-sm text-muted-foreground line-clamp-2">{item.description}</p>
+                           <h3 className="font-semibold text-sm md:text-base mb-1 md:mb-2">{item.title}</h3>
+                           <p className="text-xs md:text-sm text-muted-foreground line-clamp-2">{item.description}</p>
                         </CardContent>
                       </Card>
                     ))}
@@ -876,23 +880,23 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
 
               {/* Blog Management */}
               {user?.canCreateBlogs && (
-                <div className="mb-8">
-                  <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                    <BookOpen className="h-5 w-5 text-green-500" />
+                <div className="mb-6 md:mb-8">
+                  <h2 className="text-lg md:text-xl font-semibold mb-4 flex items-center gap-2">
+                    <BookOpen className="h-4 w-4 md:h-5 md:w-5 text-green-500" />
                     Gestión de Contenido
                   </h2>
                   <Card 
-                    className="group cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
+                    className="group cursor-pointer transition-all duration-300 hover:scale-[1.01] md:hover:scale-[1.02] hover:shadow-lg"
                     onClick={() => setCurrentView('blog-manager')}
                   >
-                    <CardContent className="p-6">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                          <BookOpen className="h-6 w-6 text-white" />
+                    <CardContent className="p-4 md:p-6">
+                      <div className="flex items-center gap-3 md:gap-4">
+                        <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                          <BookOpen className="h-5 w-5 md:h-6 md:w-6 text-white" />
                         </div>
                         <div>
-                          <h3 className="font-semibold text-lg mb-1">Gestión de Blog</h3>
-                          <p className="text-sm text-muted-foreground">Crea y administra contenido legal profesional</p>
+                          <h3 className="font-semibold text-base md:text-lg mb-1">Gestión de Blog</h3>
+                          <p className="text-sm md:text-sm text-muted-foreground">Crea y administra contenido legal profesional</p>
                         </div>
                       </div>
                     </CardContent>
@@ -901,22 +905,22 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
               )}
 
               {/* Training & Certification */}
-              <div className="mb-8">
-                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                  <Brain className="h-5 w-5 text-pink-500" />
+              <div className="mb-6 md:mb-8">
+                <h2 className="text-lg md:text-xl font-semibold mb-4 flex items-center gap-2">
+                  <Brain className="h-4 w-4 md:h-5 md:w-5 text-pink-500" />
                   Desarrollo Profesional
                 </h2>
                 <Card 
-                  className="group cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-lg border-0 bg-gradient-to-br from-pink-50 to-rose-50 dark:from-pink-900/20 dark:to-rose-900/20"
+                  className="group cursor-pointer transition-all duration-300 hover:scale-[1.01] md:hover:scale-[1.02] hover:shadow-lg border-0 bg-gradient-to-br from-pink-50 to-rose-50 dark:from-pink-900/20 dark:to-rose-900/20"
                   onClick={() => setCurrentView('training')}
                 >
-                  <CardContent className="p-6">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-pink-500 to-rose-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                        <Brain className="h-6 w-6 text-white" />
+                  <CardContent className="p-4 md:p-6">
+                    <div className="flex items-center gap-3 md:gap-4">
+                      <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg bg-gradient-to-r from-pink-500 to-rose-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                        <Brain className="h-5 w-5 md:h-6 md:w-6 text-white" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-lg mb-1">Formación IA</h3>
+                        <h3 className="font-semibold text-base md:text-lg mb-1">Formación IA</h3>
                         <p className="text-sm text-muted-foreground">Certifícate en el uso de herramientas de IA legal</p>
                       </div>
                     </div>
@@ -925,12 +929,14 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
               </div>
 
               {/* Documents Section */}
-              <div className="mb-8">
-                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-blue-500" />
-                  Documentos Pendientes
+              <div className="mb-6 md:mb-8">
+                <h2 className="text-lg md:text-xl font-semibold mb-4 flex flex-col sm:flex-row sm:items-center gap-2">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 md:h-5 md:w-5 text-blue-500" />
+                    Documentos Pendientes
+                  </div>
                   {documents.length > 0 && (
-                    <Badge variant="secondary" className="ml-2">
+                    <Badge variant="secondary" className="w-fit">
                       {documents.length}
                     </Badge>
                   )}
@@ -938,10 +944,10 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                 
                 {documents.length === 0 ? (
                   <Card className="border-dashed border-2">
-                    <CardContent className="p-12 text-center">
-                      <FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
-                      <h3 className="text-lg font-medium mb-2">No hay documentos pendientes</h3>
-                      <p className="text-muted-foreground">Los documentos que requieren revisión aparecerán aquí</p>
+                    <CardContent className="p-8 md:p-12 text-center">
+                      <FileText className="h-12 w-12 md:h-16 md:w-16 text-muted-foreground mx-auto mb-3 md:mb-4 opacity-50" />
+                      <h3 className="text-base md:text-lg font-medium mb-2">No hay documentos pendientes</h3>
+                      <p className="text-sm md:text-base text-muted-foreground">Los documentos que requieren revisión aparecerán aquí</p>
                     </CardContent>
                   </Card>
                 ) : (
