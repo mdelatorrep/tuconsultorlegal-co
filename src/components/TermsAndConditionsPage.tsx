@@ -137,9 +137,244 @@ export default function TermsAndConditionsPage({ onOpenChat }: TermsAndCondition
             </section>
 
             <section>
-              <h2 className="text-2xl font-bold text-primary mb-4">10. CONTACTO</h2>
+              <h2 className="text-2xl font-bold text-primary mb-4">11. TÉRMINOS ESPECÍFICOS PARA SERVICIOS DE SUSCRIPCIÓN PARA ABOGADOS</h2>
+              
+              <div className="bg-accent/10 border border-accent/20 p-6 rounded-lg mb-6">
+                <h4 className="text-lg font-bold text-accent mb-3 flex items-center gap-2">
+                  <span className="w-2 h-2 bg-accent rounded-full"></span>
+                  Servicios Especializados para Profesionales del Derecho
+                </h4>
+                <p className="text-foreground">
+                  Esta sección establece términos adicionales que se aplican específicamente a los abogados que contratan servicios de suscripción en nuestra plataforma.
+                </p>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-bold text-foreground mb-3">11.1 Naturaleza de los Servicios de Suscripción</h3>
+                  <p className="text-foreground mb-3">
+                    Los servicios de suscripción para abogados proporcionan acceso a herramientas tecnológicas avanzadas que incluyen:
+                  </p>
+                  <ul className="list-disc pl-6 space-y-2 text-foreground">
+                    <li>Herramientas de inteligencia artificial para análisis y redacción legal</li>
+                    <li>Sistema de gestión de relaciones con clientes (CRM) especializado</li>
+                    <li>Automatización de documentos y procesos legales</li>
+                    <li>Herramientas de investigación jurídica asistida por IA</li>
+                    <li>Capacitación y certificación en tecnologías legales</li>
+                    <li>Soporte técnico especializado para abogados</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-bold text-foreground mb-3">11.2 Requisitos del Suscriptor</h3>
+                  <p className="text-foreground mb-3">
+                    Para acceder a los servicios de suscripción, el abogado debe cumplir con:
+                  </p>
+                  <ul className="list-disc pl-6 space-y-2 text-foreground">
+                    <li>Ser abogado titulado y debidamente colegiado en Colombia</li>
+                    <li>Mantener vigente su tarjeta profesional expedida por el Consejo Superior de la Judicatura</li>
+                    <li>Cumplir con las normas éticas y deontológicas de la profesión legal</li>
+                    <li>Proporcionar información veraz y actualizada sobre su ejercicio profesional</li>
+                    <li>No tener sanciones disciplinarias vigentes que impidan el ejercicio de la profesión</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-bold text-foreground mb-3">11.3 Términos de Facturación y Pago</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-semibold mb-2">Modalidades de Suscripción:</h4>
+                      <ul className="list-disc pl-6 space-y-1 text-foreground">
+                        <li><strong>Suscripción Mensual:</strong> Facturación y cobro automático cada 30 días</li>
+                        <li><strong>Suscripción Anual:</strong> Pago único anual con descuentos por pronto pago</li>
+                        <li>Los pagos se procesan mediante pasarelas seguras certificadas (dLocal, Bold)</li>
+                        <li>Los precios están expresados en dólares estadounidenses (USD) e incluyen los impuestos aplicables según la legislación colombiana</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-2">Renovación y Cancelación:</h4>
+                      <ul className="list-disc pl-6 space-y-1 text-foreground">
+                        <li>Las suscripciones se renuevan automáticamente al finalizar cada período</li>
+                        <li>El suscriptor puede cancelar con al menos 24 horas de anticipación a la fecha de renovación</li>
+                        <li>La cancelación será efectiva al final del período de facturación actual</li>
+                        <li>No se generan reembolsos por cancelaciones posteriores al período de prueba</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-2">Política de Reembolsos:</h4>
+                      <ul className="list-disc pl-6 space-y-1 text-foreground">
+                        <li>Período de prueba de 7 días calendario para nuevas suscripciones</li>
+                        <li>Reembolso del 100% si se cancela dentro del período de prueba</li>
+                        <li>Las suscripciones anuales pueden reembolsarse dentro de los primeros 30 días</li>
+                        <li>No se otorgan reembolsos proporcionales por cancelaciones anticipadas</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-bold text-foreground mb-3">11.4 Uso Responsable de Herramientas de Inteligencia Artificial</h3>
+                  <div className="bg-orange-50 border border-orange-200 p-4 rounded-lg mb-4">
+                    <p className="text-orange-800 font-semibold">
+                      ⚠️ Responsabilidad Profesional: El abogado suscriptor mantiene la total responsabilidad profesional y ética sobre el uso de las herramientas de IA.
+                    </p>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-semibold mb-2">Obligaciones del Suscriptor:</h4>
+                      <ul className="list-disc pl-6 space-y-1 text-foreground">
+                        <li>Revisar, validar y supervisar todo contenido generado por herramientas de IA antes de su uso o entrega a clientes</li>
+                        <li>Mantener la responsabilidad profesional total sobre los documentos y consejos legales finales</li>
+                        <li>No delegar exclusivamente en la IA decisiones que requieren criterio legal profesional</li>
+                        <li>Cumplir con las normas deontológicas del Código de Ética Profesional del Abogado</li>
+                        <li>Informar adecuadamente a los clientes sobre el uso de herramientas tecnológicas en su caso</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-2">Limitaciones de las Herramientas de IA:</h4>
+                      <ul className="list-disc pl-6 space-y-1 text-foreground">
+                        <li>Las herramientas de IA son auxiliares y no sustituyen el criterio profesional del abogado</li>
+                        <li>Los resultados generados requieren siempre revisión y validación humana</li>
+                        <li>No garantizamos la exactitud absoluta de las sugerencias o contenidos generados</li>
+                        <li>El suscriptor debe verificar la vigencia de normas y jurisprudencia sugeridas</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-bold text-foreground mb-3">11.5 Confidencialidad y Protección de Datos</h3>
+                  <div className="space-y-3">
+                    <p className="text-foreground">
+                      <strong>Compromiso de Confidencialidad:</strong> Toda la información procesada a través de nuestras herramientas está protegida por estrictas medidas de seguridad y confidencialidad. Cumplimos con la Ley 1581 de 2012 de Protección de Datos Personales y sus decretos reglamentarios.
+                    </p>
+                    <div>
+                      <h4 className="font-semibold mb-2">Obligaciones del Suscriptor:</h4>
+                      <ul className="list-disc pl-6 space-y-1 text-foreground">
+                        <li>Proteger las credenciales de acceso y no compartirlas con terceros</li>
+                        <li>Mantener la confidencialidad de la información de sus clientes según el secreto profesional</li>
+                        <li>Informar inmediatamente cualquier compromiso de seguridad de su cuenta</li>
+                        <li>Usar las herramientas exclusivamente para fines profesionales legítimos</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-bold text-foreground mb-3">11.6 Suspensión y Terminación del Servicio</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-semibold mb-2">Causales de Suspensión Inmediata:</h4>
+                      <ul className="list-disc pl-6 space-y-1 text-foreground">
+                        <li>Falta de pago en las fechas establecidas (gracia de 5 días hábiles)</li>
+                        <li>Uso indebido o no autorizado de las herramientas de IA</li>
+                        <li>Violación de normas éticas profesionales en el uso del servicio</li>
+                        <li>Compartir credenciales de acceso con personas no autorizadas</li>
+                        <li>Uso del servicio para actividades ilegales o no éticas</li>
+                        <li>Suspensión o cancelación de la tarjeta profesional del suscriptor</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-2">Proceso de Terminación:</h4>
+                      <ul className="list-disc pl-6 space-y-1 text-foreground">
+                        <li>El usuario puede cancelar su suscripción en cualquier momento desde su panel de control</li>
+                        <li>La cancelación será efectiva al final del período de facturación actual</li>
+                        <li>El acceso a las herramientas se mantendrá hasta la fecha de expiración</li>
+                        <li>Los datos del usuario se conservarán según nuestra política de retención de datos</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-bold text-foreground mb-3">11.7 Responsabilidad Profesional y Limitaciones</h3>
+                  <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg mb-4">
+                    <p className="text-blue-800 font-semibold">
+                      ℹ️ Clarificación Importante: El abogado suscriptor mantiene la total responsabilidad profesional por su ejercicio y las decisiones tomadas con apoyo de nuestras herramientas.
+                    </p>
+                  </div>
+                  <div className="space-y-3">
+                    <div>
+                      <h4 className="font-semibold mb-2">Responsabilidad del Abogado Suscriptor:</h4>
+                      <ul className="list-disc pl-6 space-y-1 text-foreground">
+                        <li>Responsabilidad profesional total por la calidad y exactitud de los documentos finales</li>
+                        <li>Cumplimiento de todas las normas éticas y legales aplicables a su profesión</li>
+                        <li>Supervisión adecuada del uso de herramientas tecnológicas en su práctica</li>
+                        <li>Protección de la información confidencial de clientes según el secreto profesional</li>
+                        <li>Mantenimiento de su competencia profesional y actualización normativa</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-2">Limitaciones de Responsabilidad de TuConsultorLegal.co:</h4>
+                      <ul className="list-disc pl-6 space-y-1 text-foreground">
+                        <li>Nuestra responsabilidad se limita a proporcionar las herramientas tecnológicas según los términos de la suscripción</li>
+                        <li>No asumimos responsabilidad por decisiones profesionales tomadas por el suscriptor</li>
+                        <li>No somos responsables por errores en el uso o interpretación de las herramientas</li>
+                        <li>La responsabilidad máxima se limita al valor de la suscripción mensual</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-bold text-foreground mb-3">11.8 Soporte Técnico y Actualizaciones</h3>
+                  <p className="text-foreground mb-3">
+                    Los abogados suscriptores tienen acceso a:
+                  </p>
+                  <ul className="list-disc pl-6 space-y-1 text-foreground">
+                    <li>Soporte técnico especializado durante horarios de oficina (8:00 AM - 6:00 PM, lunes a viernes)</li>
+                    <li>Actualizaciones automáticas y gratuitas de todas las herramientas</li>
+                    <li>Capacitación continua en nuevas funcionalidades y mejores prácticas</li>
+                    <li>Documentación técnica completa y guías de uso</li>
+                    <li>Webinars periódicos sobre innovaciones en tecnología legal</li>
+                    <li>Acceso prioritario a nuevas funcionalidades en fase beta</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-bold text-foreground mb-3">11.9 Modificaciones de Términos y Tarifas</h3>
+                  <div className="space-y-3">
+                    <p className="text-foreground">
+                      <strong>Notificación de Cambios:</strong> Cualquier modificación a estos términos específicos será notificada con al menos 30 días de anticipación a través del correo electrónico registrado y notificaciones en la plataforma.
+                    </p>
+                    <div>
+                      <h4 className="font-semibold mb-2">Cambios en Tarifas:</h4>
+                      <ul className="list-disc pl-6 space-y-1 text-foreground">
+                        <li>Los cambios en precios se notificarán con 60 días de anticipación</li>
+                        <li>Los suscriptores existentes mantendrán su tarifa actual durante el período de facturación vigente</li>
+                        <li>El uso continuado del servicio después de los cambios constituye aceptación de las nuevas condiciones</li>
+                        <li>Los suscriptores pueden cancelar sin penalización antes de que entren en vigor los nuevos términos</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-bold text-foreground mb-3">11.10 Contacto y Resolución de Disputas</h3>
+                  <div className="bg-card border border-border p-4 rounded-lg">
+                    <h4 className="font-semibold mb-3">Canales de Contacto para Suscriptores:</h4>
+                    <ul className="list-none space-y-2 text-foreground">
+                      <li><strong>Email de suscripciones:</strong> suscripciones@tuconsultorlegal.co</li>
+                      <li><strong>Soporte técnico:</strong> soporte@tuconsultorlegal.co</li>
+                      <li><strong>Línea directa:</strong> +57 (4) 444-5555</li>
+                      <li><strong>Horario de atención:</strong> Lunes a Viernes, 8:00 AM - 6:00 PM</li>
+                      <li><strong>Chat en vivo:</strong> Disponible en la plataforma durante horarios de oficina</li>
+                    </ul>
+                  </div>
+                  <p className="text-foreground mt-4">
+                    <strong>Resolución de Disputas:</strong> Cualquier controversia relacionada con los servicios de suscripción será resuelta inicialmente mediante diálogo directo. En caso de no llegarse a un acuerdo, se someterá a los procedimientos de conciliación del Centro de Arbitraje y Conciliación de la Cámara de Comercio de Medellín.
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-bold text-primary mb-4">12. CONTACTO</h2>
+              <p className="text-foreground mb-4">
+                Para consultas generales, puedes contactarnos a través del correo electrónico: soporte@tuconsultorlegal.co.
+              </p>
               <p className="text-foreground">
-                Si tienes alguna pregunta sobre estos Términos y Condiciones, puedes contactarnos a través del correo electrónico: soporte@tuconsultorlegal.co.
+                Para consultas específicas sobre suscripciones de abogados: suscripciones@tuconsultorlegal.co.
               </p>
             </section>
 
