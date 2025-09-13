@@ -138,23 +138,9 @@ export default function StrategizeModule({ user, currentView, onViewChange, onLo
         {/* Main Content */}
         <main className="flex-1 min-w-0">
           {/* Enhanced Header - Mobile First */}
-          <header className="h-14 lg:h-16 border-b bg-gradient-to-r from-background/95 to-purple-500/10 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 relative overflow-hidden sticky top-0 z-40">
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-transparent opacity-50"></div>
+          <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
             <div className="relative flex h-14 lg:h-16 items-center px-3 lg:px-6">
               <SidebarTrigger className="mr-2 lg:mr-4 hover:bg-purple-500/10 rounded-lg p-2 transition-all duration-200 flex-shrink-0" />
-              <div className="flex items-center gap-2 lg:gap-3 min-w-0">
-                <div className="p-1.5 lg:p-2 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg lg:rounded-xl shadow-lg flex-shrink-0">
-                  <Lightbulb className="h-4 w-4 lg:h-6 lg:w-6 text-white" />
-                </div>
-                <div className="min-w-0">
-                  <div className="sr-only">
-                    Estrategia Legal IA
-                  </div>
-                  <p className="text-xs lg:text-sm text-muted-foreground hidden sm:block truncate">
-                    Planificación inteligente de casos
-                  </p>
-                </div>
-              </div>
             </div>
           </header>
 
@@ -170,9 +156,9 @@ export default function StrategizeModule({ user, currentView, onViewChange, onLo
                         <Brain className="h-10 w-10 text-white" />
                       </div>
                       <div>
-                        <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-purple-500 to-purple-400 bg-clip-text text-transparent">
+                        <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-purple-500 to-purple-400 bg-clip-text text-transparent">
                           Centro de Estrategia Legal
-                        </h2>
+                        </h1>
                         <p className="text-lg text-muted-foreground mt-2">
                           Análisis estratégico avanzado, planificación de casos y desarrollo de argumentos
                         </p>
