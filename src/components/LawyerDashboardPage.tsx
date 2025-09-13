@@ -611,7 +611,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
         <Sidebar 
-          className={`${isMobile ? 'w-16 lg:w-64' : 'w-64'} transition-all duration-300`}
+          className={`${isMobile ? 'w-14' : 'w-64'} transition-all duration-300`}
           data-tour="lawyer-sidebar"
           collapsible="icon"
           variant={isMobile ? "floating" : "sidebar"}
@@ -619,11 +619,11 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
         >
           <SidebarContent>
             {/* Header del Sidebar */}
-            <div className="p-4 border-b">
-              <h2 className={`text-lg font-semibold text-foreground ${isMobile ? 'hidden lg:block' : ''}`}>
+            <div className={`p-4 border-b ${isMobile ? 'p-2' : 'p-4'}`}>
+              <h2 className={`text-lg font-semibold text-foreground ${isMobile ? 'hidden' : 'block'}`}>
                 Portal Abogados
               </h2>
-              <p className={`text-sm text-muted-foreground ${isMobile ? 'hidden lg:block' : ''}`}>
+              <p className={`text-sm text-muted-foreground ${isMobile ? 'hidden' : 'block'}`}>
                 {user?.name}
               </p>
             </div>
@@ -638,29 +638,36 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                   section.title === "Estadísticas" ? "stats-section" : undefined
                 }
               >
-                <SidebarGroupLabel>{section.title}</SidebarGroupLabel>
+                <SidebarGroupLabel className={isMobile ? 'sr-only' : ''}>{section.title}</SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu>
                      {section.items.map((item) => (
                        <SidebarMenuItem key={item.view}>
                          <SidebarMenuButton 
-                           onClick={() => setCurrentView(item.view)}
-                           className={`flex items-center justify-between gap-3 px-3 py-2 rounded-lg transition-colors ${
-                             currentView === item.view 
-                               ? 'bg-primary text-primary-foreground' 
-                               : 'hover:bg-muted'
-                           } ${(item as any).isPremium ? 'opacity-75' : ''}`}
-                         >
-                           <div className="flex items-center gap-3">
-                             <item.icon className="h-4 w-4" />
-                             <span>{item.title}</span>
-                           </div>
-                           {(item as any).isPremium && (
-                             <div className="flex items-center gap-1">
-                               <Crown className="h-3 w-3 text-amber-500" />
-                               <Lock className="h-3 w-3 text-muted-foreground" />
-                             </div>
-                           )}
+                            onClick={() => setCurrentView(item.view)}
+                            className={`flex items-center ${isMobile ? 'justify-center p-2' : 'justify-between gap-3 px-3 py-2'} rounded-lg transition-colors ${
+                              currentView === item.view 
+                                ? 'bg-primary text-primary-foreground' 
+                                : 'hover:bg-muted'
+                            } ${(item as any).isPremium ? 'opacity-75' : ''}`}
+                            tooltip={isMobile ? item.title : undefined}
+                          >
+                            {isMobile ? (
+                              <item.icon className="h-5 w-5" />
+                            ) : (
+                              <>
+                                <div className="flex items-center gap-3">
+                                  <item.icon className="h-4 w-4" />
+                                  <span>{item.title}</span>
+                                </div>
+                                {(item as any).isPremium && (
+                                  <div className="flex items-center gap-1">
+                                    <Crown className="h-3 w-3 text-amber-500" />
+                                    <Lock className="h-3 w-3 text-muted-foreground" />
+                                  </div>
+                                )}
+                              </>
+                            )}
                          </SidebarMenuButton>
                        </SidebarMenuItem>
                      ))}
@@ -670,7 +677,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
             ))}
 
             {/* Logout Button */}
-            <div className="p-4 border-t mt-auto">
+            <div className={`border-t mt-auto ${isMobile ? 'p-2' : 'p-4'}`}>
                 <Button
                   onClick={() => {
                     console.log('=== LOGOUT BUTTON CLICKED (DASHBOARD) ===');
@@ -680,11 +687,13 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                     logout();
                   }}
                   variant="outline"
-                className="w-full flex items-center gap-2"
-              >
-                <LogOut className="h-4 w-4" />
-                Cerrar Sesión
-              </Button>
+                  size={isMobile ? "icon" : "default"}
+                  className={`${isMobile ? 'w-10 h-10' : 'w-full'} flex items-center ${isMobile ? 'justify-center' : 'gap-2'}`}
+                  title={isMobile ? "Cerrar Sesión" : undefined}
+                >
+                  <LogOut className="h-4 w-4" />
+                  {!isMobile && "Cerrar Sesión"}
+                </Button>
             </div>
           </SidebarContent>
         </Sidebar>
