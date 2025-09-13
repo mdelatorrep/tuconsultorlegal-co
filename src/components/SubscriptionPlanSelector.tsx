@@ -9,6 +9,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import AILegalPaymentLoader from './AILegalPaymentLoader';
+import { LawyerTermsAndConditions } from './LawyerTermsAndConditions';
 
 interface SubscriptionPlanSelectorProps {
   onPlanSelected?: (planId: string, billingCycle: 'monthly' | 'yearly') => void;
@@ -25,33 +26,44 @@ export const SubscriptionPlanSelector: React.FC<SubscriptionPlanSelectorProps> =
 }) => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>(defaultCycle);
   const [isCreating, setIsCreating] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const { plans, isLoading, createSubscription } = useSubscription();
   const { toast } = useToast();
 
   const handleSelectPlan = async (plan: any) => {
-    try {
-      console.log('🎯 Plan selected:', plan);
-      console.log('💰 Plan ID:', plan.id, 'Type:', typeof plan.id);
-      
-      // Handle free plan selection
-      if (plan.id === 'free') {
-        console.log('📄 Free plan selected');
-        if (onPlanSelected) {
-          onPlanSelected(plan.id, billingCycle);
-        }
-        return;
+    console.log('🎯 Plan selected:', plan);
+    console.log('💰 Plan ID:', plan.id, 'Type:', typeof plan.id);
+    
+    // Handle free plan selection (no terms needed)
+    if (plan.id === 'free') {
+      console.log('📄 Free plan selected');
+      if (onPlanSelected) {
+        onPlanSelected(plan.id, billingCycle);
       }
-      
+      return;
+    }
+    
+    // For premium plans, show terms and conditions first
+    setSelectedPlan(plan);
+    setShowTerms(true);
+  };
+
+  const handleTermsAccept = async () => {
+    if (!selectedPlan) return;
+    
+    try {
+      setShowTerms(false);
       setIsCreating(true);
       
       // Get current user for personalization
       const { data: { user } } = await supabase.auth.getUser();
       
       // For premium plans with subscribeUrl, create personalized URL
-      if (plan.subscribeUrl) {
-        console.log('🔗 Creating personalized dLocal subscribe URL:', plan.subscribeUrl);
+      if (selectedPlan.subscribeUrl) {
+        console.log('🔗 Creating personalized dLocal subscribe URL:', selectedPlan.subscribeUrl);
         
-        let personalizedUrl = plan.subscribeUrl;
+        let personalizedUrl = selectedPlan.subscribeUrl;
         
         // Add email parameter if user is authenticated
         if (user?.email) {
@@ -72,20 +84,26 @@ export const SubscriptionPlanSelector: React.FC<SubscriptionPlanSelectorProps> =
       
       // Fallback: use the create subscription flow
       console.log('💎 Premium plan selected, creating subscription...');
-      console.log('🔄 Calling createSubscription with plan ID:', plan.id, 'cycle:', billingCycle);
-      const result = await createSubscription(plan.id, billingCycle);
+      console.log('🔄 Calling createSubscription with plan ID:', selectedPlan.id, 'cycle:', billingCycle);
+      const result = await createSubscription(selectedPlan.id, billingCycle);
       console.log('✅ Subscription result:', result);
       
     } catch (error) {
-      console.error('❌ Error in handleSelectPlan:', error);
+      console.error('❌ Error in handleTermsAccept:', error);
       toast({
         title: "Error",
-        description: "Ocurrió un error al seleccionar el plan. Por favor, intenta nuevamente.",
+        description: "Ocurrió un error al procesar la suscripción. Por favor, intenta nuevamente.",
         variant: "destructive"
       });
     } finally {
       setIsCreating(false);
+      setSelectedPlan(null);
     }
+  };
+
+  const handleTermsDecline = () => {
+    setShowTerms(false);
+    setSelectedPlan(null);
   };
 
   const formatPrice = (monthlyPrice: number, yearlyPrice: number, currency = 'USD') => {
@@ -162,10 +180,16 @@ export const SubscriptionPlanSelector: React.FC<SubscriptionPlanSelectorProps> =
   }
 
   return (
-    <div className={`space-y-6 ${className}`}>
-
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {plans.map((plan) => {
+    <>
+      <LawyerTermsAndConditions
+        open={showTerms}
+        onAccept={handleTermsAccept}
+        onDecline={handleTermsDecline}
+      />
+      
+      <div className={`space-y-6 ${className}`}>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {plans.map((plan) => {
           const pricing = formatPrice(plan.monthlyPrice, plan.yearlyPrice, plan.currency);
           const isPopular = isPlanPopular(plan.name);
           const isFree = plan.monthlyPrice === 0;
@@ -246,8 +270,9 @@ export const SubscriptionPlanSelector: React.FC<SubscriptionPlanSelectorProps> =
               </CardContent>
             </Card>
           );
-        })}
+          })}
+        </div>
       </div>
-    </div>
+    </>
   );
 };
