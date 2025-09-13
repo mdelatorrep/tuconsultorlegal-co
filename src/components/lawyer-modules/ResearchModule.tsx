@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Search, BookOpen, FileText, Loader2, Sparkles, Target, TrendingUp, Clock, CheckCircle2, AlertCircle, Hourglass } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Search, BookOpen, FileText, Loader2, Sparkles, Target, TrendingUp, Clock, CheckCircle2, AlertCircle, Hourglass, ChevronDown, ChevronRight, Calendar, Archive, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -41,7 +42,44 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
   const [results, setResults] = useState<ResearchResult[]>([]);
   const [pendingTasks, setPendingTasks] = useState<PendingTask[]>([]);
   const [progress, setProgress] = useState(0);
+  const [expandedResults, setExpandedResults] = useState<Set<number>>(new Set());
+  const [sortBy, setSortBy] = useState<'date' | 'query'>('date');
+  const [filterBy, setFilterBy] = useState<'all' | 'recent' | 'archived'>('all');
   const { toast } = useToast();
+
+  // Toggle expand/collapse for individual results
+  const toggleResult = (index: number) => {
+    const newExpanded = new Set(expandedResults);
+    if (newExpanded.has(index)) {
+      newExpanded.delete(index);
+    } else {
+      newExpanded.add(index);
+    }
+    setExpandedResults(newExpanded);
+  };
+
+  // Filter and sort results
+  const getFilteredResults = () => {
+    let filtered = [...results];
+    
+    // Apply filters
+    if (filterBy === 'recent') {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      filtered = filtered.filter(result => new Date(result.timestamp) >= sevenDaysAgo);
+    }
+    
+    // Apply sorting
+    filtered.sort((a, b) => {
+      if (sortBy === 'date') {
+        return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+      } else {
+        return a.query.localeCompare(b.query);
+      }
+    });
+    
+    return filtered;
+  };
 
   // Debug logs
   console.log('ResearchModule state:', { query, isSearching, results: results.length, pendingTasks: pendingTasks.length });
@@ -499,102 +537,168 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
                   </div>
                 )}
 
-                {/* Enhanced Results */}
+                {/* Enhanced Results History */}
                 {results.length > 0 && (
                   <div className="space-y-6">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg">
-                        <CheckCircle2 className="h-5 w-5 text-white" />
+                    {/* Header with Controls */}
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 bg-gradient-to-r from-emerald-50 to-emerald-100/50 border border-emerald-200 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg">
+                          <Archive className="h-5 w-5 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-500 bg-clip-text text-transparent">
+                            Historial de Investigaciones
+                          </h3>
+                          <p className="text-emerald-700 text-sm">
+                            {getFilteredResults().length} investigación{getFilteredResults().length !== 1 ? 'es' : ''} encontrada{getFilteredResults().length !== 1 ? 's' : ''}
+                          </p>
+                        </div>
                       </div>
-                      <h3 className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-500 bg-clip-text text-transparent">
-                        Investigaciones Completadas
-                      </h3>
+                      
+                      {/* Filter and Sort Controls */}
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant={sortBy === 'date' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setSortBy('date')}
+                          className="text-xs"
+                        >
+                          <Calendar className="h-3 w-3 mr-1" />
+                          Fecha
+                        </Button>
+                        <Button
+                          variant={sortBy === 'query' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setSortBy('query')}
+                          className="text-xs"
+                        >
+                          <Filter className="h-3 w-3 mr-1" />
+                          A-Z
+                        </Button>
+                        <Button
+                          variant={filterBy === 'recent' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setFilterBy(filterBy === 'recent' ? 'all' : 'recent')}
+                          className="text-xs"
+                        >
+                          Recientes
+                        </Button>
+                      </div>
                     </div>
                     
-                    {results.map((result, index) => (
-                      <Card key={index} className="border-0 shadow-xl bg-gradient-to-br from-white via-white to-emerald-50 overflow-hidden">
-                        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-emerald-500/10 opacity-50"></div>
-                        <CardHeader className="relative pb-4">
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex-1">
-                              <CardTitle className="text-xl font-bold text-gray-900 mb-2 leading-tight">
-                                {result.query.length > 120 
-                                  ? `${result.query.substring(0, 120)}...` 
-                                  : result.query
-                                }
-                              </CardTitle>
-                            </div>
-                            <div className="flex gap-2 flex-col sm:flex-row">
-                              <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 border-emerald-200 whitespace-nowrap">
-                                <CheckCircle2 className="h-3 w-3 mr-1" />
-                                Completado
-                              </Badge>
-                              <Badge variant="outline" className="text-gray-600 border-gray-300 whitespace-nowrap">
-                                <Clock className="h-3 w-3 mr-1" />
-                                {new Date(result.timestamp).toLocaleDateString()}
-                              </Badge>
-                            </div>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="relative space-y-6">
-                          <div className="bg-gradient-to-br from-white via-white to-gray-50 border border-gray-200/60 p-6 rounded-xl shadow-inner">
-                            <h4 className="font-bold mb-4 flex items-center gap-3 text-lg text-gray-900">
-                              <div className="p-2 bg-gradient-to-br from-primary to-primary/80 rounded-lg">
-                                <FileText className="h-4 w-4 text-white" />
-                              </div>
-                              Hallazgos Jurídicos
-                            </h4>
-                            <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed whitespace-pre-wrap">
-                              {result.findings}
-                            </div>
-                          </div>
-                          
-                          {result.conclusion && (
-                            <div className="bg-gradient-to-br from-blue-50 via-white to-blue-50 border border-blue-200/60 p-4 rounded-xl">
-                              <h4 className="font-bold mb-3 flex items-center gap-3 text-lg text-blue-900">
-                                <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg">
-                                  <Target className="h-4 w-4 text-white" />
-                                </div>
-                                Conclusión
-                              </h4>
-                              <p className="text-blue-800 leading-relaxed">{result.conclusion}</p>
-                            </div>
-                          )}
-                          
-                          <div>
-                            <h4 className="font-bold mb-4 flex items-center gap-3 text-lg text-gray-900">
-                              <div className="p-2 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg">
-                                <BookOpen className="h-4 w-4 text-white" />
-                              </div>
-                              Fuentes Jurídicas Consultadas
-                            </h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                              {result.sources.filter(Boolean).map((source, idx) => {
-                                let sourceText = 'Fuente legal';
-                                
-                                try {
-                                  if (typeof source === 'string') {
-                                    sourceText = source;
-                                  } else if (source && typeof source === 'object' && 'title' in source) {
-                                    sourceText = (source as any).title || 'Fuente legal';
-                                  }
-                                } catch (e) {
-                                  sourceText = 'Fuente legal';
-                                }
-                                
-                                return (
-                                  <div key={idx} className="bg-gradient-to-r from-purple-50 to-purple-100/50 border border-purple-200 rounded-lg p-3 shadow-sm">
-                                    <Badge variant="outline" className="text-purple-700 border-purple-300 bg-white/80 text-sm font-medium">
-                                      {sourceText}
-                                    </Badge>
+                    {/* Expandable Results List */}
+                    <div className="space-y-3">
+                      {getFilteredResults().map((result, index) => (
+                        <Collapsible 
+                          key={index} 
+                          open={expandedResults.has(index)}
+                          onOpenChange={() => toggleResult(index)}
+                        >
+                          <Card className="border-0 shadow-lg bg-gradient-to-br from-white via-white to-emerald-50/30 overflow-hidden hover:shadow-xl transition-all duration-300">
+                            <CollapsibleTrigger asChild>
+                              <CardHeader className="cursor-pointer hover:bg-emerald-50/50 transition-colors pb-4">
+                                <div className="flex items-center justify-between gap-4">
+                                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                                    <div className="flex-shrink-0">
+                                      {expandedResults.has(index) ? (
+                                        <ChevronDown className="h-5 w-5 text-emerald-600" />
+                                      ) : (
+                                        <ChevronRight className="h-5 w-5 text-emerald-600" />
+                                      )}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <CardTitle className="text-base lg:text-lg font-semibold text-gray-900 line-clamp-2 leading-tight">
+                                        {result.query}
+                                      </CardTitle>
+                                      <div className="flex items-center gap-2 mt-2">
+                                        <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 border-emerald-200 text-xs">
+                                          <CheckCircle2 className="h-3 w-3 mr-1" />
+                                          Completado
+                                        </Badge>
+                                        <Badge variant="outline" className="text-gray-600 border-gray-300 text-xs">
+                                          <Clock className="h-3 w-3 mr-1" />
+                                          {new Date(result.timestamp).toLocaleDateString('es-ES', {
+                                            day: '2-digit',
+                                            month: 'short',
+                                            year: 'numeric'
+                                          })}
+                                        </Badge>
+                                      </div>
+                                    </div>
                                   </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                                </div>
+                              </CardHeader>
+                            </CollapsibleTrigger>
+                            
+                            <CollapsibleContent>
+                              <CardContent className="pt-0 space-y-6">
+                                {/* Findings Section */}
+                                <div className="bg-gradient-to-br from-white via-white to-gray-50 border border-gray-200/60 p-4 lg:p-6 rounded-xl shadow-inner">
+                                  <h4 className="font-bold mb-4 flex items-center gap-3 text-lg text-gray-900">
+                                    <div className="p-2 bg-gradient-to-br from-primary to-primary/80 rounded-lg">
+                                      <FileText className="h-4 w-4 text-white" />
+                                    </div>
+                                    Hallazgos Jurídicos
+                                  </h4>
+                                  <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed">
+                                    <div className="whitespace-pre-wrap text-sm lg:text-base">
+                                      {result.findings}
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                {/* Conclusion Section */}
+                                {result.conclusion && (
+                                  <div className="bg-gradient-to-br from-blue-50 via-white to-blue-50 border border-blue-200/60 p-4 lg:p-6 rounded-xl">
+                                    <h4 className="font-bold mb-3 flex items-center gap-3 text-lg text-blue-900">
+                                      <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg">
+                                        <Target className="h-4 w-4 text-white" />
+                                      </div>
+                                      Conclusión
+                                    </h4>
+                                    <p className="text-blue-800 leading-relaxed text-sm lg:text-base">{result.conclusion}</p>
+                                  </div>
+                                )}
+                                
+                                {/* Sources Section */}
+                                <div>
+                                  <h4 className="font-bold mb-4 flex items-center gap-3 text-lg text-gray-900">
+                                    <div className="p-2 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg">
+                                      <BookOpen className="h-4 w-4 text-white" />
+                                    </div>
+                                    Fuentes Jurídicas Consultadas
+                                  </h4>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    {result.sources.filter(Boolean).map((source, idx) => {
+                                      let sourceText = 'Fuente legal';
+                                      
+                                      try {
+                                        if (typeof source === 'string') {
+                                          sourceText = source;
+                                        } else if (source && typeof source === 'object' && 'title' in source) {
+                                          sourceText = (source as any).title || 'Fuente legal';
+                                        }
+                                      } catch (e) {
+                                        sourceText = 'Fuente legal';
+                                      }
+                                      
+                                      return (
+                                        <div key={idx} className="bg-gradient-to-r from-purple-50 to-purple-100/50 border border-purple-200 rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow">
+                                          <Badge variant="outline" className="text-purple-700 border-purple-300 bg-white/80 text-xs font-medium">
+                                            {sourceText}
+                                          </Badge>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </CollapsibleContent>
+                          </Card>
+                        </Collapsible>
+                      ))}
+                    </div>
                   </div>
                 )}
 
