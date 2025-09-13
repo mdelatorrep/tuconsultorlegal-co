@@ -214,78 +214,86 @@ const CRMClientsView: React.FC<CRMClientsViewProps> = ({ lawyerData, searchTerm,
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 p-4 sm:p-0">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">Gestión de Clientes</h2>
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-0 sm:justify-between sm:items-center">
+        <h2 className="text-lg sm:text-xl font-semibold">Gestión de Clientes</h2>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => { resetForm(); setEditingClient(null); }}>
+            <Button 
+              className="w-full sm:w-auto" 
+              onClick={() => { resetForm(); setEditingClient(null); }}
+            >
               <Plus className="h-4 w-4 mr-2" />
-              Nuevo Cliente
+              <span className="hidden xs:inline">Nuevo Cliente</span>
+              <span className="xs:hidden">Nuevo</span>
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>
+              <DialogTitle className="text-lg">
                 {editingClient ? 'Editar Cliente' : 'Nuevo Cliente'}
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-sm">
                 {editingClient ? 'Modifica los datos del cliente' : 'Ingresa los datos del nuevo cliente'}
               </DialogDescription>
             </DialogHeader>
             
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Nombre *</Label>
+                <Label htmlFor="name" className="text-sm">Nombre *</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="Nombre completo"
+                  className="text-base"
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="email">Email *</Label>
+                <Label htmlFor="email" className="text-sm">Email *</Label>
                 <Input
                   id="email"
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder="correo@ejemplo.com"
+                  className="text-base"
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="phone">Teléfono</Label>
+                <Label htmlFor="phone" className="text-sm">Teléfono</Label>
                 <Input
                   id="phone"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   placeholder="+57 300 123 4567"
+                  className="text-base"
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="company">Empresa</Label>
+                <Label htmlFor="company" className="text-sm">Empresa</Label>
                 <Input
                   id="company"
                   value={formData.company}
                   onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                   placeholder="Nombre de la empresa"
+                  className="text-base"
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="client_type">Tipo de Cliente</Label>
+                <Label htmlFor="client_type" className="text-sm">Tipo de Cliente</Label>
                 <Select
                   value={formData.client_type}
                   onValueChange={(value) => 
                     setFormData({ ...formData, client_type: value })
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="text-base">
                     <SelectValue placeholder="Selecciona el tipo" />
                   </SelectTrigger>
                   <SelectContent>
@@ -296,14 +304,14 @@ const CRMClientsView: React.FC<CRMClientsViewProps> = ({ lawyerData, searchTerm,
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="status">Estado</Label>
+                <Label htmlFor="status" className="text-sm">Estado</Label>
                 <Select
                   value={formData.status}
                   onValueChange={(value) => 
                     setFormData({ ...formData, status: value })
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="text-base">
                     <SelectValue placeholder="Selecciona el estado" />
                   </SelectTrigger>
                   <SelectContent>
@@ -314,33 +322,42 @@ const CRMClientsView: React.FC<CRMClientsViewProps> = ({ lawyerData, searchTerm,
                 </Select>
               </div>
               
-              <div className="col-span-2 space-y-2">
-                <Label htmlFor="address">Dirección</Label>
+              <div className="col-span-1 sm:col-span-2 space-y-2">
+                <Label htmlFor="address" className="text-sm">Dirección</Label>
                 <Input
                   id="address"
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   placeholder="Dirección completa"
+                  className="text-base"
                 />
               </div>
               
-              <div className="col-span-2 space-y-2">
-                <Label htmlFor="notes">Notas</Label>
+              <div className="col-span-1 sm:col-span-2 space-y-2">
+                <Label htmlFor="notes" className="text-sm">Notas</Label>
                 <Textarea
                   id="notes"
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   placeholder="Notas adicionales sobre el cliente"
                   rows={3}
+                  className="text-base resize-none"
                 />
               </div>
             </div>
             
-            <div className="flex justify-end gap-2 mt-4">
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 mt-4">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsDialogOpen(false)}
+                className="w-full sm:w-auto"
+              >
                 Cancelar
               </Button>
-              <Button onClick={handleSaveClient}>
+              <Button 
+                onClick={handleSaveClient}
+                className="w-full sm:w-auto"
+              >
                 {editingClient ? 'Actualizar' : 'Crear'} Cliente
               </Button>
             </div>
@@ -349,16 +366,19 @@ const CRMClientsView: React.FC<CRMClientsViewProps> = ({ lawyerData, searchTerm,
       </div>
 
       {/* Clients Grid */}
-      <div className="grid gap-4">
+      <div className="space-y-3">
         {filteredClients.length === 0 ? (
           <Card>
-            <CardContent className="p-8 text-center">
-              <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-muted-foreground">
+            <CardContent className="p-6 sm:p-8 text-center">
+              <Users className="h-8 w-8 sm:h-12 sm:w-12 mx-auto mb-3 sm:mb-4 text-muted-foreground" />
+              <p className="text-sm sm:text-base text-muted-foreground">
                 {searchTerm ? 'No se encontraron clientes que coincidan con la búsqueda' : 'No tienes clientes registrados aún'}
               </p>
               {!searchTerm && (
-                <Button className="mt-4" onClick={() => setIsDialogOpen(true)}>
+                <Button 
+                  className="mt-3 sm:mt-4 w-full sm:w-auto" 
+                  onClick={() => setIsDialogOpen(true)}
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   Crear primer cliente
                 </Button>
@@ -367,62 +387,69 @@ const CRMClientsView: React.FC<CRMClientsViewProps> = ({ lawyerData, searchTerm,
           </Card>
         ) : (
           filteredClients.map((client) => (
-            <Card key={client.id}>
+            <Card key={client.id} className="transition-all hover:shadow-md">
               <CardContent className="p-4">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
+                <div className="flex flex-col sm:flex-row sm:justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start sm:items-center gap-2 mb-2 flex-wrap">
                       {client.client_type === 'company' ? (
-                        <Building className="h-4 w-4 text-muted-foreground" />
+                        <Building className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5 sm:mt-0" />
                       ) : (
-                        <User className="h-4 w-4 text-muted-foreground" />
+                        <User className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5 sm:mt-0" />
                       )}
-                      <h3 className="font-semibold">{client.name}</h3>
-                      <Badge variant={getStatusBadgeVariant(client.status)}>
+                      <h3 className="font-semibold text-sm sm:text-base truncate flex-1 min-w-0">
+                        {client.name}
+                      </h3>
+                      <Badge 
+                        variant={getStatusBadgeVariant(client.status)}
+                        className="text-xs flex-shrink-0"
+                      >
                         {getStatusText(client.status)}
                       </Badge>
                     </div>
                     
-                    <div className="space-y-1 text-sm text-muted-foreground">
+                    <div className="space-y-1 text-xs sm:text-sm text-muted-foreground">
                       <div className="flex items-center gap-2">
-                        <Mail className="h-3 w-3" />
-                        <span>{client.email}</span>
+                        <Mail className="h-3 w-3 flex-shrink-0" />
+                        <span className="truncate">{client.email}</span>
                       </div>
                       {client.phone && (
                         <div className="flex items-center gap-2">
-                          <Phone className="h-3 w-3" />
-                          <span>{client.phone}</span>
+                          <Phone className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate">{client.phone}</span>
                         </div>
                       )}
                       {client.company && (
                         <div className="flex items-center gap-2">
-                          <Building className="h-3 w-3" />
-                          <span>{client.company}</span>
+                          <Building className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate">{client.company}</span>
                         </div>
                       )}
                     </div>
                     
                     {client.notes && (
-                      <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+                      <p className="text-xs sm:text-sm text-muted-foreground mt-2 line-clamp-2">
                         {client.notes}
                       </p>
                     )}
                   </div>
                   
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 self-start sm:self-center flex-shrink-0">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleEditClient(client)}
+                      className="h-8 w-8 p-0"
                     >
-                      <Edit2 className="h-4 w-4" />
+                      <Edit2 className="h-3 w-3" />
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleDeleteClient(client.id)}
+                      className="h-8 w-8 p-0"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-3 w-3" />
                     </Button>
                   </div>
                 </div>
