@@ -149,9 +149,9 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout 
                   <Zap className="h-4 w-4 lg:h-6 lg:w-6 text-white" />
                 </div>
                 <div className="min-w-0">
-                  <h1 className="text-base lg:text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent truncate">
+                  <div className="sr-only">
                     Redacción Inteligente IA
-                  </h1>
+                  </div>
                   <p className="text-xs lg:text-sm text-muted-foreground hidden sm:block">Generación automática de documentos legales</p>
                 </div>
               </div>

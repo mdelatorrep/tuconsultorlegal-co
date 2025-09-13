@@ -322,9 +322,9 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
                   <Search className="h-4 w-4 lg:h-6 lg:w-6 text-primary-foreground" />
                 </div>
                 <div className="min-w-0">
-                  <h1 className="text-base lg:text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent truncate">
+                  <div className="sr-only">
                     Investigación Jurídica IA
-                  </h1>
+                  </div>
                   <p className="text-xs lg:text-sm text-muted-foreground hidden sm:block truncate">
                     Sistema inteligente de investigación legal
                   </p>

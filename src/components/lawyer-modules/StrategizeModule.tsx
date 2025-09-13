@@ -147,9 +147,9 @@ export default function StrategizeModule({ user, currentView, onViewChange, onLo
                   <Lightbulb className="h-4 w-4 lg:h-6 lg:w-6 text-white" />
                 </div>
                 <div className="min-w-0">
-                  <h1 className="text-base lg:text-xl font-bold bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent truncate">
+                  <div className="sr-only">
                     Estrategia Legal IA
-                  </h1>
+                  </div>
                   <p className="text-xs lg:text-sm text-muted-foreground hidden sm:block truncate">
                     Planificación inteligente de casos
                   </p>
