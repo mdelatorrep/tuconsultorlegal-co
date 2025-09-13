@@ -274,20 +274,22 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
         />
 
         {/* Main Content */}
-        <main className="flex-1">
-          {/* Modern Header */}
-          <header className="h-16 border-b bg-gradient-to-r from-background/95 to-primary/10 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 relative overflow-hidden">
-            <div className="flex h-16 items-center px-6 relative z-10">
-              <SidebarTrigger className="mr-4 hover:bg-primary/10 rounded-lg p-2 transition-all duration-200" />
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-gradient-to-br from-primary to-primary/80 rounded-xl shadow-lg">
-                  <Search className="h-6 w-6 text-primary-foreground" />
+        <main className="flex-1 min-w-0">
+          {/* Enhanced Header - Mobile First */}
+          <header className="h-14 lg:h-16 border-b bg-gradient-to-r from-background/95 to-primary/10 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 relative overflow-hidden sticky top-0 z-40">
+            <div className="flex h-14 lg:h-16 items-center px-3 lg:px-6 relative z-10">
+              <SidebarTrigger className="mr-2 lg:mr-4 hover:bg-primary/10 rounded-lg p-2 transition-all duration-200 flex-shrink-0" />
+              <div className="flex items-center gap-2 lg:gap-3 min-w-0">
+                <div className="p-1.5 lg:p-2 bg-gradient-to-br from-primary to-primary/80 rounded-lg lg:rounded-xl shadow-lg flex-shrink-0">
+                  <Search className="h-4 w-4 lg:h-6 lg:w-6 text-primary-foreground" />
                 </div>
-                <div>
-                  <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                <div className="min-w-0">
+                  <h1 className="text-base lg:text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent truncate">
                     Investigación Jurídica IA
                   </h1>
-                  <p className="text-sm text-muted-foreground">Sistema inteligente de investigación legal</p>
+                  <p className="text-xs lg:text-sm text-muted-foreground hidden sm:block truncate">
+                    Sistema inteligente de investigación legal
+                  </p>
                 </div>
               </div>
             </div>

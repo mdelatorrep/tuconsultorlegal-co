@@ -136,29 +136,31 @@ export default function StrategizeModule({ user, currentView, onViewChange, onLo
         />
 
         {/* Main Content */}
-        <main className="flex-1">
-          {/* Enhanced Header */}
-          <header className="h-16 border-b bg-gradient-to-r from-background/95 to-purple-500/10 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 relative overflow-hidden">
+        <main className="flex-1 min-w-0">
+          {/* Enhanced Header - Mobile First */}
+          <header className="h-14 lg:h-16 border-b bg-gradient-to-r from-background/95 to-purple-500/10 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 relative overflow-hidden sticky top-0 z-40">
             <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-transparent opacity-50"></div>
-            <div className="relative flex h-16 items-center px-6">
-              <SidebarTrigger className="mr-4 hover:bg-purple-500/10 rounded-lg p-2 transition-all duration-200" />
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg">
-                  <Lightbulb className="h-6 w-6 text-white" />
+            <div className="relative flex h-14 lg:h-16 items-center px-3 lg:px-6">
+              <SidebarTrigger className="mr-2 lg:mr-4 hover:bg-purple-500/10 rounded-lg p-2 transition-all duration-200 flex-shrink-0" />
+              <div className="flex items-center gap-2 lg:gap-3 min-w-0">
+                <div className="p-1.5 lg:p-2 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg lg:rounded-xl shadow-lg flex-shrink-0">
+                  <Lightbulb className="h-4 w-4 lg:h-6 lg:w-6 text-white" />
                 </div>
-                <div>
-                  <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent">
+                <div className="min-w-0">
+                  <h1 className="text-base lg:text-xl font-bold bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent truncate">
                     Estrategia Legal IA
                   </h1>
-                  <p className="text-sm text-muted-foreground">Planificación inteligente de casos</p>
+                  <p className="text-xs lg:text-sm text-muted-foreground hidden sm:block truncate">
+                    Planificación inteligente de casos
+                  </p>
                 </div>
               </div>
             </div>
           </header>
 
-          <div className="container mx-auto px-6 py-8">
+          <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 lg:py-8">
             <div className="max-w-7xl mx-auto">
-              <div className="space-y-8">
+              <div className="space-y-4 lg:space-y-8">
                 {/* Hero Section */}
                 <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-purple-500/10 via-purple-500/5 to-transparent border border-purple-500/20 p-8">
                   <div className="absolute inset-0 bg-grid-pattern opacity-10"></div>
