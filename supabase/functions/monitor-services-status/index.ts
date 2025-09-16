@@ -86,6 +86,7 @@ async function checkOpenAIStatus() {
   let status = 'unknown';
   let errorMessage = null;
   let responseTime = 0;
+  let indicator = null;
 
   try {
     console.log('Checking OpenAI status...');
@@ -106,7 +107,7 @@ async function checkOpenAIStatus() {
       const statusData = await statusResponse.json();
       
       if (statusData && statusData.status && statusData.status.indicator) {
-        const indicator = statusData.status.indicator;
+        indicator = statusData.status.indicator;
         
         // Map OpenAI status indicators to our internal status
         switch (indicator) {
@@ -114,9 +115,13 @@ async function checkOpenAIStatus() {
             status = 'operational';
             break;
           case 'minor':
+            // For minor issues, check if API is still responsive
+            status = 'degraded';
+            errorMessage = statusData.status.description || 'Service experiencing minor issues';
+            break;
           case 'major':
             status = 'degraded';
-            errorMessage = statusData.status.description || 'Service experiencing issues';
+            errorMessage = statusData.status.description || 'Service experiencing significant issues';
             break;
           case 'critical':
             status = 'outage';
@@ -139,9 +144,9 @@ async function checkOpenAIStatus() {
       console.error(`OpenAI status API error: ${errorMessage}`);
     }
     
-    // If status page indicates issues, also verify API availability
-    if (status !== 'operational') {
-      console.log('Status page indicates issues, also checking API availability...');
+    // For minor issues, check if API is actually working well
+    if (indicator === 'minor') {
+      console.log('Minor status detected, checking API availability...');
       
       try {
         const openaiKey = Deno.env.get('OPENAI_API_KEY');
@@ -153,25 +158,30 @@ async function checkOpenAIStatus() {
               'Authorization': `Bearer ${openaiKey}`,
               'Content-Type': 'application/json',
             },
-            signal: AbortSignal.timeout(8000) // 8 second timeout for API check
+            signal: AbortSignal.timeout(5000) // 5 second timeout for API check
           });
           
           const apiResponseTime = Date.now() - apiStartTime;
           
-          if (apiResponse.ok) {
-            console.log(`API is still responding (${apiResponseTime}ms) despite status page issues`);
-            // Don't override status, but log additional info
-            errorMessage = `${errorMessage} (API still responding in ${apiResponseTime}ms)`;
+          if (apiResponse.ok && apiResponseTime < 3000) {
+            // API is working well, downgrade to operational
+            console.log(`API responding normally (${apiResponseTime}ms), treating minor status as operational`);
+            status = 'operational';
+            errorMessage = `Minor status reported but API working normally (${apiResponseTime}ms)`;
+          } else if (apiResponse.ok) {
+            console.log(`API responding slowly (${apiResponseTime}ms), keeping degraded status`);
+            errorMessage = `${errorMessage} (API slower than usual: ${apiResponseTime}ms)`;
           } else {
             console.log(`API also failing: HTTP ${apiResponse.status}`);
             errorMessage = `${errorMessage} + API error: HTTP ${apiResponse.status}`;
           }
         }
       } catch (apiError) {
-        console.log(`API check also failed: ${apiError.message}`);
-        errorMessage = `${errorMessage} + API unavailable`;
+        console.log(`API check failed: ${apiError.message}`);
+        errorMessage = `${errorMessage} + API check failed`;
       }
     }
+    
     
   } catch (error) {
     responseTime = Date.now() - startTime;
