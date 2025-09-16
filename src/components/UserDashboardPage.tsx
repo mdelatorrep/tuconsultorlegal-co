@@ -18,13 +18,14 @@ import {
   Plus,
   Search,
   Calendar,
-  DollarSign
+  DollarSign,
+  ArrowLeft
 } from 'lucide-react';
 import { Input } from './ui/input';
 import { useDocumentPayment } from './document-payment/useDocumentPayment';
 import DocumentFormFlow from './DocumentFormFlow';
 import DocumentCreationSuccess from './DocumentCreationSuccess';
-import PersonasPage from './PersonasPage';
+import UserDocumentSelector from './UserDocumentSelector';
 import LegalConsultationChat from './LegalConsultationChat';
 
 interface UserDashboardPageProps {
@@ -62,11 +63,9 @@ export default function UserDashboardPage({ onBack, onOpenChat }: UserDashboardP
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('documents');
   
-  // Document creation states
-  const [showPersonasPage, setShowPersonasPage] = useState(false);
-  const [showDocumentForm, setShowDocumentForm] = useState(false);
+  // Document creation states - integrated workflow
+  const [currentView, setCurrentView] = useState<'dashboard' | 'create-document' | 'document-form' | 'document-success'>('dashboard');
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
-  const [showDocumentSuccess, setShowDocumentSuccess] = useState(false);
   const [newDocumentToken, setNewDocumentToken] = useState<string | null>(null);
   
   // Consultation states
@@ -164,34 +163,33 @@ export default function UserDashboardPage({ onBack, onOpenChat }: UserDashboardP
   };
 
   const handleNewDocumentRequest = () => {
-    setShowPersonasPage(true);
+    setCurrentView('create-document');
   };
 
   const handleAgentSelected = (agentId: string) => {
     setSelectedAgentId(agentId);
-    setShowPersonasPage(false);
-    setShowDocumentForm(true);
+    setCurrentView('document-form');
   };
 
   const handleDocumentCreated = (token: string) => {
     setNewDocumentToken(token);
-    setShowDocumentForm(false);
-    setShowDocumentSuccess(true);
+    setCurrentView('document-success');
     loadUserData(); // Reload to show new document
   };
 
   const handleBackFromForm = () => {
-    setShowDocumentForm(false);
-    setShowPersonasPage(true);
+    setCurrentView('create-document');
   };
 
-  const handleBackFromPersonas = () => {
-    setShowPersonasPage(false);
+  const handleBackFromDocumentCreation = () => {
+    setCurrentView('dashboard');
+    setSelectedAgentId(null);
   };
 
   const handleBackFromSuccess = () => {
-    setShowDocumentSuccess(false);
+    setCurrentView('dashboard');
     setNewDocumentToken(null);
+    setSelectedAgentId(null);
   };
 
   const formatPrice = (price: number) => {
@@ -245,36 +243,102 @@ export default function UserDashboardPage({ onBack, onOpenChat }: UserDashboardP
     );
   }
 
-  // Show document creation flow
-  if (showPersonasPage) {
+  // Render different views based on current state
+  if (currentView === 'create-document') {
     return (
-      <PersonasPage
-        onOpenChat={onOpenChat}
-        onNavigate={handleAgentSelected}
-      />
+      <div className="min-h-screen bg-background">
+        {/* Mantener header dentro de la experiencia */}
+        <div className="border-b bg-card">
+          <div className="container mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Button variant="ghost" size="sm" onClick={handleBackFromDocumentCreation}>
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Volver al Dashboard
+                </Button>
+                <div>
+                  <h1 className="text-xl font-semibold">Crear Nuevo Documento</h1>
+                  <p className="text-sm text-muted-foreground">Selecciona el tipo de documento que necesitas</p>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" onClick={handleLogout}>
+                <LogOut className="w-4 h-4 mr-2" />
+                Cerrar Sesión
+              </Button>
+            </div>
+          </div>
+        </div>
+        
+        <UserDocumentSelector
+          onAgentSelected={handleAgentSelected}
+          onOpenChat={onOpenChat}
+        />
+      </div>
     );
   }
 
-  if (showDocumentForm && selectedAgentId) {
+  if (currentView === 'document-form' && selectedAgentId) {
     return (
-      <DocumentFormFlow
-        agentId={selectedAgentId}
-        onBack={handleBackFromForm}
-        onComplete={handleDocumentCreated}
-      />
+      <div className="min-h-screen bg-background">
+        <div className="border-b bg-card">
+          <div className="container mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Button variant="ghost" size="sm" onClick={handleBackFromForm}>
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Volver a Selección
+                </Button>
+                <div>
+                  <h1 className="text-xl font-semibold">Completar Información</h1>
+                  <p className="text-sm text-muted-foreground">Llena los datos necesarios para tu documento</p>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" onClick={handleLogout}>
+                <LogOut className="w-4 h-4 mr-2" />
+                Cerrar Sesión
+              </Button>
+            </div>
+          </div>
+        </div>
+        
+        <DocumentFormFlow
+          agentId={selectedAgentId}
+          onBack={handleBackFromForm}
+          onComplete={handleDocumentCreated}
+        />
+      </div>
     );
   }
 
-  if (showDocumentSuccess && newDocumentToken) {
+  if (currentView === 'document-success' && newDocumentToken) {
     return (
-      <DocumentCreationSuccess
-        token={newDocumentToken}
-        onBack={handleBackFromSuccess}
-        onNavigateToTracking={() => {
-          handleBackFromSuccess();
-          setActiveTab('documents');
-        }}
-      />
+      <div className="min-h-screen bg-background">
+        <div className="border-b bg-card">
+          <div className="container mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div>
+                  <h1 className="text-xl font-semibold">Documento Creado Exitosamente</h1>
+                  <p className="text-sm text-muted-foreground">Tu documento ha sido generado y está listo</p>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" onClick={handleLogout}>
+                <LogOut className="w-4 h-4 mr-2" />
+                Cerrar Sesión
+              </Button>
+            </div>
+          </div>
+        </div>
+        
+        <DocumentCreationSuccess
+          token={newDocumentToken}
+          onBack={handleBackFromSuccess}
+          onNavigateToTracking={() => {
+            handleBackFromSuccess();
+            setActiveTab('documents');
+          }}
+        />
+      </div>
     );
   }
 
