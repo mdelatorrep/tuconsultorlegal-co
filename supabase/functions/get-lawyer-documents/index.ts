@@ -42,14 +42,29 @@ Deno.serve(async (req) => {
       lawyerToken = authHeader.substring(7)
     }
 
-    // access_token no existe en lawyer_profiles
-    const lawyer = null;
-    const lawyerError = { message: 'Token validation not supported - access_token column does not exist' };
+    // Extract lawyer ID from token (assuming JWT or similar format)
+    // For now, we'll use the auth.uid() from Supabase auth
+    const { data: { user }, error: authError } = await supabase.auth.getUser(lawyerToken)
+    
+    if (authError || !user) {
+      console.error('Invalid auth token:', authError)
+      return new Response(JSON.stringify({ error: 'Token de autorización inválido' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    // Get lawyer profile
+    const { data: lawyer, error: lawyerError } = await supabase
+      .from('lawyer_profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single()
 
     if (lawyerError || !lawyer) {
-      console.error('Invalid lawyer token:', lawyerError)
-      return new Response(JSON.stringify({ error: 'Token de abogado inválido' }), {
-        status: 401,
+      console.error('Lawyer not found:', lawyerError)
+      return new Response(JSON.stringify({ error: 'Perfil de abogado no encontrado' }), {
+        status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }

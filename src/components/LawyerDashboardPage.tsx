@@ -135,20 +135,64 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
 
   const fetchDocuments = async () => {
     try {
-      const { data, error } = await supabase
+      if (!user?.id) {
+        console.log('No user ID available for fetching documents');
+        setDocuments([]);
+        setIsLoading(false);
+        return;
+      }
+
+      // First get the lawyer's agents
+      const { data: lawyerAgents, error: agentsError } = await supabase
+        .from('legal_agents')
+        .select('name')
+        .eq('created_by', user.id);
+
+      if (agentsError) {
+        console.error('Error fetching lawyer agents:', agentsError);
+        setDocuments([]);
+        setIsLoading(false);
+        return;
+      }
+
+      // If lawyer has no agents, return empty array
+      if (!lawyerAgents || lawyerAgents.length === 0) {
+        console.log('Lawyer has no agents, no documents to show');
+        setDocuments([]);
+        setIsLoading(false);
+        return;
+      }
+
+      // Get all documents and filter by lawyer's agent names
+      const { data: allDocuments, error: documentsError } = await supabase
         .from('document_tokens')
         .select('*')
         .in('status', ['solicitado', 'revision_usuario'])
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching documents:', error);
+      if (documentsError) {
+        console.error('Error fetching documents:', documentsError);
+        setDocuments([]);
+        setIsLoading(false);
         return;
       }
 
-      setDocuments(data || []);
+      // Filter documents by matching document_type with lawyer's agent names
+      const agentNames = lawyerAgents.map(agent => agent.name.toLowerCase().trim());
+      const filteredDocuments = allDocuments?.filter(doc => {
+        const docType = doc.document_type.toLowerCase().trim();
+        return agentNames.some(agentName => 
+          docType.includes(agentName) || 
+          agentName.includes(docType) ||
+          (docType.includes('arrendamiento') && agentName.includes('arrendamiento'))
+        );
+      }) || [];
+
+      console.log(`Filtered ${filteredDocuments.length} documents from ${allDocuments?.length || 0} total for lawyer's ${lawyerAgents.length} agents`);
+      setDocuments(filteredDocuments);
     } catch (error) {
       console.error('Error:', error);
+      setDocuments([]);
     } finally {
       setIsLoading(false);
     }
