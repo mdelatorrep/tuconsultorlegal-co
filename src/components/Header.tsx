@@ -30,13 +30,13 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
   const { isAuthenticated, user } = useUserAuth();
 
   const navItems = [
-    { id: "personas", label: "Personas", description: "Servicios legales individuales" },
-    { id: "empresas", label: "Empresas", description: "Soluciones corporativas" },
-    { id: "documento", label: "Mi Documento", description: "Seguimiento de documentos" },
-    { id: "precios", label: "Precios", description: "Planes y tarifas" },
-    { id: "blog", label: "Blog", description: "Artículos legales" },
-    { id: "contacto", label: "Contacto", description: "Atención al cliente" },
-    { id: "abogados", label: "Portal Abogados", description: "Acceso profesional" },
+    { id: "personas", label: "Personas", description: "Servicios legales individuales", icon: User, color: "text-primary" },
+    { id: "empresas", label: "Empresas", description: "Soluciones corporativas", icon: Users, color: "text-success" },
+    { id: "documento", label: "Mi Documento", description: "Seguimiento de documentos", icon: FileText, color: "text-muted-foreground" },
+    { id: "precios", label: "Precios", description: "Planes y tarifas", icon: DollarSign, color: "text-muted-foreground" },
+    { id: "blog", label: "Blog", description: "Artículos legales", icon: Newspaper, color: "text-muted-foreground" },
+    { id: "contacto", label: "Contacto", description: "Atención al cliente", icon: Phone, color: "text-muted-foreground" },
+    { id: "abogados", label: "Portal Abogados", description: "Acceso profesional", icon: Shield, color: "text-warning" },
   ];
 
   const handleNavClick = (pageId: string) => {
@@ -61,132 +61,192 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
         </button>
 
         {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center space-x-6">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => handleNavClick(item.id)}
-              className={`group transition-smooth font-medium relative ${
-                currentPage === item.id
-                  ? "text-success font-bold"
-                  : "text-foreground hover:text-primary"
-              }`}
-              title={item.description}
-            >
-              {item.label}
-              {item.id === "abogados" && (
-                <Shield className="w-3 h-3 ml-1 inline text-warning" />
-              )}
-            </button>
-          ))}
+        <div className="hidden lg:flex items-center space-x-4">
+          {navItems.map((item) => {
+            const IconComponent = item.icon;
+            const isActive = currentPage === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleNavClick(item.id)}
+                className={`group flex items-center gap-2 px-3 py-2 rounded-lg transition-smooth font-medium text-sm ${
+                  isActive
+                    ? "bg-primary/10 text-primary font-bold shadow-sm"
+                    : "text-foreground hover:text-primary hover:bg-muted/50"
+                }`}
+                title={item.description}
+              >
+                <IconComponent className={`w-4 h-4 ${isActive ? "text-primary" : item.color}`} />
+                <span className="hidden xl:inline">{item.label}</span>
+                {item.id === "abogados" && !isActive && (
+                  <div className="w-1.5 h-1.5 bg-warning rounded-full animate-pulse" />
+                )}
+              </button>
+            );
+          })}
         </div>
 
         {/* Desktop CTA Buttons */}
-        <div className="hidden md:flex items-center space-x-3">
+        <div className="hidden lg:flex items-center space-x-3">
           {isAuthenticated ? (
             <Button 
               onClick={() => onNavigate("user-dashboard")}
               variant="outline"
-              className="bg-gradient-to-r from-primary/5 to-success/5 border-primary/20"
+              size="sm"
+              className="bg-gradient-subtle border-primary/20 text-primary font-medium"
             >
               <User className="w-4 h-4 mr-2" />
-              Mi Panel Personal
+              <span className="hidden xl:inline">Mi Panel</span>
             </Button>
           ) : (
             <Button 
               onClick={() => onNavigate("user-dashboard")}
               variant="outline"
-              className="hover:bg-primary/5"
+              size="sm"
+              className="hover:bg-primary/5 border-primary/30"
             >
               <LogIn className="w-4 h-4 mr-2" />
-              Acceder
+              <span className="hidden xl:inline">Acceder</span>
             </Button>
           )}
           
           <Button
             variant="success"
-            size="lg"
-            className="shadow-glow"
+            size="sm"
+            className="shadow-elegant font-medium"
             onClick={() => onOpenChat("Quiero una consultoría legal")}
           >
             <MessageCircle className="w-4 h-4 mr-2" />
-            Consulta Gratuita
+            <span className="hidden xl:inline">Consulta Gratuita</span>
+            <span className="xl:hidden">Consulta</span>
           </Button>
         </div>
 
         {/* Mobile Menu Button */}
         <button
-          className="md:hidden"
+          className="lg:hidden p-2 rounded-lg hover:bg-muted/50 transition-smooth"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label="Menú de navegación"
         >
           {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
+
       </nav>
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden px-6 pb-4 bg-card border-t">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => handleNavClick(item.id)}
-              className={`block w-full text-left py-3 px-2 rounded transition-smooth ${
-                currentPage === item.id
-                  ? "text-success font-bold bg-success/5"
-                  : "text-foreground hover:bg-muted"
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <span>{item.label}</span>
-                {item.id === "abogados" && (
-                  <Shield className="w-4 h-4 text-warning" />
-                )}
+        <div className="lg:hidden absolute top-full left-0 right-0 bg-card border-t shadow-lg z-50 max-h-[80vh] overflow-y-auto">
+          <div className="container mx-auto px-6 py-4">
+            {/* User Type Selection */}
+            <div className="mb-6">
+              <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
+                Tipo de Usuario
+              </h3>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  onClick={() => handleNavClick("personas")}
+                  className={`p-3 rounded-lg border transition-smooth ${
+                    currentPage === "personas"
+                      ? "bg-primary/10 border-primary text-primary"
+                      : "border-border hover:bg-muted/50"
+                  }`}
+                >
+                  <User className="w-5 h-5 mx-auto mb-1" />
+                  <div className="text-xs font-medium">Personas</div>
+                </button>
+                <button
+                  onClick={() => handleNavClick("empresas")}
+                  className={`p-3 rounded-lg border transition-smooth ${
+                    currentPage === "empresas"
+                      ? "bg-success/10 border-success text-success"
+                      : "border-border hover:bg-muted/50"
+                  }`}
+                >
+                  <Users className="w-5 h-5 mx-auto mb-1" />
+                  <div className="text-xs font-medium">Empresas</div>
+                </button>
+                <button
+                  onClick={() => handleNavClick("abogados")}
+                  className={`p-3 rounded-lg border transition-smooth ${
+                    currentPage === "abogados"
+                      ? "bg-warning/10 border-warning text-warning"
+                      : "border-border hover:bg-muted/50"
+                  }`}
+                >
+                  <Shield className="w-5 h-5 mx-auto mb-1" />
+                  <div className="text-xs font-medium">Abogados</div>
+                </button>
               </div>
-              <div className="text-xs text-muted-foreground mt-1">
-                {item.description}
-              </div>
-            </button>
-          ))}
-          
-          <div className="space-y-2 mt-4 pt-4 border-t border-border">
-            {isAuthenticated ? (
-              <Button 
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  onNavigate("user-dashboard");
-                }}
-                variant="outline"
-                className="w-full bg-gradient-to-r from-primary/5 to-success/5 border-primary/20"
-              >
-                <User className="w-4 h-4 mr-2" />
-                Mi Panel Personal
-              </Button>
-            ) : (
-              <Button 
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  onNavigate("user-dashboard");
-                }}
-                variant="outline"
-                className="w-full"
-              >
-                <LogIn className="w-4 h-4 mr-2" />
-                Acceder como Usuario
-              </Button>
-            )}
+            </div>
+
+            {/* Navigation Items */}
+            <div className="space-y-1 mb-6">
+              {navItems.filter(item => !["personas", "empresas", "abogados"].includes(item.id)).map((item) => {
+                const IconComponent = item.icon;
+                const isActive = currentPage === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => handleNavClick(item.id)}
+                    className={`flex items-center w-full p-3 rounded-lg transition-smooth ${
+                      isActive
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "text-foreground hover:bg-muted/50"
+                    }`}
+                  >
+                    <IconComponent className="w-5 h-5 mr-3" />
+                    <div className="flex-1 text-left">
+                      <div className="font-medium">{item.label}</div>
+                      <div className="text-xs text-muted-foreground">{item.description}</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
             
-            <Button
-              variant="success"
-              size="lg"
-              className="w-full"
-              onClick={() => {
-                onOpenChat("Quiero una consultoría legal");
-                setMobileMenuOpen(false);
-              }}
-            >
-              <MessageCircle className="w-4 h-4 mr-2" />
-              Consulta Gratuita
-            </Button>
+            {/* CTA Buttons */}
+            <div className="space-y-3 pt-4 border-t border-border">
+              {isAuthenticated ? (
+                <Button 
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    onNavigate("user-dashboard");
+                  }}
+                  variant="outline"
+                  className="w-full bg-gradient-subtle border-primary/20 text-primary"
+                  size="lg"
+                >
+                  <User className="w-4 h-4 mr-2" />
+                  Mi Panel Personal
+                </Button>
+              ) : (
+                <Button 
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    onNavigate("user-dashboard");
+                  }}
+                  variant="outline"
+                  className="w-full border-primary/30"
+                  size="lg"
+                >
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Acceder como Usuario
+                </Button>
+              )}
+              
+              <Button
+                variant="success"
+                size="lg"
+                className="w-full shadow-elegant"
+                onClick={() => {
+                  onOpenChat("Quiero una consultoría legal");
+                  setMobileMenuOpen(false);
+                }}
+              >
+                <MessageCircle className="w-4 h-4 mr-2" />
+                Consulta Gratuita
+              </Button>
+            </div>
           </div>
         </div>
       )}

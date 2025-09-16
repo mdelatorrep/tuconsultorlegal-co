@@ -128,18 +128,18 @@ export default function UserAuthPage({ onBack, onAuthSuccess }: UserAuthPageProp
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-8 bg-muted/30">
-      <div className="w-full max-w-md">
-        <Card>
-          <CardHeader className="space-y-4">
+    <div className="min-h-screen flex items-center justify-center px-4 py-8 bg-gradient-hero">
+      <div className="w-full max-w-md mx-auto">
+        <Card className="shadow-trust border-border/50 bg-card/80 backdrop-blur-sm">
+          <CardHeader className="space-y-4 pb-6">
             <div className="flex items-center gap-3">
-              <Button variant="ghost" size="sm" onClick={onBack} className="shrink-0">
+              <Button variant="ghost" size="sm" onClick={onBack} className="shrink-0 hover:bg-muted/50">
                 <ArrowLeft className="w-4 h-4" />
               </Button>
-              <div className="flex-1">
-                <CardTitle className="text-xl">Tu Consultor Legal</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Accede a servicios legales de calidad
+              <div className="flex-1 text-center">
+                <CardTitle className="text-2xl font-bold text-primary">Tu Consultor Legal</CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Plataforma legal inteligente para personas
                 </p>
               </div>
             </div>
@@ -147,9 +147,9 @@ export default function UserAuthPage({ onBack, onAuthSuccess }: UserAuthPageProp
 
           <CardContent>
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Iniciar Sesión</TabsTrigger>
-                <TabsTrigger value="signup">Crear Cuenta</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 bg-muted/30">
+                <TabsTrigger value="login" className="text-sm font-medium">Iniciar Sesión</TabsTrigger>
+                <TabsTrigger value="signup" className="text-sm font-medium">Crear Cuenta</TabsTrigger>
               </TabsList>
 
               <TabsContent value="login" className="space-y-4 mt-6">
@@ -199,6 +199,7 @@ export default function UserAuthPage({ onBack, onAuthSuccess }: UserAuthPageProp
                     type="submit"
                     disabled={isLoading}
                     className="w-full"
+                    size="lg"
                   >
                     {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
                   </Button>
@@ -299,6 +300,7 @@ export default function UserAuthPage({ onBack, onAuthSuccess }: UserAuthPageProp
                     type="submit"
                     disabled={isLoading || !termsAccepted}
                     className="w-full"
+                    size="lg"
                   >
                     {isLoading ? 'Creando cuenta...' : 'Crear Cuenta'}
                   </Button>

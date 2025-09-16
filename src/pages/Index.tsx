@@ -19,6 +19,7 @@ import UnifiedDocumentPage from "@/components/UnifiedDocumentPage";
 import LegalConsultationChat from "@/components/LegalConsultationChat";
 import UserAuthPage from "@/components/UserAuthPage";
 import UserDashboardPage from "@/components/UserDashboardPage";
+import UserTypeSelector from "@/components/UserTypeSelector";
 import LawyerDashboardPage from "@/components/LawyerDashboardPage";
 import { LawyerAuthProvider } from "@/components/LawyerAuthProvider";
 import { LogRocketProvider } from "@/components/LogRocketProvider";
@@ -36,6 +37,8 @@ export default function Index() {
   const [certificationCode, setCertificationCode] = useState<string | null>(null);
   const [showUserAuth, setShowUserAuth] = useState(false);
   const [showUserDashboard, setShowUserDashboard] = useState(false);
+  const [showUserTypeSelector, setShowUserTypeSelector] = useState(false);
+  const [selectedUserType, setSelectedUserType] = useState<'user' | 'business' | 'lawyer' | null>(null);
 
   // Handle browser navigation
   useEffect(() => {
@@ -79,7 +82,7 @@ export default function Index() {
       if (isAuthenticated) {
         setShowUserDashboard(true);
       } else {
-        setShowUserAuth(true);
+        setShowUserTypeSelector(true);
       }
       return;
     }
@@ -114,14 +117,36 @@ export default function Index() {
   const handleAuthSuccess = () => {
     setShowUserAuth(false);
     setShowUserDashboard(true);
+    setShowUserTypeSelector(false);
+    setSelectedUserType(null);
   };
 
   const handleBackFromAuth = () => {
     setShowUserAuth(false);
+    setShowUserTypeSelector(true);
   };
 
   const handleBackFromDashboard = () => {
     setShowUserDashboard(false);
+    setCurrentPage("home");
+  };
+
+  const handleUserTypeSelect = (type: 'user' | 'business' | 'lawyer') => {
+    setSelectedUserType(type);
+    setShowUserTypeSelector(false);
+    
+    if (type === 'lawyer') {
+      handleNavigate('abogados');
+    } else if (type === 'business') {
+      handleNavigate('empresas');
+    } else {
+      setShowUserAuth(true);
+    }
+  };
+
+  const handleBackFromUserType = () => {
+    setShowUserTypeSelector(false);
+    setSelectedUserType(null);
     setCurrentPage("home");
   };
 
@@ -133,6 +158,18 @@ export default function Index() {
           <p className="text-muted-foreground">Cargando...</p>
         </div>
       </div>
+    );
+  }
+
+  // Show user type selector
+  if (showUserTypeSelector) {
+    return (
+      <LogRocketProvider>
+        <UserTypeSelector
+          onSelectType={handleUserTypeSelect}
+          onBack={handleBackFromUserType}
+        />
+      </LogRocketProvider>
     );
   }
 
