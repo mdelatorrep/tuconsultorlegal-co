@@ -63,21 +63,11 @@ export default function LegalConsultationChat() {
 
   const loadLegalAdvisors = async () => {
     try {
-      // Get legal agents that have OpenAI agents created
+      // Get legal advisor agents - these are the specialized consultants
       const { data, error } = await supabase
-        .from('legal_agents')
-        .select(`
-          id,
-          name,
-          description,
-          category,
-          target_audience,
-          openai_agents!inner (
-            openai_agent_id
-          )
-        `)
-        .eq('status', 'approved')
-        .eq('openai_enabled', true)
+        .from('legal_advisor_agents')
+        .select('*')
+        .eq('status', 'active')
         .order('name', { ascending: true });
 
       if (error) throw error;
@@ -86,10 +76,10 @@ export default function LegalConsultationChat() {
       const transformedAgents = (data || []).map(agent => ({
         id: agent.id,
         name: agent.name,
-        specialization: agent.category || 'general',
-        target_audience: agent.target_audience || 'ambos',
-        openai_agent_id: agent.openai_agents[0]?.openai_agent_id || '',
-        status: 'active'
+        specialization: agent.specialization,
+        target_audience: agent.target_audience,
+        openai_agent_id: agent.openai_agent_id,
+        status: agent.status
       }));
 
       setAgents(transformedAgents);
@@ -134,12 +124,13 @@ export default function LegalConsultationChat() {
     setSending(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('agent-workflow-orchestrator', {
+      const { data, error } = await supabase.functions.invoke('legal-consultation-advisor', {
         body: {
           messages: updatedMessages.map(msg => ({ role: msg.role, content: msg.content })),
           agentId: selectedAgent.openai_agent_id,
           threadId: threadId,
-          documentTokenId: null // For consultation mode, no document token needed
+          consultationTopic: consultationTopic || currentMessage.trim().substring(0, 100),
+          legalArea: selectedAgent.specialization
         }
       });
 
@@ -150,17 +141,23 @@ export default function LegalConsultationChat() {
         setThreadId(data.threadId);
       }
 
+      // Update sources consulted if provided
+      if (data.sourcesConsulted && Array.isArray(data.sourcesConsulted)) {
+        setSourcesConsulted(prev => [...new Set([...prev, ...data.sourcesConsulted])]);
+      }
+
       const assistantMessage: Message = {
         role: 'assistant',
-        content: data.message,
-        timestamp: new Date()
+        content: data.message || 'Lo siento, no pude procesar tu consulta. Por favor intenta de nuevo.',
+        timestamp: new Date(),
+        sources: data.sourcesConsulted
       };
 
       setMessages(prev => [...prev, assistantMessage]);
 
-      // Show success message for workflow completion
-      if (data.runStatus === 'completed') {
-        toast.success('Consulta completada exitosamente');
+      // Show success message if consultation completed
+      if (data.consultationComplete) {
+        toast.success('Consulta procesada exitosamente');
       }
 
     } catch (error) {
