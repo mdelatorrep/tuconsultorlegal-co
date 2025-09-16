@@ -962,6 +962,7 @@ export type Database = {
           token: string
           updated_at: string
           user_email: string | null
+          user_id: string | null
           user_name: string | null
           user_observation_date: string | null
           user_observations: string | null
@@ -981,6 +982,7 @@ export type Database = {
           token: string
           updated_at?: string
           user_email?: string | null
+          user_id?: string | null
           user_name?: string | null
           user_observation_date?: string | null
           user_observations?: string | null
@@ -1000,6 +1002,7 @@ export type Database = {
           token?: string
           updated_at?: string
           user_email?: string | null
+          user_id?: string | null
           user_name?: string | null
           user_observation_date?: string | null
           user_observations?: string | null
@@ -1885,6 +1888,33 @@ export type Database = {
           score?: number
           updated_at?: string
           validated_at?: string
+        }
+        Relationships: []
+      }
+      user_profiles: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name: string
+          id: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          phone?: string | null
+          updated_at?: string
         }
         Relationships: []
       }

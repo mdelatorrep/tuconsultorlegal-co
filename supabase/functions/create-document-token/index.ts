@@ -18,7 +18,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { document_content, document_type, user_email, user_name, sla_hours } = await req.json();
+    const { document_content, document_type, user_email, user_name, sla_hours, user_id } = await req.json();
 
     // Validate required fields
     if (!document_content || !document_type || !user_email || !user_name) {
@@ -59,7 +59,8 @@ serve(async (req) => {
         sla_hours: sla_hours || 4,
         sla_deadline: slaDeadline.toISOString(),
         status: 'solicitado',
-        sla_status: 'on_time'
+        sla_status: 'on_time',
+        user_id: user_id || null
       })
       .select()
       .single();

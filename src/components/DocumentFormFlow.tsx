@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, ArrowRight, FileText, User, Bot } from "lucide-react";
 import { toast } from "sonner";
+import { useUserAuth } from "@/hooks/useUserAuth";
 
 interface DocumentFormFlowProps {
   agentId: string;
@@ -40,6 +41,7 @@ interface AgentData {
 }
 
 export default function DocumentFormFlow({ agentId, onBack, onComplete }: DocumentFormFlowProps) {
+  const { user, isAuthenticated } = useUserAuth();
   const [agent, setAgent] = useState<AgentData | null>(null);
   const [currentGroupIndex, setCurrentGroupIndex] = useState(0);
   const [currentFieldInGroup, setCurrentFieldInGroup] = useState(0);
@@ -58,7 +60,15 @@ export default function DocumentFormFlow({ agentId, onBack, onComplete }: Docume
     loadAgent();
     // Load any previous chat session data
     loadPreviousSessionData();
-  }, [agentId]);
+    
+    // Pre-fill user info if authenticated
+    if (isAuthenticated && user) {
+      setUserInfo({
+        name: user.user_metadata?.full_name || '',
+        email: user.email || ''
+      });
+    }
+  }, [agentId, isAuthenticated, user]);
 
   const loadPreviousSessionData = () => {
     const sessionData = localStorage.getItem(`document_session_${agentId}`);
@@ -183,7 +193,8 @@ export default function DocumentFormFlow({ agentId, onBack, onComplete }: Docume
           document_type: agent.document_name,
           user_email: userInfo.email,
           user_name: userInfo.name,
-          sla_hours: agent.sla_hours || 4
+          sla_hours: agent.sla_hours || 4,
+          user_id: isAuthenticated ? user?.id : null
         }
       });
 
