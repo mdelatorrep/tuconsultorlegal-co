@@ -112,14 +112,29 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
                 ))}
               </div>
 
-              {/* Primary CTA */}
-              <Button
-                size="lg"
-                className="bg-success hover:bg-success-dark text-success-foreground px-12 py-6 text-lg font-medium shadow-glow mb-16 transition-smooth"
-                onClick={() => onOpenChat("Quiero una consultoría legal")}
-              >
-                Comenzar Ahora
-              </Button>
+              {/* Enhanced Primary CTA - Priority on Registration */}
+              <div className="space-y-6">
+                <Button
+                  size="xl"
+                  className="bg-success hover:bg-success-dark text-success-foreground px-16 py-8 text-xl font-bold shadow-glow hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
+                  onClick={() => onNavigate("user-dashboard")}
+                >
+                  Regístrate Gratis - Acceso Inmediato
+                </Button>
+                
+                <div className="text-center text-primary-foreground/80">
+                  <p className="text-sm mb-3">O explora nuestros servicios:</p>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
+                    onClick={() => onOpenChat("Quiero una consultoría legal")}
+                  >
+                    <MessageCircle className="w-5 h-5 mr-2" />
+                    Consulta Gratuita Ahora
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
 

@@ -15,11 +15,15 @@ interface UserIdentity {
   subscriptionType?: string;
 }
 
+let logRocketInitialized = false;
+
 export const useLogRocket = () => {
   useEffect(() => {
-    // Solo inicializar LogRocket en producción o cuando esté explícitamente habilitado
+    // Solo inicializar LogRocket una vez en producción
+    if (logRocketInitialized) return;
+    
     const isProduction = import.meta.env.PROD;
-    const logRocketAppId = import.meta.env.VITE_LOGROCKET_APP_ID || 'ykekku/legalai';
+    const logRocketAppId = 'ykekku/legalai'; // Usar valor fijo en lugar de VITE_
     
     if (isProduction && logRocketAppId) {
       initializeLogRocket({
@@ -27,11 +31,17 @@ export const useLogRocket = () => {
         enabled: true,
         environment: 'production'
       });
+      logRocketInitialized = true;
     }
   }, []);
 
   const initializeLogRocket = (config: LogRocketConfig) => {
     try {
+      if (logRocketInitialized) {
+        console.log('LogRocket already initialized, skipping...');
+        return;
+      }
+      
       console.log('Initializing LogRocket...', config);
       
       LogRocket.init(config.appId, {

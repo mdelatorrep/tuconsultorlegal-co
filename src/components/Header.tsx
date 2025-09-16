@@ -86,8 +86,8 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
           })}
         </div>
 
-        {/* Desktop CTA Buttons */}
-        <div className="hidden lg:flex items-center space-x-3">
+        {/* Desktop CTA Buttons - Enhanced for Role Priority */}
+        <div className="hidden lg:flex items-center space-x-2">
           {isAuthenticated ? (
             <Button 
               onClick={() => onNavigate("user-dashboard")}
@@ -99,15 +99,31 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
               <span className="hidden xl:inline">Mi Panel</span>
             </Button>
           ) : (
-            <Button 
-              onClick={() => onNavigate("user-dashboard")}
-              variant="outline"
-              size="sm"
-              className="hover:bg-primary/5 border-primary/30"
-            >
-              <LogIn className="w-4 h-4 mr-2" />
-              <span className="hidden xl:inline">Acceder</span>
-            </Button>
+            <div className="flex items-center space-x-2">
+              <Button 
+                onClick={() => onNavigate("user-dashboard")}
+                variant="outline"
+                size="sm"
+                className="hover:bg-primary/5 border-primary/30 text-primary font-medium"
+              >
+                <LogIn className="w-4 h-4 mr-1" />
+                <span className="hidden xl:inline">Registrarse</span>
+                <span className="xl:hidden">Registro</span>
+              </Button>
+              
+              <div className="h-4 w-px bg-border mx-1"></div>
+              
+              <Button 
+                onClick={() => handleNavClick("abogados")}
+                variant="outline"
+                size="sm"
+                className="hover:bg-warning/5 border-warning/30 text-warning font-medium"
+              >
+                <Shield className="w-4 h-4 mr-1" />
+                <span className="hidden xl:inline">Portal Pro</span>
+                <span className="xl:hidden">Pro</span>
+              </Button>
+            </div>
           )}
           
           <Button
@@ -117,7 +133,7 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
             onClick={() => onOpenChat("Quiero una consultoría legal")}
           >
             <MessageCircle className="w-4 h-4 mr-2" />
-            <span className="hidden xl:inline">Consulta Gratuita</span>
+            <span className="hidden xl:inline">Consulta Gratis</span>
             <span className="xl:hidden">Consulta</span>
           </Button>
         </div>
@@ -137,44 +153,66 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
       {mobileMenuOpen && (
         <div className="lg:hidden absolute top-full left-0 right-0 bg-card border-t shadow-lg z-50 max-h-[80vh] overflow-y-auto">
           <div className="container mx-auto px-6 py-4">
-            {/* User Type Selection */}
+            {/* User Type Selection - Priority Layout */}
             <div className="mb-6">
               <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
-                Tipo de Usuario
+                Elegir Perfil de Usuario
               </h3>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="space-y-3">
+                {/* Priority: Individual Registration */}
                 <button
                   onClick={() => handleNavClick("personas")}
-                  className={`p-3 rounded-lg border transition-smooth ${
+                  className={`w-full p-4 rounded-lg border transition-smooth ${
                     currentPage === "personas"
                       ? "bg-primary/10 border-primary text-primary"
                       : "border-border hover:bg-muted/50"
                   }`}
                 >
-                  <User className="w-5 h-5 mx-auto mb-1" />
-                  <div className="text-xs font-medium">Personas</div>
+                  <div className="flex items-center gap-3">
+                    <User className="w-6 h-6" />
+                    <div className="flex-1 text-left">
+                      <div className="font-semibold">Personas</div>
+                      <div className="text-xs text-muted-foreground">Registro individual • Más popular</div>
+                    </div>
+                    <div className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">Gratis</div>
+                  </div>
                 </button>
+                
+                {/* Business Registration */}
                 <button
                   onClick={() => handleNavClick("empresas")}
-                  className={`p-3 rounded-lg border transition-smooth ${
+                  className={`w-full p-4 rounded-lg border transition-smooth ${
                     currentPage === "empresas"
                       ? "bg-success/10 border-success text-success"
                       : "border-border hover:bg-muted/50"
                   }`}
                 >
-                  <Users className="w-5 h-5 mx-auto mb-1" />
-                  <div className="text-xs font-medium">Empresas</div>
+                  <div className="flex items-center gap-3">
+                    <Users className="w-6 h-6" />
+                    <div className="flex-1 text-left">
+                      <div className="font-semibold">Empresas</div>
+                      <div className="text-xs text-muted-foreground">Soluciones corporativas</div>
+                    </div>
+                  </div>
                 </button>
+                
+                {/* Professional Portal */}
                 <button
                   onClick={() => handleNavClick("abogados")}
-                  className={`p-3 rounded-lg border transition-smooth ${
+                  className={`w-full p-4 rounded-lg border transition-smooth ${
                     currentPage === "abogados"
                       ? "bg-warning/10 border-warning text-warning"
                       : "border-border hover:bg-muted/50"
                   }`}
                 >
-                  <Shield className="w-5 h-5 mx-auto mb-1" />
-                  <div className="text-xs font-medium">Abogados</div>
+                  <div className="flex items-center gap-3">
+                    <Shield className="w-6 h-6" />
+                    <div className="flex-1 text-left">
+                      <div className="font-semibold">Abogados</div>
+                      <div className="text-xs text-muted-foreground">Portal profesional avanzado</div>
+                    </div>
+                    <div className="w-2 h-2 bg-warning rounded-full animate-pulse"></div>
+                  </div>
                 </button>
               </div>
             </div>
@@ -204,7 +242,7 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
               })}
             </div>
             
-            {/* CTA Buttons */}
+            {/* Enhanced CTA Buttons */}
             <div className="space-y-3 pt-4 border-t border-border">
               {isAuthenticated ? (
                 <Button 
@@ -220,18 +258,33 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
                   Mi Panel Personal
                 </Button>
               ) : (
-                <Button 
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    onNavigate("user-dashboard");
-                  }}
-                  variant="outline"
-                  className="w-full border-primary/30"
-                  size="lg"
-                >
-                  <LogIn className="w-4 h-4 mr-2" />
-                  Acceder como Usuario
-                </Button>
+                <div className="space-y-2">
+                  <Button 
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onNavigate("user-dashboard");
+                    }}
+                    variant="outline"
+                    className="w-full border-primary/30 text-primary"
+                    size="lg"
+                  >
+                    <LogIn className="w-4 h-4 mr-2" />
+                    Registrarse / Iniciar Sesión
+                  </Button>
+                  
+                  <Button 
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      handleNavClick("abogados");
+                    }}
+                    variant="outline"
+                    className="w-full border-warning/30 text-warning"
+                    size="sm"
+                  >
+                    <Shield className="w-4 h-4 mr-2" />
+                    Portal Profesional
+                  </Button>
+                </div>
               )}
               
               <Button

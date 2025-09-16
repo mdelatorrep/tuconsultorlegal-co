@@ -49,83 +49,148 @@ export default function UserTypeSelector({ onSelectType, onBack }: UserTypeSelec
   ];
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-8 bg-muted/30">
-      <div className="w-full max-w-4xl">
-        <div className="text-center mb-8">
+    <div className="min-h-screen flex items-center justify-center px-4 py-8 bg-gradient-hero">
+      <div className="w-full max-w-5xl">
+        {/* Enhanced Header */}
+        <div className="text-center mb-12">
           <Button 
             variant="ghost" 
             onClick={onBack}
-            className="mb-4"
+            className="mb-6 hover:bg-white/10"
           >
             ← Volver al inicio
           </Button>
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            Selecciona tu tipo de acceso
-          </h1>
-          <p className="text-muted-foreground text-lg">
-            Elige la opción que mejor se adapte a tus necesidades
-          </p>
+          
+          <div className="space-y-4">
+            <h1 className="text-4xl md:text-5xl font-bold text-primary mb-4">
+              Accede a Tu Consultor Legal
+            </h1>
+            <p className="text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
+              Elige tu perfil para acceder a servicios legales personalizados y herramientas especializadas
+            </p>
+            
+            {/* Quick Benefits */}
+            <div className="flex flex-wrap justify-center gap-6 mt-8 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-success" />
+                <span>Registro rápido</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-success" />
+                <span>Acceso inmediato</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-success" />
+                <span>Soporte especializado</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
-          {userTypes.map((userType) => {
+        {/* Enhanced User Type Cards */}
+        <div className="grid lg:grid-cols-3 md:grid-cols-2 gap-8 mb-12">
+          {userTypes.map((userType, index) => {
             const IconComponent = userType.icon;
+            const isRecommended = userType.type === 'user'; // Highlight personal users
+            
             return (
               <Card 
                 key={userType.type}
-                className={`group cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-105 ${userType.borderColor} ${userType.bgColor}`}
+                className={`group cursor-pointer transition-all duration-500 hover:shadow-2xl hover:scale-105 relative overflow-hidden ${userType.borderColor} ${userType.bgColor} ${
+                  isRecommended ? 'ring-2 ring-primary/50 shadow-lg' : ''
+                }`}
                 onClick={() => onSelectType(userType.type)}
+                style={{ 
+                  animationDelay: `${index * 0.1}s`,
+                  animation: 'fade-in 0.6s ease-out forwards'
+                }}
               >
-                <CardHeader className="text-center pb-4">
-                  <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${userType.bgColor}`}>
-                    <IconComponent className={`w-8 h-8 ${userType.textColor}`} />
+                {isRecommended && (
+                  <div className="absolute top-4 right-4 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full font-medium">
+                    Más Popular
                   </div>
-                  <CardTitle className={`text-xl ${userType.textColor}`}>
+                )}
+                
+                <CardHeader className="text-center pb-6 relative">
+                  <div className={`w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center ${userType.bgColor} ring-4 ring-white/50 group-hover:scale-110 transition-transform duration-300`}>
+                    <IconComponent className={`w-10 h-10 ${userType.textColor}`} />
+                  </div>
+                  <CardTitle className={`text-2xl font-bold ${userType.textColor} mb-2`}>
                     {userType.title}
                   </CardTitle>
-                  <CardDescription className="text-sm font-medium">
+                  <CardDescription className="text-base font-medium text-foreground/80">
                     {userType.subtitle}
                   </CardDescription>
                 </CardHeader>
 
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-6 px-6 pb-8">
                   <p className="text-sm text-muted-foreground leading-relaxed">
                     {userType.description}
                   </p>
 
-                  <div className="space-y-2">
-                    {userType.features.map((feature, index) => (
-                      <div key={index} className="flex items-center gap-2 text-sm">
-                        <Check className="w-4 h-4 text-success" />
-                        <span>{feature}</span>
+                  <div className="space-y-3">
+                    {userType.features.map((feature, featureIndex) => (
+                      <div key={featureIndex} className="flex items-center gap-3 text-sm">
+                        <Check className="w-4 h-4 text-success flex-shrink-0" />
+                        <span className="text-foreground/90">{feature}</span>
                       </div>
                     ))}
                   </div>
 
-                  <Button 
-                    className={`w-full group-hover:shadow-md transition-all duration-300`}
-                    variant={userType.color === 'primary' ? 'default' : userType.color === 'success' ? 'success' : 'outline'}
-                  >
-                    Continuar
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
+                  <div className="pt-4">
+                    <Button 
+                      className={`w-full group-hover:shadow-lg transition-all duration-300 text-base font-medium ${
+                        isRecommended ? 'bg-primary hover:bg-primary/90 text-primary-foreground' : 
+                        userType.color === 'success' ? 'bg-success hover:bg-success-dark text-success-foreground' : 
+                        'border-2 border-warning text-warning hover:bg-warning hover:text-warning-foreground'
+                      }`}
+                      size="lg"
+                      variant={isRecommended ? 'default' : userType.color === 'success' ? 'success' : 'outline'}
+                    >
+                      {isRecommended ? 'Comenzar Ahora' : 'Acceder'}
+                      <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             );
           })}
         </div>
 
-        <div className="text-center mt-8 p-4 bg-card rounded-lg border">
-          <p className="text-sm text-muted-foreground">
-            ¿No estás seguro? Puedes{' '}
+        {/* Enhanced Call-to-Action Section */}
+        <div className="text-center space-y-6">
+          <div className="grid md:grid-cols-3 gap-4 mb-8">
+            <div className="bg-card/50 p-4 rounded-lg border border-border/50">
+              <h3 className="font-semibold text-primary mb-2">¿Eres nuevo?</h3>
+              <p className="text-sm text-muted-foreground">
+                Regístrate y accede a documentos legales en minutos
+              </p>
+            </div>
+            <div className="bg-card/50 p-4 rounded-lg border border-border/50">
+              <h3 className="font-semibold text-success mb-2">¿Ya tienes cuenta?</h3>
+              <p className="text-sm text-muted-foreground">
+                Inicia sesión para continuar donde lo dejaste
+              </p>
+            </div>
+            <div className="bg-card/50 p-4 rounded-lg border border-border/50">
+              <h3 className="font-semibold text-warning mb-2">¿Eres abogado?</h3>
+              <p className="text-sm text-muted-foreground">
+                Accede a herramientas profesionales avanzadas
+              </p>
+            </div>
+          </div>
+          
+          <div className="bg-card/30 backdrop-blur-sm p-6 rounded-xl border border-border/30">
+            <p className="text-muted-foreground mb-4 text-lg">
+              ¿No estás seguro cuál elegir?
+            </p>
             <button 
               onClick={() => onSelectType('user')}
-              className="text-primary hover:underline font-medium"
+              className="text-primary hover:underline font-semibold text-lg transition-colors"
             >
-              comenzar como persona
+              Comienza como persona → es gratis y puedes cambiar después
             </button>
-            {' '}y cambiar más tarde
-          </p>
+          </div>
         </div>
       </div>
     </div>
