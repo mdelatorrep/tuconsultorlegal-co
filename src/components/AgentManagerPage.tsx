@@ -18,7 +18,9 @@ import {
   User,
   FileText,
   Save,
-  X
+  X,
+  Plus,
+  Settings
 } from "lucide-react";
 import {
   Dialog,
@@ -32,6 +34,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { ConversationGuideBuilder } from "@/components/ConversationGuideBuilder";
+import { FieldInstructionsManager } from "@/components/FieldInstructionsManager";
 
 interface LegalAgent {
   id: string;
@@ -51,6 +56,8 @@ interface LegalAgent {
   target_audience: string | null;
   button_cta: string | null;
   frontend_icon: string | null;
+  sla_enabled: boolean;
+  sla_hours: number;
 }
 
 interface AgentManagerPageProps {
@@ -71,27 +78,65 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [convBlocks, setConvBlocks] = useState<any[]>([]);
   const [convLoading, setConvLoading] = useState(false);
+  const [fieldInstructions, setFieldInstructions] = useState<any[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
 
   const fetchConversationBlocks = async (legalAgentId: string) => {
     setConvLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('conversation_blocks')
-        .select('id, block_name, intro_phrase, placeholders, block_order')
-        .eq('legal_agent_id', legalAgentId)
-        .order('block_order', { ascending: true });
+      const [blocksResult, instructionsResult] = await Promise.all([
+        supabase
+          .from('conversation_blocks')
+          .select('id, block_name, intro_phrase, placeholders, block_order')
+          .eq('legal_agent_id', legalAgentId)
+          .order('block_order', { ascending: true }),
+        supabase
+          .from('field_instructions')
+          .select('id, field_name, validation_rule, help_text')
+          .eq('legal_agent_id', legalAgentId)
+      ]);
 
-      if (error) {
-        console.error('Error fetching conversation blocks:', error);
+      if (blocksResult.error) {
+        console.error('Error fetching conversation blocks:', blocksResult.error);
         setConvBlocks([]);
       } else {
-        setConvBlocks(data || []);
+        setConvBlocks(blocksResult.data || []);
+      }
+
+      if (instructionsResult.error) {
+        console.error('Error fetching field instructions:', instructionsResult.error);
+        setFieldInstructions([]);
+      } else {
+        setFieldInstructions(instructionsResult.data || []);
       }
     } catch (e) {
-      console.error('Unexpected error loading conversation blocks:', e);
+      console.error('Unexpected error loading conversation data:', e);
       setConvBlocks([]);
+      setFieldInstructions([]);
     } finally {
       setConvLoading(false);
+    }
+  };
+
+  const loadCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('document_categories')
+        .select('name')
+        .eq('is_active', true)
+        .in('category_type', ['document', 'both'])
+        .order('display_order')
+        .order('name');
+
+      if (error) {
+        console.error('Error loading categories:', error);
+        return;
+      }
+
+      const categoryNames = data?.map(cat => cat.name) || [];
+      setCategories(categoryNames);
+    } catch (error) {
+      console.error('Error loading categories:', error);
     }
   };
 
@@ -100,11 +145,13 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
       fetchConversationBlocks(selectedAgent.id);
     } else {
       setConvBlocks([]);
+      setFieldInstructions([]);
     }
   }, [selectedAgent?.id]);
 
   useEffect(() => {
     fetchAgents();
+    loadCategories();
   }, []);
 
   const fetchAgents = async () => {
@@ -310,7 +357,20 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
 
   const handleEditAgent = (agent: LegalAgent) => {
     // Los abogados pueden editar sus propios agentes
-    setEditingAgent({ ...agent });
+    setEditingAgent({ 
+      ...agent,
+      // Ensure all fields have default values
+      sla_enabled: agent.sla_enabled ?? true,
+      sla_hours: agent.sla_hours ?? 4,
+      button_cta: agent.button_cta ?? 'Generar Documento',
+      frontend_icon: agent.frontend_icon ?? 'FileText'
+    });
+    
+    // Load conversation blocks and field instructions for editing
+    if (agent.id) {
+      fetchConversationBlocks(agent.id);
+    }
+    
     setIsEditDialogOpen(true);
   };
 
@@ -346,7 +406,23 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
           price_justification: editingAgent.price_justification,
           target_audience: editingAgent.target_audience,
           template_content: editingAgent.template_content,
-          ai_prompt: editingAgent.ai_prompt
+          ai_prompt: editingAgent.ai_prompt,
+          button_cta: editingAgent.button_cta,
+          frontend_icon: editingAgent.frontend_icon,
+          sla_enabled: editingAgent.sla_enabled,
+          sla_hours: editingAgent.sla_hours,
+          // Include conversation blocks and field instructions
+          conversation_blocks: convBlocks.map((block, index) => ({
+            block_name: block.block_name,
+            intro_phrase: block.intro_phrase,
+            placeholders: block.placeholders,
+            block_order: index + 1
+          })),
+          field_instructions: fieldInstructions.map(instruction => ({
+            field_name: instruction.field_name,
+            validation_rule: instruction.validation_rule,
+            help_text: instruction.help_text
+          }))
         },
         headers: {
           'Content-Type': 'application/json',
@@ -1044,12 +1120,27 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="category">Categoría</Label>
-                    <Input
-                      id="category"
+                    <Select
                       value={editingAgent.category}
-                      onChange={(e) => handleEditFieldChange('category', e.target.value)}
-                      placeholder="Categoría del agente"
-                    />
+                      onValueChange={(value) => handleEditFieldChange('category', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecciona una categoría" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.length > 0 ? (
+                          categories.map((category) => (
+                            <SelectItem key={category} value={category}>
+                              {category}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="loading" disabled>
+                            Cargando categorías...
+                          </SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
                   </div>
                   
                   <div>
@@ -1062,12 +1153,84 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                         <SelectValue placeholder="Selecciona audiencia" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="personas">Personas</SelectItem>
-                        <SelectItem value="empresas">Empresas</SelectItem>
-                        <SelectItem value="ambos">Ambos</SelectItem>
+                        <SelectItem value="personas">👤 Personas</SelectItem>
+                        <SelectItem value="empresas">🏢 Empresas</SelectItem>
+                        <SelectItem value="ambos">🌐 Ambos</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+
+                {/* UI Configuration */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="button_cta">Texto del Botón</Label>
+                    <Input
+                      id="button_cta"
+                      value={editingAgent.button_cta || 'Generar Documento'}
+                      onChange={(e) => handleEditFieldChange('button_cta', e.target.value)}
+                      placeholder="Texto del botón de acción"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="frontend_icon">Ícono del Frontend</Label>
+                    <Select
+                      value={editingAgent.frontend_icon || 'FileText'}
+                      onValueChange={(value) => handleEditFieldChange('frontend_icon', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecciona un ícono" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="FileText">📄 Documento</SelectItem>
+                        <SelectItem value="Scale">⚖️ Balanza</SelectItem>
+                        <SelectItem value="Building">🏢 Edificio</SelectItem>
+                        <SelectItem value="Users">👥 Usuarios</SelectItem>
+                        <SelectItem value="Shield">🛡️ Escudo</SelectItem>
+                        <SelectItem value="Gavel">🔨 Martillo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* SLA Configuration */}
+                <div className="space-y-4 p-4 border border-border rounded-lg bg-muted/50">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-semibold text-sm">⏱️ Configuración de ANS</h3>
+                      <p className="text-xs text-muted-foreground">Acuerdo de Nivel de Servicio</p>
+                    </div>
+                    <Switch
+                      checked={editingAgent.sla_enabled ?? true}
+                      onCheckedChange={(checked) => handleEditFieldChange('sla_enabled', checked)}
+                    />
+                  </div>
+                  
+                  {editingAgent.sla_enabled && (
+                    <div>
+                      <Label htmlFor="sla_hours" className="text-sm">
+                        Tiempo límite de respuesta (horas)
+                      </Label>
+                      <Select 
+                        value={(editingAgent.sla_hours ?? 4).toString()} 
+                        onValueChange={(value) => handleEditFieldChange('sla_hours', parseInt(value))}
+                      >
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="Selecciona el tiempo límite" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">1 hora</SelectItem>
+                          <SelectItem value="2">2 horas</SelectItem>
+                          <SelectItem value="4">4 horas (recomendado)</SelectItem>
+                          <SelectItem value="6">6 horas</SelectItem>
+                          <SelectItem value="8">8 horas</SelectItem>
+                          <SelectItem value="12">12 horas</SelectItem>
+                          <SelectItem value="24">24 horas (máximo)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 gap-4">
@@ -1120,6 +1283,74 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                     rows={6}
                     className="font-mono text-sm"
                   />
+                </div>
+
+                {/* Conversation Guide Builder */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold">Guía de Conversación</h3>
+                    <Badge variant="outline">{convBlocks.length} bloques</Badge>
+                  </div>
+                  
+                  {editingAgent.placeholder_fields && editingAgent.placeholder_fields.length > 0 ? (
+                    <ConversationGuideBuilder 
+                      placeholders={editingAgent.placeholder_fields.map((field: any) => field.placeholder || field.name)}
+                      conversationBlocks={convBlocks.map(block => ({
+                        id: block.id,
+                        name: block.block_name,
+                        introduction: block.intro_phrase,
+                        placeholders: Array.isArray(block.placeholders) ? block.placeholders : []
+                      }))}
+                      onBlocksChange={(blocks) => {
+                        const updatedBlocks = blocks.map((block, index) => ({
+                          id: block.id,
+                          block_name: block.name,
+                          intro_phrase: block.introduction,
+                          placeholders: block.placeholders,
+                          block_order: index + 1
+                        }));
+                        setConvBlocks(updatedBlocks);
+                      }}
+                    />
+                  ) : (
+                    <div className="text-center py-4 text-muted-foreground">
+                      <p>No se han detectado placeholders en la plantilla.</p>
+                      <p className="text-xs">Los placeholders se detectan automáticamente en el formato {`{{nombre_campo}}`}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Field Instructions Manager */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold">Instrucciones de Campos</h3>
+                    <Badge variant="outline">{fieldInstructions.length} instrucciones</Badge>
+                  </div>
+                  
+                  {editingAgent.placeholder_fields && editingAgent.placeholder_fields.length > 0 ? (
+                    <FieldInstructionsManager
+                      placeholders={editingAgent.placeholder_fields.map((field: any) => field.placeholder || field.name)}
+                      fieldInstructions={fieldInstructions.map(instruction => ({
+                        id: instruction.id,
+                        fieldName: instruction.field_name,
+                        validationRule: instruction.validation_rule,
+                        helpText: instruction.help_text
+                      }))}
+                      onInstructionsChange={(instructions) => {
+                        const updatedInstructions = instructions.map(instruction => ({
+                          id: instruction.id,
+                          field_name: instruction.fieldName,
+                          validation_rule: instruction.validationRule,
+                          help_text: instruction.helpText
+                        }));
+                        setFieldInstructions(updatedInstructions);
+                      }}
+                    />
+                  ) : (
+                    <div className="text-center py-4 text-muted-foreground">
+                      <p>No hay campos para configurar instrucciones.</p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">

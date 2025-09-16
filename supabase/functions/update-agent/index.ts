@@ -136,7 +136,7 @@ serve(async (req) => {
 
     console.log('📝 Fields to update:', Object.keys(updateData));
 
-    // Perform the update
+    // Begin transaction for updating agent and related data
     const { data: updatedAgent, error: updateError } = await supabase
       .from('legal_agents')
       .update(updateData)
@@ -154,6 +154,69 @@ serve(async (req) => {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
+    }
+
+    // Update conversation blocks if provided
+    if (requestData.conversation_blocks && Array.isArray(requestData.conversation_blocks)) {
+      console.log('🔄 Updating conversation blocks...');
+      
+      // First, delete existing blocks
+      await supabase
+        .from('conversation_blocks')
+        .delete()
+        .eq('legal_agent_id', agent_id);
+
+      // Then insert new blocks
+      if (requestData.conversation_blocks.length > 0) {
+        const blocksToInsert = requestData.conversation_blocks.map((block: any) => ({
+          legal_agent_id: agent_id,
+          block_name: block.block_name,
+          intro_phrase: block.intro_phrase,
+          placeholders: block.placeholders || [],
+          block_order: block.block_order || 1
+        }));
+
+        const { error: blocksError } = await supabase
+          .from('conversation_blocks')
+          .insert(blocksToInsert);
+
+        if (blocksError) {
+          console.error('❌ Error updating conversation blocks:', blocksError);
+        } else {
+          console.log('✅ Conversation blocks updated successfully');
+        }
+      }
+    }
+
+    // Update field instructions if provided
+    if (requestData.field_instructions && Array.isArray(requestData.field_instructions)) {
+      console.log('🔄 Updating field instructions...');
+      
+      // First, delete existing instructions
+      await supabase
+        .from('field_instructions')
+        .delete()
+        .eq('legal_agent_id', agent_id);
+
+      // Then insert new instructions
+      if (requestData.field_instructions.length > 0) {
+        const instructionsToInsert = requestData.field_instructions.map((instruction: any) => ({
+          legal_agent_id: agent_id,
+          field_name: instruction.field_name,
+          validation_rule: instruction.validation_rule || '',
+          help_text: instruction.help_text || ''
+        }));
+
+        const { error: instructionsError } = await supabase
+          .from('field_instructions')
+          .insert(instructionsToInsert);
+
+        if (instructionsError) {
+          console.error('❌ Error updating field instructions:', instructionsError);
+        } else {
+          console.log('✅ Field instructions updated successfully');
+        }
+      }
     }
 
     console.log('✅ Agent updated successfully');
