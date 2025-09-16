@@ -30,13 +30,13 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
   const { isAuthenticated, user } = useUserAuth();
 
   const navItems = [
-    { id: "personas", label: "Para Personas" },
-    { id: "empresas", label: "Para Empresas" },
-    { id: "documento", label: "Mi Documento" },
-    { id: "precios", label: "Precios" },
-    { id: "blog", label: "Blog" },
-    { id: "contacto", label: "Contacto" },
-    { id: "abogados", label: "Panel Abogados" },
+    { id: "personas", label: "Personas", description: "Servicios legales individuales" },
+    { id: "empresas", label: "Empresas", description: "Soluciones corporativas" },
+    { id: "documento", label: "Mi Documento", description: "Seguimiento de documentos" },
+    { id: "precios", label: "Precios", description: "Planes y tarifas" },
+    { id: "blog", label: "Blog", description: "Artículos legales" },
+    { id: "contacto", label: "Contacto", description: "Atención al cliente" },
+    { id: "abogados", label: "Portal Abogados", description: "Acceso profesional" },
   ];
 
   const handleNavClick = (pageId: string) => {
@@ -66,44 +66,51 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
             <button
               key={item.id}
               onClick={() => handleNavClick(item.id)}
-              className={`transition-smooth font-medium ${
+              className={`group transition-smooth font-medium relative ${
                 currentPage === item.id
                   ? "text-success font-bold"
                   : "text-foreground hover:text-primary"
               }`}
+              title={item.description}
             >
               {item.label}
+              {item.id === "abogados" && (
+                <Shield className="w-3 h-3 ml-1 inline text-warning" />
+              )}
             </button>
           ))}
         </div>
 
         {/* Desktop CTA Buttons */}
-        <div className="hidden md:flex items-center space-x-4">
+        <div className="hidden md:flex items-center space-x-3">
           {isAuthenticated ? (
             <Button 
               onClick={() => onNavigate("user-dashboard")}
               variant="outline"
+              className="bg-gradient-to-r from-primary/5 to-success/5 border-primary/20"
             >
               <User className="w-4 h-4 mr-2" />
-              Mi Dashboard
+              Mi Panel Personal
             </Button>
           ) : (
             <Button 
               onClick={() => onNavigate("user-dashboard")}
               variant="outline"
+              className="hover:bg-primary/5"
             >
               <LogIn className="w-4 h-4 mr-2" />
-              Ingresar
+              Acceder
             </Button>
           )}
           
           <Button
             variant="success"
             size="lg"
+            className="shadow-glow"
             onClick={() => onOpenChat("Quiero una consultoría legal")}
           >
             <MessageCircle className="w-4 h-4 mr-2" />
-            Asesoría Gratuita
+            Consulta Gratuita
           </Button>
         </div>
 
@@ -123,17 +130,25 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
             <button
               key={item.id}
               onClick={() => handleNavClick(item.id)}
-              className={`block w-full text-left py-2 transition-smooth ${
+              className={`block w-full text-left py-3 px-2 rounded transition-smooth ${
                 currentPage === item.id
-                  ? "text-success font-bold"
-                  : "text-foreground"
+                  ? "text-success font-bold bg-success/5"
+                  : "text-foreground hover:bg-muted"
               }`}
             >
-              {item.label}
+              <div className="flex items-center justify-between">
+                <span>{item.label}</span>
+                {item.id === "abogados" && (
+                  <Shield className="w-4 h-4 text-warning" />
+                )}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">
+                {item.description}
+              </div>
             </button>
           ))}
           
-          <div className="space-y-2 mt-4">
+          <div className="space-y-2 mt-4 pt-4 border-t border-border">
             {isAuthenticated ? (
               <Button 
                 onClick={() => {
@@ -141,10 +156,10 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
                   onNavigate("user-dashboard");
                 }}
                 variant="outline"
-                className="w-full"
+                className="w-full bg-gradient-to-r from-primary/5 to-success/5 border-primary/20"
               >
                 <User className="w-4 h-4 mr-2" />
-                Mi Dashboard
+                Mi Panel Personal
               </Button>
             ) : (
               <Button 
@@ -156,7 +171,7 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
                 className="w-full"
               >
                 <LogIn className="w-4 h-4 mr-2" />
-                Ingresar
+                Acceder como Usuario
               </Button>
             )}
             
@@ -170,7 +185,7 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
               }}
             >
               <MessageCircle className="w-4 h-4 mr-2" />
-              Asesoría Gratuita
+              Consulta Gratuita
             </Button>
           </div>
         </div>

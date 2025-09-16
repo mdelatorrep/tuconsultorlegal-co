@@ -306,6 +306,10 @@ export default function UserDashboardPage({ onBack, onOpenChat }: UserDashboardP
                 Salir
               </Button>
               <div>
+                <div className="inline-flex items-center bg-primary/10 text-primary px-2 py-1 rounded text-xs font-medium mb-1">
+                  <User className="w-3 h-3 mr-1" />
+                  Panel Personal
+                </div>
                 <h1 className="text-xl font-bold">Mi Dashboard</h1>
                 <p className="text-sm text-muted-foreground">
                   Hola, {profile?.full_name || user?.email}

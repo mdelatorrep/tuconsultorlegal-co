@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { Check, FileText, Home, Briefcase, Car, Eye, Shield, Users, DollarSign } from "lucide-react";
+import { Check, FileText, Home, Briefcase, Car, Eye, Shield, Users, DollarSign, User } from "lucide-react";
 import DocumentChatFlow from "./DocumentChatFlow";
 import DocumentCreationSuccess from "./DocumentCreationSuccess";
 interface PersonasPageProps {
@@ -129,12 +129,16 @@ export default function PersonasPage({
   return <div className="container mx-auto px-6 py-20">
       {/* Header */}
       <div className="text-center mb-16">
+        <div className="inline-flex items-center bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-4">
+          <User className="w-4 h-4 mr-2" />
+          Panel para Personas Naturales
+        </div>
         <h1 className="text-4xl md:text-5xl font-extrabold text-primary mb-4">
           Soluciones Legales para tu Día a Día
         </h1>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-          Simplificamos la gestión de tus documentos y la resolución de tus dudas legales. 
-          Encuentra el servicio que necesitas a continuación.
+          Simplificamos la gestión de tus documentos y la resolución de tus dudas legales personales. 
+          Encuentra el servicio individual que necesitas a continuación.
         </p>
       </div>
 

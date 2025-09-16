@@ -187,7 +187,9 @@ export default function Index() {
       case "abogados":
         return (
           <LawyerAuthProvider>
-            <LawyerDashboardPage onOpenChat={handleOpenChat} />
+            <div className="min-h-screen">
+              <LawyerDashboardPage onOpenChat={handleOpenChat} />
+            </div>
           </LawyerAuthProvider>
         );
       case "terminos":

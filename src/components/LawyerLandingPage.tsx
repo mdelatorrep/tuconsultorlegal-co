@@ -98,6 +98,12 @@ export default function LawyerLandingPage({
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Hero Content */}
             <div className={`space-y-8 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-10'}`}>
+              {/* Professional Badge */}
+              <div className="inline-flex items-center bg-white/20 backdrop-blur-sm border border-white/30 text-white px-4 py-2 rounded-full text-sm font-medium">
+                <Scale className="w-4 h-4 mr-2" />
+                Portal Exclusivo para Abogados
+                <Shield className="w-4 h-4 ml-2 text-yellow-300" />
+              </div>
               <div className="space-y-4">
                 <Badge className="bg-success/20 text-success border-success/30">
                   <Sparkles className="w-3 h-3 mr-1" />
