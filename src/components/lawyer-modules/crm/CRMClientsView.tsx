@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Edit2, Trash2, Phone, Mail, Building, User, Users } from 'lucide-react';
+import { Plus, Edit2, Trash2, Phone, Mail, Building, User, Users, Calendar, UserPlus, MessageSquare } from 'lucide-react';
 
 interface Client {
   id: string;
@@ -202,6 +202,39 @@ const CRMClientsView: React.FC<CRMClientsViewProps> = ({ lawyerData, searchTerm,
       case 'inactive': return 'Inactivo';
       case 'prospect': return 'Prospecto';
       default: return status;
+    }
+  };
+
+  const handleQuickAction = async (action: string, client: Client) => {
+    switch (action) {
+      case 'call':
+        if (client.phone) {
+          window.open(`tel:${client.phone}`);
+        } else {
+          toast({
+            title: "Sin número de teléfono",
+            description: "Este cliente no tiene un número de teléfono registrado",
+            variant: "destructive",
+          });
+        }
+        break;
+      case 'email':
+        window.open(`mailto:${client.email}`);
+        break;
+      case 'meeting':
+        toast({
+          title: "Programar reunión",
+          description: `Función de calendario para ${client.name} próximamente disponible`,
+        });
+        break;
+      case 'case':
+        toast({
+          title: "Crear nuevo caso",
+          description: `Redirigiendo para crear caso para ${client.name}`,
+        });
+        break;
+      default:
+        break;
     }
   };
 
@@ -434,7 +467,44 @@ const CRMClientsView: React.FC<CRMClientsViewProps> = ({ lawyerData, searchTerm,
                     )}
                   </div>
                   
-                  <div className="flex gap-2 self-start sm:self-center flex-shrink-0">
+                  <div className="flex gap-1 self-start sm:self-center flex-shrink-0 flex-wrap">
+                    {/* Quick Actions */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleQuickAction('call', client)}
+                      title="Llamar cliente"
+                      className="h-8 w-8 p-0"
+                    >
+                      <Phone className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleQuickAction('email', client)}
+                      title="Enviar email"
+                      className="h-8 w-8 p-0"
+                    >
+                      <Mail className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleQuickAction('meeting', client)}
+                      title="Programar reunión"
+                      className="h-8 w-8 p-0"
+                    >
+                      <Calendar className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleQuickAction('case', client)}
+                      title="Crear nuevo caso"
+                      className="h-8 w-8 p-0"
+                    >
+                      <UserPlus className="h-3 w-3" />
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"

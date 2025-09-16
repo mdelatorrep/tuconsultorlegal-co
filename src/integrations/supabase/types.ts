@@ -513,6 +513,53 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_case_activities: {
+        Row: {
+          activity_date: string
+          activity_type: string
+          case_id: string
+          created_at: string
+          description: string | null
+          id: string
+          lawyer_id: string
+          metadata: Json | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          activity_date?: string
+          activity_type: string
+          case_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          lawyer_id: string
+          metadata?: Json | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          activity_date?: string
+          activity_type?: string
+          case_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          lawyer_id?: string
+          metadata?: Json | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_case_activities_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "crm_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_cases: {
         Row: {
           actual_hours: number | null

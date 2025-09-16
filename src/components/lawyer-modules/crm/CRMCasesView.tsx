@@ -9,9 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Edit2, Trash2, Calendar, DollarSign, Clock, FileText } from 'lucide-react';
+import { Plus, Edit2, Trash2, Calendar, DollarSign, Clock, FileText, History, Download, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import CaseTraceabilityModal from './CaseTraceabilityModal';
+import { generateCasePDF } from '@/utils/pdfGenerator';
 
 interface Case {
   id: string;
@@ -46,6 +48,8 @@ const CRMCasesView: React.FC<CRMCasesViewProps> = ({ lawyerData, searchTerm, onR
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCase, setEditingCase] = useState<Case | null>(null);
+  const [traceabilityModalOpen, setTraceabilityModalOpen] = useState(false);
+  const [selectedCase, setSelectedCase] = useState<Case | null>(null);
   const [formData, setFormData] = useState({
     client_id: '',
     case_number: '',
@@ -227,6 +231,36 @@ const CRMCasesView: React.FC<CRMCasesViewProps> = ({ lawyerData, searchTerm, onR
     });
   };
 
+  const handleViewTraceability = async (case_: Case) => {
+    setSelectedCase(case_);
+    setTraceabilityModalOpen(true);
+  };
+
+  const handleGeneratePDF = async (case_: Case) => {
+    try {
+      const { data: activities } = await supabase
+        .from('crm_case_activities')
+        .select('*')
+        .eq('case_id', case_.id)
+        .order('activity_date', { ascending: true });
+
+      // Generate PDF using the dedicated utility
+      generateCasePDF(case_, activities || []);
+
+      toast({
+        title: "Reporte generado",
+        description: "El reporte PDF del caso se ha descargado correctamente",
+      });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo generar el reporte PDF",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
       case 'active': return 'default';
@@ -265,7 +299,7 @@ const CRMCasesView: React.FC<CRMCasesViewProps> = ({ lawyerData, searchTerm, onR
               Nuevo Caso
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingCase ? 'Editar Caso' : 'Nuevo Caso'}
@@ -275,7 +309,7 @@ const CRMCasesView: React.FC<CRMCasesViewProps> = ({ lawyerData, searchTerm, onR
               </DialogDescription>
             </DialogHeader>
             
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto pr-2">
               <div className="space-y-2">
                 <Label htmlFor="client_id">Cliente *</Label>
                 <Select
@@ -495,6 +529,22 @@ const CRMCasesView: React.FC<CRMCasesViewProps> = ({ lawyerData, searchTerm, onR
                     <Button
                       variant="outline"
                       size="sm"
+                      onClick={() => handleViewTraceability(case_)}
+                      title="Ver trazabilidad"
+                    >
+                      <History className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleGeneratePDF(case_)}
+                      title="Generar reporte PDF"
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => handleEditCase(case_)}
                     >
                       <Edit2 className="h-4 w-4" />
@@ -513,6 +563,16 @@ const CRMCasesView: React.FC<CRMCasesViewProps> = ({ lawyerData, searchTerm, onR
           ))
         )}
       </div>
+
+      {/* Traceability Modal */}
+      {selectedCase && (
+        <CaseTraceabilityModal
+          isOpen={traceabilityModalOpen}
+          onClose={() => setTraceabilityModalOpen(false)}
+          caseData={selectedCase}
+          lawyerData={lawyerData}
+        />
+      )}
     </div>
   );
 };
