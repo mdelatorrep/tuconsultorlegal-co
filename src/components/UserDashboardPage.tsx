@@ -136,7 +136,7 @@ export default function UserDashboardPage({ onBack, onOpenChat }: UserDashboardP
         return;
       }
 
-      setDocuments(data || []);
+      setDocuments((data || []) as DocumentToken[]);
     } catch (error) {
       console.error('Error loading documents:', error);
     }
@@ -203,12 +203,12 @@ export default function UserDashboardPage({ onBack, onOpenChat }: UserDashboardP
   };
 
   const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      'solicitado': { label: 'Solicitado', variant: 'secondary' as const, icon: Clock },
-      'en_revision_abogado': { label: 'En Revisión', variant: 'default' as const, icon: AlertCircle },
-      'revision_usuario': { label: 'Para Revisar', variant: 'destructive' as const, icon: AlertCircle },
-      'pagado': { label: 'Pagado', variant: 'default' as const, icon: CreditCard },
-      'descargado': { label: 'Completado', variant: 'default' as const, icon: CheckCircle }
+    const statusConfig: Record<string, { label: string, variant: any, icon: any }> = {
+      'solicitado': { label: 'Solicitado', variant: 'secondary', icon: Clock },
+      'en_revision_abogado': { label: 'En Revisión', variant: 'default', icon: AlertCircle },
+      'revision_usuario': { label: 'Para Revisar', variant: 'destructive', icon: AlertCircle },
+      'pagado': { label: 'Pagado', variant: 'default', icon: CreditCard },
+      'descargado': { label: 'Completado', variant: 'default', icon: CheckCircle }
     };
 
     const config = statusConfig[status] || statusConfig['solicitado'];
@@ -251,7 +251,6 @@ export default function UserDashboardPage({ onBack, onOpenChat }: UserDashboardP
       <PersonasPage
         onOpenChat={onOpenChat}
         onNavigate={handleAgentSelected}
-        onBack={handleBackFromPersonas}
       />
     );
   }
@@ -281,10 +280,17 @@ export default function UserDashboardPage({ onBack, onOpenChat }: UserDashboardP
 
   if (showConsultation) {
     return (
-      <LegalConsultationChat
-        onBack={() => setShowConsultation(false)}
-        consultationType="personal"
-      />
+      <div className="min-h-screen bg-muted/30">
+        <div className="container mx-auto px-6 py-8">
+          <div className="flex items-center gap-4 mb-6">
+            <Button variant="ghost" onClick={() => setShowConsultation(false)}>
+              ← Volver al Dashboard
+            </Button>
+            <h1 className="text-2xl font-bold">Consulta Jurídica</h1>
+          </div>
+          <LegalConsultationChat />
+        </div>
+      </div>
     );
   }
 

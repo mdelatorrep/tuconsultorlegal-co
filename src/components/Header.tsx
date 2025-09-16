@@ -1,6 +1,22 @@
 import { useState } from "react";
 import { Button } from "./ui/button";
-import { Menu, X } from "lucide-react";
+import { 
+  Menu, 
+  X, 
+  MessageCircle, 
+  FileText, 
+  Scale, 
+  Users, 
+  Phone, 
+  Newspaper,
+  DollarSign,
+  Shield,
+  FileText as DocumentIcon,
+  Gavel,
+  User,
+  LogIn
+} from "lucide-react";
+import { useUserAuth } from "@/hooks/useUserAuth";
 import logoImage from "/logo-ai-legal.png";
 
 interface HeaderProps {
@@ -11,6 +27,7 @@ interface HeaderProps {
 
 export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { isAuthenticated, user } = useUserAuth();
 
   const navItems = [
     { id: "personas", label: "Para Personas" },
@@ -60,15 +77,35 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
           ))}
         </div>
 
-        {/* Desktop CTA Button */}
-        <Button
-          variant="success"
-          size="lg"
-          className="hidden md:block"
-          onClick={() => onOpenChat("Quiero una consultoría legal")}
-        >
-          Asesoría Gratuita
-        </Button>
+        {/* Desktop CTA Buttons */}
+        <div className="hidden md:flex items-center space-x-4">
+          {isAuthenticated ? (
+            <Button 
+              onClick={() => onNavigate("user-dashboard")}
+              variant="outline"
+            >
+              <User className="w-4 h-4 mr-2" />
+              Mi Dashboard
+            </Button>
+          ) : (
+            <Button 
+              onClick={() => onNavigate("user-dashboard")}
+              variant="outline"
+            >
+              <LogIn className="w-4 h-4 mr-2" />
+              Ingresar
+            </Button>
+          )}
+          
+          <Button
+            variant="success"
+            size="lg"
+            onClick={() => onOpenChat("Quiero una consultoría legal")}
+          >
+            <MessageCircle className="w-4 h-4 mr-2" />
+            Asesoría Gratuita
+          </Button>
+        </div>
 
         {/* Mobile Menu Button */}
         <button
@@ -95,17 +132,47 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
               {item.label}
             </button>
           ))}
-          <Button
-            variant="success"
-            size="lg"
-            className="mt-4 w-full"
-            onClick={() => {
-              onOpenChat("Quiero una consultoría legal");
-              setMobileMenuOpen(false);
-            }}
-          >
-            Asesoría Gratuita
-          </Button>
+          
+          <div className="space-y-2 mt-4">
+            {isAuthenticated ? (
+              <Button 
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  onNavigate("user-dashboard");
+                }}
+                variant="outline"
+                className="w-full"
+              >
+                <User className="w-4 h-4 mr-2" />
+                Mi Dashboard
+              </Button>
+            ) : (
+              <Button 
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  onNavigate("user-dashboard");
+                }}
+                variant="outline"
+                className="w-full"
+              >
+                <LogIn className="w-4 h-4 mr-2" />
+                Ingresar
+              </Button>
+            )}
+            
+            <Button
+              variant="success"
+              size="lg"
+              className="w-full"
+              onClick={() => {
+                onOpenChat("Quiero una consultoría legal");
+                setMobileMenuOpen(false);
+              }}
+            >
+              <MessageCircle className="w-4 h-4 mr-2" />
+              Asesoría Gratuita
+            </Button>
+          </div>
         </div>
       )}
     </header>

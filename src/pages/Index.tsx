@@ -1,26 +1,41 @@
 import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import ChatWidget from "@/components/ChatWidget";
 import HomePage from "@/components/HomePage";
 import PersonasPage from "@/components/PersonasPage";
 import EmpresasPage from "@/components/EmpresasPage";
-import UnifiedDocumentPage from "@/components/UnifiedDocumentPage";
-import LawyerDashboardPage from "@/components/LawyerDashboardPage";
-import EmptyPage from "@/components/EmptyPage";
+import LawyerLandingPage from "@/components/LawyerLandingPage";
+import ContactPage from "@/components/ContactPage";
 import BlogPage from "@/components/BlogPage";
 import BlogArticlePage from "@/components/BlogArticlePage";
+import PricingPage from "@/components/PricingPage";
 import PrivacyPolicyPage from "@/components/PrivacyPolicyPage";
 import TermsAndConditionsPage from "@/components/TermsAndConditionsPage";
+import CertificationVerificationPage from "@/components/CertificationVerificationPage";
+import ChatWidget from "@/components/ChatWidget";
+import DocumentFormFlow from "@/components/DocumentFormFlow";
+import DocumentCreationSuccess from "@/components/DocumentCreationSuccess";
+import UnifiedDocumentPage from "@/components/UnifiedDocumentPage";
+import LegalConsultationChat from "@/components/LegalConsultationChat";
+import UserAuthPage from "@/components/UserAuthPage";
+import UserDashboardPage from "@/components/UserDashboardPage";
+import LawyerDashboardPage from "@/components/LawyerDashboardPage";
 import { LawyerAuthProvider } from "@/components/LawyerAuthProvider";
-
-import PricingPage from "@/components/PricingPage";
-import ContactPage from "@/components/ContactPage";
+import { LogRocketProvider } from "@/components/LogRocketProvider";
+import { useUserAuth } from "@/hooks/useUserAuth";
 
 export default function Index() {
+  const { user, loading: authLoading, isAuthenticated } = useUserAuth();
   const [currentPage, setCurrentPage] = useState("home");
-  const [chatOpen, setChatOpen] = useState(false);
+  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
+  const [documentToken, setDocumentToken] = useState<string | null>(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatMessage, setChatMessage] = useState<string>("");
+  const [consultationType, setConsultationType] = useState<'personal' | 'business'>('personal');
+  const [selectedArticleSlug, setSelectedArticleSlug] = useState<string | null>(null);
+  const [certificationCode, setCertificationCode] = useState<string | null>(null);
+  const [showUserAuth, setShowUserAuth] = useState(false);
+  const [showUserDashboard, setShowUserDashboard] = useState(false);
 
   // Handle browser navigation
   useEffect(() => {
@@ -58,25 +73,92 @@ export default function Index() {
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
-  const handleNavigate = (page: string) => {
+  const handleNavigate = (page: string, data?: any) => {
+    // Handle user dashboard access
+    if (page === "user-dashboard") {
+      if (isAuthenticated) {
+        setShowUserDashboard(true);
+      } else {
+        setShowUserAuth(true);
+      }
+      return;
+    }
+    
     setCurrentPage(page);
+    if (page === "personas" || page === "empresas") {
+      setConsultationType(page === "personas" ? 'personal' : 'business');
+    }
+    if (data?.agentId) {
+      setSelectedAgentId(data.agentId);
+    }
+    if (data?.articleSlug) {
+      setSelectedArticleSlug(data.articleSlug);
+    }
+    if (data?.certificationCode) {
+      setCertificationCode(data.certificationCode);
+    }
     window.history.pushState(null, "", `#${page}`);
     window.scrollTo(0, 0);
   };
 
   const handleOpenChat = (message?: string) => {
-    if (message) {
-      setChatMessage(message);
-    }
-    setChatOpen(true);
+    setChatMessage(message || "");
+    setIsChatOpen(true);
   };
 
-  const handleToggleChat = () => {
-    setChatOpen(!chatOpen);
-    if (chatOpen) {
-      setChatMessage("");
-    }
+  const handleCloseChat = () => {
+    setIsChatOpen(false);
+    setChatMessage("");
   };
+
+  const handleAuthSuccess = () => {
+    setShowUserAuth(false);
+    setShowUserDashboard(true);
+  };
+
+  const handleBackFromAuth = () => {
+    setShowUserAuth(false);
+  };
+
+  const handleBackFromDashboard = () => {
+    setShowUserDashboard(false);
+    setCurrentPage("home");
+  };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show user authentication
+  if (showUserAuth) {
+    return (
+      <LogRocketProvider>
+        <UserAuthPage
+          onBack={handleBackFromAuth}
+          onAuthSuccess={handleAuthSuccess}
+        />
+      </LogRocketProvider>
+    );
+  }
+
+  // Show user dashboard
+  if (showUserDashboard) {
+    return (
+      <LogRocketProvider>
+        <UserDashboardPage
+          onBack={handleBackFromDashboard}
+          onOpenChat={handleOpenChat}
+        />
+      </LogRocketProvider>
+    );
+  }
 
   const renderCurrentPage = () => {
     // Check for dynamic blog article routes first
@@ -112,35 +194,35 @@ export default function Index() {
         return <TermsAndConditionsPage onOpenChat={handleOpenChat} />;
       case "privacidad":
         return <PrivacyPolicyPage onOpenChat={handleOpenChat} />;
-      default:
-        return <HomePage onOpenChat={handleOpenChat} onNavigate={handleNavigate} />;
     }
   };
 
-  // No mostrar ChatWidget en portal de abogados
-  const shouldShowChatWidget = currentPage !== "abogados";
+  // No mostrar ChatWidget en portal de abogados o cuando el usuario está autenticado en su dashboard
+  const shouldShowChatWidget = currentPage !== "abogados" && !showUserDashboard;
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header
-        currentPage={currentPage}
-        onNavigate={handleNavigate}
-        onOpenChat={handleOpenChat}
-      />
-      
-      <main className="page-enter page-enter-active">
-        {renderCurrentPage()}
-      </main>
-
-      <Footer onNavigate={handleNavigate} />
-
-      {shouldShowChatWidget && (
-        <ChatWidget
-          isOpen={chatOpen}
-          onToggle={handleToggleChat}
-          initialMessage={chatMessage}
+    <LogRocketProvider>
+      <div className="min-h-screen bg-background">
+        <Header
+          currentPage={currentPage}
+          onNavigate={handleNavigate}
+          onOpenChat={handleOpenChat}
         />
-      )}
-    </div>
+        
+        <main className="page-enter page-enter-active">
+          {renderCurrentPage()}
+        </main>
+
+        <Footer onNavigate={handleNavigate} />
+
+        {shouldShowChatWidget && (
+          <ChatWidget
+            isOpen={isChatOpen}
+            onToggle={() => setIsChatOpen(!isChatOpen)}
+            initialMessage={chatMessage}
+          />
+        )}
+      </div>
+    </LogRocketProvider>
   );
 }
