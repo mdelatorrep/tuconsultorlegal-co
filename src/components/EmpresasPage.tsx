@@ -153,62 +153,64 @@ export default function EmpresasPage({ onOpenChat, onNavigate }: EmpresasPagePro
 
   return (
     <div className="container mx-auto px-6 py-20">
+      {/* Hero Section */}
+      <div className="bg-gradient-elegant rounded-xl p-8 mb-16">
+        <div className="text-center max-w-4xl mx-auto">
+          <h1 className="text-4xl md:text-5xl font-extrabold text-primary-foreground mb-6">
+            Tu Centro de Control Legal Empresarial
+          </h1>
+          <p className="text-lg text-primary-foreground/90 mb-8">
+            Regístrate para centralizar toda la gestión legal de tu empresa en un solo panel
+          </p>
+          
+          <div className="grid md:grid-cols-3 gap-6 mb-8">
+            <div className="text-center">
+              <div className="bg-primary-foreground/10 rounded-lg p-4 mb-3 mx-auto w-fit">
+                <Handshake className="w-8 h-8 text-primary-foreground" />
+              </div>
+              <h3 className="font-semibold text-primary-foreground mb-2">Contratos Automatizados</h3>
+              <p className="text-sm text-primary-foreground/80">Generación inteligente y personalizada</p>
+            </div>
+            <div className="text-center">
+              <div className="bg-primary-foreground/10 rounded-lg p-4 mb-3 mx-auto w-fit">
+                <Shield className="w-8 h-8 text-primary-foreground" />
+              </div>
+              <h3 className="font-semibold text-primary-foreground mb-2">Compliance Total</h3>
+              <p className="text-sm text-primary-foreground/80">Monitoreo y alertas automáticas</p>
+            </div>
+            <div className="text-center">
+              <div className="bg-primary-foreground/10 rounded-lg p-4 mb-3 mx-auto w-fit">
+                <Scale className="w-8 h-8 text-primary-foreground" />
+              </div>
+              <h3 className="font-semibold text-primary-foreground mb-2">Asesoría Corporativa</h3>
+              <p className="text-sm text-primary-foreground/80">Expertos en derecho empresarial</p>
+            </div>
+          </div>
+          
+          <Button 
+            onClick={() => onNavigate && onNavigate("user-dashboard")}
+            variant="secondary"
+            size="xl"
+            className="bg-card text-primary hover:bg-card/90"
+          >
+            <Building className="w-5 h-5 mr-2" />
+            Crear Panel Empresarial
+          </Button>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="text-center mb-16">
         <div className="inline-flex items-center bg-success/10 text-success px-4 py-2 rounded-full text-sm font-medium mb-4">
           <Building className="w-4 h-4 mr-2" />
-          Panel para Empresas
+          Documentos para Empresas
         </div>
-        <h1 className="text-4xl md:text-5xl font-extrabold text-primary mb-6">
-          Tu Centro de Control Legal Empresarial
-        </h1>
-        <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
-          Centraliza toda la gestión legal de tu empresa. Contratos inteligentes, 
-          compliance automatizado y asesoría especializada en un solo panel.
+        <h2 className="text-3xl md:text-4xl font-bold text-primary mb-4">
+          Soluciones Legales Empresariales
+        </h2>
+        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          Protege y haz crecer tu empresa con documentos legales profesionales.
         </p>
-        
-        {/* Value Proposition & CTA */}
-        <div className="bg-gradient-elegant rounded-xl p-8 max-w-4xl mx-auto mb-12">
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            <div className="text-left">
-              <h2 className="text-2xl font-bold text-primary-foreground mb-4">
-                Lleva tu empresa al siguiente nivel legal
-              </h2>
-              <div className="space-y-3 text-primary-foreground/90">
-                <p className="flex items-center">
-                  <Check className="w-5 h-5 mr-3 text-primary-foreground" />
-                  Contratos empresariales automatizados
-                </p>
-                <p className="flex items-center">
-                  <Check className="w-5 h-5 mr-3 text-primary-foreground" />
-                  Dashboard de compliance en tiempo real
-                </p>
-                <p className="flex items-center">
-                  <Check className="w-5 h-5 mr-3 text-primary-foreground" />
-                  Asesoría corporativa especializada
-                </p>
-                <p className="flex items-center">
-                  <Check className="w-5 h-5 mr-3 text-primary-foreground" />
-                  Gestión de múltiples empresas
-                </p>
-              </div>
-            </div>
-            <div className="text-center">
-              <Button 
-                onClick={() => onNavigate && onNavigate("user-dashboard")}
-                variant="secondary"
-                size="xl"
-                className="mb-4 w-full bg-card text-primary hover:bg-card/90"
-              >
-                <Building className="w-5 h-5 mr-2" />
-                Crear Panel Empresarial
-              </Button>
-              <p className="text-sm text-primary-foreground/80">
-                Prueba gratuita • Configuración rápida
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Services by Category */}

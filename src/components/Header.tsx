@@ -61,15 +61,23 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
           {/* Main User Type Selector */}
           <div className="flex items-center space-x-1 bg-muted/30 rounded-lg p-1">
             <button
-              onClick={() => handleNavClick("user-dashboard")}
-              className="flex items-center gap-2 px-3 py-2 rounded-md transition-smooth font-medium text-sm text-muted-foreground hover:text-foreground"
+              onClick={() => handleNavClick("personas")}
+              className={`flex items-center gap-2 px-3 py-2 rounded-md transition-smooth font-medium text-sm ${
+                currentPage === "personas"
+                  ? "bg-card text-primary shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
             >
               <User className="w-4 h-4" />
               <span>Personas</span>
             </button>
             <button
-              onClick={() => handleNavClick("user-dashboard")}
-              className="flex items-center gap-2 px-3 py-2 rounded-md transition-smooth font-medium text-sm text-muted-foreground hover:text-foreground"
+              onClick={() => handleNavClick("empresas")}
+              className={`flex items-center gap-2 px-3 py-2 rounded-md transition-smooth font-medium text-sm ${
+                currentPage === "empresas"
+                  ? "bg-card text-success shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
             >
               <Users className="w-4 h-4" />
               <span>Empresas</span>
@@ -187,8 +195,12 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
               <div className="grid grid-cols-1 gap-3">
                 {/* Individual Users - Priority */}
                 <button
-                  onClick={() => handleNavClick("user-dashboard")}
-                  className="p-4 rounded-xl border-2 transition-smooth border-border hover:border-primary/30 hover:bg-muted/30"
+                  onClick={() => handleNavClick("personas")}
+                  className={`p-4 rounded-xl border-2 transition-smooth ${
+                    currentPage === "personas"
+                      ? "bg-primary/10 border-primary text-primary"
+                      : "border-border hover:border-primary/30 hover:bg-muted/30"
+                  }`}
                 >
                   <div className="flex items-center gap-4">
                     <div className="p-2 bg-primary/10 rounded-lg">
@@ -196,7 +208,7 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
                     </div>
                     <div className="flex-1 text-left">
                       <div className="font-semibold text-base">Persona Natural</div>
-                      <div className="text-sm text-muted-foreground">Accede a tu panel personalizado</div>
+                      <div className="text-sm text-muted-foreground">Documentos personales y asesoría individual</div>
                     </div>
                     <div className="px-3 py-1 bg-primary/10 text-primary text-xs font-medium rounded-full">
                       Más Popular
@@ -206,8 +218,12 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
                 
                 {/* Business Users */}
                 <button
-                  onClick={() => handleNavClick("user-dashboard")}
-                  className="p-4 rounded-xl border-2 transition-smooth border-border hover:border-success/30 hover:bg-muted/30"
+                  onClick={() => handleNavClick("empresas")}
+                  className={`p-4 rounded-xl border-2 transition-smooth ${
+                    currentPage === "empresas"
+                      ? "bg-success/10 border-success text-success"
+                      : "border-border hover:border-success/30 hover:bg-muted/30"
+                  }`}
                 >
                   <div className="flex items-center gap-4">
                     <div className="p-2 bg-success/10 rounded-lg">
@@ -215,7 +231,7 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
                     </div>
                     <div className="flex-1 text-left">
                       <div className="font-semibold text-base">Empresa</div>
-                      <div className="text-sm text-muted-foreground">Accede a tu panel empresarial</div>
+                      <div className="text-sm text-muted-foreground">Soluciones corporativas y contratos</div>
                     </div>
                   </div>
                 </button>

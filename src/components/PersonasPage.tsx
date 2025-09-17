@@ -127,58 +127,64 @@ export default function PersonasPage({
       </div>;
   }
   return <div className="container mx-auto px-6 py-20">
+      {/* Hero Section */}
+      <div className="bg-gradient-elegant rounded-xl p-8 mb-16">
+        <div className="text-center max-w-4xl mx-auto">
+          <h1 className="text-4xl md:text-5xl font-extrabold text-primary-foreground mb-6">
+            Tu Panel Legal Personal
+          </h1>
+          <p className="text-lg text-primary-foreground/90 mb-8">
+            Regístrate para acceder a documentos personalizados, historial completo y asesoría 24/7
+          </p>
+          
+          <div className="grid md:grid-cols-3 gap-6 mb-8">
+            <div className="text-center">
+              <div className="bg-primary-foreground/10 rounded-lg p-4 mb-3 mx-auto w-fit">
+                <FileText className="w-8 h-8 text-primary-foreground" />
+              </div>
+              <h3 className="font-semibold text-primary-foreground mb-2">Documentos Inteligentes</h3>
+              <p className="text-sm text-primary-foreground/80">Generación automática basada en IA</p>
+            </div>
+            <div className="text-center">
+              <div className="bg-primary-foreground/10 rounded-lg p-4 mb-3 mx-auto w-fit">
+                <Shield className="w-8 h-8 text-primary-foreground" />
+              </div>
+              <h3 className="font-semibold text-primary-foreground mb-2">Seguridad Total</h3>
+              <p className="text-sm text-primary-foreground/80">Encriptación y protección de datos</p>
+            </div>
+            <div className="text-center">
+              <div className="bg-primary-foreground/10 rounded-lg p-4 mb-3 mx-auto w-fit">
+                <Users className="w-8 h-8 text-primary-foreground" />
+              </div>
+              <h3 className="font-semibold text-primary-foreground mb-2">Asesoría Experta</h3>
+              <p className="text-sm text-primary-foreground/80">Abogados especializados disponibles</p>
+            </div>
+          </div>
+          
+          <Button 
+            onClick={() => onNavigate && onNavigate("user-dashboard")}
+            variant="secondary"
+            size="xl"
+            className="bg-card text-primary hover:bg-card/90"
+          >
+            <User className="w-5 h-5 mr-2" />
+            Crear Mi Cuenta Gratis
+          </Button>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="text-center mb-16">
         <div className="inline-flex items-center bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-4">
           <User className="w-4 h-4 mr-2" />
-          Panel para Personas Naturales
+          Documentos para Personas Naturales
         </div>
-        <h1 className="text-4xl md:text-5xl font-extrabold text-primary mb-6">
-          Tu Panel Legal Personal
-        </h1>
-        <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
-          Accede a documentos legales personalizados, gestiona tus trámites y recibe asesoría especializada. 
-          Todo desde un solo lugar, con tu historial completo.
+        <h2 className="text-3xl md:text-4xl font-bold text-primary mb-4">
+          Soluciones Legales para tu Día a Día
+        </h2>
+        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          Simplificamos la gestión de tus documentos y la resolución de tus dudas legales personales.
         </p>
-        
-        {/* Value Proposition & CTA */}
-        <div className="bg-gradient-elegant rounded-xl p-8 max-w-4xl mx-auto mb-12">
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            <div className="text-left">
-              <h2 className="text-2xl font-bold text-primary-foreground mb-4">
-                ¿Listo para simplificar tu vida legal?
-              </h2>
-              <div className="space-y-3 text-primary-foreground/90">
-                <p className="flex items-center">
-                  <Check className="w-5 h-5 mr-3 text-primary-foreground" />
-                  Documentos personalizados en minutos
-                </p>
-                <p className="flex items-center">
-                  <Check className="w-5 h-5 mr-3 text-primary-foreground" />
-                  Historial completo de todos tus trámites
-                </p>
-                <p className="flex items-center">
-                  <Check className="w-5 h-5 mr-3 text-primary-foreground" />
-                  Asesoría legal personalizada 24/7
-                </p>
-              </div>
-            </div>
-            <div className="text-center">
-              <Button 
-                onClick={() => onNavigate && onNavigate("user-dashboard")}
-                variant="secondary"
-                size="xl"
-                className="mb-4 w-full bg-card text-primary hover:bg-card/90"
-              >
-                <User className="w-5 h-5 mr-2" />
-                Crear Mi Cuenta Gratis
-              </Button>
-              <p className="text-sm text-primary-foreground/80">
-                Sin costos ocultos • Acceso inmediato
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Services by Category */}
