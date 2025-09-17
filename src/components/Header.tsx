@@ -30,13 +30,9 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
   const { isAuthenticated, user } = useUserAuth();
 
   const navItems = [
-    { id: "personas", label: "Personas", description: "Servicios legales individuales", icon: User, color: "text-primary" },
-    { id: "empresas", label: "Empresas", description: "Soluciones corporativas", icon: Users, color: "text-success" },
-    { id: "documento", label: "Mi Documento", description: "Seguimiento de documentos", icon: FileText, color: "text-muted-foreground" },
-    { id: "precios", label: "Precios", description: "Planes y tarifas", icon: DollarSign, color: "text-muted-foreground" },
-    { id: "blog", label: "Blog", description: "Artículos legales", icon: Newspaper, color: "text-muted-foreground" },
-    { id: "contacto", label: "Contacto", description: "Atención al cliente", icon: Phone, color: "text-muted-foreground" },
-    { id: "abogados", label: "Portal Abogados", description: "Acceso profesional", icon: Shield, color: "text-warning" },
+    { id: "precios", label: "Precios", description: "Transparencia total", icon: DollarSign, color: "text-muted-foreground" },
+    { id: "blog", label: "Recursos", description: "Guías y artículos", icon: Newspaper, color: "text-muted-foreground" },
+    { id: "contacto", label: "Ayuda", description: "Soporte directo", icon: Phone, color: "text-muted-foreground" },
   ];
 
   const handleNavClick = (pageId: string) => {
@@ -60,8 +56,35 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
           <span>Tu Consultor Legal</span>
         </button>
 
-        {/* Desktop Navigation */}
-        <div className="hidden lg:flex items-center space-x-4">
+        {/* Desktop Navigation - Simplified */}
+        <div className="hidden lg:flex items-center space-x-6">
+          {/* Main User Type Selector */}
+          <div className="flex items-center space-x-1 bg-muted/30 rounded-lg p-1">
+            <button
+              onClick={() => handleNavClick("personas")}
+              className={`flex items-center gap-2 px-3 py-2 rounded-md transition-smooth font-medium text-sm ${
+                currentPage === "personas"
+                  ? "bg-card text-primary shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <User className="w-4 h-4" />
+              <span>Personas</span>
+            </button>
+            <button
+              onClick={() => handleNavClick("empresas")}
+              className={`flex items-center gap-2 px-3 py-2 rounded-md transition-smooth font-medium text-sm ${
+                currentPage === "empresas"
+                  ? "bg-card text-success shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              <span>Empresas</span>
+            </button>
+          </div>
+
+          {/* Secondary Navigation */}
           {navItems.map((item) => {
             const IconComponent = item.icon;
             const isActive = currentPage === item.id;
@@ -71,69 +94,80 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
                 onClick={() => handleNavClick(item.id)}
                 className={`group flex items-center gap-2 px-3 py-2 rounded-lg transition-smooth font-medium text-sm ${
                   isActive
-                    ? "bg-primary/10 text-primary font-bold shadow-sm"
-                    : "text-foreground hover:text-primary hover:bg-muted/50"
+                    ? "text-primary"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
                 title={item.description}
               >
-                <IconComponent className={`w-4 h-4 ${isActive ? "text-primary" : item.color}`} />
+                <IconComponent className="w-4 h-4" />
                 <span className="hidden xl:inline">{item.label}</span>
-                {item.id === "abogados" && !isActive && (
-                  <div className="w-1.5 h-1.5 bg-warning rounded-full animate-pulse" />
-                )}
               </button>
             );
           })}
         </div>
 
-        {/* Desktop CTA Buttons - Enhanced for Role Priority */}
-        <div className="hidden lg:flex items-center space-x-2">
+        {/* Desktop CTA Buttons - Clear Priority */}
+        <div className="hidden lg:flex items-center space-x-3">
           {isAuthenticated ? (
-            <Button 
-              onClick={() => onNavigate("user-dashboard")}
-              variant="outline"
-              size="sm"
-              className="bg-gradient-subtle border-primary/20 text-primary font-medium"
-            >
-              <User className="w-4 h-4 mr-2" />
-              <span className="hidden xl:inline">Mi Panel</span>
-            </Button>
-          ) : (
             <div className="flex items-center space-x-2">
               <Button 
                 onClick={() => onNavigate("user-dashboard")}
                 variant="outline"
                 size="sm"
-                className="hover:bg-primary/5 border-primary/30 text-primary font-medium"
+                className="text-foreground border-border"
               >
-                <LogIn className="w-4 h-4 mr-1" />
-                <span className="hidden xl:inline">Registrarse</span>
-                <span className="xl:hidden">Registro</span>
+                <User className="w-4 h-4 mr-2" />
+                Mi Panel
               </Button>
-              
-              <div className="h-4 w-px bg-border mx-1"></div>
-              
+              <Button
+                onClick={() => onNavigate("documento")}
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground"
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                Seguimiento
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center space-x-2">
+              {/* Professional Portal */}
               <Button 
                 onClick={() => handleNavClick("abogados")}
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-warning"
+              >
+                <Shield className="w-4 h-4 mr-2" />
+                <span className="hidden xl:inline">Soy Abogado</span>
+                <span className="xl:hidden">Abogado</span>
+              </Button>
+              
+              <div className="h-4 w-px bg-border"></div>
+              
+              {/* Main Registration CTA */}
+              <Button 
+                onClick={() => onNavigate("user-dashboard")}
                 variant="outline"
                 size="sm"
-                className="hover:bg-warning/5 border-warning/30 text-warning font-medium"
+                className="border-primary/20 text-primary hover:bg-primary/5"
               >
-                <Shield className="w-4 h-4 mr-1" />
-                <span className="hidden xl:inline">Portal Pro</span>
-                <span className="xl:hidden">Pro</span>
+                <LogIn className="w-4 h-4 mr-2" />
+                <span className="hidden xl:inline">Acceder</span>
+                <span className="xl:hidden">Entrar</span>
               </Button>
             </div>
           )}
           
+          {/* Primary CTA */}
           <Button
-            variant="success"
+            variant="default"
             size="sm"
-            className="shadow-elegant font-medium"
+            className="bg-gradient-elegant shadow-elegant font-medium"
             onClick={() => onOpenChat("Quiero una consultoría legal")}
           >
             <MessageCircle className="w-4 h-4 mr-2" />
-            <span className="hidden xl:inline">Consulta Gratis</span>
+            <span className="hidden xl:inline">Consulta Gratuita</span>
             <span className="xl:hidden">Consulta</span>
           </Button>
         </div>
@@ -151,47 +185,53 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden absolute top-full left-0 right-0 bg-card border-t shadow-lg z-50 max-h-[80vh] overflow-y-auto">
-          <div className="container mx-auto px-6 py-4">
-            {/* User Type Selection - Priority Layout */}
+        <div className="lg:hidden absolute top-full left-0 right-0 bg-card/95 backdrop-blur-sm border-t shadow-lg z-50 max-h-[80vh] overflow-y-auto">
+          <div className="container mx-auto px-6 py-6">
+            {/* Clear User Type Selection */}
             <div className="mb-6">
-              <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
-                Elegir Perfil de Usuario
+              <h3 className="text-lg font-semibold text-foreground mb-4">
+                ¿Qué tipo de usuario eres?
               </h3>
-              <div className="space-y-3">
-                {/* Priority: Individual Registration */}
+              <div className="grid grid-cols-1 gap-3">
+                {/* Individual Users - Priority */}
                 <button
                   onClick={() => handleNavClick("personas")}
-                  className={`w-full p-4 rounded-lg border transition-smooth ${
+                  className={`p-4 rounded-xl border-2 transition-smooth ${
                     currentPage === "personas"
                       ? "bg-primary/10 border-primary text-primary"
-                      : "border-border hover:bg-muted/50"
+                      : "border-border hover:border-primary/30 hover:bg-muted/30"
                   }`}
                 >
-                  <div className="flex items-center gap-3">
-                    <User className="w-6 h-6" />
-                    <div className="flex-1 text-left">
-                      <div className="font-semibold">Personas</div>
-                      <div className="text-xs text-muted-foreground">Registro individual • Más popular</div>
+                  <div className="flex items-center gap-4">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <User className="w-6 h-6 text-primary" />
                     </div>
-                    <div className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">Gratis</div>
+                    <div className="flex-1 text-left">
+                      <div className="font-semibold text-base">Persona Natural</div>
+                      <div className="text-sm text-muted-foreground">Documentos personales y asesoría individual</div>
+                    </div>
+                    <div className="px-3 py-1 bg-primary/10 text-primary text-xs font-medium rounded-full">
+                      Más Popular
+                    </div>
                   </div>
                 </button>
                 
-                {/* Business Registration */}
+                {/* Business Users */}
                 <button
                   onClick={() => handleNavClick("empresas")}
-                  className={`w-full p-4 rounded-lg border transition-smooth ${
+                  className={`p-4 rounded-xl border-2 transition-smooth ${
                     currentPage === "empresas"
                       ? "bg-success/10 border-success text-success"
-                      : "border-border hover:bg-muted/50"
+                      : "border-border hover:border-success/30 hover:bg-muted/30"
                   }`}
                 >
-                  <div className="flex items-center gap-3">
-                    <Users className="w-6 h-6" />
+                  <div className="flex items-center gap-4">
+                    <div className="p-2 bg-success/10 rounded-lg">
+                      <Users className="w-6 h-6 text-success" />
+                    </div>
                     <div className="flex-1 text-left">
-                      <div className="font-semibold">Empresas</div>
-                      <div className="text-xs text-muted-foreground">Soluciones corporativas</div>
+                      <div className="font-semibold text-base">Empresa</div>
+                      <div className="text-sm text-muted-foreground">Soluciones corporativas y contratos</div>
                     </div>
                   </div>
                 </button>
@@ -199,17 +239,19 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
                 {/* Professional Portal */}
                 <button
                   onClick={() => handleNavClick("abogados")}
-                  className={`w-full p-4 rounded-lg border transition-smooth ${
+                  className={`p-4 rounded-xl border-2 transition-smooth ${
                     currentPage === "abogados"
                       ? "bg-warning/10 border-warning text-warning"
-                      : "border-border hover:bg-muted/50"
+                      : "border-border hover:border-warning/30 hover:bg-muted/30"
                   }`}
                 >
-                  <div className="flex items-center gap-3">
-                    <Shield className="w-6 h-6" />
+                  <div className="flex items-center gap-4">
+                    <div className="p-2 bg-warning/10 rounded-lg">
+                      <Shield className="w-6 h-6 text-warning" />
+                    </div>
                     <div className="flex-1 text-left">
-                      <div className="font-semibold">Abogados</div>
-                      <div className="text-xs text-muted-foreground">Portal profesional avanzado</div>
+                      <div className="font-semibold text-base">Soy Abogado</div>
+                      <div className="text-sm text-muted-foreground">Portal profesional avanzado</div>
                     </div>
                     <div className="w-2 h-2 bg-warning rounded-full animate-pulse"></div>
                   </div>
@@ -217,46 +259,66 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
               </div>
             </div>
 
-            {/* Navigation Items */}
-            <div className="space-y-1 mb-6">
-              {navItems.filter(item => !["personas", "empresas", "abogados"].includes(item.id)).map((item) => {
-                const IconComponent = item.icon;
-                const isActive = currentPage === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => handleNavClick(item.id)}
-                    className={`flex items-center w-full p-3 rounded-lg transition-smooth ${
-                      isActive
-                        ? "bg-primary/10 text-primary font-medium"
-                        : "text-foreground hover:bg-muted/50"
-                    }`}
-                  >
-                    <IconComponent className="w-5 h-5 mr-3" />
-                    <div className="flex-1 text-left">
-                      <div className="font-medium">{item.label}</div>
-                      <div className="text-xs text-muted-foreground">{item.description}</div>
-                    </div>
-                  </button>
-                );
-              })}
+            {/* Additional Navigation */}
+            <div className="mb-6">
+              <h4 className="text-sm font-medium text-muted-foreground mb-3 uppercase tracking-wide">
+                Información
+              </h4>
+              <div className="space-y-2">
+                {navItems.map((item) => {
+                  const IconComponent = item.icon;
+                  const isActive = currentPage === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => handleNavClick(item.id)}
+                      className={`flex items-center w-full p-3 rounded-lg transition-smooth ${
+                        isActive
+                          ? "bg-primary/10 text-primary font-medium"
+                          : "text-foreground hover:bg-muted/50"
+                      }`}
+                    >
+                      <IconComponent className="w-5 h-5 mr-3" />
+                      <div className="flex-1 text-left">
+                        <div className="font-medium">{item.label}</div>
+                        <div className="text-xs text-muted-foreground">{item.description}</div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             
-            {/* Enhanced CTA Buttons */}
+            
+            {/* Clear Action Buttons */}
             <div className="space-y-3 pt-4 border-t border-border">
               {isAuthenticated ? (
-                <Button 
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    onNavigate("user-dashboard");
-                  }}
-                  variant="outline"
-                  className="w-full bg-gradient-subtle border-primary/20 text-primary"
-                  size="lg"
-                >
-                  <User className="w-4 h-4 mr-2" />
-                  Mi Panel Personal
-                </Button>
+                <div className="space-y-2">
+                  <Button 
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onNavigate("user-dashboard");
+                    }}
+                    variant="outline"
+                    className="w-full border-primary/30 text-primary"
+                    size="lg"
+                  >
+                    <User className="w-4 h-4 mr-2" />
+                    Mi Panel Personal
+                  </Button>
+                  <Button 
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onNavigate("documento");
+                    }}
+                    variant="ghost"
+                    className="w-full text-muted-foreground"
+                    size="sm"
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    Seguimiento de Documentos
+                  </Button>
+                </div>
               ) : (
                 <div className="space-y-2">
                   <Button 
@@ -269,35 +331,22 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
                     size="lg"
                   >
                     <LogIn className="w-4 h-4 mr-2" />
-                    Registrarse / Iniciar Sesión
-                  </Button>
-                  
-                  <Button 
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      handleNavClick("abogados");
-                    }}
-                    variant="outline"
-                    className="w-full border-warning/30 text-warning"
-                    size="sm"
-                  >
-                    <Shield className="w-4 h-4 mr-2" />
-                    Portal Profesional
+                    Acceder a Mi Cuenta
                   </Button>
                 </div>
               )}
               
               <Button
-                variant="success"
+                variant="default"
                 size="lg"
-                className="w-full shadow-elegant"
+                className="w-full bg-gradient-elegant shadow-elegant"
                 onClick={() => {
                   onOpenChat("Quiero una consultoría legal");
                   setMobileMenuOpen(false);
                 }}
               >
                 <MessageCircle className="w-4 h-4 mr-2" />
-                Consulta Gratuita
+                Consulta Legal Gratuita
               </Button>
             </div>
           </div>
