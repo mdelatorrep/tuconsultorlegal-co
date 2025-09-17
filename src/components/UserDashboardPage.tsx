@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { Input } from './ui/input';
 import { useDocumentPayment } from './document-payment/useDocumentPayment';
-import DocumentFormFlow from './DocumentFormFlow';
+import DocumentChatFlow from './DocumentChatFlow';
 import DocumentCreationSuccess from './DocumentCreationSuccess';
 import UserDocumentSelector from './UserDocumentSelector';
 import LegalConsultationChat from './LegalConsultationChat';
@@ -301,7 +301,7 @@ export default function UserDashboardPage({ onBack, onOpenChat }: UserDashboardP
           </div>
         </div>
         
-        <DocumentFormFlow
+        <DocumentChatFlow
           agentId={selectedAgentId}
           onBack={handleBackFromForm}
           onComplete={handleDocumentCreated}
