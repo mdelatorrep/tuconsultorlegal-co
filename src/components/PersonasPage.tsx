@@ -133,13 +133,52 @@ export default function PersonasPage({
           <User className="w-4 h-4 mr-2" />
           Panel para Personas Naturales
         </div>
-        <h1 className="text-4xl md:text-5xl font-extrabold text-primary mb-4">
-          Soluciones Legales para tu Día a Día
+        <h1 className="text-4xl md:text-5xl font-extrabold text-primary mb-6">
+          Tu Panel Legal Personal
         </h1>
-        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-          Simplificamos la gestión de tus documentos y la resolución de tus dudas legales personales. 
-          Encuentra el servicio individual que necesitas a continuación.
+        <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
+          Accede a documentos legales personalizados, gestiona tus trámites y recibe asesoría especializada. 
+          Todo desde un solo lugar, con tu historial completo.
         </p>
+        
+        {/* Value Proposition & CTA */}
+        <div className="bg-gradient-elegant rounded-xl p-8 max-w-4xl mx-auto mb-12">
+          <div className="grid md:grid-cols-2 gap-8 items-center">
+            <div className="text-left">
+              <h2 className="text-2xl font-bold text-primary-foreground mb-4">
+                ¿Listo para simplificar tu vida legal?
+              </h2>
+              <div className="space-y-3 text-primary-foreground/90">
+                <p className="flex items-center">
+                  <Check className="w-5 h-5 mr-3 text-primary-foreground" />
+                  Documentos personalizados en minutos
+                </p>
+                <p className="flex items-center">
+                  <Check className="w-5 h-5 mr-3 text-primary-foreground" />
+                  Historial completo de todos tus trámites
+                </p>
+                <p className="flex items-center">
+                  <Check className="w-5 h-5 mr-3 text-primary-foreground" />
+                  Asesoría legal personalizada 24/7
+                </p>
+              </div>
+            </div>
+            <div className="text-center">
+              <Button 
+                onClick={() => onNavigate && onNavigate("user-dashboard")}
+                variant="secondary"
+                size="xl"
+                className="mb-4 w-full bg-card text-primary hover:bg-card/90"
+              >
+                <User className="w-5 h-5 mr-2" />
+                Crear Mi Cuenta Gratis
+              </Button>
+              <p className="text-sm text-primary-foreground/80">
+                Sin costos ocultos • Acceso inmediato
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Services by Category */}
