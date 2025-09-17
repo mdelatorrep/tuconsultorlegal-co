@@ -41,7 +41,7 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
   };
 
   return (
-    <header className="bg-card/80 backdrop-blur-md sticky top-0 z-50 shadow-soft border-b">
+    <header className="bg-background/95 backdrop-blur-md sticky top-0 z-50 shadow-soft border-b border-border">
       <nav className="container mx-auto px-6 py-4 flex justify-between items-center">
         {/* Logo */}
         <button
@@ -53,30 +53,30 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
             alt="Tu Consultor Legal" 
             className="w-10 h-10 object-contain"
           />
-          <span>Tu Consultor Legal</span>
+          <span className="text-foreground">Tu Consultor Legal</span>
         </button>
 
         {/* Desktop Navigation - Simplified */}
         <div className="hidden lg:flex items-center space-x-6">
           {/* Main User Type Selector */}
-          <div className="flex items-center space-x-1 bg-muted/30 rounded-lg p-1">
+          <div className="flex items-center space-x-1 bg-muted/50 rounded-lg p-1">
             <button
-              onClick={() => handleNavClick("personas")}
+              onClick={() => handleNavClick("user-dashboard")}
               className={`flex items-center gap-2 px-3 py-2 rounded-md transition-smooth font-medium text-sm ${
                 currentPage === "personas"
-                  ? "bg-card text-primary shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-background text-primary shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
               }`}
             >
               <User className="w-4 h-4" />
               <span>Personas</span>
             </button>
             <button
-              onClick={() => handleNavClick("empresas")}
+              onClick={() => handleNavClick("user-dashboard")}
               className={`flex items-center gap-2 px-3 py-2 rounded-md transition-smooth font-medium text-sm ${
                 currentPage === "empresas"
-                  ? "bg-card text-success shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-background text-success shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
               }`}
             >
               <Users className="w-4 h-4" />
@@ -161,9 +161,9 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
           
           {/* Primary CTA */}
           <Button
-            variant="default"
+            variant="hero"
             size="sm"
-            className="bg-gradient-elegant shadow-elegant font-medium"
+            className="font-medium"
             onClick={() => onOpenChat("Quiero una consultoría legal")}
           >
             <MessageCircle className="w-4 h-4 mr-2" />
@@ -185,7 +185,7 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden absolute top-full left-0 right-0 bg-card/95 backdrop-blur-sm border-t shadow-lg z-50 max-h-[80vh] overflow-y-auto">
+        <div className="lg:hidden absolute top-full left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border shadow-lg z-50 max-h-[80vh] overflow-y-auto">
           <div className="container mx-auto px-6 py-6">
             {/* Clear User Type Selection */}
             <div className="mb-6">
@@ -195,7 +195,7 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
               <div className="grid grid-cols-1 gap-3">
                 {/* Individual Users - Priority */}
                 <button
-                  onClick={() => handleNavClick("personas")}
+                  onClick={() => handleNavClick("user-dashboard")}
                   className={`p-4 rounded-xl border-2 transition-smooth ${
                     currentPage === "personas"
                       ? "bg-primary/10 border-primary text-primary"
@@ -218,7 +218,7 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
                 
                 {/* Business Users */}
                 <button
-                  onClick={() => handleNavClick("empresas")}
+                  onClick={() => handleNavClick("user-dashboard")}
                   className={`p-4 rounded-xl border-2 transition-smooth ${
                     currentPage === "empresas"
                       ? "bg-success/10 border-success text-success"
@@ -337,9 +337,9 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
               )}
               
               <Button
-                variant="default"
+                variant="hero"
                 size="lg"
-                className="w-full bg-gradient-elegant shadow-elegant"
+                className="w-full"
                 onClick={() => {
                   onOpenChat("Quiero una consultoría legal");
                   setMobileMenuOpen(false);
