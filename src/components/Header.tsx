@@ -70,9 +70,13 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
                     ? "bg-background text-primary shadow-sm"
                     : "text-muted-foreground hover:text-foreground hover:bg-background/50"
                 }`}
+                title="Documentos y consultoría para personas"
               >
                 <User className="w-4 h-4" />
-                <span>Personas</span>
+                <div className="flex flex-col items-start">
+                  <span>Personas</span>
+                  <span className="text-xs opacity-70">Documentos & Consultoría</span>
+                </div>
               </button>
               <button
                 onClick={() => handleNavClick("empresas")}
@@ -81,9 +85,13 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
                     ? "bg-background text-success shadow-sm"
                     : "text-muted-foreground hover:text-foreground hover:bg-background/50"
                 }`}
+                title="Documentos y consultoría para empresas"
               >
                 <Users className="w-4 h-4" />
-                <span>Empresas</span>
+                <div className="flex flex-col items-start">
+                  <span>Empresas</span>
+                  <span className="text-xs opacity-70">Documentos & Consultoría</span>
+                </div>
               </button>
             </div>
           </div>
@@ -143,18 +151,18 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
                 className="bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 <LogIn className="w-4 h-4 mr-2" />
-                <span className="hidden xl:inline">Registrarse</span>
-                <span className="xl:hidden">Registro</span>
+                <span className="hidden xl:inline">Acceder</span>
+                <span className="xl:hidden">Login</span>
               </Button>
               
               <div className="h-4 w-px bg-border"></div>
               
-              {/* Professional Portal */}
+              {/* Professional Portal - Also goes to auth but with different styling */}
               <Button 
-                onClick={() => handleNavClick("abogados")}
+                onClick={() => onNavigate("auth")}
                 variant="outline"
                 size="sm"
-                className="text-muted-foreground border-border hover:text-warning hover:border-warning/30"
+                className="text-warning border-warning/30 hover:text-warning hover:border-warning/50 hover:bg-warning/10"
               >
                 <Shield className="w-4 h-4 mr-2" />
                 <span className="hidden xl:inline">Soy Abogado</span>
@@ -199,7 +207,7 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
               <div className="grid grid-cols-1 gap-3">
                 {/* Individual Users - Priority */}
                 <button
-                  onClick={() => handleNavClick("user-dashboard")}
+                  onClick={() => handleNavClick("personas")}
                   className={`p-4 rounded-xl border-2 transition-smooth ${
                     currentPage === "personas"
                       ? "bg-primary/10 border-primary text-primary"
@@ -212,7 +220,7 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
                     </div>
                     <div className="flex-1 text-left">
                       <div className="font-semibold text-base">Persona Natural</div>
-                      <div className="text-sm text-muted-foreground">Documentos personales y asesoría individual</div>
+                      <div className="text-sm text-muted-foreground">Documentos personales y consultoría individual</div>
                     </div>
                     <div className="px-3 py-1 bg-primary/10 text-primary text-xs font-medium rounded-full">
                       Más Popular
@@ -222,7 +230,7 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
                 
                 {/* Business Users */}
                 <button
-                  onClick={() => handleNavClick("user-dashboard")}
+                  onClick={() => handleNavClick("empresas")}
                   className={`p-4 rounded-xl border-2 transition-smooth ${
                     currentPage === "empresas"
                       ? "bg-success/10 border-success text-success"
@@ -235,14 +243,14 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
                     </div>
                     <div className="flex-1 text-left">
                       <div className="font-semibold text-base">Empresa</div>
-                      <div className="text-sm text-muted-foreground">Soluciones corporativas y contratos</div>
+                      <div className="text-sm text-muted-foreground">Documentos corporativos y consultoría empresarial</div>
                     </div>
                   </div>
                 </button>
                 
                 {/* Professional Portal */}
                 <button
-                  onClick={() => handleNavClick("abogados")}
+                  onClick={() => onNavigate("auth")}
                   className={`p-4 rounded-xl border-2 transition-smooth ${
                     currentPage === "abogados"
                       ? "bg-warning/10 border-warning text-warning"
@@ -255,7 +263,7 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
                     </div>
                     <div className="flex-1 text-left">
                       <div className="font-semibold text-base">Soy Abogado</div>
-                      <div className="text-sm text-muted-foreground">Portal profesional avanzado</div>
+                      <div className="text-sm text-muted-foreground">Acceso profesional - Registro/Login</div>
                     </div>
                     <div className="w-2 h-2 bg-warning rounded-full animate-pulse"></div>
                   </div>
@@ -335,7 +343,7 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
                     size="lg"
                   >
                     <LogIn className="w-4 h-4 mr-2" />
-                    Registrarse / Iniciar Sesión
+                    Acceder / Registrarse
                   </Button>
                 </div>
               )}
