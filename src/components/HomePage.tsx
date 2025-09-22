@@ -3,15 +3,19 @@ import { Check, Clock, Users, Shield, Zap, DollarSign, MessageCircle, FileText, 
 import ServiceStatusAlert from "./ServiceStatusAlert";
 import useSEO from "@/hooks/useSEO";
 import { usePopularDocuments } from "@/hooks/usePopularDocuments";
-
 interface HomePageProps {
   onOpenChat: (message?: string) => void;
   onNavigate: (page: string) => void;
 }
+export default function HomePage({
+  onOpenChat,
+  onNavigate
+}: HomePageProps) {
+  const {
+    documents: popularDocuments,
+    loading: loadingDocs
+  } = usePopularDocuments();
 
-export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
-  const { documents: popularDocuments, loading: loadingDocs } = usePopularDocuments();
-  
   // SEO optimization for home page
   useSEO({
     title: "Tu Consultor Legal - Democratizando el Acceso a Servicios Legales de Alta Calidad en Colombia",
@@ -37,45 +41,42 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
       }
     }
   });
-
-  const mainFeatures = [
-    {
-      icon: <Shield className="w-12 h-12" />,
-      title: "Para Personas",
-      subtitle: "Contratos, consultas y asesoría personalizada",
-      description: "Accede a servicios legales de calidad sin barreras económicas. Resuelve tus dudas jurídicas y obtén documentos respaldados por abogados expertos.",
-      action: "Explorar Servicios",
-      gradient: "from-primary to-primary-light",
-      onClick: () => onNavigate("personas")
-    },
-    {
-      icon: <Users className="w-12 h-12" />,
-      title: "Para Empresas", 
-      subtitle: "Soluciones jurídicas empresariales integrales",
-      description: "Optimiza la gestión legal de tu empresa con documentos corporativos, contratos comerciales y asesoría especializada en derecho empresarial.",
-      action: "Ver Soluciones",
-      gradient: "from-success to-success-dark",
-      onClick: () => onNavigate("empresas")
-    },
-    {
-      icon: <Zap className="w-12 h-12" />,
-      title: "Para Abogados",
-      subtitle: "Herramientas de productividad legal",
-      description: "Potencia tu práctica legal con IA avanzada. Automatiza tareas repetitivas, mejora la precisión y enfócate en casos de mayor valor.",
-      action: "Acceder Dashboard",
-      gradient: "from-accent to-primary",
-      onClick: () => onNavigate("abogados")
-    }
-  ];
-
-  const trustBadges = [
-    { icon: <Shield className="w-5 h-5" />, text: "Respaldo Legal Certificado" },
-    { icon: <Clock className="w-5 h-5" />, text: "Disponible 24/7" },
-    { icon: <Users className="w-5 h-5" />, text: "+10,000 Usuarios Confiaron" }
-  ];
-
-  return (
-    <>
+  const mainFeatures = [{
+    icon: <Shield className="w-12 h-12" />,
+    title: "Para Personas",
+    subtitle: "Contratos, consultas y asesoría personalizada",
+    description: "Accede a servicios legales de calidad sin barreras económicas. Resuelve tus dudas jurídicas y obtén documentos respaldados por abogados expertos.",
+    action: "Explorar Servicios",
+    gradient: "from-primary to-primary-light",
+    onClick: () => onNavigate("personas")
+  }, {
+    icon: <Users className="w-12 h-12" />,
+    title: "Para Empresas",
+    subtitle: "Soluciones jurídicas empresariales integrales",
+    description: "Optimiza la gestión legal de tu empresa con documentos corporativos, contratos comerciales y asesoría especializada en derecho empresarial.",
+    action: "Ver Soluciones",
+    gradient: "from-success to-success-dark",
+    onClick: () => onNavigate("empresas")
+  }, {
+    icon: <Zap className="w-12 h-12" />,
+    title: "Para Abogados",
+    subtitle: "Herramientas de productividad legal",
+    description: "Potencia tu práctica legal con IA avanzada. Automatiza tareas repetitivas, mejora la precisión y enfócate en casos de mayor valor.",
+    action: "Acceder Dashboard",
+    gradient: "from-accent to-primary",
+    onClick: () => onNavigate("abogados")
+  }];
+  const trustBadges = [{
+    icon: <Shield className="w-5 h-5" />,
+    text: "Respaldo Legal Certificado"
+  }, {
+    icon: <Clock className="w-5 h-5" />,
+    text: "Disponible 24/7"
+  }, {
+    icon: <Users className="w-5 h-5" />,
+    text: "+10,000 Usuarios Confiaron"
+  }];
+  return <>
       <ServiceStatusAlert />
       <div className="min-h-screen">
         {/* Hero Section - Apple Style */}
@@ -104,32 +105,21 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
 
               {/* Trust Badges */}
               <div className="flex justify-center items-center space-x-8 text-sm text-primary-foreground/70 mb-16 flex-wrap gap-4">
-                {trustBadges.map((badge, index) => (
-                  <div key={index} className="flex items-center space-x-2">
+                {trustBadges.map((badge, index) => <div key={index} className="flex items-center space-x-2">
                     <div className="text-success">{badge.icon}</div>
                     <span>{badge.text}</span>
-                  </div>
-                ))}
+                  </div>)}
               </div>
 
               {/* Enhanced Primary CTA - Priority on Registration */}
               <div className="space-y-6">
-                <Button
-                  size="xl"
-                  className="bg-success hover:bg-success-dark text-success-foreground px-16 py-8 text-xl font-bold shadow-glow hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
-                  onClick={() => onNavigate("user-dashboard")}
-                >
+                <Button size="xl" className="bg-success hover:bg-success-dark text-success-foreground px-16 py-8 text-xl font-bold shadow-glow hover:shadow-2xl transition-all duration-300 transform hover:scale-105" onClick={() => onNavigate("user-dashboard")}>
                   Regístrate Gratis - Acceso Inmediato
                 </Button>
                 
                 <div className="text-center text-primary-foreground/80">
                   <p className="text-sm mb-3">O explora nuestros servicios:</p>
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
-                    onClick={() => onOpenChat("Quiero una consultoría legal")}
-                  >
+                  <Button size="lg" variant="outline" onClick={() => onOpenChat("Quiero una consultoría legal")} className="border-primary-foreground/30 text-primary-foreground bg-slate-800 hover:bg-slate-700">
                     <MessageCircle className="w-5 h-5 mr-2" />
                     Consulta Gratuita Ahora
                   </Button>
@@ -161,12 +151,7 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
               </div>
 
               <div className="grid lg:grid-cols-3 gap-8">
-                {mainFeatures.map((feature, index) => (
-                  <div
-                    key={index}
-                    className="group relative bg-card border border-border rounded-3xl p-8 md:p-12 hover:shadow-trust transition-smooth cursor-pointer"
-                    onClick={feature.onClick}
-                  >
+                {mainFeatures.map((feature, index) => <div key={index} className="group relative bg-card border border-border rounded-3xl p-8 md:p-12 hover:shadow-trust transition-smooth cursor-pointer" onClick={feature.onClick}>
                     {/* Gradient Background */}
                     <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-5 rounded-3xl transition-smooth`}></div>
                     
@@ -195,8 +180,7 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  </div>)}
               </div>
             </div>
           </div>
@@ -216,35 +200,23 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
                 </p>
               </div>
 
-              {loadingDocs ? (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {[...Array(6)].map((_, index) => (
-                    <div key={index} className="bg-card p-8 rounded-2xl shadow-soft animate-pulse">
+              {loadingDocs ? <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {[...Array(6)].map((_, index) => <div key={index} className="bg-card p-8 rounded-2xl shadow-soft animate-pulse">
                       <div className="bg-muted rounded-full w-12 h-12 mb-6"></div>
                       <div className="bg-muted h-6 rounded mb-4"></div>
                       <div className="bg-muted h-4 rounded mb-6"></div>
                       <div className="bg-muted h-12 rounded"></div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {popularDocuments.map((doc, index) => (
-                    <div 
-                      key={doc.id} 
-                      className="group bg-card p-8 rounded-2xl shadow-soft hover:shadow-trust transition-smooth border border-border hover:border-primary/20 cursor-pointer"
-                      onClick={() => onOpenChat(`Quiero crear un ${doc.name.toLowerCase()}`)}
-                    >
+                    </div>)}
+                </div> : <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {popularDocuments.map((doc, index) => <div key={doc.id} className="group bg-card p-8 rounded-2xl shadow-soft hover:shadow-trust transition-smooth border border-border hover:border-primary/20 cursor-pointer" onClick={() => onOpenChat(`Quiero crear un ${doc.name.toLowerCase()}`)}>
                       <div className="flex items-center justify-between mb-6">
                         <div className="bg-primary/10 text-primary rounded-2xl p-4 w-16 h-16 flex items-center justify-center group-hover:bg-primary/20 transition-smooth">
                           <FileText className="w-8 h-8" />
                         </div>
-                        {doc.request_count > 0 && (
-                          <div className="flex items-center text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
+                        {doc.request_count > 0 && <div className="flex items-center text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
                             <Star className="w-4 h-4 mr-1 text-success" />
                             <span>{doc.request_count}</span>
-                          </div>
-                        )}
+                          </div>}
                       </div>
                       
                       <h3 className="text-2xl font-bold text-foreground mb-3 group-hover:text-primary transition-smooth">
@@ -267,10 +239,8 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
                           <span className="text-sm">→</span>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    </div>)}
+                </div>}
             </div>
           </div>
         </section>
@@ -290,31 +260,24 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
               </div>
 
               <div className="grid md:grid-cols-3 gap-8">
-                {[
-                  {
-                    text: "El proceso para crear el contrato de arrendamiento fue increíblemente fácil y rápido. ¡Y saber que un abogado lo revisó me dio total tranquilidad!",
-                    author: "Juliana G.",
-                    location: "Medellín",
-                    rating: 5
-                  },
-                  {
-                    text: "Como freelancer, necesitaba un contrato de prestación de servicios. En minutos lo tuve listo y a un precio justo. 100% recomendado.",
-                    author: "Carlos V.",
-                    location: "Bogotá", 
-                    rating: 5
-                  },
-                  {
-                    text: "Resolví una duda sobre mi liquidación laboral en minutos. La respuesta fue clara y me citaron los artículos correctos del código. ¡Excelente servicio!",
-                    author: "Sofía R.",
-                    location: "Cali",
-                    rating: 5
-                  }
-                ].map((testimonial, index) => (
-                  <div key={index} className="bg-background p-8 rounded-2xl shadow-soft border border-border">
+                {[{
+                text: "El proceso para crear el contrato de arrendamiento fue increíblemente fácil y rápido. ¡Y saber que un abogado lo revisó me dio total tranquilidad!",
+                author: "Juliana G.",
+                location: "Medellín",
+                rating: 5
+              }, {
+                text: "Como freelancer, necesitaba un contrato de prestación de servicios. En minutos lo tuve listo y a un precio justo. 100% recomendado.",
+                author: "Carlos V.",
+                location: "Bogotá",
+                rating: 5
+              }, {
+                text: "Resolví una duda sobre mi liquidación laboral en minutos. La respuesta fue clara y me citaron los artículos correctos del código. ¡Excelente servicio!",
+                author: "Sofía R.",
+                location: "Cali",
+                rating: 5
+              }].map((testimonial, index) => <div key={index} className="bg-background p-8 rounded-2xl shadow-soft border border-border">
                     <div className="flex mb-4">
-                      {[...Array(testimonial.rating)].map((_, i) => (
-                        <Star key={i} className="w-5 h-5 fill-success text-success" />
-                      ))}
+                      {[...Array(testimonial.rating)].map((_, i) => <Star key={i} className="w-5 h-5 fill-success text-success" />)}
                     </div>
                     <p className="text-muted-foreground mb-6 italic leading-relaxed">
                       "{testimonial.text}"
@@ -328,8 +291,7 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
                         <p className="text-sm text-muted-foreground">{testimonial.location}</p>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  </div>)}
               </div>
             </div>
           </div>
@@ -349,17 +311,12 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
               <p className="text-xl text-primary-foreground/80 mb-12 max-w-2xl mx-auto leading-relaxed">
                 Únete a miles de colombianos que ya disfrutan de servicios legales accesibles, confiables y profesionales.
               </p>
-              <Button
-                size="lg"
-                className="bg-success hover:bg-success-dark text-success-foreground px-12 py-6 text-lg font-medium shadow-glow transition-smooth"
-                onClick={() => onOpenChat("Quiero una consultoría legal")}
-              >
+              <Button size="lg" className="bg-success hover:bg-success-dark text-success-foreground px-12 py-6 text-lg font-medium shadow-glow transition-smooth" onClick={() => onOpenChat("Quiero una consultoría legal")}>
                 Comenzar Ahora
               </Button>
             </div>
           </div>
         </section>
     </div>
-    </>
-  );
+    </>;
 }
