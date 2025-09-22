@@ -4,12 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Check, FileText, Home, Briefcase, Car, Eye, Shield, Users, DollarSign, User, MessageCircle, Scale } from "lucide-react";
 import DocumentChatFlow from "./DocumentChatFlow";
 import DocumentCreationSuccess from "./DocumentCreationSuccess";
-
 interface PersonasPageProps {
   onOpenChat: (message: string) => void;
   onNavigate?: (page: string) => void;
 }
-
 interface AgentService {
   id: string;
   document_name: string;
@@ -21,7 +19,6 @@ interface AgentService {
   category: string;
   ai_prompt: string;
 }
-
 export default function PersonasPage({
   onOpenChat,
   onNavigate
@@ -31,7 +28,6 @@ export default function PersonasPage({
   const [currentView, setCurrentView] = useState<'list' | 'form' | 'success'>('list');
   const [selectedAgent, setSelectedAgent] = useState<string>('');
   const [documentToken, setDocumentToken] = useState<string>('');
-
   const iconMap: {
     [key: string]: JSX.Element;
   } = {
@@ -44,11 +40,9 @@ export default function PersonasPage({
     Users: <Users className="w-10 h-10" />,
     DollarSign: <DollarSign className="w-10 h-10" />
   };
-
   useEffect(() => {
     loadServices();
   }, []);
-
   const loadServices = async () => {
     try {
       const {
@@ -57,7 +51,6 @@ export default function PersonasPage({
       } = await supabase.from('legal_agents').select('*').eq('status', 'active').in('target_audience', ['personas', 'ambos']).order('category', {
         ascending: true
       });
-
       if (error) throw error;
       setServices(agents || []);
     } catch (error) {
@@ -66,34 +59,28 @@ export default function PersonasPage({
       setLoading(false);
     }
   };
-
   const handleDocumentAction = (service: AgentService) => {
     setSelectedAgent(service.id);
     setCurrentView('form');
   };
-
   const handleFormBack = () => {
     setCurrentView('list');
     setSelectedAgent('');
   };
-
   const handleFormComplete = (token: string) => {
     setDocumentToken(token);
     setCurrentView('success');
   };
-
   const handleSuccessBack = () => {
     setCurrentView('list');
     setSelectedAgent('');
     setDocumentToken('');
   };
-
   const handleNavigateToTracking = () => {
     if (onNavigate) {
       onNavigate('seguimiento');
     }
   };
-
   const groupedServices = services.reduce((acc, service) => {
     if (!acc[service.category]) {
       acc[service.category] = [];
@@ -103,20 +90,8 @@ export default function PersonasPage({
   }, {} as {
     [key: string]: AgentService[];
   });
-
   const getCategoryGradient = (category: string) => {
-    const gradients = [
-      'from-primary to-primary-light', 
-      'from-success to-success-dark', 
-      'from-rose-500 to-rose-600', 
-      'from-purple-500 to-purple-600',
-      'from-blue-500 to-blue-600', 
-      'from-green-500 to-green-600', 
-      'from-orange-500 to-orange-600', 
-      'from-pink-500 to-pink-600', 
-      'from-indigo-500 to-indigo-600', 
-      'from-cyan-500 to-cyan-600'
-    ];
+    const gradients = ['from-primary to-primary-light', 'from-success to-success-dark', 'from-rose-500 to-rose-600', 'from-purple-500 to-purple-600', 'from-blue-500 to-blue-600', 'from-green-500 to-green-600', 'from-orange-500 to-orange-600', 'from-pink-500 to-pink-600', 'from-indigo-500 to-indigo-600', 'from-cyan-500 to-cyan-600'];
     const hash = category.split('').reduce((a, b) => {
       a = (a << 5) - a + b.charCodeAt(0);
       return a & a;
@@ -133,34 +108,31 @@ export default function PersonasPage({
   if (currentView === 'success' && documentToken) {
     return <DocumentCreationSuccess token={documentToken} onBack={handleSuccessBack} onNavigateToTracking={handleNavigateToTracking} />;
   }
-
   if (loading) {
-    return (
-      <div className="container mx-auto px-6 py-20">
+    return <div className="container mx-auto px-6 py-20">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">Cargando servicios...</p>
         </div>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-brand-gray-light to-background">
+  return <div className="min-h-screen bg-gradient-to-br from-background via-brand-gray-light to-background">
       <div className="container mx-auto px-6 py-12">
         {/* Floating Hero Section with Glass Morphism */}
         <div className="relative mb-20">
           {/* Animated Background Elements */}
           <div className="absolute inset-0 overflow-hidden rounded-3xl">
             <div className="absolute -top-4 -right-4 w-72 h-72 bg-brand-gold/10 rounded-full blur-3xl animate-float"></div>
-            <div className="absolute -bottom-4 -left-4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-float" style={{animationDelay: '3s'}}></div>
+            <div className="absolute -bottom-4 -left-4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-float" style={{
+            animationDelay: '3s'
+          }}></div>
           </div>
           
           {/* Main Hero Card */}
           <div className="relative glass-card rounded-3xl p-12 lg:p-16 shadow-floating hover-glow animate-slide-up">
             <div className="text-center max-w-5xl mx-auto">
               {/* Badge */}
-              <div className="inline-flex items-center gap-3 bg-gradient-elegant rounded-full px-6 py-3 text-primary-foreground font-semibold text-sm mb-8 shadow-card animate-scale-in">
+              <div className="inline-flex items-center gap-3 bg-gradient-elegant rounded-full px-6 py-3 text-primary-foreground font-semibold text-sm mb-8 shadow-card animate-scale-in bg-amber-400">
                 <User className="w-5 h-5" />
                 <span>Panel Legal Inteligente</span>
                 <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
@@ -217,11 +189,7 @@ export default function PersonasPage({
               
               {/* CTA Section */}
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <Button 
-                  onClick={() => onNavigate && onNavigate("user-dashboard")}
-                  size="xl"
-                  className="bg-gradient-elegant hover:shadow-glow transition-spring transform hover:scale-105 font-bold text-lg px-12 py-6 rounded-2xl"
-                >
+                <Button onClick={() => onNavigate && onNavigate("user-dashboard")} size="xl" className="bg-gradient-elegant hover:shadow-glow transition-spring transform hover:scale-105 font-bold text-lg px-12 py-6 rounded-2xl bg-yellow-400 hover:bg-yellow-300">
                   <User className="w-6 h-6 mr-3" />
                   Crear Cuenta Gratuita
                 </Button>
@@ -250,8 +218,9 @@ export default function PersonasPage({
         </div>
 
         {/* Enhanced Services Grid */}
-        {Object.entries(groupedServices).map(([category, categoryServices], index) => (
-          <div key={category} className="mb-20 animate-slide-up" style={{animationDelay: `${index * 0.1}s`}}>
+        {Object.entries(groupedServices).map(([category, categoryServices], index) => <div key={category} className="mb-20 animate-slide-up" style={{
+        animationDelay: `${index * 0.1}s`
+      }}>
             <div className="flex items-center gap-4 mb-12">
               <div className={`h-1 w-12 bg-gradient-to-r ${getCategoryGradient(category)} rounded-full`}></div>
               <h3 className="text-3xl lg:text-4xl font-bold text-primary">{category}</h3>
@@ -259,12 +228,9 @@ export default function PersonasPage({
             </div>
             
             <div className="grid grid-auto-fit gap-8">
-              {categoryServices.map((service, serviceIndex) => (
-                <div 
-                  key={service.id} 
-                  className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-card via-background to-brand-gray-light shadow-card hover-lift border border-border/50 animate-scale-in"
-                  style={{animationDelay: `${(index * 0.1) + (serviceIndex * 0.05)}s`}}
-                >
+              {categoryServices.map((service, serviceIndex) => <div key={service.id} className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-card via-background to-brand-gray-light shadow-card hover-lift border border-border/50 animate-scale-in" style={{
+            animationDelay: `${index * 0.1 + serviceIndex * 0.05}s`
+          }}>
                   {/* Hover Overlay */}
                   <div className="absolute inset-0 bg-gradient-elegant opacity-0 group-hover:opacity-5 transition-smooth"></div>
                   
@@ -292,32 +258,22 @@ export default function PersonasPage({
                       <div className="text-2xl font-bold text-success">
                         {service.price === 0 ? 'Gratis' : `$${service.price.toLocaleString()} COP`}
                       </div>
-                      {service.price === 0 && (
-                        <div className="bg-success/10 text-success px-3 py-1 rounded-full text-sm font-semibold">
+                      {service.price === 0 && <div className="bg-success/10 text-success px-3 py-1 rounded-full text-sm font-semibold">
                           Sin costo
-                        </div>
-                      )}
+                        </div>}
                     </div>
                     
                     {/* CTA Button */}
-                    <Button 
-                      variant="default"
-                      size="lg"
-                      className="w-full bg-gradient-elegant hover:shadow-glow transition-spring transform group-hover:scale-105 font-semibold rounded-xl"
-                      onClick={() => handleDocumentAction(service)}
-                    >
+                    <Button variant="default" size="lg" className="w-full bg-gradient-elegant hover:shadow-glow transition-spring transform group-hover:scale-105 font-semibold rounded-xl" onClick={() => handleDocumentAction(service)}>
                       <FileText className="w-5 h-5 mr-2" />
                       {service.button_cta}
                     </Button>
                   </div>
-                </div>
-              ))}
+                </div>)}
             </div>
-          </div>
-        ))}
+          </div>)}
 
-        {services.length === 0 && (
-          <div className="text-center py-20 animate-slide-up">
+        {services.length === 0 && <div className="text-center py-20 animate-slide-up">
             <div className="bg-gradient-to-br from-card to-brand-gray-light rounded-3xl p-12 shadow-card max-w-2xl mx-auto">
               <div className="w-24 h-24 bg-muted/30 rounded-full flex items-center justify-center mx-auto mb-6">
                 <FileText className="w-12 h-12 text-muted-foreground" />
@@ -325,8 +281,7 @@ export default function PersonasPage({
               <h3 className="text-2xl font-bold text-muted-foreground mb-4">Servicios en Preparación</h3>
               <p className="text-muted-foreground">Nuestros expertos legales están perfeccionando los servicios para ofrecerte la mejor experiencia.</p>
             </div>
-          </div>
-        )}
+          </div>}
 
         {/* Enhanced CTA Section */}
         <div className="relative mt-20 animate-slide-up">
@@ -379,11 +334,7 @@ export default function PersonasPage({
                   </div>
                 </div>
                 
-                <Button 
-                  size="xl"
-                  className="bg-gradient-success hover:shadow-glow transition-spring transform hover:scale-105 font-bold text-lg px-8 py-4 rounded-2xl"
-                  onClick={() => onOpenChat("Necesito una consultoría legal personalizada. Soy una persona natural con una situación específica que requiere asesoría profesional.")}
-                >
+                <Button size="xl" className="bg-gradient-success hover:shadow-glow transition-spring transform hover:scale-105 font-bold text-lg px-8 py-4 rounded-2xl" onClick={() => onOpenChat("Necesito una consultoría legal personalizada. Soy una persona natural con una situación específica que requiere asesoría profesional.")}>
                   <MessageCircle className="w-6 h-6 mr-3" />
                   Consulta Gratuita Ahora
                 </Button>
@@ -423,6 +374,5 @@ export default function PersonasPage({
           </div>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 }
