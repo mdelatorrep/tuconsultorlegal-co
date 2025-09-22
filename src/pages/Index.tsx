@@ -211,6 +211,13 @@ export default function Index() {
         return <PersonasPage onOpenChat={handleOpenChat} onNavigate={handleNavigate} />;
       case "empresas":
         return <EmpresasPage onOpenChat={handleOpenChat} onNavigate={handleNavigate} />;
+      case "auth":
+        return (
+          <UserAuthPage
+            onBack={() => handleNavigate("home")}
+            onAuthSuccess={handleAuthSuccess}
+          />
+        );
       case "precios":
         return <PricingPage onOpenChat={handleOpenChat} onNavigate={handleNavigate} />;
       case "blog":
