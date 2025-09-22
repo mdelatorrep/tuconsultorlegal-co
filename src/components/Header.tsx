@@ -58,30 +58,34 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
 
         {/* Desktop Navigation - Simplified */}
         <div className="hidden lg:flex items-center space-x-6">
-          {/* Main User Type Selector */}
-          <div className="flex items-center space-x-1 bg-muted/50 rounded-lg p-1">
-            <button
-              onClick={() => handleNavClick("user-dashboard")}
-              className={`flex items-center gap-2 px-3 py-2 rounded-md transition-smooth font-medium text-sm ${
-                currentPage === "personas"
-                  ? "bg-background text-primary shadow-sm"
-                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
-              }`}
-            >
-              <User className="w-4 h-4" />
-              <span>Personas</span>
-            </button>
-            <button
-              onClick={() => handleNavClick("user-dashboard")}
-              className={`flex items-center gap-2 px-3 py-2 rounded-md transition-smooth font-medium text-sm ${
-                currentPage === "empresas"
-                  ? "bg-background text-success shadow-sm"
-                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
-              }`}
-            >
-              <Users className="w-4 h-4" />
-              <span>Empresas</span>
-            </button>
+
+          {/* Service Tabs - Personas y Empresas */}
+          <div className="flex items-center space-x-4">
+            <div className="text-sm text-muted-foreground">Servicios:</div>
+            <div className="flex items-center space-x-1 bg-muted/50 rounded-lg p-1">
+              <button
+                onClick={() => handleNavClick("personas")}
+                className={`flex items-center gap-2 px-3 py-2 rounded-md transition-smooth font-medium text-sm ${
+                  currentPage === "personas"
+                    ? "bg-background text-primary shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                }`}
+              >
+                <User className="w-4 h-4" />
+                <span>Personas</span>
+              </button>
+              <button
+                onClick={() => handleNavClick("empresas")}
+                className={`flex items-center gap-2 px-3 py-2 rounded-md transition-smooth font-medium text-sm ${
+                  currentPage === "empresas"
+                    ? "bg-background text-success shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                }`}
+              >
+                <Users className="w-4 h-4" />
+                <span>Empresas</span>
+              </button>
+            </div>
           </div>
 
           {/* Secondary Navigation */}
@@ -131,30 +135,30 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
             </div>
           ) : (
             <div className="flex items-center space-x-2">
-              {/* Professional Portal */}
+              {/* Main Registration CTA - Priority */}
               <Button 
-                onClick={() => handleNavClick("abogados")}
-                variant="ghost"
+                onClick={() => onNavigate("auth")}
+                variant="default"
                 size="sm"
-                className="text-muted-foreground hover:text-warning"
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
               >
-                <Shield className="w-4 h-4 mr-2" />
-                <span className="hidden xl:inline">Soy Abogado</span>
-                <span className="xl:hidden">Abogado</span>
+                <LogIn className="w-4 h-4 mr-2" />
+                <span className="hidden xl:inline">Registrarse</span>
+                <span className="xl:hidden">Registro</span>
               </Button>
               
               <div className="h-4 w-px bg-border"></div>
               
-              {/* Main Registration CTA */}
+              {/* Professional Portal */}
               <Button 
-                onClick={() => onNavigate("user-dashboard")}
+                onClick={() => handleNavClick("abogados")}
                 variant="outline"
                 size="sm"
-                className="border-primary/20 text-primary hover:bg-primary/5"
+                className="text-muted-foreground border-border hover:text-warning hover:border-warning/30"
               >
-                <LogIn className="w-4 h-4 mr-2" />
-                <span className="hidden xl:inline">Acceder</span>
-                <span className="xl:hidden">Entrar</span>
+                <Shield className="w-4 h-4 mr-2" />
+                <span className="hidden xl:inline">Soy Abogado</span>
+                <span className="xl:hidden">Abogado</span>
               </Button>
             </div>
           )}
@@ -324,14 +328,14 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
                   <Button 
                     onClick={() => {
                       setMobileMenuOpen(false);
-                      onNavigate("user-dashboard");
+                      onNavigate("auth");
                     }}
-                    variant="outline"
-                    className="w-full border-primary/30 text-primary"
+                    variant="default"
+                    className="w-full bg-primary text-primary-foreground"
                     size="lg"
                   >
                     <LogIn className="w-4 h-4 mr-2" />
-                    Acceder a Mi Cuenta
+                    Registrarse / Iniciar Sesión
                   </Button>
                 </div>
               )}
