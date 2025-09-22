@@ -157,9 +157,9 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
               
               <div className="h-4 w-px bg-border"></div>
               
-              {/* Professional Portal - Also goes to auth but with different styling */}
+              {/* Professional Portal - Goes to lawyer dashboard */}
               <Button 
-                onClick={() => onNavigate("auth")}
+                onClick={() => onNavigate("abogados")}
                 variant="outline"
                 size="sm"
                 className="text-warning border-warning/30 hover:text-warning hover:border-warning/50 hover:bg-warning/10"
@@ -250,7 +250,7 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
                 
                 {/* Professional Portal */}
                 <button
-                  onClick={() => onNavigate("auth")}
+                  onClick={() => onNavigate("abogados")}
                   className={`p-4 rounded-xl border-2 transition-smooth ${
                     currentPage === "abogados"
                       ? "bg-warning/10 border-warning text-warning"
@@ -263,7 +263,7 @@ export default function Header({ currentPage, onNavigate, onOpenChat }: HeaderPr
                     </div>
                     <div className="flex-1 text-left">
                       <div className="font-semibold text-base">Soy Abogado</div>
-                      <div className="text-sm text-muted-foreground">Acceso profesional - Registro/Login</div>
+                      <div className="text-sm text-muted-foreground">Portal profesional - Panel de abogados</div>
                     </div>
                     <div className="w-2 h-2 bg-warning rounded-full animate-pulse"></div>
                   </div>
