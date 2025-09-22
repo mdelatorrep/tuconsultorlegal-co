@@ -189,7 +189,7 @@ export default function PersonasPage({
               
               {/* CTA Section */}
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <Button onClick={() => onNavigate && onNavigate("user-dashboard")} size="xl" className="bg-gradient-elegant hover:shadow-glow transition-spring transform hover:scale-105 font-bold text-lg px-12 py-6 rounded-2xl bg-yellow-400 hover:bg-yellow-300">
+                <Button onClick={() => onNavigate && onNavigate("user-dashboard")} size="xl" className="bg-gradient-elegant hover:shadow-glow transition-spring transform hover:scale-105 font-bold text-lg px-12 py-6 rounded-2xl bg-amber-500 hover:bg-amber-400">
                   <User className="w-6 h-6 mr-3" />
                   Crear Cuenta Gratuita
                 </Button>
