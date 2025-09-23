@@ -47,7 +47,7 @@ export default function HomePage({
     subtitle: "Contratos, consultas y asesoría personalizada",
     description: "Accede a servicios legales de calidad sin barreras económicas. Resuelve tus dudas jurídicas y obtén documentos respaldados por abogados expertos.",
     action: "Explorar Servicios",
-    gradient: "from-primary to-primary-light",
+    bgColor: "bg-primary",
     onClick: () => onNavigate("personas")
   }, {
     icon: <Users className="w-12 h-12" />,
@@ -55,7 +55,7 @@ export default function HomePage({
     subtitle: "Soluciones jurídicas empresariales integrales",
     description: "Optimiza la gestión legal de tu empresa con documentos corporativos, contratos comerciales y asesoría especializada en derecho empresarial.",
     action: "Ver Soluciones",
-    gradient: "from-success to-success-dark",
+    bgColor: "bg-success",
     onClick: () => onNavigate("empresas")
   }, {
     icon: <Zap className="w-12 h-12" />,
@@ -63,7 +63,7 @@ export default function HomePage({
     subtitle: "Herramientas de productividad legal",
     description: "Potencia tu práctica legal con IA avanzada. Automatiza tareas repetitivas, mejora la precisión y enfócate en casos de mayor valor.",
     action: "Acceder Dashboard",
-    gradient: "from-accent to-primary",
+    bgColor: "bg-brand-orange",
     onClick: () => onNavigate("abogados")
   }];
   const trustBadges = [{
@@ -81,8 +81,8 @@ export default function HomePage({
       <div className="min-h-screen">
         {/* Hero Section - Apple Style */}
         <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-          {/* Background Gradient */}
-          <div className="absolute inset-0 hero-gradient"></div>
+          {/* Solid Professional Background */}
+          <div className="absolute inset-0 hero-solid"></div>
           
           {/* Content */}
           <div className="relative z-10 container mx-auto px-6 text-center">
@@ -91,7 +91,7 @@ export default function HomePage({
               <h1 className="text-5xl md:text-7xl lg:text-8xl font-light text-primary-foreground mb-8 leading-[0.9]">
                 Democratizar
                 <br />
-                <span className="font-bold bg-gradient-to-r from-success to-success-dark bg-clip-text text-transparent">
+                <span className="font-bold text-success">
                   el Acceso Legal
                 </span>
               </h1>
@@ -113,9 +113,9 @@ export default function HomePage({
 
               {/* Enhanced Primary CTA - Priority on Registration */}
               <div className="space-y-6">
-                <Button size="xl" className="bg-success hover:bg-success-dark text-success-foreground px-16 py-8 text-xl font-bold shadow-glow hover:shadow-2xl transition-all duration-300 transform hover:scale-105" onClick={() => onNavigate("user-dashboard")}>
-                  Regístrate Gratis - Acceso Inmediato
-                </Button>
+              <Button size="xl" className="bg-success hover:bg-success-dark text-success-foreground px-16 py-8 text-xl font-bold shadow-card hover:shadow-elevated transition-all duration-300 transform hover:scale-105" onClick={() => onNavigate("user-dashboard")}>
+                Regístrate Gratis - Acceso Inmediato
+              </Button>
                 
                 <div className="text-center text-primary-foreground/80">
                   <p className="text-sm mb-3">O explora nuestros servicios:</p>
@@ -152,12 +152,12 @@ export default function HomePage({
 
               <div className="grid lg:grid-cols-3 gap-8">
                 {mainFeatures.map((feature, index) => <div key={index} className="group relative bg-card border border-border rounded-3xl p-8 md:p-12 hover:shadow-trust transition-smooth cursor-pointer" onClick={feature.onClick}>
-                    {/* Gradient Background */}
-                    <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-5 rounded-3xl transition-smooth`}></div>
+                    {/* Subtle Hover Background */}
+                    <div className={`absolute inset-0 ${feature.bgColor} opacity-0 group-hover:opacity-5 rounded-3xl transition-smooth`}></div>
                     
                     <div className="relative z-10">
                       {/* Icon */}
-                      <div className={`inline-flex p-4 rounded-2xl bg-gradient-to-br ${feature.gradient} text-white mb-8`}>
+                      <div className={`inline-flex p-4 rounded-2xl ${feature.bgColor} text-white mb-8`}>
                         {feature.icon}
                       </div>
                       
@@ -283,9 +283,9 @@ export default function HomePage({
                       "{testimonial.text}"
                     </p>
                     <div className="flex items-center">
-                      <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary-light rounded-full flex items-center justify-center text-white font-bold mr-4">
-                        {testimonial.author.charAt(0)}
-                      </div>
+                        <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-bold mr-4">
+                          {testimonial.author.charAt(0)}
+                        </div>
                       <div>
                         <p className="font-bold text-foreground">{testimonial.author}</p>
                         <p className="text-sm text-muted-foreground">{testimonial.location}</p>
@@ -298,20 +298,20 @@ export default function HomePage({
         </section>
 
         {/* Final CTA Section */}
-        <section className="py-32 hero-gradient text-primary-foreground">
+        <section className="py-32 hero-solid text-primary-foreground">
           <div className="container mx-auto px-6 text-center">
             <div className="max-w-4xl mx-auto">
               <h2 className="text-4xl md:text-6xl font-light mb-8 leading-tight">
                 Comienza tu
                 <br />
-                <span className="font-bold bg-gradient-to-r from-success to-success-dark bg-clip-text text-transparent">
+                <span className="font-bold text-success">
                   transformación legal
                 </span>
               </h2>
               <p className="text-xl text-primary-foreground/80 mb-12 max-w-2xl mx-auto leading-relaxed">
                 Únete a miles de colombianos que ya disfrutan de servicios legales accesibles, confiables y profesionales.
               </p>
-              <Button size="lg" className="bg-success hover:bg-success-dark text-success-foreground px-12 py-6 text-lg font-medium shadow-glow transition-smooth" onClick={() => onOpenChat("Quiero una consultoría legal")}>
+              <Button size="lg" className="bg-success hover:bg-success-dark text-success-foreground px-12 py-6 text-lg font-medium shadow-card transition-smooth" onClick={() => onOpenChat("Quiero una consultoría legal")}>
                 Comenzar Ahora
               </Button>
             </div>

@@ -19,18 +19,18 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 0%;
 
-    /* Primary Colors - Clean Professional Palette */
-    --primary: 215 84% 30%; /* balanced professional blue */
-    --primary-light: 215 84% 40%; /* accessible lighter variant */
+    /* Primary Colors - Refined Professional Palette */
+    --primary: 215 28% 17%; /* deep professional navy */
+    --primary-light: 215 20% 25%; /* subtle lighter variant */
     --primary-foreground: 0 0% 100%;
 
-    /* Action/CTA Colors - Harmonized Success */
-    --success: 142 76% 36%; /* professional green */
-    --success-dark: 142 76% 28%; /* consistent darker variant */
+    /* Action/CTA Colors - Professional Success */
+    --success: 158 36% 37%; /* muted professional green */
+    --success-dark: 158 40% 30%; /* darker variant for depth */
     --success-foreground: 0 0% 100%;
     
-    /* Warning/Accent - Balanced Orange */
-    --warning: 25 95% 55%; /* harmonized orange */
+    /* Warning/Accent - Refined Orange */
+    --warning: 28 76% 67%; /* softer professional orange */
     --warning-foreground: 0 0% 100%;
 
     /* Secondary Colors - Consistent Hierarchy */
@@ -52,30 +52,28 @@ All colors MUST be HSL.
 
     --radius: 0.75rem;
 
-    /* Brand Theme - Simplified Professional Palette */
-    --brand-blue: 215 84% 30%; /* clean professional blue */
-    --brand-blue-light: 215 84% 40%; /* accessible lighter variant */
-    --brand-orange: 25 95% 55%; /* balanced accent orange */
-    --brand-orange-dark: 25 95% 45%; /* consistent darker variant */
+    /* Brand Theme - Clean Flat Colors */
+    --brand-blue: 215 28% 17%; /* consistent with primary */
+    --brand-blue-light: 215 20% 25%; /* consistent lighter variant */
+    --brand-orange: 28 76% 67%; /* consistent with warning */
+    --brand-orange-dark: 28 80% 55%; /* darker variant */
     --brand-gray-light: 210 16% 96%; /* subtle light background */
     --brand-text-light: 210 18% 94%; /* clean light text */
 
-    /* Gradients - Elevated Design */
-    --gradient-hero: linear-gradient(135deg, hsl(var(--brand-blue)) 0%, hsl(var(--brand-blue-light)) 50%, hsl(var(--brand-gold)) 100%);
-    --gradient-elegant: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-light)) 100%);
-    --gradient-card: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(var(--brand-gray-light)) 100%);
-    --gradient-accent: linear-gradient(90deg, hsl(var(--brand-gold)) 0%, hsl(var(--brand-gold-dark)) 100%);
-    --gradient-success: linear-gradient(135deg, hsl(var(--success)) 0%, hsl(var(--success-dark)) 100%);
-    --gradient-glass: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+    /* Solid Professional Backgrounds - No Gradients */
+    --solid-hero: hsl(var(--primary));
+    --solid-card: hsl(var(--card));
+    --solid-success: hsl(var(--success));
+    --solid-accent: hsl(var(--brand-orange));
+    --solid-muted: hsl(var(--muted));
 
-    /* Shadows - Professional & Modern */
-    --shadow-soft: 0 4px 6px -1px hsl(var(--brand-blue) / 0.08), 0 2px 4px -1px hsl(var(--brand-blue) / 0.06);
-    --shadow-card: 0 10px 15px -3px hsl(var(--brand-blue) / 0.12), 0 4px 6px -2px hsl(var(--brand-blue) / 0.08);
-    --shadow-hero: 0 20px 25px -5px hsl(var(--brand-blue) / 0.18), 0 10px 10px -5px hsl(var(--brand-blue) / 0.08);
-    --shadow-glow: 0 0 50px hsl(var(--brand-gold) / 0.3);
-    --shadow-trust: 0 8px 32px hsl(var(--brand-blue) / 0.15);
-    --shadow-elevated: 0 25px 50px -12px hsl(var(--brand-blue) / 0.25);
-    --shadow-floating: 0 35px 60px -12px hsl(var(--brand-blue) / 0.35);
+    /* Shadows - Subtle & Professional */
+    --shadow-soft: 0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+    --shadow-card: 0 4px 6px -1px hsl(0 0% 0% / 0.1), 0 2px 4px -2px hsl(0 0% 0% / 0.1);
+    --shadow-hero: 0 10px 15px -3px hsl(0 0% 0% / 0.1), 0 4px 6px -4px hsl(0 0% 0% / 0.1);
+    --shadow-trust: 0 8px 25px -8px hsl(0 0% 0% / 0.1);
+    --shadow-elevated: 0 20px 25px -5px hsl(0 0% 0% / 0.1), 0 8px 10px -6px hsl(0 0% 0% / 0.1);
+    --shadow-floating: 0 25px 50px -12px hsl(0 0% 0% / 0.25);
 
     /* Animations & Transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -146,21 +144,21 @@ All colors MUST be HSL.
     font-family: 'Montserrat', sans-serif;
   }
 
-  /* Enhanced Legal Theme Custom Styles */
-  .hero-gradient {
-    background: var(--gradient-hero);
+  /* Clean Professional Solid Backgrounds */
+  .hero-solid {
+    background: var(--solid-hero);
   }
 
-  .gradient-elegant {
-    background: var(--gradient-elegant);
+  .card-solid {
+    background: var(--solid-card);
   }
 
-  .gradient-success {
-    background: var(--gradient-success);
+  .success-solid {
+    background: var(--solid-success);
   }
 
-  .card-gradient {
-    background: var(--gradient-card);
+  .accent-solid {
+    background: var(--solid-accent);
   }
 
   .glass-card {
@@ -216,8 +214,8 @@ All colors MUST be HSL.
     box-shadow: var(--shadow-floating);
   }
 
-  .hover-glow:hover {
-    box-shadow: var(--shadow-glow);
+  .hover-subtle:hover {
+    box-shadow: var(--shadow-card);
     transform: translateY(-2px);
   }
 
@@ -227,9 +225,9 @@ All colors MUST be HSL.
     50% { transform: translateY(-10px); }
   }
 
-  @keyframes pulse-glow {
+  @keyframes pulse-subtle {
     0%, 100% { box-shadow: var(--shadow-soft); }
-    50% { box-shadow: var(--shadow-glow); }
+    50% { box-shadow: var(--shadow-card); }
   }
 
   @keyframes slide-up {
@@ -246,8 +244,8 @@ All colors MUST be HSL.
     animation: float 6s ease-in-out infinite;
   }
 
-  .animate-pulse-glow {
-    animation: pulse-glow 3s ease-in-out infinite;
+  .animate-pulse-subtle {
+    animation: pulse-subtle 3s ease-in-out infinite;
   }
 
   .animate-slide-up {
