@@ -19,42 +19,46 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 0%;
 
-    /* Brand Colors - Modern Legal Tech */
-    --primary: 220 60% 20%; /* azul marino profundo #1e2a5e */
-    --primary-light: 220 85% 55%; /* azul eléctrico vibrante #2563eb */
+    /* Primary Colors - Clean Professional Palette */
+    --primary: 215 84% 30%; /* balanced professional blue */
+    --primary-light: 215 84% 40%; /* accessible lighter variant */
     --primary-foreground: 0 0% 100%;
 
-    /* Action/CTA Colors - Trust Gold */
-    --success: 45 93% 47%; /* oro confianza #e6a700 */
-    --success-dark: 45 100% 35%; /* oro profundo #b8860b */
-    --success-foreground: 220 60% 20%;
+    /* Action/CTA Colors - Harmonized Success */
+    --success: 142 76% 36%; /* professional green */
+    --success-dark: 142 76% 28%; /* consistent darker variant */
+    --success-foreground: 0 0% 100%;
+    
+    /* Warning/Accent - Balanced Orange */
+    --warning: 25 95% 55%; /* harmonized orange */
+    --warning-foreground: 0 0% 100%;
 
-    /* Secondary Colors */
-    --secondary: 0 0% 85%; /* gris claro #D8D8D8 */
-    --secondary-foreground: 0 0% 0%;
+    /* Secondary Colors - Consistent Hierarchy */
+    --secondary: 210 20% 96%; /* subtle light background */
+    --secondary-foreground: 215 20% 15%;
 
-    --muted: 0 0% 85%; /* gris claro */
-    --muted-foreground: 0 0% 40%; /* gris medio */
+    --muted: 210 20% 96%; /* consistent light background */
+    --muted-foreground: 215 16% 50%; /* balanced medium text */
 
-    --accent: 0 0% 85%;
-    --accent-foreground: 0 0% 0%;
+    --accent: 210 20% 94%; /* slightly darker for emphasis */
+    --accent-foreground: 215 20% 15%;
 
-    --destructive: 0 62% 50%; /* rojo destructivo */
+    --destructive: 0 84% 60%; /* clear error red */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 85%; /* gris claro */
-    --input: 0 0% 85%;
-    --ring: 233 49% 46%;
+    --border: 214 20% 90%; /* subtle borders */
+    --input: 214 20% 90%; /* consistent input styling */
+    --ring: 215 84% 30%; /* matches primary for focus */
 
     --radius: 0.75rem;
 
-    /* Brand Theme Specific Colors */
-    --brand-blue: 224 47% 32%; /* azul marino profesional */
-    --brand-blue-light: 224 78% 63%; /* azul eléctrico moderno */
-    --brand-gold: 44 95% 51%; /* dorado confianza */
-    --brand-gold-dark: 44 95% 45%; /* dorado oscuro */
-    --brand-gray-light: 220 15% 92%; /* gris más cálido */
-    --brand-text-light: 224 15% 55%; /* texto más armonioso */
+    /* Brand Theme - Simplified Professional Palette */
+    --brand-blue: 215 84% 30%; /* clean professional blue */
+    --brand-blue-light: 215 84% 40%; /* accessible lighter variant */
+    --brand-orange: 25 95% 55%; /* balanced accent orange */
+    --brand-orange-dark: 25 95% 45%; /* consistent darker variant */
+    --brand-gray-light: 210 16% 96%; /* subtle light background */
+    --brand-text-light: 210 18% 94%; /* clean light text */
 
     /* Gradients - Elevated Design */
     --gradient-hero: linear-gradient(135deg, hsl(var(--brand-blue)) 0%, hsl(var(--brand-blue-light)) 50%, hsl(var(--brand-gold)) 100%);
