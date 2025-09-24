@@ -91,7 +91,7 @@ export default function HomePage({
               <h1 className="text-5xl md:text-7xl lg:text-8xl font-light text-primary-foreground mb-8 leading-[0.9]">
                 Democratizar
                 <br />
-                <span className="font-bold text-success">
+                <span className="font-bold text-[#e7b008]">
                   el Acceso Legal
                 </span>
               </h1>
@@ -113,7 +113,7 @@ export default function HomePage({
 
               {/* Enhanced Primary CTA - Priority on Registration */}
               <div className="space-y-6">
-              <Button size="xl" className="bg-success hover:bg-success-dark text-success-foreground px-16 py-8 text-xl font-bold shadow-card hover:shadow-elevated transition-all duration-300 transform hover:scale-105" onClick={() => onNavigate("user-dashboard")}>
+              <Button size="xl" onClick={() => onNavigate("user-dashboard")} className="text-success-foreground px-16 py-8 text-xl font-bold shadow-card hover:shadow-elevated transition-all duration-300 transform hover:scale-105 bg-[#e7b008]">
                 Regístrate Gratis - Acceso Inmediato
               </Button>
                 
@@ -311,7 +311,7 @@ export default function HomePage({
               <p className="text-xl text-primary-foreground/80 mb-12 max-w-2xl mx-auto leading-relaxed">
                 Únete a miles de colombianos que ya disfrutan de servicios legales accesibles, confiables y profesionales.
               </p>
-              <Button size="lg" className="bg-success hover:bg-success-dark text-success-foreground px-12 py-6 text-lg font-medium shadow-card transition-smooth" onClick={() => onOpenChat("Quiero una consultoría legal")}>
+              <Button size="lg" onClick={() => onOpenChat("Quiero una consultoría legal")} className="text-success-foreground px-12 py-6 text-lg font-medium shadow-card transition-smooth bg-[#e7b008]">
                 Comenzar Ahora
               </Button>
             </div>
