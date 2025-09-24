@@ -19,29 +19,28 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 0%;
 
-    /* Primary Colors - Refined Professional Palette */
-    --primary: 215 28% 17%; /* deep professional navy */
-    --primary-light: 215 20% 25%; /* subtle lighter variant */
+    /* Primary Colors - Brand Palette */
+    --primary: 219 46% 32%; /* #2B4078 - Color Principal */
+    --primary-light: 219 40% 40%; /* lighter variant of primary */
     --primary-foreground: 0 0% 100%;
 
-    /* Action/CTA Colors - Professional Success */
-    --success: 158 36% 37%; /* muted professional green */
-    --success-dark: 158 40% 30%; /* darker variant for depth */
-    --success-foreground: 0 0% 100%;
+    /* Secondary/Accent Colors */
+    --secondary: 45 93% 47%; /* #E7B008 - Color Secundario */
+    --secondary-dark: 45 93% 40%; /* darker variant for hover */
+    --secondary-foreground: 0 0% 0%;
     
-    /* Warning/Accent - Refined Orange */
-    --warning: 28 76% 67%; /* softer professional orange */
-    --warning-foreground: 0 0% 100%;
+    /* Warning/Success Colors */
+    --warning: 45 93% 47%; /* using secondary color for consistency */
+    --warning-foreground: 0 0% 0%;
+    --success: 219 46% 32%; /* using primary for success states */
+    --success-foreground: 0 0% 100%;
 
-    /* Secondary Colors - Consistent Hierarchy */
-    --secondary: 210 20% 96%; /* subtle light background */
-    --secondary-foreground: 215 20% 15%;
+    /* Neutral Colors */
+    --muted: 0 0% 95%; /* #F3F3F3 - Complementario 1 */
+    --muted-foreground: 219 46% 32%; /* primary color for muted text */
 
-    --muted: 210 20% 96%; /* consistent light background */
-    --muted-foreground: 215 16% 50%; /* balanced medium text */
-
-    --accent: 210 20% 94%; /* slightly darker for emphasis */
-    --accent-foreground: 215 20% 15%;
+    --accent: 0 0% 95%; /* #F3F3F3 for accent backgrounds */
+    --accent-foreground: 219 46% 32%;
 
     --destructive: 0 84% 60%; /* clear error red */
     --destructive-foreground: 0 0% 100%;
@@ -52,20 +51,20 @@ All colors MUST be HSL.
 
     --radius: 0.75rem;
 
-    /* Brand Theme - Clean Flat Colors */
-    --brand-blue: 215 28% 17%; /* consistent with primary */
-    --brand-blue-light: 215 20% 25%; /* consistent lighter variant */
-    --brand-orange: 28 76% 67%; /* consistent with warning */
-    --brand-orange-dark: 28 80% 55%; /* darker variant */
-    --brand-gray-light: 210 16% 96%; /* subtle light background */
-    --brand-text-light: 210 18% 94%; /* clean light text */
+    /* Brand Theme - Exact Brand Colors */
+    --brand-blue: 219 46% 32%; /* #2B4078 - Color Principal */
+    --brand-blue-light: 219 40% 40%; /* lighter variant */
+    --brand-yellow: 45 93% 47%; /* #E7B008 - Color Secundario */
+    --brand-yellow-dark: 45 93% 40%; /* darker variant */
+    --brand-gray-light: 0 0% 95%; /* #F3F3F3 - Complementario 1 */
+    --brand-white: 0 0% 100%; /* #ffffff - Complementario 2 */
 
-    /* Solid Professional Backgrounds - No Gradients */
-    --solid-hero: hsl(var(--primary));
-    --solid-card: hsl(var(--card));
-    --solid-success: hsl(var(--success));
-    --solid-accent: hsl(var(--brand-orange));
-    --solid-muted: hsl(var(--muted));
+    /* Solid Professional Backgrounds - Brand Colors */
+    --solid-hero: hsl(var(--brand-blue));
+    --solid-card: hsl(var(--brand-white));
+    --solid-accent: hsl(var(--brand-yellow));
+    --solid-secondary: hsl(var(--brand-yellow));
+    --solid-muted: hsl(var(--brand-gray-light));
 
     /* Shadows - Subtle & Professional */
     --shadow-soft: 0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
