@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "./ui/button";
 import { Menu, X, MessageCircle, FileText, Scale, Users, Phone, Newspaper, DollarSign, Shield, FileText as DocumentIcon, Gavel, User, LogIn } from "lucide-react";
 import { useUserAuth } from "@/hooks/useUserAuth";
+import { useLawyerAuthContext } from "@/components/LawyerAuthProvider";
 import logoImage from "/logo-ai-legal.png";
 interface HeaderProps {
   currentPage: string;
@@ -15,9 +16,25 @@ export default function Header({
 }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const {
-    isAuthenticated,
-    user
+    isAuthenticated: userAuthenticated,
+    user: regularUser
   } = useUserAuth();
+  
+  // Try to get lawyer auth context if available
+  let lawyerAuthenticated = false;
+  let lawyerUser = null;
+  try {
+    const lawyerAuth = useLawyerAuthContext();
+    lawyerAuthenticated = lawyerAuth.isAuthenticated;
+    lawyerUser = lawyerAuth.user;
+  } catch (error) {
+    // LawyerAuthProvider not available in this context
+  }
+  
+  // Determine authentication state and user type
+  const isAuthenticated = userAuthenticated || lawyerAuthenticated;
+  const isLawyer = lawyerAuthenticated && lawyerUser;
+  const user = isLawyer ? lawyerUser : regularUser;
   const navItems = [{
     id: "precios",
     label: "Precios",
@@ -81,9 +98,13 @@ export default function Header({
         {/* Desktop CTA Buttons - Simplified */}
         <div className="hidden lg:flex items-center space-x-3">
           {isAuthenticated ? <div className="flex items-center space-x-2">
-              <Button onClick={() => onNavigate("user-dashboard")} variant="outline" size="sm">
+              <Button 
+                onClick={() => onNavigate(isLawyer ? "abogados" : "user-dashboard")} 
+                variant="outline" 
+                size="sm"
+              >
                 <User className="w-4 h-4 mr-2" />
-                Mi Panel
+                {isLawyer ? "Panel Abogado" : "Mi Panel"}
               </Button>
             </div> : <div className="flex items-center space-x-2">
               <Button onClick={() => onNavigate("auth")} variant="outline" size="sm">
@@ -190,10 +211,10 @@ export default function Header({
               {isAuthenticated ? <div className="space-y-2">
                   <Button onClick={() => {
               setMobileMenuOpen(false);
-              onNavigate("user-dashboard");
+              onNavigate(isLawyer ? "abogados" : "user-dashboard");
             }} variant="outline" className="w-full border-primary/30 text-primary" size="lg">
                     <User className="w-4 h-4 mr-2" />
-                    Mi Panel Personal
+                    {isLawyer ? "Panel de Abogado" : "Mi Panel Personal"}
                   </Button>
                   <Button onClick={() => {
               setMobileMenuOpen(false);

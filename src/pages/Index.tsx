@@ -77,13 +77,29 @@ export default function Index() {
   }, []);
 
   const handleNavigate = (page: string, data?: any) => {
-    // Handle user dashboard access
+    // Handle user dashboard access - prevent lawyers from accessing user dashboard
     if (page === "user-dashboard") {
+      // If already on lawyer route, redirect to lawyer dashboard
+      if (currentPage === "abogados") {
+        setCurrentPage("abogados");
+        return;
+      }
+      
       if (isAuthenticated) {
         setShowUserDashboard(true);
       } else {
         setShowUserTypeSelector(true);
       }
+      return;
+    }
+    
+    // Handle lawyer dashboard access - clear user dashboard states
+    if (page === "abogados") {
+      setShowUserDashboard(false);
+      setShowUserAuth(false);
+      setShowUserTypeSelector(false);
+      setCurrentPage("abogados");
+      window.history.pushState(null, "", `#abogados`);
       return;
     }
     
