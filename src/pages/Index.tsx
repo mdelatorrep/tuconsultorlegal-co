@@ -205,7 +205,7 @@ export default function Index() {
   if (showUserDashboard) {
     return (
       <LogRocketProvider>
-        <UserDashboardPage
+        <EnhancedUserDashboard
           onBack={handleBackFromDashboard}
           onOpenChat={handleOpenChat}
         />
