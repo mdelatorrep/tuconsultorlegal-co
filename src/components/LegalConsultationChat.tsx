@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { createLegalAdvisorAgents, checkAgentsStatus } from "@/utils/createLegalAdvisors";
 import { 
   MessageCircle, 
   Send, 
@@ -51,6 +52,8 @@ export default function LegalConsultationChat() {
 
   useEffect(() => {
     loadLegalAdvisors();
+    // Check if agents need to be created and create them automatically
+    checkAndCreateAgentsIfNeeded();
   }, []);
 
   useEffect(() => {
@@ -59,6 +62,29 @@ export default function LegalConsultationChat() {
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const checkAndCreateAgentsIfNeeded = async () => {
+    try {
+      const status = await checkAgentsStatus();
+      
+      if (status.needsCreation > 0) {
+        console.log(`Found ${status.needsCreation} agents that need OpenAI agent creation`);
+        toast.info('Configurando asesores legales... Esto puede tomar unos momentos.');
+        
+        // Create the actual OpenAI agents
+        await createLegalAdvisorAgents();
+        
+        // Reload the agents after creation
+        setTimeout(() => {
+          loadLegalAdvisors();
+          toast.success('Asesores legales configurados correctamente');
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('Error in checkAndCreateAgentsIfNeeded:', error);
+      toast.error('Error al configurar los asesores legales');
+    }
   };
 
   const loadLegalAdvisors = async () => {
