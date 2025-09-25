@@ -18,7 +18,7 @@ import DocumentCreationSuccess from "@/components/DocumentCreationSuccess";
 import UnifiedDocumentPage from "@/components/UnifiedDocumentPage";
 import LegalConsultationChat from "@/components/LegalConsultationChat";
 import UserAuthPage from "@/components/UserAuthPage";
-import UserDashboardPage from "@/components/UserDashboardPage";
+import EnhancedUserDashboard from "@/components/EnhancedUserDashboard";
 import UserTypeSelector from "@/components/UserTypeSelector";
 import LawyerDashboardPage from "@/components/LawyerDashboardPage";
 import { LawyerAuthProvider } from "@/components/LawyerAuthProvider";
