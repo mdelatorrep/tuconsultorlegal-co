@@ -200,7 +200,8 @@ export default function EmpresasPage({
                   <p className="text-xl font-bold text-success mb-6">
                     {service.price === 0 ? 'Gratis' : `Desde $${service.price.toLocaleString()} COP`}
                   </p>
-                  <Button variant="default" className="w-full" onClick={() => handleDocumentAction(service)}>
+                  <Button variant="accent" size="lg" className="w-full hover:shadow-glow transition-spring font-semibold rounded-xl" onClick={() => handleDocumentAction(service)}>
+                    <FileText className="w-5 h-5 mr-2" />
                     {service.button_cta}
                   </Button>
                 </div>

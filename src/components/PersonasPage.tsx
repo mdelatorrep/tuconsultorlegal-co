@@ -264,7 +264,7 @@ export default function PersonasPage({
                     </div>
                     
                     {/* CTA Button */}
-                    <Button variant="default" size="lg" className="w-full bg-gradient-elegant hover:shadow-glow transition-spring transform group-hover:scale-105 font-semibold rounded-xl" onClick={() => handleDocumentAction(service)}>
+                    <Button variant="accent" size="lg" className="w-full hover:shadow-glow transition-spring transform group-hover:scale-105 font-semibold rounded-xl" onClick={() => handleDocumentAction(service)}>
                       <FileText className="w-5 h-5 mr-2" />
                       {service.button_cta}
                     </Button>
