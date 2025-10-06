@@ -124,9 +124,9 @@ export default function LawyerLandingPage({
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button size="lg" onClick={() => document.getElementById('login-section')?.scrollIntoView({
+                <Button size="lg" variant="accent" onClick={() => document.getElementById('login-section')?.scrollIntoView({
                 behavior: 'smooth'
-              })} className="bg-success hover:bg-success-dark font-semibold px-8 py-6 shadow-glow transition-all duration-300 hover:scale-105 text-slate-50 text-[E7B008]">
+              })} className="font-semibold px-8 py-6 shadow-glow transition-all duration-300 hover:scale-105">
                   <Rocket className="w-5 h-5 mr-2" />
                   Comenzar Ahora
                   <ArrowRight className="w-5 h-5 ml-2" />
@@ -134,7 +134,7 @@ export default function LawyerLandingPage({
                 
                 <Button variant="outline" size="lg" onClick={() => document.getElementById('demo-section')?.scrollIntoView({
                 behavior: 'smooth'
-              })} className="border-white hover:bg-white px-8 py-6 text-lg text-slate-600">
+              })} className="border-white/50 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white px-8 py-6 text-lg">
                   <Play className="w-5 h-5 mr-2" />
                   Ver Demo
                 </Button>
@@ -161,7 +161,7 @@ export default function LawyerLandingPage({
                     <div className="space-y-6">
                       <div className="flex items-center justify-between">
                         <h3 className="text-white font-semibold">Panel de Control IA</h3>
-                        <Badge className="text-success border-success/30 bg-slate-50">
+                        <Badge className="bg-success text-white border-success/30">
                           <Zap className="w-3 h-3 mr-1" />
                           En Vivo
                         </Badge>

@@ -189,7 +189,7 @@ export default function PersonasPage({
               
               {/* CTA Section */}
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <Button onClick={() => onNavigate && onNavigate("user-dashboard")} size="xl" className="bg-gradient-elegant hover:shadow-glow transition-spring transform hover:scale-105 font-bold text-lg px-12 py-6 rounded-2xl bg-amber-500 hover:bg-amber-400">
+                <Button onClick={() => onNavigate && onNavigate("user-dashboard")} variant="accent" size="xl" className="hover:shadow-glow transition-spring transform hover:scale-105 font-bold text-lg px-12 py-6 rounded-2xl">
                   <User className="w-6 h-6 mr-3" />
                   Crear Cuenta Gratuita
                 </Button>
@@ -334,7 +334,7 @@ export default function PersonasPage({
                   </div>
                 </div>
                 
-                <Button size="xl" className="bg-gradient-success hover:shadow-glow transition-spring transform hover:scale-105 font-bold text-lg px-8 py-4 rounded-2xl" onClick={() => onOpenChat("Necesito una consultoría legal personalizada. Soy una persona natural con una situación específica que requiere asesoría profesional.")}>
+                <Button variant="accent" size="xl" className="hover:shadow-glow transition-spring transform hover:scale-105 font-bold text-lg px-8 py-4 rounded-2xl" onClick={() => onOpenChat("Necesito una consultoría legal personalizada. Soy una persona natural con una situación específica que requiere asesoría profesional.")}>
                   <MessageCircle className="w-6 h-6 mr-3" />
                   Consulta Gratuita Ahora
                 </Button>

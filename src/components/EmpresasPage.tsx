@@ -127,31 +127,31 @@ export default function EmpresasPage({
   }
   return <div className="container mx-auto px-6 py-20">
       {/* Hero Section */}
-      <div className="hero-gradient rounded-xl p-8 mb-16 shadow-elevated">
+      <div className="bg-gradient-to-br from-primary via-primary-light to-brand-blue-light rounded-xl p-8 mb-16 shadow-elevated">
         <div className="text-center max-w-4xl mx-auto">
-          <h1 className="text-4xl md:text-5xl font-extrabold mb-6 text-[#2b4078]">
+          <h1 className="text-4xl md:text-5xl font-extrabold mb-6 text-white">
             Tu Centro de Control Legal Empresarial
           </h1>
-          <p className="text-lg mb-8 text-slate-500">
+          <p className="text-lg mb-8 text-white/90">
             Regístrate para centralizar toda la gestión legal de tu empresa en un solo panel
           </p>
           
           <div className="grid md:grid-cols-3 gap-6 mb-8">
-            <div className="text-center bg-[#2b4078]">
+            <div className="text-center bg-white/10 backdrop-blur-sm rounded-lg p-6 border border-white/20">
               <div className="bg-white/20 rounded-lg p-4 mb-3 mx-auto w-fit backdrop-blur-sm">
                 <Handshake className="w-8 h-8 text-white" />
               </div>
               <h3 className="font-semibold text-white mb-2">Contratos Automatizados</h3>
               <p className="text-sm text-white/80">Generación inteligente y personalizada</p>
             </div>
-            <div className="text-center">
+            <div className="text-center bg-white/10 backdrop-blur-sm rounded-lg p-6 border border-white/20">
               <div className="bg-white/20 rounded-lg p-4 mb-3 mx-auto w-fit backdrop-blur-sm">
                 <Shield className="w-8 h-8 text-white" />
               </div>
               <h3 className="font-semibold text-white mb-2">Compliance Total</h3>
               <p className="text-sm text-white/80">Monitoreo y alertas automáticas</p>
             </div>
-            <div className="text-center">
+            <div className="text-center bg-white/10 backdrop-blur-sm rounded-lg p-6 border border-white/20">
               <div className="bg-white/20 rounded-lg p-4 mb-3 mx-auto w-fit backdrop-blur-sm">
                 <Scale className="w-8 h-8 text-white" />
               </div>
@@ -160,7 +160,7 @@ export default function EmpresasPage({
             </div>
           </div>
           
-          <Button onClick={() => onNavigate && onNavigate("user-dashboard")} variant="success" size="xl" className="shadow-glow">
+          <Button onClick={() => onNavigate && onNavigate("user-dashboard")} variant="accent" size="xl" className="shadow-glow">
             <Building className="w-5 h-5 mr-2" />
             Crear Panel Empresarial
           </Button>
