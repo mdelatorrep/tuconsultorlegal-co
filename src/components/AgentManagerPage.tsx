@@ -20,7 +20,12 @@ import {
   Save,
   X,
   Plus,
-  Settings
+  Settings,
+  Wand2,
+  AlertTriangle,
+  Info,
+  RefreshCw,
+  Sparkles
 } from "lucide-react";
 import {
   Dialog,
@@ -35,6 +40,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ConversationGuideBuilder } from "@/components/ConversationGuideBuilder";
 import { FieldInstructionsManager } from "@/components/FieldInstructionsManager";
 
@@ -80,6 +87,21 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
   const [convLoading, setConvLoading] = useState(false);
   const [fieldInstructions, setFieldInstructions] = useState<any[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
+  
+  // AI Improvement states
+  const [isImprovingDocInfo, setIsImprovingDocInfo] = useState(false);
+  const [isImprovingPrompt, setIsImprovingPrompt] = useState(false);
+  const [isImprovingTemplate, setIsImprovingTemplate] = useState(false);
+  const [isReprocessingTemplate, setIsReprocessingTemplate] = useState(false);
+  
+  // Auto-save state
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // Improvement suggestions
+  const [docInfoSuggestions, setDocInfoSuggestions] = useState<any>(null);
+  const [promptSuggestions, setPromptSuggestions] = useState<any>(null);
+  const [templateSuggestions, setTemplateSuggestions] = useState<any>(null);
 
   const fetchConversationBlocks = async (legalAgentId: string) => {
     setConvLoading(true);
@@ -374,11 +396,54 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
     setIsEditDialogOpen(true);
   };
 
-  const handleSaveAgent = async () => {
+  const handleSaveAgent = async (silent = false) => {
     if (!editingAgent) return;
+    
+    // Validations
+    if (!editingAgent.name?.trim()) {
+      toast({
+        title: "Error",
+        description: "El nombre es obligatorio",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!editingAgent.template_content?.trim()) {
+      toast({
+        title: "Error",
+        description: "La plantilla es obligatoria",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Validate placeholders
+    const extractedPlaceholders = extractPlaceholdersFromTemplate(editingAgent.template_content);
+    if (extractedPlaceholders.length === 0 && !silent) {
+      toast({
+        title: "Advertencia",
+        description: "No se encontraron placeholders. Usa formato {{campo}}",
+        variant: "destructive"
+      });
+    }
+    
+    // Check placeholders in blocks
+    const placeholdersInBlocks = new Set<string>();
+    convBlocks.forEach(block => {
+      block.placeholders?.forEach((p: string) => placeholdersInBlocks.add(p));
+    });
+    
+    const missingInBlocks = extractedPlaceholders.filter(p => !placeholdersInBlocks.has(p.placeholder));
+    if (missingInBlocks.length > 0 && !silent) {
+      const confirmed = window.confirm(
+        `Hay ${missingInBlocks.length} placeholders sin asignar a bloques: ${missingInBlocks.map(p => p.placeholder).join(', ')}. ¿Continuar?`
+      );
+      if (!confirmed) return;
+    }
 
+    setIsSaving(true);
     try {
-      // Intentar ambos tipos de autenticación
       const lawyerHeaders = getAuthHeaders('lawyer');
       const adminHeaders = getAuthHeaders('admin');
       const authHeaders = lawyerHeaders.authorization ? lawyerHeaders : adminHeaders;
@@ -407,11 +472,11 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
           target_audience: editingAgent.target_audience,
           template_content: editingAgent.template_content,
           ai_prompt: editingAgent.ai_prompt,
+          placeholder_fields: extractedPlaceholders,
           button_cta: editingAgent.button_cta,
           frontend_icon: editingAgent.frontend_icon,
           sla_enabled: editingAgent.sla_enabled,
           sla_hours: editingAgent.sla_hours,
-          // Include conversation blocks and field instructions
           conversation_blocks: convBlocks.map((block, index) => ({
             block_name: block.block_name,
             intro_phrase: block.intro_phrase,
@@ -434,31 +499,261 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
         throw new Error(data?.error || error?.message || 'Error al actualizar el agente');
       }
 
-      toast({
-        title: "Agente actualizado",
-        description: data.message || "El agente ha sido actualizado correctamente.",
-      });
+      if (!silent) {
+        toast({
+          title: "Agente actualizado",
+          description: data.message || "El agente ha sido actualizado correctamente.",
+        });
+      }
 
-      // Update local state
       setAgents(agents.map(agent => 
         agent.id === editingAgent.id ? editingAgent : agent
       ));
       
-      setIsEditDialogOpen(false);
-      setEditingAgent(null);
+      setHasUnsavedChanges(false);
+      
+      if (!silent) {
+        setIsEditDialogOpen(false);
+        setEditingAgent(null);
+      }
     } catch (error: any) {
       console.error('Error:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Ocurrió un error inesperado al actualizar el agente.",
-        variant: "destructive",
-      });
+      if (!silent) {
+        toast({
+          title: "Error",
+          description: error.message || "Ocurrió un error inesperado al actualizar el agente.",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleEditFieldChange = (field: string, value: any) => {
     if (!editingAgent) return;
     setEditingAgent({ ...editingAgent, [field]: value });
+    setHasUnsavedChanges(true);
+  };
+  
+  // Extract placeholders from template
+  const extractPlaceholdersFromTemplate = (template: string) => {
+    const regex = /\{\{([^}]+)\}\}/g;
+    const matches = [];
+    let match;
+    
+    while ((match = regex.exec(template)) !== null) {
+      const placeholder = match[1].trim();
+      if (!matches.find(m => m.placeholder === placeholder)) {
+        matches.push({
+          placeholder,
+          pregunta: `¿Cuál es ${placeholder.toLowerCase()}?`
+        });
+      }
+    }
+    
+    return matches;
+  };
+  
+  // Re-extract placeholders when template changes
+  const handleReprocessTemplate = async () => {
+    if (!editingAgent?.template_content) {
+      toast({
+        title: "Error",
+        description: "No hay plantilla para procesar",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsReprocessingTemplate(true);
+    try {
+      // Extract placeholders locally
+      const newPlaceholders = extractPlaceholdersFromTemplate(editingAgent.template_content);
+      
+      // Check for orphaned placeholders in blocks
+      const blocksPlaceholders = new Set();
+      convBlocks.forEach(block => {
+        block.placeholders?.forEach((p: string) => blocksPlaceholders.add(p));
+      });
+      
+      const orphaned = [...blocksPlaceholders].filter(
+        p => !newPlaceholders.some(np => np.placeholder === p)
+      );
+      
+      if (orphaned.length > 0) {
+        const confirmed = window.confirm(
+          `Los siguientes campos están en bloques pero ya no en la plantilla: ${orphaned.join(', ')}.\n\n¿Deseas continuar?`
+        );
+        if (!confirmed) {
+          setIsReprocessingTemplate(false);
+          return;
+        }
+      }
+      
+      // Call AI to improve prompt and calculate price
+      const { data, error } = await supabase.functions.invoke('process-agent-ai', {
+        body: {
+          docName: editingAgent.document_name || editingAgent.name,
+          docDesc: editingAgent.document_description || editingAgent.description,
+          docCat: editingAgent.category,
+          docTemplate: editingAgent.template_content,
+          targetAudience: editingAgent.target_audience || 'personas'
+        }
+      });
+      
+      if (error) throw error;
+      
+      if (data?.success) {
+        handleEditFieldChange('ai_prompt', data.enhancedPrompt);
+        handleEditFieldChange('placeholder_fields', newPlaceholders);
+        
+        toast({
+          title: "Plantilla reprocesada",
+          description: `Se encontraron ${newPlaceholders.length} placeholders y se actualizó el prompt AI.`,
+        });
+      }
+    } catch (error: any) {
+      console.error('Error reprocessing template:', error);
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo reprocesar la plantilla",
+        variant: "destructive"
+      });
+    } finally {
+      setIsReprocessingTemplate(false);
+    }
+  };
+  
+  // Improve document name and description with AI
+  const handleImproveDocInfo = async () => {
+    if (!editingAgent?.name || !editingAgent?.description) {
+      toast({
+        title: "Error",
+        description: "Se requiere nombre y descripción",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsImprovingDocInfo(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('improve-document-info', {
+        body: {
+          docName: editingAgent.name,
+          docDesc: editingAgent.description,
+          docCategory: editingAgent.category,
+          targetAudience: editingAgent.target_audience || 'personas'
+        }
+      });
+      
+      if (error) throw error;
+      
+      if (data?.success) {
+        setDocInfoSuggestions({
+          improvedName: data.improvedName,
+          improvedDescription: data.improvedDescription,
+          originalName: editingAgent.name,
+          originalDescription: editingAgent.description
+        });
+      }
+    } catch (error: any) {
+      console.error('Error improving doc info:', error);
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo mejorar la información",
+        variant: "destructive"
+      });
+    } finally {
+      setIsImprovingDocInfo(false);
+    }
+  };
+  
+  // Improve AI prompt
+  const handleImprovePrompt = async () => {
+    if (!editingAgent?.ai_prompt) {
+      toast({
+        title: "Error",
+        description: "No hay prompt para mejorar",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsImprovingPrompt(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('improve-prompt-ai', {
+        body: {
+          current_prompt: editingAgent.ai_prompt,
+          target_audience: editingAgent.target_audience || 'personas'
+        }
+      });
+      
+      if (error) throw error;
+      
+      if (data?.success) {
+        setPromptSuggestions({
+          improvedPrompt: data.improved_prompt,
+          originalPrompt: editingAgent.ai_prompt
+        });
+      }
+    } catch (error: any) {
+      console.error('Error improving prompt:', error);
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo mejorar el prompt",
+        variant: "destructive"
+      });
+    } finally {
+      setIsImprovingPrompt(false);
+    }
+  };
+  
+  // Check consistency between template and blocks
+  const checkConsistency = () => {
+    if (!editingAgent?.template_content) return { orphanedInBlocks: [], missingInBlocks: [] };
+    
+    const templatePlaceholders = extractPlaceholdersFromTemplate(editingAgent.template_content);
+    const blocksPlaceholders = new Set<string>();
+    
+    convBlocks.forEach(block => {
+      block.placeholders?.forEach((p: string) => blocksPlaceholders.add(p));
+    });
+    
+    const orphanedInBlocks = [...blocksPlaceholders].filter(
+      p => !templatePlaceholders.some(tp => tp.placeholder === p)
+    );
+    
+    const missingInBlocks = templatePlaceholders.filter(
+      tp => !blocksPlaceholders.has(tp.placeholder)
+    );
+    
+    return { orphanedInBlocks, missingInBlocks };
+  };
+  
+  // Auto-save effect
+  useEffect(() => {
+    if (!hasUnsavedChanges || !editingAgent || isSaving) return;
+    
+    const timer = setTimeout(() => {
+      handleSaveAgent(true);
+    }, 3000);
+    
+    return () => clearTimeout(timer);
+  }, [editingAgent, convBlocks, fieldInstructions, hasUnsavedChanges]);
+  
+  // Warning before closing with unsaved changes
+  const handleCloseDialog = () => {
+    if (hasUnsavedChanges) {
+      const confirmed = window.confirm("Hay cambios sin guardar. ¿Deseas salir sin guardar?");
+      if (!confirmed) return;
+    }
+    setIsEditDialogOpen(false);
+    setEditingAgent(null);
+    setHasUnsavedChanges(false);
+    setDocInfoSuggestions(null);
+    setPromptSuggestions(null);
+    setTemplateSuggestions(null);
   };
 
   const getStatusText = (status: string) => {
@@ -1061,330 +1356,500 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
             )}
           </DialogContent>
         </Dialog>
-        {/* Edit Agent Dialog */}
-        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        {/* Edit Agent Dialog with Tabs */}
+        <Dialog open={isEditDialogOpen} onOpenChange={handleCloseDialog}>
+          <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
             <DialogHeader>
-              <DialogTitle>Editar Agente Legal</DialogTitle>
+              <DialogTitle className="flex items-center gap-2">
+                Editar Agente Legal
+                {isSaving && <Badge variant="outline" className="text-xs">Guardando...</Badge>}
+                {hasUnsavedChanges && !isSaving && <Badge variant="secondary" className="text-xs">Cambios sin guardar</Badge>}
+              </DialogTitle>
               <DialogDescription>
                 Modifica la información del agente legal
               </DialogDescription>
             </DialogHeader>
             
             {editingAgent && (
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="name">Nombre del Agente</Label>
-                    <Input
-                      id="name"
-                      value={editingAgent.name}
-                      onChange={(e) => handleEditFieldChange('name', e.target.value)}
-                      placeholder="Nombre del agente"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="document_name">Nombre del Documento</Label>
-                    <Input
-                      id="document_name"
-                      value={editingAgent.document_name || ''}
-                      onChange={(e) => handleEditFieldChange('document_name', e.target.value)}
-                      placeholder="Nombre del documento"
-                    />
-                  </div>
-                </div>
+              <Tabs defaultValue="basic" className="flex-1 overflow-hidden flex flex-col">
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="basic">📝 Información</TabsTrigger>
+                  <TabsTrigger value="template">📄 Plantilla</TabsTrigger>
+                  <TabsTrigger value="conversation">💬 Conversación</TabsTrigger>
+                  <TabsTrigger value="config">⚙️ Configuración</TabsTrigger>
+                </TabsList>
 
-                <div>
-                  <Label htmlFor="description">Descripción</Label>
-                  <Textarea
-                    id="description"
-                    value={editingAgent.description}
-                    onChange={(e) => handleEditFieldChange('description', e.target.value)}
-                    placeholder="Descripción del agente"
-                    rows={3}
-                  />
-                </div>
+                {/* Check consistency warnings */}
+                {(() => {
+                  const { orphanedInBlocks, missingInBlocks } = checkConsistency();
+                  return (
+                    <>
+                      {orphanedInBlocks.length > 0 && (
+                        <Alert variant="destructive" className="mt-4">
+                          <AlertTriangle className="h-4 w-4" />
+                          <AlertTitle>Placeholders huérfanos en bloques</AlertTitle>
+                          <AlertDescription>
+                            Los siguientes campos están en bloques pero ya no existen en la plantilla: {orphanedInBlocks.join(', ')}
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                      {missingInBlocks.length > 0 && (
+                        <Alert className="mt-4">
+                          <Info className="h-4 w-4" />
+                          <AlertTitle>Campos sin asignar</AlertTitle>
+                          <AlertDescription>
+                            Estos campos están en la plantilla pero no en bloques: {missingInBlocks.map(p => p.placeholder).join(', ')}
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                    </>
+                  );
+                })()}
 
-                <div>
-                  <Label htmlFor="document_description">Descripción del Documento</Label>
-                  <Textarea
-                    id="document_description"
-                    value={editingAgent.document_description || ''}
-                    onChange={(e) => handleEditFieldChange('document_description', e.target.value)}
-                    placeholder="Descripción del documento"
-                    rows={3}
-                  />
-                </div>
+                <div className="flex-1 overflow-y-auto mt-4">
+                  {/* TAB 1: INFORMACIÓN BÁSICA */}
+                  <TabsContent value="basic" className="space-y-4 mt-0">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Label htmlFor="name">Nombre del Agente *</Label>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={handleImproveDocInfo}
+                            disabled={isImprovingDocInfo}
+                          >
+                            {isImprovingDocInfo ? (
+                              <RefreshCw className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Wand2 className="h-3 w-3" />
+                            )}
+                          </Button>
+                        </div>
+                        <Input
+                          id="name"
+                          value={editingAgent.name}
+                          onChange={(e) => handleEditFieldChange('name', e.target.value)}
+                          placeholder="Nombre del agente"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="document_name">Nombre del Documento</Label>
+                        <Input
+                          id="document_name"
+                          value={editingAgent.document_name || ''}
+                          onChange={(e) => handleEditFieldChange('document_name', e.target.value)}
+                          placeholder="Nombre del documento"
+                        />
+                      </div>
+                    </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="category">Categoría</Label>
-                    <Select
-                      value={editingAgent.category}
-                      onValueChange={(value) => handleEditFieldChange('category', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecciona una categoría" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.length > 0 ? (
-                          categories.map((category) => (
-                            <SelectItem key={category} value={category}>
-                              {category}
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <SelectItem value="loading" disabled>
-                            Cargando categorías...
-                          </SelectItem>
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="target_audience">Audiencia Objetivo</Label>
-                    <Select
-                      value={editingAgent.target_audience || 'personas'}
-                      onValueChange={(value) => handleEditFieldChange('target_audience', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecciona audiencia" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="personas">👤 Personas</SelectItem>
-                        <SelectItem value="empresas">🏢 Empresas</SelectItem>
-                        <SelectItem value="ambos">🌐 Ambos</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                    {/* AI Suggestions for Doc Info */}
+                    {docInfoSuggestions && (
+                      <Card className="bg-muted/50">
+                        <CardHeader>
+                          <CardTitle className="text-sm flex items-center gap-2">
+                            <Sparkles className="h-4 w-4" />
+                            Sugerencias de IA
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <div>
+                            <Label className="text-xs">Nombre sugerido:</Label>
+                            <p className="text-sm">{docInfoSuggestions.improvedName}</p>
+                          </div>
+                          <div>
+                            <Label className="text-xs">Descripción sugerida:</Label>
+                            <p className="text-sm">{docInfoSuggestions.improvedDescription}</p>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                handleEditFieldChange('name', docInfoSuggestions.improvedName);
+                                handleEditFieldChange('description', docInfoSuggestions.improvedDescription);
+                                setDocInfoSuggestions(null);
+                                toast({ title: "Sugerencias aplicadas" });
+                              }}
+                            >
+                              Aplicar
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => setDocInfoSuggestions(null)}>
+                              Rechazar
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
 
-                {/* UI Configuration */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="button_cta">Texto del Botón</Label>
-                    <Input
-                      id="button_cta"
-                      value={editingAgent.button_cta || 'Generar Documento'}
-                      onChange={(e) => handleEditFieldChange('button_cta', e.target.value)}
-                      placeholder="Texto del botón de acción"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="frontend_icon">Ícono del Frontend</Label>
-                    <Select
-                      value={editingAgent.frontend_icon || 'FileText'}
-                      onValueChange={(value) => handleEditFieldChange('frontend_icon', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecciona un ícono" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="FileText">📄 Documento</SelectItem>
-                        <SelectItem value="Scale">⚖️ Balanza</SelectItem>
-                        <SelectItem value="Building">🏢 Edificio</SelectItem>
-                        <SelectItem value="Users">👥 Usuarios</SelectItem>
-                        <SelectItem value="Shield">🛡️ Escudo</SelectItem>
-                        <SelectItem value="Gavel">🔨 Martillo</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {/* SLA Configuration */}
-                <div className="space-y-4 p-4 border border-border rounded-lg bg-muted/50">
-                  <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-semibold text-sm">⏱️ Configuración de ANS</h3>
-                      <p className="text-xs text-muted-foreground">Acuerdo de Nivel de Servicio</p>
+                      <Label htmlFor="description">Descripción *</Label>
+                      <Textarea
+                        id="description"
+                        value={editingAgent.description}
+                        onChange={(e) => handleEditFieldChange('description', e.target.value)}
+                        placeholder="Descripción del agente"
+                        rows={3}
+                      />
                     </div>
-                    <Switch
-                      checked={editingAgent.sla_enabled ?? true}
-                      onCheckedChange={(checked) => handleEditFieldChange('sla_enabled', checked)}
-                    />
-                  </div>
-                  
-                  {editingAgent.sla_enabled && (
+
                     <div>
-                      <Label htmlFor="sla_hours" className="text-sm">
-                        Tiempo límite de respuesta (horas)
-                      </Label>
-                      <Select 
-                        value={(editingAgent.sla_hours ?? 4).toString()} 
-                        onValueChange={(value) => handleEditFieldChange('sla_hours', parseInt(value))}
-                      >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue placeholder="Selecciona el tiempo límite" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="1">1 hora</SelectItem>
-                          <SelectItem value="2">2 horas</SelectItem>
-                          <SelectItem value="4">4 horas (recomendado)</SelectItem>
-                          <SelectItem value="6">6 horas</SelectItem>
-                          <SelectItem value="8">8 horas</SelectItem>
-                          <SelectItem value="12">12 horas</SelectItem>
-                          <SelectItem value="24">24 horas (máximo)</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <Label htmlFor="document_description">Descripción del Documento</Label>
+                      <Textarea
+                        id="document_description"
+                        value={editingAgent.document_description || ''}
+                        onChange={(e) => handleEditFieldChange('document_description', e.target.value)}
+                        placeholder="Descripción del documento"
+                        rows={3}
+                      />
                     </div>
-                  )}
-                </div>
 
-                <div className="grid grid-cols-1 gap-4">
-                  <div>
-                    <Label htmlFor="price">Precio (COP)</Label>
-                    <Input
-                      id="price"
-                      type="number"
-                      min="0"
-                      value={editingAgent.price || 0}
-                      onChange={(e) => handleEditFieldChange('price', parseInt(e.target.value) || 0)}
-                      placeholder="Precio (0 = gratis)"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Ingresa 0 para hacer el documento gratuito
-                    </p>
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="price_justification">Justificación del Precio</Label>
-                  <Textarea
-                    id="price_justification"
-                    value={editingAgent.price_justification || ''}
-                    onChange={(e) => handleEditFieldChange('price_justification', e.target.value)}
-                    placeholder="Justificación del precio"
-                    rows={3}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="template_content">Contenido de la Plantilla</Label>
-                  <Textarea
-                    id="template_content"
-                    value={editingAgent.template_content}
-                    onChange={(e) => handleEditFieldChange('template_content', e.target.value)}
-                    placeholder="Contenido de la plantilla del documento"
-                    rows={6}
-                    className="font-mono text-sm"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="ai_prompt">Prompt de IA</Label>
-                  <Textarea
-                    id="ai_prompt"
-                    value={editingAgent.ai_prompt}
-                    onChange={(e) => handleEditFieldChange('ai_prompt', e.target.value)}
-                    placeholder="Prompt para la IA"
-                    rows={6}
-                    className="font-mono text-sm"
-                  />
-                </div>
-
-                {/* Conversation Guide Builder */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold">Guía de Conversación</h3>
-                    <Badge variant="outline">{convBlocks.length} bloques</Badge>
-                  </div>
-                  
-                  {editingAgent.placeholder_fields && editingAgent.placeholder_fields.length > 0 ? (
-                    <ConversationGuideBuilder 
-                      placeholders={editingAgent.placeholder_fields.map((field: any) => field.placeholder || field.name)}
-                      conversationBlocks={convBlocks.map(block => ({
-                        id: block.id,
-                        name: block.block_name,
-                        introduction: block.intro_phrase,
-                        placeholders: Array.isArray(block.placeholders) ? block.placeholders : []
-                      }))}
-                      onBlocksChange={(blocks) => {
-                        const updatedBlocks = blocks.map((block, index) => ({
-                          id: block.id,
-                          block_name: block.name,
-                          intro_phrase: block.introduction,
-                          placeholders: block.placeholders,
-                          block_order: index + 1
-                        }));
-                        setConvBlocks(updatedBlocks);
-                      }}
-                    />
-                  ) : (
-                    <div className="text-center py-4 text-muted-foreground">
-                      <p>No se han detectado placeholders en la plantilla.</p>
-                      <p className="text-xs">Los placeholders se detectan automáticamente en el formato {`{{nombre_campo}}`}</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="category">Categoría *</Label>
+                        <Select
+                          value={editingAgent.category}
+                          onValueChange={(value) => handleEditFieldChange('category', value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecciona una categoría" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {categories.length > 0 ? (
+                              categories.map((category) => (
+                                <SelectItem key={category} value={category}>
+                                  {category}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <SelectItem value="loading" disabled>
+                                Cargando categorías...
+                              </SelectItem>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="target_audience">Audiencia Objetivo</Label>
+                        <Select
+                          value={editingAgent.target_audience || 'personas'}
+                          onValueChange={(value) => handleEditFieldChange('target_audience', value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecciona audiencia" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="personas">👤 Personas</SelectItem>
+                            <SelectItem value="empresas">🏢 Empresas</SelectItem>
+                            <SelectItem value="ambos">🌐 Ambos</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
-                  )}
-                </div>
+                  </TabsContent>
 
-                {/* Field Instructions Manager */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold">Instrucciones de Campos</h3>
-                    <Badge variant="outline">{fieldInstructions.length} instrucciones</Badge>
-                  </div>
-                  
-                  {editingAgent.placeholder_fields && editingAgent.placeholder_fields.length > 0 ? (
-                    <FieldInstructionsManager
-                      placeholders={editingAgent.placeholder_fields.map((field: any) => field.placeholder || field.name)}
-                      fieldInstructions={fieldInstructions.map(instruction => ({
-                        id: instruction.id,
-                        fieldName: instruction.field_name,
-                        validationRule: instruction.validation_rule,
-                        helpText: instruction.help_text
-                      }))}
-                      onInstructionsChange={(instructions) => {
-                        const updatedInstructions = instructions.map(instruction => ({
-                          id: instruction.id,
-                          field_name: instruction.fieldName,
-                          validation_rule: instruction.validationRule,
-                          help_text: instruction.helpText
-                        }));
-                        setFieldInstructions(updatedInstructions);
-                      }}
-                    />
-                  ) : (
-                    <div className="text-center py-4 text-muted-foreground">
-                      <p>No hay campos para configurar instrucciones.</p>
+                  {/* TAB 2: PLANTILLA Y PROMPT */}
+                  <TabsContent value="template" className="space-y-4 mt-0">
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <Label htmlFor="template_content">Contenido de la Plantilla *</Label>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleReprocessTemplate}
+                          disabled={isReprocessingTemplate}
+                        >
+                          {isReprocessingTemplate ? (
+                            <RefreshCw className="h-3 w-3 animate-spin mr-1" />
+                          ) : (
+                            <RefreshCw className="h-3 w-3 mr-1" />
+                          )}
+                          Re-analizar Plantilla
+                        </Button>
+                      </div>
+                      <Textarea
+                        id="template_content"
+                        value={editingAgent.template_content}
+                        onChange={(e) => handleEditFieldChange('template_content', e.target.value)}
+                        placeholder="Contenido de la plantilla del documento. Usa {{campo}} para placeholders."
+                        rows={10}
+                        className="font-mono text-sm"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Placeholders detectados: {extractPlaceholdersFromTemplate(editingAgent.template_content).length}
+                      </p>
                     </div>
-                  )}
+
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Label htmlFor="ai_prompt">Prompt de IA</Label>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={handleImprovePrompt}
+                          disabled={isImprovingPrompt}
+                        >
+                          {isImprovingPrompt ? (
+                            <RefreshCw className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Wand2 className="h-3 w-3" />
+                          )}
+                        </Button>
+                      </div>
+                      <Textarea
+                        id="ai_prompt"
+                        value={editingAgent.ai_prompt}
+                        onChange={(e) => handleEditFieldChange('ai_prompt', e.target.value)}
+                        placeholder="Prompt para la IA"
+                        rows={8}
+                        className="font-mono text-sm"
+                      />
+                    </div>
+
+                    {/* AI Suggestions for Prompt */}
+                    {promptSuggestions && (
+                      <Card className="bg-muted/50">
+                        <CardHeader>
+                          <CardTitle className="text-sm flex items-center gap-2">
+                            <Sparkles className="h-4 w-4" />
+                            Prompt mejorado por IA
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <div>
+                            <Label className="text-xs">Nuevo prompt:</Label>
+                            <pre className="text-sm bg-background p-2 rounded mt-1 max-h-40 overflow-y-auto">
+                              {promptSuggestions.improvedPrompt}
+                            </pre>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                handleEditFieldChange('ai_prompt', promptSuggestions.improvedPrompt);
+                                setPromptSuggestions(null);
+                                toast({ title: "Prompt mejorado aplicado" });
+                              }}
+                            >
+                              Aplicar
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => setPromptSuggestions(null)}>
+                              Rechazar
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </TabsContent>
+
+                  {/* TAB 3: GUÍA DE CONVERSACIÓN */}
+                  <TabsContent value="conversation" className="space-y-4 mt-0">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-semibold">Guía de Conversación</h3>
+                        <Badge variant="outline">{convBlocks.length} bloques</Badge>
+                      </div>
+                      
+                      {editingAgent.placeholder_fields && editingAgent.placeholder_fields.length > 0 ? (
+                        <ConversationGuideBuilder 
+                          placeholders={extractPlaceholdersFromTemplate(editingAgent.template_content).map(p => p.placeholder)}
+                          conversationBlocks={convBlocks.map(block => ({
+                            id: block.id,
+                            name: block.block_name,
+                            introduction: block.intro_phrase,
+                            placeholders: Array.isArray(block.placeholders) ? block.placeholders : []
+                          }))}
+                          onBlocksChange={(blocks) => {
+                            const updatedBlocks = blocks.map((block, index) => ({
+                              id: block.id,
+                              block_name: block.name,
+                              intro_phrase: block.introduction,
+                              placeholders: block.placeholders,
+                              block_order: index + 1
+                            }));
+                            setConvBlocks(updatedBlocks);
+                            setHasUnsavedChanges(true);
+                          }}
+                        />
+                      ) : (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <AlertTriangle className="h-8 w-8 mx-auto mb-2" />
+                          <p>No se han detectado placeholders en la plantilla.</p>
+                          <p className="text-xs mt-1">Los placeholders se detectan automáticamente en el formato {`{{nombre_campo}}`}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-4 pt-4 border-t">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-semibold">Instrucciones de Campos</h3>
+                        <Badge variant="outline">{fieldInstructions.length} instrucciones</Badge>
+                      </div>
+                      
+                      {editingAgent.placeholder_fields && editingAgent.placeholder_fields.length > 0 ? (
+                        <FieldInstructionsManager
+                          placeholders={extractPlaceholdersFromTemplate(editingAgent.template_content).map(p => p.placeholder)}
+                          fieldInstructions={fieldInstructions.map(instruction => ({
+                            id: instruction.id,
+                            fieldName: instruction.field_name,
+                            validationRule: instruction.validation_rule,
+                            helpText: instruction.help_text
+                          }))}
+                          onInstructionsChange={(instructions) => {
+                            const updatedInstructions = instructions.map(instruction => ({
+                              id: instruction.id,
+                              field_name: instruction.fieldName,
+                              validation_rule: instruction.validationRule,
+                              help_text: instruction.helpText
+                            }));
+                            setFieldInstructions(updatedInstructions);
+                            setHasUnsavedChanges(true);
+                          }}
+                        />
+                      ) : (
+                        <div className="text-center py-4 text-muted-foreground">
+                          <p>No hay campos para configurar instrucciones.</p>
+                        </div>
+                      )}
+                    </div>
+                  </TabsContent>
+
+                  {/* TAB 4: CONFIGURACIÓN */}
+                  <TabsContent value="config" className="space-y-4 mt-0">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="button_cta">Texto del Botón</Label>
+                        <Input
+                          id="button_cta"
+                          value={editingAgent.button_cta || 'Generar Documento'}
+                          onChange={(e) => handleEditFieldChange('button_cta', e.target.value)}
+                          placeholder="Texto del botón de acción"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="frontend_icon">Ícono del Frontend</Label>
+                        <Select
+                          value={editingAgent.frontend_icon || 'FileText'}
+                          onValueChange={(value) => handleEditFieldChange('frontend_icon', value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecciona un ícono" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="FileText">📄 Documento</SelectItem>
+                            <SelectItem value="Scale">⚖️ Balanza</SelectItem>
+                            <SelectItem value="Building">🏢 Edificio</SelectItem>
+                            <SelectItem value="Users">👥 Usuarios</SelectItem>
+                            <SelectItem value="Shield">🛡️ Escudo</SelectItem>
+                            <SelectItem value="Gavel">🔨 Martillo</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4 p-4 border border-border rounded-lg bg-muted/50">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="font-semibold text-sm">⏱️ Configuración de ANS</h3>
+                          <p className="text-xs text-muted-foreground">Acuerdo de Nivel de Servicio</p>
+                        </div>
+                        <Switch
+                          checked={editingAgent.sla_enabled ?? true}
+                          onCheckedChange={(checked) => handleEditFieldChange('sla_enabled', checked)}
+                        />
+                      </div>
+                      
+                      {editingAgent.sla_enabled && (
+                        <div>
+                          <Label htmlFor="sla_hours" className="text-sm">
+                            Tiempo límite de respuesta (horas)
+                          </Label>
+                          <Select 
+                            value={(editingAgent.sla_hours ?? 4).toString()} 
+                            onValueChange={(value) => handleEditFieldChange('sla_hours', parseInt(value))}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue placeholder="Selecciona el tiempo límite" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="1">1 hora</SelectItem>
+                              <SelectItem value="2">2 horas</SelectItem>
+                              <SelectItem value="4">4 horas (recomendado)</SelectItem>
+                              <SelectItem value="6">6 horas</SelectItem>
+                              <SelectItem value="8">8 horas</SelectItem>
+                              <SelectItem value="12">12 horas</SelectItem>
+                              <SelectItem value="24">24 horas</SelectItem>
+                              <SelectItem value="48">48 horas</SelectItem>
+                              <SelectItem value="72">72 horas (máximo)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <Label htmlFor="price">Precio (COP)</Label>
+                        <Input
+                          id="price"
+                          type="number"
+                          min="0"
+                          value={editingAgent.price || 0}
+                          onChange={(e) => handleEditFieldChange('price', parseInt(e.target.value) || 0)}
+                          placeholder="Precio (0 = gratis)"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Ingresa 0 para hacer el documento gratuito
+                        </p>
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="price_justification">Justificación del Precio</Label>
+                      <Textarea
+                        id="price_justification"
+                        value={editingAgent.price_justification || ''}
+                        onChange={(e) => handleEditFieldChange('price_justification', e.target.value)}
+                        placeholder="Justificación del precio"
+                        rows={3}
+                      />
+                    </div>
+                  </TabsContent>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
+                <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t mt-4">
                   <Button 
-                    onClick={handleSaveAgent}
+                    onClick={() => handleSaveAgent(false)}
+                    disabled={isSaving}
                     className="flex-1 sm:flex-none"
                   >
-                    <Save className="h-4 w-4 mr-2" />
-                    Guardar Cambios
+                    {isSaving ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Guardando...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4 mr-2" />
+                        Guardar Cambios
+                      </>
+                    )}
                   </Button>
                   
-                  {lawyerData.is_admin && editingAgent.status === 'pending_review' && (
-                    <Button 
-                      onClick={() => {
-                        handleApproveAgent(editingAgent.id);
-                        setIsEditDialogOpen(false);
-                      }}
-                      className="flex-1 sm:flex-none bg-success hover:bg-success/90"
-                    >
-                      <Play className="h-4 w-4 mr-2" />
-                      Aprobar y Activar
-                    </Button>
-                  )}
-                  
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setIsEditDialogOpen(false)}
+                  <Button
+                    variant="outline"
+                    onClick={handleCloseDialog}
+                    disabled={isSaving}
                     className="flex-1 sm:flex-none"
                   >
                     <X className="h-4 w-4 mr-2" />
                     Cancelar
                   </Button>
                 </div>
-              </div>
+              </Tabs>
             )}
           </DialogContent>
         </Dialog>
