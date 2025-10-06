@@ -377,8 +377,14 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
 
   const handleEditAgent = (agent: LegalAgent) => {
     // Los abogados pueden editar sus propios agentes
+    
+    // Extract current placeholders from template to ensure consistency
+    const currentPlaceholders = extractPlaceholdersFromTemplate(agent.template_content || '');
+    
     setEditingAgent({ 
       ...agent,
+      // Ensure placeholder_fields is up-to-date with current template
+      placeholder_fields: currentPlaceholders.length > 0 ? currentPlaceholders : agent.placeholder_fields,
       // Ensure all fields have default values
       sla_enabled: agent.sla_enabled ?? true,
       sla_hours: agent.sla_hours ?? 4,
@@ -532,6 +538,16 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
     if (!editingAgent) return;
     setEditingAgent({ ...editingAgent, [field]: value });
     setHasUnsavedChanges(true);
+    
+    // Auto-detect placeholder changes when template changes
+    if (field === 'template_content') {
+      const newPlaceholders = extractPlaceholdersFromTemplate(value);
+      setEditingAgent(prev => ({
+        ...prev!,
+        [field]: value,
+        placeholder_fields: newPlaceholders
+      }));
+    }
   };
   
   // Extract placeholders from template
