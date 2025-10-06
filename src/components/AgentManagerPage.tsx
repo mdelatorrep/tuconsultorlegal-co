@@ -90,7 +90,6 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
   
   // AI Improvement states
   const [isImprovingDocInfo, setIsImprovingDocInfo] = useState(false);
-  const [isImprovingPrompt, setIsImprovingPrompt] = useState(false);
   const [isImprovingTemplate, setIsImprovingTemplate] = useState(false);
   const [isReprocessingTemplate, setIsReprocessingTemplate] = useState(false);
   
@@ -100,7 +99,6 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
   
   // Improvement suggestions
   const [docInfoSuggestions, setDocInfoSuggestions] = useState<any>(null);
-  const [promptSuggestions, setPromptSuggestions] = useState<any>(null);
   const [templateSuggestions, setTemplateSuggestions] = useState<any>(null);
 
   const fetchConversationBlocks = async (legalAgentId: string) => {
@@ -591,28 +589,75 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
         }
       }
       
-      // Call AI to improve prompt and calculate price
-      const { data, error } = await supabase.functions.invoke('process-agent-ai', {
-        body: {
-          docName: editingAgent.document_name || editingAgent.name,
-          docDesc: editingAgent.document_description || editingAgent.description,
-          docCat: editingAgent.category,
-          docTemplate: editingAgent.template_content,
-          targetAudience: editingAgent.target_audience || 'personas'
-        }
-      });
+      // Call AI to regenerate prompt - SAME LOGIC AS CREATION
+      const requestPayload = {
+        docName: editingAgent.name.trim(),
+        docDesc: editingAgent.description?.trim() || 'Documento legal generado automáticamente',
+        category: editingAgent.category || 'General',
+        docTemplate: editingAgent.template_content.trim(),
+        conversationBlocks: (convBlocks || []).map((b, idx) => ({
+          blockName: b.name?.trim() || '',
+          introPhrase: b.introduction?.trim() || '',
+          placeholders: Array.isArray(b.placeholders) ? b.placeholders : [],
+          blockOrder: idx + 1
+        })),
+        fieldInstructions: fieldInstructions || [],
+        targetAudience: editingAgent.target_audience || 'personas'
+      };
+
+      let data: any = null;
+      let error: any = null;
+
+      // Try primary function with timeout
+      try {
+        const invokeWithTimeout = async <T,>(p: Promise<T>, ms = 60000): Promise<T> => {
+          return await Promise.race([
+            p,
+            new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))
+          ]) as T;
+        };
+        
+        ({ data, error } = await invokeWithTimeout(
+          supabase.functions.invoke('ai-agent-processor', { body: requestPayload }),
+          60000
+        ));
+      } catch (e) {
+        console.warn('⏳ ai-agent-processor timeout/exception, preparing fallback...', e);
+        error = error || e;
+      }
+
+      // Fallback to process-agent-ai if needed
+      const hasPlaceholdersArray = Array.isArray(data?.placeholders) || Array.isArray(data?.extractedPlaceholders);
+      const needFallback = !!error || !data || !data.enhancedPrompt || !hasPlaceholdersArray;
+
+      if (needFallback) {
+        console.warn('🔄 Falling back to process-agent-ai');
+        ({ data, error } = await supabase.functions.invoke('process-agent-ai', {
+          body: {
+            docName: requestPayload.docName,
+            docDesc: requestPayload.docDesc,
+            docCat: requestPayload.category,
+            docTemplate: requestPayload.docTemplate,
+            initialPrompt: `Eres un asistente legal. Prepara un prompt óptimo para generar el documento "${requestPayload.docName}" para "${requestPayload.targetAudience}" usando la plantilla dada. Extrae placeholders y formula preguntas necesarias para completarlos.`,
+            targetAudience: requestPayload.targetAudience
+          }
+        }));
+      }
       
       if (error) throw error;
       
-      if (data?.success) {
-        handleEditFieldChange('ai_prompt', data.enhancedPrompt);
-        handleEditFieldChange('placeholder_fields', newPlaceholders);
-        
-        toast({
-          title: "Plantilla reprocesada",
-          description: `Se encontraron ${newPlaceholders.length} placeholders y se actualizó el prompt AI.`,
-        });
+      if (!data || !data.enhancedPrompt) {
+        throw new Error('La IA no pudo generar el prompt mejorado');
       }
+      
+      // Update agent with AI-generated prompt and placeholders
+      handleEditFieldChange('ai_prompt', data.enhancedPrompt);
+      handleEditFieldChange('placeholder_fields', newPlaceholders);
+      
+      toast({
+        title: "✅ Plantilla Re-procesada",
+        description: `Se encontraron ${newPlaceholders.length} placeholders y se regeneró el prompt AI automáticamente.`,
+      });
     } catch (error: any) {
       console.error('Error reprocessing template:', error);
       toast({
@@ -669,45 +714,6 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
     }
   };
   
-  // Improve AI prompt
-  const handleImprovePrompt = async () => {
-    if (!editingAgent?.ai_prompt) {
-      toast({
-        title: "Error",
-        description: "No hay prompt para mejorar",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    setIsImprovingPrompt(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('improve-prompt-ai', {
-        body: {
-          current_prompt: editingAgent.ai_prompt,
-          target_audience: editingAgent.target_audience || 'personas'
-        }
-      });
-      
-      if (error) throw error;
-      
-      if (data?.success) {
-        setPromptSuggestions({
-          improvedPrompt: data.improved_prompt,
-          originalPrompt: editingAgent.ai_prompt
-        });
-      }
-    } catch (error: any) {
-      console.error('Error improving prompt:', error);
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo mejorar el prompt",
-        variant: "destructive"
-      });
-    } finally {
-      setIsImprovingPrompt(false);
-    }
-  };
   
   // Check consistency between template and blocks
   const checkConsistency = () => {
@@ -752,7 +758,6 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
     setEditingAgent(null);
     setHasUnsavedChanges(false);
     setDocInfoSuggestions(null);
-    setPromptSuggestions(null);
     setTemplateSuggestions(null);
   };
 
@@ -1584,64 +1589,24 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
 
                     <div>
                       <div className="flex items-center gap-2 mb-2">
-                        <Label htmlFor="ai_prompt">Prompt de IA</Label>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={handleImprovePrompt}
-                          disabled={isImprovingPrompt}
-                        >
-                          {isImprovingPrompt ? (
-                            <RefreshCw className="h-3 w-3 animate-spin" />
-                          ) : (
-                            <Wand2 className="h-3 w-3" />
-                          )}
-                        </Button>
+                        <Label htmlFor="ai_prompt">
+                          Prompt de IA 
+                          <Badge variant="secondary" className="ml-2 text-xs">Auto-generado</Badge>
+                        </Label>
                       </div>
                       <Textarea
                         id="ai_prompt"
-                        value={editingAgent.ai_prompt}
-                        onChange={(e) => handleEditFieldChange('ai_prompt', e.target.value)}
-                        placeholder="Prompt para la IA"
+                        value={editingAgent.ai_prompt || 'El prompt se genera automáticamente al re-procesar la plantilla...'}
+                        readOnly
+                        disabled
                         rows={8}
-                        className="font-mono text-sm"
+                        className="font-mono text-sm bg-muted/30 cursor-not-allowed"
                       />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        💡 Este prompt se genera automáticamente basado en: nombre, descripción, categoría, plantilla, bloques de conversación, instrucciones de campos y audiencia objetivo. 
+                        Usa el botón <strong>"Re-analizar Plantilla"</strong> arriba para regenerarlo cuando cambies alguno de estos campos.
+                      </p>
                     </div>
-
-                    {/* AI Suggestions for Prompt */}
-                    {promptSuggestions && (
-                      <Card className="bg-muted/50">
-                        <CardHeader>
-                          <CardTitle className="text-sm flex items-center gap-2">
-                            <Sparkles className="h-4 w-4" />
-                            Prompt mejorado por IA
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                          <div>
-                            <Label className="text-xs">Nuevo prompt:</Label>
-                            <pre className="text-sm bg-background p-2 rounded mt-1 max-h-40 overflow-y-auto">
-                              {promptSuggestions.improvedPrompt}
-                            </pre>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              onClick={() => {
-                                handleEditFieldChange('ai_prompt', promptSuggestions.improvedPrompt);
-                                setPromptSuggestions(null);
-                                toast({ title: "Prompt mejorado aplicado" });
-                              }}
-                            >
-                              Aplicar
-                            </Button>
-                            <Button size="sm" variant="outline" onClick={() => setPromptSuggestions(null)}>
-                              Rechazar
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
                   </TabsContent>
 
                   {/* TAB 3: GUÍA DE CONVERSACIÓN */}
