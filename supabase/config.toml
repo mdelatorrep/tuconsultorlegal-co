@@ -146,3 +146,6 @@ verify_jwt = false
 
 [functions.ai-training-validator]
 verify_jwt = false
+
+[functions.suggest-conversation-blocks]
+verify_jwt = false

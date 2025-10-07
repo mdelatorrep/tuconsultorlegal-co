@@ -25,6 +25,13 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
   const [isProcessing, setIsProcessing] = useState(false);
   const [isImprovingTemplate, setIsImprovingTemplate] = useState(false);
   const [isImprovingDocInfo, setIsImprovingDocInfo] = useState(false);
+  const [isSuggestingBlocks, setIsSuggestingBlocks] = useState(false);
+  const [suggestedBlocks, setSuggestedBlocks] = useState<{
+    blocks: ConversationBlock[];
+    strategy: string;
+    reasoning: Array<{ blockName: string; reasoning: string }>;
+  } | null>(null);
+
   
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [isLoadingDrafts, setIsLoadingDrafts] = useState(false);
@@ -105,6 +112,15 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
   useEffect(() => {
     loadCategories();
   }, []);
+
+  // Auto-suggest conversation blocks when reaching step 3
+  useEffect(() => {
+    if (currentStep === 3 && aiResults.extractedPlaceholders.length > 0 && !suggestedBlocks && formData.conversation_blocks.length === 0) {
+      console.log('🤖 Auto-suggesting conversation blocks for step 3');
+      suggestConversationBlocks();
+    }
+  }, [currentStep, aiResults.extractedPlaceholders]);
+
 
   const loadCategories = async () => {
     console.log('🔄 Loading categories...');
@@ -1158,6 +1174,85 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
     });
   };
 
+  const suggestConversationBlocks = async () => {
+    if (isSuggestingBlocks) {
+      console.warn('⏳ suggestConversationBlocks already running');
+      return;
+    }
+
+    if (!formData.docTemplate || aiResults.extractedPlaceholders.length === 0) {
+      console.log('❌ No template or placeholders available');
+      return;
+    }
+
+    console.log('🤖 Starting conversation blocks suggestion...');
+    setIsSuggestingBlocks(true);
+
+    try {
+      const placeholders = aiResults.extractedPlaceholders.map(p => p.placeholder);
+      
+      console.log('📤 Calling suggest-conversation-blocks function...', {
+        docName: formData.docName,
+        placeholdersCount: placeholders.length,
+        targetAudience: formData.targetAudience
+      });
+
+      const { data, error } = await supabase.functions.invoke('suggest-conversation-blocks', {
+        body: {
+          docName: formData.docName,
+          docDescription: formData.docDesc,
+          docTemplate: formData.docTemplate,
+          placeholders,
+          targetAudience: formData.targetAudience
+        }
+      });
+
+      if (error) {
+        console.error('❌ Error from suggest-conversation-blocks:', error);
+        throw new Error(error.message || 'Error al sugerir bloques de conversación');
+      }
+
+      if (!data?.success) {
+        console.error('❌ Function returned unsuccessful response:', data);
+        throw new Error(data?.error || 'Error al sugerir bloques de conversación');
+      }
+
+      console.log('✅ Conversation blocks suggested successfully:', {
+        blocksCount: data.conversationBlocks?.length || 0,
+        strategy: data.strategy
+      });
+
+      // Store suggestions
+      setSuggestedBlocks({
+        blocks: data.conversationBlocks || [],
+        strategy: data.strategy || '',
+        reasoning: data.reasoning || []
+      });
+
+      // Auto-apply suggestions
+      if (data.conversationBlocks && data.conversationBlocks.length > 0) {
+        setFormData(prev => ({
+          ...prev,
+          conversation_blocks: data.conversationBlocks
+        }));
+
+        toast({
+          title: "Bloques sugeridos automáticamente",
+          description: `Se crearon ${data.conversationBlocks.length} bloques de conversación. Puedes ajustarlos según necesites.`,
+        });
+      }
+
+    } catch (error) {
+      console.error('💥 Error suggesting conversation blocks:', error);
+      // No mostrar toast de error para no interrumpir el flujo
+      // El usuario puede crear los bloques manualmente
+      console.log('ℹ️ User can still create blocks manually');
+    } finally {
+      setIsSuggestingBlocks(false);
+    }
+  };
+
+
   const enableEditingDocInfo = () => {
     setDocInfoImprovement(prev => ({ ...prev, isEditing: true }));
   };
@@ -2200,6 +2295,39 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
                     Organiza los placeholders en bloques de conversación. Esto definirá el orden en que Lexi le pedirá la información al cliente.
                   </p>
                 </div>
+
+                {isSuggestingBlocks && (
+                  <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 flex items-center gap-3">
+                    <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+                    <div>
+                      <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                        Generando bloques de conversación sugeridos...
+                      </p>
+                      <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                        La IA está analizando tu plantilla para crear una estructura óptima
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {suggestedBlocks && !isSuggestingBlocks && formData.conversation_blocks.length > 0 && (
+                  <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <Sparkles className="h-5 w-5 text-emerald-600 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300 mb-2">
+                          ✨ Bloques sugeridos automáticamente
+                        </p>
+                        <p className="text-xs text-emerald-600 dark:text-emerald-400 mb-3">
+                          {suggestedBlocks.strategy}
+                        </p>
+                        <p className="text-xs text-emerald-700 dark:text-emerald-300 font-medium">
+                          Puedes ajustar, agregar o eliminar estos bloques según lo necesites.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {aiResults.extractedPlaceholders.length === 0 ? (
                   <div className="text-center py-8">
