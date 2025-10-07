@@ -93,9 +93,15 @@ serve(async (req) => {
     // Poll for completion and handle function calls
     let runStatus = run.status;
     let runData = run;
+    let pollAttempts = 0;
+    const MAX_POLL_ATTEMPTS = 60; // 60 segundos máximo
 
-    while (runStatus === 'in_progress' || runStatus === 'requires_action') {
+    while ((runStatus === 'queued' || runStatus === 'in_progress' || runStatus === 'requires_action') 
+           && pollAttempts < MAX_POLL_ATTEMPTS) {
       await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+      pollAttempts++;
+
+      console.log(`[Attempt ${pollAttempts}/${MAX_POLL_ATTEMPTS}] Run status: ${runStatus}`);
 
       // Check run status
       const statusResponse = await fetch(`https://api.openai.com/v1/threads/${currentThreadId}/runs/${run.id}`, {
@@ -111,6 +117,13 @@ serve(async (req) => {
 
       runData = await statusResponse.json();
       runStatus = runData.status;
+
+      // Handle error states
+      if (runStatus === 'failed' || runStatus === 'cancelled' || runStatus === 'expired') {
+        const errorMsg = runData.last_error?.message || 'Unknown error';
+        console.error(`Run ${runStatus}:`, errorMsg);
+        throw new Error(`El asistente encontró un error: ${errorMsg}`);
+      }
 
       // Handle function calls
       if (runStatus === 'requires_action') {
@@ -191,6 +204,14 @@ serve(async (req) => {
       }
     }
 
+    // Check for timeout
+    if (pollAttempts >= MAX_POLL_ATTEMPTS) {
+      console.error('Timeout: Assistant took too long to respond');
+      throw new Error('El asistente tardó demasiado en responder. Por favor intenta nuevamente.');
+    }
+
+    console.log(`Assistant run completed successfully after ${pollAttempts} attempts`);
+
     // Get the latest messages
     const messagesResponse = await fetch(`https://api.openai.com/v1/threads/${currentThreadId}/messages`, {
       headers: {
@@ -205,6 +226,10 @@ serve(async (req) => {
 
     const messagesData = await messagesResponse.json();
     const latestMessage = messagesData.data[0];
+    
+    // Asegurar encoding UTF-8 correcto para el contenido del mensaje
+    const messageContent = latestMessage.content[0]?.text?.value || 'No response';
+    console.log('Assistant response length:', messageContent.length, 'characters');
 
     // Save conversation to database
     await supabase
@@ -240,12 +265,12 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({
       success: true,
-      message: latestMessage.content[0]?.text?.value || 'No response',
+      message: messageContent,
       threadId: currentThreadId,
       runStatus: runStatus,
       conversationComplete: runStatus === 'completed'
     }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json; charset=utf-8' },
     });
 
   } catch (error) {

@@ -273,6 +273,8 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
       
       if (error) {
         console.error('OpenAI Agent error, falling back to basic chat:', error);
+        toast.error(`Error con el asistente: ${error.message || 'Error desconocido'}`);
+        
         // Fallback to original chat system
         const { data: fallbackData, error: fallbackError } = await supabase.functions.invoke('document-chat', {
           body: {
@@ -282,25 +284,32 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
           }
         });
 
-        if (fallbackError) throw fallbackError;
+        if (fallbackError) {
+          console.error('Fallback chat also failed:', fallbackError);
+          throw fallbackError;
+        }
 
-          const assistantMessage: Message = {
-            role: 'assistant',
-            content: fallbackData.message,
-            timestamp: new Date(),
-            showGenerateButton: shouldShowGenerateButton(fallbackData.message)
-          };
+        const assistantMessage: Message = {
+          role: 'assistant',
+          content: fallbackData.message,
+          timestamp: new Date(),
+          showGenerateButton: shouldShowGenerateButton(fallbackData.message)
+        };
 
         setMessages(prev => [...prev, assistantMessage]);
         setSending(false);
         return;
       }
 
-      if (error) throw error;
-
       // Update thread ID if new thread was created
       if (data.threadId && !threadId) {
         setThreadId(data.threadId);
+      }
+
+      // Verificar que recibimos una respuesta válida
+      if (!data || !data.message) {
+        console.error('No valid response received from orchestrator');
+        throw new Error('No se recibió una respuesta válida del asistente');
       }
 
       const assistantMessage: Message = {
@@ -314,13 +323,15 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
       const extractedData = extractInformationFromMessage(userMessage.content);
       setCollectedData(prev => ({ ...prev, ...extractedData }));
 
+      // Agregar el mensaje del asistente solo una vez
       setMessages(prev => [...prev, assistantMessage]);
       
       // Mantener foco en el input después de recibir respuesta
       maintainInputFocus();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending message:', error);
-      toast.error('Error al enviar el mensaje');
+      const errorMsg = error?.message || 'Error desconocido al procesar tu mensaje';
+      toast.error(`Error: ${errorMsg}`);
       // Mantener foco incluso en caso de error
       maintainInputFocus();
     } finally {
