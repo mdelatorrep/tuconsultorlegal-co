@@ -291,19 +291,35 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
   // Function to determine if generate button should be shown
   const shouldShowGenerateButton = (message: string): boolean => {
     const lowerMessage = message.toLowerCase();
-    const triggerPhrases = [
+    
+    // Frases que indican que el asistente HA COMPLETADO la recopilación
+    const completionPhrases = [
       'he recopilado toda la información',
-      'información necesaria',
-      'proceder con la generación',
-      'generar el documento',
-      'documento listo',
-      'continuar con la generación',
       'toda la información está completa',
-      'crear el documento',
-      'proceder a generar'
+      'ya tengo toda la información',
+      'información completa',
+      '¿deseas proceder con la generación',
+      'proceder con la generación del documento',
+      'listo para generar el documento'
     ];
     
-    return triggerPhrases.some(phrase => lowerMessage.includes(phrase));
+    // Frases que NO deben activar el botón (está pidiendo información)
+    const excludePhrases = [
+      'necesito',
+      'ayúdame con',
+      'por favor',
+      'proporciona',
+      '¿cuál es',
+      '¿cuáles son',
+      'dime',
+      'indícame'
+    ];
+    
+    // Solo mostrar si contiene frase de completitud Y NO contiene frases de solicitud
+    const hasCompletionPhrase = completionPhrases.some(phrase => lowerMessage.includes(phrase));
+    const hasExcludePhrase = excludePhrases.some(phrase => lowerMessage.includes(phrase));
+    
+    return hasCompletionPhrase && !hasExcludePhrase;
   };
 
   const sendMessage = async () => {
