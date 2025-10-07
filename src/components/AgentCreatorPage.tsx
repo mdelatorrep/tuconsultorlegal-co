@@ -1252,7 +1252,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
       // Now handle conversation blocks for the final agent
       if (formData.conversation_blocks && formData.conversation_blocks.length > 0) {
         const blocksToInsert = formData.conversation_blocks.map((b, idx) => ({
-          agent_id: data.id,
+          legal_agent_id: data.id,
           block_name: b.name?.trim() || '',
           intro_phrase: b.introduction?.trim() || '',
           placeholders: Array.isArray(b.placeholders) ? b.placeholders : [],
@@ -1265,14 +1265,20 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
 
         if (blocksError) {
           console.error('Error creating conversation blocks:', blocksError);
-          // Don't fail the whole operation for block errors
+          toast({
+            title: "Advertencia",
+            description: "El agente se creó pero hubo un error guardando los bloques de conversación.",
+            variant: "destructive",
+          });
+        } else {
+          console.log(`✅ ${blocksToInsert.length} bloques de conversación guardados correctamente`);
         }
       }
 
       // Handle field instructions for the final agent
       if (formData.field_instructions && formData.field_instructions.length > 0) {
         const instructionsToInsert = formData.field_instructions.map((instruction) => ({
-          agent_id: data.id,
+          legal_agent_id: data.id,
           field_name: instruction.fieldName,
           validation_rule: instruction.validationRule,
           help_text: instruction.helpText
@@ -1284,7 +1290,13 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
 
         if (instructionsError) {
           console.error('Error creating field instructions:', instructionsError);
-          // Don't fail the whole operation for instruction errors
+          toast({
+            title: "Advertencia",
+            description: "El agente se creó pero hubo un error guardando las instrucciones de campos.",
+            variant: "destructive",
+          });
+        } else {
+          console.log(`✅ ${instructionsToInsert.length} instrucciones de campos guardadas correctamente`);
         }
       }
 

@@ -343,6 +343,53 @@ async function generateDocumentAgentInstructions(legalAgent: any, supabase: any)
   ).join('\n');
 
   const knowledgeBaseUrls = await getKnowledgeBaseUrls(supabase);
+  
+  // Obtener conversation_blocks
+  const { data: conversationBlocks } = await supabase
+    .from('conversation_blocks')
+    .select('*')
+    .eq('legal_agent_id', legalAgent.id)
+    .order('block_order');
+
+  // Obtener field_instructions
+  const { data: fieldInstructions } = await supabase
+    .from('field_instructions')
+    .select('*')
+    .eq('legal_agent_id', legalAgent.id);
+
+  // Generar guía de conversación estructurada
+  let conversationGuide = '';
+  if (conversationBlocks && conversationBlocks.length > 0) {
+    conversationGuide = '\n\nGUÍA DE CONVERSACIÓN ESTRUCTURADA:\n';
+    conversationGuide += 'IMPORTANTE: Debes seguir esta estructura de conversación en el ORDEN EXACTO indicado:\n\n';
+    conversationBlocks.forEach((block: any, idx: number) => {
+      conversationGuide += `BLOQUE ${idx + 1}: ${block.block_name}\n`;
+      conversationGuide += `Frase introductoria: "${block.intro_phrase}"\n`;
+      conversationGuide += `Placeholders a recopilar en este bloque: ${Array.isArray(block.placeholders) ? block.placeholders.join(', ') : 'ninguno'}\n`;
+      conversationGuide += '\n';
+    });
+    conversationGuide += 'REGLAS DE LA GUÍA:\n';
+    conversationGuide += '- Sigue los bloques en el orden establecido\n';
+    conversationGuide += '- Usa la frase introductoria de cada bloque para iniciar esa sección\n';
+    conversationGuide += '- Recopila TODOS los placeholders del bloque antes de pasar al siguiente\n';
+    conversationGuide += '- Mantén el flujo conversacional natural mientras sigues la estructura\n\n';
+  }
+
+  // Generar instrucciones de campos
+  let fieldInstructionsText = '';
+  if (fieldInstructions && fieldInstructions.length > 0) {
+    fieldInstructionsText = '\n\nINSTRUCCIONES ESPECÍFICAS POR CAMPO:\n';
+    fieldInstructions.forEach((instruction: any) => {
+      fieldInstructionsText += `\nCampo: ${instruction.field_name}\n`;
+      if (instruction.validation_rule) {
+        fieldInstructionsText += `Validación: ${instruction.validation_rule}\n`;
+      }
+      if (instruction.help_text) {
+        fieldInstructionsText += `Ayuda: ${instruction.help_text}\n`;
+      }
+    });
+    fieldInstructionsText += '\nAplica estas instrucciones cuando recopiles estos campos específicos.\n\n';
+  }
 
   return `
 Eres un asistente legal especializado en ayudar a crear "${legalAgent.document_name}" para ${legalAgent.target_audience === 'empresas' ? 'empresas' : 'personas naturales'}.
@@ -361,6 +408,10 @@ INSTRUCCIONES DEL ABOGADO:
 ${legalAgent.ai_prompt}
 
 ${knowledgeBaseUrls}
+
+${conversationGuide}
+
+${fieldInstructionsText}
 
 PROTOCOLO DE TRABAJO:
 1. **SALUDO PROFESIONAL**: Preséntate como asistente especializado en ${legalAgent.document_name}
