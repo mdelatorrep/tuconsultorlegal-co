@@ -1399,14 +1399,24 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                   <div>
                     <h4 className="font-semibold mb-2">Variables ({selectedAgent.placeholder_fields.length})</h4>
                     <div className="space-y-1 text-sm max-h-40 overflow-y-auto">
-                       {selectedAgent.placeholder_fields.map((field: any, index: number) => (
-                         <div key={index} className="p-2 bg-muted rounded">
-                           <div className="flex items-center gap-2 mb-1">
-                             <Badge variant="outline" className="text-xs">{field.placeholder || field.name}</Badge>
+                       {selectedAgent.placeholder_fields.map((field: any, index: number) => {
+                         // Manejar diferentes formatos de datos
+                         const fieldName = typeof field === 'string' 
+                           ? field 
+                           : (field.placeholder || field.name || field.field_name || `Campo ${index + 1}`);
+                         const fieldDescription = typeof field === 'object' 
+                           ? (field.pregunta || field.description || field.help_text || 'Sin descripción')
+                           : 'Sin descripción';
+                         
+                         return (
+                           <div key={index} className="p-2 bg-muted rounded">
+                             <div className="flex items-center gap-2 mb-1">
+                               <Badge variant="outline" className="text-xs">{fieldName}</Badge>
+                             </div>
+                             <p className="text-xs text-muted-foreground">{fieldDescription}</p>
                            </div>
-                           <p className="text-xs text-muted-foreground">{field.pregunta || field.description}</p>
-                         </div>
-                       ))}
+                         );
+                       })}
                     </div>
                   </div>
                 </div>
