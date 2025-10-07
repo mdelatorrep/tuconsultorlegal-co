@@ -108,6 +108,7 @@ serve(async (req) => {
         model: model,
         name: `${legalAgent.name} - Asistente de Documentos`,
         instructions: agentInstructions,
+        temperature: 0,
         tools: [
           {
             type: "function",
