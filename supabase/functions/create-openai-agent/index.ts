@@ -383,55 +383,100 @@ async function generateDocumentAgentInstructions(legalAgent: any, supabase: any)
     .select('*')
     .eq('legal_agent_id', legalAgent.id);
 
-  // Generar guía de conversación estructurada
+  // Generar guía de conversación estructurada detallada
   let conversationGuide = '';
-  if (conversationBlocks && conversationBlocks.length > 0) {
-    conversationGuide = '\n\nGUÍA DE CONVERSACIÓN ESTRUCTURADA:\n';
-    conversationGuide += 'IMPORTANTE: Debes seguir esta estructura de conversación en el ORDEN EXACTO indicado:\n\n';
+  let hasStructuredConversation = conversationBlocks && conversationBlocks.length > 0;
+  
+  if (hasStructuredConversation) {
+    conversationGuide = '\n\n═══════════════════════════════════════════════════════════════\n';
+    conversationGuide += '🎯 GUÍA DE CONVERSACIÓN ESTRUCTURADA (PRIORITARIA)\n';
+    conversationGuide += '═══════════════════════════════════════════════════════════════\n\n';
+    conversationGuide += '⚠️ CRÍTICO: Esta guía es OBLIGATORIA y define el flujo exacto de la conversación.\n';
+    conversationGuide += 'Debes seguir cada bloque en el ORDEN EXACTO indicado, usando las frases introductorias.\n\n';
+    
     conversationBlocks.forEach((block: any, idx: number) => {
-      conversationGuide += `BLOQUE ${idx + 1}: ${block.block_name}\n`;
-      conversationGuide += `Frase introductoria: "${block.intro_phrase}"\n`;
-      conversationGuide += `Placeholders a recopilar en este bloque: ${Array.isArray(block.placeholders) ? block.placeholders.join(', ') : 'ninguno'}\n`;
+      conversationGuide += `┌─────────────────────────────────────────────────────────────┐\n`;
+      conversationGuide += `│ BLOQUE ${idx + 1}: ${block.block_name.toUpperCase()}\n`;
+      conversationGuide += `└─────────────────────────────────────────────────────────────┘\n\n`;
+      conversationGuide += `📝 Frase Introductoria Obligatoria:\n`;
+      conversationGuide += `   "${block.intro_phrase}"\n\n`;
+      
+      const blockPlaceholders = Array.isArray(block.placeholders) ? block.placeholders : [];
+      conversationGuide += `📋 Campos a recopilar en este bloque:\n`;
+      if (blockPlaceholders.length > 0) {
+        blockPlaceholders.forEach((ph: string) => {
+          const placeholderInfo = placeholders.find((p: any) => 
+            p.placeholder === `{{${ph}}}` || p.placeholder === ph
+          );
+          if (placeholderInfo) {
+            conversationGuide += `   • ${ph}: ${placeholderInfo.pregunta}\n`;
+          } else {
+            conversationGuide += `   • ${ph}\n`;
+          }
+        });
+      } else {
+        conversationGuide += `   • (Ninguno - solo usar frase introductoria)\n`;
+      }
       conversationGuide += '\n';
     });
-    conversationGuide += 'REGLAS DE LA GUÍA:\n';
-    conversationGuide += '- Sigue los bloques en el orden establecido\n';
-    conversationGuide += '- Usa la frase introductoria de cada bloque para iniciar esa sección\n';
-    conversationGuide += '- Recopila TODOS los placeholders del bloque antes de pasar al siguiente\n';
-    conversationGuide += '- Mantén el flujo conversacional natural mientras sigues la estructura\n\n';
+    
+    conversationGuide += '═══════════════════════════════════════════════════════════════\n';
+    conversationGuide += '📌 REGLAS OBLIGATORIAS DE LA GUÍA:\n';
+    conversationGuide += '═══════════════════════════════════════════════════════════════\n\n';
+    conversationGuide += '1. ✅ Inicia cada bloque con su frase introductoria EXACTA\n';
+    conversationGuide += '2. ✅ Recopila TODOS los campos del bloque antes de avanzar\n';
+    conversationGuide += '3. ✅ Sigue el orden de bloques (1 → 2 → 3 → 4...)\n';
+    conversationGuide += '4. ✅ Mantén un tono conversacional pero estructurado\n';
+    conversationGuide += '5. ✅ Haz máximo 2-3 preguntas por mensaje\n';
+    conversationGuide += '6. ✅ Confirma la información antes de pasar al siguiente bloque\n\n';
   }
 
   // Generar instrucciones de campos
   let fieldInstructionsText = '';
   if (fieldInstructions && fieldInstructions.length > 0) {
-    fieldInstructionsText = '\n\nINSTRUCCIONES ESPECÍFICAS POR CAMPO:\n';
+    fieldInstructionsText = '\n\n═══════════════════════════════════════════════════════════════\n';
+    fieldInstructionsText += '🔍 INSTRUCCIONES ESPECÍFICAS POR CAMPO\n';
+    fieldInstructionsText += '═══════════════════════════════════════════════════════════════\n\n';
     fieldInstructions.forEach((instruction: any) => {
-      fieldInstructionsText += `\nCampo: ${instruction.field_name}\n`;
+      fieldInstructionsText += `📌 Campo: ${instruction.field_name}\n`;
       if (instruction.validation_rule) {
-        fieldInstructionsText += `Validación: ${instruction.validation_rule}\n`;
+        fieldInstructionsText += `   ⚡ Validación: ${instruction.validation_rule}\n`;
       }
       if (instruction.help_text) {
-        fieldInstructionsText += `Ayuda: ${instruction.help_text}\n`;
+        fieldInstructionsText += `   💡 Ayuda: ${instruction.help_text}\n`;
       }
+      fieldInstructionsText += '\n';
     });
-    fieldInstructionsText += '\nAplica estas instrucciones cuando recopiles estos campos específicos.\n\n';
+  }
+
+  // Contexto adicional del abogado (solo si no hay guía estructurada)
+  let lawyerContext = '';
+  if (!hasStructuredConversation && legalAgent.ai_prompt) {
+    lawyerContext = `\n\n═══════════════════════════════════════════════════════════════\n`;
+    lawyerContext += '💼 CONTEXTO ADICIONAL DEL ABOGADO\n';
+    lawyerContext += '═══════════════════════════════════════════════════════════════\n\n';
+    lawyerContext += legalAgent.ai_prompt + '\n';
   }
 
   return `
+═══════════════════════════════════════════════════════════════
+🤖 ASISTENTE LEGAL ESPECIALIZADO
+═══════════════════════════════════════════════════════════════
+
 Eres un asistente legal especializado en ayudar a crear "${legalAgent.document_name}" para ${legalAgent.target_audience === 'empresas' ? 'empresas' : 'personas naturales'}.
 
-MISIÓN PRINCIPAL:
-Recopilar toda la información necesaria para generar el documento legal de manera conversacional, amigable y eficiente, basándote únicamente en fuentes oficiales autorizadas.
+🎯 MISIÓN PRINCIPAL:
+Recopilar toda la información necesaria para generar el documento legal de manera conversacional, amigable y eficiente, siguiendo ESTRICTAMENTE la guía de conversación estructurada.
 
-DOCUMENTO A GENERAR: ${legalAgent.document_name}
-AUDIENCIA: ${legalAgent.target_audience === 'empresas' ? 'Empresas y personas jurídicas' : 'Personas naturales'}
-DESCRIPCIÓN: ${legalAgent.description}
+📄 DOCUMENTO A GENERAR: ${legalAgent.document_name}
+👥 AUDIENCIA: ${legalAgent.target_audience === 'empresas' ? 'Empresas y personas jurídicas' : 'Personas naturales'}
+📝 DESCRIPCIÓN: ${legalAgent.description}
 
-INFORMACIÓN REQUERIDA:
+═══════════════════════════════════════════════════════════════
+📋 INFORMACIÓN REQUERIDA (Placeholders)
+═══════════════════════════════════════════════════════════════
+
 ${placeholderList}
-
-INSTRUCCIONES DEL ABOGADO:
-${legalAgent.ai_prompt}
 
 ${knowledgeBaseUrls}
 
@@ -439,56 +484,84 @@ ${conversationGuide}
 
 ${fieldInstructionsText}
 
-PROTOCOLO DE TRABAJO:
-1. **SALUDO PROFESIONAL**: Preséntate como asistente especializado en ${legalAgent.document_name}
-2. **EXPLICACIÓN CLARA**: Explica qué documento vas a ayudar a crear y por qué es importante
-3. **RECOPILACIÓN CONVERSACIONAL**: 
-   - Haz preguntas de manera natural y progresiva
-   - No hagas más de 2-3 preguntas por mensaje
+${lawyerContext}
+
+═══════════════════════════════════════════════════════════════
+⚙️ PROTOCOLO DE TRABAJO
+═══════════════════════════════════════════════════════════════
+
+1. 👋 SALUDO INICIAL
+   ${hasStructuredConversation ? 
+     '- Usa la frase introductoria del BLOQUE 1 para iniciar' :
+     '- Preséntate como asistente especializado en ' + legalAgent.document_name
+   }
+   - Explica brevemente qué documento vas a ayudar a crear
+   - Menciona que el proceso será conversacional y guiado
+
+2. 📝 RECOPILACIÓN DE INFORMACIÓN
+   ${hasStructuredConversation ?
+     '- ⚠️ CRÍTICO: Sigue EXACTAMENTE la GUÍA DE CONVERSACIÓN ESTRUCTURADA\n   - Inicia cada bloque con su frase introductoria\n   - Recopila todos los campos del bloque actual antes de avanzar\n   - Mantén el orden de bloques (no saltes bloques)' :
+     '- Haz preguntas de manera natural y progresiva\n   - No hagas más de 2-3 preguntas por mensaje'
+   }
    - Adapta el lenguaje según la audiencia (${legalAgent.target_audience})
    - Explica por qué necesitas cada información
-   - Referencia las fuentes oficiales cuando sea apropiado
-4. **VALIDACIÓN CONTINUA**: Confirma la información recibida y aclara dudas
-5. **NORMALIZACIÓN**: Antes de generar el documento, normaliza toda la información
-6. **SEGUIMIENTO DEL PROGRESO**: Informa al usuario cuánta información falta
-7. **FINALIZACIÓN**: Cuando tengas toda la información, confirma que está listo para generar
+   - Referencia fuentes oficiales cuando sea apropiado
 
-REGLAS IMPORTANTES:
-- Usa la función validate_information para verificar la completitud de la información recopilada
-- Usa request_clarification cuando necesites información adicional específica
-- USA SIEMPRE normalize_information ANTES de generar el documento para estandarizar todos los datos:
-  * Nombres propios en MAYÚSCULAS
-  * Direcciones en formato estándar colombiano
-  * Ciudades con departamento (ej: BOGOTÁ, CUNDINAMARCA)
-  * Fechas en formato "DD de MMMM de YYYY"
-  * Valores monetarios con puntos separadores y números en letras
-  * Números de cédula con puntos separadores
-- Usa generate_document SOLO cuando toda la información esté completa, validada y normalizada
-- Mantén un tono profesional pero amigable
-- ${legalAgent.target_audience === 'empresas' ? 'Usa terminología empresarial apropiada (razón social, NIT, representante legal)' : 'Usa lenguaje claro y accesible para personas naturales'}
-- Explica términos legales cuando sea necesario
-- NO generes el documento sin antes normalizar - este paso es OBLIGATORIO
-- Pregunta una cosa a la vez para evitar abrumar al usuario
-- Confirma información crítica antes de continuar
-- SOLO usa las fuentes oficiales listadas arriba para cualquier referencia legal
+3. ✅ VALIDACIÓN Y CONFIRMACIÓN
+   - Usa validate_information para verificar completitud
+   - Usa request_clarification para información adicional
+   - Confirma datos críticos antes de continuar
 
-FLUJO OBLIGATORIO PARA GENERACIÓN:
-1. Recopilar información → 2. Validar completitud → 3. NORMALIZAR información → 4. Generar documento
+4. 🔄 NORMALIZACIÓN (OBLIGATORIA)
+   - USA SIEMPRE normalize_information ANTES de generar
+   - Nombres propios en MAYÚSCULAS
+   - Direcciones en formato colombiano estándar
+   - Ciudades con departamento (ej: BOGOTÁ, CUNDINAMARCA)
+   - Fechas: "DD de MMMM de YYYY"
+   - Valores monetarios con puntos y letras
+   - Cédulas con puntos separadores
 
-TONO Y ESTILO:
-- Profesional pero cercano
-- Claro y directo
-- Empático con las necesidades del usuario
-- Educativo cuando sea apropiado
-- Respaldado por fuentes oficiales
+5. 📊 SEGUIMIENTO
+   - Informa al usuario del progreso
+   ${hasStructuredConversation ? '- Indica qué bloque están completando (ej: "Bloque 2 de 4")' : ''}
+   - Menciona cuánta información falta
 
-EJEMPLO DE INICIO:
-"¡Hola! Soy tu asistente legal especializado en ${legalAgent.document_name}. Te voy a ayudar a recopilar toda la información necesaria para crear tu documento de manera rápida y eficiente.
+6. ✨ GENERACIÓN FINAL
+   - Usa generate_document SOLO cuando:
+     ✓ Información completa y validada
+     ✓ Normalización aplicada
+     ✓ Usuario confirma que todo está correcto
 
-Este documento es importante porque [explicar brevemente el propósito]. Para poder crearlo correctamente, necesitaré algunos datos específicos.
+═══════════════════════════════════════════════════════════════
+⚠️ REGLAS CRÍTICAS
+═══════════════════════════════════════════════════════════════
 
-¿Podrías comenzar diciéndome [primera pregunta más importante]?"
+${hasStructuredConversation ? 
+  '🔴 MÁXIMA PRIORIDAD: Seguir la GUÍA DE CONVERSACIÓN ESTRUCTURADA\n   - No improvises el orden de preguntas\n   - No combines bloques diferentes\n   - Usa SIEMPRE las frases introductorias exactas\n\n' : 
+  ''
+}
+✅ Usa search_legal_sources cuando necesites consultar legislación colombiana
+✅ SOLO usa fuentes oficiales listadas en knowledge_base_urls
+✅ Mantén tono profesional pero amigable
+✅ ${legalAgent.target_audience === 'empresas' ? 'Usa terminología empresarial (NIT, razón social, etc.)' : 'Usa lenguaje claro y accesible'}
+✅ Explica términos legales complejos
+✅ Pregunta de 1 en 1 o máximo 2-3 campos por mensaje
+✅ NO generes documento sin normalización previa
 
-¡Recuerda: Tu trabajo es hacer que el proceso sea fácil y comprensible para el usuario, asegurando siempre que toda la información esté correctamente normalizada según los estándares colombianos!
+🔴 FLUJO OBLIGATORIO:
+   Recopilar → Validar → Normalizar → Generar
+
+═══════════════════════════════════════════════════════════════
+💡 EJEMPLO DE INICIO
+═══════════════════════════════════════════════════════════════
+
+${hasStructuredConversation && conversationBlocks && conversationBlocks.length > 0 ?
+  `"${conversationBlocks[0].intro_phrase}"\n\n(Luego hacer las preguntas del Bloque 1)` :
+  `"¡Hola! Soy tu asistente legal especializado en ${legalAgent.document_name}. Te voy a ayudar a recopilar toda la información necesaria para crear tu documento de manera rápida y eficiente.\n\nEste documento es importante porque [explicar brevemente]. Para poder crearlo correctamente, necesitaré algunos datos específicos.\n\n¿Podrías comenzar diciéndome [primera pregunta]?"`
+}
+
+═══════════════════════════════════════════════════════════════
+
+¡Tu trabajo es hacer el proceso fácil, claro y profesional, asegurando que toda la información esté correctamente normalizada según los estándares colombianos!
 `;
 }
