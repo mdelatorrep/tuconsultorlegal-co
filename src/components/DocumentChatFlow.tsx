@@ -167,6 +167,7 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
         agentId 
       });
       
+      let detectedAssistantId: string | null = null;
       if (data.openai_enabled) {
         const { data: openaiAgent, error: agentError } = await supabase
           .from('openai_agents')
@@ -177,6 +178,7 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
 
         if (openaiAgent && openaiAgent.openai_agent_id) {
           console.log('✅ OpenAI Assistant found:', openaiAgent.openai_agent_id);
+          detectedAssistantId = openaiAgent.openai_agent_id;
           setOpenaiAgentId(openaiAgent.openai_agent_id);
         } else {
           console.log('⚠️ No active OpenAI assistant found, will use fallback chat');
@@ -189,7 +191,7 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
         name: data.name,
         document_name: data.document_name,
         openai_enabled: data.openai_enabled,
-        has_assistant: !!openaiAgentId
+        has_assistant: !!detectedAssistantId
       });
       
       // Only add initial message if there are no existing messages
@@ -201,9 +203,9 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
         };
         setMessages([initialMessage]);
         
-        console.log('📤 Sending initial request to assistant...');
-        // Immediately get the assistant's response
-        await getInitialResponse(data, initialMessage);
+        console.log('📤 Sending initial request to assistant with ID:', detectedAssistantId);
+        // Pass the assistantId directly to ensure it's used immediately
+        await getInitialResponse(data, initialMessage, detectedAssistantId);
       }
     } catch (error) {
       console.error('❌ Error loading agent:', error);
@@ -213,19 +215,29 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
     }
   };
 
-  const getInitialResponse = async (agentData: AgentData, userMessage: Message) => {
+  const getInitialResponse = async (
+    agentData: AgentData, 
+    userMessage: Message, 
+    assistantId: string | null = null
+  ) => {
     try {
+      const effectiveAssistantId = assistantId || openaiAgentId;
+      
       console.log('🤖 Getting initial response for document:', agentData.document_name);
-      console.log('🔑 OpenAI Assistant available:', !!openaiAgentId);
+      console.log('🔑 OpenAI Assistant:', { 
+        passedAssistantId: assistantId,
+        stateAssistantId: openaiAgentId,
+        effectiveAssistantId: effectiveAssistantId
+      });
       
       // SI HAY OPENAI ASSISTANT, USARLO
-      if (openaiAgentId) {
-        console.log('🚀 Using OpenAI orchestrator for initial response');
+      if (effectiveAssistantId) {
+        console.log('🚀 Using OpenAI orchestrator for initial response with assistant:', effectiveAssistantId);
         
         const { data, error } = await supabase.functions.invoke('agent-workflow-orchestrator', {
           body: {
             messages: [{ role: userMessage.role, content: userMessage.content }],
-            agentId: openaiAgentId,
+            agentId: effectiveAssistantId,
             documentTokenId: null,
             threadId: null // New conversation
           }
