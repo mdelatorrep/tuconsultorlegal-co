@@ -926,12 +926,61 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
         </div>
 
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-primary mb-2">
-            Gestión de Agentes Legales
-          </h1>
-          <p className="text-lg text-muted-foreground">
-            Administra tus agentes creados: activa, suspende o modifica según sea necesario.
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-primary mb-2">
+                Gestión de Agentes Legales
+              </h1>
+              <p className="text-lg text-muted-foreground">
+                Administra tus agentes creados: activa, suspende o modifica según sea necesario.
+              </p>
+            </div>
+            {lawyerData.is_admin && agents.length > 0 && (
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  if (!confirm(`¿Deseas regenerar los prompts de IA de TODOS los agentes (${agents.length})?\n\nEsto actualizará los prompts para incluir todos los bloques de conversación y validaciones correctamente.`)) {
+                    return;
+                  }
+                  
+                  try {
+                    toast({
+                      title: "Regenerando prompts...",
+                      description: `Procesando ${agents.length} agentes. Esto puede tomar varios segundos.`,
+                    });
+                    
+                    const { data, error } = await supabase.functions.invoke('regenerate-agent-prompts', {
+                      body: { agent_ids: agents.map(a => a.id) }
+                    });
+                    
+                    if (error) throw error;
+                    
+                    if (data?.success) {
+                      toast({
+                        title: "✅ Prompts regenerados",
+                        description: `Procesados: ${data.processed}, Actualizados: ${data.updated}, Omitidos: ${data.skipped}`,
+                      });
+                      
+                      // Recargar los agentes
+                      fetchAgents();
+                    } else {
+                      throw new Error('No se pudieron regenerar los prompts');
+                    }
+                  } catch (error: any) {
+                    console.error('Error regenerating prompts:', error);
+                    toast({
+                      title: "Error",
+                      description: error.message || "No se pudieron regenerar los prompts",
+                      variant: "destructive"
+                    });
+                  }
+                }}
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Regenerar Todos los Prompts
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Separar agentes por estado */}
@@ -1345,7 +1394,62 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                 </div>
                 
                 <div>
-                  <h4 className="font-semibold mb-2">Prompt de IA</h4>
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-semibold">Prompt de IA</h4>
+                    {lawyerData.is_admin && convBlocks.length > 0 && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={async () => {
+                          if (!selectedAgent) return;
+                          try {
+                            toast({
+                              title: "Regenerando prompt...",
+                              description: "Esto puede tomar unos segundos",
+                            });
+                            
+                            const { data, error } = await supabase.functions.invoke('regenerate-agent-prompts', {
+                              body: { agent_id: selectedAgent.id }
+                            });
+                            
+                            if (error) throw error;
+                            
+                            if (data?.success && data?.updated > 0) {
+                              toast({
+                                title: "✅ Prompt regenerado",
+                                description: `El prompt de IA ha sido actualizado con ${convBlocks.length} bloques y ${fieldInstructions.length} validaciones.`,
+                              });
+                              
+                              // Recargar el agente para mostrar el nuevo prompt
+                              const { data: updatedAgent, error: fetchError } = await supabase
+                                .from('legal_agents')
+                                .select('*')
+                                .eq('id', selectedAgent.id)
+                                .single();
+                              
+                              if (!fetchError && updatedAgent) {
+                                setSelectedAgent(updatedAgent as LegalAgent);
+                                // También actualizar en la lista
+                                setAgents(agents.map(a => a.id === updatedAgent.id ? updatedAgent as LegalAgent : a));
+                              }
+                            } else {
+                              throw new Error(data?.errors?.[0]?.error || 'No se pudo regenerar el prompt');
+                            }
+                          } catch (error: any) {
+                            console.error('Error regenerating prompt:', error);
+                            toast({
+                              title: "Error",
+                              description: error.message || "No se pudo regenerar el prompt",
+                              variant: "destructive"
+                            });
+                          }
+                        }}
+                      >
+                        <RefreshCw className="h-3 w-3 mr-1" />
+                        Regenerar Prompt
+                      </Button>
+                    )}
+                  </div>
                   <div className="p-4 bg-muted rounded-md text-xs font-mono max-h-40 overflow-y-auto">
                     {selectedAgent.ai_prompt}
                   </div>

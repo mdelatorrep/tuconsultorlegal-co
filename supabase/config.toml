@@ -149,3 +149,6 @@ verify_jwt = false
 
 [functions.suggest-conversation-blocks]
 verify_jwt = false
+
+[functions.regenerate-agent-prompts]
+verify_jwt = false
