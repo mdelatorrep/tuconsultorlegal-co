@@ -108,6 +108,7 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
 
   const loadAgent = async () => {
     try {
+      console.log('🔍 Loading agent:', agentId);
       const { data, error } = await supabase
         .from('legal_agents')
         .select('*')
@@ -119,6 +120,13 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
         toast.error('Agente no encontrado');
         return;
       }
+      
+      console.log('✅ Agent loaded successfully:', {
+        name: data.name,
+        document_name: data.document_name,
+        openai_enabled: data.openai_enabled
+      });
+      
       setAgent(data);
       
       // Only add initial message if there are no existing messages
@@ -130,11 +138,12 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
         };
         setMessages([initialMessage]);
         
+        console.log('📤 Sending initial request to assistant...');
         // Immediately get the assistant's response
         await getInitialResponse(data, initialMessage);
       }
     } catch (error) {
-      console.error('Error loading agent:', error);
+      console.error('❌ Error loading agent:', error);
       toast.error('Error al cargar el agente');
     } finally {
       setLoading(false);
@@ -143,6 +152,8 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
 
   const getInitialResponse = async (agentData: AgentData, userMessage: Message) => {
     try {
+      console.log('🤖 Getting initial response for document:', agentData.document_name);
+      
       // Generar el prompt inicial que asegura recopilar TODOS los campos requeridos
       const enhancedPrompt = `${agentData.ai_prompt}
 
@@ -161,7 +172,9 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
 
 5. NO permitas generar el documento hasta que TODOS los campos estén completos.
 
-6. IMPORTANTE: Usa las frases exactas "información necesaria" y "proceder con la generación" cuando toda la información esté completa.`;
+6. IMPORTANTE: Usa las frases exactas "información necesaria" y "proceder con la generación" cuando toda la información esté completa.
+
+7. RESPONDE EN ESPAÑOL CLARO SIN FORMATO MARKDOWN. No uses caracteres como #, *, **, etc.`;
 
       const { data, error } = await supabase.functions.invoke('document-chat', {
         body: {
@@ -173,15 +186,18 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
 
       if (error) throw error;
 
+      console.log('✅ Initial response received, length:', data.message?.length);
+
       const assistantMessage: Message = {
         role: 'assistant',
         content: data.message,
-        timestamp: new Date()
+        timestamp: new Date(),
+        showGenerateButton: shouldShowGenerateButton(data.message)
       };
 
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
-      console.error('Error getting initial response:', error);
+      console.error('❌ Error getting initial response:', error);
       toast.error('Error al inicializar el chat');
     }
   };
@@ -220,6 +236,12 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
     setMessages(updatedMessages);
     setCurrentMessage('');
     setSending(true);
+
+    console.log('📨 Sending message:', {
+      messageLength: currentMessage.length,
+      totalMessages: updatedMessages.length,
+      hasOpenAIAgent: !!openaiAgentId
+    });
 
     try {
       // Get or verify OpenAI agent for this legal agent
@@ -453,12 +475,40 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
   };
 
   // Mantener el foco en el input después de enviar mensaje
+  // Mantener el foco en el input después de enviar mensaje
   const maintainInputFocus = () => {
     setTimeout(() => {
       if (inputRef.current && !sending) {
         inputRef.current.focus();
       }
     }, 150);
+  };
+
+  // Función para limpiar formato Markdown y devolver texto limpio
+  const cleanMarkdown = (text: string): string => {
+    if (!text) return '';
+    
+    return text
+      // Eliminar headers markdown (###, ##, #)
+      .replace(/^#{1,6}\s+/gm, '')
+      // Eliminar negritas (**texto** o __texto__)
+      .replace(/\*\*(.+?)\*\*/g, '$1')
+      .replace(/__(.+?)__/g, '$1')
+      // Eliminar cursivas (*texto* o _texto_)
+      .replace(/\*(.+?)\*/g, '$1')
+      .replace(/_(.+?)_/g, '$1')
+      // Eliminar listas con viñetas
+      .replace(/^\s*[-*+]\s+/gm, '• ')
+      // Eliminar listas numeradas
+      .replace(/^\s*\d+\.\s+/gm, '')
+      // Limpiar bloques de código
+      .replace(/```[\s\S]*?```/g, '')
+      .replace(/`([^`]+)`/g, '$1')
+      // Limpiar líneas horizontales
+      .replace(/^[-*_]{3,}$/gm, '')
+      // Normalizar espacios múltiples
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
   };
 
   if (loading) {
@@ -643,7 +693,9 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
                       /* Assistant message - left side */
                       <div className="max-w-[80%] group">
                         <div className="bg-white dark:bg-gray-700 border rounded-2xl rounded-tl-md px-4 py-2.5 shadow-sm">
-                          <p className="text-sm leading-relaxed whitespace-pre-wrap break-words text-gray-900 dark:text-gray-100">{message.content}</p>
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap break-words text-gray-900 dark:text-gray-100">
+                            {cleanMarkdown(message.content)}
+                          </p>
                           <div className="flex items-center justify-start gap-1 mt-1">
                             <span className="text-xs text-gray-500 dark:text-gray-400">
                               {message.timestamp.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
