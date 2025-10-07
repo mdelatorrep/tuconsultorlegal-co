@@ -109,7 +109,33 @@ serve(async (req) => {
         name: `${legalAgent.name} - Asistente de Documentos`,
         instructions: agentInstructions,
         tools: [
-          { type: "web_search" },
+          {
+            type: "function",
+            function: {
+              name: "search_legal_sources",
+              description: "Busca información legal específica en fuentes oficiales colombianas y en línea usando serper.dev. Utiliza esta función cuando necesites consultar legislación, jurisprudencia o normatividad colombiana actualizada.",
+              parameters: {
+                type: "object",
+                properties: {
+                  query: {
+                    type: "string",
+                    description: "Consulta legal específica a buscar (ej: 'Ley 1562 de 2012', 'contratos de trabajo Colombia', 'prescripción acción laboral')"
+                  },
+                  legal_area: {
+                    type: "string",
+                    description: "Área legal específica (civil, laboral, comercial, penal, administrativo, constitucional)",
+                    enum: ["civil", "laboral", "comercial", "penal", "administrativo", "constitucional", "general"]
+                  },
+                  source_type: {
+                    type: "string",
+                    description: "Tipo de fuente legal (ley, decreto, jurisprudencia, doctrina)",
+                    enum: ["ley", "decreto", "jurisprudencia", "doctrina", "codigo", "resolucion"]
+                  }
+                },
+                required: ["query"]
+              }
+            }
+          },
           {
             type: "function",
             function: {

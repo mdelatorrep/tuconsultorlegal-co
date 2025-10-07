@@ -125,6 +125,10 @@ serve(async (req) => {
             const functionArgs = JSON.parse(toolCall.function.arguments);
             
             switch (toolCall.function.name) {
+              case 'search_legal_sources':
+                output = await handleSearchLegalSources(supabase, functionArgs);
+                break;
+              
               case 'generate_document':
                 output = await handleGenerateDocument(
                   supabase, 
@@ -613,5 +617,101 @@ async function handleStoreCollectedData(
   } catch (error) {
     console.error('Error storing collected data:', error);
     return `Error al guardar datos: ${error.message}`;
+  }
+}
+
+async function handleSearchLegalSources(supabase: any, args: any) {
+  console.log('Searching legal sources:', args);
+  
+  try {
+    const { query, legal_area, source_type } = args;
+    
+    // Call the search-legal-sources edge function
+    const { data, error } = await supabase.functions.invoke('search-legal-sources', {
+      body: { 
+        query, 
+        legal_area, 
+        source_type,
+        include_kb_urls: true 
+      }
+    });
+    
+    if (error) {
+      console.error('Error calling search-legal-sources:', error);
+      return `Error al buscar fuentes legales: ${error.message}`;
+    }
+    
+    if (!data || !data.success) {
+      return 'No se pudieron obtener resultados de la búsqueda legal.';
+    }
+    
+    const results = data.results;
+    let response = `📚 RESULTADOS DE BÚSQUEDA LEGAL: "${query}"${legal_area ? ` (${legal_area})` : ''}\n\n`;
+    
+    // Add knowledge base URLs (official sources)
+    if (results.knowledge_base_urls && results.knowledge_base_urls.length > 0) {
+      response += '🏛️ FUENTES OFICIALES AUTORIZADAS:\n';
+      
+      const urlsByCategory = results.knowledge_base_urls.reduce((acc: any, url: any) => {
+        if (!acc[url.category]) acc[url.category] = [];
+        acc[url.category].push(url);
+        return acc;
+      }, {});
+      
+      const categoryNames: Record<string, string> = {
+        'legislacion': 'LEGISLACIÓN Y NORMATIVIDAD',
+        'jurisprudencia': 'JURISPRUDENCIA Y DECISIONES JUDICIALES',
+        'normatividad': 'NORMATIVIDAD LOCAL Y DISTRITAL',
+        'doctrina': 'DOCTRINA JURÍDICA',
+        'general': 'FUENTES GENERALES'
+      };
+      
+      Object.entries(urlsByCategory).forEach(([category, urls]: [string, any]) => {
+        response += `\n**${categoryNames[category] || category.toUpperCase()}:**\n`;
+        urls.slice(0, 3).forEach((url: any) => {
+          response += `• ${url.url}${url.description ? ` - ${url.description}` : ''}\n`;
+        });
+      });
+      
+      response += '\n';
+    }
+    
+    // Add web search results
+    if (results.web_results && results.web_results.length > 0) {
+      response += '🔍 RESULTADOS DE BÚSQUEDA EN LÍNEA (Priorizados por relevancia oficial):\n\n';
+      
+      results.web_results.slice(0, 5).forEach((result: any, idx: number) => {
+        const isOfficial = result.link.includes('gov.co');
+        response += `${idx + 1}. ${isOfficial ? '🏛️ ' : ''}**${result.title}**\n`;
+        response += `   ${result.snippet}\n`;
+        response += `   🔗 ${result.link}\n\n`;
+      });
+    }
+    
+    // Add answer box if available
+    if (results.answer_box) {
+      response += '💡 RESPUESTA DIRECTA:\n';
+      response += `${results.answer_box.answer}\n`;
+      response += `Fuente: ${results.answer_box.source}\n\n`;
+    }
+    
+    // Add knowledge graph if available
+    if (results.knowledge_graph) {
+      response += '📖 INFORMACIÓN CONTEXTUAL:\n';
+      response += `${results.knowledge_graph.title}\n`;
+      response += `${results.knowledge_graph.description}\n\n`;
+    }
+    
+    response += '\n⚠️ IMPORTANTE:\n';
+    response += '- Prioriza siempre las fuentes oficiales (.gov.co)\n';
+    response += '- Verifica la vigencia de las normas antes de citarlas\n';
+    response += '- Usa esta información como guía para orientar al usuario\n';
+    response += '- Siempre menciona las fuentes oficiales consultadas\n';
+    
+    return response;
+    
+  } catch (error) {
+    console.error('Error in handleSearchLegalSources:', error);
+    return `Error al buscar fuentes legales: ${error.message}`;
   }
 }

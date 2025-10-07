@@ -255,32 +255,59 @@ async function getKnowledgeBaseUrls(supabase: any): Promise<any[]> {
 async function handleLegalSearch(args: any, advisorAgent: any, sourcesConsulted: string[], supabase: any) {
   console.log('Performing legal search:', args);
   
-  const { query, legal_area, source_type } = args;
-  const legalSources = advisorAgent.legal_sources || [];
-  const knowledgeBaseUrls = await getKnowledgeBaseUrls(supabase);
-  
-  // Build search query with Colombian legal context
-  const searchQueries = [
-    `${query} Colombia ley vigente ${legal_area}`,
-    `${query} jurisprudencia Colombia corte suprema`,
-    `${query} decreto reglamentario Colombia ${legal_area}`,
-    `${query} normativa colombiana ${source_type || ''}`
-  ];
-
-  let searchResults = '';
-  
-  // Add knowledge base URLs as primary sources
-  if (knowledgeBaseUrls.length > 0) {
-    searchResults += '🏛️ FUENTES OFICIALES AUTORIZADAS:\n';
+  try {
+    const { query, legal_area, source_type } = args;
     
-    const urlsByCategory = knowledgeBaseUrls.reduce((acc: any, url: any) => {
-      if (!acc[url.category]) acc[url.category] = [];
-      acc[url.category].push(url);
-      return acc;
-    }, {});
-
-    Object.entries(urlsByCategory).forEach(([category, categoryUrls]: [string, any]) => {
-      const categoryNames: { [key: string]: string } = {
+    // Call the search-legal-sources edge function
+    const { data, error } = await supabase.functions.invoke('search-legal-sources', {
+      body: { 
+        query, 
+        legal_area: legal_area || advisorAgent.specialization, 
+        source_type,
+        include_kb_urls: true 
+      }
+    });
+    
+    if (error) {
+      console.error('Error calling search-legal-sources:', error);
+      return `Error al buscar fuentes legales: ${error.message}`;
+    }
+    
+    if (!data || !data.success) {
+      return 'No se pudieron obtener resultados de la búsqueda legal.';
+    }
+    
+    const results = data.results;
+    let response = `📚 RESULTADOS DE BÚSQUEDA LEGAL: "${query}"${legal_area ? ` (${legal_area})` : ''}\n\n`;
+    
+    // Track sources consulted
+    if (results.knowledge_base_urls) {
+      results.knowledge_base_urls.forEach((url: any) => {
+        if (!sourcesConsulted.includes(url.url)) {
+          sourcesConsulted.push(url.url);
+        }
+      });
+    }
+    
+    if (results.web_results) {
+      results.web_results.forEach((result: any) => {
+        if (!sourcesConsulted.includes(result.link)) {
+          sourcesConsulted.push(result.link);
+        }
+      });
+    }
+    
+    // Add knowledge base URLs (official sources)
+    if (results.knowledge_base_urls && results.knowledge_base_urls.length > 0) {
+      response += '🏛️ FUENTES OFICIALES AUTORIZADAS:\n';
+      
+      const urlsByCategory = results.knowledge_base_urls.reduce((acc: any, url: any) => {
+        if (!acc[url.category]) acc[url.category] = [];
+        acc[url.category].push(url);
+        return acc;
+      }, {});
+      
+      const categoryNames: Record<string, string> = {
         'legislacion': 'LEGISLACIÓN Y NORMATIVIDAD',
         'jurisprudencia': 'JURISPRUDENCIA Y DECISIONES JUDICIALES',
         'normatividad': 'NORMATIVIDAD LOCAL Y DISTRITAL',
@@ -288,50 +315,54 @@ async function handleLegalSearch(args: any, advisorAgent: any, sourcesConsulted:
         'general': 'FUENTES GENERALES'
       };
       
-      searchResults += `\n**${categoryNames[category] || category.toUpperCase()}:**\n`;
-      categoryUrls.slice(0, 3).forEach((url: any) => {
-        searchResults += `• ${url.url}${url.description ? ` - ${url.description}` : ''}\n`;
-        if (!sourcesConsulted.includes(url.url)) {
-          sourcesConsulted.push(url.url);
-        }
+      Object.entries(urlsByCategory).forEach(([category, urls]: [string, any]) => {
+        response += `\n**${categoryNames[category] || category.toUpperCase()}:**\n`;
+        urls.slice(0, 3).forEach((url: any) => {
+          response += `• ${url.url}${url.description ? ` - ${url.description}` : ''}\n`;
+        });
       });
-    });
-  }
-  
-  for (const searchQuery of searchQueries.slice(0, 2)) { // Limit to 2 searches
-    try {
-      searchResults += `\n🔍 Búsqueda: "${searchQuery}"\n`;
-      searchResults += `Fuentes relevantes encontradas para ${legal_area} en Colombia:\n`;
       
-      // Add specific legal sources
-      for (const source of legalSources.slice(0, 3)) {
-        searchResults += `- ${source}: Normativa actualizada sobre ${query}\n`;
-        if (!sourcesConsulted.includes(source)) {
-          sourcesConsulted.push(source);
-        }
-      }
-      
-      // Add common Colombian legal sources
-      const commonSources = [
-        'Constitución Política de Colombia 1991',
-        `Código ${legal_area === 'civil' ? 'Civil' : legal_area === 'comercial' ? 'de Comercio' : 'Sustantivo del Trabajo'} colombiano`,
-        'Jurisprudencia de la Corte Constitucional',
-        'Decretos reglamentarios vigentes'
-      ];
-      
-      for (const source of commonSources.slice(0, 2)) {
-        if (!sourcesConsulted.includes(source)) {
-          sourcesConsulted.push(source);
-        }
-      }
-      
-      searchResults += '\n';
-    } catch (error) {
-      console.error('Error in legal search:', error);
+      response += '\n';
     }
+    
+    // Add web search results
+    if (results.web_results && results.web_results.length > 0) {
+      response += '🔍 RESULTADOS DE BÚSQUEDA EN LÍNEA (Priorizados por relevancia oficial):\n\n';
+      
+      results.web_results.slice(0, 5).forEach((result: any, idx: number) => {
+        const isOfficial = result.link.includes('gov.co');
+        response += `${idx + 1}. ${isOfficial ? '🏛️ ' : ''}**${result.title}**\n`;
+        response += `   ${result.snippet}\n`;
+        response += `   🔗 ${result.link}\n\n`;
+      });
+    }
+    
+    // Add answer box if available
+    if (results.answer_box) {
+      response += '💡 RESPUESTA DIRECTA:\n';
+      response += `${results.answer_box.answer}\n`;
+      response += `Fuente: ${results.answer_box.source}\n\n`;
+    }
+    
+    // Add knowledge graph if available
+    if (results.knowledge_graph) {
+      response += '📖 INFORMACIÓN CONTEXTUAL:\n';
+      response += `${results.knowledge_graph.title}\n`;
+      response += `${results.knowledge_graph.description}\n\n`;
+    }
+    
+    response += '\n⚠️ IMPORTANTE:\n';
+    response += '- Prioriza siempre las fuentes oficiales (.gov.co)\n';
+    response += '- Verifica la vigencia de las normas antes de citarlas\n';
+    response += '- Usa esta información para fundamentar tu asesoría\n';
+    response += '- Siempre menciona las fuentes oficiales consultadas\n';
+    
+    return response;
+    
+  } catch (error) {
+    console.error('Error in handleLegalSearch:', error);
+    return `Error al buscar fuentes legales: ${error.message}`;
   }
-  
-  return `Resultados de búsqueda legal actualizados para "${query}" en ${legal_area}:\n\n${searchResults}\n⚠️ IMPORTANTE: Verifica la vigencia de estas fuentes y consulta las versiones más recientes en los sitios oficiales autorizados arriba listados.`;
 }
 
 async function handleCitationValidation(args: any) {
