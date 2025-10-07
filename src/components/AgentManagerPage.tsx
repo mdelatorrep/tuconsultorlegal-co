@@ -375,7 +375,7 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
     }
   };
 
-  const handleEditAgent = (agent: LegalAgent) => {
+  const handleEditAgent = async (agent: LegalAgent) => {
     // Los abogados pueden editar sus propios agentes
     
     // Extract current placeholders from template to ensure consistency
@@ -392,9 +392,9 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
       frontend_icon: agent.frontend_icon ?? 'FileText'
     });
     
-    // Load conversation blocks and field instructions for editing
+    // Load conversation blocks and field instructions BEFORE opening dialog
     if (agent.id) {
-      fetchConversationBlocks(agent.id);
+      await fetchConversationBlocks(agent.id);
     }
     
     setIsEditDialogOpen(true);
@@ -1633,7 +1633,12 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                         <Badge variant="outline">{convBlocks.length} bloques</Badge>
                       </div>
                       
-                      {editingAgent.placeholder_fields && editingAgent.placeholder_fields.length > 0 ? (
+                      {convLoading ? (
+                        <div className="flex items-center justify-center py-8">
+                          <RefreshCw className="h-6 w-6 animate-spin mr-2" />
+                          <span>Cargando bloques de conversación...</span>
+                        </div>
+                      ) : extractPlaceholdersFromTemplate(editingAgent.template_content).length > 0 ? (
                         <ConversationGuideBuilder 
                           placeholders={extractPlaceholdersFromTemplate(editingAgent.template_content).map(p => p.placeholder)}
                           conversationBlocks={convBlocks.map(block => ({
