@@ -121,13 +121,38 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
         return;
       }
       
+      setAgent(data);
+      
+      // 🔑 VERIFICAR OPENAI ASSISTANT AL INICIO
+      console.log('🔍 Checking for OpenAI assistant...', { 
+        openai_enabled: data.openai_enabled,
+        agentId 
+      });
+      
+      if (data.openai_enabled) {
+        const { data: openaiAgent, error: agentError } = await supabase
+          .from('openai_agents')
+          .select('openai_agent_id, status')
+          .eq('legal_agent_id', agentId)
+          .eq('status', 'active')
+          .maybeSingle();
+
+        if (openaiAgent && openaiAgent.openai_agent_id) {
+          console.log('✅ OpenAI Assistant found:', openaiAgent.openai_agent_id);
+          setOpenaiAgentId(openaiAgent.openai_agent_id);
+        } else {
+          console.log('⚠️ No active OpenAI assistant found, will use fallback chat');
+        }
+      } else {
+        console.log('ℹ️ OpenAI not enabled for this agent');
+      }
+      
       console.log('✅ Agent loaded successfully:', {
         name: data.name,
         document_name: data.document_name,
-        openai_enabled: data.openai_enabled
+        openai_enabled: data.openai_enabled,
+        has_assistant: !!openaiAgentId
       });
-      
-      setAgent(data);
       
       // Only add initial message if there are no existing messages
       if (messages.length === 0) {
@@ -153,8 +178,47 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
   const getInitialResponse = async (agentData: AgentData, userMessage: Message) => {
     try {
       console.log('🤖 Getting initial response for document:', agentData.document_name);
+      console.log('🔑 OpenAI Assistant available:', !!openaiAgentId);
       
-      // Generar el prompt inicial que asegura recopilar TODOS los campos requeridos
+      // SI HAY OPENAI ASSISTANT, USARLO
+      if (openaiAgentId) {
+        console.log('🚀 Using OpenAI orchestrator for initial response');
+        
+        const { data, error } = await supabase.functions.invoke('agent-workflow-orchestrator', {
+          body: {
+            messages: [{ role: userMessage.role, content: userMessage.content }],
+            agentId: openaiAgentId,
+            documentTokenId: null,
+            threadId: null // New conversation
+          }
+        });
+
+        if (error) {
+          console.error('❌ OpenAI orchestrator error:', error);
+          throw error;
+        }
+
+        console.log('✅ Initial response received from OpenAI');
+
+        // Save threadId for future messages
+        if (data.threadId) {
+          setThreadId(data.threadId);
+        }
+
+        const assistantMessage: Message = {
+          role: 'assistant',
+          content: data.message,
+          timestamp: new Date(),
+          showGenerateButton: shouldShowGenerateButton(data.message)
+        };
+
+        setMessages(prev => [...prev, assistantMessage]);
+        return;
+      }
+
+      // FALLBACK: Usar document-chat
+      console.log('📝 Using fallback document-chat');
+      
       const enhancedPrompt = `${agentData.ai_prompt}
 
 REGLAS ESTRICTAS PARA RECOPILACIÓN DE INFORMACIÓN:
@@ -244,50 +308,48 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
     });
 
     try {
-      // Get or verify OpenAI agent for this legal agent
-      let currentOpenaiAgentId = openaiAgentId;
-      
-      if (!currentOpenaiAgentId) {
-        const { data: openaiAgent, error: agentError } = await supabase
-          .from('openai_agents')
-          .select('openai_agent_id')
-          .eq('legal_agent_id', agentId)
-          .eq('status', 'active')
-          .maybeSingle();
+      // 🎯 USAR OPENAI ASSISTANT SI ESTÁ DISPONIBLE
+      console.log('🎯 Using assistant:', { 
+        hasOpenAI: !!openaiAgentId, 
+        agentId: openaiAgentId 
+      });
 
-        if (agentError || !openaiAgent) {
-          // Fallback to original chat system if no OpenAI agent exists
-          const { data, error } = await supabase.functions.invoke('document-chat', {
-            body: {
-              messages: updatedMessages.map(msg => ({ role: msg.role, content: msg.content })),
-              agent_prompt: agent.ai_prompt,
-              document_name: agent.document_name
-            }
-          });
+      if (!openaiAgentId) {
+        console.log('⚠️ No OpenAI assistant available, using fallback chat');
+        // Fallback to original chat system if no OpenAI agent exists
+        const { data, error } = await supabase.functions.invoke('document-chat', {
+          body: {
+            messages: updatedMessages.map(msg => ({ role: msg.role, content: msg.content })),
+            agent_prompt: agent.ai_prompt,
+            document_name: agent.document_name
+          }
+        });
 
-          if (error) throw error;
+        if (error) throw error;
 
-          const assistantMessage: Message = {
-            role: 'assistant',
-            content: data.message,
-            timestamp: new Date(),
-            showGenerateButton: shouldShowGenerateButton(data.message)
-          };
+        const assistantMessage: Message = {
+          role: 'assistant',
+          content: data.message,
+          timestamp: new Date(),
+          showGenerateButton: shouldShowGenerateButton(data.message)
+        };
 
-          setMessages(prev => [...prev, assistantMessage]);
-          setSending(false);
-          return;
-        }
-
-        currentOpenaiAgentId = openaiAgent.openai_agent_id;
-        setOpenaiAgentId(currentOpenaiAgentId);
+        setMessages(prev => [...prev, assistantMessage]);
+        setSending(false);
+        return;
       }
 
-      // Use OpenAI Agents workflow orchestrator with enhanced error handling
+      // 🚀 USAR OPENAI WORKFLOW ORCHESTRATOR
+      console.log('🚀 Calling OpenAI orchestrator with:', {
+        agentId: openaiAgentId,
+        threadId,
+        messageCount: updatedMessages.length
+      });
+
       const { data, error } = await supabase.functions.invoke('agent-workflow-orchestrator', {
         body: {
           messages: updatedMessages.map(msg => ({ role: msg.role, content: msg.content })),
-          agentId: currentOpenaiAgentId,
+          agentId: openaiAgentId,
           documentTokenId: null, // Will be set when document is generated
           threadId: threadId
         }
