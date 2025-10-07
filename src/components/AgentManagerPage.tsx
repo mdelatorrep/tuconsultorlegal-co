@@ -432,13 +432,22 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
       });
     }
     
-    // Check placeholders in blocks
+    // Check placeholders in blocks - NORMALIZAR comparación
     const placeholdersInBlocks = new Set<string>();
     convBlocks.forEach(block => {
-      block.placeholders?.forEach((p: string) => placeholdersInBlocks.add(p));
+      // Normalizar: remover llaves si existen
+      block.placeholders?.forEach((p: string) => {
+        const normalized = p.replace(/\{\{|\}\}/g, '').trim();
+        placeholdersInBlocks.add(normalized);
+      });
     });
     
-    const missingInBlocks = extractedPlaceholders.filter(p => !placeholdersInBlocks.has(p.placeholder));
+    // Comparar placeholders normalizados
+    const missingInBlocks = extractedPlaceholders.filter(p => {
+      const normalizedPlaceholder = p.placeholder.replace(/\{\{|\}\}/g, '').trim();
+      return !placeholdersInBlocks.has(normalizedPlaceholder);
+    });
+    
     if (missingInBlocks.length > 0 && !silent) {
       const confirmed = window.confirm(
         `Hay ${missingInBlocks.length} placeholders sin asignar a bloques: ${missingInBlocks.map(p => p.placeholder).join(', ')}. ¿Continuar?`
@@ -622,10 +631,13 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
       // Extract placeholders locally
       const newPlaceholders = extractPlaceholdersFromTemplate(editingAgent.template_content);
       
-      // Check for orphaned placeholders in blocks
+      // Check for orphaned placeholders in blocks - NORMALIZAR comparación
       const blocksPlaceholders = new Set();
       convBlocks.forEach(block => {
-        block.placeholders?.forEach((p: string) => blocksPlaceholders.add(p));
+        block.placeholders?.forEach((p: string) => {
+          const normalized = p.replace(/\{\{|\}\}/g, '').trim();
+          blocksPlaceholders.add(normalized);
+        });
       });
       
       const orphaned = [...blocksPlaceholders].filter(
@@ -649,12 +661,16 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
         category: editingAgent.category || 'General',
         docTemplate: editingAgent.template_content.trim(),
         conversationBlocks: (convBlocks || []).map((b, idx) => ({
-          blockName: b.name?.trim() || '',
-          introPhrase: b.introduction?.trim() || '',
+          blockName: b.block_name || '',
+          introPhrase: b.intro_phrase || '',
           placeholders: Array.isArray(b.placeholders) ? b.placeholders : [],
           blockOrder: idx + 1
         })),
-        fieldInstructions: fieldInstructions || [],
+        fieldInstructions: (fieldInstructions || []).map(fi => ({
+          fieldName: fi.field_name,
+          validationRule: fi.validation_rule,
+          helpText: fi.help_text
+        })),
         targetAudience: editingAgent.target_audience || 'personas'
       };
 
@@ -775,8 +791,12 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
     const templatePlaceholders = extractPlaceholdersFromTemplate(editingAgent.template_content);
     const blocksPlaceholders = new Set<string>();
     
+    // Normalizar placeholders de los bloques
     convBlocks.forEach(block => {
-      block.placeholders?.forEach((p: string) => blocksPlaceholders.add(p));
+      block.placeholders?.forEach((p: string) => {
+        const normalized = p.replace(/\{\{|\}\}/g, '').trim();
+        blocksPlaceholders.add(normalized);
+      });
     });
     
     const orphanedInBlocks = [...blocksPlaceholders].filter(
