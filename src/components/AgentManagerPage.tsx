@@ -1639,26 +1639,37 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                           <span>Cargando bloques de conversación...</span>
                         </div>
                       ) : extractPlaceholdersFromTemplate(editingAgent.template_content).length > 0 ? (
-                        <ConversationGuideBuilder 
-                          placeholders={extractPlaceholdersFromTemplate(editingAgent.template_content).map(p => p.placeholder)}
-                          conversationBlocks={convBlocks.map(block => ({
-                            id: block.id,
-                            name: block.block_name,
-                            introduction: block.intro_phrase,
-                            placeholders: Array.isArray(block.placeholders) ? block.placeholders : []
-                          }))}
-                          onBlocksChange={(blocks) => {
-                            const updatedBlocks = blocks.map((block, index) => ({
+                        <>
+                          {convBlocks.length === 0 && (
+                            <Alert className="mb-4">
+                              <Info className="h-4 w-4" />
+                              <AlertTitle>Primera vez configurando conversación</AlertTitle>
+                              <AlertDescription>
+                                Este agente no tiene bloques de conversación configurados. Crea los bloques para organizar cómo se recolecta la información del usuario.
+                              </AlertDescription>
+                            </Alert>
+                          )}
+                          <ConversationGuideBuilder 
+                            placeholders={extractPlaceholdersFromTemplate(editingAgent.template_content).map(p => p.placeholder)}
+                            conversationBlocks={convBlocks.map(block => ({
                               id: block.id,
-                              block_name: block.name,
-                              intro_phrase: block.introduction,
-                              placeholders: block.placeholders,
-                              block_order: index + 1
-                            }));
-                            setConvBlocks(updatedBlocks);
-                            setHasUnsavedChanges(true);
-                          }}
-                        />
+                              name: block.block_name,
+                              introduction: block.intro_phrase,
+                              placeholders: Array.isArray(block.placeholders) ? block.placeholders : []
+                            }))}
+                            onBlocksChange={(blocks) => {
+                              const updatedBlocks = blocks.map((block, index) => ({
+                                id: block.id,
+                                block_name: block.name,
+                                intro_phrase: block.introduction,
+                                placeholders: block.placeholders,
+                                block_order: index + 1
+                              }));
+                              setConvBlocks(updatedBlocks);
+                              setHasUnsavedChanges(true);
+                            }}
+                          />
+                        </>
                       ) : (
                         <div className="text-center py-8 text-muted-foreground">
                           <AlertTriangle className="h-8 w-8 mx-auto mb-2" />
@@ -1675,25 +1686,36 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                       </div>
                       
                       {extractPlaceholdersFromTemplate(editingAgent.template_content).length > 0 ? (
-                        <FieldInstructionsManager
-                          placeholders={extractPlaceholdersFromTemplate(editingAgent.template_content).map(p => p.placeholder)}
-                          fieldInstructions={fieldInstructions.map(instruction => ({
-                            id: instruction.id,
-                            fieldName: instruction.field_name,
-                            validationRule: instruction.validation_rule,
-                            helpText: instruction.help_text
-                          }))}
-                          onInstructionsChange={(instructions) => {
-                            const updatedInstructions = instructions.map(instruction => ({
+                        <>
+                          {fieldInstructions.length === 0 && (
+                            <Alert className="mb-4">
+                              <Info className="h-4 w-4" />
+                              <AlertTitle>Instrucciones opcionales</AlertTitle>
+                              <AlertDescription>
+                                Puedes agregar validaciones y textos de ayuda específicos para cada campo. Esto es opcional pero mejora la experiencia del usuario.
+                              </AlertDescription>
+                            </Alert>
+                          )}
+                          <FieldInstructionsManager
+                            placeholders={extractPlaceholdersFromTemplate(editingAgent.template_content).map(p => p.placeholder)}
+                            fieldInstructions={fieldInstructions.map(instruction => ({
                               id: instruction.id,
-                              field_name: instruction.fieldName,
-                              validation_rule: instruction.validationRule,
-                              help_text: instruction.helpText
-                            }));
-                            setFieldInstructions(updatedInstructions);
-                            setHasUnsavedChanges(true);
-                          }}
-                        />
+                              fieldName: instruction.field_name,
+                              validationRule: instruction.validation_rule,
+                              helpText: instruction.help_text
+                            }))}
+                            onInstructionsChange={(instructions) => {
+                              const updatedInstructions = instructions.map(instruction => ({
+                                id: instruction.id,
+                                field_name: instruction.fieldName,
+                                validation_rule: instruction.validationRule,
+                                help_text: instruction.helpText
+                              }));
+                              setFieldInstructions(updatedInstructions);
+                              setHasUnsavedChanges(true);
+                            }}
+                          />
+                        </>
                       ) : (
                         <div className="text-center py-4 text-muted-foreground">
                           <p>Primero necesitas crear una plantilla con placeholders en formato {`{{campo}}`}.</p>
