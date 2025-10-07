@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,10 +26,14 @@ export const ConversationGuideBuilder: React.FC<ConversationGuideBuilderProps> =
   conversationBlocks,
   onBlocksChange
 }) => {
-  const [availablePlaceholders, setAvailablePlaceholders] = useState(() => {
+  const [availablePlaceholders, setAvailablePlaceholders] = useState<string[]>([]);
+
+  // Recalculate available placeholders when placeholders or conversation blocks change
+  useEffect(() => {
     const usedPlaceholders = conversationBlocks.flatMap(block => block.placeholders);
-    return placeholders.filter(p => !usedPlaceholders.includes(p));
-  });
+    const available = placeholders.filter(p => !usedPlaceholders.includes(p));
+    setAvailablePlaceholders(available);
+  }, [placeholders, conversationBlocks]);
 
   const addBlock = () => {
     const newBlock: ConversationBlock = {
