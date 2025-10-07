@@ -355,14 +355,18 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
     console.log('📨 Sending message:', {
       messageLength: currentMessage.length,
       totalMessages: updatedMessages.length,
-      hasOpenAIAgent: !!openaiAgentId
+      hasOpenAIAgent: !!openaiAgentId,
+      openaiAgentId: openaiAgentId,
+      threadId: threadId
     });
 
     try {
       // 🎯 USAR OPENAI ASSISTANT SI ESTÁ DISPONIBLE
       console.log('🎯 Using assistant:', { 
         hasOpenAI: !!openaiAgentId, 
-        agentId: openaiAgentId 
+        agentId: openaiAgentId,
+        threadId: threadId,
+        willUseFallback: !openaiAgentId
       });
 
       if (!openaiAgentId) {
@@ -394,23 +398,30 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
       console.log('🚀 Calling OpenAI orchestrator with:', {
         agentId: openaiAgentId,
         threadId,
-        messageCount: updatedMessages.length
+        messageCount: updatedMessages.length,
+        lastMessageContent: updatedMessages[updatedMessages.length - 1].content.substring(0, 50)
       });
 
+      const requestBody = {
+        messages: updatedMessages.map(msg => ({ role: msg.role, content: msg.content })),
+        agentId: openaiAgentId,
+        documentTokenId: null, // Will be set when document is generated
+        threadId: threadId
+      };
+      
+      console.log('📤 Request to orchestrator:', JSON.stringify(requestBody, null, 2));
+
       const { data, error } = await supabase.functions.invoke('agent-workflow-orchestrator', {
-        body: {
-          messages: updatedMessages.map(msg => ({ role: msg.role, content: msg.content })),
-          agentId: openaiAgentId,
-          documentTokenId: null, // Will be set when document is generated
-          threadId: threadId
-        }
+        body: requestBody
       });
       
       if (error) {
-        console.error('OpenAI Agent error, falling back to basic chat:', error);
+        console.error('❌ OpenAI Agent error:', error);
+        console.error('❌ Error details:', JSON.stringify(error, null, 2));
         toast.error(`Error con el asistente: ${error.message || 'Error desconocido'}`);
         
         // Fallback to original chat system
+        console.log('⚠️ Falling back to document-chat...');
         const { data: fallbackData, error: fallbackError } = await supabase.functions.invoke('document-chat', {
           body: {
             messages: updatedMessages.map(msg => ({ role: msg.role, content: msg.content })),
@@ -440,15 +451,26 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
       if (data.threadId) {
         if (!threadId) {
           console.log('✅ New threadId received:', data.threadId);
+        } else {
+          console.log('✅ ThreadId confirmed:', data.threadId);
         }
         setThreadId(data.threadId);
+      } else {
+        console.warn('⚠️ No threadId in response');
       }
 
       // Verificar que recibimos una respuesta válida
       if (!data || !data.message) {
-        console.error('No valid response received from orchestrator');
+        console.error('❌ No valid response received from orchestrator');
+        console.error('❌ Response data:', JSON.stringify(data, null, 2));
         throw new Error('No se recibió una respuesta válida del asistente');
       }
+      
+      console.log('✅ Response received:', {
+        messageLength: data.message?.length,
+        hasThreadId: !!data.threadId,
+        runStatus: data.runStatus
+      });
 
       const assistantMessage: Message = {
         role: 'assistant',
