@@ -45,10 +45,28 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
   const [dataProcessingConsent, setDataProcessingConsent] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  // Estados para manejo de términos y condiciones
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showTermsDialog, setShowTermsDialog] = useState(true);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
 
+  // Verificar si ya aceptó términos en esta sesión
   useEffect(() => {
-    loadAgent();
+    const accepted = localStorage.getItem(`terms_accepted_${agentId}`);
+    if (accepted === 'true') {
+      setTermsAccepted(true);
+      setShowTermsDialog(false);
+    }
   }, [agentId]);
+
+  // Solo cargar agente DESPUÉS de aceptar términos
+  useEffect(() => {
+    if (termsAccepted) {
+      loadAgent();
+    }
+  }, [agentId, termsAccepted]);
 
   useEffect(() => {
     // Usar setTimeout para evitar que el scroll interfiera con el foco
@@ -573,12 +591,138 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
       .trim();
   };
 
-  if (loading) {
+  // Manejar la aceptación de términos
+  const handleContinue = () => {
+    if (acceptedTerms && acceptedPrivacy) {
+      localStorage.setItem(`terms_accepted_${agentId}`, 'true');
+      setTermsAccepted(true);
+      setShowTermsDialog(false);
+    }
+  };
+
+  const canContinue = acceptedTerms && acceptedPrivacy;
+
+  if (loading && !termsAccepted) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">Cargando asistente legal...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Card de aceptación de términos - SE MUESTRA PRIMERO
+  if (!termsAccepted && showTermsDialog) {
+    return (
+      <div className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm">
+        <div className="flex items-center justify-center min-h-screen p-4">
+          <div className="w-full max-w-md">
+            <Card className="border-primary/20">
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                    <Bot className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">Bienvenido</CardTitle>
+                    <p className="text-sm text-muted-foreground">Asistente Legal Lexi</p>
+                  </div>
+                </div>
+              </CardHeader>
+              
+              <CardContent className="space-y-6">
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Antes de comenzar con tu documento, necesito que aceptes los siguientes términos para poder continuar:
+                </p>
+
+                <div className="space-y-4">
+                  {/* Checkbox Términos y Condiciones */}
+                  <div className="flex items-start space-x-3">
+                    <Checkbox
+                      id="terms"
+                      checked={acceptedTerms}
+                      onCheckedChange={(checked) => setAcceptedTerms(checked as boolean)}
+                      className="mt-1"
+                    />
+                    <div className="space-y-1 flex-1">
+                      <Label 
+                        htmlFor="terms" 
+                        className="text-sm font-medium cursor-pointer"
+                      >
+                        Acepto los Términos y Condiciones *
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Lee nuestros{' '}
+                        <a 
+                          href="/terminos" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-primary underline hover:text-primary/80 font-medium"
+                        >
+                          Términos y Condiciones
+                        </a>
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Checkbox Política de Privacidad */}
+                  <div className="flex items-start space-x-3">
+                    <Checkbox
+                      id="privacy"
+                      checked={acceptedPrivacy}
+                      onCheckedChange={(checked) => setAcceptedPrivacy(checked as boolean)}
+                      className="mt-1"
+                    />
+                    <div className="space-y-1 flex-1">
+                      <Label 
+                        htmlFor="privacy" 
+                        className="text-sm font-medium cursor-pointer"
+                      >
+                        Acepto la Política de Privacidad *
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Lee nuestra{' '}
+                        <a 
+                          href="/privacidad" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-primary underline hover:text-primary/80 font-medium"
+                        >
+                          Política de Privacidad
+                        </a>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-muted/50 rounded-lg p-3 border border-border">
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Al continuar, confirmas que has leído y aceptado ambos documentos. 
+                    Esta información es necesaria para procesar tu solicitud de forma segura.
+                  </p>
+                </div>
+
+                <div className="flex gap-3">
+                  <Button 
+                    variant="outline" 
+                    onClick={onBack}
+                    className="flex-1"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={handleContinue}
+                    disabled={!canContinue}
+                    className="flex-1"
+                  >
+                    Continuar
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     );
