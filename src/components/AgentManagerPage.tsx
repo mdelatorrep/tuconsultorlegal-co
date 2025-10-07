@@ -1669,7 +1669,7 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                         <Badge variant="outline">{fieldInstructions.length} instrucciones</Badge>
                       </div>
                       
-                      {editingAgent.placeholder_fields && editingAgent.placeholder_fields.length > 0 ? (
+                      {extractPlaceholdersFromTemplate(editingAgent.template_content).length > 0 ? (
                         <FieldInstructionsManager
                           placeholders={extractPlaceholdersFromTemplate(editingAgent.template_content).map(p => p.placeholder)}
                           fieldInstructions={fieldInstructions.map(instruction => ({
@@ -1691,7 +1691,7 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                         />
                       ) : (
                         <div className="text-center py-4 text-muted-foreground">
-                          <p>No hay campos para configurar instrucciones.</p>
+                          <p>Primero necesitas crear una plantilla con placeholders en formato {`{{campo}}`}.</p>
                         </div>
                       )}
                     </div>
