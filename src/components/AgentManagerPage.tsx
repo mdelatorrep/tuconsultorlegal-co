@@ -516,6 +516,43 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
       
       setHasUnsavedChanges(false);
       
+      // ✅ CRITICAL: Update OpenAI assistant if agent has OpenAI enabled
+      const updatedAgent = agents.find(a => a.id === editingAgent.id);
+      if (updatedAgent && (updatedAgent as any).openai_enabled) {
+        try {
+          console.log('🔄 Recreating OpenAI assistant with updated conversation blocks...');
+          
+          const { data: openaiData, error: openaiError } = await supabase.functions.invoke('create-openai-agent', {
+            body: {
+              legal_agent_id: editingAgent.id,
+              force_recreate: true
+            },
+            headers: authHeaders
+          });
+          
+          if (openaiError) {
+            console.error('Error recreating OpenAI agent:', openaiError);
+            if (!silent) {
+              toast({
+                title: "Advertencia",
+                description: "El agente se guardó pero no se pudo actualizar el asistente de IA. Intenta desde el panel de OpenAI.",
+                variant: "destructive",
+              });
+            }
+          } else if (openaiData?.success) {
+            console.log('✅ OpenAI assistant recreated successfully');
+            if (!silent) {
+              toast({
+                title: "Asistente actualizado",
+                description: "El asistente de IA se actualizó con los nuevos bloques de conversación",
+              });
+            }
+          }
+        } catch (openaiError) {
+          console.error('Error updating OpenAI assistant:', openaiError);
+        }
+      }
+      
       if (!silent) {
         setIsEditDialogOpen(false);
         setEditingAgent(null);
