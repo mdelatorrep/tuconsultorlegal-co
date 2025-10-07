@@ -36,7 +36,7 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
   const [agent, setAgent] = useState<AgentData | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentMessage, setCurrentMessage] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Iniciar en false
   const [sending, setSending] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [userInfo, setUserInfo] = useState({ name: '', email: '' });
@@ -64,6 +64,7 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
   // Solo cargar agente DESPUÉS de aceptar términos
   useEffect(() => {
     if (termsAccepted) {
+      setLoading(true); // Activar loading solo cuando va a cargar
       loadAgent();
     }
   }, [agentId, termsAccepted]);
@@ -602,18 +603,7 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
 
   const canContinue = acceptedTerms && acceptedPrivacy;
 
-  if (loading && !termsAccepted) {
-    return (
-      <div className="min-h-screen flex items-center justify-center px-4">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Cargando asistente legal...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Card de aceptación de términos - SE MUESTRA PRIMERO
+  // Card de aceptación de términos - SE MUESTRA PRIMERO (antes que loading)
   if (!termsAccepted && showTermsDialog) {
     return (
       <div className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm">
@@ -723,6 +713,18 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
               </CardContent>
             </Card>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Loading después de aceptar términos
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Cargando asistente legal...</p>
         </div>
       </div>
     );
