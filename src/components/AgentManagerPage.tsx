@@ -103,7 +103,6 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
 
   const fetchConversationBlocks = async (legalAgentId: string) => {
     setConvLoading(true);
-    console.log('🔍 [fetchConversationBlocks] Loading blocks for agent:', legalAgentId);
     try {
       const [blocksResult, instructionsResult] = await Promise.all([
         supabase
@@ -118,23 +117,20 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
       ]);
 
       if (blocksResult.error) {
-        console.error('❌ Error fetching conversation blocks:', blocksResult.error);
+        console.error('Error fetching conversation blocks:', blocksResult.error);
         setConvBlocks([]);
       } else {
-        console.log('✅ Conversation blocks loaded:', blocksResult.data?.length || 0, 'blocks');
-        console.log('   Blocks:', blocksResult.data);
         setConvBlocks(blocksResult.data || []);
       }
 
       if (instructionsResult.error) {
-        console.error('❌ Error fetching field instructions:', instructionsResult.error);
+        console.error('Error fetching field instructions:', instructionsResult.error);
         setFieldInstructions([]);
       } else {
-        console.log('✅ Field instructions loaded:', instructionsResult.data?.length || 0, 'instructions');
         setFieldInstructions(instructionsResult.data || []);
       }
     } catch (e) {
-      console.error('💥 Unexpected error loading conversation data:', e);
+      console.error('Unexpected error loading conversation data:', e);
       setConvBlocks([]);
       setFieldInstructions([]);
     } finally {
@@ -1088,6 +1084,49 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                             Editar
                           </Button>
 
+                          {/* Regenerate Prompt (only for admins) */}
+                          {lawyerData.is_admin && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={async () => {
+                                try {
+                                  toast({
+                                    title: "Regenerando prompt...",
+                                    description: "Esto puede tomar unos segundos",
+                                  });
+                                  
+                                  const { data, error } = await supabase.functions.invoke('regenerate-agent-prompts', {
+                                    body: { agent_id: agent.id }
+                                  });
+                                  
+                                  if (error) throw error;
+                                  
+                                  if (data?.success && data?.updated > 0) {
+                                    toast({
+                                      title: "✅ Prompt regenerado",
+                                      description: `El prompt de "${agent.name}" ha sido actualizado exitosamente.`,
+                                    });
+                                    fetchAgents(); // Recargar la lista
+                                  } else {
+                                    throw new Error(data?.errors?.[0]?.error || 'No se pudo regenerar el prompt');
+                                  }
+                                } catch (error: any) {
+                                  console.error('Error regenerating prompt:', error);
+                                  toast({
+                                    title: "Error",
+                                    description: error.message || "No se pudo regenerar el prompt",
+                                    variant: "destructive"
+                                  });
+                                }
+                              }}
+                              className="text-blue-600 hover:text-blue-700"
+                            >
+                              <RefreshCw className="h-4 w-4 mr-1" />
+                              Regenerar
+                            </Button>
+                          )}
+
                           {/* Delete */}
                           <Button 
                             variant="outline" 
@@ -1193,6 +1232,49 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                             <Edit className="h-4 w-4 mr-1" />
                             Editar
                           </Button>
+
+                          {/* Regenerate Prompt (only for admins) */}
+                          {lawyerData.is_admin && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={async () => {
+                                try {
+                                  toast({
+                                    title: "Regenerando prompt...",
+                                    description: "Esto puede tomar unos segundos",
+                                  });
+                                  
+                                  const { data, error } = await supabase.functions.invoke('regenerate-agent-prompts', {
+                                    body: { agent_id: agent.id }
+                                  });
+                                  
+                                  if (error) throw error;
+                                  
+                                  if (data?.success && data?.updated > 0) {
+                                    toast({
+                                      title: "✅ Prompt regenerado",
+                                      description: `El prompt de "${agent.name}" ha sido actualizado exitosamente.`,
+                                    });
+                                    fetchAgents(); // Recargar la lista
+                                  } else {
+                                    throw new Error(data?.errors?.[0]?.error || 'No se pudo regenerar el prompt');
+                                  }
+                                } catch (error: any) {
+                                  console.error('Error regenerating prompt:', error);
+                                  toast({
+                                    title: "Error",
+                                    description: error.message || "No se pudo regenerar el prompt",
+                                    variant: "destructive"
+                                  });
+                                }
+                              }}
+                              className="text-blue-600 hover:text-blue-700"
+                            >
+                              <RefreshCw className="h-4 w-4 mr-1" />
+                              Regenerar
+                            </Button>
+                          )}
 
                           {/* Suspend/Activate (solo para admin) */}
                           {lawyerData.is_admin && (
@@ -1400,20 +1482,12 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-semibold">Prompt de IA</h4>
-                    {(() => {
-                      console.log('🔍 [RegenerateButton] Evaluating conditions:', {
-                        isAdmin: lawyerData.is_admin,
-                        blocksCount: convBlocks.length,
-                        shouldShow: lawyerData.is_admin && convBlocks.length > 0
-                      });
-                      return lawyerData.is_admin && convBlocks.length > 0;
-                    })() && (
+                    {lawyerData.is_admin && convBlocks.length > 0 && (
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={async () => {
                           if (!selectedAgent) return;
-                          console.log('🔄 Regenerating prompt for:', selectedAgent.name);
                           try {
                             toast({
                               title: "Regenerando prompt...",
