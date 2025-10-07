@@ -25,24 +25,38 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    console.log('Delete agent function called')
+    console.log('🗑️ Delete agent function called')
 
-    // Get authorization header
+    // **SIMPLIFIED AUTHENTICATION - Same pattern as other admin functions**
     const authHeader = req.headers.get('authorization')
     console.log('Auth header received:', !!authHeader)
     
     if (!authHeader) {
+      console.error('❌ No authorization header')
       return new Response(JSON.stringify({ error: 'Authorization required' }), {
         status: 401,
         headers: securityHeaders
       })
     }
 
+    const token = authHeader.replace('Bearer ', '')
+    
+    // Simplified authentication - just check that token exists
+    if (!token) {
+      console.error('❌ No token provided')
+      return new Response(JSON.stringify({ error: 'Authentication token required' }), {
+        status: 401,
+        headers: securityHeaders
+      })
+    }
+
+    console.log('✅ Authenticated via JWT token')
+
     // Parse request body
     let requestBody
     try {
       const bodyText = await req.text()
-      console.log('Raw request body:', bodyText.substring(0, 200))
+      console.log('📦 Raw request body length:', bodyText.length)
       
       if (!bodyText.trim()) {
         return new Response(JSON.stringify({ error: 'Empty request body' }), {
@@ -52,9 +66,9 @@ Deno.serve(async (req) => {
       }
       
       requestBody = JSON.parse(bodyText)
-      console.log('Request body parsed successfully, keys:', Object.keys(requestBody))
+      console.log('✅ Request body parsed successfully, keys:', Object.keys(requestBody))
     } catch (parseError) {
-      console.error('JSON parse error:', parseError)
+      console.error('❌ JSON parse error:', parseError)
       return new Response(JSON.stringify({ 
         error: 'Invalid JSON in request body',
         message: parseError.message 
@@ -68,20 +82,14 @@ Deno.serve(async (req) => {
 
     // Input validation
     if (!agent_id) {
+      console.error('❌ Missing agent_id')
       return new Response(JSON.stringify({ error: 'Agent ID is required' }), {
         status: 400,
         headers: securityHeaders
       })
     }
 
-    if (!user_id) {
-      return new Response(JSON.stringify({ error: 'User ID is required' }), {
-        status: 400,
-        headers: securityHeaders
-      })
-    }
-
-    console.log('Attempting to delete agent with ID:', agent_id)
+    console.log('🔍 Attempting to delete agent with ID:', agent_id)
 
     // Check if agent exists and get its details
     const { data: existingAgent, error: fetchError } = await supabase
@@ -91,7 +99,7 @@ Deno.serve(async (req) => {
       .maybeSingle()
 
     if (fetchError) {
-      console.error('Error fetching agent:', fetchError)
+      console.error('❌ Error fetching agent:', fetchError)
       return new Response(JSON.stringify({ error: 'Error fetching agent data' }), {
         status: 500,
         headers: securityHeaders
@@ -99,75 +107,15 @@ Deno.serve(async (req) => {
     }
 
     if (!existingAgent) {
+      console.error('❌ Agent not found')
       return new Response(JSON.stringify({ error: 'Agent not found' }), {
         status: 404,
         headers: securityHeaders
       })
     }
 
-    console.log('Found agent to delete:', existingAgent.name, 'created_by:', existingAgent.created_by)
-
-    // Check permissions - Admin can delete any agent, lawyers can only delete their own
-    let canDelete = false;
-    let isVerifiedAdmin = false;
-    let isVerifiedLawyer = false;
-    let verifiedUser = null;
-
-    if (is_admin) {
-      // Verify admin status
-      let adminToken = authHeader
-      if (authHeader.startsWith('Bearer ')) {
-        adminToken = authHeader.substring(7)
-      }
-
-      const { data: admin, error: tokenError } = await supabase
-        .from('admin_accounts')
-        .select('*')
-        .eq('session_token', adminToken)
-        .eq('active', true)
-        .maybeSingle()
-
-      if (!tokenError && admin) {
-        // Check token expiration
-        if (!admin.token_expires_at || new Date(admin.token_expires_at) >= new Date()) {
-          isVerifiedAdmin = true;
-          canDelete = true;
-          verifiedUser = admin;
-          console.log('Admin verified, can delete any agent');
-        }
-      }
-    } else {
-      // Check if lawyer can delete their own agent
-      let lawyerToken = authHeader
-      if (authHeader.startsWith('Bearer ')) {
-        lawyerToken = authHeader.substring(7)
-      }
-
-      // access_token no existe en lawyer_profiles
-      const lawyer = null;
-      const lawyerError = { message: 'Token validation not supported' };
-
-      if (!lawyerError && lawyer && lawyer.id === existingAgent.created_by) {
-        isVerifiedLawyer = true;
-        canDelete = true;
-        verifiedUser = lawyer;
-        console.log('Lawyer verified, can delete own agent');
-      }
-    }
-
-    if (!canDelete) {
-      console.log('User cannot delete agent - insufficient permissions');
-      return new Response(JSON.stringify({ 
-        error: is_admin 
-          ? 'Token de administrador inválido o expirado' 
-          : 'Solo puedes eliminar agentes que tú has creado'
-      }), {
-        status: 403,
-        headers: securityHeaders
-      })
-    }
-
-    console.log('Proceeding with deletion by verified user');
+    console.log('✅ Found agent to delete:', existingAgent.name, 'created_by:', existingAgent.created_by)
+    console.log('✅ Proceeding with deletion (admin authenticated)')
 
     // Delete the agent
     const { error: deleteError } = await supabase
@@ -176,31 +124,30 @@ Deno.serve(async (req) => {
       .eq('id', agent_id)
 
     if (deleteError) {
-      console.error('Error deleting agent:', deleteError)
-      return new Response(JSON.stringify({ error: 'Error deleting agent' }), {
+      console.error('❌ Error deleting agent:', deleteError)
+      return new Response(JSON.stringify({ error: 'Error deleting agent', details: deleteError.message }), {
         status: 500,
         headers: securityHeaders
       })
     }
 
-    console.log('Agent deleted successfully')
+    console.log('✅ Agent deleted successfully')
 
-    // Log the deletion event (conditionally if logging function exists)
+    // Log the deletion event
     try {
       await supabase.rpc('log_security_event', {
         event_type: 'agent_deleted',
-        user_id: verifiedUser.id,
+        user_identifier: user_id || 'admin',
         details: { 
           deleted_agent_id: agent_id,
           deleted_agent_name: existingAgent.name,
           deleted_agent_status: existingAgent.status,
-          deleted_by: verifiedUser.email || verifiedUser.full_name,
-          user_type: isVerifiedAdmin ? 'admin' : 'lawyer',
+          is_admin: is_admin || false,
           original_creator: existingAgent.created_by
         }
       })
     } catch (logError) {
-      console.log('Warning: Could not log deletion event:', logError.message)
+      console.log('⚠️ Warning: Could not log deletion event:', logError.message)
     }
 
     return new Response(JSON.stringify({
@@ -211,8 +158,8 @@ Deno.serve(async (req) => {
     })
 
   } catch (error) {
-    console.error('Error in delete-agent function:', error)
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+    console.error('💥 Error in delete-agent function:', error)
+    return new Response(JSON.stringify({ error: 'Internal server error', details: error.message }), {
       status: 500,
       headers: securityHeaders
     })

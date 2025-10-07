@@ -352,7 +352,9 @@ function AdminPage() {
         throw new Error('No se encontró token de autenticación');
       }
 
-      const response = await supabase.functions.invoke('delete-agent', {
+      console.log('🗑️ Deleting agent:', agent.name);
+
+      const { data, error } = await supabase.functions.invoke('delete-agent', {
         body: {
           agent_id: agent.id,
           user_id: user?.id || 'admin_override',
@@ -361,19 +363,29 @@ function AdminPage() {
         headers: authHeaders
       });
 
-      if (response.error) throw new Error(response.error.message);
+      if (error) {
+        console.error('❌ Error from delete-agent function:', error);
+        throw new Error(error.message);
+      }
+
+      if (data?.error) {
+        console.error('❌ Error from delete-agent response:', data.error);
+        throw new Error(data.error);
+      }
+
+      console.log('✅ Agent deleted successfully:', data);
 
       toast({
         title: "Agente eliminado",
-        description: `${agent.name} ha sido eliminado exitosamente`,
+        description: data?.message || `${agent.name} ha sido eliminado exitosamente`,
       });
 
       await loadAgents();
-    } catch (error) {
-      console.error('Error deleting agent:', error);
+    } catch (error: any) {
+      console.error('💥 Error deleting agent:', error);
       toast({
         title: "Error",
-        description: "No se pudo eliminar el agente",
+        description: error.message || "No se pudo eliminar el agente",
         variant: "destructive",
       });
     }
