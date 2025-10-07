@@ -106,9 +106,12 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
         
         if (isRecent && parsed.messages.length > 1) {
           // Convert timestamp strings/numbers back to Date objects
+          // Y recalcular showGenerateButton para cada mensaje
           const messagesWithDates = parsed.messages.map((msg: any) => ({
             ...msg,
-            timestamp: new Date(msg.timestamp)
+            timestamp: new Date(msg.timestamp),
+            // Recalcular showGenerateButton basado en el contenido actual
+            showGenerateButton: msg.role === 'assistant' ? shouldShowGenerateButton(msg.content) : false
           }));
           
           setMessages(messagesWithDates);
@@ -612,6 +615,9 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
   const handleContinue = () => {
     if (acceptedTerms && acceptedPrivacy) {
       localStorage.setItem(`terms_accepted_${agentId}`, 'true');
+      // Limpiar datos de chat anteriores para empezar fresh
+      localStorage.removeItem(`chat_${agentId}`);
+      localStorage.removeItem(`document_session_${agentId}`);
       setTermsAccepted(true);
       setShowTermsDialog(false);
     }
