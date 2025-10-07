@@ -103,6 +103,7 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
 
   const fetchConversationBlocks = async (legalAgentId: string) => {
     setConvLoading(true);
+    console.log('🔍 [fetchConversationBlocks] Loading blocks for agent:', legalAgentId);
     try {
       const [blocksResult, instructionsResult] = await Promise.all([
         supabase
@@ -117,20 +118,23 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
       ]);
 
       if (blocksResult.error) {
-        console.error('Error fetching conversation blocks:', blocksResult.error);
+        console.error('❌ Error fetching conversation blocks:', blocksResult.error);
         setConvBlocks([]);
       } else {
+        console.log('✅ Conversation blocks loaded:', blocksResult.data?.length || 0, 'blocks');
+        console.log('   Blocks:', blocksResult.data);
         setConvBlocks(blocksResult.data || []);
       }
 
       if (instructionsResult.error) {
-        console.error('Error fetching field instructions:', instructionsResult.error);
+        console.error('❌ Error fetching field instructions:', instructionsResult.error);
         setFieldInstructions([]);
       } else {
+        console.log('✅ Field instructions loaded:', instructionsResult.data?.length || 0, 'instructions');
         setFieldInstructions(instructionsResult.data || []);
       }
     } catch (e) {
-      console.error('Unexpected error loading conversation data:', e);
+      console.error('💥 Unexpected error loading conversation data:', e);
       setConvBlocks([]);
       setFieldInstructions([]);
     } finally {
@@ -1396,12 +1400,20 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-semibold">Prompt de IA</h4>
-                    {lawyerData.is_admin && convBlocks.length > 0 && (
+                    {(() => {
+                      console.log('🔍 [RegenerateButton] Evaluating conditions:', {
+                        isAdmin: lawyerData.is_admin,
+                        blocksCount: convBlocks.length,
+                        shouldShow: lawyerData.is_admin && convBlocks.length > 0
+                      });
+                      return lawyerData.is_admin && convBlocks.length > 0;
+                    })() && (
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={async () => {
                           if (!selectedAgent) return;
+                          console.log('🔄 Regenerating prompt for:', selectedAgent.name);
                           try {
                             toast({
                               title: "Regenerando prompt...",
