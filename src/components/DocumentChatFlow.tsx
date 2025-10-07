@@ -46,6 +46,10 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   
+  // Estados para OpenAI (MOVERLOS AL INICIO)
+  const [threadId, setThreadId] = useState<string | null>(null);
+  const [openaiAgentId, setOpenaiAgentId] = useState<string | null>(null);
+  
   // Estados para manejo de términos y condiciones
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showTermsDialog, setShowTermsDialog] = useState(true);
@@ -81,6 +85,8 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
         messages,
         collectedData,
         userInfo,
+        threadId,  // ✅ GUARDAR threadId
+        openaiAgentId,  // ✅ GUARDAR openaiAgentId
         timestamp: Date.now(),
         agentId,
         mode: 'chat'
@@ -94,7 +100,7 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
         extractedFormData: collectedData
       }));
     }
-  }, [messages, collectedData, userInfo, agentId]);
+  }, [messages, collectedData, userInfo, agentId, threadId, openaiAgentId]);
 
   // Load persisted data on mount
   useEffect(() => {
@@ -117,6 +123,16 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
           setMessages(messagesWithDates);
           setCollectedData(parsed.collectedData || {});
           setUserInfo(parsed.userInfo || { name: '', email: '' });
+          
+          // ✅ RESTAURAR threadId y openaiAgentId
+          if (parsed.threadId) {
+            setThreadId(parsed.threadId);
+            console.log('✅ ThreadId restored from localStorage:', parsed.threadId);
+          }
+          if (parsed.openaiAgentId) {
+            setOpenaiAgentId(parsed.openaiAgentId);
+            console.log('✅ OpenAI AgentId restored from localStorage:', parsed.openaiAgentId);
+          }
         }
       } catch (error) {
         console.error('Error loading persisted chat data:', error);
@@ -288,9 +304,6 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
     }
   };
 
-  const [threadId, setThreadId] = useState<string | null>(null);
-  const [openaiAgentId, setOpenaiAgentId] = useState<string | null>(null);
-
   // Function to determine if generate button should be shown
   const shouldShowGenerateButton = (message: string): boolean => {
     const lowerMessage = message.toLowerCase();
@@ -424,7 +437,10 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
       }
 
       // Update thread ID if new thread was created
-      if (data.threadId && !threadId) {
+      if (data.threadId) {
+        if (!threadId) {
+          console.log('✅ New threadId received:', data.threadId);
+        }
         setThreadId(data.threadId);
       }
 
@@ -615,9 +631,15 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
   const handleContinue = () => {
     if (acceptedTerms && acceptedPrivacy) {
       localStorage.setItem(`terms_accepted_${agentId}`, 'true');
-      // Limpiar datos de chat anteriores para empezar fresh
-      localStorage.removeItem(`chat_${agentId}`);
-      localStorage.removeItem(`document_session_${agentId}`);
+      
+      // ✅ SOLO limpiar si NO hay conversación activa
+      const existingChat = localStorage.getItem(`chat_${agentId}`);
+      if (!existingChat) {
+        // Nueva sesión, limpiar cualquier dato antiguo
+        localStorage.removeItem(`document_session_${agentId}`);
+      }
+      // Si YA existe un chat, NO borrarlo para mantener threadId
+      
       setTermsAccepted(true);
       setShowTermsDialog(false);
     }
