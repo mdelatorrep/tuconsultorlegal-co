@@ -157,6 +157,7 @@ function AdminPage() {
   
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isRecreatingAgent, setIsRecreatingAgent] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [showAgentDetails, setShowAgentDetails] = useState(false);
@@ -390,6 +391,48 @@ function AdminPage() {
         description: error.message || "No se pudo eliminar el agente",
         variant: "destructive",
       });
+    }
+  };
+
+  // Función para recrear agente de OpenAI
+  const handleRecreateOpenAIAgent = async (agentId: string, agentName: string) => {
+    setIsRecreatingAgent(true);
+    sonnerToast.loading(`Recreando agente OpenAI para "${agentName}"...`);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('create-openai-agent', {
+        body: {
+          legal_agent_id: agentId,
+          force_recreate: true
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Error al recrear el agente');
+      }
+
+      if (data?.success) {
+        sonnerToast.success(`✅ Agente OpenAI recreado exitosamente: ${data.openai_agent_id}`);
+        await loadAgents();
+        
+        toast({
+          title: "Agente Recreado",
+          description: `El agente "${agentName}" ha sido recreado con las instrucciones actualizadas.`,
+        });
+      } else {
+        throw new Error(data?.error || 'Error desconocido al recrear el agente');
+      }
+    } catch (error) {
+      console.error('Error recreating OpenAI agent:', error);
+      sonnerToast.error(`❌ Error: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+      
+      toast({
+        title: "Error",
+        description: "No se pudo recrear el agente OpenAI",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRecreatingAgent(false);
     }
   };
 
@@ -1199,6 +1242,50 @@ function AdminPage() {
                           <Edit className="w-4 h-4 mr-1" />
                           Editar
                         </Button>
+
+                        {/* Botón para recrear agente OpenAI */}
+                        {(agent as any).openai_enabled && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button 
+                                size="sm"
+                                variant="outline" 
+                                disabled={isRecreatingAgent}
+                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              >
+                                🔄 Recrear OpenAI
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>
+                                  Recrear Agente de OpenAI
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Esta acción recreará el agente de OpenAI para "<strong>{agent.name}</strong>" con las instrucciones actualizadas de la base de datos.
+                                  <ul className="list-disc list-inside mt-3 space-y-1 text-sm">
+                                    <li>Se eliminará el asistente actual de OpenAI</li>
+                                    <li>Se creará un nuevo asistente con instrucciones actualizadas</li>
+                                    <li>Se actualizarán los bloques de conversación</li>
+                                    <li>Se configurarán las herramientas y funciones</li>
+                                  </ul>
+                                  <p className="mt-3 font-semibold text-orange-600">
+                                    ⚠️ Esta operación puede tardar varios segundos.
+                                  </p>
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleRecreateOpenAIAgent(agent.id, agent.name)}
+                                  className="bg-blue-600 hover:bg-blue-700"
+                                >
+                                  Recrear Agente
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-2">
