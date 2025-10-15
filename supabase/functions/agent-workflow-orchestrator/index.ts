@@ -306,6 +306,7 @@ async function handleGenerateDocument(supabase: any, args: any, legalAgent: any,
   try {
     // Get collected data from agent_conversations
     let documentData = args.documentData || {};
+    let placeholderMapping = {};
     
     // If no data provided in args, retrieve from stored conversation
     if (Object.keys(documentData).length === 0) {
@@ -331,20 +332,24 @@ async function handleGenerateDocument(supabase: any, args: any, legalAgent: any,
       }
       
       documentData = conversation.conversation_data.collected_data;
+      placeholderMapping = conversation.conversation_data.placeholder_mapping || {};
       console.log('Retrieved collected data:', documentData);
+      console.log('Retrieved placeholder mapping:', placeholderMapping);
     }
     
     // Apply the template with the collected data
     let documentContent = legalAgent.template_content;
     const placeholderFields = legalAgent.placeholder_fields || [];
     
-    // Replace placeholders with actual data from documentData
+    // Replace placeholders with actual data - prioritize placeholder_mapping
     for (const field of placeholderFields) {
-      const placeholder = field.placeholder;
+      const placeholder = field.placeholder.replace(/[{}]/g, ''); // Remove {{ }}
       const fieldName = field.name || placeholder;
       
-      // Look for the value in the provided documentData
-      let value = documentData[fieldName] || 
+      // Priority: 1) placeholder_mapping, 2) documentData with various keys
+      let value = placeholderMapping[placeholder] ||
+                 placeholderMapping[fieldName] ||
+                 documentData[fieldName] || 
                  documentData[placeholder] || 
                  documentData[field.pregunta] || 
                  `[${placeholder}]`;
@@ -360,9 +365,14 @@ async function handleGenerateDocument(supabase: any, args: any, legalAgent: any,
         }
       }
       
-      // Replace all occurrences of the placeholder in the template
-      const regex = new RegExp(`\\{\\{${placeholder}\\}\\}`, 'g');
-      documentContent = documentContent.replace(regex, value);
+      // Replace all occurrences of the placeholder in the template (with and without {{}})
+      const regexWithBraces = new RegExp(`\\{\\{${placeholder}\\}\\}`, 'g');
+      const regexWithoutBraces = new RegExp(`${placeholder}`, 'g');
+      documentContent = documentContent.replace(regexWithBraces, value);
+      // Only replace without braces if it hasn't been replaced yet
+      if (documentContent.includes(`{{${placeholder}}}`)) {
+        documentContent = documentContent.replace(regexWithoutBraces, value);
+      }
     }
     
     // Apply any user-specific requests
@@ -408,20 +418,39 @@ async function handleGenerateDocument(supabase: any, args: any, legalAgent: any,
     const token = tokenData.token;
     const trackingUrl = `https://tuconsultorlegal.co/documento/${token}`;
 
-    return `✅ ¡Documento generado exitosamente!
+    // Extract key document details for the response
+    const documentDetails = [];
+    for (const [key, value] of Object.entries(placeholderMapping)) {
+      if (value && typeof value === 'string' && value.length > 0) {
+        documentDetails.push(`  • ${key}: ${value}`);
+      }
+    }
 
-📋 **Token de seguimiento:** ${token}
-🔗 **Link de seguimiento:** ${trackingUrl}
+    const detailsSection = documentDetails.length > 0 
+      ? `\n\n📄 **Detalles del documento:**\n${documentDetails.slice(0, 5).join('\n')}`
+      : '';
 
-📧 Te hemos enviado un correo a **${userEmail}** con el link de seguimiento.
+    return `✅ ¡Documento "${legalAgent.name}" generado exitosamente!
+
+📋 **Token:** ${token}
+🔗 **Seguimiento:** ${trackingUrl}
+
+📧 Enviado a: **${userEmail}**
 
 💰 **Precio:** $${tokenData.price.toLocaleString('es-CO')}
-⏰ **Entrega máxima:** ${new Date(tokenData.sla_deadline).toLocaleString('es-CO')}
+⏰ **Entrega:** ${new Date(tokenData.sla_deadline).toLocaleDateString('es-CO', { 
+  weekday: 'long', 
+  year: 'numeric', 
+  month: 'long', 
+  day: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit'
+})}${detailsSection}
 
 Con este link podrás:
-✓ Ver el estado de tu documento
-✓ Realizar el pago
-✓ Descargar tu documento una vez esté listo
+✓ Ver el estado en tiempo real
+✓ Realizar el pago seguro
+✓ Descargar tu documento final
 
 ¿Necesitas algo más? 😊`;
     
@@ -737,11 +766,47 @@ async function handleStoreCollectedData(
     }
 
     const existingData = existing?.conversation_data?.collected_data || {};
+    const existingMapping = existing?.conversation_data?.placeholder_mapping || {};
     const collected_data = merge ? { ...existingData, ...newData } : newData;
+
+    // Get conversation_blocks to map questions to placeholders
+    const { data: openaiAgent } = await supabase
+      .from('openai_agents')
+      .select('legal_agent_id')
+      .eq('id', openaiAgentId)
+      .maybeSingle();
+    
+    const { data: legalAgent } = await supabase
+      .from('legal_agents')
+      .select('placeholder_fields')
+      .eq('id', openaiAgent?.legal_agent_id)
+      .maybeSingle();
+    
+    // Build placeholder_mapping from newData
+    const newPlaceholderMapping = { ...existingMapping };
+    
+    if (legalAgent?.placeholder_fields) {
+      for (const [key, value] of Object.entries(newData)) {
+        // Try to find matching placeholder by question text or name
+        const matchingField = legalAgent.placeholder_fields.find((field: any) => 
+          field.pregunta === key || field.name === key
+        );
+        
+        if (matchingField) {
+          // Remove {{ }} from placeholder
+          const cleanPlaceholder = matchingField.placeholder.replace(/[{}]/g, '');
+          newPlaceholderMapping[cleanPlaceholder] = value;
+        } else {
+          // If no match found, use the key as-is
+          newPlaceholderMapping[key] = value;
+        }
+      }
+    }
 
     const conversation_data = {
       ...(existing?.conversation_data || {}),
-      collected_data
+      collected_data,
+      placeholder_mapping: newPlaceholderMapping
     };
 
     if (existing?.id) {

@@ -576,7 +576,8 @@ ${lawyerContext}
 3. ✅ VALIDACIÓN Y CONFIRMACIÓN
    - Usa validate_information para verificar completitud
    - Usa request_clarification para información adicional
-   - Confirma datos críticos antes de continuar
+   - NO pidas confirmación manual si todos los datos están completos y coherentes
+   - Solo confirma si hay ambigüedades o contradicciones
 
 4. 🔄 NORMALIZACIÓN (OBLIGATORIA)
    - USA SIEMPRE normalize_information ANTES de generar
@@ -598,7 +599,7 @@ ${lawyerContext}
      ✓ Confirmar que tienes nombre completo y email del usuario
      ✓ Información completa y validada
      ✓ Normalización aplicada
-     ✓ Usuario confirma que todo está correcto
+     ✓ NO pedir confirmación manual si datos están completos y coherentes
    
    - Al llamar generate_document, incluye:
      ✓ documentData: información normalizada
@@ -606,8 +607,8 @@ ${lawyerContext}
      ✓ user_email: email del usuario
    
    - Después de generar:
-     ✓ Comparte el TOKEN y LINK de seguimiento
-     ✓ Explica cómo hacer seguimiento
+     ✓ Comparte el TOKEN y LINK de seguimiento con detalles específicos del documento
+     ✓ Explica cómo hacer seguimiento y próximos pasos
      ✓ Menciona el proceso de pago y descarga
 
 ═══════════════════════════════════════════════════════════════
@@ -629,8 +630,13 @@ ${hasStructuredConversation ?
 
 🔴 ANTES de generate_document:
    1. USA request_user_contact_info para obtener nombre y email
-   2. CONFIRMA los datos con el usuario
+   2. NO pidas confirmación manual si todos los datos están completos y coherentes
    3. SOLO entonces llama generate_document
+
+🔴 NO PIDAS CONFIRMACIÓN MANUAL si:
+   ✓ Todos los placeholders tienen valores
+   ✓ Los datos son coherentes y sin contradicciones
+   ✓ No hay ambigüedades en la información
 
 🔴 FLUJO OBLIGATORIO:
    Recopilar → Validar → Normalizar → Solicitar Contacto → Generar
@@ -640,11 +646,11 @@ ${hasStructuredConversation ?
 ═══════════════════════════════════════════════════════════════
 
 1. Recopilar información del documento (bloques estructurados)
-2. Validar información completa
-3. Normalizar datos
+2. Validar información completa (sin pedir confirmación manual si está completa)
+3. Normalizar datos automáticamente
 4. Solicitar datos de contacto: "Para finalizar, necesito tus datos de contacto para enviarte el documento y el link de seguimiento. ¿Cuál es tu nombre completo y correo electrónico?"
 5. Generar documento con user_name y user_email
-6. Compartir token y link: "✅ ¡Listo! Tu documento ha sido generado. Token: ABC123. Link: https://tuconsultorlegal.co/documento/ABC123"
+6. Compartir token y link con detalles específicos: "✅ ¡Listo! Tu documento Certificado de Paz y Salvo ha sido generado. Token: ABC123. Link: https://tuconsultorlegal.co/documento/ABC123. Precio: $50.000. Entrega: 15 de octubre..."
 
 ${hasStructuredConversation && conversationBlocks && conversationBlocks.length > 0 ?
   `\n💡 EJEMPLO DE INICIO:\n"${conversationBlocks[0].intro_phrase}"\n\n(Luego hacer las preguntas del Bloque 1)` :

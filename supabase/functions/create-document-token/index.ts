@@ -34,13 +34,13 @@ serve(async (req) => {
     // Try to get price from legal_agents table based on document_type
     const { data: agentData } = await supabase
       .from('legal_agents')
-      .select('final_price, suggested_price')
+      .select('price')
       .eq('name', document_type)
       .eq('status', 'active')
       .single();
 
-    // Use final_price if available, otherwise suggested_price, otherwise default to 50000
-    const price = agentData?.final_price || agentData?.suggested_price || 50000;
+    // Use price if available, otherwise default to 50000
+    const price = agentData?.price || 50000;
 
     // Calculate SLA deadline
     const now = new Date();
