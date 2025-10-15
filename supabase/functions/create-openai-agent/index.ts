@@ -222,8 +222,29 @@ serve(async (req) => {
           {
             type: "function",
             function: {
+              name: "request_user_contact_info",
+              description: "Solicita y almacena los datos de contacto del usuario (nombre completo y email) necesarios para generar el token de seguimiento del documento",
+              parameters: {
+                type: "object",
+                properties: {
+                  user_name: {
+                    type: "string",
+                    description: "Nombre completo del usuario"
+                  },
+                  user_email: {
+                    type: "string",
+                    description: "Correo electrónico del usuario"
+                  }
+                },
+                required: ["user_name", "user_email"]
+              }
+            }
+          },
+          {
+            type: "function",
+            function: {
               name: "generate_document",
-              description: "Genera el documento final con la información recopilada y normalizada",
+              description: "Genera el documento final con la información recopilada, normalizada y los datos de contacto del usuario para crear el token de seguimiento",
               parameters: {
                 type: "object",
                 properties: {
@@ -231,12 +252,20 @@ serve(async (req) => {
                     type: "object",
                     description: "Datos normalizados para completar el documento"
                   },
+                  user_name: {
+                    type: "string",
+                    description: "Nombre completo del usuario (OBLIGATORIO)"
+                  },
+                  user_email: {
+                    type: "string",
+                    description: "Email del usuario (OBLIGATORIO)"
+                  },
                   userRequests: {
                     type: "string",
                     description: "Solicitudes específicas del usuario"
                   }
                 },
-                required: ["documentData"]
+                required: ["documentData", "user_name", "user_email"]
               }
             }
           }
@@ -564,10 +593,22 @@ ${lawyerContext}
    - Menciona cuánta información falta
 
 6. ✨ GENERACIÓN FINAL
-   - Usa generate_document SOLO cuando:
+   - ANTES de generar, DEBES:
+     🔴 OBLIGATORIO: Usar request_user_contact_info para obtener nombre y email
+     ✓ Confirmar que tienes nombre completo y email del usuario
      ✓ Información completa y validada
      ✓ Normalización aplicada
      ✓ Usuario confirma que todo está correcto
+   
+   - Al llamar generate_document, incluye:
+     ✓ documentData: información normalizada
+     ✓ user_name: nombre del usuario
+     ✓ user_email: email del usuario
+   
+   - Después de generar:
+     ✓ Comparte el TOKEN y LINK de seguimiento
+     ✓ Explica cómo hacer seguimiento
+     ✓ Menciona el proceso de pago y descarga
 
 ═══════════════════════════════════════════════════════════════
 ⚠️ REGLAS CRÍTICAS
@@ -586,16 +627,28 @@ ${hasStructuredConversation ?
 ✅ Pregunta de 1 en 1 o máximo 2-3 campos por mensaje
 ✅ NO generes documento sin normalización previa
 
+🔴 ANTES de generate_document:
+   1. USA request_user_contact_info para obtener nombre y email
+   2. CONFIRMA los datos con el usuario
+   3. SOLO entonces llama generate_document
+
 🔴 FLUJO OBLIGATORIO:
-   Recopilar → Validar → Normalizar → Generar
+   Recopilar → Validar → Normalizar → Solicitar Contacto → Generar
 
 ═══════════════════════════════════════════════════════════════
-💡 EJEMPLO DE INICIO
+💡 EJEMPLO DE FLUJO COMPLETO
 ═══════════════════════════════════════════════════════════════
+
+1. Recopilar información del documento (bloques estructurados)
+2. Validar información completa
+3. Normalizar datos
+4. Solicitar datos de contacto: "Para finalizar, necesito tus datos de contacto para enviarte el documento y el link de seguimiento. ¿Cuál es tu nombre completo y correo electrónico?"
+5. Generar documento con user_name y user_email
+6. Compartir token y link: "✅ ¡Listo! Tu documento ha sido generado. Token: ABC123. Link: https://tuconsultorlegal.co/documento/ABC123"
 
 ${hasStructuredConversation && conversationBlocks && conversationBlocks.length > 0 ?
-  `"${conversationBlocks[0].intro_phrase}"\n\n(Luego hacer las preguntas del Bloque 1)` :
-  `"¡Hola! Soy tu asistente legal especializado en ${legalAgent.document_name}. Te voy a ayudar a recopilar toda la información necesaria para crear tu documento de manera rápida y eficiente.\n\nEste documento es importante porque [explicar brevemente]. Para poder crearlo correctamente, necesitaré algunos datos específicos.\n\n¿Podrías comenzar diciéndome [primera pregunta]?"`
+  `\n💡 EJEMPLO DE INICIO:\n"${conversationBlocks[0].intro_phrase}"\n\n(Luego hacer las preguntas del Bloque 1)` :
+  `\n💡 EJEMPLO DE INICIO:\n"¡Hola! Soy tu asistente legal especializado en ${legalAgent.document_name}. Te voy a ayudar a recopilar toda la información necesaria para crear tu documento de manera rápida y eficiente.\n\nEste documento es importante porque [explicar brevemente]. Para poder crearlo correctamente, necesitaré algunos datos específicos.\n\n¿Podrías comenzar diciéndome [primera pregunta]?"`
 }
 
 ═══════════════════════════════════════════════════════════════

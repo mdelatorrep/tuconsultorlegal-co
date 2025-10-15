@@ -178,6 +178,16 @@ serve(async (req) => {
               case 'request_clarification':
                 output = await handleRequestClarification(functionArgs);
                 break;
+              
+              case 'request_user_contact_info':
+                console.log('📧 Solicitando datos de contacto:', JSON.stringify(functionArgs));
+                output = await handleRequestUserContactInfo(
+                  supabase,
+                  functionArgs,
+                  openaiAgent.id,
+                  currentThreadId
+                );
+                break;
                 
               default:
                 output = `Función ${toolCall.function.name} no implementada`;
@@ -360,23 +370,60 @@ async function handleGenerateDocument(supabase: any, args: any, legalAgent: any,
       documentContent += `\n\nObservaciones adicionales: ${args.userRequests}`;
     }
     
-    // Update document token with generated content if documentTokenId is provided
-    if (documentTokenId) {
-      const { error: updateError } = await supabase
-        .from('document_tokens')
-        .update({
-          document_content: documentContent,
-          status: 'generado',
-          user_observations: args.userRequests || null
-        })
-        .eq('id', documentTokenId);
-        
-      if (updateError) {
-        console.error('Error updating document token:', updateError);
-      }
+    // Get user contact info from conversation data
+    const { data: conversation } = await supabase
+      .from('agent_conversations')
+      .select('conversation_data')
+      .eq('thread_id', threadId)
+      .eq('openai_agent_id', openaiAgentId)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    
+    const userEmail = args.user_email || conversation?.conversation_data?.user_contact?.user_email;
+    const userName = args.user_name || conversation?.conversation_data?.user_contact?.user_name;
+    
+    if (!userEmail || !userName) {
+      return 'Error: Necesito tu nombre completo y correo electrónico para generar el documento. Por favor proporciona esta información primero usando request_user_contact_info.';
     }
     
-    return `Documento generado exitosamente. El documento ha sido actualizado con la información proporcionada y está listo para su revisión y pago.`;
+    // Call create-document-token to generate tracking token
+    console.log('Calling create-document-token with:', { userName, userEmail, documentType: legalAgent.name });
+    const { data: tokenData, error: tokenError } = await supabase.functions.invoke('create-document-token', {
+      body: {
+        document_content: documentContent,
+        document_type: legalAgent.name,
+        user_email: userEmail,
+        user_name: userName,
+        sla_hours: legalAgent.sla_hours || 4,
+        user_id: null
+      }
+    });
+
+    if (tokenError) {
+      console.error('Error creating document token:', tokenError);
+      return `Error al generar el token de seguimiento: ${tokenError.message}`;
+    }
+
+    const token = tokenData.token;
+    const trackingUrl = `https://tuconsultorlegal.co/documento/${token}`;
+
+    return `✅ ¡Documento generado exitosamente!
+
+📋 **Token de seguimiento:** ${token}
+🔗 **Link de seguimiento:** ${trackingUrl}
+
+📧 Te hemos enviado un correo a **${userEmail}** con el link de seguimiento.
+
+💰 **Precio:** $${tokenData.price.toLocaleString('es-CO')}
+⏰ **Entrega máxima:** ${new Date(tokenData.sla_deadline).toLocaleString('es-CO')}
+
+Con este link podrás:
+✓ Ver el estado de tu documento
+✓ Realizar el pago
+✓ Descargar tu documento una vez esté listo
+
+¿Necesitas algo más? 😊`;
     
   } catch (error) {
     console.error('Error generating document:', error);
@@ -621,6 +668,49 @@ async function handleRequestClarification(args: any) {
   console.log('Requesting clarification:', args);
   
   return `Necesito una aclaración sobre ${args.field || 'un campo'}: ${args.question}`;
+}
+
+async function handleRequestUserContactInfo(supabase: any, args: any, openaiAgentId: string, threadId: string) {
+  console.log('Storing user contact info:', args);
+  
+  try {
+    // Get existing conversation
+    const { data: conversation } = await supabase
+      .from('agent_conversations')
+      .select('conversation_data')
+      .eq('thread_id', threadId)
+      .eq('openai_agent_id', openaiAgentId)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    
+    // Store contact info in conversation data
+    const { error: contactError } = await supabase
+      .from('agent_conversations')
+      .update({
+        conversation_data: {
+          ...conversation?.conversation_data || {},
+          user_contact: {
+            user_name: args.user_name,
+            user_email: args.user_email,
+            collected_at: new Date().toISOString()
+          }
+        }
+      })
+      .eq('thread_id', threadId)
+      .eq('openai_agent_id', openaiAgentId);
+    
+    if (contactError) {
+      console.error('Error storing contact info:', contactError);
+      return `Error al almacenar los datos de contacto: ${contactError.message}`;
+    }
+    
+    return `Perfecto, ${args.user_name}. He registrado tu correo ${args.user_email}. Una vez generemos el documento, te enviaremos el link de seguimiento a este correo.`;
+    
+  } catch (error) {
+    console.error('Error in handleRequestUserContactInfo:', error);
+    return `Error al procesar los datos de contacto: ${error.message}`;
+  }
 }
 
 async function handleStoreCollectedData(
