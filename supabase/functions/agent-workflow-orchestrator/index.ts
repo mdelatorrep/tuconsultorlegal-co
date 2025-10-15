@@ -147,7 +147,8 @@ serve(async (req) => {
                   supabase, 
                   functionArgs, 
                   openaiAgent.legal_agents, 
-                  documentTokenId
+                  documentTokenId,
+                  currentThreadId
                 );
                 break;
                 
@@ -286,10 +287,37 @@ serve(async (req) => {
 });
 
 // Function handlers
-async function handleGenerateDocument(supabase: any, args: any, legalAgent: any, documentTokenId: string) {
-  console.log('Generating document with data:', args);
+async function handleGenerateDocument(supabase: any, args: any, legalAgent: any, documentTokenId: string, threadId: string) {
+  console.log('Generating document with data from args:', args);
   
   try {
+    // Get collected data from agent_conversations
+    let documentData = args.documentData || {};
+    
+    // If no data provided in args, retrieve from stored conversation
+    if (Object.keys(documentData).length === 0) {
+      console.log('No data in args, retrieving from agent_conversations for threadId:', threadId);
+      
+      const { data: conversation, error: convError } = await supabase
+        .from('agent_conversations')
+        .select('conversation_data')
+        .eq('thread_id', threadId)
+        .maybeSingle();
+      
+      if (convError) {
+        console.error('Error retrieving conversation data:', convError);
+        throw new Error('No se pudo recuperar la información recopilada');
+      }
+      
+      if (!conversation?.conversation_data?.collected_data) {
+        console.error('No collected data found in conversation');
+        throw new Error('No se ha recopilado información suficiente para generar el documento');
+      }
+      
+      documentData = conversation.conversation_data.collected_data;
+      console.log('Retrieved collected data:', documentData);
+    }
+    
     // Apply the template with the collected data
     let documentContent = legalAgent.template_content;
     const placeholderFields = legalAgent.placeholder_fields || [];
@@ -300,14 +328,14 @@ async function handleGenerateDocument(supabase: any, args: any, legalAgent: any,
       const fieldName = field.name || placeholder;
       
       // Look for the value in the provided documentData
-      let value = args.documentData[fieldName] || 
-                 args.documentData[placeholder] || 
-                 args.documentData[field.pregunta] || 
+      let value = documentData[fieldName] || 
+                 documentData[placeholder] || 
+                 documentData[field.pregunta] || 
                  `[${placeholder}]`;
       
       // If value is still a placeholder, try to find it by question text
       if (value.startsWith('[') && value.endsWith(']')) {
-        for (const [key, val] of Object.entries(args.documentData)) {
+        for (const [key, val] of Object.entries(documentData)) {
           if (key.toLowerCase().includes(fieldName.toLowerCase()) || 
               fieldName.toLowerCase().includes(key.toLowerCase())) {
             value = val as string;
@@ -317,7 +345,7 @@ async function handleGenerateDocument(supabase: any, args: any, legalAgent: any,
       }
       
       // Replace all occurrences of the placeholder in the template
-      const regex = new RegExp(`\\[${placeholder}\\]`, 'g');
+      const regex = new RegExp(`\\{\\{${placeholder}\\}\\}`, 'g');
       documentContent = documentContent.replace(regex, value);
     }
     
