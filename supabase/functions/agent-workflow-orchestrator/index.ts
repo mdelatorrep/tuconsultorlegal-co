@@ -78,8 +78,8 @@ serve(async (req) => {
         'OpenAI-Beta': 'assistants=v2'
       },
       body: JSON.stringify({
-        assistant_id: agentId,
-        instructions: "Mantén una conversación natural y profesional. Usa las funciones disponibles según sea necesario para completar la tarea."
+        assistant_id: agentId
+        // Use the assistant's original instructions which include conversation blocks
       })
     });
 
