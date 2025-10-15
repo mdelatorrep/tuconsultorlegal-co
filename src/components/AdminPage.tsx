@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Switch } from "./ui/switch";
 import { toast } from "@/hooks/use-toast";
+import { toast as sonnerToast } from "sonner";
+import { AuthStorage } from "@/utils/authStorage";
 import NativeAdminLogin from "./NativeAdminLogin";
 import { useNativeAdminAuth } from "../hooks/useNativeAdminAuth";
 import LawyerStatsAdmin from "./LawyerStatsAdmin";
@@ -1466,6 +1468,51 @@ function AdminPage() {
                     </div>
                   </PopoverContent>
                 </Popover>
+
+                {/* Botón para limpiar memoria de agentes */}
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex items-center gap-2 text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:hover:bg-orange-950/20"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span className="hidden sm:inline">Limpiar Memoria</span>
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className="flex items-center gap-2">
+                        <Trash2 className="w-5 h-5 text-orange-500" />
+                        Limpiar Memoria de Agentes
+                      </AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Esta acción eliminará toda la memoria almacenada de los agentes de chat, incluyendo:
+                        <ul className="list-disc list-inside mt-2 space-y-1">
+                          <li>Conversaciones activas</li>
+                          <li>Thread IDs de OpenAI</li>
+                          <li>Sesiones de chat</li>
+                          <li>Términos aceptados</li>
+                        </ul>
+                        <p className="mt-3 font-semibold">La página se recargará después de limpiar la memoria.</p>
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={() => {
+                          AuthStorage.clearAllAgentMemory();
+                          sonnerToast.success("✅ Memoria de agentes limpiada correctamente");
+                          setTimeout(() => window.location.reload(), 1000);
+                        }}
+                        className="bg-orange-600 hover:bg-orange-700 text-white"
+                      >
+                        Limpiar Memoria
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
 
                 {/* Botón de cierre de sesión */}
                 <AlertDialog>

@@ -1,10 +1,8 @@
 import { useState } from "react";
 import { Button } from "./ui/button";
-import { Menu, X, MessageCircle, FileText, Scale, Users, Phone, Newspaper, DollarSign, Shield, FileText as DocumentIcon, Gavel, User, LogIn, Trash2 } from "lucide-react";
+import { Menu, X, MessageCircle, FileText, Scale, Users, Phone, Newspaper, DollarSign, Shield, FileText as DocumentIcon, Gavel, User, LogIn } from "lucide-react";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import { useLawyerAuthContext } from "@/components/LawyerAuthProvider";
-import { AuthStorage } from "@/utils/authStorage";
-import { toast } from "sonner";
 import logoImage from "/logo-ai-legal.png";
 interface HeaderProps {
   currentPage: string;
@@ -99,21 +97,6 @@ export default function Header({
 
         {/* Desktop CTA Buttons - Simplified */}
         <div className="hidden lg:flex items-center space-x-3">
-          {/* Botón para limpiar memoria de agentes */}
-          <Button 
-            onClick={() => {
-              AuthStorage.clearAllAgentMemory();
-              toast.success("✅ Memoria de agentes limpiada correctamente");
-              window.location.reload();
-            }}
-            variant="outline" 
-            size="sm"
-            className="text-destructive border-destructive/30 hover:bg-destructive/10"
-          >
-            <Trash2 className="w-4 h-4 mr-2" />
-            Limpiar Memoria
-          </Button>
-          
           {isAuthenticated ? <div className="flex items-center space-x-2">
               <Button 
                 onClick={() => onNavigate(isLawyer ? "abogados" : "user-dashboard")} 
