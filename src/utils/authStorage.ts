@@ -135,6 +135,33 @@ export class AuthStorage {
     sessionStorage.removeItem(this.KEYS.CHAT_SESSION);
   }
 
+  // Limpiar toda la memoria de agentes de chat
+  static clearAllAgentMemory(): void {
+    // Limpiar sessionStorage de chat
+    sessionStorage.removeItem('chat-session-id');
+    sessionStorage.removeItem('anonymous-session-id');
+    
+    // Limpiar localStorage de agentes de chat
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (
+        key.startsWith('chat_') || 
+        key.startsWith('document_session_') ||
+        key.startsWith('terms_accepted_')
+      )) {
+        keysToRemove.push(key);
+      }
+    }
+    
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    
+    console.log('✅ Agent memory cleared:', {
+      itemsRemoved: keysToRemove.length,
+      keys: keysToRemove
+    });
+  }
+
   static getActiveTokens(): { admin: boolean; lawyer: boolean; chat: boolean } {
     return {
       admin: !!sessionStorage.getItem(this.KEYS.ADMIN_TOKEN),
