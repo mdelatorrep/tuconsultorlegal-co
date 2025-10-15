@@ -148,7 +148,8 @@ serve(async (req) => {
                   functionArgs, 
                   openaiAgent.legal_agents, 
                   documentTokenId,
-                  currentThreadId
+                  currentThreadId,
+                  openaiAgent.id
                 );
                 break;
                 
@@ -287,7 +288,7 @@ serve(async (req) => {
 });
 
 // Function handlers
-async function handleGenerateDocument(supabase: any, args: any, legalAgent: any, documentTokenId: string, threadId: string) {
+async function handleGenerateDocument(supabase: any, args: any, legalAgent: any, documentTokenId: string, threadId: string, openaiAgentId: string) {
   console.log('Generating document with data from args:', args);
   
   try {
@@ -296,12 +297,15 @@ async function handleGenerateDocument(supabase: any, args: any, legalAgent: any,
     
     // If no data provided in args, retrieve from stored conversation
     if (Object.keys(documentData).length === 0) {
-      console.log('No data in args, retrieving from agent_conversations for threadId:', threadId);
+      console.log('No data in args, retrieving from agent_conversations for threadId:', threadId, 'and openaiAgentId:', openaiAgentId);
       
       const { data: conversation, error: convError } = await supabase
         .from('agent_conversations')
         .select('conversation_data')
         .eq('thread_id', threadId)
+        .eq('openai_agent_id', openaiAgentId)
+        .order('updated_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
       
       if (convError) {
