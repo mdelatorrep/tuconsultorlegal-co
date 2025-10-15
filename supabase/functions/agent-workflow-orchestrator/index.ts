@@ -139,7 +139,9 @@ serve(async (req) => {
             
             switch (toolCall.function.name) {
               case 'search_legal_sources':
+                console.log('🔍 BÚSQUEDA LEGAL INICIADA:', JSON.stringify(functionArgs));
                 output = await handleSearchLegalSources(supabase, functionArgs);
+                console.log('🔍 BÚSQUEDA LEGAL COMPLETADA. Resultados:', output.substring(0, 200));
                 break;
               
               case 'generate_document':
