@@ -39,6 +39,8 @@ interface DocumentToken {
   updated_at: string;
   user_observations?: string | null;
   user_observation_date?: string | null;
+  lawyer_comments?: string | null;
+  lawyer_comments_date?: string | null;
   sla_hours?: number;
   sla_deadline?: string;
   sla_status?: string;
@@ -52,6 +54,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const [documents, setDocuments] = useState<DocumentToken[]>([]);
   const [selectedDocument, setSelectedDocument] = useState<DocumentToken | null>(null);
   const [editedContent, setEditedContent] = useState("");
+  const [lawyerComments, setLawyerComments] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [currentView, setCurrentView] = useState<'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager' | 'research' | 'analyze' | 'draft' | 'strategize' | 'subscription' | 'crm'>('dashboard');
   const [isCheckingSpelling, setIsCheckingSpelling] = useState(false);
@@ -220,10 +223,12 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
     if (selectedDocument?.id === doc.id) {
       setSelectedDocument(null);
       setEditedContent("");
+      setLawyerComments("");
       setSpellCheckResults(null);
     } else {
       setSelectedDocument(doc);
       setEditedContent(doc.document_content);
+      setLawyerComments(doc.lawyer_comments || "");
       setSpellCheckResults(null);
     }
   };
@@ -261,6 +266,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
       // Cerrar el panel de revisión automáticamente
       setSelectedDocument(null);
       setEditedContent("");
+      setLawyerComments("");
 
       // Also refresh from server
       await fetchDocuments();
@@ -298,14 +304,22 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
     try {
       setIsLoading(true);
       
+      const updateData: any = { 
+        document_content: editedContent,
+        reviewed_by_lawyer_id: user?.id,
+        reviewed_by_lawyer_name: user?.name,
+        updated_at: new Date().toISOString()
+      };
+
+      // Add lawyer comments if provided
+      if (lawyerComments.trim()) {
+        updateData.lawyer_comments = lawyerComments.trim();
+        updateData.lawyer_comments_date = new Date().toISOString();
+      }
+      
       const { error } = await supabase
         .from('document_tokens')
-        .update({ 
-          document_content: editedContent,
-          reviewed_by_lawyer_id: user?.id,
-          reviewed_by_lawyer_name: user?.name,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', selectedDocument.id);
 
       if (error) {
@@ -323,7 +337,13 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
       // Update local state immediately
       setDocuments(prev => prev.map(doc => 
         doc.id === selectedDocument.id 
-          ? { ...doc, document_content: editedContent, updated_at: new Date().toISOString() }
+          ? { 
+              ...doc, 
+              document_content: editedContent, 
+              lawyer_comments: lawyerComments.trim() || doc.lawyer_comments,
+              lawyer_comments_date: lawyerComments.trim() ? new Date().toISOString() : doc.lawyer_comments_date,
+              updated_at: new Date().toISOString() 
+            }
           : doc
       ));
 
@@ -331,6 +351,8 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
       setSelectedDocument(prev => prev ? { 
         ...prev, 
         document_content: editedContent,
+        lawyer_comments: lawyerComments.trim() || prev.lawyer_comments,
+        lawyer_comments_date: lawyerComments.trim() ? new Date().toISOString() : prev.lawyer_comments_date,
         updated_at: new Date().toISOString()
       } : null);
 
@@ -1217,6 +1239,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                           onClick={() => {
                             setSelectedDocument(null);
                             setEditedContent("");
+                            setLawyerComments("");
                           }}
                         >
                           Cerrar
@@ -1300,6 +1323,22 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                             placeholder="Revisa y edita el contenido del documento según sea necesario..."
                             className="min-h-[200px] font-mono text-sm"
                           />
+                        </div>
+
+                        {/* Lawyer Comments Section */}
+                        <div>
+                          <label className="text-sm font-medium mb-2 block">
+                            Comentarios para el cliente (opcional):
+                          </label>
+                          <Textarea
+                            value={lawyerComments}
+                            onChange={(e) => setLawyerComments(e.target.value)}
+                            placeholder="Escribe aquí cualquier comentario sobre los cambios realizados al documento que quieras que el cliente vea..."
+                            className="min-h-[100px] text-sm"
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Estos comentarios serán visibles para el cliente junto con el documento revisado.
+                          </p>
                         </div>
                         
                         {/* Spell Check Section */}
@@ -1412,6 +1451,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                             onClick={() => {
                               setSelectedDocument(null);
                               setEditedContent("");
+                              setLawyerComments("");
                               setSpellCheckResults(null);
                             }}
                           >

@@ -952,6 +952,8 @@ export type Database = {
           document_content: string
           document_type: string
           id: string
+          lawyer_comments: string | null
+          lawyer_comments_date: string | null
           price: number
           reviewed_by_lawyer_id: string | null
           reviewed_by_lawyer_name: string | null
@@ -972,6 +974,8 @@ export type Database = {
           document_content: string
           document_type: string
           id?: string
+          lawyer_comments?: string | null
+          lawyer_comments_date?: string | null
           price: number
           reviewed_by_lawyer_id?: string | null
           reviewed_by_lawyer_name?: string | null
@@ -992,6 +996,8 @@ export type Database = {
           document_content?: string
           document_type?: string
           id?: string
+          lawyer_comments?: string | null
+          lawyer_comments_date?: string | null
           price?: number
           reviewed_by_lawyer_id?: string | null
           reviewed_by_lawyer_name?: string | null

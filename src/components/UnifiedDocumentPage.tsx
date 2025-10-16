@@ -691,6 +691,24 @@ export default function UnifiedDocumentPage({ onOpenChat }: UnifiedDocumentPageP
                         </div>
                       )}
                       
+                      {/* Show lawyer comments if any */}
+                      {documentData.lawyer_comments && (
+                        <div className="p-4 bg-primary/5 border-l-4 border-primary rounded">
+                          <div className="flex items-start gap-2 mb-2">
+                            <User className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                            <div className="flex-1">
+                              <Label className="text-sm font-semibold text-primary">Comentarios del Abogado:</Label>
+                              <p className="text-sm mt-2 whitespace-pre-wrap">{documentData.lawyer_comments}</p>
+                              <p className="text-xs text-muted-foreground mt-2">
+                                {documentData.lawyer_comments_date && 
+                                  `Enviado el: ${new Date(documentData.lawyer_comments_date).toLocaleDateString('es-CO')} a las ${new Date(documentData.lawyer_comments_date).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}`
+                                }
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
                       <div>
                         <Label htmlFor="observations">Observaciones o Cambios Requeridos (Opcional)</Label>
                         <Textarea

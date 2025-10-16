@@ -53,6 +53,8 @@ interface DocumentToken {
   sla_deadline: string;
   created_at: string;
   updated_at: string;
+  lawyer_comments?: string;
+  lawyer_comments_date?: string;
 }
 
 export default function UserDashboardPage({ onBack, onOpenChat }: UserDashboardPageProps) {
