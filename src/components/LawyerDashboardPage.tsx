@@ -7,8 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Bot, Plus, Settings, LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Lock, Crown, Users, SpellCheck, AlertCircle, Clock, FileImage } from "lucide-react";
+import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Bot, Plus, Settings, LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Lock, Crown, Users, SpellCheck, AlertCircle, Clock, FileImage, Send } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import LawyerStatsSection from "./LawyerStatsSection";
 import LawyerLandingPage from "./LawyerLandingPage";
 import AgentCreatorPage from "./AgentCreatorPage";
@@ -58,6 +59,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const [isLoading, setIsLoading] = useState(true);
   const [currentView, setCurrentView] = useState<'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager' | 'research' | 'analyze' | 'draft' | 'strategize' | 'subscription' | 'crm'>('dashboard');
   const [isCheckingSpelling, setIsCheckingSpelling] = useState(false);
+  const [showSendConfirmation, setShowSendConfirmation] = useState(false);
   const [spellCheckResults, setSpellCheckResults] = useState<{
     errors: Array<{
       word: string;
@@ -275,28 +277,13 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
     }
   };
 
-  const handleSave = async () => {
-    if (!selectedDocument) {
-      console.error('No document selected for saving');
+  // Guardar borrador: Guarda cambios pero mantiene el panel abierto y no cambia el estado
+  const handleSaveDraft = async () => {
+    if (!selectedDocument || !editedContent) {
       toast({
         title: "Error",
-        description: "No hay documento seleccionado para guardar",
+        description: "No hay contenido para guardar",
         variant: "destructive",
-      });
-      return;
-    }
-
-    console.log('Saving document:', {
-      id: selectedDocument.id,
-      originalContent: selectedDocument.document_content.substring(0, 100) + '...',
-      editedContent: editedContent.substring(0, 100) + '...',
-      hasChanges: selectedDocument.document_content !== editedContent
-    });
-
-    if (selectedDocument.document_content === editedContent) {
-      toast({
-        title: "Sin cambios",
-        description: "No hay cambios que guardar",
       });
       return;
     }
@@ -323,18 +310,18 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
         .eq('id', selectedDocument.id);
 
       if (error) {
-        console.error('Error saving document:', error);
+        console.error('Error saving document draft:', error);
         toast({
           title: "Error",
-          description: `No se pudo guardar el documento: ${error.message}`,
+          description: `No se pudo guardar el borrador: ${error.message}`,
           variant: "destructive",
         });
         return;
       }
 
-      console.log('Document saved successfully');
+      console.log('Document draft saved successfully');
 
-      // Update local state immediately
+      // Update local state immediately (but don't close the panel)
       setDocuments(prev => prev.map(doc => 
         doc.id === selectedDocument.id 
           ? { 
@@ -347,24 +334,114 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
           : doc
       ));
 
+      // Also update selected document to reflect saved state
+      setSelectedDocument(prev => prev ? {
+        ...prev,
+        document_content: editedContent,
+        lawyer_comments: lawyerComments.trim() || prev.lawyer_comments,
+        lawyer_comments_date: lawyerComments.trim() ? new Date().toISOString() : prev.lawyer_comments_date,
+        updated_at: new Date().toISOString()
+      } : null);
+
       toast({
-        title: "Documento guardado",
-        description: "Los cambios han sido guardados exitosamente",
+        title: "Borrador guardado",
+        description: "Los cambios han sido guardados. Puede seguir editando.",
       });
 
-      // Cerrar el panel de revisión automáticamente
-      setSelectedDocument(null);
-      setEditedContent("");
-      setLawyerComments("");
-      setSpellCheckResults(null);
+      // NO cerramos el panel - el usuario puede seguir editando
 
       // Refresh from server to ensure consistency
       await fetchDocuments();
     } catch (error) {
-      console.error('Error saving document:', error);
+      console.error('Error saving document draft:', error);
       toast({
         title: "Error",
-        description: "Ocurrió un error inesperado al guardar el documento",
+        description: "Ocurrió un error inesperado al guardar el borrador",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Enviar al cliente: Guarda cambios, cambia estado a revision_usuario y cierra el panel
+  const handleSendToClient = async () => {
+    if (!selectedDocument || !editedContent) {
+      toast({
+        title: "Error",
+        description: "No hay contenido para enviar",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      
+      const updateData: any = { 
+        document_content: editedContent,
+        reviewed_by_lawyer_id: user?.id,
+        reviewed_by_lawyer_name: user?.name,
+        status: 'revision_usuario',
+        updated_at: new Date().toISOString()
+      };
+
+      // Add lawyer comments if provided
+      if (lawyerComments.trim()) {
+        updateData.lawyer_comments = lawyerComments.trim();
+        updateData.lawyer_comments_date = new Date().toISOString();
+      }
+      
+      const { error } = await supabase
+        .from('document_tokens')
+        .update(updateData)
+        .eq('id', selectedDocument.id);
+
+      if (error) {
+        console.error('Error sending document to client:', error);
+        toast({
+          title: "Error",
+          description: `No se pudo enviar el documento: ${error.message}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('Document sent to client successfully');
+
+      // Update local state immediately
+      setDocuments(prev => prev.map(doc => 
+        doc.id === selectedDocument.id 
+          ? { 
+              ...doc, 
+              document_content: editedContent,
+              lawyer_comments: lawyerComments.trim() || doc.lawyer_comments,
+              lawyer_comments_date: lawyerComments.trim() ? new Date().toISOString() : doc.lawyer_comments_date,
+              status: 'revision_usuario',
+              updated_at: new Date().toISOString() 
+            }
+          : doc
+      ));
+
+      toast({
+        title: "Documento enviado al cliente",
+        description: "El cliente recibirá una notificación por correo electrónico.",
+      });
+
+      // Cerrar el panel de revisión y limpiar estados
+      setSelectedDocument(null);
+      setEditedContent("");
+      setLawyerComments("");
+      setSpellCheckResults(null);
+      setShowSendConfirmation(false);
+
+      // Refresh from server to ensure consistency
+      await fetchDocuments();
+    } catch (error) {
+      console.error('Error sending document to client:', error);
+      toast({
+        title: "Error",
+        description: "Ocurrió un error inesperado al enviar el documento",
         variant: "destructive",
       });
     } finally {
@@ -834,6 +911,27 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   // If not dashboard view, show module content with sidebar
   if (currentView !== 'dashboard') {
     return (
+      <>
+        {/* Confirmation Dialog for Sending to Client */}
+        <AlertDialog open={showSendConfirmation} onOpenChange={setShowSendConfirmation}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Enviar documento al cliente?</AlertDialogTitle>
+              <AlertDialogDescription>
+                El documento será enviado al cliente para su revisión y pago. El cliente recibirá una notificación por correo electrónico con un enlace para acceder al documento.
+                <br /><br />
+                <strong>Esta acción cambiará el estado del documento a "Revisión Usuario".</strong>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={handleSendToClient}>
+                Sí, Enviar al Cliente
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
       <SidebarProvider>
         <div className="min-h-screen flex w-full">
           <Sidebar 
@@ -932,10 +1030,32 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
           </main>
         </div>
       </SidebarProvider>
+      </>
     );
   }
 
   return (
+    <>
+      {/* Confirmation Dialog for Sending to Client */}
+      <AlertDialog open={showSendConfirmation} onOpenChange={setShowSendConfirmation}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Enviar documento al cliente?</AlertDialogTitle>
+            <AlertDialogDescription>
+              El documento será enviado al cliente para su revisión y pago. El cliente recibirá una notificación por correo electrónico con un enlace para acceder al documento.
+              <br /><br />
+              <strong>Esta acción cambiará el estado del documento a "Revisión Usuario".</strong>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSendToClient}>
+              Sí, Enviar al Cliente
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background overflow-hidden">
         <Sidebar 
@@ -1425,24 +1545,23 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
 
                         <div className="flex flex-wrap gap-3">
                           <Button 
-                            onClick={handleSave}
+                            onClick={handleSaveDraft}
                             disabled={isLoading}
+                            variant="outline"
                             className="flex items-center gap-2"
                           >
                             <Save className="h-4 w-4" />
-                            {selectedDocument.document_content === editedContent ? 'Guardado' : 'Guardar Revisión'}
+                            {selectedDocument.document_content === editedContent && selectedDocument.lawyer_comments === lawyerComments ? 'Borrador Guardado' : 'Guardar Borrador'}
                           </Button>
-                          {selectedDocument.status === 'solicitado' && (
-                            <Button
-                              variant="default"
-                              onClick={() => handleReviewDocument(selectedDocument.id)}
-                              disabled={isLoading}
-                              className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
-                            >
-                              <CheckCircle className="h-4 w-4" />
-                              Aprobar y Enviar al Cliente
-                            </Button>
-                          )}
+                          <Button
+                            variant="default"
+                            onClick={() => setShowSendConfirmation(true)}
+                            disabled={isLoading}
+                            className="flex items-center gap-2"
+                          >
+                            <Send className="h-4 w-4" />
+                            Enviar al Cliente
+                          </Button>
                           <Button
                             variant="outline"
                             onClick={() => {
@@ -1631,5 +1750,6 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
         />
       )}
     </SidebarProvider>
+    </>
   );
 };
