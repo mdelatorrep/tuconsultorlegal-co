@@ -1,6 +1,14 @@
 import { useState } from "react";
 import { Button } from "./ui/button";
-import { Menu, X, MessageCircle, FileText, Scale, Users, Phone, Newspaper, DollarSign, Shield, FileText as DocumentIcon, Gavel, User, LogIn } from "lucide-react";
+import { Badge } from "./ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
+import { Menu, X, MessageCircle, FileText, Scale, Users, Phone, Newspaper, DollarSign, Shield, FileText as DocumentIcon, Gavel, User, LogIn, MoreHorizontal } from "lucide-react";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import { useLawyerAuthContext } from "@/components/LawyerAuthProvider";
 import logoImage from "/logo-ai-legal.png";
@@ -58,6 +66,47 @@ export default function Header({
     onNavigate(pageId);
     setMobileMenuOpen(false);
   };
+
+  // Navigation Dropdown Component
+  const NavigationDropdown = () => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="sm" className="h-9">
+          <MoreHorizontal className="w-4 h-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56 bg-background/95 backdrop-blur-md border-border z-[100]">
+        {navItems.map((item) => {
+          const IconComponent = item.icon;
+          const isActive = currentPage === item.id;
+          return (
+            <DropdownMenuItem
+              key={item.id}
+              onClick={() => handleNavClick(item.id)}
+              className={`cursor-pointer ${isActive ? "bg-primary/10 text-primary font-medium" : ""}`}
+            >
+              <IconComponent className="w-4 h-4 mr-2" />
+              <span>{item.label}</span>
+            </DropdownMenuItem>
+          );
+        })}
+        {!isAuthenticated && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => handleNavClick("abogados")}
+              className="cursor-pointer"
+            >
+              <Shield className="w-4 h-4 mr-2" />
+              <span>Portal Abogados</span>
+              <Badge variant="outline" className="ml-auto text-xs">Pro</Badge>
+            </DropdownMenuItem>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   return <header className="bg-background/95 backdrop-blur-md sticky top-0 z-50 shadow-soft border-b border-border">
       <nav className="container mx-auto px-6 py-4 flex justify-between items-center">
         {/* Logo */}
@@ -69,7 +118,7 @@ export default function Header({
         </button>
 
         {/* Desktop Navigation - Simplified & Clean */}
-        <div className="hidden lg:flex items-center space-x-8">
+        <div className="hidden lg:flex items-center space-x-6">
           {/* Service Tabs - Clean Design */}
           <div className="flex items-center space-x-2 bg-muted/30 rounded-xl p-1">
             <button onClick={() => handleNavClick("personas")} className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-smooth font-medium text-sm ${currentPage === "personas" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
@@ -82,41 +131,27 @@ export default function Header({
             </button>
           </div>
 
-          {/* Secondary Navigation - Minimized */}
-          <div className="flex items-center space-x-6">
-            {navItems.map(item => {
-            const IconComponent = item.icon;
-            const isActive = currentPage === item.id;
-            return <button key={item.id} onClick={() => handleNavClick(item.id)} className={`flex items-center gap-2 transition-smooth font-medium text-sm ${isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>
-                  <IconComponent className="w-4 h-4" />
-                  <span>{item.label}</span>
-                </button>;
-          })}
-          </div>
+          {/* More Options Dropdown */}
+          <NavigationDropdown />
         </div>
 
         {/* Desktop CTA Buttons - Simplified */}
         <div className="hidden lg:flex items-center space-x-3">
-          {isAuthenticated ? <div className="flex items-center space-x-2">
-              <Button 
-                onClick={() => onNavigate(isLawyer ? "abogados" : "user-dashboard")} 
-                variant="outline" 
-                size="sm"
-              >
-                <User className="w-4 h-4 mr-2" />
-                {isLawyer ? "Panel Abogado" : "Mi Panel"}
-              </Button>
-            </div> : <div className="flex items-center space-x-2">
-              <Button onClick={() => onNavigate("auth")} variant="outline" size="sm">
-                <LogIn className="w-4 h-4 mr-2" />
-                Acceder
-              </Button>
-              
-              <Button onClick={() => onNavigate("abogados")} variant="outline" size="sm" className="text-muted-foreground">
-                <Shield className="w-4 h-4 mr-2" />
-                Soy Abogado
-              </Button>
-            </div>}
+          {isAuthenticated ? (
+            <Button 
+              onClick={() => onNavigate(isLawyer ? "abogados" : "user-dashboard")} 
+              variant="outline" 
+              size="sm"
+            >
+              <User className="w-4 h-4 mr-2" />
+              {isLawyer ? "Panel Abogado" : "Mi Panel"}
+            </Button>
+          ) : (
+            <Button onClick={() => onNavigate("auth")} variant="outline" size="sm">
+              <LogIn className="w-4 h-4 mr-2" />
+              Acceder
+            </Button>
+          )}
           
           <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => onOpenChat("Quiero una consultoría legal")}>
             <MessageCircle className="w-4 h-4 mr-2" />
