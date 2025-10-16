@@ -309,24 +309,27 @@ function AdminPage() {
           if (openaiError) {
             console.error('Error creating OpenAI agent:', openaiError);
             toast({
-              title: "Agente aprobado con advertencia",
-              description: "El agente fue aprobado exitosamente, pero hubo un problema al configurar el agente de IA. Se puede configurar manualmente después.",
+              title: "Advertencia",
+              description: "Agente aprobado pero falló la creación del agente OpenAI. Usa el botón 'Recrear OpenAI'",
               variant: "destructive",
             });
-          } else {
-            console.log('OpenAI agent created successfully:', openaiAgentResult);
+          } else if (openaiAgentResult?.success) {
+            console.log('✅ OpenAI agent created successfully');
+            
+            // **NUEVO: Actualizar openai_enabled en la UI inmediatamente**
+            setAgents(prevAgents =>
+              prevAgents.map(a =>
+                a.id === agentId ? { ...a, openai_enabled: true } : a
+              )
+            );
+            
             toast({
-              title: "¡Agente aprobado!",
-              description: "El agente fue aprobado y el agente de IA fue creado correctamente.",
+              title: "Agente OpenAI Creado",
+              description: `El agente OpenAI ha sido creado exitosamente`,
             });
           }
         } catch (error) {
-          console.error('Error creating OpenAI agent:', error);
-          toast({
-            title: "Agente aprobado con advertencia",
-            description: "El agente fue aprobado exitosamente, pero hubo un error al configurar el agente de IA.",
-            variant: "destructive",
-          });
+          console.error('Exception creating OpenAI agent:', error);
         }
       } else {
         // Para otros cambios de estado (no aprobación)
