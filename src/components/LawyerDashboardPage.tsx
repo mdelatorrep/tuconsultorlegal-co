@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Bot, Plus, Settings, LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Lock, Crown, Users, SpellCheck, AlertCircle } from "lucide-react";
+import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Bot, Plus, Settings, LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Lock, Crown, Users, SpellCheck, AlertCircle, Clock } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import LawyerStatsSection from "./LawyerStatsSection";
 import LawyerLandingPage from "./LawyerLandingPage";
@@ -880,246 +880,122 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                 </div>
               </div>
 
-              {/* Premium Tools Section */}
-              {user?.canUseAiTools && (
-                <div className="mb-4 md:mb-6 lg:mb-8">
-                  <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:items-center sm:space-x-3 mb-3 md:mb-4">
-                    <div className="flex items-center gap-2">
-                      <Crown className="h-4 w-4 md:h-5 md:w-5 text-amber-500 flex-shrink-0" />
-                      <h2 className="text-base md:text-lg lg:text-xl font-semibold">Herramientas IA Premium</h2>
-                    </div>
-                    <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs w-fit">
-                      ACTIVO
-                    </Badge>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-                    {[
-                      {
-                        title: "Investigación",
-                        description: "Análisis legal profundo con IA",
-                        icon: Search,
-                        view: "research",
-                        gradient: "from-blue-500 to-cyan-500",
-                        bgPattern: "from-blue-50 to-cyan-50"
-                      },
-                      {
-                        title: "Análisis",
-                        description: "Evaluación inteligente de documentos",
-                        icon: Eye,
-                        view: "analyze",
-                        gradient: "from-purple-500 to-pink-500",
-                        bgPattern: "from-purple-50 to-pink-50"
-                      },
-                      {
-                        title: "Redacción",
-                        description: "Creación automática de documentos",
-                        icon: PenTool,
-                        view: "draft",
-                        gradient: "from-green-500 to-emerald-500",
-                        bgPattern: "from-green-50 to-emerald-50"
-                      },
-                      {
-                        title: "Estrategia",
-                        description: "Planificación legal estratégica",
-                        icon: Target,
-                        view: "strategize",
-                        gradient: "from-orange-500 to-red-500",
-                        bgPattern: "from-orange-50 to-red-50"
-                      }
-                    ].map((tool, index) => (
-                      <Card 
-                        key={tool.view} 
-                        className={`group cursor-pointer transition-all duration-300 hover:scale-[1.02] md:hover:scale-105 hover:shadow-lg border-0 bg-gradient-to-br ${tool.bgPattern} dark:from-gray-800 dark:to-gray-900`}
-                        onClick={() => setCurrentView(tool.view as any)}
-                      >
-                        <CardContent className="p-4 md:p-6">
-                          <div className={`w-10 h-10 md:w-12 md:h-12 rounded-lg bg-gradient-to-r ${tool.gradient} flex items-center justify-center mb-3 md:mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                            <tool.icon className="h-5 w-5 md:h-6 md:w-6 text-white" />
-                          </div>
-                           <h3 className="font-semibold text-sm md:text-base lg:text-lg mb-1 md:mb-2">{tool.title}</h3>
-                           <p className="text-xs md:text-sm text-muted-foreground line-clamp-2">{tool.description}</p>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* CRM Module */}
-              {user?.canUseAiTools && (
-                <div className="mb-6 md:mb-8">
-                  <h2 className="text-lg md:text-xl font-semibold mb-4 flex items-center gap-2">
-                    <Users className="h-4 w-4 md:h-5 md:w-5 text-blue-500" />
-                    Gestión de Clientes
-                  </h2>
-                  <Card 
-                    className="group cursor-pointer transition-all duration-300 hover:scale-[1.01] md:hover:scale-[1.02] hover:shadow-xl border-0 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20"
-                    onClick={() => setCurrentView('crm')}
-                  >
-                    <CardContent className="p-4 md:p-6 lg:p-8">
-                      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                        <div className="flex items-center gap-3 md:gap-4">
-                          <div className="w-12 h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                            <Users className="h-6 w-6 md:h-7 md:w-7 lg:h-8 lg:w-8 text-white" />
-                          </div>
-                          <div>
-                            <h3 className="text-lg md:text-xl font-bold mb-1 md:mb-2">Sistema CRM Inteligente</h3>
-                            <p className="text-sm md:text-base text-muted-foreground">Gestiona clientes, casos y comunicaciones con IA avanzada</p>
-                          </div>
-                        </div>
-                        <div className="flex flex-row lg:flex-col items-start lg:items-end lg:text-right gap-2 lg:gap-1">
-                          <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground">
-                            <Bot className="h-3 w-3 md:h-4 md:w-4" />
-                            IA Habilitada
-                          </div>
-                          <Badge variant="outline" className="text-xs">Acceso completo</Badge>
-                        </div>
+              {/* 🔴 URGENT DOCUMENTS - Documents at risk or overdue */}
+              {documents.filter(doc => doc.sla_status === 'overdue' || doc.sla_status === 'at_risk').length > 0 && (
+                <div className="mb-6">
+                  <Card className="border-2 border-red-500 bg-red-50 dark:bg-red-950/20">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg flex items-center gap-2 text-red-700 dark:text-red-400">
+                        <AlertCircle className="h-5 w-5 animate-pulse" />
+                        Documentos Urgentes
+                        <Badge variant="destructive" className="ml-2">
+                          {documents.filter(doc => doc.sla_status === 'overdue' || doc.sla_status === 'at_risk').length}
+                        </Badge>
+                      </CardTitle>
+                      <CardDescription className="text-red-600 dark:text-red-400">
+                        Estos documentos requieren tu atención inmediata
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid gap-3">
+                        {documents
+                          .filter(doc => doc.sla_status === 'overdue' || doc.sla_status === 'at_risk')
+                          .map((doc) => (
+                            <Card 
+                              key={doc.id} 
+                              className={`border-2 hover:shadow-lg transition-all cursor-pointer ${
+                                doc.sla_status === 'overdue' 
+                                  ? 'border-red-500 bg-red-50/50 dark:bg-red-950/10' 
+                                  : 'border-yellow-500 bg-yellow-50/50 dark:bg-yellow-950/10'
+                              }`}
+                              onClick={() => handleDocumentClick(doc)}
+                            >
+                              <CardHeader className="pb-2">
+                                <CardTitle className="text-base md:text-lg flex items-center justify-between">
+                                  <span className="truncate flex items-center gap-2">
+                                    {doc.sla_status === 'overdue' && (
+                                      <AlertCircle className="h-4 w-4 text-red-500" />
+                                    )}
+                                    {doc.document_type}
+                                  </span>
+                                  <div className="flex items-center gap-2 flex-shrink-0">
+                                    <Badge variant={getStatusVariant(doc.status)}>
+                                      {getStatusText(doc.status)}
+                                    </Badge>
+                                    <Badge variant={getSlaStatusVariant(doc.sla_status)}>
+                                      {getSlaStatusText(doc.sla_status)}
+                                    </Badge>
+                                  </div>
+                                </CardTitle>
+                                <CardDescription className="text-xs md:text-sm">
+                                  <div className="flex items-center gap-3 flex-wrap">
+                                    <span className="flex items-center gap-1">
+                                      <User className="h-3 w-3" />
+                                      {doc.user_name || 'Usuario anónimo'}
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                      <Calendar className="h-3 w-3" />
+                                      {new Date(doc.created_at).toLocaleDateString()}
+                                    </span>
+                                    {doc.sla_deadline && (
+                                      <span className="flex items-center gap-1 text-red-600 dark:text-red-400 font-medium">
+                                        <Clock className="h-3 w-3" />
+                                        Límite: {new Date(doc.sla_deadline).toLocaleString()}
+                                      </span>
+                                    )}
+                                  </div>
+                                </CardDescription>
+                              </CardHeader>
+                            </Card>
+                          ))}
                       </div>
                     </CardContent>
                   </Card>
                 </div>
               )}
 
-              {/* Gestión IA */}
-              {user?.canCreateAgents && (
-                <div className="mb-6 md:mb-8">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-4">
-                    <div className="flex items-center gap-2">
-                      <Bot className="h-4 w-4 md:h-5 md:w-5 text-purple-500" />
-                      <h2 className="text-lg md:text-xl font-semibold">Gestión IA</h2>
-                    </div>
-                    <Badge variant="secondary" className="text-xs w-fit">ADMIN</Badge>
-                  </div>
-                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-                    {[
-                      {
-                        title: "Crear Agente",
-                        description: "Desarrolla nuevos agentes de IA especializados",
-                        icon: Bot,
-                        view: "agent-creator",
-                        color: "purple"
-                      },
-                      {
-                        title: "Gestionar Agentes",
-                        description: "Administra tus agentes existentes",
-                        icon: Settings,
-                        view: "agent-manager",
-                        color: "indigo"
-                      },
-                      {
-                        title: "Métricas",
-                        description: "Estadísticas de rendimiento",
-                        icon: BarChart3,
-                        view: "stats",
-                        color: "emerald"
-                      }
-                    ].map((item, index) => (
-                      <Card 
-                        key={item.view}
-                        className="group cursor-pointer transition-all duration-300 hover:scale-[1.02] md:hover:scale-105 hover:shadow-lg"
-                        onClick={() => setCurrentView(item.view as any)}
-                      >
-                         <CardContent className="p-4 md:p-6 text-center">
-                          <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full bg-${item.color}-100 dark:bg-${item.color}-900/30 flex items-center justify-center mx-auto mb-3 md:mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                            <item.icon className={`h-5 w-5 md:h-6 md:w-6 text-${item.color}-600 dark:text-${item.color}-400`} />
-                          </div>
-                           <h3 className="font-semibold text-sm md:text-base mb-1 md:mb-2">{item.title}</h3>
-                           <p className="text-xs md:text-sm text-muted-foreground line-clamp-2">{item.description}</p>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Blog Management */}
-              {user?.canCreateBlogs && (
-                <div className="mb-6 md:mb-8">
-                  <h2 className="text-lg md:text-xl font-semibold mb-4 flex items-center gap-2">
-                    <BookOpen className="h-4 w-4 md:h-5 md:w-5 text-green-500" />
-                    Gestión de Contenido
-                  </h2>
-                  <Card 
-                    className="group cursor-pointer transition-all duration-300 hover:scale-[1.01] md:hover:scale-[1.02] hover:shadow-lg"
-                    onClick={() => setCurrentView('blog-manager')}
-                  >
-                    <CardContent className="p-4 md:p-6">
-                      <div className="flex items-center gap-3 md:gap-4">
-                        <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                          <BookOpen className="h-5 w-5 md:h-6 md:w-6 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-base md:text-lg mb-1">Gestión de Blog</h3>
-                          <p className="text-sm md:text-sm text-muted-foreground">Crea y administra contenido legal profesional</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
-
-              {/* Training & Certification */}
-              <div className="mb-6 md:mb-8">
-                <h2 className="text-lg md:text-xl font-semibold mb-4 flex items-center gap-2">
-                  <Brain className="h-4 w-4 md:h-5 md:w-5 text-pink-500" />
-                  Desarrollo Profesional
-                </h2>
-                <Card 
-                  className="group cursor-pointer transition-all duration-300 hover:scale-[1.01] md:hover:scale-[1.02] hover:shadow-lg border-0 bg-gradient-to-br from-pink-50 to-rose-50 dark:from-pink-900/20 dark:to-rose-900/20"
-                  onClick={() => setCurrentView('training')}
-                >
-                  <CardContent className="p-4 md:p-6">
-                    <div className="flex items-center gap-3 md:gap-4">
-                      <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg bg-gradient-to-r from-pink-500 to-rose-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                        <Brain className="h-5 w-5 md:h-6 md:w-6 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-base md:text-lg mb-1">Formación IA</h3>
-                        <p className="text-sm text-muted-foreground">Certifícate en el uso de herramientas de IA legal</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Documents Section */}
-              <div className="mb-6 md:mb-8">
-                <h2 className="text-lg md:text-xl font-semibold mb-4 flex flex-col sm:flex-row sm:items-center gap-2">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 md:h-5 md:w-5 text-blue-500" />
+              {/* 📄 ALL PENDING DOCUMENTS */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl md:text-2xl font-bold flex items-center gap-2">
+                    <FileText className="h-5 w-5 md:h-6 md:w-6 text-blue-500" />
                     Documentos Pendientes
-                  </div>
+                  </h2>
                   {documents.length > 0 && (
-                    <Badge variant="secondary" className="w-fit">
-                      {documents.length}
+                    <Badge variant="secondary" className="text-sm">
+                      {documents.length} {documents.length === 1 ? 'documento' : 'documentos'}
                     </Badge>
                   )}
-                </h2>
+                </div>
                 
                 {documents.length === 0 ? (
                   <Card className="border-dashed border-2">
                     <CardContent className="p-8 md:p-12 text-center">
-                      <FileText className="h-12 w-12 md:h-16 md:w-16 text-muted-foreground mx-auto mb-3 md:mb-4 opacity-50" />
-                      <h3 className="text-base md:text-lg font-medium mb-2">No hay documentos pendientes</h3>
-                      <p className="text-sm md:text-base text-muted-foreground">Los documentos que requieren revisión aparecerán aquí</p>
+                      <CheckCircle className="h-12 w-12 md:h-16 md:w-16 text-green-500 mx-auto mb-3 md:mb-4" />
+                      <h3 className="text-base md:text-lg font-medium mb-2 text-green-700 dark:text-green-400">
+                        ¡Todo al día!
+                      </h3>
+                      <p className="text-sm md:text-base text-muted-foreground">
+                        No hay documentos pendientes de revisión
+                      </p>
                     </CardContent>
                   </Card>
                 ) : (
                   <div className="grid gap-4">
-                    {documents.slice(0, 3).map((doc) => (
+                    {documents.map((doc) => (
                       <Card 
                         key={doc.id} 
-                        className={`border border-border hover:border-primary transition-colors cursor-pointer ${
+                        className={`border hover:border-primary hover:shadow-md transition-all cursor-pointer ${
                           doc.sla_status === 'at_risk' ? 'border-l-4 border-l-yellow-400' :
                           doc.sla_status === 'overdue' ? 'border-l-4 border-l-red-500' :
-                          ''
+                          'border-l-4 border-l-green-400'
                         }`}
                         onClick={() => handleDocumentClick(doc)}
                       >
                         <CardHeader className="pb-2">
-                          <CardTitle className="text-lg flex items-center justify-between">
+                          <CardTitle className="text-base md:text-lg flex items-center justify-between">
                             <span className="truncate">{doc.document_type}</span>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-shrink-0">
                               <Badge variant={getStatusVariant(doc.status)}>
                                 {getStatusText(doc.status)}
                               </Badge>
@@ -1130,8 +1006,8 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                               )}
                             </div>
                           </CardTitle>
-                          <CardDescription className="text-sm text-muted-foreground">
-                            <div className="flex items-center gap-4">
+                          <CardDescription className="text-xs md:text-sm">
+                            <div className="flex items-center gap-3 flex-wrap">
                               <span className="flex items-center gap-1">
                                 <User className="h-3 w-3" />
                                 {doc.user_name || 'Usuario anónimo'}
@@ -1144,60 +1020,147 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                                 <DollarSign className="h-3 w-3" />
                                 ${doc.price.toLocaleString()}
                               </span>
+                              {doc.sla_deadline && (
+                                <span className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  {new Date(doc.sla_deadline).toLocaleDateString()}
+                                </span>
+                              )}
                             </div>
                           </CardDescription>
                         </CardHeader>
                       </Card>
                     ))}
-                    {documents.length > 3 && (
-                      <div className="text-center">
-                        <Button variant="outline">
-                          Ver todos los documentos ({documents.length - 3} más)
-                        </Button>
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
 
-              {/* Quick Actions */}
-              <div className="mb-8">
-                <h2 className="text-xl font-semibold mb-4">Acciones Rápidas</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Card 
-                    className="group cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg"
-                    onClick={() => setCurrentView('subscription')}
-                  >
-                    <CardContent className="p-6 text-center">
-                      <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
-                        <Crown className="h-6 w-6 text-amber-600 dark:text-amber-400" />
-                      </div>
-                      <h3 className="font-semibold mb-2">Suscripción</h3>
-                      <p className="text-sm text-muted-foreground">Gestiona tu plan y facturación</p>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card className="group cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg">
-                    <CardContent className="p-6 text-center">
-                      <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
-                        <Settings className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                      </div>
-                      <h3 className="font-semibold mb-2">Configuración</h3>
-                      <p className="text-sm text-muted-foreground">Personaliza tu experiencia</p>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card className="group cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg">
-                    <CardContent className="p-6 text-center">
-                      <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
-                        <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
-                      </div>
-                      <h3 className="font-semibold mb-2">Soporte</h3>
-                      <p className="text-sm text-muted-foreground">Obtén ayuda cuando la necesites</p>
-                    </CardContent>
-                  </Card>
+              {/* 🛠️ QUICK ACCESS TOOLS */}
+              {user?.canUseAiTools && (
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Crown className="h-5 w-5 text-amber-500" />
+                    <h2 className="text-lg md:text-xl font-semibold">Herramientas Rápidas</h2>
+                    <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs">
+                      PREMIUM ACTIVO
+                    </Badge>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                    {[
+                      { title: "Investigación", icon: Search, view: "research", gradient: "from-blue-500 to-cyan-500" },
+                      { title: "Análisis", icon: Eye, view: "analyze", gradient: "from-purple-500 to-pink-500" },
+                      { title: "Redacción", icon: PenTool, view: "draft", gradient: "from-green-500 to-emerald-500" },
+                      { title: "Estrategia", icon: Target, view: "strategize", gradient: "from-orange-500 to-red-500" },
+                      { title: "CRM", icon: Users, view: "crm", gradient: "from-blue-500 to-indigo-500" }
+                    ].map((tool) => (
+                      <Card 
+                        key={tool.view} 
+                        className="group cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg border-0"
+                        onClick={() => setCurrentView(tool.view as any)}
+                      >
+                        <CardContent className="p-4 text-center">
+                          <div className={`w-12 h-12 rounded-lg bg-gradient-to-r ${tool.gradient} flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-300`}>
+                            <tool.icon className="h-6 w-6 text-white" />
+                          </div>
+                          <h3 className="font-semibold text-sm">{tool.title}</h3>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
                 </div>
+              )}
+
+              {/* 🎓 PROFESSIONAL DEVELOPMENT */}
+              <div className="mb-6">
+                <h2 className="text-lg md:text-xl font-semibold mb-4 flex items-center gap-2">
+                  <Brain className="h-5 w-5 text-pink-500" />
+                  Desarrollo Profesional
+                </h2>
+                <Card 
+                  className="group cursor-pointer transition-all duration-300 hover:scale-[1.01] hover:shadow-lg border-0 bg-gradient-to-br from-pink-50 to-rose-50 dark:from-pink-900/20 dark:to-rose-900/20"
+                  onClick={() => setCurrentView('training')}
+                >
+                  <CardContent className="p-4 md:p-6">
+                    <div className="flex items-center gap-3 md:gap-4">
+                      <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-pink-500 to-rose-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                        <Brain className="h-6 w-6 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-base md:text-lg mb-1">Formación IA</h3>
+                        <p className="text-sm text-muted-foreground">Certifícate en el uso de herramientas de IA legal</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
+
+              {/* ⚙️ ADMINISTRATION - Compact Section */}
+              <details className="group mb-6">
+                <summary className="flex items-center gap-2 cursor-pointer list-none hover:text-primary transition-colors">
+                  <Settings className="h-5 w-5 text-gray-500" />
+                  <h2 className="text-lg md:text-xl font-semibold">Administración</h2>
+                  <span className="ml-auto text-muted-foreground group-open:rotate-180 transition-transform">▼</span>
+                </summary>
+                
+                <div className="mt-4 space-y-4">
+                  {/* Agent Management */}
+                  {user?.canCreateAgents && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <Bot className="h-4 w-4 text-purple-500" />
+                        <h3 className="text-base font-medium">Gestión IA</h3>
+                        <Badge variant="secondary" className="text-xs">ADMIN</Badge>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        {[
+                          { title: "Crear Agente", icon: Bot, view: "agent-creator", color: "purple" },
+                          { title: "Gestionar Agentes", icon: Settings, view: "agent-manager", color: "indigo" },
+                          { title: "Métricas", icon: BarChart3, view: "stats", color: "emerald" }
+                        ].map((item) => (
+                          <Card 
+                            key={item.view}
+                            className="group cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-md"
+                            onClick={() => setCurrentView(item.view as any)}
+                          >
+                            <CardContent className="p-4 text-center">
+                              <div className={`w-10 h-10 rounded-full bg-${item.color}-100 dark:bg-${item.color}-900/30 flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform`}>
+                                <item.icon className={`h-5 w-5 text-${item.color}-600 dark:text-${item.color}-400`} />
+                              </div>
+                              <h4 className="font-semibold text-sm">{item.title}</h4>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Blog Management */}
+                  {user?.canCreateBlogs && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <BookOpen className="h-4 w-4 text-green-500" />
+                        <h3 className="text-base font-medium">Gestión de Contenido</h3>
+                      </div>
+                      <Card 
+                        className="group cursor-pointer transition-all duration-300 hover:scale-[1.01] hover:shadow-md"
+                        onClick={() => setCurrentView('blog-manager')}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                              <BookOpen className="h-5 w-5 text-white" />
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-sm md:text-base">Gestión de Blog</h4>
+                              <p className="text-xs text-muted-foreground">Crea y administra contenido legal</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  )}
+                </div>
+              </details>
 
               {/* Upgrade CTA for Free Users */}
               {!user?.canUseAiTools && (
