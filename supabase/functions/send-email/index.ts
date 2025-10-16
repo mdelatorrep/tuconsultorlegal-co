@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3';
+import { SmtpClient } from 'https://deno.land/x/smtp@v0.7.0/mod.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -82,84 +83,59 @@ Deno.serve(async (req) => {
     const logId = logData?.id;
 
     try {
-      // Enviar email usando SMTP
-      const emailBody = `From: ${config.smtp_from_name} <${config.smtp_from_email}>\r\n` +
-        `To: ${to}\r\n` +
-        `Subject: ${subject}\r\n` +
-        `MIME-Version: 1.0\r\n` +
-        `Content-Type: text/html; charset=utf-8\r\n\r\n` +
-        html;
+      // Crear cliente SMTP
+      const client = new SmtpClient();
 
-      const command = new Deno.Command('openssl', {
-        args: [
-          's_client',
-          '-connect',
-          `${config.smtp_host}:${config.smtp_port}`,
-          '-crlf',
-          '-quiet'
-        ],
-        stdin: 'piped',
-        stdout: 'piped',
-        stderr: 'piped'
+      console.log(`Connecting to SMTP server: ${config.smtp_host}:${config.smtp_port}`);
+      
+      // Conectar al servidor SMTP (usar connectTLS para puerto 465, connect para otros)
+      if (config.smtp_port === 465) {
+        await client.connectTLS({
+          hostname: config.smtp_host,
+          port: config.smtp_port,
+          username: config.smtp_user,
+          password: smtpPassword,
+        });
+      } else {
+        await client.connect({
+          hostname: config.smtp_host,
+          port: config.smtp_port,
+          username: config.smtp_user,
+          password: smtpPassword,
+        });
+      }
+
+      console.log('SMTP connection established, sending email...');
+
+      // Enviar email
+      await client.send({
+        from: `${config.smtp_from_name} <${config.smtp_from_email}>`,
+        to: to,
+        subject: subject,
+        content: '', // Content vacío porque usamos HTML
+        html: html,
       });
 
-      const process = command.spawn();
-      const writer = process.stdin.getWriter();
-      
-      const encoder = new TextEncoder();
-      
-      // Enviar comandos SMTP
-      await writer.write(encoder.encode(`EHLO localhost\r\n`));
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      await writer.write(encoder.encode(`AUTH LOGIN\r\n`));
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      await writer.write(encoder.encode(`${btoa(config.smtp_user)}\r\n`));
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      await writer.write(encoder.encode(`${btoa(smtpPassword)}\r\n`));
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      await writer.write(encoder.encode(`MAIL FROM:<${config.smtp_from_email}>\r\n`));
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      await writer.write(encoder.encode(`RCPT TO:<${to}>\r\n`));
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      await writer.write(encoder.encode(`DATA\r\n`));
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      await writer.write(encoder.encode(emailBody + '\r\n.\r\n'));
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      await writer.write(encoder.encode(`QUIT\r\n`));
-      
-      await writer.close();
-      
-      const { code } = await process.status;
+      // Cerrar conexión
+      await client.close();
 
-      if (code === 0) {
-        console.log(`Email sent successfully to ${to}`);
-        
-        // Actualizar log como exitoso
-        if (logId) {
-          await supabaseClient
-            .from('email_notifications_log')
-            .update({
-              status: 'sent',
-              sent_at: new Date().toISOString()
-            })
-            .eq('id', logId);
-        }
-
-        return new Response(
-          JSON.stringify({ success: true, message: 'Email sent successfully' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      } else {
-        throw new Error('SMTP command failed');
+      console.log(`Email sent successfully to ${to}`);
+      
+      // Actualizar log como exitoso
+      if (logId) {
+        await supabaseClient
+          .from('email_notifications_log')
+          .update({
+            status: 'sent',
+            sent_at: new Date().toISOString()
+          })
+          .eq('id', logId);
       }
+
+      return new Response(
+        JSON.stringify({ success: true, message: 'Email sent successfully' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     } catch (emailError) {
       console.error('Error sending email:', emailError);
       
