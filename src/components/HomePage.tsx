@@ -84,12 +84,12 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
       {/* Hero Section - Estilo Apple */}
       <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
         {/* Background con profundidad */}
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#010f24] via-[#011838] to-[#010f24]">
           {/* Grid pattern sutil */}
           <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:100px_100px]"></div>
           
           {/* Glow effect central */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#e7b008]/10 rounded-full blur-[120px]"></div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#0372e8]/10 rounded-full blur-[120px]"></div>
         </div>
 
         <div className="container mx-auto px-6 relative z-10">
@@ -102,7 +102,7 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
             >
               Tu derecho.
               <br />
-              <span className="font-[700] bg-gradient-to-r from-[#e7b008] to-[#f4d03f] bg-clip-text text-transparent">
+              <span className="font-[700] bg-gradient-to-r from-[#0372e8] to-[#0a8fff] bg-clip-text text-transparent">
                 Simplificado.
               </span>
             </motion.h1>
@@ -127,7 +127,7 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
               <Button 
                 size="lg" 
                 onClick={() => onNavigate("user-dashboard")}
-                className="bg-white text-slate-950 hover:bg-white/90 px-12 py-7 text-lg font-medium rounded-full shadow-2xl hover:shadow-[0_20px_60px_rgba(231,176,8,0.4)] transition-all duration-500 hover:scale-[1.02]"
+                className="bg-white text-[#010f24] hover:bg-white/90 px-12 py-7 text-lg font-medium rounded-full shadow-2xl hover:shadow-[0_20px_60px_rgba(3,114,232,0.4)] transition-all duration-500 hover:scale-[1.02]"
               >
                 Comenzar gratis
               </Button>
@@ -191,7 +191,7 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
                       </p>
                       
                       {/* Link minimalista */}
-                      <div className="inline-flex items-center text-[#e7b008] font-medium gap-0 group-hover:gap-2 transition-all">
+                      <div className="inline-flex items-center text-[#0372e8] font-medium gap-0 group-hover:gap-2 transition-all">
                         <span>{feature.action}</span>
                         <span className="group-hover:translate-x-1 transition-transform">→</span>
                       </div>
@@ -241,12 +241,12 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
                       onClick={() => onOpenChat(`Quiero crear un ${doc.name.toLowerCase()}`)}
                     >
                       {/* Icono más grande */}
-                      <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-6 group-hover:bg-[#e7b008]/10 transition-colors duration-500">
-                        <FileText className="w-8 h-8 text-slate-700 group-hover:text-[#e7b008] transition-colors duration-500" />
+                      <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-6 group-hover:bg-[#0372e8]/10 transition-colors duration-500">
+                        <FileText className="w-8 h-8 text-slate-700 group-hover:text-[#0372e8] transition-colors duration-500" />
                       </div>
                       
                       {/* Título más limpio */}
-                      <h3 className="text-xl font-[600] text-slate-950 mb-3 tracking-tight group-hover:text-[#e7b008] transition-colors">
+                      <h3 className="text-xl font-[600] text-slate-950 mb-3 tracking-tight group-hover:text-[#0372e8] transition-colors">
                         {doc.name}
                       </h3>
                       
@@ -317,7 +317,7 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
                         {/* Rating */}
                         <div className="flex gap-1 mb-4">
                           {[...Array(5)].map((_, i) => (
-                            <Star key={i} className="w-4 h-4 fill-[#e7b008] text-[#e7b008]" />
+                            <Star key={i} className="w-4 h-4 fill-[#f2bb31] text-[#f2bb31]" />
                           ))}
                         </div>
                         
@@ -328,7 +328,7 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
                         
                         {/* Author */}
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#e7b008] to-[#f4d03f] flex items-center justify-center text-white font-[600] text-sm">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#0372e8] to-[#0a8fff] flex items-center justify-center text-white font-[600] text-sm">
                             {testimonial.author.charAt(0)}
                           </div>
                           <div className="text-left">
@@ -348,9 +348,9 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
 
       {/* Final CTA - Minimalista y Potente */}
       <FadeInSection delay={0.5}>
-        <section className="py-40 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden">
+        <section className="py-40 bg-gradient-to-br from-[#010f24] via-[#011838] to-[#010f24] relative overflow-hidden">
           {/* Efecto de glow */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#e7b008]/20 rounded-full blur-[150px]"></div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#0372e8]/20 rounded-full blur-[150px]"></div>
           
           <div className="container mx-auto px-6 text-center relative z-10">
             <div className="max-w-3xl mx-auto">
@@ -369,7 +369,7 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
               <Button 
                 size="lg"
                 onClick={() => onNavigate("user-dashboard")}
-                className="bg-white text-slate-950 hover:bg-white/90 px-12 py-7 text-lg font-medium rounded-full shadow-2xl hover:shadow-[0_20px_60px_rgba(255,255,255,0.3)] transition-all duration-500 hover:scale-[1.02]"
+                className="bg-white text-[#010f24] hover:bg-white/90 px-12 py-7 text-lg font-medium rounded-full shadow-2xl hover:shadow-[0_20px_60px_rgba(255,255,255,0.3)] transition-all duration-500 hover:scale-[1.02]"
               >
                 Comenzar gratis
               </Button>

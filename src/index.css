@@ -10,61 +10,61 @@ All colors MUST be HSL.
 @layer base {
   :root {
     /* Base Colors */
-    --background: 0 0% 100%; /* blanco principal */
-    --foreground: 0 0% 0%; /* negro neutro */
+    --background: 0 0% 100%; /* blanco - Complementario 2 */
+    --foreground: 217 92% 7%; /* casi negro - Complementario 1 */
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 0%;
+    --card-foreground: 217 92% 7%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 0%;
+    --popover-foreground: 217 92% 7%;
 
     /* Primary Colors - Brand Palette */
-    --primary: 219 46% 32%; /* #2B4078 - Color Principal */
-    --primary-light: 219 40% 40%; /* lighter variant of primary */
+    --primary: 213 96% 46%; /* #0372e8 - Color Principal Azul */
+    --primary-light: 213 96% 55%; /* lighter variant of primary */
     --primary-foreground: 0 0% 100%;
 
     /* Secondary/Accent Colors */
-    --secondary: 45 93% 47%; /* #E7B008 - Color Secundario */
-    --secondary-dark: 45 93% 40%; /* darker variant for hover */
-    --secondary-foreground: 0 0% 0%;
+    --secondary: 44 87% 57%; /* #f2bb31 - Color Secundario Amarillo */
+    --secondary-dark: 44 87% 50%; /* darker variant for hover */
+    --secondary-foreground: 217 92% 7%;
     
     /* Warning/Success Colors */
-    --warning: 45 93% 47%; /* using secondary color for consistency */
-    --warning-foreground: 0 0% 0%;
-    --success: 219 46% 32%; /* using primary for success states */
+    --warning: 44 87% 57%; /* using secondary color for consistency */
+    --warning-foreground: 217 92% 7%;
+    --success: 213 96% 46%; /* using primary for success states */
     --success-foreground: 0 0% 100%;
 
     /* Neutral Colors */
-    --muted: 0 0% 95%; /* #F3F3F3 - Complementario 1 */
-    --muted-foreground: 219 46% 32%; /* primary color for muted text */
+    --muted: 0 0% 95%; /* gris muy claro */
+    --muted-foreground: 213 96% 46%; /* primary color for muted text */
 
-    --accent: 0 0% 95%; /* #F3F3F3 for accent backgrounds */
-    --accent-foreground: 219 46% 32%;
+    --accent: 0 0% 95%; /* gris claro para accent backgrounds */
+    --accent-foreground: 213 96% 46%;
 
     --destructive: 0 84% 60%; /* clear error red */
     --destructive-foreground: 0 0% 100%;
 
     --border: 214 20% 90%; /* subtle borders */
     --input: 214 20% 90%; /* consistent input styling */
-    --ring: 215 84% 30%; /* matches primary for focus */
+    --ring: 213 96% 46%; /* matches primary for focus */
 
     --radius: 0.75rem;
 
     /* Brand Theme - Exact Brand Colors */
-    --brand-blue: 219 46% 32%; /* #2B4078 - Color Principal */
-    --brand-blue-light: 219 40% 40%; /* lighter variant */
-    --brand-yellow: 45 93% 47%; /* #E7B008 - Color Secundario */
-    --brand-yellow-dark: 45 93% 40%; /* darker variant */
-    --brand-gray-light: 0 0% 95%; /* #F3F3F3 - Complementario 1 */
+    --brand-blue: 213 96% 46%; /* #0372e8 - Color Principal */
+    --brand-blue-light: 213 96% 55%; /* lighter variant */
+    --brand-yellow: 44 87% 57%; /* #f2bb31 - Color Secundario */
+    --brand-yellow-dark: 44 87% 50%; /* darker variant */
+    --brand-dark: 217 92% 7%; /* #010f24 - Complementario 1 */
     --brand-white: 0 0% 100%; /* #ffffff - Complementario 2 */
 
     /* Solid Professional Backgrounds - Brand Colors */
-    --solid-hero: hsl(var(--brand-blue));
+    --solid-hero: hsl(var(--brand-dark));
     --solid-card: hsl(var(--brand-white));
     --solid-accent: hsl(var(--brand-yellow));
     --solid-secondary: hsl(var(--brand-yellow));
-    --solid-muted: hsl(var(--brand-gray-light));
+    --solid-muted: hsl(var(--muted));
 
     /* Shadows - Subtle & Professional */
     --shadow-soft: 0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
@@ -328,6 +328,6 @@ All colors MUST be HSL.
   }
 
   .hover-glow:hover {
-    box-shadow: 0 20px 60px rgba(231, 176, 8, 0.15);
+    box-shadow: 0 20px 60px rgba(3, 114, 232, 0.15);
   }
 }
