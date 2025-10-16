@@ -20,6 +20,7 @@ import KnowledgeBaseManager from "./KnowledgeBaseManager";
 import LawyerTrainingManager from "./LawyerTrainingManager";
 import CategoryManager from "./CategoryManager";
 import SubscriptionAdminManager from "./admin/SubscriptionAdminManager";
+import { EmailConfigManager } from "./admin/EmailConfigManager";
 import { 
   Copy, Users, Bot, BarChart3, Clock, CheckCircle, Lock, Unlock, Trash2, Check, X, Plus, 
   Loader2, MessageCircle, BookOpen, Settings, Zap, Mail, Phone, Bell, LogOut, UserCheck, 
@@ -764,6 +765,7 @@ function AdminPage() {
         { id: 'knowledge', label: 'Base de Conocimiento', icon: Database, count: 0 },
         { id: 'categories', label: 'Categorías', icon: Tag, count: 0 },
         { id: 'subscriptions', label: 'Gestión Suscripciones', icon: CreditCard, count: 0 },
+        { id: 'email-config', label: 'Configuración Email', icon: Mail, count: 0 },
         { id: 'stats', label: 'Estadísticas Avanzadas', icon: BarChart3, count: 0 },
         { id: 'config', label: 'Configuración Sistema', icon: Settings, count: 0 },
       ]
@@ -1403,6 +1405,9 @@ function AdminPage() {
       case 'config':
         return <SystemConfigManager />;
         
+      case 'email-config':
+        return <EmailConfigManager />;
+        
       case 'messages':
         return (
           <Card>
@@ -1491,6 +1496,7 @@ function AdminPage() {
                      currentView === 'stats' ? 'Visualiza estadísticas del sistema' :
                      currentView === 'categories' ? 'Configura categorías de documentos' :
                      currentView === 'subscriptions' ? 'Administra planes y suscripciones de dLocal' :
+                     currentView === 'email-config' ? 'Configura el sistema de notificaciones por email' :
                      currentView === 'config' ? 'Configuración avanzada del sistema' :
                      'Gestiona el portal administrativo'}
                   </p>
