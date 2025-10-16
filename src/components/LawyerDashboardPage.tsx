@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Bot, Plus, Settings, LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Lock, Crown, Users, SpellCheck, AlertCircle, Clock } from "lucide-react";
+import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Bot, Plus, Settings, LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Lock, Crown, Users, SpellCheck, AlertCircle, Clock, FileImage } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import LawyerStatsSection from "./LawyerStatsSection";
 import LawyerLandingPage from "./LawyerLandingPage";
@@ -350,6 +350,165 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handlePreviewPDF = () => {
+    if (!selectedDocument || !editedContent) {
+      toast({
+        title: "Error",
+        description: "No hay contenido para previsualizar",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Crear ventana de preview con el formato del PDF
+    const previewWindow = window.open('', '_blank', 'width=900,height=700,scrollbars=yes,resizable=yes');
+    if (previewWindow) {
+      previewWindow.document.write(`
+        <!DOCTYPE html>
+        <html lang="es">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Vista Previa PDF - ${selectedDocument.document_type}</title>
+            <style>
+              * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+              }
+              body {
+                font-family: Arial, sans-serif;
+                background: #e5e5e5;
+                padding: 20px;
+              }
+              .pdf-container {
+                max-width: 800px;
+                margin: 0 auto;
+                background: white;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+                padding: 40px 50px;
+                min-height: 1000px;
+                position: relative;
+              }
+              .header {
+                border-bottom: 3px solid #172554;
+                padding-bottom: 15px;
+                margin-bottom: 30px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+              }
+              .header h1 {
+                color: #172554;
+                font-size: 18px;
+                font-weight: bold;
+              }
+              .header .page-number {
+                color: #666;
+                font-size: 12px;
+              }
+              .title {
+                text-align: center;
+                color: #172554;
+                font-size: 22px;
+                font-weight: bold;
+                margin: 30px 0 40px 0;
+                text-transform: uppercase;
+              }
+              .content {
+                color: #000;
+                font-size: 14px;
+                line-height: 1.7;
+                white-space: pre-line;
+                text-align: justify;
+              }
+              .footer {
+                position: fixed;
+                bottom: 40px;
+                left: 50px;
+                right: 50px;
+                border-top: 1px solid #ccc;
+                padding-top: 15px;
+                font-size: 11px;
+                color: #666;
+              }
+              .footer-row {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 5px;
+              }
+              .footer-center {
+                text-align: center;
+                margin-top: 8px;
+                font-size: 10px;
+              }
+              .watermark {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%) rotate(-45deg);
+                font-size: 80px;
+                color: rgba(200, 200, 200, 0.2);
+                font-weight: bold;
+                pointer-events: none;
+                z-index: -1;
+              }
+              @media print {
+                body {
+                  background: white;
+                  padding: 0;
+                }
+                .pdf-container {
+                  box-shadow: none;
+                  padding: 25mm 20mm;
+                }
+              }
+            </style>
+          </head>
+          <body>
+            <div class="watermark">VISTA PREVIA</div>
+            <div class="pdf-container">
+              <div class="header">
+                <h1>TU CONSULTOR LEGAL</h1>
+                <div class="page-number">Página 1</div>
+              </div>
+              
+              <div class="title">${selectedDocument.document_type}</div>
+              
+              <div class="content">${editedContent}</div>
+              
+              <div class="footer">
+                <div class="footer-row">
+                  <span>Token: ${selectedDocument.token}</span>
+                  <span>Generado: ${new Date().toLocaleDateString('es-ES')}</span>
+                  <span style="color: #3b82f6;">www.tuconsultorlegal.co</span>
+                </div>
+                ${user?.name ? `<div style="margin-top: 5px; font-size: 10px;">Documento revisado por: ${user.name}</div>` : ''}
+                <div class="footer-center">
+                  Documento generado digitalmente por Tu Consultor Legal - Válido sin firma física
+                </div>
+              </div>
+            </div>
+          </body>
+        </html>
+      `);
+      previewWindow.document.close();
+      
+      toast({
+        title: "Vista previa generada",
+        description: "Se ha abierto una vista previa del documento en una nueva ventana",
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "No se pudo abrir la ventana de vista previa. Verifica que los pop-ups estén habilitados.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -1121,9 +1280,20 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                         )}
 
                         <div>
-                          <label className="text-sm font-medium mb-2 block">
-                            Contenido revisado (modifica según sea necesario):
-                          </label>
+                          <div className="flex items-center justify-between mb-2">
+                            <label className="text-sm font-medium">
+                              Contenido revisado (modifica según sea necesario):
+                            </label>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={handlePreviewPDF}
+                              className="flex items-center gap-2"
+                            >
+                              <FileImage className="h-4 w-4" />
+                              Vista Previa PDF
+                            </Button>
+                          </div>
                           <Textarea
                             value={editedContent}
                             onChange={(e) => setEditedContent(e.target.value)}
