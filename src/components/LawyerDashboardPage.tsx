@@ -347,19 +347,16 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
           : doc
       ));
 
-      // Update selected document state
-      setSelectedDocument(prev => prev ? { 
-        ...prev, 
-        document_content: editedContent,
-        lawyer_comments: lawyerComments.trim() || prev.lawyer_comments,
-        lawyer_comments_date: lawyerComments.trim() ? new Date().toISOString() : prev.lawyer_comments_date,
-        updated_at: new Date().toISOString()
-      } : null);
-
       toast({
         title: "Documento guardado",
         description: "Los cambios han sido guardados exitosamente",
       });
+
+      // Cerrar el panel de revisión automáticamente
+      setSelectedDocument(null);
+      setEditedContent("");
+      setLawyerComments("");
+      setSpellCheckResults(null);
 
       // Refresh from server to ensure consistency
       await fetchDocuments();
