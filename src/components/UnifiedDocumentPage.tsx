@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle, Clock, FileText, Search, User, Download, AlertCircle, Shield, Eye } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { CheckCircle, Clock, FileText, Search, User, Download, AlertCircle, Shield, Eye, Maximize2, Minimize2, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useBoldCheckout } from "./document-payment/useBoldCheckout";
@@ -25,6 +26,8 @@ export default function UnifiedDocumentPage({ onOpenChat }: UnifiedDocumentPageP
   const [searchCodeError, setSearchCodeError] = useState("");
   const [userObservations, setUserObservations] = useState("");
   const [isSendingObservations, setIsSendingObservations] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [isPreviewMaximized, setIsPreviewMaximized] = useState(false);
   const { toast } = useToast();
   const { openCheckout, currentOrderId } = useBoldCheckout(documentData);
 
@@ -465,294 +468,7 @@ export default function UnifiedDocumentPage({ onOpenChat }: UnifiedDocumentPageP
 
   const handlePreviewDocument = () => {
     if (!documentData) return;
-    
-    const previewWindow = window.open('', '_blank', 'width=800,height=600,toolbar=no,menubar=no,status=no');
-    if (previewWindow) {
-      previewWindow.document.write(`
-        <html>
-          <head>
-            <title>Vista Previa - ${documentData.document_type}</title>
-            <style>
-              body { 
-                font-family: Arial, sans-serif; 
-                padding: 20px; 
-                line-height: 1.6; 
-                user-select: none;
-                -webkit-user-select: none;
-                -moz-user-select: none;
-                -ms-user-select: none;
-                -webkit-touch-callout: none;
-                -webkit-tap-highlight-color: transparent;
-                background: #f5f5f5;
-                position: relative;
-                overflow: hidden;
-              }
-              
-              .watermark { 
-                position: fixed; 
-                top: 0; 
-                left: 0; 
-                width: 100vw; 
-                height: 100vh; 
-                pointer-events: none; 
-                z-index: 1000;
-                background-image: 
-                  repeating-linear-gradient(
-                    45deg,
-                    rgba(255, 0, 0, 0.15) 0px,
-                    rgba(255, 0, 0, 0.15) 200px,
-                    transparent 200px,
-                    transparent 400px
-                  );
-              }
-              
-              .watermark::before {
-                content: "VISTA PREVIA - NO VÁLIDO PARA USO LEGAL";
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%) rotate(-45deg);
-                font-size: 48px;
-                font-weight: bold;
-                color: rgba(255, 0, 0, 0.3);
-                white-space: nowrap;
-                text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-              }
-              
-              .header { 
-                border-bottom: 2px solid #333; 
-                padding-bottom: 10px; 
-                margin-bottom: 20px; 
-                position: relative;
-                z-index: 1;
-              }
-              
-              .content { 
-                white-space: pre-wrap; 
-                position: relative;
-                z-index: 1;
-                background: white;
-                padding: 20px;
-                border-radius: 8px;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-              }
-              
-              .security-notice {
-                position: fixed;
-                bottom: 10px;
-                right: 10px;
-                background: rgba(255, 0, 0, 0.9);
-                color: white;
-                padding: 10px;
-                border-radius: 5px;
-                font-size: 12px;
-                z-index: 1001;
-              }
-              
-              /* Disable text selection completely */
-              * {
-                -webkit-user-select: none !important;
-                -moz-user-select: none !important;
-                -ms-user-select: none !important;
-                user-select: none !important;
-              }
-              
-              /* Hide scrollbars to prevent right-click on them */
-              ::-webkit-scrollbar {
-                display: none;
-              }
-              
-              /* Blur content when dev tools might be open */
-              @media (max-width: 1200px) and (max-height: 600px) {
-                .content {
-                  filter: blur(3px);
-                }
-              }
-            </style>
-          </head>
-          <body>
-            <div class="watermark"></div>
-            <div class="security-notice">
-              📵 Vista Previa Protegida - Solo para Revisión
-            </div>
-            <div class="header">
-              <h1>${documentData.document_type}</h1>
-              <p><strong>Código:</strong> ${documentData.token}</p>
-              <p style="color: red; font-weight: bold;">⚠️ DOCUMENTO DE VISTA PREVIA - NO VÁLIDO PARA USO LEGAL</p>
-            </div>
-            <div class="content">${documentData.document_content}</div>
-            
-            <script>
-              // Disable right-click context menu
-              document.addEventListener('contextmenu', function(e) {
-                e.preventDefault();
-                alert('⚠️ Función deshabilitada por seguridad. Para obtener el documento completo, procede al pago.');
-                return false;
-              });
-              
-              // Disable key combinations
-              document.addEventListener('keydown', function(e) {
-                // Disable Ctrl+A (Select All)
-                if (e.ctrlKey && e.keyCode === 65) {
-                  e.preventDefault();
-                  alert('⚠️ Selección deshabilitada por seguridad.');
-                  return false;
-                }
-                
-                // Disable Ctrl+C (Copy)
-                if (e.ctrlKey && e.keyCode === 67) {
-                  e.preventDefault();
-                  alert('⚠️ Copia deshabilitada por seguridad.');
-                  return false;
-                }
-                
-                // Disable Ctrl+V (Paste)
-                if (e.ctrlKey && e.keyCode === 86) {
-                  e.preventDefault();
-                  return false;
-                }
-                
-                // Disable Ctrl+S (Save)
-                if (e.ctrlKey && e.keyCode === 83) {
-                  e.preventDefault();
-                  alert('⚠️ Para descargar el documento, procede al pago.');
-                  return false;
-                }
-                
-                // Disable Ctrl+P (Print)
-                if (e.ctrlKey && e.keyCode === 80) {
-                  e.preventDefault();
-                  alert('⚠️ Impresión deshabilitada por seguridad.');
-                  return false;
-                }
-                
-                // Disable Print Screen
-                if (e.keyCode === 44) {
-                  e.preventDefault();
-                  alert('⚠️ Captura de pantalla deshabilitada por seguridad.');
-                  return false;
-                }
-                
-                // Disable F12 (Developer Tools)
-                if (e.keyCode === 123) {
-                  e.preventDefault();
-                  alert('⚠️ Herramientas de desarrollador deshabilitadas por seguridad.');
-                  return false;
-                }
-                
-                // Disable Ctrl+Shift+I (Developer Tools)
-                if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
-                  e.preventDefault();
-                  alert('⚠️ Herramientas de desarrollador deshabilitadas por seguridad.');
-                  return false;
-                }
-                
-                // Disable Ctrl+Shift+C (Inspect Element)
-                if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
-                  e.preventDefault();
-                  alert('⚠️ Inspección deshabilitada por seguridad.');
-                  return false;
-                }
-                
-                // Disable Ctrl+U (View Source)
-                if (e.ctrlKey && e.keyCode === 85) {
-                  e.preventDefault();
-                  alert('⚠️ Ver código fuente deshabilitado por seguridad.');
-                  return false;
-                }
-              });
-              
-              // Disable drag and drop
-              document.addEventListener('dragstart', function(e) {
-                e.preventDefault();
-                return false;
-              });
-              
-              // Disable text selection with mouse
-              document.addEventListener('selectstart', function(e) {
-                e.preventDefault();
-                return false;
-              });
-              
-              // Additional protection against selection
-              document.onselectstart = function() {
-                return false;
-              };
-              
-              document.onmousedown = function() {
-                return false;
-              };
-              
-              // Detect if developer tools are opened (basic detection)
-              let devtools = {open: false};
-              const threshold = 160;
-              
-              setInterval(function() {
-                if (window.outerHeight - window.innerHeight > threshold || 
-                    window.outerWidth - window.innerWidth > threshold) {
-                  if (!devtools.open) {
-                    devtools.open = true;
-                    document.body.style.filter = 'blur(10px)';
-                    alert('⚠️ Se detectaron herramientas de desarrollador. El contenido ha sido protegido.');
-                  }
-                } else {
-                  if (devtools.open) {
-                    devtools.open = false;
-                    document.body.style.filter = 'none';
-                  }
-                }
-              }, 500);
-              
-              // Show security reminder every 30 seconds
-              setInterval(function() {
-                console.clear();
-                console.log('%c⚠️ DOCUMENTO PROTEGIDO', 
-                  'color: red; font-size: 20px; font-weight: bold;');
-                console.log('%cEste es un documento de vista previa protegido.', 
-                  'color: orange; font-size: 14px;');
-                console.log('%cPara obtener el documento completo, procede al pago.', 
-                  'color: blue; font-size: 14px;');
-              }, 30000);
-              
-              // Clear console initially
-              console.clear();
-              console.log('%c⚠️ VISTA PREVIA PROTEGIDA', 
-                'color: red; font-size: 24px; font-weight: bold;');
-              console.log('%cEste documento está protegido contra copia y captura de pantalla.', 
-                'color: orange; font-size: 16px;');
-              
-              // Prevent image saving
-              document.addEventListener('dragstart', function(e) {
-                if (e.target.tagName === 'IMG') {
-                  e.preventDefault();
-                }
-              });
-              
-              // Show warning if user tries to reload
-              window.addEventListener('beforeunload', function(e) {
-                const message = 'Para obtener el documento completo y sin restricciones, procede al pago.';
-                e.returnValue = message;
-                return message;
-              });
-              
-              // Focus trap to prevent easy navigation away
-              window.addEventListener('blur', function() {
-                setTimeout(function() {
-                  window.focus();
-                }, 100);
-              });
-              
-            </script>
-          </body>
-        </html>
-      `);
-      previewWindow.document.close();
-      
-      // Additional security for the parent window
-      previewWindow.addEventListener('beforeunload', () => {
-        console.log('Vista previa cerrada');
-      });
-    }
+    setShowPreview(true);
   };
 
   const getProgressPercentage = (currentStep: number) => {
@@ -1174,6 +890,97 @@ export default function UnifiedDocumentPage({ onOpenChat }: UnifiedDocumentPageP
           </Card>
         )}
       </div>
+
+      {/* PDF Preview Dialog */}
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent 
+          className={`bg-background border-border ${isPreviewMaximized ? 'max-w-[95vw] h-[95vh]' : 'max-w-4xl max-h-[85vh]'} p-0 transition-all duration-300`}
+        >
+          <DialogHeader className="px-6 py-4 border-b border-border bg-background z-50 sticky top-0">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-primary" />
+                Vista Previa - {documentData?.document_type}
+              </DialogTitle>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsPreviewMaximized(!isPreviewMaximized)}
+                  className="h-8 w-8"
+                >
+                  {isPreviewMaximized ? (
+                    <Minimize2 className="h-4 w-4" />
+                  ) : (
+                    <Maximize2 className="h-4 w-4" />
+                  )}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowPreview(false)}
+                  className="h-8 w-8"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 mt-2">
+              <Badge variant="destructive" className="text-xs">
+                VISTA PREVIA - NO VÁLIDO PARA USO LEGAL
+              </Badge>
+              <span className="text-xs text-muted-foreground">
+                Código: {documentData?.token}
+              </span>
+            </div>
+          </DialogHeader>
+          
+          <div className="relative overflow-y-auto overflow-x-hidden h-full bg-muted/30">
+            {/* Watermark overlay */}
+            <div className="fixed inset-0 pointer-events-none z-10 select-none">
+              <div 
+                className="absolute inset-0"
+                style={{
+                  backgroundImage: 'repeating-linear-gradient(45deg, rgba(239, 68, 68, 0.08) 0px, rgba(239, 68, 68, 0.08) 200px, transparent 200px, transparent 400px)',
+                }}
+              />
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 -rotate-45 text-6xl font-bold text-destructive/20 whitespace-nowrap select-none pointer-events-none">
+                VISTA PREVIA - NO VÁLIDO PARA USO LEGAL
+              </div>
+            </div>
+            
+            {/* Document content */}
+            <div className="relative z-0 p-8">
+              <div className="max-w-4xl mx-auto bg-background rounded-lg shadow-lg p-8 select-none">
+                <div className="border-b-2 border-foreground pb-4 mb-6">
+                  <h1 className="text-2xl font-bold mb-2">{documentData?.document_type}</h1>
+                  <p className="text-sm text-muted-foreground">Código: {documentData?.token}</p>
+                  <p className="text-sm text-destructive font-semibold mt-2">
+                    ⚠️ DOCUMENTO DE VISTA PREVIA - NO VÁLIDO PARA USO LEGAL
+                  </p>
+                </div>
+                <div 
+                  className="whitespace-pre-wrap text-sm leading-relaxed"
+                  style={{
+                    userSelect: 'none',
+                    WebkitUserSelect: 'none',
+                    MozUserSelect: 'none',
+                    msUserSelect: 'none'
+                  }}
+                  onContextMenu={(e) => e.preventDefault()}
+                >
+                  {documentData?.document_content}
+                </div>
+              </div>
+              
+              {/* Security notice */}
+              <div className="fixed bottom-4 right-4 bg-destructive text-destructive-foreground px-4 py-2 rounded-lg shadow-lg text-sm font-semibold z-50 select-none">
+                📵 Vista Previa Protegida - Solo para Revisión
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
