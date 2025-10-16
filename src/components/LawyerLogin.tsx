@@ -280,11 +280,8 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
   };
 
   return (
-    <Card className="w-full max-w-4xl mx-auto shadow-hero">
-      <CardContent className="p-0">
-        <div className="grid md:grid-cols-2 gap-0">
-          {/* Login/Register Form Side */}
-          <div className="p-8">
+    <Card className="w-full max-w-md mx-auto shadow-hero">
+      <CardContent className="p-8">
             {/* Tabs para Login/Register */}
             {(viewMode === 'login' || viewMode === 'register') && (
               <div className="flex gap-2 mb-6 p-1 bg-muted rounded-lg">
@@ -727,45 +724,6 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
               </div>
             </div>
           )}
-          </div>
-
-          {/* Benefits Side - Only show on login/register views */}
-          {(viewMode === 'login' || viewMode === 'register') && (
-            <div className="bg-gradient-to-br from-primary/5 to-brand-blue-light/10 p-8 flex flex-col justify-center">
-              <div className="space-y-6">
-                <h4 className="text-xl font-semibold">¿Por qué elegir nuestra plataforma?</h4>
-                
-                <div className="space-y-4">
-                  {[
-                    "✓ IA especializada en derecho colombiano",
-                    "✓ Herramientas profesionales avanzadas",
-                    "✓ Seguridad bancaria para tus datos",
-                    "✓ Soporte técnico especializado 24/7",
-                    "✓ Actualizaciones constantes",
-                    "✓ ROI desde el primer mes"
-                  ].map((benefit, index) => (
-                    <div key={index} className="flex items-center gap-3">
-                      <CheckCircle className="w-5 h-5 text-success flex-shrink-0" />
-                      <span className="text-sm">{benefit}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="border-t pt-6 mt-6">
-                  <div className="flex items-start gap-3">
-                    <Shield className="w-6 h-6 text-success flex-shrink-0 mt-1" />
-                    <div>
-                      <h5 className="font-semibold mb-1">Prueba sin riesgo</h5>
-                      <p className="text-sm text-muted-foreground">
-                        30 días gratis. Cancela cuando quieras.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
         </CardContent>
       </Card>
   );
