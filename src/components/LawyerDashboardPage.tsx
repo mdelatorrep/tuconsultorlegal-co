@@ -226,8 +226,9 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
       }
 
       toast({
-        title: "Documento actualizado",
-        description: "El documento ha sido marcado como listo para revisión del usuario",
+        title: "✅ Documento aprobado",
+        description: "El documento ha sido enviado al cliente para su revisión y pago",
+        duration: 5000,
       });
 
       // Update local state immediately for better UX
@@ -236,6 +237,10 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
           ? { ...doc, status: 'revision_usuario' as any }
           : doc
       ));
+
+      // Cerrar el panel de revisión automáticamente
+      setSelectedDocument(null);
+      setEditedContent("");
 
       // Also refresh from server
       await fetchDocuments();
