@@ -54,6 +54,20 @@ export default function Index() {
     const boldTxStatus = urlParams.get('bold-tx-status');
     const boldOrderId = urlParams.get('bold-order-id');
     
+    // Check if URL path contains /documento/:token
+    const pathParts = window.location.pathname.split('/');
+    const isDocumentoRoute = pathParts[1] === 'documento' && pathParts[2];
+    
+    // If accessing /documento/:token, redirect to the unified document page with the token as parameter
+    if (isDocumentoRoute) {
+      const token = pathParts[2];
+      setCurrentPage("documento");
+      // Add token to URL params for UnifiedDocumentPage to read
+      const newUrl = `${window.location.origin}/#documento?code=${token}`;
+      window.history.replaceState(null, "", newUrl);
+      return;
+    }
+    
     // If requesting token view, show the request form
     if (view === 'request-token') {
       setCurrentPage("request-token");

@@ -46,6 +46,7 @@ const AppContent = () => {
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/admin" element={<AdminPage />} />
+          <Route path="/documento/:token" element={<Index />} />
           <Route path="/subscription-success" element={<SubscriptionSuccessPage />} />
           <Route path="/subscription-error" element={<SubscriptionErrorPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
