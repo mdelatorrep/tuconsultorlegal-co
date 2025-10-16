@@ -43,8 +43,10 @@ export default function Index() {
   // Handle browser navigation
   useEffect(() => {
     const handlePopState = () => {
+      // Parse hash to separate route from query params
       const hash = window.location.hash.replace("#", "") || "home";
-      setCurrentPage(hash);
+      const route = hash.split('?')[0]; // Get only the route part, ignore query params
+      setCurrentPage(route);
     };
 
     // Check URL parameters for special views
@@ -81,9 +83,10 @@ export default function Index() {
       return;
     }
 
-    // Set initial page from URL
+    // Set initial page from URL - parse hash to separate route from query params
     const initialHash = window.location.hash.replace("#", "") || "home";
-    setCurrentPage(initialHash);
+    const initialRoute = initialHash.split('?')[0]; // Get only the route part
+    setCurrentPage(initialRoute);
 
     // Listen for browser back/forward
     window.addEventListener("popstate", handlePopState);

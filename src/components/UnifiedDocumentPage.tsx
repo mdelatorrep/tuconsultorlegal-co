@@ -74,7 +74,11 @@ export default function UnifiedDocumentPage({ onOpenChat }: UnifiedDocumentPageP
   useEffect(() => {
     // Check both search params and hash params (for compatibility with hash routing)
     const urlParams = new URLSearchParams(window.location.search);
-    const hashParams = new URLSearchParams(window.location.hash.split('?')[1] || '');
+    
+    // Parse hash: it can be #documento?code=XXX
+    const hash = window.location.hash;
+    const hashParts = hash.split('?');
+    const hashParams = new URLSearchParams(hashParts[1] || '');
     
     const urlTrackingCode = urlParams.get('code') || hashParams.get('code');
     const paymentStatus = urlParams.get('payment') || hashParams.get('payment');
