@@ -155,3 +155,9 @@ verify_jwt = false
 
 [functions.regenerate-agent-prompts]
 verify_jwt = false
+
+[functions.send-email]
+verify_jwt = false
+
+[functions.notify-document-status-change]
+verify_jwt = false
