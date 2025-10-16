@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Scale, Brain, Search, Eye, PenTool, Target, Users, Bot, BarChart3, Shield, Zap, Sparkles, ChevronRight, Play, ArrowRight, CheckCircle, Star, Rocket } from 'lucide-react';
+import { Scale, Brain, Search, Eye, PenTool, Target, Users, Bot, BarChart3, Shield, Zap, Sparkles, ChevronRight, Play, ArrowRight, CheckCircle, Star, Rocket, User } from 'lucide-react';
 import LawyerLogin from './LawyerLogin';
 interface LawyerLandingPageProps {
   onOpenChat: (message: string) => void;
@@ -90,6 +90,39 @@ export default function LawyerLandingPage({
     rating: 5
   }];
   return <div className="min-h-screen bg-background">
+      {/* Sticky Quick Access Bar */}
+      <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b shadow-sm">
+        <div className="container mx-auto px-6 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Scale className="h-5 w-5 text-primary" />
+              <span className="font-semibold text-primary">Portal Abogados</span>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => document.getElementById('login-section')?.scrollIntoView({
+                  behavior: 'smooth'
+                })}
+              >
+                Iniciar Sesión
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => document.getElementById('login-section')?.scrollIntoView({
+                  behavior: 'smooth'
+                })}
+              >
+                <User className="w-4 h-4 mr-2" />
+                Registrarse
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-primary via-primary-light to-brand-blue-light">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width=%2260%22%20height=%2260%22%20viewBox=%220%200%2060%2060%22%20xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cg%20fill=%22none%22%20fill-rule=%22evenodd%22%3E%3Cg%20fill=%22%23ffffff%22%20fill-opacity=%220.05%22%3E%3Ccircle%20cx=%2230%22%20cy=%2230%22%20r=%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] animate-pulse"></div>
@@ -123,20 +156,46 @@ export default function LawyerLandingPage({
                 </p>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button size="lg" variant="accent" onClick={() => document.getElementById('login-section')?.scrollIntoView({
-                behavior: 'smooth'
-              })} className="font-semibold px-8 py-6 shadow-glow transition-all duration-300 hover:scale-105">
-                  <Rocket className="w-5 h-5 mr-2" />
-                  Comenzar Ahora
-                  <ArrowRight className="w-5 h-5 ml-2" />
-                </Button>
+              {/* Clear CTAs for Login/Register */}
+              <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Button 
+                    size="lg" 
+                    variant="accent" 
+                    onClick={() => document.getElementById('login-section')?.scrollIntoView({
+                      behavior: 'smooth'
+                    })} 
+                    className="font-semibold px-8 py-6 shadow-glow transition-all duration-300 hover:scale-105"
+                  >
+                    <User className="w-5 h-5 mr-2" />
+                    Crear Cuenta Gratis
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="lg" 
+                    onClick={() => document.getElementById('login-section')?.scrollIntoView({
+                      behavior: 'smooth'
+                    })} 
+                    className="border-white/50 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white px-8 py-6"
+                  >
+                    <Scale className="w-5 h-5 mr-2" />
+                    Ya tengo cuenta
+                  </Button>
+                </div>
                 
-                <Button variant="outline" size="lg" onClick={() => document.getElementById('demo-section')?.scrollIntoView({
-                behavior: 'smooth'
-              })} className="border-white/50 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white px-8 py-6 text-lg">
-                  <Play className="w-5 h-5 mr-2" />
-                  Ver Demo
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => document.getElementById('demo-section')?.scrollIntoView({
+                    behavior: 'smooth'
+                  })} 
+                  className="text-white/80 hover:text-white hover:bg-white/10 mx-auto"
+                >
+                  <Play className="w-4 h-4 mr-2" />
+                  Ver cómo funciona
+                  <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
               </div>
 
@@ -306,16 +365,21 @@ export default function LawyerLandingPage({
         </div>
       </section>
 
-      {/* Login Section */}
+      {/* Login Section - Simplified & Clear */}
       <section id="login-section" className="py-20 bg-gradient-to-b from-brand-gray-light to-background">
         <div className="container mx-auto px-6">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
-              <h2 className="text-4xl font-bold mb-6">
-                Únete a la <span className="text-primary">Revolución Legal</span>
+              <Badge className="mb-4">
+                <Shield className="w-4 h-4 mr-2" />
+                Acceso Seguro
+              </Badge>
+              <h2 className="text-4xl font-bold mb-4">
+                <span className="text-primary">Inicia Sesión</span> o{' '}
+                <span className="text-primary">Crea tu Cuenta</span>
               </h2>
-              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                Accede a todas las herramientas que necesitas para llevar tu práctica al siguiente nivel
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                Comienza en menos de 2 minutos. Sin tarjeta de crédito requerida para probar.
               </p>
             </div>
 

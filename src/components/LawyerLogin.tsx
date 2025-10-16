@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useLawyerAuth } from '@/hooks/useLawyerAuth';
-import { Scale, Lock, Mail, User, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { Scale, Lock, Mail, User, Eye, EyeOff, ArrowLeft, CheckCircle, Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { SubscriptionPlanSelector } from './SubscriptionPlanSelector';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -280,22 +280,53 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="w-16 h-16 mx-auto mb-4 bg-primary/10 rounded-full flex items-center justify-center">
-            <Scale className="h-8 w-8 text-primary" />
-          </div>
-          <CardTitle className="text-2xl">{getTitle()}</CardTitle>
-          <CardDescription>{getDescription()}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {errorMessage && (
-            <Alert variant="destructive" className="mb-4">
-              <Lock className="h-4 w-4" />
-              <AlertDescription>{errorMessage}</AlertDescription>
-            </Alert>
-          )}
+    <Card className="w-full max-w-4xl mx-auto shadow-hero">
+      <CardContent className="p-0">
+        <div className="grid md:grid-cols-2 gap-0">
+          {/* Login/Register Form Side */}
+          <div className="p-8">
+            {/* Tabs para Login/Register */}
+            {(viewMode === 'login' || viewMode === 'register') && (
+              <div className="flex gap-2 mb-6 p-1 bg-muted rounded-lg">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('login')}
+                  className={`flex-1 py-2 px-4 rounded-md font-medium transition-all ${
+                    viewMode === 'login'
+                      ? 'bg-background text-primary shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  Iniciar Sesión
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('register')}
+                  className={`flex-1 py-2 px-4 rounded-md font-medium transition-all ${
+                    viewMode === 'register'
+                      ? 'bg-background text-primary shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  Crear Cuenta
+                </button>
+              </div>
+            )}
+
+            <div className="mb-6">
+              <div className="w-12 h-12 mx-auto mb-4 bg-primary/10 rounded-full flex items-center justify-center">
+                <Scale className="h-6 w-6 text-primary" />
+              </div>
+              <h3 className="text-2xl font-bold text-center mb-2">{getTitle()}</h3>
+              <p className="text-muted-foreground text-center text-sm">{getDescription()}</p>
+            </div>
+
+            {errorMessage && (
+              <Alert variant="destructive" className="mb-4">
+                <Lock className="h-4 w-4" />
+                <AlertDescription>{errorMessage}</AlertDescription>
+              </Alert>
+            )}
 
           {viewMode === 'login' && (
             <form onSubmit={handleLogin} className="space-y-4">
@@ -366,21 +397,6 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
                 >
                   ¿Olvidaste tu contraseña?
                 </Button>
-                <div className="border-t border-border pt-4">
-                  <p className="text-sm text-muted-foreground mb-3">
-                    ¿No tienes cuenta?
-                  </p>
-                  <Button 
-                    type="button"
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => setViewMode('register')}
-                    disabled={isLoading}
-                  >
-                    <User className="h-4 w-4 mr-2" />
-                    Crear Cuenta
-                  </Button>
-                </div>
               </div>
             </form>
           )}
@@ -530,7 +546,7 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
                 ) : (
                   <>
                     <User className="h-4 w-4 mr-2" />
-                    Crear Cuenta
+                    Crear Cuenta Gratis
                   </>
                 )}
               </Button>
@@ -711,8 +727,46 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
               </div>
             </div>
           )}
+          </div>
+
+          {/* Benefits Side - Only show on login/register views */}
+          {(viewMode === 'login' || viewMode === 'register') && (
+            <div className="bg-gradient-to-br from-primary/5 to-brand-blue-light/10 p-8 flex flex-col justify-center">
+              <div className="space-y-6">
+                <h4 className="text-xl font-semibold">¿Por qué elegir nuestra plataforma?</h4>
+                
+                <div className="space-y-4">
+                  {[
+                    "✓ IA especializada en derecho colombiano",
+                    "✓ Herramientas profesionales avanzadas",
+                    "✓ Seguridad bancaria para tus datos",
+                    "✓ Soporte técnico especializado 24/7",
+                    "✓ Actualizaciones constantes",
+                    "✓ ROI desde el primer mes"
+                  ].map((benefit, index) => (
+                    <div key={index} className="flex items-center gap-3">
+                      <CheckCircle className="w-5 h-5 text-success flex-shrink-0" />
+                      <span className="text-sm">{benefit}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="border-t pt-6 mt-6">
+                  <div className="flex items-start gap-3">
+                    <Shield className="w-6 h-6 text-success flex-shrink-0 mt-1" />
+                    <div>
+                      <h5 className="font-semibold mb-1">Prueba sin riesgo</h5>
+                      <p className="text-sm text-muted-foreground">
+                        30 días gratis. Cancela cuando quieras.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
         </CardContent>
       </Card>
-    </div>
   );
 }
