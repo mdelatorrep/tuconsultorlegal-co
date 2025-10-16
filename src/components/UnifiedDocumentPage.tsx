@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useBoldCheckout } from "./document-payment/useBoldCheckout";
 import { generatePDFDownload } from "./document-payment/pdfGenerator";
+import DOMPurify from 'dompurify';
 
 interface UnifiedDocumentPageProps {
   onOpenChat: (message: string) => void;
@@ -968,9 +969,13 @@ export default function UnifiedDocumentPage({ onOpenChat }: UnifiedDocumentPageP
                     msUserSelect: 'none'
                   }}
                   onContextMenu={(e) => e.preventDefault()}
-                >
-                  {documentData?.document_content}
-                </div>
+                  dangerouslySetInnerHTML={{
+                    __html: DOMPurify.sanitize(documentData?.document_content || '', {
+                      ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'div', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'table', 'thead', 'tbody', 'tr', 'td', 'th'],
+                      ALLOWED_ATTR: ['align', 'style', 'class']
+                    })
+                  }}
+                />
               </div>
               
               {/* Security notice */}
