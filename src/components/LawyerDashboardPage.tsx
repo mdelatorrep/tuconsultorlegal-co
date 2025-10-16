@@ -1390,11 +1390,11 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                         <div className="flex flex-wrap gap-3">
                           <Button 
                             onClick={handleSave}
-                            disabled={isLoading || selectedDocument.document_content === editedContent}
+                            disabled={isLoading}
                             className="flex items-center gap-2"
                           >
                             <Save className="h-4 w-4" />
-                            Guardar Revisión
+                            {selectedDocument.document_content === editedContent ? 'Guardado' : 'Guardar Revisión'}
                           </Button>
                           {selectedDocument.status === 'solicitado' && (
                             <Button
