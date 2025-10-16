@@ -153,11 +153,12 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
         return;
       }
 
-      // First get the lawyer's agents
+      // First get the lawyer's agents (only active/approved ones)
       const { data: lawyerAgents, error: agentsError } = await supabase
         .from('legal_agents')
         .select('name')
-        .eq('created_by', user.id);
+        .eq('created_by', user.id)
+        .in('status', ['active', 'approved']);
 
       if (agentsError) {
         console.error('Error fetching lawyer agents:', agentsError);
@@ -190,13 +191,19 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
 
       // Filter documents by matching document_type with lawyer's agent names
       const agentNames = lawyerAgents.map(agent => agent.name.toLowerCase().trim());
+      console.log('Lawyer agent names:', agentNames);
+      console.log('All documents:', allDocuments?.map(d => ({ token: d.token, type: d.document_type, status: d.status })));
+      
       const filteredDocuments = allDocuments?.filter(doc => {
         const docType = doc.document_type.toLowerCase().trim();
-        return agentNames.some(agentName => 
+        const matches = agentNames.some(agentName => 
+          docType === agentName || // Exact match first
           docType.includes(agentName) || 
           agentName.includes(docType) ||
           (docType.includes('arrendamiento') && agentName.includes('arrendamiento'))
         );
+        console.log(`Document ${doc.token} (${doc.document_type}): ${matches ? 'MATCH' : 'NO MATCH'}`);
+        return matches;
       }) || [];
 
       console.log(`Filtered ${filteredDocuments.length} documents from ${allDocuments?.length || 0} total for lawyer's ${lawyerAgents.length} agents`);
