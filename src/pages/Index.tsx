@@ -23,6 +23,9 @@ import UserTypeSelector from "@/components/UserTypeSelector";
 import LawyerDashboardPage from "@/components/LawyerDashboardPage";
 import { LawyerAuthProvider } from "@/components/LawyerAuthProvider";
 import { LogRocketProvider } from "@/components/LogRocketProvider";
+import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
+import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
+import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { useUserAuth } from "@/hooks/useUserAuth";
 
 export default function Index() {
@@ -281,6 +284,10 @@ export default function Index() {
 
   return (
     <LogRocketProvider>
+      <PWAUpdatePrompt />
+      <OfflineIndicator />
+      <PWAInstallPrompt />
+      
       <div className="min-h-screen bg-background">
         <Header
           currentPage={currentPage}
