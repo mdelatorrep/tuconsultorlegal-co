@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3';
-import { SmtpClient } from 'https://deno.land/x/smtp@v0.7.0/mod.ts';
+import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -83,27 +83,20 @@ Deno.serve(async (req) => {
     const logId = logData?.id;
 
     try {
-      // Crear cliente SMTP
-      const client = new SmtpClient();
-
       console.log(`Connecting to SMTP server: ${config.smtp_host}:${config.smtp_port}`);
       
-      // Conectar al servidor SMTP (usar connectTLS para puerto 465, connect para otros)
-      if (config.smtp_port === 465) {
-        await client.connectTLS({
+      // Crear cliente SMTP con denomailer (versión actualizada)
+      const client = new SMTPClient({
+        connection: {
           hostname: config.smtp_host,
           port: config.smtp_port,
-          username: config.smtp_user,
-          password: smtpPassword,
-        });
-      } else {
-        await client.connect({
-          hostname: config.smtp_host,
-          port: config.smtp_port,
-          username: config.smtp_user,
-          password: smtpPassword,
-        });
-      }
+          tls: config.smtp_secure,
+          auth: {
+            username: config.smtp_user,
+            password: smtpPassword,
+          },
+        },
+      });
 
       console.log('SMTP connection established, sending email...');
 
@@ -112,7 +105,7 @@ Deno.serve(async (req) => {
         from: `${config.smtp_from_name} <${config.smtp_from_email}>`,
         to: to,
         subject: subject,
-        content: '', // Content vacío porque usamos HTML
+        content: 'auto',
         html: html,
       });
 
