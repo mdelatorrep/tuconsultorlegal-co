@@ -25,13 +25,35 @@ interface SpellCheckResponse {
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
+    console.log("Handling CORS preflight request");
     return new Response(null, { headers: corsHeaders });
   }
 
+  console.log("=== Spell Check Function Started ===");
+  console.log("Method:", req.method);
+
   try {
-    const { content } = await req.json() as SpellCheckRequest;
+    console.log("Attempting to parse request body...");
+    
+    let requestBody;
+    try {
+      requestBody = await req.json();
+      console.log("✓ Request body parsed successfully");
+    } catch (parseError) {
+      console.error("✗ Error parsing request body:", parseError);
+      return new Response(
+        JSON.stringify({ error: "Error al procesar la solicitud" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const { content } = requestBody as SpellCheckRequest;
 
     if (!content || content.trim().length === 0) {
+      console.log("✗ Empty content received");
       return new Response(
         JSON.stringify({ error: "El contenido no puede estar vacío" }),
         {
@@ -41,11 +63,13 @@ serve(async (req) => {
       );
     }
 
+    console.log(`✓ Content received: ${content.length} characters`);
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
-      console.error("LOVABLE_API_KEY is not configured");
+      console.error("✗ LOVABLE_API_KEY is not configured");
       return new Response(
-        JSON.stringify({ error: "Error de configuración del servidor" }),
+        JSON.stringify({ error: "Error de configuración del servidor: falta API key" }),
         {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -53,7 +77,8 @@ serve(async (req) => {
       );
     }
 
-    console.log("Analyzing document for spelling and grammar errors...");
+    console.log("✓ LOVABLE_API_KEY found");
+    console.log("Starting AI analysis...");
 
     const systemPrompt = `Eres un experto corrector ortográfico y gramatical especializado en español legal.
 
@@ -96,6 +121,7 @@ Si no hay errores, devuelve:
   "summary": "No se encontraron errores ortográficos ni gramaticales"
 }`;
 
+    console.log("Making request to AI gateway...");
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -113,8 +139,11 @@ Si no hay errores, devuelve:
       }),
     });
 
+    console.log("AI gateway response status:", response.status);
+
     if (!response.ok) {
       if (response.status === 429) {
+        console.error("✗ Rate limit exceeded");
         return new Response(
           JSON.stringify({ error: "Límite de solicitudes excedido. Por favor, intenta más tarde." }),
           {
@@ -124,6 +153,7 @@ Si no hay errores, devuelve:
         );
       }
       if (response.status === 402) {
+        console.error("✗ Payment required");
         return new Response(
           JSON.stringify({ error: "Se requiere añadir créditos a tu espacio de trabajo de Lovable AI." }),
           {
@@ -133,7 +163,7 @@ Si no hay errores, devuelve:
         );
       }
       const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
+      console.error("✗ AI gateway error:", response.status, errorText);
       return new Response(
         JSON.stringify({ error: "Error en el servicio de IA" }),
         {
@@ -143,12 +173,16 @@ Si no hay errores, devuelve:
       );
     }
 
+    console.log("✓ Received response from AI gateway");
     const aiResponse = await response.json();
     const aiContent = aiResponse.choices?.[0]?.message?.content;
 
     if (!aiContent) {
+      console.error("✗ No content in AI response");
       throw new Error("No se recibió respuesta del servicio de IA");
     }
+
+    console.log("✓ AI content received, parsing JSON...");
 
     // Parse the JSON response from AI
     let spellCheckResult: SpellCheckResponse;
@@ -157,9 +191,10 @@ Si no hay errores, devuelve:
       const jsonMatch = aiContent.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
       const jsonString = jsonMatch ? jsonMatch[1] : aiContent;
       spellCheckResult = JSON.parse(jsonString);
+      console.log("✓ JSON parsed successfully");
     } catch (parseError) {
-      console.error("Error parsing AI response:", parseError);
-      console.error("AI response content:", aiContent);
+      console.error("✗ Error parsing AI response:", parseError);
+      console.error("AI response content:", aiContent.substring(0, 200) + "...");
       // Fallback response if parsing fails
       spellCheckResult = {
         errors: [],
@@ -168,7 +203,8 @@ Si no hay errores, devuelve:
       };
     }
 
-    console.log(`Spell check completed: ${spellCheckResult.errors.length} errors found`);
+    console.log(`✓ Spell check completed: ${spellCheckResult.errors.length} errors found`);
+    console.log("=== Spell Check Function Completed Successfully ===");
 
     return new Response(
       JSON.stringify(spellCheckResult),
@@ -179,7 +215,11 @@ Si no hay errores, devuelve:
     );
 
   } catch (error) {
-    console.error("Spell check error:", error);
+    console.error("=== Spell Check Function Error ===");
+    console.error("Error type:", error?.constructor?.name);
+    console.error("Error message:", error instanceof Error ? error.message : String(error));
+    console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace");
+    
     return new Response(
       JSON.stringify({ 
         error: error instanceof Error ? error.message : "Error desconocido al revisar ortografía" 
