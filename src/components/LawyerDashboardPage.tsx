@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Bot, Plus, Settings, LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Lock, Crown, Users } from "lucide-react";
+import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Bot, Plus, Settings, LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Lock, Crown, Users, SpellCheck, AlertCircle } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import LawyerStatsSection from "./LawyerStatsSection";
 import LawyerLandingPage from "./LawyerLandingPage";
@@ -54,6 +54,17 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const [editedContent, setEditedContent] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [currentView, setCurrentView] = useState<'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager' | 'research' | 'analyze' | 'draft' | 'strategize' | 'subscription' | 'crm'>('dashboard');
+  const [isCheckingSpelling, setIsCheckingSpelling] = useState(false);
+  const [spellCheckResults, setSpellCheckResults] = useState<{
+    errors: Array<{
+      word: string;
+      suggestions: string[];
+      context: string;
+      position: number;
+    }>;
+    correctedText: string;
+    summary: string;
+  } | null>(null);
   const { toast } = useToast();
   const { isAuthenticated, isLoading: authLoading, user, logout, checkAuthStatus } = useLawyerAuth();
   const isMobile = useIsMobile();
@@ -202,9 +213,11 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
     if (selectedDocument?.id === doc.id) {
       setSelectedDocument(null);
       setEditedContent("");
+      setSpellCheckResults(null);
     } else {
       setSelectedDocument(doc);
       setEditedContent(doc.document_content);
+      setSpellCheckResults(null);
     }
   };
 
@@ -330,6 +343,79 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleSpellCheck = async () => {
+    if (!editedContent || editedContent.trim().length === 0) {
+      toast({
+        title: "Sin contenido",
+        description: "No hay contenido para revisar",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsCheckingSpelling(true);
+      setSpellCheckResults(null);
+
+      const { data, error } = await supabase.functions.invoke('spell-check-document', {
+        body: { content: editedContent }
+      });
+
+      if (error) {
+        console.error('Error checking spelling:', error);
+        toast({
+          title: "Error al revisar ortografía",
+          description: error.message || "No se pudo completar la revisión ortográfica",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (data.error) {
+        toast({
+          title: "Error",
+          description: data.error,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setSpellCheckResults(data);
+      
+      if (data.errors && data.errors.length > 0) {
+        toast({
+          title: "Revisión completada",
+          description: data.summary || `Se encontraron ${data.errors.length} errores`,
+        });
+      } else {
+        toast({
+          title: "¡Excelente!",
+          description: "No se encontraron errores ortográficos ni gramaticales",
+        });
+      }
+    } catch (error) {
+      console.error('Error checking spelling:', error);
+      toast({
+        title: "Error",
+        description: "Ocurrió un error inesperado al revisar la ortografía",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCheckingSpelling(false);
+    }
+  };
+
+  const applySpellCheckCorrections = () => {
+    if (spellCheckResults && spellCheckResults.correctedText) {
+      setEditedContent(spellCheckResults.correctedText);
+      toast({
+        title: "Correcciones aplicadas",
+        description: "El texto ha sido corregido automáticamente. Revisa los cambios antes de guardar.",
+      });
+      setSpellCheckResults(null);
     }
   };
 
@@ -1302,6 +1388,92 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                               className="min-h-[200px] font-mono text-sm"
                             />
                           </div>
+                          
+                          {/* Spell Check Section */}
+                          <div className="border-t pt-4 mt-4">
+                            <div className="flex items-center justify-between mb-3">
+                              <h4 className="text-sm font-medium flex items-center gap-2">
+                                <SpellCheck className="h-4 w-4" />
+                                Revisor Ortográfico Automático
+                              </h4>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleSpellCheck}
+                                disabled={isCheckingSpelling || !editedContent.trim()}
+                                className="flex items-center gap-2"
+                              >
+                                {isCheckingSpelling ? (
+                                  <>
+                                    <div className="animate-spin h-3 w-3 border-2 border-current border-t-transparent rounded-full" />
+                                    Revisando...
+                                  </>
+                                ) : (
+                                  <>
+                                    <SpellCheck className="h-3 w-3" />
+                                    Revisar Ortografía
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+
+                            {/* Spell Check Results */}
+                            {spellCheckResults && (
+                              <div className="space-y-3">
+                                <div className="bg-muted/50 p-3 rounded-lg">
+                                  <p className="text-sm font-medium mb-2">{spellCheckResults.summary}</p>
+                                  
+                                  {spellCheckResults.errors.length > 0 && (
+                                    <>
+                                      <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                                        {spellCheckResults.errors.map((error, index) => (
+                                          <div key={index} className="bg-background p-2 rounded border text-sm">
+                                            <div className="flex items-start gap-2">
+                                              <AlertCircle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
+                                              <div className="flex-1 min-w-0">
+                                                <p className="font-medium text-destructive">"{error.word}"</p>
+                                                <p className="text-xs text-muted-foreground mt-1 truncate">
+                                                  Contexto: ...{error.context}...
+                                                </p>
+                                                {error.suggestions.length > 0 && (
+                                                  <p className="text-xs mt-1">
+                                                    <span className="text-muted-foreground">Sugerencias:</span>{' '}
+                                                    <span className="text-primary">
+                                                      {error.suggestions.join(', ')}
+                                                    </span>
+                                                  </p>
+                                                )}
+                                              </div>
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                      
+                                      <div className="flex gap-2 mt-3">
+                                        <Button
+                                          variant="default"
+                                          size="sm"
+                                          onClick={applySpellCheckCorrections}
+                                          className="flex items-center gap-2"
+                                        >
+                                          <CheckCircle className="h-3 w-3" />
+                                          Aplicar Correcciones Automáticas
+                                        </Button>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => setSpellCheckResults(null)}
+                                        >
+                                          Cerrar
+                                        </Button>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
                           <div className="flex flex-wrap gap-3">
                             <Button 
                               onClick={handleSave}
@@ -1327,6 +1499,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                               onClick={() => {
                                 setSelectedDocument(null);
                                 setEditedContent("");
+                                setSpellCheckResults(null);
                               }}
                             >
                               Cancelar

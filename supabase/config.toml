@@ -161,3 +161,6 @@ verify_jwt = false
 
 [functions.notify-document-status-change]
 verify_jwt = false
+
+[functions.spell-check-document]
+verify_jwt = false
