@@ -100,13 +100,17 @@ Deno.serve(async (req) => {
 
       console.log('SMTP connection established, sending email...');
 
+      // Normalizar saltos de línea para cumplir con RFC 822
+      // Los emails deben usar \r\n en lugar de solo \n
+      const normalizedHtml = html.replace(/(?<!\r)\n/g, '\r\n');
+
       // Enviar email
       await client.send({
         from: `${config.smtp_from_name} <${config.smtp_from_email}>`,
         to: to,
         subject: subject,
         content: 'auto',
-        html: html,
+        html: normalizedHtml,
       });
 
       // Cerrar conexión
