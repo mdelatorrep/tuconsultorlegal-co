@@ -18,26 +18,27 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
   const plugin = useRef(Autoplay({ delay: 4000, stopOnInteraction: true }));
 
   useSEO({
-    title: "Tu Consultor Legal - Democratizando el Acceso a Servicios Legales de Alta Calidad en Colombia",
-    description: "Democratizamos el acceso a servicios legales de alta calidad en Colombia con tecnología. Asesoría legal confiable, documentos jurídicos precisos y soporte profesional para todos.",
-    keywords: "asesoría legal Colombia, democratizar servicios legales, abogado virtual, documentos jurídicos IA, contratos inteligentes, consulta legal accesible, derechos laborales, derecho empresarial, servicios legales digitales, tuconsultorlegal",
+    title: "Documentos Legales con IA en 10 Minutos | tuconsultorlegal.co",
+    description: "Crea contratos y documentos jurídicos válidos en Colombia con IA. Respaldados por abogados profesionales. Rápido, seguro y económico. ¡Empieza gratis!",
+    keywords: "documentos legales Colombia, contratos con IA, asesoría legal online, abogado virtual Colombia, contratos digitales, documentos jurídicos rápidos, plantillas legales Colombia, contrato arrendamiento, contrato trabajo, registrar marca Colombia",
     canonical: "https://tuconsultorlegal.co/",
     ogImage: "https://tuconsultorlegal.co/og-image.png",
     structuredData: {
       "@context": "https://schema.org",
       "@type": "WebPage",
-      "name": "Tu Consultor Legal - Democratizando el Acceso a Servicios Legales",
-      "description": "Democratizando el acceso a servicios legales de alta calidad en Colombia con tecnología",
+      "name": "Documentos Legales con IA | tuconsultorlegal.co",
+      "description": "Crea contratos y documentos jurídicos válidos en Colombia con Inteligencia Artificial. Respaldados por abogados profesionales.",
       "url": "https://tuconsultorlegal.co/",
-      "mainEntity": {
-        "@type": "LegalService",
-        "name": "Tu Consultor Legal",
-        "description": "Democratizando el acceso a servicios legales de alta calidad en Colombia con tecnología",
-        "provider": {
-          "@type": "Organization",
-          "name": "Tu Consultor Legal",
-          "url": "https://tuconsultorlegal.co"
-        }
+      "breadcrumb": {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Inicio",
+            "item": "https://tuconsultorlegal.co/"
+          }
+        ]
       }
     }
   });
@@ -100,10 +101,10 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
               transition={{ duration: 1, ease: [0.25, 0.1, 0.25, 1] }}
               className="text-6xl md:text-8xl lg:text-[120px] font-[100] text-white mb-6 leading-[0.95] tracking-tight"
             >
-              Tu derecho.
+              Documentos Legales.
               <br />
               <span className="font-[700] bg-gradient-to-r from-[#0372e8] to-[#0a8fff] bg-clip-text text-transparent">
-                Simplificado.
+                En 10 Minutos.
               </span>
             </motion.h1>
             
@@ -113,9 +114,9 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
               transition={{ duration: 1, delay: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
               className="text-lg md:text-xl text-white/60 max-w-2xl mx-auto mb-16 font-[300] leading-relaxed"
             >
-              Servicios legales profesionales al alcance de todos.
+              Genera contratos y documentos jurídicos válidos con IA.
               <br />
-              Sin complicaciones. Sin letra pequeña.
+              Respaldados por abogados profesionales. Rápido, seguro y económico.
             </motion.p>
             
             <motion.div 
