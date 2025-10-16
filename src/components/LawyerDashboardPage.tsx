@@ -1042,6 +1042,218 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                 )}
               </div>
 
+              {/* Document Review Panel - Prioritized Position */}
+              {selectedDocument && (
+                <div className="space-y-6 mb-6" data-tour="document-details">
+                  <Card className="border-2 border-primary shadow-lg">
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between">
+                        <span className="flex items-center gap-2">
+                          <FileText className="h-5 w-5" />
+                          Revisión de Documento
+                        </span>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            setSelectedDocument(null);
+                            setEditedContent("");
+                          }}
+                        >
+                          Cerrar
+                        </Button>
+                      </CardTitle>
+                      <CardDescription>
+                        Revisa y modifica el documento antes de enviarlo al cliente
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-6">
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <div>
+                            <label className="text-sm font-medium">Token:</label>
+                            <p className="text-sm">{selectedDocument.token}</p>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Tipo de documento:</label>
+                            <p className="text-sm">{selectedDocument.document_type}</p>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Usuario:</label>
+                            <p className="text-sm">{selectedDocument.user_name || 'Usuario anónimo'}</p>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Email:</label>
+                            <p className="text-sm">{selectedDocument.user_email || 'No proporcionado'}</p>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Estado:</label>
+                            <Badge variant={getStatusVariant(selectedDocument.status)}>
+                              {getStatusText(selectedDocument.status)}
+                            </Badge>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Precio:</label>
+                            <p className="text-sm font-semibold">${selectedDocument.price.toLocaleString()}</p>
+                          </div>
+                        </div>
+
+                        {/* Show user observations if present */}
+                        {selectedDocument.user_observations && (
+                          <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                            <div className="flex items-start gap-2 mb-2">
+                              <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                              <div className="flex-1">
+                                <h4 className="font-semibold text-amber-900 dark:text-amber-100 mb-1">
+                                  Observaciones del Cliente
+                                </h4>
+                                <p className="text-sm text-amber-800 dark:text-amber-200 whitespace-pre-wrap">
+                                  {selectedDocument.user_observations}
+                                </p>
+                                {selectedDocument.user_observation_date && (
+                                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+                                    Enviado: {new Date(selectedDocument.user_observation_date).toLocaleString()}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        <div>
+                          <label className="text-sm font-medium mb-2 block">
+                            Contenido revisado (modifica según sea necesario):
+                          </label>
+                          <Textarea
+                            value={editedContent}
+                            onChange={(e) => setEditedContent(e.target.value)}
+                            placeholder="Revisa y edita el contenido del documento según sea necesario..."
+                            className="min-h-[200px] font-mono text-sm"
+                          />
+                        </div>
+                        
+                        {/* Spell Check Section */}
+                        <div className="border-t pt-4 mt-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="text-sm font-medium flex items-center gap-2">
+                              <SpellCheck className="h-4 w-4" />
+                              Revisor Ortográfico Automático
+                            </h4>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={handleSpellCheck}
+                              disabled={isCheckingSpelling || !editedContent.trim()}
+                              className="flex items-center gap-2"
+                            >
+                              {isCheckingSpelling ? (
+                                <>
+                                  <div className="animate-spin h-3 w-3 border-2 border-current border-t-transparent rounded-full" />
+                                  Revisando...
+                                </>
+                              ) : (
+                                <>
+                                  <SpellCheck className="h-3 w-3" />
+                                  Revisar Ortografía
+                                </>
+                              )}
+                            </Button>
+                          </div>
+
+                          {/* Spell Check Results */}
+                          {spellCheckResults && (
+                            <div className="space-y-3">
+                              <div className="bg-muted/50 p-3 rounded-lg">
+                                <p className="text-sm font-medium mb-2">{spellCheckResults.summary}</p>
+                                
+                                {spellCheckResults.errors.length > 0 && (
+                                  <>
+                                    <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                                      {spellCheckResults.errors.map((error, index) => (
+                                        <div key={index} className="bg-background p-2 rounded border text-sm">
+                                          <div className="flex items-start gap-2">
+                                            <AlertCircle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
+                                            <div className="flex-1 min-w-0">
+                                              <p className="font-medium text-destructive">"{error.word}"</p>
+                                              <p className="text-xs text-muted-foreground mt-1 truncate">
+                                                Contexto: ...{error.context}...
+                                              </p>
+                                              {error.suggestions.length > 0 && (
+                                                <p className="text-xs mt-1">
+                                                  <span className="text-muted-foreground">Sugerencias:</span>{' '}
+                                                  <span className="text-primary">
+                                                    {error.suggestions.join(', ')}
+                                                  </span>
+                                                </p>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                    
+                                    <div className="flex gap-2 mt-3">
+                                      <Button
+                                        variant="default"
+                                        size="sm"
+                                        onClick={applySpellCheckCorrections}
+                                        className="flex items-center gap-2"
+                                      >
+                                        <CheckCircle className="h-3 w-3" />
+                                        Aplicar Correcciones Automáticas
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setSpellCheckResults(null)}
+                                      >
+                                        Cerrar
+                                      </Button>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex flex-wrap gap-3">
+                          <Button 
+                            onClick={handleSave}
+                            disabled={isLoading || selectedDocument.document_content === editedContent}
+                            className="flex items-center gap-2"
+                          >
+                            <Save className="h-4 w-4" />
+                            Guardar Revisión
+                          </Button>
+                          {selectedDocument.status === 'solicitado' && (
+                            <Button
+                              variant="default"
+                              onClick={() => handleReviewDocument(selectedDocument.id)}
+                              disabled={isLoading}
+                              className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                              Aprobar y Enviar al Cliente
+                            </Button>
+                          )}
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedDocument(null);
+                              setEditedContent("");
+                              setSpellCheckResults(null);
+                            }}
+                          >
+                            Cancelar
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+
               {/* 🛠️ QUICK ACCESS TOOLS */}
               {user?.canUseAiTools && (
                 <div className="mb-6">
@@ -1198,289 +1410,6 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                 </div>
               )}
 
-              {/* Document Review Panel */}
-              {selectedDocument && (
-                <div className="space-y-6" data-tour="document-details">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center justify-between">
-                        <span className="flex items-center gap-2">
-                          <FileText className="h-5 w-5" />
-                          Revisión de Documento
-                        </span>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => {
-                            setSelectedDocument(null);
-                            setEditedContent("");
-                          }}
-                        >
-                          Cerrar
-                        </Button>
-                      </CardTitle>
-                      <CardDescription>
-                        Documento diligenciado por el cliente para revisión legal
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                      {/* Client Information */}
-                      <div className="bg-muted/50 p-4 rounded-lg">
-                        <h3 className="font-medium mb-3 flex items-center gap-2">
-                          <User className="h-4 w-4" />
-                          Información del Cliente
-                        </h3>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="text-sm font-medium text-muted-foreground">Nombre:</label>
-                            <p className="text-sm font-medium">{selectedDocument.user_name || 'Usuario anónimo'}</p>
-                          </div>
-                          <div>
-                            <label className="text-sm font-medium text-muted-foreground">Email:</label>
-                            <p className="text-sm font-medium">{selectedDocument.user_email || 'No disponible'}</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Document Information */}
-                      <div className="bg-muted/50 p-4 rounded-lg">
-                        <h3 className="font-medium mb-3 flex items-center gap-2">
-                          <FileText className="h-4 w-4" />
-                          Información del Documento
-                        </h3>
-                        <div className="grid grid-cols-3 gap-4">
-                          <div>
-                            <label className="text-sm font-medium text-muted-foreground">Tipo:</label>
-                            <p className="text-sm font-medium">{selectedDocument.document_type}</p>
-                          </div>
-                          <div>
-                            <label className="text-sm font-medium text-muted-foreground">Precio:</label>
-                            <p className="text-sm font-medium">${selectedDocument.price.toLocaleString()}</p>
-                          </div>
-                          <div>
-                            <label className="text-sm font-medium text-muted-foreground">Estado:</label>
-                            <Badge variant={getStatusVariant(selectedDocument.status)}>
-                              {getStatusText(selectedDocument.status)}
-                            </Badge>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 mt-4">
-                          <div>
-                            <label className="text-sm font-medium text-muted-foreground">Fecha de solicitud:</label>
-                            <p className="text-sm font-medium">{new Date(selectedDocument.created_at).toLocaleString()}</p>
-                          </div>
-                          <div>
-                            <label className="text-sm font-medium text-muted-foreground">Última actualización:</label>
-                            <p className="text-sm font-medium">{new Date(selectedDocument.updated_at).toLocaleString()}</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* SLA Information */}
-                      {selectedDocument.sla_hours && (
-                        <div className="bg-muted/50 p-4 rounded-lg">
-                          <h3 className="font-medium mb-3 flex items-center gap-2">
-                            <Calendar className="h-4 w-4" />
-                            Información de SLA
-                          </h3>
-                          <div className="grid grid-cols-3 gap-4">
-                            <div>
-                              <label className="text-sm font-medium text-muted-foreground">SLA (horas):</label>
-                              <p className="text-sm font-medium">{selectedDocument.sla_hours}h</p>
-                            </div>
-                            <div>
-                              <label className="text-sm font-medium text-muted-foreground">Fecha límite:</label>
-                              <p className="text-sm font-medium">
-                                {selectedDocument.sla_deadline ? new Date(selectedDocument.sla_deadline).toLocaleString() : 'No definida'}
-                              </p>
-                            </div>
-                            <div>
-                              <label className="text-sm font-medium text-muted-foreground">Estado SLA:</label>
-                              <Badge variant={getSlaStatusVariant(selectedDocument.sla_status)}>
-                                {getSlaStatusText(selectedDocument.sla_status)}
-                              </Badge>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Client Observations */}
-                      {selectedDocument.user_observations && (
-                        <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
-                          <h3 className="font-medium mb-3 flex items-center gap-2 text-blue-700 dark:text-blue-300">
-                            <FileText className="h-4 w-4" />
-                            Observaciones del Cliente
-                          </h3>
-                          <div className="bg-white dark:bg-gray-900 p-3 rounded border text-sm">
-                            {selectedDocument.user_observations}
-                          </div>
-                          {selectedDocument.user_observation_date && (
-                            <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
-                              Registrado el: {new Date(selectedDocument.user_observation_date).toLocaleString()}
-                            </p>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Document Content Review */}
-                      <div>
-                        <div className="flex items-center justify-between mb-3">
-                          <h3 className="font-medium flex items-center gap-2">
-                            <FileText className="h-4 w-4" />
-                            Contenido Diligenciado por el Cliente
-                          </h3>
-                          <Badge variant="outline" className="text-xs">
-                            Para Revisión Legal
-                          </Badge>
-                        </div>
-                        <div className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-900 min-h-[200px] max-h-[400px] overflow-y-auto">
-                          <pre className="whitespace-pre-wrap text-sm font-mono leading-relaxed">
-                            {selectedDocument.document_content}
-                          </pre>
-                        </div>
-                      </div>
-
-                      {/* Review Section */}
-                      <div className="border-t pt-6">
-                        <h3 className="font-medium mb-3 flex items-center gap-2">
-                          <CheckCircle className="h-4 w-4" />
-                          Revisión y Edición
-                        </h3>
-                        <div className="space-y-4">
-                          <div>
-                            <label className="text-sm font-medium mb-2 block">
-                              Contenido revisado (modifica según sea necesario):
-                            </label>
-                            <Textarea
-                              value={editedContent}
-                              onChange={(e) => setEditedContent(e.target.value)}
-                              placeholder="Revisa y edita el contenido del documento según sea necesario..."
-                              className="min-h-[200px] font-mono text-sm"
-                            />
-                          </div>
-                          
-                          {/* Spell Check Section */}
-                          <div className="border-t pt-4 mt-4">
-                            <div className="flex items-center justify-between mb-3">
-                              <h4 className="text-sm font-medium flex items-center gap-2">
-                                <SpellCheck className="h-4 w-4" />
-                                Revisor Ortográfico Automático
-                              </h4>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={handleSpellCheck}
-                                disabled={isCheckingSpelling || !editedContent.trim()}
-                                className="flex items-center gap-2"
-                              >
-                                {isCheckingSpelling ? (
-                                  <>
-                                    <div className="animate-spin h-3 w-3 border-2 border-current border-t-transparent rounded-full" />
-                                    Revisando...
-                                  </>
-                                ) : (
-                                  <>
-                                    <SpellCheck className="h-3 w-3" />
-                                    Revisar Ortografía
-                                  </>
-                                )}
-                              </Button>
-                            </div>
-
-                            {/* Spell Check Results */}
-                            {spellCheckResults && (
-                              <div className="space-y-3">
-                                <div className="bg-muted/50 p-3 rounded-lg">
-                                  <p className="text-sm font-medium mb-2">{spellCheckResults.summary}</p>
-                                  
-                                  {spellCheckResults.errors.length > 0 && (
-                                    <>
-                                      <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                                        {spellCheckResults.errors.map((error, index) => (
-                                          <div key={index} className="bg-background p-2 rounded border text-sm">
-                                            <div className="flex items-start gap-2">
-                                              <AlertCircle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
-                                              <div className="flex-1 min-w-0">
-                                                <p className="font-medium text-destructive">"{error.word}"</p>
-                                                <p className="text-xs text-muted-foreground mt-1 truncate">
-                                                  Contexto: ...{error.context}...
-                                                </p>
-                                                {error.suggestions.length > 0 && (
-                                                  <p className="text-xs mt-1">
-                                                    <span className="text-muted-foreground">Sugerencias:</span>{' '}
-                                                    <span className="text-primary">
-                                                      {error.suggestions.join(', ')}
-                                                    </span>
-                                                  </p>
-                                                )}
-                                              </div>
-                                            </div>
-                                          </div>
-                                        ))}
-                                      </div>
-                                      
-                                      <div className="flex gap-2 mt-3">
-                                        <Button
-                                          variant="default"
-                                          size="sm"
-                                          onClick={applySpellCheckCorrections}
-                                          className="flex items-center gap-2"
-                                        >
-                                          <CheckCircle className="h-3 w-3" />
-                                          Aplicar Correcciones Automáticas
-                                        </Button>
-                                        <Button
-                                          variant="outline"
-                                          size="sm"
-                                          onClick={() => setSpellCheckResults(null)}
-                                        >
-                                          Cerrar
-                                        </Button>
-                                      </div>
-                                    </>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="flex flex-wrap gap-3">
-                            <Button 
-                              onClick={handleSave}
-                              disabled={isLoading || selectedDocument.document_content === editedContent}
-                              className="flex items-center gap-2"
-                            >
-                              <Save className="h-4 w-4" />
-                              Guardar Revisión
-                            </Button>
-                            {selectedDocument.status === 'solicitado' && (
-                              <Button
-                                variant="default"
-                                onClick={() => handleReviewDocument(selectedDocument.id)}
-                                disabled={isLoading}
-                                className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
-                              >
-                                <CheckCircle className="h-4 w-4" />
-                                Aprobar y Enviar al Cliente
-                              </Button>
-                            )}
-                            <Button
-                              variant="outline"
-                              onClick={() => {
-                                setSelectedDocument(null);
-                                setEditedContent("");
-                                setSpellCheckResults(null);
-                              }}
-                            >
-                              Cancelar
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
             </div>
           </div>
         </main>
