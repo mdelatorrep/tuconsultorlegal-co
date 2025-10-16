@@ -1017,6 +1017,128 @@ export type Database = {
           },
         ]
       }
+      email_configuration: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          smtp_from_email: string
+          smtp_from_name: string
+          smtp_host: string
+          smtp_port: number
+          smtp_secure: boolean
+          smtp_user: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          smtp_from_email?: string
+          smtp_from_name?: string
+          smtp_host?: string
+          smtp_port?: number
+          smtp_secure?: boolean
+          smtp_user?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          smtp_from_email?: string
+          smtp_from_name?: string
+          smtp_host?: string
+          smtp_port?: number
+          smtp_secure?: boolean
+          smtp_user?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      email_notifications_log: {
+        Row: {
+          created_at: string
+          document_token_id: string | null
+          error_message: string | null
+          id: string
+          recipient_email: string
+          recipient_type: string
+          sent_at: string | null
+          status: string
+          subject: string
+          template_key: string
+        }
+        Insert: {
+          created_at?: string
+          document_token_id?: string | null
+          error_message?: string | null
+          id?: string
+          recipient_email: string
+          recipient_type: string
+          sent_at?: string | null
+          status?: string
+          subject: string
+          template_key: string
+        }
+        Update: {
+          created_at?: string
+          document_token_id?: string | null
+          error_message?: string | null
+          id?: string
+          recipient_email?: string
+          recipient_type?: string
+          sent_at?: string | null
+          status?: string
+          subject?: string
+          template_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_notifications_log_document_token_id_fkey"
+            columns: ["document_token_id"]
+            isOneToOne: false
+            referencedRelation: "document_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_templates: {
+        Row: {
+          created_at: string
+          html_body: string
+          id: string
+          is_active: boolean
+          subject: string
+          template_key: string
+          template_name: string
+          updated_at: string
+          variables: Json | null
+        }
+        Insert: {
+          created_at?: string
+          html_body: string
+          id?: string
+          is_active?: boolean
+          subject: string
+          template_key: string
+          template_name: string
+          updated_at?: string
+          variables?: Json | null
+        }
+        Update: {
+          created_at?: string
+          html_body?: string
+          id?: string
+          is_active?: boolean
+          subject?: string
+          template_key?: string
+          template_name?: string
+          updated_at?: string
+          variables?: Json | null
+        }
+        Relationships: []
+      }
       field_instructions: {
         Row: {
           created_at: string
