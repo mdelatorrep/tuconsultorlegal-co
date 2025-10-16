@@ -85,7 +85,8 @@ export default function PersonasPage({ onOpenChat, onNavigate }: PersonasPagePro
   const handleSearchDocument = () => {
     if (searchCode.trim()) {
       if (onNavigate) {
-        onNavigate('documento');
+        // Navigate to documento page with the tracking code as URL parameter
+        window.location.hash = `#documento?code=${encodeURIComponent(searchCode.trim())}`;
       }
     }
   };
