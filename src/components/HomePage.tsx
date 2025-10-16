@@ -13,7 +13,7 @@ interface HomePageProps {
   onNavigate: (page: string) => void;
 }
 
-export const HomePage = ({ onOpenChat, onNavigate }: HomePageProps) => {
+export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
   const { documents: popularDocuments, loading: loadingDocs } = usePopularDocuments();
   const plugin = useRef(Autoplay({ delay: 4000, stopOnInteraction: true }));
 
@@ -379,4 +379,4 @@ export const HomePage = ({ onOpenChat, onNavigate }: HomePageProps) => {
       </FadeInSection>
     </div>
   );
-};
+}
