@@ -72,11 +72,14 @@ export default function UnifiedDocumentPage({ onOpenChat }: UnifiedDocumentPageP
 
   // Check for URL parameters on load and setup auto-refresh
   useEffect(() => {
+    // Check both search params and hash params (for compatibility with hash routing)
     const urlParams = new URLSearchParams(window.location.search);
-    const urlTrackingCode = urlParams.get('code');
-    const paymentStatus = urlParams.get('payment');
-    const boldOrderId = urlParams.get('bold-order-id');
-    const boldTxStatus = urlParams.get('bold-tx-status');
+    const hashParams = new URLSearchParams(window.location.hash.split('?')[1] || '');
+    
+    const urlTrackingCode = urlParams.get('code') || hashParams.get('code');
+    const paymentStatus = urlParams.get('payment') || hashParams.get('payment');
+    const boldOrderId = urlParams.get('bold-order-id') || hashParams.get('bold-order-id');
+    const boldTxStatus = urlParams.get('bold-tx-status') || hashParams.get('bold-tx-status');
     
     if (urlTrackingCode) {
       setSearchCode(urlTrackingCode);
