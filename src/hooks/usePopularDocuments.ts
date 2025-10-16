@@ -21,7 +21,7 @@ export const usePopularDocuments = () => {
       try {
         setLoading(true);
         
-        // Get approved legal agents with their request counts
+        // Get active legal agents with their request counts
         const { data: popularDocs, error: docsError } = await supabase
           .from('legal_agents')
           .select(`
@@ -33,7 +33,7 @@ export const usePopularDocuments = () => {
             button_cta,
             document_name
           `)
-          .eq('status', 'approved')
+          .eq('status', 'active')
           .limit(6);
 
         if (docsError) throw docsError;
