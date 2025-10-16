@@ -128,7 +128,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
             event: '*',
             schema: 'public',
             table: 'document_tokens',
-            filter: 'status=in.(solicitado,revision_usuario)'
+            filter: 'status=in.(solicitado,revision_usuario,en_revision_abogado)'
           },
           (payload) => {
             console.log('Document real-time update:', payload);
@@ -178,7 +178,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
       const { data: allDocuments, error: documentsError } = await supabase
         .from('document_tokens')
         .select('*')
-        .in('status', ['solicitado', 'revision_usuario'])
+        .in('status', ['solicitado', 'revision_usuario', 'en_revision_abogado'])
         .order('created_at', { ascending: false });
 
       if (documentsError) {
