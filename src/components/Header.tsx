@@ -11,7 +11,7 @@ import {
 import { Menu, X, MessageCircle, FileText, Scale, Users, Phone, Newspaper, DollarSign, Shield, FileText as DocumentIcon, Gavel, User, LogIn, MoreHorizontal } from "lucide-react";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import { useLawyerAuthContext } from "@/components/LawyerAuthProvider";
-import logoImage from "/logo-ai-legal.png";
+import logoImage from "/logo-tcl.png";
 interface HeaderProps {
   currentPage: string;
   onNavigate: (page: string) => void;
