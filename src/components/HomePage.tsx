@@ -1,22 +1,22 @@
-import { Button } from "./ui/button";
-import { Check, Clock, Users, Shield, Zap, DollarSign, MessageCircle, FileText, Star } from "lucide-react";
-import ServiceStatusAlert from "./ServiceStatusAlert";
-import useSEO from "@/hooks/useSEO";
+import { FileText, Star, Users, Building2, Scale } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { usePopularDocuments } from "@/hooks/usePopularDocuments";
+import { useSEO } from "@/hooks/useSEO";
+import ServiceStatusAlert from "./ServiceStatusAlert";
+import { motion } from "framer-motion";
+import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
+import Autoplay from "embla-carousel-autoplay";
+import { useRef } from "react";
+
 interface HomePageProps {
   onOpenChat: (message?: string) => void;
   onNavigate: (page: string) => void;
 }
-export default function HomePage({
-  onOpenChat,
-  onNavigate
-}: HomePageProps) {
-  const {
-    documents: popularDocuments,
-    loading: loadingDocs
-  } = usePopularDocuments();
 
-  // SEO optimization for home page
+export const HomePage = ({ onOpenChat, onNavigate }: HomePageProps) => {
+  const { documents: popularDocuments, loading: loadingDocs } = usePopularDocuments();
+  const plugin = useRef(Autoplay({ delay: 4000, stopOnInteraction: true }));
+
   useSEO({
     title: "Tu Consultor Legal - Democratizando el Acceso a Servicios Legales de Alta Calidad en Colombia",
     description: "Democratizamos el acceso a servicios legales de alta calidad en Colombia con tecnología. Asesoría legal confiable, documentos jurídicos precisos y soporte profesional para todos.",
@@ -41,282 +41,342 @@ export default function HomePage({
       }
     }
   });
-  const mainFeatures = [{
-    icon: <Shield className="w-12 h-12" />,
-    title: "Para Personas",
-    subtitle: "Contratos, consultas y asesoría personalizada",
-    description: "Accede a servicios legales de calidad sin barreras económicas. Resuelve tus dudas jurídicas y obtén documentos respaldados por abogados expertos.",
-    action: "Explorar Servicios",
-    bgColor: "bg-primary",
-    onClick: () => onNavigate("personas")
-  }, {
-    icon: <Users className="w-12 h-12" />,
-    title: "Para Empresas",
-    subtitle: "Soluciones jurídicas empresariales integrales",
-    description: "Optimiza la gestión legal de tu empresa con documentos corporativos, contratos comerciales y asesoría especializada en derecho empresarial.",
-    action: "Ver Soluciones",
-    bgColor: "bg-success",
-    onClick: () => onNavigate("empresas")
-  }, {
-    icon: <Zap className="w-12 h-12" />,
-    title: "Para Abogados",
-    subtitle: "Herramientas de productividad legal",
-    description: "Potencia tu práctica legal con IA avanzada. Automatiza tareas repetitivas, mejora la precisión y enfócate en casos de mayor valor.",
-    action: "Acceder Dashboard",
-    bgColor: "bg-brand-orange",
-    onClick: () => onNavigate("abogados")
-  }];
-  const trustBadges = [{
-    icon: <Shield className="w-5 h-5" />,
-    text: "Respaldo Legal Certificado"
-  }, {
-    icon: <Clock className="w-5 h-5" />,
-    text: "Disponible 24/7"
-  }, {
-    icon: <Users className="w-5 h-5" />,
-    text: "+10,000 Usuarios Confiaron"
-  }];
-  return <>
+
+  const mainFeatures = [
+    {
+      icon: <Users className="w-8 h-8 text-slate-700" />,
+      title: "Personas",
+      subtitle: "Accede a contratos y asesoría legal sin complicaciones.",
+      action: "Explorar servicios",
+      onClick: () => onNavigate('personas')
+    },
+    {
+      icon: <Building2 className="w-8 h-8 text-slate-700" />,
+      title: "Empresas",
+      subtitle: "Gestiona contratos comerciales y compliance corporativo.",
+      action: "Soluciones empresariales",
+      onClick: () => onNavigate('empresas')
+    },
+    {
+      icon: <Scale className="w-8 h-8 text-slate-700" />,
+      title: "Abogados",
+      subtitle: "Potencia tu práctica con IA y gestión automatizada.",
+      action: "Portal Abogados",
+      onClick: () => onNavigate('lawyer-landing')
+    }
+  ];
+
+  const FadeInSection = ({ children, delay = 0 }: { children: React.ReactNode, delay?: number }) => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-100px" }}
+      transition={{ duration: 0.8, delay, ease: [0.25, 0.1, 0.25, 1] }}
+    >
+      {children}
+    </motion.div>
+  );
+
+  return (
+    <div className="min-h-screen bg-white">
       <ServiceStatusAlert />
-      <div className="min-h-screen">
-        {/* Hero Section - Apple Style */}
-        <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-          {/* Solid Professional Background */}
-          <div className="absolute inset-0 hero-solid"></div>
+      
+      {/* Hero Section - Estilo Apple */}
+      <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
+        {/* Background con profundidad */}
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+          {/* Grid pattern sutil */}
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:100px_100px]"></div>
           
-          {/* Content */}
-          <div className="relative z-10 container mx-auto px-6 text-center">
-            <div className="max-w-6xl mx-auto">
-              {/* Main Headline */}
-              <h1 className="text-5xl md:text-7xl lg:text-8xl font-light text-primary-foreground mb-8 leading-[0.9]">
-                Democratizar
-                <br />
-                <span className="font-bold text-[#e7b008]">
-                  el Acceso Legal
-                </span>
-              </h1>
-              
-              {/* Subtitle */}
-              <p className="text-xl md:text-2xl text-primary-foreground/80 max-w-4xl mx-auto mb-12 font-light leading-relaxed">
-                Servicios legales de alta calidad para todos los colombianos.
-                <br />
-                Tecnología inteligente. Respaldo profesional. Precios justos.
-              </p>
+          {/* Glow effect central */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#e7b008]/10 rounded-full blur-[120px]"></div>
+        </div>
 
-              {/* Trust Badges */}
-              <div className="flex justify-center items-center space-x-8 text-sm text-primary-foreground/70 mb-16 flex-wrap gap-4">
-                {trustBadges.map((badge, index) => <div key={index} className="flex items-center space-x-2">
-                    <div className="text-success">{badge.icon}</div>
-                    <span>{badge.text}</span>
-                  </div>)}
-              </div>
-
-              {/* Enhanced Primary CTA - Priority on Registration */}
-              <div className="space-y-6">
-              <Button size="xl" onClick={() => onNavigate("user-dashboard")} className="text-success-foreground px-16 py-8 text-xl font-bold shadow-card hover:shadow-elevated transition-all duration-300 transform hover:scale-105 bg-[#e7b008]">
-                Regístrate Gratis - Acceso Inmediato
+        <div className="container mx-auto px-6 relative z-10">
+          <div className="max-w-6xl mx-auto text-center">
+            <motion.h1 
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1, ease: [0.25, 0.1, 0.25, 1] }}
+              className="text-6xl md:text-8xl lg:text-[120px] font-[100] text-white mb-6 leading-[0.95] tracking-tight"
+            >
+              Tu derecho.
+              <br />
+              <span className="font-[700] bg-gradient-to-r from-[#e7b008] to-[#f4d03f] bg-clip-text text-transparent">
+                Simplificado.
+              </span>
+            </motion.h1>
+            
+            <motion.p 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1, delay: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+              className="text-lg md:text-xl text-white/60 max-w-2xl mx-auto mb-16 font-[300] leading-relaxed"
+            >
+              Servicios legales profesionales al alcance de todos.
+              <br />
+              Sin complicaciones. Sin letra pequeña.
+            </motion.p>
+            
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1, delay: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+              className="flex flex-col items-center gap-6"
+            >
+              <Button 
+                size="lg" 
+                onClick={() => onNavigate("user-dashboard")}
+                className="bg-white text-slate-950 hover:bg-white/90 px-12 py-7 text-lg font-medium rounded-full shadow-2xl hover:shadow-[0_20px_60px_rgba(231,176,8,0.4)] transition-all duration-500 hover:scale-[1.02]"
+              >
+                Comenzar gratis
               </Button>
-                
-                <div className="text-center text-primary-foreground/80">
-                  <p className="text-sm mb-3">O explora nuestros servicios:</p>
-                  <Button size="lg" variant="outline" onClick={() => onOpenChat("Quiero una consultoría legal")} className="border-primary-foreground/30 text-primary-foreground bg-slate-800 hover:bg-slate-700">
-                    <MessageCircle className="w-5 h-5 mr-2" />
-                    Consulta Gratuita Ahora
-                  </Button>
-                </div>
-              </div>
-            </div>
+              
+              <button 
+                onClick={() => onOpenChat("Quiero una consultoría legal")}
+                className="text-white/70 hover:text-white text-sm font-medium transition-colors flex items-center gap-2 group"
+              >
+                <span>Ver cómo funciona</span>
+                <span className="group-hover:translate-x-1 transition-transform">→</span>
+              </button>
+            </motion.div>
           </div>
+        </div>
+      </section>
 
-          {/* Scroll Indicator */}
-          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-primary-foreground/60 animate-bounce">
-            <div className="w-6 h-10 border-2 border-primary-foreground/30 rounded-full flex justify-center">
-              <div className="w-1 h-3 bg-primary-foreground/60 rounded-full mt-2 animate-pulse"></div>
-            </div>
-          </div>
-        </section>
-
-        {/* Main Features Section - Apple Style Cards */}
-        <section className="py-32 bg-background">
+      {/* Features Section - Cards Estilo Apple */}
+      <FadeInSection delay={0.2}>
+        <section className="py-40 bg-white">
           <div className="container mx-auto px-6">
-            <div className="max-w-7xl mx-auto">
+            <div className="max-w-[1400px] mx-auto">
               <div className="text-center mb-20">
-                <h2 className="text-4xl md:text-5xl font-light text-foreground mb-6">
-                  Diseñado para
-                  <span className="font-bold"> cada necesidad</span>
+                <h2 className="text-5xl md:text-6xl font-[200] text-slate-950 mb-4 tracking-tight">
+                  Para cada necesidad.
                 </h2>
-                <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-                  Tres experiencias únicas optimizadas para personas, empresas y profesionales del derecho
+                <p className="text-xl text-slate-600 font-[300]">
+                  Tres experiencias. Una plataforma.
                 </p>
               </div>
 
-              <div className="grid lg:grid-cols-3 gap-8">
-                {mainFeatures.map((feature, index) => <div key={index} className="group relative bg-card border border-border rounded-3xl p-8 md:p-12 hover:shadow-trust transition-smooth cursor-pointer" onClick={feature.onClick}>
-                    {/* Subtle Hover Background */}
-                    <div className={`absolute inset-0 ${feature.bgColor} opacity-0 group-hover:opacity-5 rounded-3xl transition-smooth`}></div>
+              <div className="grid lg:grid-cols-3 gap-6">
+                {mainFeatures.map((feature, index) => (
+                  <motion.div 
+                    key={index}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.8, delay: index * 0.1 }}
+                    className="group relative bg-slate-50 rounded-[32px] p-12 hover:bg-slate-100 transition-all duration-500 cursor-pointer overflow-hidden"
+                    onClick={feature.onClick}
+                  >
+                    {/* Efecto de hover sutil */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                     
                     <div className="relative z-10">
-                      {/* Icon */}
-                      <div className={`inline-flex p-4 rounded-2xl ${feature.bgColor} text-white mb-8`}>
-                        {feature.icon}
-                      </div>
-                      
-                      {/* Content */}
-                      <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-3">
-                        {feature.title}
-                      </h3>
-                      <p className="text-lg text-primary/80 mb-6 font-medium">
-                        {feature.subtitle}
-                      </p>
-                      <p className="text-muted-foreground mb-8 leading-relaxed">
-                        {feature.description}
-                      </p>
-                      
-                      {/* CTA */}
-                      <div className="flex items-center text-primary font-medium group-hover:text-primary-light transition-smooth">
-                        <span className="mr-2">{feature.action}</span>
-                        <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-smooth">
-                          <span className="text-sm">→</span>
+                      {/* Icono más grande y elegante */}
+                      <div className="mb-8 transform group-hover:scale-110 transition-transform duration-500">
+                        <div className="w-20 h-20 rounded-full bg-white shadow-lg flex items-center justify-center">
+                          {feature.icon}
                         </div>
                       </div>
+                      
+                      {/* Título */}
+                      <h3 className="text-3xl font-[600] text-slate-950 mb-3 tracking-tight">
+                        {feature.title}
+                      </h3>
+                      
+                      {/* Descripción más corta */}
+                      <p className="text-slate-600 font-[300] leading-relaxed mb-8">
+                        {feature.subtitle}
+                      </p>
+                      
+                      {/* Link minimalista */}
+                      <div className="inline-flex items-center text-[#e7b008] font-medium gap-0 group-hover:gap-2 transition-all">
+                        <span>{feature.action}</span>
+                        <span className="group-hover:translate-x-1 transition-transform">→</span>
+                      </div>
                     </div>
-                  </div>)}
+                  </motion.div>
+                ))}
               </div>
             </div>
           </div>
         </section>
+      </FadeInSection>
 
-        {/* Popular Documents Section */}
-        <section className="py-32 bg-muted/30">
+      {/* Popular Documents - Más Visual */}
+      <FadeInSection delay={0.3}>
+        <section className="py-40 bg-slate-50">
           <div className="container mx-auto px-6">
-            <div className="max-w-7xl mx-auto">
+            <div className="max-w-[1400px] mx-auto">
               <div className="text-center mb-20">
-                <h2 className="text-4xl md:text-5xl font-light text-foreground mb-6">
-                  Documentos
-                  <span className="font-bold"> más solicitados</span>
+                <h2 className="text-5xl md:text-6xl font-[200] text-slate-950 mb-4 tracking-tight">
+                  Documentos más solicitados.
                 </h2>
-                <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-                  Accede rápidamente a los documentos legales que más necesitan los colombianos
+                <p className="text-xl text-slate-600 font-[300]">
+                  Creados por expertos. Listos para usar.
                 </p>
               </div>
 
-              {loadingDocs ? <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {[...Array(6)].map((_, index) => <div key={index} className="bg-card p-8 rounded-2xl shadow-soft animate-pulse">
-                      <div className="bg-muted rounded-full w-12 h-12 mb-6"></div>
-                      <div className="bg-muted h-6 rounded mb-4"></div>
-                      <div className="bg-muted h-4 rounded mb-6"></div>
-                      <div className="bg-muted h-12 rounded"></div>
-                    </div>)}
-                </div> : <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {popularDocuments.map((doc, index) => <div key={doc.id} className="group bg-card p-8 rounded-2xl shadow-soft hover:shadow-trust transition-smooth border border-border hover:border-primary/20 cursor-pointer" onClick={() => onOpenChat(`Quiero crear un ${doc.name.toLowerCase()}`)}>
-                      <div className="flex items-center justify-between mb-6">
-                        <div className="bg-primary/10 text-primary rounded-2xl p-4 w-16 h-16 flex items-center justify-center group-hover:bg-primary/20 transition-smooth">
-                          <FileText className="w-8 h-8" />
-                        </div>
-                        {doc.request_count > 0 && <div className="flex items-center text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
-                            <Star className="w-4 h-4 mr-1 text-success" />
-                            <span>{doc.request_count}</span>
-                          </div>}
+              {loadingDocs ? (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <div key={i} className="bg-white rounded-[24px] p-8 animate-pulse">
+                      <div className="w-16 h-16 rounded-2xl bg-slate-200 mb-6"></div>
+                      <div className="h-6 bg-slate-200 rounded mb-3"></div>
+                      <div className="h-4 bg-slate-200 rounded"></div>
+                    </div>
+                  ))}
+                </div>
+              ) : popularDocuments.length > 0 ? (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {popularDocuments.map((doc, index) => (
+                    <motion.div 
+                      key={doc.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.8, delay: index * 0.05 }}
+                      className="group bg-white rounded-[24px] p-8 hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] transition-all duration-500 cursor-pointer border border-slate-200/50"
+                      onClick={() => onOpenChat(`Quiero crear un ${doc.name.toLowerCase()}`)}
+                    >
+                      {/* Icono más grande */}
+                      <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-6 group-hover:bg-[#e7b008]/10 transition-colors duration-500">
+                        <FileText className="w-8 h-8 text-slate-700 group-hover:text-[#e7b008] transition-colors duration-500" />
                       </div>
                       
-                      <h3 className="text-2xl font-bold text-foreground mb-3 group-hover:text-primary transition-smooth">
+                      {/* Título más limpio */}
+                      <h3 className="text-xl font-[600] text-slate-950 mb-3 tracking-tight group-hover:text-[#e7b008] transition-colors">
                         {doc.name}
                       </h3>
                       
-                      <p className="text-muted-foreground mb-6 leading-relaxed">
+                      {/* Descripción más corta */}
+                      <p className="text-slate-600 font-[300] text-sm leading-relaxed line-clamp-2">
                         {doc.description}
                       </p>
-                      
-                      <div className="mb-6">
-                        <span className="inline-block bg-success/10 text-success text-sm px-3 py-1 rounded-full font-medium">
-                          {doc.category}
-                        </span>
-                      </div>
-                      
-                      <div className="flex items-center text-primary font-medium group-hover:text-primary-light transition-smooth">
-                        <span className="mr-2">{doc.button_cta || 'Crear Documento'}</span>
-                        <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-smooth">
-                          <span className="text-sm">→</span>
-                        </div>
-                      </div>
-                    </div>)}
-                </div>}
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <FileText className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                  <p className="text-slate-600 font-[300]">
+                    No hay documentos disponibles en este momento
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </section>
+      </FadeInSection>
 
-        {/* Social Proof Section */}
-        <section className="py-32 bg-card">
+      {/* Testimonials - Carrusel Elegante */}
+      <FadeInSection delay={0.4}>
+        <section className="py-40 bg-white overflow-hidden">
           <div className="container mx-auto px-6">
-            <div className="max-w-6xl mx-auto text-center">
-              <div className="mb-20">
-                <h2 className="text-4xl md:text-5xl font-light text-foreground mb-6">
-                  Testimonios de
-                  <span className="font-bold"> confianza</span>
-                </h2>
-                <p className="text-xl text-muted-foreground">
-                  Miles de colombianos ya confían en nosotros
-                </p>
-              </div>
-
-              <div className="grid md:grid-cols-3 gap-8">
-                {[{
-                text: "El proceso para crear el contrato de arrendamiento fue increíblemente fácil y rápido. ¡Y saber que un abogado lo revisó me dio total tranquilidad!",
-                author: "Juliana G.",
-                location: "Medellín",
-                rating: 5
-              }, {
-                text: "Como freelancer, necesitaba un contrato de prestación de servicios. En minutos lo tuve listo y a un precio justo. 100% recomendado.",
-                author: "Carlos V.",
-                location: "Bogotá",
-                rating: 5
-              }, {
-                text: "Resolví una duda sobre mi liquidación laboral en minutos. La respuesta fue clara y me citaron los artículos correctos del código. ¡Excelente servicio!",
-                author: "Sofía R.",
-                location: "Cali",
-                rating: 5
-              }].map((testimonial, index) => <div key={index} className="bg-background p-8 rounded-2xl shadow-soft border border-border">
-                    <div className="flex mb-4">
-                      {[...Array(testimonial.rating)].map((_, i) => <Star key={i} className="w-5 h-5 fill-success text-success" />)}
-                    </div>
-                    <p className="text-muted-foreground mb-6 italic leading-relaxed">
-                      "{testimonial.text}"
-                    </p>
-                    <div className="flex items-center">
-                        <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-bold mr-4">
-                          {testimonial.author.charAt(0)}
+            <div className="max-w-5xl mx-auto text-center">
+              <h2 className="text-5xl md:text-6xl font-[200] text-slate-950 mb-4 tracking-tight">
+                Lo que dicen nuestros usuarios.
+              </h2>
+              
+              <Carousel 
+                plugins={[plugin.current]}
+                className="mt-20"
+                opts={{ align: "center", loop: true }}
+              >
+                <CarouselContent>
+                  {[
+                    {
+                      text: "Increíble servicio. Pude crear mi contrato laboral en minutos y todo quedó perfecto.",
+                      author: "María González",
+                      location: "Bogotá"
+                    },
+                    {
+                      text: "La plataforma es muy intuitiva. Me ayudó con toda la documentación legal de mi empresa.",
+                      author: "Carlos Rodríguez",
+                      location: "Medellín"
+                    },
+                    {
+                      text: "Excelente atención y rapidez. Los documentos generados son de alta calidad.",
+                      author: "Ana Martínez",
+                      location: "Cali"
+                    },
+                    {
+                      text: "Como abogado, esta herramienta ha revolucionado mi práctica. Muy recomendado.",
+                      author: "Diego Sánchez",
+                      location: "Barranquilla"
+                    },
+                    {
+                      text: "Servicio excepcional. Me ahorraron tiempo y dinero en trámites legales.",
+                      author: "Laura Pérez",
+                      location: "Cartagena"
+                    }
+                  ].map((testimonial, index) => (
+                    <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
+                      <div className="bg-slate-50 rounded-[24px] p-8 mx-2 h-full">
+                        {/* Rating */}
+                        <div className="flex gap-1 mb-4">
+                          {[...Array(5)].map((_, i) => (
+                            <Star key={i} className="w-4 h-4 fill-[#e7b008] text-[#e7b008]" />
+                          ))}
                         </div>
-                      <div>
-                        <p className="font-bold text-foreground">{testimonial.author}</p>
-                        <p className="text-sm text-muted-foreground">{testimonial.location}</p>
+                        
+                        {/* Quote */}
+                        <p className="text-slate-700 font-[300] leading-relaxed mb-6">
+                          "{testimonial.text}"
+                        </p>
+                        
+                        {/* Author */}
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#e7b008] to-[#f4d03f] flex items-center justify-center text-white font-[600] text-sm">
+                            {testimonial.author.charAt(0)}
+                          </div>
+                          <div className="text-left">
+                            <p className="font-[500] text-slate-950 text-sm">{testimonial.author}</p>
+                            <p className="text-xs text-slate-500">{testimonial.location}</p>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>)}
-              </div>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+              </Carousel>
             </div>
           </div>
         </section>
+      </FadeInSection>
 
-        {/* Final CTA Section */}
-        <section className="py-32 hero-solid text-primary-foreground">
-          <div className="container mx-auto px-6 text-center">
-            <div className="max-w-4xl mx-auto">
-              <h2 className="text-4xl md:text-6xl font-light mb-8 leading-tight">
-                Comienza tu
+      {/* Final CTA - Minimalista y Potente */}
+      <FadeInSection delay={0.5}>
+        <section className="py-40 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden">
+          {/* Efecto de glow */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#e7b008]/20 rounded-full blur-[150px]"></div>
+          
+          <div className="container mx-auto px-6 text-center relative z-10">
+            <div className="max-w-3xl mx-auto">
+              <h2 className="text-5xl md:text-7xl font-[200] text-white mb-6 leading-tight tracking-tight">
+                Comienza hoy.
                 <br />
-                <span className="font-bold text-success">
-                  transformación legal
+                <span className="font-[700]">
+                  Sin compromisos.
                 </span>
               </h2>
-              <p className="text-xl text-primary-foreground/80 mb-12 max-w-2xl mx-auto leading-relaxed">
-                Únete a miles de colombianos que ya disfrutan de servicios legales accesibles, confiables y profesionales.
+              
+              <p className="text-lg text-white/60 mb-12 font-[300] leading-relaxed max-w-xl mx-auto">
+                Únete a miles de colombianos que transformaron su relación con los servicios legales.
               </p>
-              <Button size="lg" onClick={() => onOpenChat("Quiero una consultoría legal")} className="text-success-foreground px-12 py-6 text-lg font-medium shadow-card transition-smooth bg-[#e7b008]">
-                Comenzar Ahora
+              
+              <Button 
+                size="lg"
+                onClick={() => onNavigate("user-dashboard")}
+                className="bg-white text-slate-950 hover:bg-white/90 px-12 py-7 text-lg font-medium rounded-full shadow-2xl hover:shadow-[0_20px_60px_rgba(255,255,255,0.3)] transition-all duration-500 hover:scale-[1.02]"
+              >
+                Comenzar gratis
               </Button>
             </div>
           </div>
         </section>
+      </FadeInSection>
     </div>
-    </>;
-}
+  );
+};

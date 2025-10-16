@@ -313,4 +313,21 @@ All colors MUST be HSL.
   .grid-auto-fill {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   }
+
+  /* Micro-interacciones estilo Apple */
+  .hover-lift-subtle {
+    transition: transform 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+  }
+
+  .hover-lift-subtle:hover {
+    transform: translateY(-4px);
+  }
+
+  .hover-glow {
+    transition: box-shadow 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+  }
+
+  .hover-glow:hover {
+    box-shadow: 0 20px 60px rgba(231, 176, 8, 0.15);
+  }
 }
