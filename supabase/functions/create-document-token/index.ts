@@ -1,10 +1,33 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const DocumentTokenSchema = z.object({
+  document_content: z.string()
+    .min(10, 'Content too short')
+    .max(50000, 'Content exceeds 50KB limit'),
+  document_type: z.string()
+    .min(1, 'Document type is required')
+    .max(200, 'Document type too long'),
+  user_email: z.string()
+    .email('Invalid email format')
+    .max(255, 'Email too long'),
+  user_name: z.string()
+    .min(2, 'Name too short')
+    .max(100, 'Name too long')
+    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, 'Name contains invalid characters'),
+  sla_hours: z.number()
+    .int('SLA hours must be an integer')
+    .min(1, 'SLA hours must be at least 1')
+    .max(72, 'SLA hours cannot exceed 72')
+    .optional(),
+  user_id: z.string().uuid('Invalid user ID format').optional().nullable()
+});
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -18,15 +41,26 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { document_content, document_type, user_email, user_name, sla_hours, user_id } = await req.json();
-
-    // Validate required fields
-    if (!document_content || !document_type || !user_email || !user_name) {
-      return new Response(
-        JSON.stringify({ error: 'Missing required fields: document_content, document_type, user_email, user_name' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    // Validate input data
+    let validatedData;
+    try {
+      const rawData = await req.json();
+      validatedData = DocumentTokenSchema.parse(rawData);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        console.error('Validation error:', error.errors);
+        return new Response(
+          JSON.stringify({ 
+            error: 'Validation failed', 
+            details: error.errors.map(e => ({ field: e.path.join('.'), message: e.message }))
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      throw error;
     }
+
+    const { document_content, document_type, user_email, user_name, sla_hours, user_id } = validatedData;
 
     // Generate unique token
     const token = crypto.randomUUID().replace(/-/g, '').substring(0, 12).toUpperCase();

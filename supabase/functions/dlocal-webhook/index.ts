@@ -1,9 +1,17 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { createHmac } from 'https://deno.land/std@0.190.0/node/crypto.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-signature',
+};
+
+const verifyDLocalSignature = (payload: string, signature: string, secret: string): boolean => {
+  const hmac = createHmac('sha256', secret);
+  hmac.update(payload);
+  const computedSignature = hmac.digest('hex');
+  return signature === computedSignature;
 };
 
 serve(async (req) => {
@@ -21,13 +29,42 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Parse the webhook payload from dLocal
-    const payload = await req.json();
-    console.log('🔔 dLocal webhook received:', JSON.stringify(payload, null, 2));
-
-    // Verify webhook signature (implement according to dLocal docs)
+    // Get raw body and signature for verification
+    const rawBody = await req.text();
     const signature = req.headers.get('x-signature');
-    // TODO: Implement signature verification
+    const secret = Deno.env.get('DLOCAL_SECRET_KEY');
+
+    // Verify webhook signature
+    if (!signature || !secret) {
+      console.error('❌ Missing signature or secret key');
+      return new Response(
+        JSON.stringify({ error: 'Missing signature or secret' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!verifyDLocalSignature(rawBody, signature, secret)) {
+      console.error('❌ Invalid webhook signature');
+      await supabase
+        .from('security_audit_log')
+        .insert({
+          event_type: 'dlocal_webhook_invalid_signature',
+          user_identifier: 'unknown',
+          details: { signature, timestamp: new Date().toISOString() },
+          created_at: new Date().toISOString()
+        });
+      
+      return new Response(
+        JSON.stringify({ error: 'Invalid signature' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('✅ Webhook signature verified');
+
+    // Parse the verified webhook payload
+    const payload = JSON.parse(rawBody);
+    console.log('🔔 dLocal webhook received:', JSON.stringify(payload, null, 2));
 
     // Extract subscription information from dLocal payload - handle multiple payload formats
     const subscriptionId = payload.subscription_id || payload.subscription?.id || payload.id;
