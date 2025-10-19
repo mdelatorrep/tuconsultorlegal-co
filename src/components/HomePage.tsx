@@ -19,28 +19,31 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
 
   useSEO({
     title: "Documentos Legales con IA en 10 Minutos | tuconsultorlegal.co",
-    description: "Crea contratos y documentos jurídicos válidos en Colombia con IA. Respaldados por abogados profesionales. Rápido, seguro y económico. ¡Empieza gratis!",
-    keywords: "documentos legales Colombia, contratos con IA, asesoría legal online, abogado virtual Colombia, contratos digitales, documentos jurídicos rápidos, plantillas legales Colombia, contrato arrendamiento, contrato trabajo, registrar marca Colombia",
+    description:
+      "Crea contratos y documentos jurídicos válidos en Colombia con IA. Respaldados por abogados profesionales. Rápido, seguro y económico. ¡Empieza gratis!",
+    keywords:
+      "documentos legales Colombia, contratos con IA, asesoría legal online, abogado virtual Colombia, contratos digitales, documentos jurídicos rápidos, plantillas legales Colombia, contrato arrendamiento, contrato trabajo, registrar marca Colombia",
     canonical: "https://tuconsultorlegal.co/",
     ogImage: "https://tuconsultorlegal.co/og-image.png",
     structuredData: {
       "@context": "https://schema.org",
       "@type": "WebPage",
-      "name": "Documentos Legales con IA | tuconsultorlegal.co",
-      "description": "Crea contratos y documentos jurídicos válidos en Colombia con Inteligencia Artificial. Respaldados por abogados profesionales.",
-      "url": "https://tuconsultorlegal.co/",
-      "breadcrumb": {
+      name: "Documentos Legales con IA | tuconsultorlegal.co",
+      description:
+        "Crea contratos y documentos jurídicos válidos en Colombia con Inteligencia Artificial. Respaldados por abogados profesionales.",
+      url: "https://tuconsultorlegal.co/",
+      breadcrumb: {
         "@type": "BreadcrumbList",
-        "itemListElement": [
+        itemListElement: [
           {
             "@type": "ListItem",
-            "position": 1,
-            "name": "Inicio",
-            "item": "https://tuconsultorlegal.co/"
-          }
-        ]
-      }
-    }
+            position: 1,
+            name: "Inicio",
+            item: "https://tuconsultorlegal.co/",
+          },
+        ],
+      },
+    },
   });
 
   const mainFeatures = [
@@ -49,26 +52,26 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
       title: "Personas",
       subtitle: "Accede a contratos y asesoría legal sin complicaciones.",
       action: "Explorar servicios",
-      onClick: () => onNavigate('personas')
+      onClick: () => onNavigate("personas"),
     },
     {
       icon: <Building2 className="w-8 h-8 text-slate-700" />,
       title: "Empresas",
       subtitle: "Portal empresarial próximamente disponible.",
       action: "Unirse a lista de espera",
-      onClick: () => onNavigate('proximamente-empresas'),
-      badge: "Próximamente"
+      onClick: () => onNavigate("proximamente-empresas"),
+      badge: "Próximamente",
     } as const,
     {
       icon: <Scale className="w-8 h-8 text-slate-700" />,
       title: "Abogados",
       subtitle: "Potencia tu práctica con IA y gestión automatizada.",
       action: "Portal Abogados",
-      onClick: () => onNavigate('lawyer-landing')
-    }
+      onClick: () => onNavigate("lawyer-landing"),
+    },
   ];
 
-  const FadeInSection = ({ children, delay = 0 }: { children: React.ReactNode, delay?: number }) => (
+  const FadeInSection = ({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) => (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
@@ -82,21 +85,21 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
   return (
     <div className="min-h-screen bg-white">
       <ServiceStatusAlert />
-      
+
       {/* Hero Section - Estilo Apple */}
       <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
         {/* Background con profundidad */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#010f24] via-[#011838] to-[#010f24]">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,#022d75_0%,#010f24_80%)]">
           {/* Grid pattern sutil */}
           <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:100px_100px]"></div>
-          
+
           {/* Glow effect central */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#0372e8]/10 rounded-full blur-[120px]"></div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#0372e8]/15 rounded-full blur-[160px]"></div>
         </div>
 
         <div className="container mx-auto px-6 relative z-10">
           <div className="max-w-6xl mx-auto text-center">
-            <motion.h1 
+            <motion.h1
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, ease: [0.25, 0.1, 0.25, 1] }}
@@ -104,12 +107,12 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
             >
               Documentos Legales.
               <br />
-              <span className="font-[700] bg-gradient-to-r from-[#0372e8] to-[#0a8fff] bg-clip-text text-transparent">
-                En 10 Minutos.
+              <span className="font-[700] bg-gradient-to-r from-[#0372e8] via-[#0a8fff] to-[#f2BB31] bg-clip-text text-transparent">
+                En Minutos.
               </span>
             </motion.h1>
-            
-            <motion.p 
+
+            <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, delay: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
@@ -119,24 +122,24 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
               <br />
               Respaldados por abogados profesionales. Rápido, seguro y económico.
             </motion.p>
-            
-            <motion.div 
+
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, delay: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
               className="flex flex-col items-center gap-6"
             >
-              <Button 
-                size="lg" 
+              <Button
+                size="lg"
                 onClick={() => onNavigate("user-dashboard")}
-                className="bg-white text-[#010f24] hover:bg-white/90 px-12 py-7 text-lg font-medium rounded-full shadow-2xl hover:shadow-[0_20px_60px_rgba(3,114,232,0.4)] transition-all duration-500 hover:scale-[1.02]"
+                className="bg-[#0372e8] text-white hover:bg-[#0a8fff] px-12 py-7 text-lg font-medium rounded-full shadow-2xl hover:shadow-[0_20px_60px_rgba(3,114,232,0.4)] transition-all duration-500 hover:scale-[1.02]"
               >
                 Comenzar gratis
               </Button>
-              
-              <button 
+
+              <button
                 onClick={() => onNavigate("user-dashboard")}
-                className="text-white/70 hover:text-white text-sm font-medium transition-colors flex items-center gap-2 group"
+                className="text-[#f2BB31]/80 hover:text-[#f2BB31] text-sm font-medium transition-colors flex items-center gap-2 group"
               >
                 <span>Consulta gratuita</span>
                 <span className="group-hover:translate-x-1 transition-transform">→</span>
@@ -155,14 +158,12 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
                 <h2 className="text-5xl md:text-6xl font-[200] text-slate-950 mb-4 tracking-tight">
                   Para cada necesidad.
                 </h2>
-                <p className="text-xl text-slate-600 font-[300]">
-                  Tres experiencias. Una plataforma.
-                </p>
+                <p className="text-xl text-slate-600 font-[300]">Tres experiencias. Una plataforma.</p>
               </div>
 
               <div className="grid lg:grid-cols-3 gap-6">
                 {mainFeatures.map((feature, index) => (
-                  <motion.div 
+                  <motion.div
                     key={index}
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
@@ -173,7 +174,7 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
                   >
                     {/* Efecto de hover sutil */}
                     <div className="absolute inset-0 bg-gradient-to-br from-white/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                    
+
                     <div className="relative z-10">
                       {/* Icono más grande y elegante */}
                       <div className="mb-8 transform group-hover:scale-110 transition-transform duration-500">
@@ -181,7 +182,7 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
                           {feature.icon}
                         </div>
                       </div>
-                      
+
                       {/* Título */}
                       <h3 className="text-3xl font-[600] text-slate-950 mb-3 tracking-tight flex items-center gap-2">
                         {feature.title}
@@ -191,12 +192,10 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
                           </span>
                         )}
                       </h3>
-                      
+
                       {/* Descripción más corta */}
-                      <p className="text-slate-600 font-[300] leading-relaxed mb-8">
-                        {feature.subtitle}
-                      </p>
-                      
+                      <p className="text-slate-600 font-[300] leading-relaxed mb-8">{feature.subtitle}</p>
+
                       {/* Link minimalista */}
                       <div className="inline-flex items-center text-[#0372e8] font-medium gap-0 group-hover:gap-2 transition-all">
                         <span>{feature.action}</span>
@@ -220,9 +219,7 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
                 <h2 className="text-5xl md:text-6xl font-[200] text-slate-950 mb-4 tracking-tight">
                   Documentos más solicitados.
                 </h2>
-                <p className="text-xl text-slate-600 font-[300]">
-                  Creados por expertos. Listos para usar.
-                </p>
+                <p className="text-xl text-slate-600 font-[300]">Creados por expertos. Listos para usar.</p>
               </div>
 
               {loadingDocs ? (
@@ -238,7 +235,7 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
               ) : popularDocuments.length > 0 ? (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {popularDocuments.map((doc, index) => (
-                    <motion.div 
+                    <motion.div
                       key={doc.id}
                       initial={{ opacity: 0, y: 20 }}
                       whileInView={{ opacity: 1, y: 0 }}
@@ -251,12 +248,12 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
                       <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-6 group-hover:bg-[#0372e8]/10 transition-colors duration-500">
                         <FileText className="w-8 h-8 text-slate-700 group-hover:text-[#0372e8] transition-colors duration-500" />
                       </div>
-                      
+
                       {/* Título más limpio */}
                       <h3 className="text-xl font-[600] text-slate-950 mb-3 tracking-tight group-hover:text-[#0372e8] transition-colors">
                         {doc.name}
                       </h3>
-                      
+
                       {/* Descripción más corta */}
                       <p className="text-slate-600 font-[300] text-sm leading-relaxed line-clamp-2">
                         {doc.description}
@@ -267,9 +264,7 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
               ) : (
                 <div className="text-center py-12">
                   <FileText className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                  <p className="text-slate-600 font-[300]">
-                    No hay documentos disponibles en este momento
-                  </p>
+                  <p className="text-slate-600 font-[300]">No hay documentos disponibles en este momento</p>
                 </div>
               )}
             </div>
@@ -285,39 +280,35 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
               <h2 className="text-5xl md:text-6xl font-[200] text-slate-950 mb-4 tracking-tight">
                 Lo que dicen nuestros usuarios.
               </h2>
-              
-              <Carousel 
-                plugins={[plugin.current]}
-                className="mt-20"
-                opts={{ align: "center", loop: true }}
-              >
+
+              <Carousel plugins={[plugin.current]} className="mt-20" opts={{ align: "center", loop: true }}>
                 <CarouselContent>
                   {[
                     {
                       text: "Increíble servicio. Pude crear mi contrato laboral en minutos y todo quedó perfecto.",
                       author: "María González",
-                      location: "Bogotá"
+                      location: "Bogotá",
                     },
                     {
                       text: "La plataforma es muy intuitiva. Me ayudó con toda la documentación legal de mi empresa.",
                       author: "Carlos Rodríguez",
-                      location: "Medellín"
+                      location: "Medellín",
                     },
                     {
                       text: "Excelente atención y rapidez. Los documentos generados son de alta calidad.",
                       author: "Ana Martínez",
-                      location: "Cali"
+                      location: "Cali",
                     },
                     {
                       text: "Como abogado, esta herramienta ha revolucionado mi práctica. Muy recomendado.",
                       author: "Diego Sánchez",
-                      location: "Barranquilla"
+                      location: "Barranquilla",
                     },
                     {
                       text: "Servicio excepcional. Me ahorraron tiempo y dinero en trámites legales.",
                       author: "Laura Pérez",
-                      location: "Cartagena"
-                    }
+                      location: "Cartagena",
+                    },
                   ].map((testimonial, index) => (
                     <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
                       <div className="bg-slate-50 rounded-[24px] p-8 mx-2 h-full">
@@ -327,12 +318,10 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
                             <Star key={i} className="w-4 h-4 fill-[#f2bb31] text-[#f2bb31]" />
                           ))}
                         </div>
-                        
+
                         {/* Quote */}
-                        <p className="text-slate-700 font-[300] leading-relaxed mb-6">
-                          "{testimonial.text}"
-                        </p>
-                        
+                        <p className="text-slate-700 font-[300] leading-relaxed mb-6">"{testimonial.text}"</p>
+
                         {/* Author */}
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#0372e8] to-[#0a8fff] flex items-center justify-center text-white font-[600] text-sm">
@@ -358,22 +347,20 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
         <section className="py-40 bg-gradient-to-br from-[#010f24] via-[#011838] to-[#010f24] relative overflow-hidden">
           {/* Efecto de glow */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#0372e8]/20 rounded-full blur-[150px]"></div>
-          
+
           <div className="container mx-auto px-6 text-center relative z-10">
             <div className="max-w-3xl mx-auto">
               <h2 className="text-5xl md:text-7xl font-[200] text-white mb-6 leading-tight tracking-tight">
                 Comienza hoy.
                 <br />
-                <span className="font-[700]">
-                  Sin compromisos.
-                </span>
+                <span className="font-[700]">Sin compromisos.</span>
               </h2>
-              
+
               <p className="text-lg text-white/60 mb-12 font-[300] leading-relaxed max-w-xl mx-auto">
                 Únete a miles de colombianos que transformaron su relación con los servicios legales.
               </p>
-              
-              <Button 
+
+              <Button
                 size="lg"
                 onClick={() => onNavigate("user-dashboard")}
                 className="bg-white text-[#010f24] hover:bg-white/90 px-12 py-7 text-lg font-medium rounded-full shadow-2xl hover:shadow-[0_20px_60px_rgba(255,255,255,0.3)] transition-all duration-500 hover:scale-[1.02]"
