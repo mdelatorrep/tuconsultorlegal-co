@@ -42,3 +42,6 @@ verify_jwt = false
 
 [functions.spell-check-document]
 verify_jwt = false
+
+[functions.update-user-onboarding]
+verify_jwt = false

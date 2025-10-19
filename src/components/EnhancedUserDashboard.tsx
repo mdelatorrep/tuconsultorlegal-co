@@ -42,6 +42,9 @@ import DocumentChatFlow from './DocumentChatFlow';
 import DocumentCreationSuccess from './DocumentCreationSuccess';
 import UserDocumentSelector from './UserDocumentSelector';
 import LegalConsultationChat from './LegalConsultationChat';
+import { useUserOnboarding } from '@/hooks/useUserOnboarding';
+import { UserOnboardingCoachmarks } from './UserOnboardingCoachmarks';
+import ChatWidget from './ChatWidget';
 
 interface EnhancedUserDashboardProps {
   onBack: () => void;
@@ -99,9 +102,14 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [newDocumentToken, setNewDocumentToken] = useState<string | null>(null);
   const [showConsultation, setShowConsultation] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   const { handleVerifyTrackingCode } = useDocumentPayment();
   const { trackAnonymousUser, trackPageVisit, trackUserAction } = useUserTracking();
+  
+  // Onboarding state
+  const { completed: onboardingCompleted, loading: onboardingLoading, markAsCompleted, skipOnboarding } = useUserOnboarding();
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     loadUserData();
@@ -110,6 +118,16 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
     trackPageVisit('user_dashboard');
     trackAnonymousUser();
   }, []);
+
+  // Check onboarding status when component loads
+  useEffect(() => {
+    if (!onboardingLoading && !onboardingCompleted && user) {
+      // Delay to ensure dashboard is fully rendered
+      setTimeout(() => {
+        setShowOnboarding(true);
+      }, 500);
+    }
+  }, [onboardingLoading, onboardingCompleted, user]);
 
   useEffect(() => {
     if (documents.length > 0) {
@@ -908,6 +926,30 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Onboarding Component */}
+      <UserOnboardingCoachmarks
+        isOpen={showOnboarding}
+        onComplete={async () => {
+          await markAsCompleted();
+          setShowOnboarding(false);
+          toast.success('¡Tutorial completado!');
+        }}
+        onSkip={() => {
+          skipOnboarding();
+          setShowOnboarding(false);
+        }}
+      />
+
+      {/* Chat Widget - Solo visible para usuarios autenticados */}
+      {user && (
+        <div data-chat-widget>
+          <ChatWidget
+            isOpen={isChatOpen}
+            onToggle={() => setIsChatOpen(!isChatOpen)}
+          />
+        </div>
+      )}
     </div>
   );
 }

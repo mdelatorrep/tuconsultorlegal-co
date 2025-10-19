@@ -279,8 +279,12 @@ export default function Index() {
     }
   };
 
-  // No mostrar ChatWidget en portal de abogados o cuando el usuario está autenticado en su dashboard
-  const shouldShowChatWidget = currentPage !== "abogados" && !showUserDashboard;
+  // ChatWidget solo visible para usuarios autenticados fuera de abogados y dashboard
+  // El dashboard tiene su propio ChatWidget integrado
+  const shouldShowChatWidget = 
+    isAuthenticated && // Solo usuarios autenticados
+    currentPage !== "abogados" && // No en portal de abogados
+    !showUserDashboard; // No en el dashboard (tiene su propio chat)
 
   return (
     <LogRocketProvider>
