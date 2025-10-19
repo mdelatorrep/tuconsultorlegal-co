@@ -325,7 +325,11 @@ export default function SystemConfigManager() {
     setSaving(true);
     try {
       const { data, error } = await supabase.functions.invoke('update-system-config', {
-        body: configForm
+        body: {
+          configKey: configForm.config_key,
+          configValue: configForm.config_value,
+          description: configForm.description
+        }
       });
 
       if (error) throw error;

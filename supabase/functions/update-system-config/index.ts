@@ -48,7 +48,7 @@ serve(async (req) => {
       throw new Error("User is not an authorized admin");
     }
 
-    const { configKey, configValue } = await req.json();
+    const { configKey, configValue, description } = await req.json();
 
     if (!configKey || configValue === undefined) {
       throw new Error("Missing configKey or configValue in request body");
@@ -56,14 +56,17 @@ serve(async (req) => {
 
     console.log(`Admin ${adminProfile.email} updating config: ${configKey}`, configValue);
 
-    // Update the system configuration
+    // Upsert the system configuration (insert if not exists, update if exists)
     const { data: updatedConfig, error: updateError } = await supabaseAdmin
       .from('system_config')
-      .update({
+      .upsert({
+        config_key: configKey,
         config_value: configValue,
+        description: description || null,
         updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'config_key'
       })
-      .eq('config_key', configKey)
       .select()
       .single();
 
