@@ -210,26 +210,25 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
         </section>
       </FadeInSection>
 
-      {/* Popular Documents - Carrusel Interactivo */}
+      {/* Popular Documents - Más Visual */}
       <FadeInSection delay={0.3}>
-        <section className="py-40 bg-gradient-to-b from-[#010f24] via-[#022d75] to-[#010f24] relative overflow-hidden">
-          <div className="container mx-auto px-6 relative z-10">
+        <section className="py-40 bg-slate-50">
+          <div className="container mx-auto px-6">
             <div className="max-w-[1400px] mx-auto">
-              {/* Encabezado */}
               <div className="text-center mb-20">
-                <h2 className="text-5xl md:text-6xl font-[200] text-white mb-4 tracking-tight">
+                <h2 className="text-5xl md:text-6xl font-[200] text-slate-950 mb-4 tracking-tight">
                   Documentos más solicitados.
                 </h2>
-                <p className="text-xl text-white/70 font-[300]">Creados por expertos. Listos para usar.</p>
+                <p className="text-xl text-slate-600 font-[300]">Creados por expertos. Listos para usar.</p>
               </div>
 
-              {/* Carrusel */}
+              {/* Carrusel con autoscroll */}
               {loadingDocs ? (
-                <div className="flex gap-6 overflow-x-auto snap-x snap-mandatory scrollbar-none">
+                <div className="flex gap-6 overflow-x-hidden">
                   {[1, 2, 3, 4, 5, 6].map((i) => (
                     <div
                       key={i}
-                      className="min-w-[320px] bg-white/10 backdrop-blur-sm rounded-[24px] p-8 animate-pulse flex-shrink-0 snap-start"
+                      className="min-w-[280px] max-w-[280px] bg-white/10 backdrop-blur-sm rounded-[24px] p-8 animate-pulse flex-shrink-0"
                     >
                       <div className="w-16 h-16 rounded-2xl bg-white/20 mb-6"></div>
                       <div className="h-6 bg-white/20 rounded mb-3"></div>
@@ -238,31 +237,42 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
                   ))}
                 </div>
               ) : popularDocuments.length > 0 ? (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.8 }}
-                  className="flex gap-6 overflow-x-auto snap-x snap-mandatory scrollbar-none pb-4"
-                >
-                  {popularDocuments.map((doc, index) => (
-                    <motion.div
-                      key={doc.id}
-                      whileHover={{ scale: 1.05 }}
-                      transition={{ type: "spring", stiffness: 200, damping: 15 }}
-                      className="min-w-[340px] bg-white rounded-[24px] p-8 flex-shrink-0 snap-start hover:shadow-[0_12px_40px_rgba(3,114,232,0.3)] border border-white/10 hover:border-[#0372e8]/30 transition-all duration-500 cursor-pointer"
-                      onClick={() => onOpenChat(`Quiero crear un ${doc.name.toLowerCase()}`)}
-                    >
-                      <div className="w-16 h-16 rounded-2xl bg-[#0372e8]/10 flex items-center justify-center mb-6 group-hover:bg-[#0372e8]/20 transition-colors duration-500">
-                        <FileText className="w-8 h-8 text-[#0372e8]" />
-                      </div>
-                      <h3 className="text-xl font-[600] text-[#010f24] mb-3 tracking-tight">{doc.name}</h3>
-                      <p className="text-slate-600 font-[300] text-sm leading-relaxed line-clamp-2">
-                        {doc.description}
-                      </p>
-                    </motion.div>
-                  ))}
-                </motion.div>
+                <div className="relative w-full overflow-hidden">
+                  <motion.div
+                    className="flex gap-8"
+                    animate={{
+                      x: ["0%", "-50%"], // desplazamiento continuo
+                    }}
+                    transition={{
+                      repeat: Infinity,
+                      repeatType: "loop",
+                      duration: 25, // velocidad del scroll
+                      ease: "linear",
+                    }}
+                    style={{ willChange: "transform" }}
+                  >
+                    {/* duplicamos la lista para un loop sin salto */}
+                    {[...popularDocuments, ...popularDocuments].map((doc, index) => (
+                      <motion.div
+                        key={`${doc.id}-${index}`}
+                        whileHover={{ scale: 1.05 }}
+                        transition={{ type: "spring", stiffness: 200, damping: 15 }}
+                        className="min-w-[280px] max-w-[280px] bg-white rounded-[24px] p-8 flex-shrink-0 hover:shadow-[0_12px_40px_rgba(3,114,232,0.3)] border border-white/10 hover:border-[#0372e8]/30 transition-all duration-500 cursor-pointer"
+                        onClick={() => onOpenChat(`Quiero crear un ${doc.name.toLowerCase()}`)}
+                      >
+                        <div className="w-14 h-14 rounded-2xl bg-[#0372e8]/10 flex items-center justify-center mb-5">
+                          <FileText className="w-7 h-7 text-[#0372e8]" />
+                        </div>
+                        <h3 className="text-base font-[600] text-[#010f24] mb-2 leading-tight line-clamp-2">
+                          {doc.name}
+                        </h3>
+                        <p className="text-slate-600 font-[300] text-sm leading-relaxed line-clamp-3">
+                          {doc.description}
+                        </p>
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                </div>
               ) : (
                 <div className="text-center py-12">
                   <FileText className="w-16 h-16 text-white/30 mx-auto mb-4" />
@@ -271,9 +281,6 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
               )}
             </div>
           </div>
-
-          {/* Glow decorativo */}
-          <div className="absolute -bottom-40 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-[#0372e8]/10 rounded-full blur-[200px]"></div>
         </section>
       </FadeInSection>
 
