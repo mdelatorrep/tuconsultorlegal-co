@@ -5,17 +5,17 @@ import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { 
-  Shield, 
-  CheckCircle, 
-  XCircle, 
-  Search, 
+import {
+  Shield,
+  CheckCircle,
+  XCircle,
+  Search,
   ArrowLeft,
   Award,
   Calendar,
   User,
   ExternalLink,
-  AlertTriangle
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import CertificationBadge from "./CertificationBadge";
@@ -38,7 +38,7 @@ export default function CertificationVerificationPage() {
   const { certificateCode } = useParams();
   const navigate = useNavigate();
   const [certificate, setCertificate] = useState<Certificate | null>(null);
-  const [searchCode, setSearchCode] = useState(certificateCode || '');
+  const [searchCode, setSearchCode] = useState(certificateCode || "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,7 +50,7 @@ export default function CertificationVerificationPage() {
 
   const verifyCertificate = async (code: string) => {
     if (!code.trim()) {
-      setError('Por favor ingresa un código de certificación');
+      setError("Por favor ingresa un código de certificación");
       return;
     }
 
@@ -60,15 +60,15 @@ export default function CertificationVerificationPage() {
 
     try {
       const { data: certData, error: queryError } = await supabase
-        .from('lawyer_certificates')
-        .select('*')
-        .eq('certificate_code', code.trim().toUpperCase())
-        .eq('is_active', true)
+        .from("lawyer_certificates")
+        .select("*")
+        .eq("certificate_code", code.trim().toUpperCase())
+        .eq("is_active", true)
         .single();
 
       if (queryError) {
-        if (queryError.code === 'PGRST116') {
-          setError('Certificación no encontrada. Verifica que el código sea correcto.');
+        if (queryError.code === "PGRST116") {
+          setError("Certificación no encontrada. Verifica que el código sea correcto.");
         } else {
           throw queryError;
         }
@@ -77,25 +77,25 @@ export default function CertificationVerificationPage() {
 
       // Get lawyer info separately
       const { data: lawyerData, error: lawyerError } = await supabase
-        .from('lawyer_profiles')
-        .select('full_name, email')
-        .eq('id', certData.lawyer_id)
+        .from("lawyer_profiles")
+        .select("full_name, email")
+        .eq("id", certData.lawyer_id)
         .single();
 
       if (lawyerError) {
-        console.warn('Could not fetch lawyer info:', lawyerError);
+        console.warn("Could not fetch lawyer info:", lawyerError);
       }
 
       const certificate = {
         ...certData,
-        lawyer_info: lawyerData || { full_name: 'Información no disponible', email: '' }
+        lawyer_info: lawyerData || { full_name: "Información no disponible", email: "" },
       };
 
       setCertificate(certificate);
-      toast.success('Certificación verificada exitosamente');
+      toast.success("Certificación verificada exitosamente");
     } catch (error) {
-      console.error('Error verifying certificate:', error);
-      setError('Error al verificar la certificación. Por favor intenta de nuevo.');
+      console.error("Error verifying certificate:", error);
+      setError("Error al verificar la certificación. Por favor intenta de nuevo.");
     } finally {
       setLoading(false);
     }
@@ -109,7 +109,7 @@ export default function CertificationVerificationPage() {
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       handleSearch();
     }
   };
@@ -120,19 +120,13 @@ export default function CertificationVerificationPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
-            <Button
-              variant="ghost"
-              onClick={() => navigate('/')}
-              className="absolute left-4 top-4"
-            >
+            <Button variant="ghost" onClick={() => navigate("/")} className="absolute left-4 top-4">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Volver al inicio
             </Button>
             <Shield className="w-16 h-16 text-primary mx-auto" />
           </div>
-          <h1 className="text-4xl font-bold text-primary mb-4">
-            Verificación de Certificaciones
-          </h1>
+          <h1 className="text-4xl font-bold text-primary mb-4">Verificación de Certificaciones</h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Verifica la autenticidad de las certificaciones emitidas por tuconsultorlegal.co
           </p>
@@ -162,11 +156,7 @@ export default function CertificationVerificationPage() {
                 El código de certificación se encuentra en el badge del certificado
               </p>
             </div>
-            <Button
-              onClick={handleSearch}
-              disabled={loading || !searchCode.trim()}
-              className="w-full"
-            >
+            <Button onClick={handleSearch} disabled={loading || !searchCode.trim()} className="w-full">
               {loading ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
@@ -190,9 +180,7 @@ export default function CertificationVerificationPage() {
                 <div className="flex items-center gap-3">
                   <XCircle className="w-8 h-8 text-destructive" />
                   <div>
-                    <h3 className="font-semibold text-destructive mb-1">
-                      Certificación No Válida
-                    </h3>
+                    <h3 className="font-semibold text-destructive mb-1">Certificación No Válida</h3>
                     <p className="text-sm text-muted-foreground">{error}</p>
                   </div>
                 </div>
@@ -208,15 +196,11 @@ export default function CertificationVerificationPage() {
                   <div className="flex items-center gap-3 mb-4">
                     <CheckCircle className="w-8 h-8 text-success" />
                     <div>
-                      <h3 className="font-semibold text-success mb-1">
-                        Certificación Verificada
-                      </h3>
-                      <p className="text-sm text-muted-foreground">
-                        Esta certificación es auténtica y válida
-                      </p>
+                      <h3 className="font-semibold text-success mb-1">Certificación Verificada</h3>
+                      <p className="text-sm text-muted-foreground">Esta certificación es auténtica y válida</p>
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                     <div className="flex items-center gap-2">
                       <User className="w-4 h-4 text-muted-foreground" />
@@ -226,7 +210,7 @@ export default function CertificationVerificationPage() {
                     <div className="flex items-center gap-2">
                       <Calendar className="w-4 h-4 text-muted-foreground" />
                       <span className="font-medium">Fecha de emisión:</span>
-                      <span>{new Date(certificate.issued_date).toLocaleDateString('es-ES')}</span>
+                      <span>{new Date(certificate.issued_date).toLocaleDateString("es-ES")}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Award className="w-4 h-4 text-muted-foreground" />
@@ -247,7 +231,7 @@ export default function CertificationVerificationPage() {
                 <CertificationBadge
                   certificate={{
                     ...certificate,
-                    lawyer_name: certificate.lawyer_info?.full_name
+                    lawyer_name: certificate.lawyer_info?.full_name,
                   }}
                   showShareOptions={false}
                 />
@@ -262,13 +246,12 @@ export default function CertificationVerificationPage() {
                   <div>
                     <h4 className="font-semibold mb-2">IA Lawyer Fundamentals</h4>
                     <p className="text-sm text-muted-foreground leading-relaxed">
-                      Esta certificación valida que el abogado ha completado exitosamente 
-                      el programa de formación en Inteligencia Artificial Legal de tuconsultorlegal.co, 
-                      que incluye 10 módulos especializados en herramientas de IA, 
-                      automatización de documentos, análisis predictivo y ética en IA legal.
+                      Esta certificación valida que el abogado ha completado exitosamente el programa de formación en
+                      Inteligencia Artificial Legal de tuconsultorlegal.co, que incluye 10 módulos especializados en
+                      herramientas de IA, automatización de documentos, análisis predictivo y ética en IA legal.
                     </p>
                   </div>
-                  
+
                   <div>
                     <h4 className="font-semibold mb-2">Criterios de Certificación</h4>
                     <ul className="text-sm text-muted-foreground space-y-1">
@@ -285,13 +268,10 @@ export default function CertificationVerificationPage() {
                       <div className="text-xs text-muted-foreground">
                         <p className="font-medium mb-1">Nota de Verificación:</p>
                         <p>
-                          Esta verificación confirma la autenticidad del certificado al momento de la consulta. 
-                          Para consultas sobre la validez o el programa de certificación, contacta a{' '}
-                          <a 
-                            href="mailto:certificaciones@tuconsultorlegal.co" 
-                            className="text-primary hover:underline"
-                          >
-                            certificaciones@tuconsultorlegal.co
+                          Esta verificación confirma la autenticidad del certificado al momento de la consulta. Para
+                          consultas sobre la validez o el programa de certificación, contacta a{" "}
+                          <a href="mailto:contacto@tuconsultorlegal.co" className="text-primary hover:underline">
+                            contacto@tuconsultorlegal.co
                           </a>
                         </p>
                       </div>
