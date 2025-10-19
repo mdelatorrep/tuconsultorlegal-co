@@ -54,10 +54,11 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
     {
       icon: <Building2 className="w-8 h-8 text-slate-700" />,
       title: "Empresas",
-      subtitle: "Gestiona contratos comerciales y compliance corporativo.",
-      action: "Soluciones empresariales",
-      onClick: () => onNavigate('empresas')
-    },
+      subtitle: "Portal empresarial próximamente disponible.",
+      action: "Unirse a lista de espera",
+      onClick: () => onNavigate('proximamente-empresas'),
+      badge: "Próximamente"
+    } as const,
     {
       icon: <Scale className="w-8 h-8 text-slate-700" />,
       title: "Abogados",
@@ -182,8 +183,13 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
                       </div>
                       
                       {/* Título */}
-                      <h3 className="text-3xl font-[600] text-slate-950 mb-3 tracking-tight">
+                      <h3 className="text-3xl font-[600] text-slate-950 mb-3 tracking-tight flex items-center gap-2">
                         {feature.title}
+                        {feature.badge && (
+                          <span className="text-xs font-medium px-2 py-1 bg-accent/10 text-accent rounded-full border border-accent/20">
+                            {feature.badge}
+                          </span>
+                        )}
                       </h3>
                       
                       {/* Descripción más corta */}

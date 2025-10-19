@@ -128,6 +128,7 @@ export default function Header({
             <button onClick={() => handleNavClick("empresas")} className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-smooth font-medium text-sm ${currentPage === "empresas" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
               <Users className="w-4 h-4" />
               <span>Empresas</span>
+              <Badge variant="secondary" className="text-xs px-1.5 py-0.5">Próximamente</Badge>
             </button>
           </div>
 
@@ -198,8 +199,11 @@ export default function Header({
                       <Users className="w-6 h-6 text-success" />
                     </div>
                     <div className="flex-1 text-left">
-                      <div className="font-semibold text-base">Empresa</div>
-                      <div className="text-sm text-muted-foreground">Documentos corporativos y consultoría empresarial</div>
+                      <div className="flex items-center gap-2">
+                        <div className="font-semibold text-base">Empresa</div>
+                        <Badge variant="secondary" className="text-xs">Próximamente</Badge>
+                      </div>
+                      <div className="text-sm text-muted-foreground">Portal empresarial en desarrollo</div>
                     </div>
                   </div>
                 </button>

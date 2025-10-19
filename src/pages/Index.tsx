@@ -21,6 +21,7 @@ import UserAuthPage from "@/components/UserAuthPage";
 import EnhancedUserDashboard from "@/components/EnhancedUserDashboard";
 import UserTypeSelector from "@/components/UserTypeSelector";
 import LawyerDashboardPage from "@/components/LawyerDashboardPage";
+import ComingSoonPage from "@/components/ComingSoonPage";
 import { LawyerAuthProvider } from "@/components/LawyerAuthProvider";
 import { LogRocketProvider } from "@/components/LogRocketProvider";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
@@ -276,6 +277,8 @@ export default function Index() {
         return <TermsAndConditionsPage onOpenChat={handleOpenChat} />;
       case "privacidad":
         return <PrivacyPolicyPage onOpenChat={handleOpenChat} />;
+      case "proximamente-empresas":
+        return <ComingSoonPage onBack={() => handleNavigate("empresas")} type="business" title="Portal Empresarial" />;
     }
   };
 

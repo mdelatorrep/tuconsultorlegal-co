@@ -160,10 +160,14 @@ export default function EmpresasPage({
             </div>
           </div>
           
-          <Button onClick={() => onNavigate && onNavigate("user-dashboard")} variant="accent" size="xl" className="shadow-glow">
+          <Button onClick={() => onNavigate && onNavigate("proximamente-empresas")} variant="accent" size="xl" className="shadow-glow">
             <Building className="w-5 h-5 mr-2" />
-            Comenzar gratis
+            Acceder al Portal Empresarial
           </Button>
+          
+          <p className="text-white/60 text-sm">
+            Próximamente disponible - Únete a la lista de espera
+          </p>
         </div>
       </div>
 
@@ -223,8 +227,8 @@ export default function EmpresasPage({
               Nuestros expertos en derecho empresarial pueden ayudarte con casos complejos, 
               restructuraciones, fusiones y cualquier tema legal corporativo.
             </p>
-            <Button variant="default" size="lg" onClick={() => onNavigate && onNavigate("user-dashboard")}>
-              Consulta Empresarial
+            <Button variant="default" size="lg" onClick={() => onNavigate && onNavigate("proximamente-empresas")}>
+              Unirme a Lista de Espera
             </Button>
           </div>
           <div className="text-muted-foreground space-y-3">
