@@ -82,80 +82,6 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
     </motion.div>
   );
 
-  import { useRef, useEffect, useState } from "react";
-  import { motion } from "framer-motion";
-  import { FileText, ChevronLeft, ChevronRight } from "lucide-react";
-
-  function CarouselDocuments({ docs, onOpenChat }) {
-    const scrollRef = useRef(null);
-    const [isPaused, setIsPaused] = useState(false);
-
-    // --- Autoscroll con pausa al hover ---
-    useEffect(() => {
-      let interval;
-      if (!isPaused && scrollRef.current) {
-        interval = setInterval(() => {
-          const container = scrollRef.current;
-          container.scrollBy({ left: 320, behavior: "smooth" });
-
-          // Reinicio al final
-          if (container.scrollLeft + container.clientWidth >= container.scrollWidth) {
-            container.scrollTo({ left: 0, behavior: "smooth" });
-          }
-        }, 3500);
-      }
-      return () => clearInterval(interval);
-    }, [isPaused]);
-
-    const scroll = (direction) => {
-      if (!scrollRef.current) return;
-      const amount = direction === "left" ? -320 : 320;
-      scrollRef.current.scrollBy({ left: amount, behavior: "smooth" });
-    };
-
-    return (
-      <div className="relative">
-        {/* Carrusel */}
-        <div
-          ref={scrollRef}
-          className="flex gap-8 overflow-x-auto snap-x snap-mandatory scroll-smooth scrollbar-hide px-6"
-          onMouseEnter={() => setIsPaused(true)}
-          onMouseLeave={() => setIsPaused(false)}
-        >
-          {docs.map((doc, index) => (
-            <motion.div
-              key={doc.id}
-              className="snap-center min-w-[320px] bg-white rounded-[24px] p-8 flex-shrink-0 hover:shadow-[0_12px_40px_rgba(3,114,232,0.25)] border border-white/10 hover:border-[#0372e8]/40 transition-all duration-500 cursor-pointer"
-              whileHover={{ scale: 1.05 }}
-              transition={{ type: "spring", stiffness: 300 }}
-              onClick={() => onOpenChat(`Quiero crear un ${doc.name.toLowerCase()}`)}
-            >
-              <div className="w-14 h-14 rounded-2xl bg-[#0372e8]/10 flex items-center justify-center mb-5">
-                <FileText className="w-7 h-7 text-[#0372e8]" />
-              </div>
-              <h3 className="text-lg font-[600] text-[#010f24] mb-2 leading-tight line-clamp-2">{doc.name}</h3>
-              <p className="text-slate-600 font-[300] text-sm leading-relaxed line-clamp-3">{doc.description}</p>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Botones navegación */}
-        <button
-          onClick={() => scroll("left")}
-          className="absolute left-0 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white rounded-full p-3 backdrop-blur-sm transition"
-        >
-          <ChevronLeft className="w-6 h-6" />
-        </button>
-        <button
-          onClick={() => scroll("right")}
-          className="absolute right-0 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white rounded-full p-3 backdrop-blur-sm transition"
-        >
-          <ChevronRight className="w-6 h-6" />
-        </button>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-white">
       <ServiceStatusAlert />
@@ -284,36 +210,61 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
         </section>
       </FadeInSection>
 
-      {/* Popular Documents - Carrusel mejorado */}
+      {/* Popular Documents - Más Visual */}
       <FadeInSection delay={0.3}>
-        <section className="py-40 bg-gradient-to-b from-[#010f24] to-[#022d75] relative overflow-hidden">
+        <section className="py-40 bg-slate-50">
           <div className="container mx-auto px-6">
-            <div className="max-w-[1400px] mx-auto relative">
-              {/* Títulos */}
+            <div className="max-w-[1400px] mx-auto">
               <div className="text-center mb-20">
-                <h2 className="text-5xl md:text-6xl font-[200] text-white mb-4 tracking-tight">
+                <h2 className="text-5xl md:text-6xl font-[200] text-slate-950 mb-4 tracking-tight">
                   Documentos más solicitados.
                 </h2>
-                <p className="text-xl text-white/70 font-[300]">Creados por expertos. Listos para usar.</p>
+                <p className="text-xl text-slate-600 font-[300]">Creados por expertos. Listos para usar.</p>
               </div>
 
-              {/* Loading State */}
               {loadingDocs ? (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {[1, 2, 3, 4, 5, 6].map((i) => (
-                    <div key={i} className="bg-white/10 rounded-[24px] p-8 animate-pulse">
-                      <div className="w-16 h-16 rounded-2xl bg-white/20 mb-6"></div>
-                      <div className="h-6 bg-white/20 rounded mb-3"></div>
-                      <div className="h-4 bg-white/20 rounded"></div>
+                    <div key={i} className="bg-white rounded-[24px] p-8 animate-pulse">
+                      <div className="w-16 h-16 rounded-2xl bg-slate-200 mb-6"></div>
+                      <div className="h-6 bg-slate-200 rounded mb-3"></div>
+                      <div className="h-4 bg-slate-200 rounded"></div>
                     </div>
                   ))}
                 </div>
               ) : popularDocuments.length > 0 ? (
-                <CarouselDocuments docs={popularDocuments} onOpenChat={onOpenChat} />
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {popularDocuments.map((doc, index) => (
+                    <motion.div
+                      key={doc.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.8, delay: index * 0.05 }}
+                      className="group bg-white rounded-[24px] p-8 hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] transition-all duration-500 cursor-pointer border border-slate-200/50"
+                      onClick={() => onOpenChat(`Quiero crear un ${doc.name.toLowerCase()}`)}
+                    >
+                      {/* Icono más grande */}
+                      <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-6 group-hover:bg-[#0372e8]/10 transition-colors duration-500">
+                        <FileText className="w-8 h-8 text-slate-700 group-hover:text-[#0372e8] transition-colors duration-500" />
+                      </div>
+
+                      {/* Título más limpio */}
+                      <h3 className="text-xl font-[600] text-slate-950 mb-3 tracking-tight group-hover:text-[#0372e8] transition-colors">
+                        {doc.name}
+                      </h3>
+
+                      {/* Descripción más corta */}
+                      <p className="text-slate-600 font-[300] text-sm leading-relaxed line-clamp-2">
+                        {doc.description}
+                      </p>
+                    </motion.div>
+                  ))}
+                </div>
               ) : (
                 <div className="text-center py-12">
-                  <FileText className="w-16 h-16 text-white/40 mx-auto mb-4" />
-                  <p className="text-white/70 font-[300]">No hay documentos disponibles en este momento</p>
+                  <FileText className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                  <p className="text-slate-600 font-[300]">No hay documentos disponibles en este momento</p>
                 </div>
               )}
             </div>
