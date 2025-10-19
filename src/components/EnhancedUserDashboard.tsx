@@ -45,6 +45,7 @@ import LegalConsultationChat from './LegalConsultationChat';
 import { useUserOnboarding } from '@/hooks/useUserOnboarding';
 import { UserOnboardingCoachmarks } from './UserOnboardingCoachmarks';
 import ChatWidget from './ChatWidget';
+import { IntelligentDocumentSearch } from './IntelligentDocumentSearch';
 
 interface EnhancedUserDashboardProps {
   onBack: () => void;
@@ -406,10 +407,24 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
           </div>
         </div>
         
-        <UserDocumentSelector
-          onAgentSelected={handleAgentSelected}
-          onOpenChat={onOpenChat}
-        />
+        <div className="container mx-auto px-6 py-8">
+          {/* Intelligent Document Search */}
+          <div className="mb-8">
+            <IntelligentDocumentSearch
+              audience="personas"
+              onDocumentSelect={handleAgentSelected}
+              placeholder="Busca documentos con lenguaje natural... Ej: 'contrato de compraventa'"
+            />
+          </div>
+
+          <div className="border-t pt-8">
+            <h3 className="text-xl font-semibold mb-6">O selecciona por categoría</h3>
+            <UserDocumentSelector
+              onAgentSelected={handleAgentSelected}
+              onOpenChat={onOpenChat}
+            />
+          </div>
+        </div>
       </div>
     );
   }

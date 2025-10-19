@@ -6,6 +6,7 @@ import { Check, FileText, Search, Shield, Users, User, MessageCircle, LogIn, Arr
 import DocumentChatFlow from "./DocumentChatFlow";
 import DocumentCreationSuccess from "./DocumentCreationSuccess";
 import { useUserAuth } from "@/hooks/useUserAuth";
+import { IntelligentDocumentSearch } from "./IntelligentDocumentSearch";
 
 interface PersonasPageProps {
   onOpenChat: (message: string) => void;
@@ -277,9 +278,22 @@ export default function PersonasPage({ onOpenChat, onNavigate }: PersonasPagePro
       {/* Documents Section */}
       <section id="documentos-section" className="pb-20 px-6">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-semibold mb-4">Documentos Disponibles</h2>
-            <p className="text-xl text-muted-foreground font-light">Selecciona el tipo de documento que necesitas</p>
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-semibold mb-4">Encuentra tu documento</h2>
+            <p className="text-xl text-muted-foreground">Busca con lenguaje natural o explora por categorías</p>
+          </div>
+
+          {/* Intelligent Search */}
+          <div className="mb-16">
+            <IntelligentDocumentSearch
+              audience="personas"
+              onDocumentSelect={(documentId) => handleDocumentAction({ id: documentId } as AgentService)}
+              placeholder="Busca documentos con lenguaje natural... Ej: 'necesito un contrato de arrendamiento'"
+            />
+          </div>
+
+          <div className="border-t pt-12">
+            <h3 className="text-2xl font-semibold mb-8 text-center">O explora por categoría</h3>
           </div>
 
           {/* Categories */}

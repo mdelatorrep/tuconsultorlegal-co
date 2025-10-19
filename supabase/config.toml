@@ -45,3 +45,6 @@ verify_jwt = false
 
 [functions.update-user-onboarding]
 verify_jwt = false
+
+[functions.intelligent-document-search]
+verify_jwt = false
