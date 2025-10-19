@@ -354,7 +354,7 @@ export default function PricingPage({ onOpenChat, onNavigate }: PricingPageProps
             </p>
             <Button 
               size="lg" 
-              onClick={() => onOpenChat("Hola, me gustaría recibir asesoría para elegir el plan más adecuado para mis necesidades.")}
+              onClick={() => onNavigate("user-dashboard")}
             >
               Hablar con un Asesor
             </Button>

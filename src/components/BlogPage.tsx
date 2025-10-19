@@ -143,7 +143,7 @@ export default function BlogPage({ onOpenChat, onNavigate }: BlogPageProps) {
           </p>
           <Button
             variant="success"
-            onClick={() => onOpenChat("Hola Lexi, necesito ayuda con una consulta legal.")}
+            onClick={() => onNavigate("user-dashboard")}
           >
             Hablar con Lexi
           </Button>
@@ -263,7 +263,7 @@ export default function BlogPage({ onOpenChat, onNavigate }: BlogPageProps) {
         <Button
           variant="success"
           size="lg"
-          onClick={() => onOpenChat("Hola Lexi, necesito ayuda con una consulta legal.")}
+          onClick={() => onNavigate("user-dashboard")}
         >
           Hablar con Lexi
         </Button>

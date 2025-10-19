@@ -162,7 +162,7 @@ export default function EmpresasPage({
           
           <Button onClick={() => onNavigate && onNavigate("user-dashboard")} variant="accent" size="xl" className="shadow-glow">
             <Building className="w-5 h-5 mr-2" />
-            Crear Panel Empresarial
+            Comenzar gratis
           </Button>
         </div>
       </div>
@@ -223,7 +223,7 @@ export default function EmpresasPage({
               Nuestros expertos en derecho empresarial pueden ayudarte con casos complejos, 
               restructuraciones, fusiones y cualquier tema legal corporativo.
             </p>
-            <Button variant="default" size="lg" onClick={() => onOpenChat("Quiero una consultoría empresarial. Represento una empresa que necesita asesoría legal corporativa.")}>
+            <Button variant="default" size="lg" onClick={() => onNavigate && onNavigate("user-dashboard")}>
               Consulta Empresarial
             </Button>
           </div>

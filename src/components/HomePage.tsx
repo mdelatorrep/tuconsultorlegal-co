@@ -134,10 +134,10 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
               </Button>
               
               <button 
-                onClick={() => onOpenChat("Quiero una consultoría legal")}
+                onClick={() => onNavigate("user-dashboard")}
                 className="text-white/70 hover:text-white text-sm font-medium transition-colors flex items-center gap-2 group"
               >
-                <span>Ver cómo funciona</span>
+                <span>Consulta gratuita</span>
                 <span className="group-hover:translate-x-1 transition-transform">→</span>
               </button>
             </motion.div>

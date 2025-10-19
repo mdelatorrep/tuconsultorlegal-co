@@ -336,7 +336,7 @@ export default function PersonasPage({ onOpenChat, onNavigate }: PersonasPagePro
           <Button 
             variant="default" 
             size="lg"
-            onClick={() => onOpenChat("Necesito asesoría legal personalizada")}
+            onClick={() => onNavigate("user-dashboard")}
             className="rounded-full px-8"
           >
             Consultar con un experto

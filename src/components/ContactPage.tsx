@@ -184,7 +184,7 @@ export default function ContactPage({ onOpenChat, onNavigate }: ContactPageProps
                   ¿Necesitas ayuda ahora? Inicia una conversación con nuestro asistente legal inteligente.
                 </p>
                 <Button 
-                  onClick={handleConsultationRequest}
+                  onClick={() => onNavigate && onNavigate("user-dashboard")}
                   className="w-full"
                   size="lg"
                 >

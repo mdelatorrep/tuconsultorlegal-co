@@ -153,7 +153,7 @@ export default function Header({
             </Button>
           )}
           
-          <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => onOpenChat("Quiero una consultoría legal")}>
+          <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => onNavigate("user-dashboard")}>
             <MessageCircle className="w-4 h-4 mr-2" />
             Consulta Gratuita
           </Button>
