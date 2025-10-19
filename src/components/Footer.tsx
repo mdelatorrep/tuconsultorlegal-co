@@ -8,13 +8,13 @@ export default function Footer({ onNavigate }: FooterProps) {
   };
 
   return (
-    <footer className="bg-brand-blue text-primary-foreground">
+    <footer className="bg-[hsl(var(--brand-yellow))] text-foreground">
       <div className="container mx-auto px-6 py-12">
         <div className="grid md:grid-cols-4 gap-8">
           {/* Brand */}
           <div>
             <h3 className="text-xl font-bold mb-4">Tu Consultor Legal</h3>
-            <p className="text-primary-foreground/80">
+            <p className="text-foreground/80">
               Democratizando el acceso a servicios legales de alta calidad en Colombia con tecnología.
             </p>
           </div>
@@ -26,7 +26,7 @@ export default function Footer({ onNavigate }: FooterProps) {
               <li>
                 <button
                   onClick={() => handleNavClick("personas")}
-                  className="text-primary-foreground/80 hover:text-primary-foreground transition-smooth"
+                  className="text-foreground/80 hover:text-foreground transition-smooth"
                 >
                   Para Personas
                 </button>
@@ -34,7 +34,7 @@ export default function Footer({ onNavigate }: FooterProps) {
               <li>
                 <button
                   onClick={() => handleNavClick("empresas")}
-                  className="text-primary-foreground/80 hover:text-primary-foreground transition-smooth"
+                  className="text-foreground/80 hover:text-foreground transition-smooth"
                 >
                   Para Empresas
                 </button>
@@ -42,7 +42,7 @@ export default function Footer({ onNavigate }: FooterProps) {
               <li>
                 <button
                   onClick={() => handleNavClick("precios")}
-                  className="text-primary-foreground/80 hover:text-primary-foreground transition-smooth"
+                  className="text-foreground/80 hover:text-foreground transition-smooth"
                 >
                   Precios
                 </button>
@@ -57,7 +57,7 @@ export default function Footer({ onNavigate }: FooterProps) {
               <li>
                 <button
                   onClick={() => handleNavClick("terminos")}
-                  className="text-primary-foreground/80 hover:text-primary-foreground transition-smooth"
+                  className="text-foreground/80 hover:text-foreground transition-smooth"
                 >
                   Términos y Condiciones
                 </button>
@@ -65,7 +65,7 @@ export default function Footer({ onNavigate }: FooterProps) {
               <li>
                 <button
                   onClick={() => handleNavClick("privacidad")}
-                  className="text-primary-foreground/80 hover:text-primary-foreground transition-smooth"
+                  className="text-foreground/80 hover:text-foreground transition-smooth"
                 >
                   Política de Privacidad
                 </button>
@@ -77,19 +77,19 @@ export default function Footer({ onNavigate }: FooterProps) {
           <div>
             <h3 className="text-lg font-bold mb-4">Contacto</h3>
             <div className="space-y-2 mb-4">
-              <p className="text-primary-foreground/80">contacto@tuconsultorlegal.co</p>
-              <p className="text-primary-foreground/80">Envigado, Antioquia, Colombia</p>
+              <p className="text-foreground/80">contacto@tuconsultorlegal.co</p>
+              <p className="text-foreground/80">Envigado, Antioquia, Colombia</p>
             </div>
 
             {/* Social Media */}
             <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-primary-foreground/90">Síguenos</h4>
+              <h4 className="text-sm font-semibold text-foreground/90">Síguenos</h4>
               <div className="flex space-x-3">
                 <a
                   href="https://www.instagram.com/tuconsultorlegal.co/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-primary-foreground/70 hover:text-primary-foreground transition-smooth"
+                  className="text-foreground/70 hover:text-foreground transition-smooth"
                   aria-label="Instagram"
                 >
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -100,7 +100,7 @@ export default function Footer({ onNavigate }: FooterProps) {
                   href="https://www.tiktok.com/@tuconsultorlegal.co"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-primary-foreground/70 hover:text-primary-foreground transition-smooth"
+                  className="text-foreground/70 hover:text-foreground transition-smooth"
                   aria-label="TikTok"
                 >
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -111,7 +111,7 @@ export default function Footer({ onNavigate }: FooterProps) {
                   href="https://www.linkedin.com/company/tuconsultorlegal-co"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-primary-foreground/70 hover:text-primary-foreground transition-smooth"
+                  className="text-foreground/70 hover:text-foreground transition-smooth"
                   aria-label="LinkedIn"
                 >
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -123,7 +123,7 @@ export default function Footer({ onNavigate }: FooterProps) {
           </div>
         </div>
 
-        <div className="mt-10 border-t border-primary-foreground/20 pt-6 text-center text-primary-foreground/60 text-sm">
+        <div className="mt-10 border-t border-foreground/20 pt-6 text-center text-foreground/60 text-sm">
           <p>&copy; 2025 Tu Consultor Legal SAS. Todos los derechos reservados.</p>
         </div>
       </div>
