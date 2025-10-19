@@ -468,8 +468,20 @@ export default function SystemConfigManager() {
     });
   };
 
-  const openEditorWithTemplate = (template: ConfigTemplate) => {
+  const openEditorWithTemplate = async (template: ConfigTemplate) => {
     const existingConfig = configs.find(config => config.config_key === template.key);
+    
+    console.log('Opening editor for template:', template.key, 'existing:', !!existingConfig);
+    
+    // Si es un campo de modelo y no se han cargado los modelos, cargarlos primero
+    if ((template.key.includes('model') || template.key.endsWith('_model')) && openaiModels.length === 0) {
+      console.log('Model field detected, loading OpenAI models...');
+      toast({
+        title: "Cargando modelos",
+        description: "Cargando lista de modelos de OpenAI disponibles..."
+      });
+      await loadOpenAIModels();
+    }
     
     if (existingConfig) {
       setEditingConfig(existingConfig);
@@ -478,6 +490,7 @@ export default function SystemConfigManager() {
         config_value: existingConfig.config_value,
         description: existingConfig.description || template.description
       });
+      console.log('Loaded existing config:', existingConfig.config_key, '=', existingConfig.config_value);
     } else {
       setEditingConfig(null);
       setConfigForm({
@@ -485,6 +498,7 @@ export default function SystemConfigManager() {
         config_value: template.defaultValue,
         description: template.description
       });
+      console.log('Created new config form:', template.key, '=', template.defaultValue);
     }
     setShowEditor(true);
   };
@@ -608,27 +622,39 @@ export default function SystemConfigManager() {
                   </Label>
                   
                   {(configForm.config_key.includes('model') || configForm.config_key.endsWith('_model')) ? (
-                    <Select
-                      value={configForm.config_value}
-                      onValueChange={(value) => setConfigForm({ ...configForm, config_value: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecciona un modelo de OpenAI" />
-                      </SelectTrigger>
-                       <SelectContent>
-                         {openaiModels.length > 0 ? (
-                           openaiModels.map((model) => (
-                             <SelectItem key={model} value={model}>
-                               {model}
-                             </SelectItem>
-                           ))
-                         ) : (
-                           <SelectItem value="no-models-loaded" disabled>
-                             {loadingModels ? 'Cargando modelos...' : 'Haz clic en "Actualizar modelos" para cargar'}
-                           </SelectItem>
-                         )}
-                       </SelectContent>
-                    </Select>
+                    <div className="space-y-2">
+                      <Select
+                        value={configForm.config_value}
+                        onValueChange={(value) => {
+                          if (value !== "no-models-loaded") {
+                            setConfigForm({ ...configForm, config_value: value });
+                          }
+                        }}
+                        disabled={loadingModels}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona un modelo de OpenAI" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {openaiModels.length > 0 ? (
+                            openaiModels.map((model) => (
+                              <SelectItem key={model} value={model}>
+                                {model}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <SelectItem value="no-models-loaded" disabled>
+                              {loadingModels ? 'Cargando modelos...' : 'No hay modelos disponibles'}
+                            </SelectItem>
+                          )}
+                        </SelectContent>
+                      </Select>
+                      {openaiModels.length === 0 && !loadingModels && (
+                        <p className="text-sm text-orange-600">
+                          ⚠️ Los modelos se cargan automáticamente al abrir este editor
+                        </p>
+                      )}
+                    </div>
                   ) : configForm.config_key.includes('prompt') || configForm.config_key.includes('system') ? (
                     <Textarea
                       id="config_value"
