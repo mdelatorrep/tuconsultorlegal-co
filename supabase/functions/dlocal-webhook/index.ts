@@ -1,16 +1,31 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-import { createHmac } from 'https://deno.land/std@0.190.0/node/crypto.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-signature',
 };
 
-const verifyDLocalSignature = (payload: string, signature: string, secret: string): boolean => {
-  const hmac = createHmac('sha256', secret);
-  hmac.update(payload);
-  const computedSignature = hmac.digest('hex');
+const verifyDLocalSignature = async (payload: string, signature: string, secret: string): Promise<boolean> => {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  
+  const signatureBytes = await crypto.subtle.sign(
+    'HMAC',
+    key,
+    encoder.encode(payload)
+  );
+  
+  const computedSignature = Array.from(new Uint8Array(signatureBytes))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+    
   return signature === computedSignature;
 };
 
@@ -43,7 +58,8 @@ serve(async (req) => {
       );
     }
 
-    if (!verifyDLocalSignature(rawBody, signature, secret)) {
+    const isValidSignature = await verifyDLocalSignature(rawBody, signature, secret);
+    if (!isValidSignature) {
       console.error('❌ Invalid webhook signature');
       await supabase
         .from('security_audit_log')
