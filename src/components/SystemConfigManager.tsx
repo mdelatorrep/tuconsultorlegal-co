@@ -313,10 +313,42 @@ export default function SystemConfigManager() {
   };
 
   const saveConfig = async () => {
-    if (!configForm.config_key.trim() || !configForm.config_value.trim()) {
+    // Validación mejorada
+    const trimmedKey = configForm.config_key.trim();
+    const trimmedValue = configForm.config_value.trim();
+    
+    if (!trimmedKey) {
       toast({
-        title: "Error",
-        description: "La clave y el valor son requeridos",
+        title: "Error de Validación",
+        description: "La clave de configuración no puede estar vacía",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!trimmedValue) {
+      toast({
+        title: "Error de Validación",
+        description: "El valor de configuración no puede estar vacío",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validación de longitud máxima
+    if (trimmedKey.length > 100) {
+      toast({
+        title: "Error de Validación",
+        description: "La clave no puede exceder 100 caracteres",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (trimmedValue.length > 5000) {
+      toast({
+        title: "Error de Validación",
+        description: "El valor no puede exceder 5000 caracteres",
         variant: "destructive"
       });
       return;
@@ -324,18 +356,31 @@ export default function SystemConfigManager() {
 
     setSaving(true);
     try {
+      console.log('Guardando configuración:', {
+        configKey: trimmedKey,
+        configValue: trimmedValue.substring(0, 50) + '...',
+        description: configForm.description?.substring(0, 50)
+      });
+
       const { data, error } = await supabase.functions.invoke('update-system-config', {
         body: {
-          configKey: configForm.config_key,
-          configValue: configForm.config_value,
-          description: configForm.description
+          configKey: trimmedKey,
+          configValue: trimmedValue,
+          description: configForm.description?.trim() || null
         }
       });
 
-      if (error) throw error;
+      console.log('Respuesta de edge function:', { data, error });
+
+      if (error) {
+        console.error('Error from edge function:', error);
+        throw error;
+      }
 
       if (!data?.success) {
-        throw new Error(data?.error || 'Error al guardar la configuración');
+        const errorMsg = data?.error || 'Error desconocido al guardar la configuración';
+        console.error('Edge function returned error:', errorMsg);
+        throw new Error(errorMsg);
       }
 
       toast({
@@ -353,9 +398,10 @@ export default function SystemConfigManager() {
       await loadConfigs();
     } catch (error: any) {
       console.error('Error saving config:', error);
+      const errorMessage = error.message || error.toString() || "Error desconocido al guardar la configuración";
       toast({
         title: "Error",
-        description: error.message || "Error al guardar la configuración",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {

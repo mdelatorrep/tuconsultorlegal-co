@@ -26,6 +26,7 @@ serve(async (req) => {
     // Verify admin authentication
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
+      console.error("No authorization header provided");
       throw new Error("No authorization header provided");
     }
 
@@ -33,6 +34,7 @@ serve(async (req) => {
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
     
     if (userError || !userData.user) {
+      console.error("User authentication failed:", userError);
       throw new Error("User not authenticated");
     }
 
@@ -45,23 +47,30 @@ serve(async (req) => {
       .single();
 
     if (adminError || !adminProfile) {
+      console.error("Admin verification failed:", adminError);
       throw new Error("User is not an authorized admin");
     }
 
-    const { configKey, configValue, description } = await req.json();
+    // Parse and log request body
+    const requestBody = await req.json();
+    console.log("Request body received:", JSON.stringify(requestBody, null, 2));
+    
+    const { configKey, configValue, description } = requestBody;
 
-    if (!configKey || configValue === undefined) {
+    // Validate required fields
+    if (!configKey || configValue === undefined || configValue === null || configValue === '') {
+      console.error("Validation failed - configKey:", configKey, "configValue:", configValue);
       throw new Error("Missing configKey or configValue in request body");
     }
 
-    console.log(`Admin ${adminProfile.email} updating config: ${configKey}`, configValue);
+    console.log(`Admin ${adminProfile.email} updating config: ${configKey} = ${configValue}`);
 
     // Upsert the system configuration (insert if not exists, update if exists)
     const { data: updatedConfig, error: updateError } = await supabaseAdmin
       .from('system_config')
       .upsert({
         config_key: configKey,
-        config_value: configValue,
+        config_value: String(configValue), // Ensure it's a string
         description: description || null,
         updated_at: new Date().toISOString()
       }, {
@@ -71,7 +80,7 @@ serve(async (req) => {
       .single();
 
     if (updateError) {
-      console.error('Error updating system config:', updateError);
+      console.error('Error upserting system config:', updateError);
       throw updateError;
     }
 
