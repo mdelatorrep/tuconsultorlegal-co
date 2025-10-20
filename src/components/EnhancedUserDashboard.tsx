@@ -34,7 +34,8 @@ import {
   Target,
   Sparkles,
   ChevronRight,
-  Activity
+  Activity,
+  Mail
 } from 'lucide-react';
 import { Input } from './ui/input';
 import { useDocumentPayment } from './document-payment/useDocumentPayment';
@@ -46,6 +47,9 @@ import { useUserOnboarding } from '@/hooks/useUserOnboarding';
 import { UserOnboardingCoachmarks } from './UserOnboardingCoachmarks';
 import ChatWidget from './ChatWidget';
 import { IntelligentDocumentSearch } from './IntelligentDocumentSearch';
+import { ChangeEmailDialog } from './ChangeEmailDialog';
+import { PasswordResetDialog } from './PasswordResetDialog';
+import { MagicLinkDialog } from './MagicLinkDialog';
 
 interface EnhancedUserDashboardProps {
   onBack: () => void;
@@ -926,6 +930,47 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
                         <span className="text-sm">Datos Personales</span>
                       </div>
                       <Badge variant="outline">Protegido</Badge>
+                    </div>
+                  </div>
+                  
+                  <div className="pt-4 border-t space-y-3">
+                    <h4 className="font-semibold text-sm">Gestionar cuenta</h4>
+                    <div className="flex flex-col gap-2">
+                      <ChangeEmailDialog
+                        trigger={
+                          <Button variant="outline" size="sm" className="w-full justify-start">
+                            <Mail className="w-4 h-4 mr-2" />
+                            Cambiar correo electrónico
+                          </Button>
+                        }
+                        onChangeEmail={async (newEmail) => {
+                          const { error } = await supabase.auth.updateUser({
+                            email: newEmail
+                          });
+                          
+                          if (error) {
+                            toast.error('Error al cambiar correo', {
+                              description: error.message
+                            });
+                            return { error };
+                          }
+                          
+                          toast.success('Correo actualizado', {
+                            description: 'Revisa tu nuevo correo para confirmar el cambio'
+                          });
+                          
+                          return { error: null as any };
+                        }}
+                      />
+                      
+                      <PasswordResetDialog
+                        trigger={
+                          <Button variant="outline" size="sm" className="w-full justify-start">
+                            <Lock className="w-4 h-4 mr-2" />
+                            Cambiar contraseña
+                          </Button>
+                        }
+                      />
                     </div>
                   </div>
                   

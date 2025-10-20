@@ -8,6 +8,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { ArrowLeft, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
 import { Checkbox } from './ui/checkbox';
+import { PasswordResetDialog } from './PasswordResetDialog';
+import { MagicLinkDialog } from './MagicLinkDialog';
 
 interface UserAuthPageProps {
   onBack: () => void;
@@ -195,6 +197,10 @@ export default function UserAuthPage({ onBack, onAuthSuccess }: UserAuthPageProp
                     </div>
                   </div>
 
+                  <div className="flex items-center justify-between mb-4">
+                    <PasswordResetDialog />
+                  </div>
+
                   <Button
                     type="submit"
                     disabled={isLoading}
@@ -203,6 +209,17 @@ export default function UserAuthPage({ onBack, onAuthSuccess }: UserAuthPageProp
                   >
                     {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
                   </Button>
+
+                  <div className="relative my-4">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-card px-2 text-muted-foreground">O accede con</span>
+                    </div>
+                  </div>
+
+                  <MagicLinkDialog />
                 </form>
               </TabsContent>
 

@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Bot, Plus, Settings, LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Lock, Crown, Users, SpellCheck, AlertCircle, Clock, FileImage, Send } from "lucide-react";
+import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Bot, Plus, Settings, LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Lock, Crown, Users, SpellCheck, AlertCircle, Clock, FileImage, Send, Mail } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import LawyerStatsSection from "./LawyerStatsSection";
@@ -26,6 +26,8 @@ import LawyerOnboardingCoachmarks from "./LawyerOnboardingCoachmarks";
 import { useLawyerOnboarding } from "@/hooks/useLawyerOnboarding";
 import { SubscriptionManager } from "./SubscriptionManager";
 import { SubscriptionStatusIndicator } from "./SubscriptionStatusIndicator";
+import { ChangeEmailDialog } from "./ChangeEmailDialog";
+import { PasswordResetDialog } from "./PasswordResetDialog";
 
 interface DocumentToken {
   id: string;
@@ -995,7 +997,48 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
               ))}
 
               {/* Logout Button */}
-              <div className="p-4 border-t mt-auto">
+              <div className="p-4 border-t mt-auto space-y-2">
+                <div className={`space-y-2 ${isMobile ? 'hidden lg:flex lg:flex-col' : 'flex flex-col'}`}>
+                  <ChangeEmailDialog
+                    trigger={
+                      <Button variant="outline" size="sm" className="w-full justify-start text-xs">
+                        <Mail className="h-3 w-3 mr-2" />
+                        Cambiar Email
+                      </Button>
+                    }
+                    onChangeEmail={async (newEmail) => {
+                      const { error } = await supabase.auth.updateUser({
+                        email: newEmail
+                      });
+                      
+                      if (error) {
+                        toast({
+                          title: "Error",
+                          description: error.message,
+                          variant: "destructive"
+                        });
+                        return { error };
+                      }
+                      
+                      toast({
+                        title: "Correo actualizado",
+                        description: "Revisa tu nuevo correo para confirmar el cambio"
+                      });
+                      
+                      return { error: null as any };
+                    }}
+                  />
+                  
+                  <PasswordResetDialog
+                    trigger={
+                      <Button variant="outline" size="sm" className="w-full justify-start text-xs">
+                        <Lock className="h-3 w-3 mr-2" />
+                        Cambiar Contraseña
+                      </Button>
+                    }
+                  />
+                </div>
+                
                 <Button
                   onClick={() => {
                     console.log('=== LOGOUT BUTTON CLICKED ===');
