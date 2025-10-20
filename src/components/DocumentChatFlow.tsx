@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Send, User, Bot, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { useUserAuth } from "@/hooks/useUserAuth";
 
 interface DocumentChatFlowProps {
   agentId: string;
@@ -33,20 +34,22 @@ interface AgentData {
 }
 
 export default function DocumentChatFlow({ agentId, onBack, onComplete }: DocumentChatFlowProps) {
+  const { user, isAuthenticated } = useUserAuth();
   const [agent, setAgent] = useState<AgentData | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentMessage, setCurrentMessage] = useState('');
-  const [loading, setLoading] = useState(false); // Iniciar en false
+  const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [userInfo, setUserInfo] = useState({ name: '', email: '' });
   const [showUserForm, setShowUserForm] = useState(false);
   const [collectedData, setCollectedData] = useState<Record<string, any>>({});
   const [dataProcessingConsent, setDataProcessingConsent] = useState(false);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   
-  // Estados para OpenAI (MOVERLOS AL INICIO)
+  // Estados para OpenAI
   const [threadId, setThreadId] = useState<string | null>(null);
   const [openaiAgentId, setOpenaiAgentId] = useState<string | null>(null);
   
@@ -56,14 +59,45 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
 
-  // Verificar si ya aceptó términos en esta sesión
+  // Cargar perfil de usuario autenticado
   useEffect(() => {
-    const accepted = localStorage.getItem(`terms_accepted_${agentId}`);
-    if (accepted === 'true') {
+    if (isAuthenticated && user) {
+      loadUserProfile();
+    }
+  }, [isAuthenticated, user]);
+
+  const loadUserProfile = async () => {
+    if (!user) return;
+    
+    const { data } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('id', user.id)
+      .maybeSingle();
+    
+    if (data) {
+      setUserProfile(data);
+      setUserInfo({
+        name: data.full_name || user.user_metadata?.full_name || '',
+        email: user.email || ''
+      });
+    }
+  };
+
+  // Verificar términos: usuarios autenticados ya los aceptaron en el registro
+  useEffect(() => {
+    if (isAuthenticated) {
       setTermsAccepted(true);
       setShowTermsDialog(false);
+      setDataProcessingConsent(true);
+    } else {
+      const accepted = localStorage.getItem(`terms_accepted_${agentId}`);
+      if (accepted === 'true') {
+        setTermsAccepted(true);
+        setShowTermsDialog(false);
+      }
     }
-  }, [agentId]);
+  }, [agentId, isAuthenticated]);
 
   // Solo cargar agente DESPUÉS de aceptar términos
   useEffect(() => {
@@ -535,17 +569,36 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
   };
 
   const generateDocument = async () => {
-    if (!userInfo.name.trim() || !userInfo.email.trim() || !agent) return;
-
-    // Validar consentimiento de datos
+    // Usuario autenticado: usar datos del perfil directamente
+    if (isAuthenticated && user) {
+      const userName = userProfile?.full_name || user.user_metadata?.full_name || '';
+      const userEmail = user.email || '';
+      
+      if (!userName || !userEmail) {
+        toast.error('No se pudo obtener tu información de perfil');
+        return;
+      }
+      
+      setGenerating(true);
+      await executeDocumentGeneration(userName, userEmail, user.id);
+      return;
+    }
+    
+    // Usuario anónimo: validar consentimiento y mostrar formulario
     if (!dataProcessingConsent) {
       toast.error('Debes aceptar el tratamiento de datos personales para continuar');
       return;
     }
 
-    setGenerating(true);
+    setShowUserForm(true);
+  };
+
+  const executeDocumentGeneration = async (
+    userName: string, 
+    userEmail: string, 
+    userId: string | null = null
+  ) => {
     try {
-      // Procesar y extraer información estructurada de la conversación
       const processedConversation = await processConversationData();
       
       const { data, error } = await supabase.functions.invoke('generate-document-from-chat', {
@@ -553,8 +606,9 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
           conversation: messages.map(msg => ({ role: msg.role, content: msg.content })),
           template_content: agent.template_content,
           document_name: agent.document_name,
-          user_email: userInfo.email,
-          user_name: userInfo.name,
+          user_email: userEmail,
+          user_name: userName,
+          user_id: userId,
           sla_hours: agent.sla_hours || 4,
           collected_data: { ...collectedData, ...processedConversation },
           placeholder_fields: agent.placeholder_fields,
@@ -564,22 +618,31 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
 
       if (error) throw error;
 
-      // Crear deep link para seguimiento
-      const trackingUrl = `${window.location.origin}/seguimiento?token=${data.token}`;
-      
-      toast.success(
-        <div className="space-y-2">
-          <p className="font-semibold">¡Documento generado exitosamente!</p>
-          <p className="text-sm">Token: {data.token}</p>
-          <button 
-            onClick={() => window.open(trackingUrl, '_blank')}
-            className="text-primary underline text-sm"
-          >
-            Ver seguimiento
-          </button>
-        </div>
-      );
-      
+      if (isAuthenticated) {
+        toast.success(
+          <div className="space-y-2">
+            <p className="font-semibold">¡Documento generado!</p>
+            <p className="text-sm">Puedes verlo en tu panel de documentos</p>
+          </div>,
+          { duration: 5000 }
+        );
+      } else {
+        const trackingUrl = `${window.location.origin}/seguimiento?token=${data.token}`;
+        toast.success(
+          <div className="space-y-2">
+            <p className="font-semibold">¡Documento generado exitosamente!</p>
+            <p className="text-sm">Token: {data.token}</p>
+            <button 
+              onClick={() => window.open(trackingUrl, '_blank')}
+              className="text-primary underline text-sm"
+            >
+              Ver seguimiento
+            </button>
+          </div>,
+          { duration: 10000 }
+        );
+      }
+
       onComplete(data.token);
     } catch (error) {
       console.error('Error generating document:', error);
@@ -819,7 +882,16 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
     );
   }
 
-  if (showUserForm) {
+  if (showUserForm && !isAuthenticated) {
+    const handleSubmit = async () => {
+      if (!userInfo.name.trim() || !userInfo.email.trim()) {
+        toast.error('Por favor completa toda la información requerida');
+        return;
+      }
+      
+      await executeDocumentGeneration(userInfo.name, userInfo.email, null);
+    };
+
     return (
       <div className="min-h-screen flex items-center justify-center px-4 py-8">
         <div className="w-full max-w-md">
@@ -915,7 +987,7 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
                   Volver al chat
                 </Button>
                 <Button
-                  onClick={generateDocument}
+                  onClick={handleSubmit}
                   disabled={!userInfo.name.trim() || !userInfo.email.trim() || !dataProcessingConsent || generating}
                   className="flex-1"
                 >
@@ -959,6 +1031,18 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
 
           {/* Messages - Modal scrollable area */}
           <div className="flex-1 overflow-y-auto px-4 py-3 bg-gray-50 dark:bg-gray-800" style={{ maxHeight: '60vh' }}>
+            {isAuthenticated && userInfo.name && (
+              <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg flex items-center gap-2">
+                <User className="w-4 h-4 text-primary shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">Sesión iniciada como {userInfo.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Tu documento se vinculará automáticamente a tu cuenta
+                  </p>
+                </div>
+              </div>
+            )}
+            
             <div className="space-y-3 pb-4">
               {messages.map((message, index) => (
                 <div key={index} className="animate-fade-in">
@@ -1002,11 +1086,22 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
                             <span className="text-sm font-medium text-green-700 dark:text-green-300">¡Documento listo para generar!</span>
                           </div>
                           <Button 
-                            onClick={() => setShowUserForm(true)}
+                            onClick={generateDocument}
+                            disabled={generating}
                             className="w-full bg-green-600 hover:bg-green-700 text-white rounded-xl"
                             size="sm"
                           >
-                            Continuar con mis datos
+                            {generating ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/20 border-t-white mr-2" />
+                                Generando...
+                              </>
+                            ) : (
+                              <>
+                                <FileText className="w-4 h-4 mr-2" />
+                                {isAuthenticated ? 'Generar Documento' : 'Continuar con mis datos'}
+                              </>
+                            )}
                           </Button>
                         </div>
                       </div>

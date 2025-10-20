@@ -40,7 +40,7 @@ serve(async (req) => {
 
     console.log('Using OpenAI model:', selectedModel);
 
-    const { conversation, template_content, document_name, user_email, user_name, sla_hours, collected_data, placeholder_fields, price } = await req.json();
+    const { conversation, template_content, document_name, user_email, user_name, user_id, sla_hours, collected_data, placeholder_fields, price } = await req.json();
 
     if (!conversation || !template_content) {
       return new Response(
@@ -213,6 +213,7 @@ FORMATO DE RESPUESTA: Devuelve únicamente el documento final usando la plantill
         document_content: documentContent,
         user_email: user_email,
         user_name: user_name,
+        user_id: user_id || null,
         price: price || 0,
         sla_hours: sla_hours || 4,
         sla_deadline: slaDeadline.toISOString(),

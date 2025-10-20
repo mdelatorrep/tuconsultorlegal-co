@@ -166,7 +166,53 @@ export default function DocumentFormFlow({ agentId, onBack, onComplete }: Docume
   const createDocumentToken = async () => {
     if (!agent) return;
 
-    // Validar consentimiento de datos
+    // Usuario autenticado: usar sus datos directamente
+    if (isAuthenticated && user) {
+      const userName = user.user_metadata?.full_name || userInfo.name;
+      const userEmail = user.email || userInfo.email;
+      
+      if (!userName || !userEmail) {
+        toast.error('No se pudo obtener tu información');
+        return;
+      }
+
+      setCreating(true);
+      try {
+        let documentContent = agent.template_content;
+        
+        Object.entries(formData).forEach(([key, value]) => {
+          documentContent = documentContent.replace(new RegExp(`{{${key}}}`, 'g'), value);
+        });
+
+        if (additionalClause.trim()) {
+          documentContent += `\n\nCLÁUSULA ADICIONAL:\n${additionalClause}`;
+        }
+
+        const { data, error } = await supabase.functions.invoke('create-document-token', {
+          body: {
+            document_content: documentContent,
+            document_type: agent.document_name,
+            user_email: userEmail,
+            user_name: userName,
+            user_id: user.id,
+            sla_hours: agent.sla_hours || 4
+          }
+        });
+
+        if (error) throw error;
+
+        toast.success('Documento creado exitosamente');
+        onComplete(data.token);
+      } catch (error) {
+        console.error('Error creating document token:', error);
+        toast.error('Error al crear el documento');
+      } finally {
+        setCreating(false);
+      }
+      return;
+    }
+
+    // Usuario anónimo: validar consentimiento
     if (!dataProcessingConsent) {
       toast.error('Debes aceptar el tratamiento de datos personales para continuar');
       return;
@@ -174,15 +220,12 @@ export default function DocumentFormFlow({ agentId, onBack, onComplete }: Docume
 
     setCreating(true);
     try {
-      // Prepare document content with form data and additional clause
       let documentContent = agent.template_content;
       
-      // Replace placeholders with form data
       Object.entries(formData).forEach(([key, value]) => {
         documentContent = documentContent.replace(new RegExp(`{{${key}}}`, 'g'), value);
       });
 
-      // Add additional clause if provided
       if (additionalClause.trim()) {
         documentContent += `\n\nCLÁUSULA ADICIONAL:\n${additionalClause}`;
       }
@@ -194,7 +237,7 @@ export default function DocumentFormFlow({ agentId, onBack, onComplete }: Docume
           user_email: userInfo.email,
           user_name: userInfo.name,
           sla_hours: agent.sla_hours || 4,
-          user_id: isAuthenticated ? user?.id : null
+          user_id: null
         }
       });
 
@@ -494,12 +537,27 @@ export default function DocumentFormFlow({ agentId, onBack, onComplete }: Docume
                   Anterior
                 </Button>
                 <Button
-                  onClick={() => setCurrentGroupIndex(fieldGroups.length + 1)}
-                  disabled={needsAdditionalClause === null}
+                  onClick={() => {
+                    if (isAuthenticated) {
+                      createDocumentToken();
+                    } else {
+                      setCurrentGroupIndex(fieldGroups.length + 1);
+                    }
+                  }}
+                  disabled={needsAdditionalClause === null || (needsAdditionalClause && !additionalClause.trim())}
                   className="flex-1"
                 >
-                  Continuar
-                  <ArrowRight className="w-4 h-4 ml-2" />
+                  {isAuthenticated ? (
+                    <>
+                      <FileText className="w-4 h-4 mr-2" />
+                      Crear Documento
+                    </>
+                  ) : (
+                    <>
+                      Continuar
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </>
+                  )}
                 </Button>
               </div>
             </CardContent>
@@ -509,8 +567,9 @@ export default function DocumentFormFlow({ agentId, onBack, onComplete }: Docume
     );
   }
 
-  // Step: User information
-  return (
+  // Step: User information (SOLO para usuarios anónimos)
+  if (!isAuthenticated) {
+    return (
     <div className="min-h-screen flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-md">
         <Card>
@@ -614,5 +673,9 @@ export default function DocumentFormFlow({ agentId, onBack, onComplete }: Docume
         </Card>
       </div>
     </div>
-  );
+    );
+  }
+  
+  // Si el usuario está autenticado, no mostrar este paso
+  return null;
 }
