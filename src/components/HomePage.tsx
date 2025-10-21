@@ -93,7 +93,7 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
           {/* Grid pattern sutil */}
           <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:100px_100px]"></div>
 
-          {/* Glow effect central */}
+          {/* Glow effect central - Brand Blue */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#0372e8]/10 rounded-full blur-[120px]"></div>
         </div>
 
@@ -107,7 +107,7 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
             >
               Documentos Legales.
               <br />
-              <span className="font-[700] bg-gradient-to-r from-[#0372e8] to-[#0a8fff] bg-clip-text text-transparent">
+              <span className="font-[700] bg-gradient-to-r from-[#f2bb31] to-[#ffd666] bg-clip-text text-transparent">
                 En 10 Minutos.
               </span>
             </motion.h1>
@@ -132,7 +132,7 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
               <Button
                 size="lg"
                 onClick={() => onNavigate("user-dashboard")}
-                className="bg-white text-[#010f24] hover:bg-white/90 px-12 py-7 text-lg font-medium rounded-full shadow-2xl hover:shadow-[0_20px_60px_rgba(3,114,232,0.4)] transition-all duration-500 hover:scale-[1.02]"
+                className="bg-[#0372e8] text-white hover:bg-[#0260c7] px-12 py-7 text-lg font-medium rounded-full shadow-2xl hover:shadow-[0_20px_60px_rgba(3,114,232,0.5)] transition-all duration-500 hover:scale-[1.02]"
               >
                 Comenzar gratis
               </Button>
@@ -357,13 +357,13 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
       {/* Final CTA - Minimalista y Potente */}
       <FadeInSection delay={0.5}>
         <section className="py-40 bg-gradient-to-br from-[#010f24] via-[#011838] to-[#010f24] relative overflow-hidden">
-          {/* Efecto de glow */}
+          {/* Efecto de glow - Brand Blue */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#0372e8]/20 rounded-full blur-[150px]"></div>
 
           <div className="container mx-auto px-6 text-center relative z-10">
             <div className="max-w-3xl mx-auto">
               <h2 className="text-5xl md:text-7xl font-[200] text-white mb-6 leading-tight tracking-tight">
-                Comienza hoy.
+                <span className="bg-gradient-to-r from-[#f2bb31] to-[#ffd666] bg-clip-text text-transparent font-[700]">Comienza hoy.</span>
                 <br />
                 <span className="font-[700]">Sin compromisos.</span>
               </h2>
@@ -375,7 +375,7 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
               <Button
                 size="lg"
                 onClick={() => onNavigate("user-dashboard")}
-                className="bg-white text-[#010f24] hover:bg-white/90 px-12 py-7 text-lg font-medium rounded-full shadow-2xl hover:shadow-[0_20px_60px_rgba(255,255,255,0.3)] transition-all duration-500 hover:scale-[1.02]"
+                className="bg-[#0372e8] text-white hover:bg-[#0260c7] px-12 py-7 text-lg font-medium rounded-full shadow-2xl hover:shadow-[0_20px_60px_rgba(3,114,232,0.5)] transition-all duration-500 hover:scale-[1.02]"
               >
                 Comenzar gratis
               </Button>

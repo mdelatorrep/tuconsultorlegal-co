@@ -82,10 +82,16 @@ All colors MUST be HSL.
     /* Brand Theme - Exact Brand Colors */
     --brand-blue: 213 96% 46%; /* #0372e8 - Color Principal */
     --brand-blue-light: 213 96% 55%; /* lighter variant */
+    --brand-blue-dark: 217 92% 7%; /* #010f24 - Dark blue for backgrounds */
     --brand-yellow: 44 87% 57%; /* #f2bb31 - Color Secundario */
     --brand-yellow-dark: 44 87% 50%; /* darker variant */
     --brand-dark: 217 92% 7%; /* #010f24 - Complementario 1 */
     --brand-white: 0 0% 100%; /* #ffffff - Complementario 2 */
+    
+    /* Hero Gradients - Consistent Brand Identity */
+    --gradient-hero-bg: linear-gradient(135deg, hsl(217, 92%, 7%), hsl(217, 85%, 10%), hsl(217, 92%, 7%));
+    --gradient-hero-accent: linear-gradient(90deg, hsl(213, 96%, 46%), hsl(213, 96%, 55%));
+    --gradient-text-yellow: linear-gradient(90deg, hsl(44, 87%, 57%), hsl(44, 87%, 65%));
 
     /* Solid Professional Backgrounds - Brand Colors */
     --solid-hero: hsl(var(--brand-dark));

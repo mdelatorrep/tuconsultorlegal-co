@@ -126,8 +126,10 @@ export default function EmpresasPage({
       </div>;
   }
   return <div className="container mx-auto px-6 py-20">
-      {/* Hero Section */}
-      <div className="bg-gradient-to-br from-primary via-primary-light to-brand-blue-light rounded-xl p-8 mb-16 shadow-elevated">
+      {/* Hero Section - Unified Brand Identity */}
+      <div className="bg-gradient-to-br from-[#010f24] via-[#011838] to-[#010f24] rounded-xl p-8 mb-16 shadow-elevated relative overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#0372e8]/10 rounded-full blur-[120px]"></div>
+        <div className="relative z-10">
         <div className="text-center max-w-4xl mx-auto">
           <h1 className="text-4xl md:text-5xl font-extrabold mb-6 text-white">
             Tu Centro de Control Legal Empresarial
@@ -160,7 +162,7 @@ export default function EmpresasPage({
             </div>
           </div>
           
-          <Button onClick={() => onNavigate && onNavigate("proximamente-empresas")} variant="accent" size="xl" className="shadow-glow">
+          <Button onClick={() => onNavigate && onNavigate("proximamente-empresas")} className="bg-[#0372e8] hover:bg-[#0260c7] text-white shadow-glow px-8 py-3 text-lg rounded-full">
             <Building className="w-5 h-5 mr-2" />
             Acceder al Portal Empresarial
           </Button>
@@ -168,6 +170,7 @@ export default function EmpresasPage({
           <p className="text-white/60 text-sm">
             Próximamente disponible - Únete a la lista de espera
           </p>
+        </div>
         </div>
       </div>
 

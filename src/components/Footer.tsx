@@ -8,25 +8,25 @@ export default function Footer({ onNavigate }: FooterProps) {
   };
 
   return (
-    <footer className="bg-[hsl(var(--brand-yellow))] text-foreground">
+    <footer className="bg-[#0372e8] text-white">
       <div className="container mx-auto px-6 py-12">
         <div className="grid md:grid-cols-4 gap-8">
           {/* Brand */}
           <div>
-            <h3 className="text-xl font-bold mb-4">Tu Consultor Legal</h3>
-            <p className="text-foreground/80">
+            <h3 className="text-xl font-bold mb-4 text-white">Tu Consultor Legal</h3>
+            <p className="text-white/90">
               Democratizando el acceso a servicios legales de alta calidad en Colombia con tecnología.
             </p>
           </div>
 
           {/* Services */}
           <div>
-            <h3 className="text-lg font-bold mb-4">Servicios</h3>
+            <h3 className="text-lg font-bold mb-4 text-white">Servicios</h3>
             <ul className="space-y-2">
               <li>
                 <button
                   onClick={() => handleNavClick("personas")}
-                  className="text-foreground/80 hover:text-foreground transition-smooth"
+                  className="text-white/90 hover:text-white transition-smooth"
                 >
                   Para Personas
                 </button>
@@ -34,7 +34,7 @@ export default function Footer({ onNavigate }: FooterProps) {
               <li>
                 <button
                   onClick={() => handleNavClick("empresas")}
-                  className="text-foreground/80 hover:text-foreground transition-smooth"
+                  className="text-white/90 hover:text-white transition-smooth"
                 >
                   Para Empresas
                 </button>
@@ -42,7 +42,7 @@ export default function Footer({ onNavigate }: FooterProps) {
               <li>
                 <button
                   onClick={() => handleNavClick("precios")}
-                  className="text-foreground/80 hover:text-foreground transition-smooth"
+                  className="text-white/90 hover:text-white transition-smooth"
                 >
                   Precios
                 </button>
@@ -52,12 +52,12 @@ export default function Footer({ onNavigate }: FooterProps) {
 
           {/* Legal */}
           <div>
-            <h3 className="text-lg font-bold mb-4">Legal</h3>
+            <h3 className="text-lg font-bold mb-4 text-white">Legal</h3>
             <ul className="space-y-2">
               <li>
                 <button
                   onClick={() => handleNavClick("terminos")}
-                  className="text-foreground/80 hover:text-foreground transition-smooth"
+                  className="text-white/90 hover:text-white transition-smooth"
                 >
                   Términos y Condiciones
                 </button>
@@ -65,7 +65,7 @@ export default function Footer({ onNavigate }: FooterProps) {
               <li>
                 <button
                   onClick={() => handleNavClick("privacidad")}
-                  className="text-foreground/80 hover:text-foreground transition-smooth"
+                  className="text-white/90 hover:text-white transition-smooth"
                 >
                   Política de Privacidad
                 </button>
@@ -75,21 +75,21 @@ export default function Footer({ onNavigate }: FooterProps) {
 
           {/* Contact & Social */}
           <div>
-            <h3 className="text-lg font-bold mb-4">Contacto</h3>
+            <h3 className="text-lg font-bold mb-4 text-white">Contacto</h3>
             <div className="space-y-2 mb-4">
-              <p className="text-foreground/80">contacto@tuconsultorlegal.co</p>
-              <p className="text-foreground/80">Envigado, Antioquia, Colombia</p>
+              <p className="text-white/90">contacto@tuconsultorlegal.co</p>
+              <p className="text-white/90">Envigado, Antioquia, Colombia</p>
             </div>
 
             {/* Social Media */}
             <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-foreground/90">Síguenos</h4>
+              <h4 className="text-sm font-semibold text-white">Síguenos</h4>
               <div className="flex space-x-3">
                 <a
                   href="https://www.instagram.com/tuconsultorlegal.co/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-foreground/70 hover:text-foreground transition-smooth"
+                  className="text-white/80 hover:text-white transition-smooth"
                   aria-label="Instagram"
                 >
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -100,7 +100,7 @@ export default function Footer({ onNavigate }: FooterProps) {
                   href="https://www.tiktok.com/@tuconsultorlegal.co"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-foreground/70 hover:text-foreground transition-smooth"
+                  className="text-white/80 hover:text-white transition-smooth"
                   aria-label="TikTok"
                 >
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -111,7 +111,7 @@ export default function Footer({ onNavigate }: FooterProps) {
                   href="https://www.linkedin.com/company/tuconsultorlegal-co"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-foreground/70 hover:text-foreground transition-smooth"
+                  className="text-white/80 hover:text-white transition-smooth"
                   aria-label="LinkedIn"
                 >
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -123,7 +123,7 @@ export default function Footer({ onNavigate }: FooterProps) {
           </div>
         </div>
 
-        <div className="mt-10 border-t border-foreground/20 pt-6 text-center text-foreground/60 text-sm">
+        <div className="mt-10 border-t border-white/20 pt-6 text-center text-white/80 text-sm">
           <p>&copy; 2025 Tu Consultor Legal SAS. Todos los derechos reservados.</p>
         </div>
       </div>
