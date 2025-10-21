@@ -103,9 +103,10 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, ease: [0.25, 0.1, 0.25, 1] }}
-              className="text-6xl md:text-8xl lg:text-[120px] font-[100] text-white mb-6 leading-[0.95] tracking-tight"
+              className="text-6xl md:text-8xl lg:text-[120px] font-[100] mb-6 leading-[0.95] tracking-tight"
             >
-              Documentos Legales.
+              <span className="text-white">Documentos</span>{' '}
+              <span className="bg-gradient-to-r from-[#f2bb31] to-[#ffd666] bg-clip-text text-transparent font-[700]">Legales.</span>
               <br />
               <span className="font-[700] bg-gradient-to-r from-[#f2bb31] to-[#ffd666] bg-clip-text text-transparent">
                 En 10 Minutos.
@@ -362,10 +363,10 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
 
           <div className="container mx-auto px-6 text-center relative z-10">
             <div className="max-w-3xl mx-auto">
-              <h2 className="text-5xl md:text-7xl font-[200] text-white mb-6 leading-tight tracking-tight">
+              <h2 className="text-5xl md:text-7xl font-[200] mb-6 leading-tight tracking-tight">
                 <span className="bg-gradient-to-r from-[#f2bb31] to-[#ffd666] bg-clip-text text-transparent font-[700]">Comienza hoy.</span>
                 <br />
-                <span className="font-[700]">Sin compromisos.</span>
+                <span className="bg-gradient-to-r from-[#f2bb31] to-[#ffd666] bg-clip-text text-transparent font-[700]">Sin compromisos.</span>
               </h2>
 
               <p className="text-lg text-white/60 mb-12 font-[300] leading-relaxed max-w-xl mx-auto">

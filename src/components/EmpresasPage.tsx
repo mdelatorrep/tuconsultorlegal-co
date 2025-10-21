@@ -131,8 +131,9 @@ export default function EmpresasPage({
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#0372e8]/10 rounded-full blur-[120px]"></div>
         <div className="relative z-10">
         <div className="text-center max-w-4xl mx-auto">
-          <h1 className="text-4xl md:text-5xl font-extrabold mb-6 text-white">
-            Tu Centro de Control Legal Empresarial
+          <h1 className="text-4xl md:text-5xl font-extrabold mb-6">
+            <span className="text-white">Tu Centro de Control</span>{' '}
+            <span className="bg-gradient-to-r from-[#f2bb31] to-[#ffd666] bg-clip-text text-transparent">Legal Empresarial</span>
           </h1>
           <p className="text-lg mb-8 text-white/90">
             Regístrate para centralizar toda la gestión legal de tu empresa en un solo panel
