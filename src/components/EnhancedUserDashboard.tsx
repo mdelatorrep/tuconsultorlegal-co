@@ -155,6 +155,7 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
       if (authError || !user) {
+        toast.error('Sesión expirada, por favor inicia sesión nuevamente');
         onBack();
         return;
       }
@@ -168,8 +169,49 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
         .eq('id', user.id)
         .single();
 
-      if (profileError && profileError.code !== 'PGRST116') {
-        console.error('Error loading profile:', profileError);
+      if (profileError) {
+        if (profileError.code === 'PGRST116') {
+          // Profile doesn't exist, create it automatically
+          console.log('Profile not found, creating new profile for user:', user.id);
+          
+          const newProfile = {
+            id: user.id,
+            full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario',
+            email: user.email || '',
+            phone: user.user_metadata?.phone || null
+          };
+          
+          const { data: createdProfile, error: createError } = await supabase
+            .from('user_profiles')
+            .insert([newProfile])
+            .select()
+            .single();
+          
+          if (createError) {
+            console.error('Error creating profile:', createError);
+            toast.error('Error al crear perfil de usuario');
+            // Use auth data as fallback
+            setProfile({
+              id: user.id,
+              full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario',
+              email: user.email || '',
+              created_at: user.created_at
+            });
+          } else {
+            setProfile(createdProfile);
+            toast.success('Perfil creado exitosamente');
+          }
+        } else {
+          console.error('Error loading profile:', profileError);
+          toast.error('Error al cargar perfil de usuario');
+          // Use auth data as fallback
+          setProfile({
+            id: user.id,
+            full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario',
+            email: user.email || '',
+            created_at: user.created_at
+          });
+        }
       } else if (profileData) {
         setProfile(profileData);
       }
@@ -269,11 +311,26 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    const name = profile?.full_name?.split(' ')[0] || 'Usuario';
+    // Try to get name from profile, fall back to user metadata, then email, then generic
+    const name = profile?.full_name?.split(' ')[0] 
+      || user?.user_metadata?.full_name?.split(' ')[0] 
+      || user?.email?.split('@')[0] 
+      || 'Usuario';
     
     if (hour < 12) return `Buenos días, ${name}`;
     if (hour < 18) return `Buenas tardes, ${name}`;
     return `Buenas noches, ${name}`;
+  };
+  
+  const getUserDisplayName = () => {
+    return profile?.full_name 
+      || user?.user_metadata?.full_name 
+      || user?.email?.split('@')[0] 
+      || 'Usuario';
+  };
+  
+  const getUserEmail = () => {
+    return profile?.email || user?.email || '';
   };
 
   const handleLogout = async () => {
