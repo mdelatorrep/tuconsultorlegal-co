@@ -30,7 +30,7 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === 'development' && componentTagger(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       includeAssets: ['favicon-tcl.png', 'logo_tcl.png'],
       manifest: {
         name: 'Tu Consultor Legal - Documentos Legales con IA',
@@ -144,8 +144,8 @@ export default defineConfig(({ mode }) => ({
           }
         ],
         cleanupOutdatedCaches: true,
-        skipWaiting: true,
-        clientsClaim: true
+        skipWaiting: false,
+        clientsClaim: false
       },
       devOptions: {
         enabled: true,

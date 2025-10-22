@@ -1,55 +1,23 @@
-import { useState, useEffect } from 'react';
+import { useRegisterSW } from 'virtual:pwa-register/react';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const PWAUpdatePrompt = () => {
-  const [needRefresh, setNeedRefresh] = useState(false);
-  const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
-
-  useEffect(() => {
-    // Registrar service worker
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js')
-        .then((reg) => {
-          setRegistration(reg);
-          
-          // Detectar actualizaciones
-          reg.addEventListener('updatefound', () => {
-            const newWorker = reg.installing;
-            if (newWorker) {
-              newWorker.addEventListener('statechange', () => {
-                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                  setNeedRefresh(true);
-                }
-              });
-            }
-          });
-
-          // Chequear actualizaciones cada hora
-          setInterval(() => {
-            reg.update();
-          }, 60 * 60 * 1000);
-        })
-        .catch((error) => {
-          console.error('Error al registrar Service Worker:', error);
-        });
-    }
-  }, []);
+  const {
+    needRefresh: [needRefresh, setNeedRefresh],
+    updateServiceWorker,
+  } = useRegisterSW({
+    onRegistered(r) {
+      console.log('SW Registered:', r);
+    },
+    onRegisterError(error) {
+      console.error('SW registration error:', error);
+    },
+  });
 
   const handleUpdate = () => {
-    if (registration?.waiting) {
-      // Ocultar el modal inmediatamente
-      setNeedRefresh(false);
-      
-      // Escuchar cuando el nuevo service worker tome el control
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        window.location.reload();
-      });
-      
-      // Enviar mensaje al service worker para activarse
-      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-    }
+    updateServiceWorker(true);
   };
 
   return (
