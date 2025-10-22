@@ -39,8 +39,16 @@ export const PWAUpdatePrompt = () => {
 
   const handleUpdate = () => {
     if (registration?.waiting) {
+      // Ocultar el modal inmediatamente
+      setNeedRefresh(false);
+      
+      // Escuchar cuando el nuevo service worker tome el control
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        window.location.reload();
+      });
+      
+      // Enviar mensaje al service worker para activarse
       registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-      window.location.reload();
     }
   };
 
