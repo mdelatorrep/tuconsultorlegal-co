@@ -280,6 +280,25 @@ serve(async (req) => {
       console.log('💾 Saved authenticated user context to conversation');
     }
     
+    // First, delete any duplicate conversations for this thread (keep only most recent)
+    const { data: allConversations } = await supabase
+      .from('agent_conversations')
+      .select('id, updated_at')
+      .eq('openai_agent_id', openaiAgent.id)
+      .eq('thread_id', currentThreadId)
+      .order('updated_at', { ascending: false });
+    
+    if (allConversations && allConversations.length > 1) {
+      console.log(`🧹 Found ${allConversations.length} conversations for thread, cleaning duplicates...`);
+      const idsToDelete = allConversations.slice(1).map(c => c.id);
+      await supabase
+        .from('agent_conversations')
+        .delete()
+        .in('id', idsToDelete);
+      console.log(`✅ Deleted ${idsToDelete.length} duplicate conversations`);
+    }
+    
+    // Now upsert the current conversation
     await supabase
       .from('agent_conversations')
       .upsert({
@@ -288,6 +307,8 @@ serve(async (req) => {
         document_token_id: documentTokenId,
         conversation_data: conversationData,
         status: runStatus === 'completed' ? 'completed' : 'active'
+      }, {
+        onConflict: 'thread_id,openai_agent_id'
       });
 
     // Update agent statistics
@@ -733,7 +754,7 @@ async function handleRequestUserContactInfo(supabase: any, args: any, openaiAgen
   console.log('📧 Storing user contact info:', args);
   
   try {
-    // Get existing conversation to check if user context exists
+    // Get existing conversation to check if user context exists - ORDER BY updated_at to get most recent
     const { data: conversation } = await supabase
       .from('agent_conversations')
       .select('conversation_data')
@@ -786,17 +807,25 @@ async function handleStoreCollectedData(
   openaiAgentId: string,
   threadId: string
 ) {
-  console.log('Storing collected data:', { threadId, keys: Object.keys(args?.data || {}) });
+  console.log('Storing collected data:', { threadId, keys: Object.keys(args?.data || {}), fullArgs: args });
   try {
     const merge = args?.merge !== false; // default true
     const newData = args?.data || {};
+    
+    // Log if data is empty to debug
+    if (Object.keys(newData).length === 0) {
+      console.warn('⚠️ store_collected_data called with empty data object');
+      return 'Datos guardados (vacío). Continúa con la siguiente pregunta.';
+    }
 
-    // Get existing conversation for this thread
+    // Get existing conversation for this thread - ORDER BY updated_at to get most recent
     const { data: existing, error: fetchErr } = await supabase
       .from('agent_conversations')
       .select('id, conversation_data')
       .eq('openai_agent_id', openaiAgentId)
       .eq('thread_id', threadId)
+      .order('updated_at', { ascending: false })
+      .limit(1)
       .maybeSingle();
 
     if (fetchErr) {

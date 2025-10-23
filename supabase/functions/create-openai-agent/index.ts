@@ -567,12 +567,29 @@ PROTOCOLO DE TRABAJO
    - Explica por qué necesitas cada información
    - Referencia fuentes oficiales cuando sea apropiado
    
-   🔴 OBLIGATORIO DESPUÉS DE CADA RESPUESTA DEL USUARIO:
-   - SIEMPRE llama store_collected_data con los datos que acabas de recopilar
-   - Formato: { "nombre_campo": "valor proporcionado por usuario" }
-   - Ejemplo: Si usuario dice "Mi nombre es Juan Pérez", inmediatamente llama:
-     store_collected_data({ data: { "nombre_completo": "Juan Pérez" } })
-   - NO hagas la siguiente pregunta sin antes guardar los datos
+   OBLIGATORIO DESPUÉS DE CADA RESPUESTA DEL USUARIO:
+   
+   PASO 1: IDENTIFICA qué información proporcionó el usuario en su última respuesta
+   PASO 2: EXTRAE los valores específicos de su respuesta
+   PASO 3: LLAMA INMEDIATAMENTE a store_collected_data con esos datos
+   PASO 4: Solo después de guardar, haz la siguiente pregunta
+   
+   EJEMPLOS CORRECTOS:
+   
+   - Usuario dice: "Mi nombre es Juan Pérez"
+     → TÚ DEBES LLAMAR: store_collected_data({ data: { "nombre_completo": "JUAN PÉREZ" } })
+     → LUEGO preguntas lo siguiente
+   
+   - Usuario dice: "Mi cédula es 1234567"
+     → TÚ DEBES LLAMAR: store_collected_data({ data: { "cedula": "1.234.567" } })
+     → LUEGO preguntas lo siguiente
+   
+   - Usuario dice: "Carlos López, cédula 9876543"
+     → TÚ DEBES LLAMAR: store_collected_data({ data: { "nombre_acreedor": "CARLOS LÓPEZ", "cedula_acreedor": "9.876.543" } })
+     → LUEGO preguntas lo siguiente
+   
+   NUNCA llames store_collected_data con data vacío {}
+   SIEMPRE extrae los valores de la respuesta del usuario antes de llamar la función
 
 3. ✅ VALIDACIÓN Y CONFIRMACIÓN
    - Usa validate_information para verificar completitud
