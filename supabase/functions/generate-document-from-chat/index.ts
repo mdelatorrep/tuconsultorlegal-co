@@ -188,10 +188,56 @@ FORMATO DE RESPUESTA: Devuelve únicamente el documento final usando la plantill
     }
 
     const data = await response.json();
-    const documentContent = data.choices[0]?.message?.content?.trim();
+    let documentContent = data.choices[0]?.message?.content?.trim();
 
     if (!documentContent) {
       throw new Error('No document content generated');
+    }
+
+    // Clean HTML tags from document content
+    console.log('Cleaning HTML tags from document content...');
+    documentContent = documentContent
+      .replace(/<\/?div[^>]*>/gi, '')
+      .replace(/<\/?span[^>]*>/gi, '')
+      .replace(/<\/?p[^>]*>/gi, '')
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/&amp;/gi, '&')
+      .replace(/&lt;/gi, '<')
+      .replace(/&gt;/gi, '>')
+      .replace(/&quot;/gi, '"')
+      .trim();
+
+    // Check for unreplaced placeholders
+    const placeholderRegex = /\{\{([^}]+)\}\}/g;
+    const unreplacedPlaceholders = documentContent.match(placeholderRegex);
+    
+    if (unreplacedPlaceholders && unreplacedPlaceholders.length > 0) {
+      console.warn('⚠️ Found unreplaced placeholders:', unreplacedPlaceholders);
+      
+      // Try to replace any remaining placeholders with collected_data if available
+      if (collected_data) {
+        for (const placeholder of unreplacedPlaceholders) {
+          const fieldName = placeholder.replace(/[{}]/g, '');
+          const fieldKey = Object.keys(collected_data).find(
+            key => key.toLowerCase() === fieldName.toLowerCase()
+          );
+          
+          if (fieldKey && collected_data[fieldKey]) {
+            console.log(`Replacing ${placeholder} with value from collected_data`);
+            documentContent = documentContent.replace(
+              new RegExp(placeholder.replace(/[{}]/g, '\\{\\}'), 'g'),
+              collected_data[fieldKey]
+            );
+          }
+        }
+      }
+      
+      // Check again after attempted replacement
+      const stillUnreplaced = documentContent.match(placeholderRegex);
+      if (stillUnreplaced && stillUnreplaced.length > 0) {
+        console.error('❌ Still have unreplaced placeholders after retry:', stillUnreplaced);
+      }
     }
 
     // Now create the document token with the generated content
