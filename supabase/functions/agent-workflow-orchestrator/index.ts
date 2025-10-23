@@ -34,6 +34,30 @@ serve(async (req) => {
       throw new Error('OpenAI agent not found');
     }
 
+    // 🧹 CRÍTICO: Limpiar duplicados ANTES de cualquier operación
+    console.log('🧹 Cleaning potential duplicates before processing...');
+    const { data: existingConversations } = await supabase
+      .from('agent_conversations')
+      .select('id, updated_at')
+      .eq('openai_agent_id', openaiAgent.id)
+      .eq('thread_id', threadId || '')
+      .order('updated_at', { ascending: false });
+
+    if (existingConversations && existingConversations.length > 1) {
+      console.log(`Found ${existingConversations.length} duplicates, keeping only the most recent`);
+      const idsToDelete = existingConversations.slice(1).map(c => c.id);
+      const { error: deleteError } = await supabase
+        .from('agent_conversations')
+        .delete()
+        .in('id', idsToDelete);
+      
+      if (deleteError) {
+        console.error('Error deleting duplicates:', deleteError);
+      } else {
+        console.log(`✅ Deleted ${idsToDelete.length} duplicate conversations`);
+      }
+    }
+
     // Create or use existing thread
     let currentThreadId = threadId;
     if (!currentThreadId) {
@@ -144,6 +168,20 @@ Email: ${userContext.email}
       if (runStatus === 'failed' || runStatus === 'cancelled' || runStatus === 'expired') {
         const errorMsg = runData.last_error?.message || 'Unknown error';
         console.error(`Run ${runStatus}:`, errorMsg);
+        
+        // Si es rate limit, dar mensaje específico
+        if (errorMsg.includes('Rate limit')) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: 'rate_limit',
+            message: 'El sistema está procesando muchas solicitudes. Por favor espera 1 minuto e intenta de nuevo.',
+            retryAfter: 60
+          }), {
+            status: 429,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        
         throw new Error(`El asistente encontró un error: ${errorMsg}`);
       }
 
@@ -846,28 +884,28 @@ async function handleStoreCollectedData(
     const merge = args?.merge !== false; // default true
     const newData = args?.data || {};
     
-    // Log if data is empty to debug
-    if (Object.keys(newData).length === 0) {
+    // Validación crítica: rechazar datos vacíos
+    if (!newData || Object.keys(newData).length === 0) {
       console.warn('⚠️ store_collected_data called with empty data object');
       return '❌ ERROR: No puedes llamar store_collected_data con data vacío. DEBES extraer los valores de la última respuesta del usuario y pasarlos en el parámetro data. Ejemplo: si el usuario dijo "Juan Pérez", debes llamar store_collected_data({ data: { "nombre_completo": "JUAN PÉREZ" } }). Vuelve a intentar extrayendo los datos correctamente.';
     }
 
-    // Get existing conversation for this thread - ORDER BY updated_at to get most recent
-    const { data: existing, error: fetchErr } = await supabase
-      .from('agent_conversations')
-      .select('id, conversation_data')
-      .eq('openai_agent_id', openaiAgentId)
-      .eq('thread_id', threadId)
-      .order('updated_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (fetchErr) {
-      console.warn('Could not fetch existing conversation, continuing:', fetchErr.message);
+    // Get existing conversation SOLO para merge
+    let existingData = {};
+    let existingMapping = {};
+    
+    if (merge) {
+      const { data: existing } = await supabase
+        .from('agent_conversations')
+        .select('conversation_data')
+        .eq('openai_agent_id', openaiAgentId)
+        .eq('thread_id', threadId)
+        .maybeSingle();
+      
+      existingData = existing?.conversation_data?.collected_data || {};
+      existingMapping = existing?.conversation_data?.placeholder_mapping || {};
     }
 
-    const existingData = existing?.conversation_data?.collected_data || {};
-    const existingMapping = existing?.conversation_data?.placeholder_mapping || {};
     const collected_data = merge ? { ...existingData, ...newData } : newData;
 
     // Get conversation_blocks to map questions to placeholders
@@ -905,27 +943,27 @@ async function handleStoreCollectedData(
     }
 
     const conversation_data = {
-      ...(existing?.conversation_data || {}),
       collected_data,
-      placeholder_mapping: newPlaceholderMapping
+      placeholder_mapping: newPlaceholderMapping,
+      last_updated: new Date().toISOString()
     };
 
-    if (existing?.id) {
-      const { error: upErr } = await supabase
-        .from('agent_conversations')
-        .update({ conversation_data, status: 'active', updated_at: new Date().toISOString() })
-        .eq('id', existing.id);
-      if (upErr) throw upErr;
-    } else {
-      const { error: insErr } = await supabase
-        .from('agent_conversations')
-        .insert({
-          openai_agent_id: openaiAgentId,
-          thread_id: threadId,
-          conversation_data,
-          status: 'active'
-        });
-      if (insErr) throw insErr;
+    // 🔥 USAR UPSERT DIRECTO con constraint único thread_id + openai_agent_id
+    const { error: upsertError } = await supabase
+      .from('agent_conversations')
+      .upsert({
+        openai_agent_id: openaiAgentId,
+        thread_id: threadId,
+        conversation_data,
+        status: 'active',
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'thread_id,openai_agent_id'
+      });
+
+    if (upsertError) {
+      console.error('Error upserting agent conversation:', upsertError);
+      throw new Error(`Error al guardar los datos: ${upsertError.message}`);
     }
 
     return `Datos guardados (${Object.keys(collected_data).length} campos).`;

@@ -41,6 +41,7 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [isRateLimited, setIsRateLimited] = useState(false);
   const [userInfo, setUserInfo] = useState({ name: '', email: '' });
   const [showUserForm, setShowUserForm] = useState(false);
   const [collectedData, setCollectedData] = useState<Record<string, any>>({});
@@ -390,7 +391,7 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
   };
 
   const sendMessage = async () => {
-    if (!currentMessage.trim() || !agent || sending) return;
+    if (!currentMessage.trim() || !agent || sending || isRateLimited) return;
 
     const userMessage: Message = {
       role: 'user',
@@ -471,9 +472,23 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
         body: requestBody
       });
       
+      // 🚨 Manejo específico de rate limit
       if (error) {
         console.error('❌ OpenAI Agent error:', error);
         console.error('❌ Error details:', JSON.stringify(error, null, 2));
+        
+        // Detectar error de rate limit
+        if (error.message?.includes('rate_limit') || error.message?.includes('Rate limit') || error.message?.includes('429')) {
+          toast.error('El sistema está procesando muchas solicitudes. Por favor espera 1 minuto e intenta de nuevo.');
+          setIsRateLimited(true);
+          setTimeout(() => {
+            setIsRateLimited(false);
+            toast.info('Ya puedes enviar mensajes nuevamente');
+          }, 60000); // 60 segundos
+          setSending(false);
+          return;
+        }
+        
         toast.error(`Error con el asistente: ${error.message || 'Error desconocido'}`);
         
         // Fallback to original chat system
@@ -1151,18 +1166,18 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
                   value={currentMessage}
                   onChange={(e) => setCurrentMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="Escribe un mensaje..."
-                  disabled={sending}
-                  className="pr-4 py-2.5 rounded-full bg-gray-100 dark:bg-gray-800 focus:bg-white dark:focus:bg-gray-700 transition-colors text-sm border"
+                  placeholder={isRateLimited ? "Por favor espera 1 minuto..." : "Escribe un mensaje..."}
+                  disabled={sending || isRateLimited}
+                  className={`pr-4 py-2.5 rounded-full bg-gray-100 dark:bg-gray-800 focus:bg-white dark:focus:bg-gray-700 transition-colors text-sm border ${isRateLimited ? 'opacity-50 cursor-not-allowed' : ''}`}
                   autoComplete="off"
                   autoFocus
                 />
               </div>
               <Button 
                 onClick={sendMessage} 
-                disabled={sending || !currentMessage.trim()}
+                disabled={sending || !currentMessage.trim() || isRateLimited}
                 size="icon"
-                className="rounded-full w-10 h-10 shrink-0 bg-primary hover:bg-primary/90"
+                className={`rounded-full w-10 h-10 shrink-0 bg-primary hover:bg-primary/90 ${isRateLimited ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <Send className="w-4 h-4" />
               </Button>

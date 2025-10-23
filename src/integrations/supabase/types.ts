@@ -2260,12 +2260,9 @@ export type Database = {
           updated_at: string
         }[]
       }
-      generate_secure_lawyer_token: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      generate_secure_lawyer_token: { Args: never; Returns: string }
       get_user_role: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: Database["public"]["Enums"]["app_role"]
       }
       has_role: {
@@ -2275,6 +2272,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      jsonb_merge: { Args: { existing: Json; new: Json }; Returns: Json }
       log_security_event: {
         Args: {
           details?: Json
@@ -2284,14 +2282,8 @@ export type Database = {
         }
         Returns: undefined
       }
-      migrate_admin_accounts_to_profiles: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      sanitize_input: {
-        Args: { input_text: string }
-        Returns: string
-      }
+      migrate_admin_accounts_to_profiles: { Args: never; Returns: number }
+      sanitize_input: { Args: { input_text: string }; Returns: string }
       validate_password_strength: {
         Args: { password: string }
         Returns: boolean
