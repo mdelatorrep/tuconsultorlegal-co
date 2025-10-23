@@ -144,14 +144,15 @@ serve(async (req) => {
             type: "function",
             function: {
               name: "store_collected_data",
-              description: "🔴 OBLIGATORIO: Guarda/actualiza en base de datos los placeholders recopilados DESPUÉS DE CADA RESPUESTA del usuario. SIEMPRE llama esta función inmediatamente después de que el usuario proporcione información, antes de hacer la siguiente pregunta.",
+              description: "🔴 USO OBLIGATORIO: Guarda datos en base de datos INMEDIATAMENTE después de que el usuario responda. DEBES extraer los valores de su respuesta y pasarlos en el parámetro 'data'. NUNCA llames esta función con data: {} vacío. Si el usuario NO proporcionó información válida, NO llames esta función. Ejemplo correcto: si usuario dice 'Juan Pérez', llamas store_collected_data({ data: { 'nombre_completo': 'JUAN PÉREZ' } })",
               parameters: {
                 type: "object",
                 properties: {
                   data: {
                     type: "object",
-                    description: "Objeto clave-valor con los placeholders y las respuestas del usuario. Ejemplo: {\"nombre_completo\": \"JUAN PÉREZ\", \"cedula\": \"1.234.567\"}",
-                    additionalProperties: true
+                    description: "⚠️ REQUERIDO NO VACÍO: Objeto clave-valor con los placeholders extraídos de la respuesta del usuario. NUNCA envíes {}. Siempre debe contener al menos un campo con valor. Ejemplo válido: {\"nombre_completo\": \"JUAN PÉREZ\", \"cedula\": \"1.234.567\"}. Ejemplo INVÁLIDO: {} o {\"nombre\": \"\"}",
+                    additionalProperties: true,
+                    minProperties: 1
                   },
                   merge: {
                     type: "boolean",
@@ -585,29 +586,59 @@ PROTOCOLO DE TRABAJO
    - Explica por qué necesitas cada información
    - Referencia fuentes oficiales cuando sea apropiado
    
-   OBLIGATORIO DESPUÉS DE CADA RESPUESTA DEL USUARIO:
+   ⚠️⚠️⚠️ PROTOCOLO CRÍTICO - NUNCA OMITIR ⚠️⚠️⚠️
    
-   PASO 1: IDENTIFICA qué información proporcionó el usuario en su última respuesta
-   PASO 2: EXTRAE los valores específicos de su respuesta
-   PASO 3: LLAMA INMEDIATAMENTE a store_collected_data con esos datos
-   PASO 4: Solo después de guardar, haz la siguiente pregunta
+   DESPUÉS DE CADA RESPUESTA DEL USUARIO, SIGUE ESTOS PASOS EN ORDEN:
    
-   EJEMPLOS CORRECTOS:
+   PASO 1️⃣: LEE la última respuesta del usuario palabra por palabra
+   PASO 2️⃣: IDENTIFICA qué campos de información contiene
+   PASO 3️⃣: EXTRAE los valores específicos (nombres, números, fechas, etc.)
+   PASO 4️⃣: LLAMA store_collected_data con un objeto que contenga esos valores
+   PASO 5️⃣: ESPERA la confirmación de que se guardaron los datos
+   PASO 6️⃣: Solo entonces, haz la siguiente pregunta
    
-   - Usuario dice: "Mi nombre es Juan Pérez"
-     → TÚ DEBES LLAMAR: store_collected_data({ data: { "nombre_completo": "JUAN PÉREZ" } })
-     → LUEGO preguntas lo siguiente
+   🔴 REGLA ABSOLUTA: NUNCA llames store_collected_data con data: {}
    
-   - Usuario dice: "Mi cédula es 1234567"
-     → TÚ DEBES LLAMAR: store_collected_data({ data: { "cedula": "1.234.567" } })
-     → LUEGO preguntas lo siguiente
+   EJEMPLOS PASO A PASO:
    
-   - Usuario dice: "Carlos López, cédula 9876543"
-     → TÚ DEBES LLAMAR: store_collected_data({ data: { "nombre_acreedor": "CARLOS LÓPEZ", "cedula_acreedor": "9.876.543" } })
-     → LUEGO preguntas lo siguiente
+   📌 Ejemplo 1:
+   Usuario dice: "Mi nombre es Juan Pérez"
+   ✅ TÚ HACES:
+     1. Identificas: el usuario dio su nombre
+     2. Extraes: "Juan Pérez"
+     3. Llamas: store_collected_data({ data: { "nombre_completo": "JUAN PÉREZ" } })
+     4. Esperas respuesta de confirmación
+     5. Respondes: "Perfecto Juan, ahora necesito..."
    
-   NUNCA llames store_collected_data con data vacío {}
-   SIEMPRE extrae los valores de la respuesta del usuario antes de llamar la función
+   📌 Ejemplo 2:
+   Usuario dice: "1234567"
+   ✅ TÚ HACES:
+     1. Identificas: el usuario dio su cédula
+     2. Extraes: "1234567"
+     3. Llamas: store_collected_data({ data: { "cedula": "1.234.567" } })
+     4. Esperas respuesta de confirmación
+     5. Respondes: "Gracias. Ahora indícame..."
+   
+   📌 Ejemplo 3:
+   Usuario dice: "Carlos López, cédula 9876543"
+   ✅ TÚ HACES:
+     1. Identificas: el usuario dio nombre y cédula de acreedor
+     2. Extraes: nombre="Carlos López", cédula="9876543"
+     3. Llamas: store_collected_data({ data: { "nombre_acreedor": "CARLOS LÓPEZ", "cedula_acreedor": "9.876.543" } })
+     4. Esperas respuesta de confirmación
+     5. Respondes: "Excelente. Continuemos con..."
+   
+   📌 Ejemplo 4:
+   Usuario dice: "No estoy seguro" o "No sé"
+   ❌ NO llames store_collected_data (no hay datos que guardar)
+   ✅ En su lugar: Usa request_clarification o haz una pregunta de seguimiento
+   
+   🚨 SI RECIBES UN ERROR de store_collected_data:
+   - NO le digas al usuario que hay un problema técnico
+   - El error significa que NO extrajiste los datos correctamente
+   - VUELVE A LEER la respuesta del usuario
+   - EXTRAE los valores manualmente
+   - VUELVE A LLAMAR store_collected_data con los datos correctos
 
 3. ✅ VALIDACIÓN Y CONFIRMACIÓN
    - Usa validate_information para verificar completitud

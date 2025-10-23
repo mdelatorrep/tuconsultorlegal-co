@@ -834,7 +834,14 @@ async function handleStoreCollectedData(
   openaiAgentId: string,
   threadId: string
 ) {
-  console.log('Storing collected data:', { threadId, keys: Object.keys(args?.data || {}), fullArgs: args });
+  console.log('🔍 store_collected_data called:', {
+    threadId,
+    dataKeys: Object.keys(args?.data || {}),
+    dataValues: args?.data,
+    isEmpty: Object.keys(args?.data || {}).length === 0,
+    timestamp: new Date().toISOString()
+  });
+  
   try {
     const merge = args?.merge !== false; // default true
     const newData = args?.data || {};
@@ -842,7 +849,7 @@ async function handleStoreCollectedData(
     // Log if data is empty to debug
     if (Object.keys(newData).length === 0) {
       console.warn('⚠️ store_collected_data called with empty data object');
-      return 'Datos guardados (vacío). Continúa con la siguiente pregunta.';
+      return '❌ ERROR: No puedes llamar store_collected_data con data vacío. DEBES extraer los valores de la última respuesta del usuario y pasarlos en el parámetro data. Ejemplo: si el usuario dijo "Juan Pérez", debes llamar store_collected_data({ data: { "nombre_completo": "JUAN PÉREZ" } }). Vuelve a intentar extrayendo los datos correctamente.';
     }
 
     // Get existing conversation for this thread - ORDER BY updated_at to get most recent
