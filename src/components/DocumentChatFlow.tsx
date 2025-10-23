@@ -91,15 +91,23 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
       setTermsAccepted(true);
       setShowTermsDialog(false);
       setDataProcessingConsent(true);
+      setAcceptedTerms(true);
+      setAcceptedPrivacy(true);
     } else {
       const accepted = localStorage.getItem(`terms_accepted_${agentId}`);
       const dataConsent = localStorage.getItem(`data_consent_${agentId}`);
-      if (accepted === 'true') {
+      
+      // IMPORTANTE: Solo ocultar el diálogo si AMBOS están aceptados
+      if (accepted === 'true' && dataConsent === 'true') {
         setTermsAccepted(true);
         setShowTermsDialog(false);
-      }
-      if (dataConsent === 'true') {
+        setAcceptedTerms(true);
+        setAcceptedPrivacy(true);
         setDataProcessingConsent(true);
+      } else {
+        // Si falta alguno, mostrar el diálogo de nuevo
+        setShowTermsDialog(true);
+        setTermsAccepted(false);
       }
     }
   }, [agentId, isAuthenticated]);
@@ -681,12 +689,7 @@ ${userContextInfo}`;
       return;
     }
     
-    // Usuario anónimo: validar consentimiento y mostrar formulario
-    if (!dataProcessingConsent) {
-      toast.error('Debes aceptar el tratamiento de datos personales para continuar');
-      return;
-    }
-
+    // Usuario anónimo: mostrar formulario para recopilar información de contacto
     setShowUserForm(true);
   };
 
@@ -1050,30 +1053,6 @@ ${userContextInfo}`;
                     placeholder="tu@email.com"
                     className="mt-1"
                   />
-                </div>
-              </div>
-
-              {/* Consentimiento de Tratamiento de Datos */}
-              <div className="space-y-4 pt-4 border-t border-border">
-                <div className="flex items-start space-x-3">
-                  <Checkbox
-                    id="dataProcessingConsent"
-                    checked={dataProcessingConsent}
-                    onCheckedChange={(checked) => setDataProcessingConsent(checked as boolean)}
-                    disabled={generating}
-                    className="mt-1"
-                  />
-                  <div className="space-y-1">
-                    <Label 
-                      htmlFor="dataProcessingConsent" 
-                      className="text-sm font-medium cursor-pointer"
-                    >
-                      Tratamiento de Datos Personales *
-                    </Label>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      Acepto el tratamiento de mis datos personales conforme a la Ley 1581 de 2012 (Ley de Habeas Data en Colombia) y autorizo a tuconsultorlegal.co para recopilar, almacenar, usar y circular mi información personal para los fines relacionados con la gestión y seguimiento de este documento legal.
-                    </p>
-                  </div>
                 </div>
               </div>
 
