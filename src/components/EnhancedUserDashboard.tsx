@@ -35,7 +35,10 @@ import {
   Sparkles,
   ChevronRight,
   Activity,
-  Mail
+  Mail,
+  MoreVertical,
+  Trash2,
+  Info
 } from 'lucide-react';
 import { Input } from './ui/input';
 import { useDocumentPayment } from './document-payment/useDocumentPayment';
@@ -50,6 +53,24 @@ import { IntelligentDocumentSearch } from './IntelligentDocumentSearch';
 import { ChangeEmailDialog } from './ChangeEmailDialog';
 import { PasswordResetDialog } from './PasswordResetDialog';
 import { MagicLinkDialog } from './MagicLinkDialog';
+import { DocumentDetailsDialog } from './DocumentDetailsDialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from './ui/alert-dialog';
 
 interface EnhancedUserDashboardProps {
   onBack: () => void;
@@ -108,6 +129,9 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
   const [newDocumentToken, setNewDocumentToken] = useState<string | null>(null);
   const [showConsultation, setShowConsultation] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState<DocumentToken | null>(null);
+  const [showDocumentDetails, setShowDocumentDetails] = useState(false);
+  const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
 
   const { handleVerifyTrackingCode } = useDocumentPayment();
   const { trackAnonymousUser, trackPageVisit, trackUserAction } = useUserTracking();
@@ -363,6 +387,39 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
       console.error('Error downloading document:', error);
       toast.error('Error al descargar el documento');
     }
+  };
+
+  const handleViewDetails = (doc: DocumentToken) => {
+    setSelectedDocument(doc);
+    setShowDocumentDetails(true);
+  };
+
+  const handleDeleteDocument = async (documentId: string) => {
+    try {
+      const { error } = await supabase
+        .from('document_tokens')
+        .delete()
+        .eq('id', documentId)
+        .eq('user_id', user?.id); // Security: only delete own documents
+
+      if (error) throw error;
+
+      toast.success('Documento eliminado exitosamente');
+      setDocumentToDelete(null);
+      
+      // Reload documents
+      if (user) {
+        await loadUserDocuments(user.id);
+      }
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      toast.error('Error al eliminar el documento');
+    }
+  };
+
+  const canDeleteDocument = (status: string) => {
+    // Only allow deletion for documents not yet paid or completed
+    return ['solicitado', 'en_revision_abogado'].includes(status);
   };
 
   const handleNewDocumentRequest = () => {
@@ -884,27 +941,62 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
                           </div>
                         </div>
 
-                        <div className="pt-2">
+                        <div className="flex items-center gap-2">
                           {doc.status === 'revision_usuario' ? (
                             <Button
                               size="sm"
-                              className="w-full"
+                              className="flex-1"
                               onClick={() => handleDownloadDocument(doc.token)}
                             >
                               <FileText className="w-4 h-4 mr-2" />
                               Revisar y Pagar
                             </Button>
+                          ) : doc.status === 'pagado' || doc.status === 'descargado' ? (
+                            <Button
+                              size="sm"
+                              className="flex-1"
+                              onClick={() => handleDownloadDocument(doc.token)}
+                            >
+                              <Download className="w-4 h-4 mr-2" />
+                              Descargar
+                            </Button>
                           ) : (
                             <Button
                               size="sm"
                               variant="outline"
-                              className="w-full"
+                              className="flex-1"
                               onClick={() => handleDownloadDocument(doc.token)}
                             >
                               <Search className="w-4 h-4 mr-2" />
                               Ver Estado
                             </Button>
                           )}
+
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button size="sm" variant="ghost" className="h-9 w-9 p-0">
+                                <MoreVertical className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleViewDetails(doc)}>
+                                <Info className="w-4 h-4 mr-2" />
+                                Ver Detalles
+                              </DropdownMenuItem>
+                              {canDeleteDocument(doc.status) && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem 
+                                    onClick={() => setDocumentToDelete(doc.id)}
+                                    className="text-destructive focus:text-destructive"
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Eliminar
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
                     </CardContent>
@@ -1059,6 +1151,37 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
           />
         </div>
       )}
+
+      {/* Document Details Dialog */}
+      <DocumentDetailsDialog
+        document={selectedDocument}
+        isOpen={showDocumentDetails}
+        onClose={() => {
+          setShowDocumentDetails(false);
+          setSelectedDocument(null);
+        }}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!documentToDelete} onOpenChange={() => setDocumentToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar documento?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. El documento será eliminado permanentemente de tu cuenta.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => documentToDelete && handleDeleteDocument(documentToDelete)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
