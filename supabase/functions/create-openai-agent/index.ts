@@ -116,10 +116,12 @@ serve(async (req) => {
               name: "get_collected_data",
               description:
                 "🔴 LLAMAR PRIMERO SIEMPRE: Recupera datos previamente recopilados en esta conversación. DEBES llamar esta función INMEDIATAMENTE después de cada mensaje del usuario ANTES de hacer cualquier otra cosa. Esto evita pedir información duplicada. Sin parámetros.",
+              strict: true,
               parameters: {
                 type: "object",
                 properties: {},
                 required: [],
+                additionalProperties: false
               },
             },
           },
@@ -129,6 +131,7 @@ serve(async (req) => {
               name: "search_legal_sources",
               description:
                 "Busca información legal específica en fuentes oficiales colombianas y en línea usando serper.dev. Utiliza esta función cuando necesites consultar legislación, jurisprudencia o normatividad colombiana actualizada.",
+              strict: true,
               parameters: {
                 type: "object",
                 properties: {
@@ -150,6 +153,7 @@ serve(async (req) => {
                   },
                 },
                 required: ["query"],
+                additionalProperties: false
               },
             },
           },
@@ -158,6 +162,7 @@ serve(async (req) => {
             function: {
               name: "store_collected_data",
               description: "🔴 USO OBLIGATORIO: Guarda datos en base de datos INMEDIATAMENTE después de que el usuario responda. DEBES extraer los valores de su respuesta y pasarlos en el parámetro 'data'. NUNCA llames esta función con data: {} vacío. Si el usuario NO proporcionó información válida, NO llames esta función. Ejemplo correcto: si usuario dice 'Juan Pérez', llamas store_collected_data({ data: { 'nombre_completo': 'JUAN PÉREZ' } })",
+              strict: false,
               parameters: {
                 type: "object",
                 properties: {
@@ -170,10 +175,10 @@ serve(async (req) => {
                   merge: {
                     type: "boolean",
                     description: "Si se debe mezclar con datos existentes (true) o sobrescribir (false)",
-                    default: true,
                   },
                 },
                 required: ["data"],
+                additionalProperties: false
               },
             },
           },
@@ -182,15 +187,18 @@ serve(async (req) => {
             function: {
               name: "validate_information",
               description: "Valida si toda la información requerida ha sido recopilada",
+              strict: false,
               parameters: {
                 type: "object",
                 properties: {
                   collectedData: {
                     type: "object",
                     description: "Datos recopilados del usuario",
+                    additionalProperties: true
                   },
                 },
                 required: ["collectedData"],
+                additionalProperties: false
               },
             },
           },
@@ -199,6 +207,7 @@ serve(async (req) => {
             function: {
               name: "request_clarification",
               description: "Solicita aclaración sobre información específica",
+              strict: true,
               parameters: {
                 type: "object",
                 properties: {
@@ -212,6 +221,7 @@ serve(async (req) => {
                   },
                 },
                 required: ["field", "question"],
+                additionalProperties: false
               },
             },
           },
@@ -221,20 +231,22 @@ serve(async (req) => {
               name: "normalize_information",
               description:
                 "Normaliza toda la información según estándares colombianos: mayúsculas, direcciones, fechas, monedas y ubicaciones geográficas",
+              strict: false,
               parameters: {
                 type: "object",
                 properties: {
                   rawData: {
                     type: "object",
                     description: "Datos sin normalizar que necesitan ser estandarizados",
+                    additionalProperties: true
                   },
                   includeGeographicSearch: {
                     type: "boolean",
                     description: "Si debe buscar información geográfica en línea",
-                    default: true,
                   },
                 },
                 required: ["rawData"],
+                additionalProperties: false
               },
             },
           },
@@ -244,6 +256,7 @@ serve(async (req) => {
               name: "request_user_contact_info",
               description:
                 "⚠️ SOLO PARA USUARIOS ANÓNIMOS: Solicita y almacena los datos de contacto del usuario (nombre completo y email) necesarios para generar el token de seguimiento del documento. NO USAR si el usuario está autenticado (si recibiste [CONTEXTO DEL SISTEMA] al inicio con datos de usuario). Solo llamar DESPUÉS de recopilar TODA la información del documento.",
+              strict: true,
               parameters: {
                 type: "object",
                 properties: {
@@ -257,6 +270,7 @@ serve(async (req) => {
                   },
                 },
                 required: ["user_name", "user_email"],
+                additionalProperties: false
               },
             },
           },
@@ -266,12 +280,14 @@ serve(async (req) => {
               name: "generate_document",
               description:
                 "Genera el documento final con la información recopilada, normalizada y los datos de contacto del usuario para crear el token de seguimiento",
+              strict: false,
               parameters: {
                 type: "object",
                 properties: {
                   documentData: {
                     type: "object",
                     description: "Datos normalizados para completar el documento",
+                    additionalProperties: true
                   },
                   user_name: {
                     type: "string",
@@ -287,6 +303,7 @@ serve(async (req) => {
                   },
                 },
                 required: ["documentData", "user_name", "user_email"],
+                additionalProperties: false
               },
             },
           },
