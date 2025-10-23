@@ -228,10 +228,19 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
 
   const loadUserDocuments = async (userId: string) => {
     try {
+      // Get user email for fallback query
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        console.error('Error getting user:', userError);
+        return;
+      }
+
+      // Query documents by user_id OR by user_email (for legacy documents)
       const { data, error } = await supabase
         .from('document_tokens')
         .select('*')
-        .eq('user_id', userId)
+        .or(`user_id.eq.${userId},user_email.eq.${user.email}`)
         .order('created_at', { ascending: false });
 
       if (error) {
