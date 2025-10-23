@@ -1584,27 +1584,43 @@ function AdminPage() {
                         Limpiar Memoria de Agentes
                       </AlertDialogTitle>
                       <AlertDialogDescription>
-                        Esta acción eliminará toda la memoria almacenada de los agentes de chat, incluyendo:
+                        Esta acción eliminará toda la memoria almacenada de los agentes de chat para TODOS los usuarios, incluyendo:
                         <ul className="list-disc list-inside mt-2 space-y-1">
-                          <li>Conversaciones activas</li>
-                          <li>Thread IDs de OpenAI</li>
-                          <li>Sesiones de chat</li>
-                          <li>Términos aceptados</li>
+                          <li>Conversaciones activas de usuarios anónimos</li>
+                          <li>Thread IDs de OpenAI en la base de datos</li>
+                          <li>Historial de conversaciones</li>
+                          <li>Datos recolectados en sesiones</li>
                         </ul>
-                        <p className="mt-3 font-semibold">La página se recargará después de limpiar la memoria.</p>
+                        <p className="mt-3 font-semibold text-orange-600">⚠️ Los usuarios deberán iniciar conversaciones nuevas desde cero.</p>
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancelar</AlertDialogCancel>
                       <AlertDialogAction 
-                        onClick={() => {
-                          AuthStorage.clearAllAgentMemory();
-                          sonnerToast.success("✅ Memoria de agentes limpiada correctamente");
-                          setTimeout(() => window.location.reload(), 1000);
+                        onClick={async () => {
+                          try {
+                            sonnerToast.loading("Limpiando memoria global...");
+                            
+                            // Limpiar memoria local del admin
+                            AuthStorage.clearAllAgentMemory();
+                            
+                            // Limpiar memoria en base de datos (para todos los usuarios)
+                            const { data, error } = await supabase.functions.invoke('clear-agent-conversations', {
+                              body: { agentId: null } // null = limpiar todos los agentes
+                            });
+                            
+                            if (error) throw error;
+                            
+                            sonnerToast.success(`✅ ${data.message}`);
+                            setTimeout(() => window.location.reload(), 1500);
+                          } catch (error: any) {
+                            console.error('Error clearing memory:', error);
+                            sonnerToast.error("❌ Error al limpiar la memoria: " + error.message);
+                          }
                         }}
                         className="bg-orange-600 hover:bg-orange-700 text-white"
                       >
-                        Limpiar Memoria
+                        Limpiar Memoria Global
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>

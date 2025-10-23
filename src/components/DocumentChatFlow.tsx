@@ -137,42 +137,65 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
     }
   }, [messages, collectedData, userInfo, agentId, threadId, openaiAgentId]);
 
-  // Load persisted data on mount
+  // Load persisted data on mount with validation
   useEffect(() => {
-    const persistedData = localStorage.getItem(`chat_${agentId}`);
-    if (persistedData) {
-      try {
-        const parsed = JSON.parse(persistedData);
-        const isRecent = Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000; // 24 hours
-        
-        if (isRecent && parsed.messages.length > 1) {
-          // Convert timestamp strings/numbers back to Date objects
-          // Y recalcular showGenerateButton para cada mensaje
-          const messagesWithDates = parsed.messages.map((msg: any) => ({
-            ...msg,
-            timestamp: new Date(msg.timestamp),
-            // Recalcular showGenerateButton basado en el contenido actual
-            showGenerateButton: msg.role === 'assistant' ? shouldShowGenerateButton(msg.content) : false
-          }));
+    const loadPersistedData = async () => {
+      const persistedData = localStorage.getItem(`chat_${agentId}`);
+      if (persistedData) {
+        try {
+          const parsed = JSON.parse(persistedData);
+          const isRecent = Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000; // 24 hours
           
-          setMessages(messagesWithDates);
-          setCollectedData(parsed.collectedData || {});
-          setUserInfo(parsed.userInfo || { name: '', email: '' });
-          
-          // ✅ RESTAURAR threadId y openaiAgentId
-          if (parsed.threadId) {
-            setThreadId(parsed.threadId);
-            console.log('✅ ThreadId restored from localStorage:', parsed.threadId);
+          if (isRecent && parsed.messages.length > 1) {
+            // Verificar si el threadId aún existe en la base de datos
+            if (parsed.threadId && parsed.openaiAgentId) {
+              const { data: conversation } = await supabase
+                .from('agent_conversations')
+                .select('id')
+                .eq('thread_id', parsed.threadId)
+                .eq('openai_agent_id', parsed.openaiAgentId)
+                .maybeSingle();
+              
+              // Si no existe conversación en BD, limpiar localStorage
+              if (!conversation) {
+                console.log('⚠️ ThreadId no válido (conversación limpiada por admin), iniciando nueva sesión');
+                localStorage.removeItem(`chat_${agentId}`);
+                localStorage.removeItem(`document_session_${agentId}`);
+                return;
+              }
+            }
+            
+            // Convert timestamp strings/numbers back to Date objects
+            // Y recalcular showGenerateButton para cada mensaje
+            const messagesWithDates = parsed.messages.map((msg: any) => ({
+              ...msg,
+              timestamp: new Date(msg.timestamp),
+              // Recalcular showGenerateButton basado en el contenido actual
+              showGenerateButton: msg.role === 'assistant' ? shouldShowGenerateButton(msg.content) : false
+            }));
+            
+            setMessages(messagesWithDates);
+            setCollectedData(parsed.collectedData || {});
+            setUserInfo(parsed.userInfo || { name: '', email: '' });
+            
+            // ✅ RESTAURAR threadId y openaiAgentId solo si son válidos
+            if (parsed.threadId) {
+              setThreadId(parsed.threadId);
+              console.log('✅ ThreadId restored from localStorage:', parsed.threadId);
+            }
+            if (parsed.openaiAgentId) {
+              setOpenaiAgentId(parsed.openaiAgentId);
+              console.log('✅ OpenAI AgentId restored from localStorage:', parsed.openaiAgentId);
+            }
           }
-          if (parsed.openaiAgentId) {
-            setOpenaiAgentId(parsed.openaiAgentId);
-            console.log('✅ OpenAI AgentId restored from localStorage:', parsed.openaiAgentId);
-          }
+        } catch (error) {
+          console.error('Error loading persisted chat data:', error);
+          localStorage.removeItem(`chat_${agentId}`);
         }
-      } catch (error) {
-        console.error('Error loading persisted chat data:', error);
       }
-    }
+    };
+    
+    loadPersistedData();
   }, [agentId]);
 
   const scrollToBottom = () => {
