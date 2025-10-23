@@ -33,7 +33,6 @@ import { supabase } from "@/integrations/supabase/client";
 
 export default function Index() {
   const { user, loading: authLoading, isAuthenticated } = useUserAuth();
-  const { userType, loading: userTypeLoading } = useAuthTypeDetection();
   const [currentPage, setCurrentPage] = useState("home");
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [documentToken, setDocumentToken] = useState<string | null>(null);
@@ -101,31 +100,10 @@ export default function Index() {
   }, []);
 
   const handleNavigate = (page: string, data?: any) => {
-    // Handle user dashboard access with proper role validation
+    // Handle user dashboard access - requires authentication
     if (page === "user-dashboard") {
       if (!isAuthenticated) {
         setShowUserTypeSelector(true);
-        return;
-      }
-      
-      // Prevent lawyers from accessing user dashboard
-      if (userType === 'lawyer') {
-        console.log('Lawyer attempted to access user dashboard, redirecting to lawyer dashboard');
-        // Log security event
-        supabase.functions.invoke('log-security-event', {
-          body: {
-            event_type: 'unauthorized_access_attempt',
-            user_identifier: user?.email,
-            details: {
-              attempted_route: 'user-dashboard',
-              user_type: 'lawyer',
-              redirect_to: 'abogados'
-            }
-          }
-        }).catch(console.error);
-        
-        setCurrentPage("abogados");
-        window.history.pushState(null, "", `#abogados`);
         return;
       }
       
@@ -133,28 +111,8 @@ export default function Index() {
       return;
     }
     
-    // Handle lawyer dashboard access with proper role validation
+    // Handle lawyer dashboard access - requires authentication
     if (page === "abogados") {
-      // If user is authenticated and is a regular user, prevent access
-      if (isAuthenticated && userType === 'user') {
-        console.log('Regular user attempted to access lawyer dashboard, redirecting to user dashboard');
-        // Log security event
-        supabase.functions.invoke('log-security-event', {
-          body: {
-            event_type: 'unauthorized_access_attempt',
-            user_identifier: user?.email,
-            details: {
-              attempted_route: 'abogados',
-              user_type: 'user',
-              redirect_to: 'user-dashboard'
-            }
-          }
-        }).catch(console.error);
-        
-        setShowUserDashboard(true);
-        return;
-      }
-      
       setShowUserDashboard(false);
       setShowUserAuth(false);
       setShowUserTypeSelector(false);
@@ -226,7 +184,8 @@ export default function Index() {
     setCurrentPage("home");
   };
 
-  if (authLoading || userTypeLoading) {
+  // Only show loading for protected routes
+  if (authLoading && (showUserDashboard || currentPage === "abogados")) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -236,21 +195,6 @@ export default function Index() {
       </div>
     );
   }
-  
-  // Automatic redirect based on user type when authenticated
-  useEffect(() => {
-    if (!authLoading && !userTypeLoading && isAuthenticated) {
-      // If lawyer is trying to access non-lawyer routes, redirect
-      if (userType === 'lawyer' && currentPage !== 'abogados' && !currentPage.startsWith('blog') && currentPage !== 'home') {
-        setCurrentPage('abogados');
-        window.history.pushState(null, "", `#abogados`);
-      }
-      // If regular user is trying to access lawyer routes
-      if (userType === 'user' && currentPage === 'abogados') {
-        setShowUserDashboard(true);
-      }
-    }
-  }, [authLoading, userTypeLoading, isAuthenticated, userType, currentPage]);
 
   // Show user type selector
   if (showUserTypeSelector) {
