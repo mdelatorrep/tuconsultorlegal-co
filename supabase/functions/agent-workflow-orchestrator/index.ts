@@ -65,9 +65,14 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             role: 'user',
-            content: `[CONTEXTO DEL SISTEMA - NO RESPONDER] Usuario autenticado: ${userContext.name}, Email: ${userContext.email}. No solicites estos datos nuevamente, ya los tienes disponibles.`
+            content: `[CONTEXTO DEL SISTEMA]
+Usuario autenticado: ${userContext.name}
+Email: ${userContext.email}
+
+⚠️ IMPORTANTE: Este usuario ya está autenticado. NO solicites su nombre ni email nuevamente. Usa esta información directamente cuando generes el documento. NUNCA llames a request_user_contact_info para este usuario.`
           })
         });
+        console.log('✅ Added authenticated user context to new thread');
       }
     }
 
@@ -269,15 +274,20 @@ serve(async (req) => {
       run_id: run.id
     };
     
-    // Include authenticated user context if provided
+    // Include authenticated user context if provided - save immediately to conversation
     if (userContext?.isAuthenticated && userContext?.name && userContext?.email) {
       conversationData.user_contact = {
         user_name: userContext.name,
         user_email: userContext.email,
+        authenticated: true,
         from_auth: true,
         collected_at: new Date().toISOString()
       };
-      console.log('💾 Saved authenticated user context to conversation');
+      console.log('💾 Saved authenticated user context to conversation:', {
+        name: userContext.name,
+        email: userContext.email,
+        authenticated: true
+      });
     }
     
     // First, delete any duplicate conversations for this thread (keep only most recent)
@@ -444,8 +454,19 @@ async function handleGenerateDocument(supabase: any, args: any, legalAgent: any,
     const userEmail = args.user_email || conversation?.conversation_data?.user_contact?.user_email;
     const userName = args.user_name || conversation?.conversation_data?.user_contact?.user_name;
     
+    console.log('🔍 User contact verification:', {
+      hasArgsEmail: !!args.user_email,
+      hasArgsName: !!args.user_name,
+      hasConversationEmail: !!conversation?.conversation_data?.user_contact?.user_email,
+      hasConversationName: !!conversation?.conversation_data?.user_contact?.user_name,
+      isAuthenticated: conversation?.conversation_data?.user_contact?.authenticated,
+      finalEmail: userEmail,
+      finalName: userName
+    });
+    
     if (!userEmail || !userName) {
-      return 'Error: Necesito tu nombre completo y correo electrónico para generar el documento. Por favor proporciona esta información primero usando request_user_contact_info.';
+      console.error('❌ Missing user contact info');
+      return 'Error: Para generar el documento necesito tu nombre completo y correo electrónico. Si eres un usuario anónimo, primero debo recopilar estos datos con request_user_contact_info. Si estás autenticado, estos datos deberían estar en tu sesión.';
     }
     
     // Call create-document-token to generate tracking token
@@ -751,7 +772,7 @@ async function handleRequestClarification(args: any) {
 }
 
 async function handleRequestUserContactInfo(supabase: any, args: any, openaiAgentId: string, threadId: string) {
-  console.log('📧 Storing user contact info:', args);
+  console.log('📧 Processing user contact info request:', args);
   
   try {
     // Get existing conversation to check if user context exists - ORDER BY updated_at to get most recent
@@ -764,14 +785,19 @@ async function handleRequestUserContactInfo(supabase: any, args: any, openaiAgen
       .limit(1)
       .maybeSingle();
     
-    // Check if user data already exists from authenticated session
+    // Check if user is authenticated (should NOT call this function)
     const existingUserContact = conversation?.conversation_data?.user_contact;
-    if (existingUserContact?.user_name && existingUserContact?.user_email) {
-      console.log('✅ Using existing authenticated user data:', existingUserContact);
-      return `Perfecto. Utilizaré los datos de tu sesión actual: ${existingUserContact.user_name} (${existingUserContact.user_email}). Procederé con la generación del documento.`;
+    if (existingUserContact?.authenticated) {
+      console.log('⚠️ Attempted to request contact info for authenticated user');
+      return `Error: El usuario ya está autenticado. No debes solicitar datos de contacto. Usa directamente: ${existingUserContact.user_name} (${existingUserContact.user_email})`;
     }
     
-    // Store new contact info
+    // For anonymous users, validate that data is provided
+    if (!args.user_name || !args.user_email) {
+      return 'Error: Debes proporcionar user_name y user_email al llamar request_user_contact_info';
+    }
+    
+    // Store contact info for anonymous user
     const { error: contactError } = await supabase
       .from('agent_conversations')
       .update({
@@ -780,6 +806,7 @@ async function handleRequestUserContactInfo(supabase: any, args: any, openaiAgen
           user_contact: {
             user_name: args.user_name,
             user_email: args.user_email,
+            authenticated: false,
             collected_at: new Date().toISOString()
           }
         }

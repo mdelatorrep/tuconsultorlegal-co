@@ -229,17 +229,17 @@ serve(async (req) => {
             function: {
               name: "request_user_contact_info",
               description:
-                "Solicita y almacena los datos de contacto del usuario (nombre completo y email) necesarios para generar el token de seguimiento del documento",
+                "⚠️ SOLO PARA USUARIOS ANÓNIMOS: Solicita y almacena los datos de contacto del usuario (nombre completo y email) necesarios para generar el token de seguimiento del documento. NO USAR si el usuario está autenticado (si recibiste [CONTEXTO DEL SISTEMA] al inicio con datos de usuario). Solo llamar DESPUÉS de recopilar TODA la información del documento.",
               parameters: {
                 type: "object",
                 properties: {
                   user_name: {
                     type: "string",
-                    description: "Nombre completo del usuario",
+                    description: "Nombre completo del usuario proporcionado por él",
                   },
                   user_email: {
                     type: "string",
-                    description: "Correo electrónico del usuario",
+                    description: "Correo electrónico del usuario proporcionado por él",
                   },
                 },
                 required: ["user_name", "user_email"],
@@ -546,6 +546,24 @@ EJEMPLOS DE USO:
 
 OBJETIVO: Siempre verificar información legal con fuentes actualizadas
 
+🔐 CONTEXTO DE USUARIO Y DATOS DE CONTACTO
+
+AL INICIO DE LA CONVERSACIÓN:
+- Revisa si recibiste un mensaje del sistema con formato:
+  [CONTEXTO DEL SISTEMA]
+  Usuario autenticado: [nombre]
+  Email: [correo]
+  
+- Si recibes este contexto:
+  ✅ Guárdalo internamente como user_name y user_email
+  ✅ NO vuelvas a preguntar por nombre ni correo
+  ✅ Usa estos datos directamente cuando llames a generate_document
+  ✅ NUNCA llames a request_user_contact_info
+
+- Si NO recibes este contexto (usuario anónimo):
+  ✅ Procede con el flujo normal de recopilación
+  ✅ Pide nombre y correo SOLO AL FINAL (ver paso 7)
+
 PROTOCOLO DE TRABAJO
 
 1. 👋 SALUDO INICIAL
@@ -611,13 +629,37 @@ PROTOCOLO DE TRABAJO
    ${hasStructuredConversation ? '- Indica qué bloque están completando (ej: "Bloque 2 de 4")' : ""}
    - Menciona cuánta información falta
 
-6. ✨ GENERACIÓN FINAL
-   - ANTES de generar, DEBES:
-     CONTEXTO DE USUARIO AUTENTICADO:
-       - Si recibes un mensaje con CONTEXTO DEL SISTEMA que incluye datos del usuario autenticado, NO solicites nombre ni email nuevamente
-       - En ese caso, usa directamente esos datos para generate_document
-       - SOLO si NO tienes datos de usuario autenticado, usa request_user_contact_info
-     
+6. 📧 SOLICITUD DE DATOS DE CONTACTO (SOLO USUARIOS ANÓNIMOS)
+   
+   ⚠️ ESTE PASO SOLO APLICA SI NO RECIBISTE [CONTEXTO DEL SISTEMA] AL INICIO
+   
+   - Solicita nombre y correo SOLO después de:
+     ✓ Recopilar TODA la información del documento
+     ✓ Validar que la información está completa
+     ✓ Normalizar todos los datos
+   
+   - Usa request_user_contact_info con el nombre y correo proporcionados
+   - Explica que necesitas estos datos para enviar el link de seguimiento
+   - NO generes el documento hasta tener estos datos
+
+7. ✨ GENERACIÓN FINAL
+   
+   ANTES de llamar generate_document, verifica:
+   
+   ✅ Si tienes datos de usuario autenticado del inicio:
+      - Usa esos datos directamente en generate_document
+      - NO llames a request_user_contact_info
+   
+   ✅ Si NO tienes datos autenticados (usuario anónimo):
+      - Verifica que YA llamaste a request_user_contact_info
+      - Los datos deben estar guardados en conversation_data
+      - Usa esos datos en generate_document
+   
+   Al llamar generate_document, SIEMPRE incluye:
+   - documentData: información normalizada del documento
+   - user_name: nombre del usuario (de contexto o de request_user_contact_info)
+   - user_email: email del usuario (de contexto o de request_user_contact_info)
+      
      ✓ Información completa y validada
      ✓ Normalización aplicada
      ✓ NO pedir confirmación manual si datos están completos y coherentes
