@@ -309,6 +309,17 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
       // FALLBACK: Usar document-chat
       console.log('📝 Using fallback document-chat');
       
+      const userContextInfo = isAuthenticated && userInfo.name && userInfo.email 
+        ? `\n\nCONTEXTO DE USUARIO AUTENTICADO:
+- El usuario YA está registrado en el sistema
+- Nombre: ${userInfo.name}
+- Email: ${userInfo.email}
+- NO solicites su nombre ni correo electrónico, ya los tenemos
+- Enfócate ÚNICAMENTE en recopilar la información específica del documento`
+        : `\n\nCONTEXTO DE USUARIO ANÓNIMO:
+- El usuario NO está registrado
+- Deberás solicitar nombre y correo al FINAL, cuando tengas toda la información del documento`;
+      
       const enhancedPrompt = `${agentData.ai_prompt}
 
 REGLAS ESTRICTAS PARA RECOPILACIÓN DE INFORMACIÓN:
@@ -328,7 +339,9 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
 
 6. IMPORTANTE: Usa las frases exactas "información necesaria" y "proceder con la generación" cuando toda la información esté completa.
 
-7. RESPONDE EN ESPAÑOL CLARO SIN FORMATO MARKDOWN. No uses caracteres como #, *, **, etc.`;
+7. RESPONDE EN ESPAÑOL CLARO SIN FORMATO MARKDOWN. No uses caracteres como #, *, **, etc.
+
+${userContextInfo}`;
 
       const { data, error } = await supabase.functions.invoke('document-chat', {
         body: {

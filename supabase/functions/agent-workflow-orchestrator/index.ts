@@ -100,6 +100,27 @@ Email: ${userContext.email}
       }
     }
 
+    // If user is authenticated and this is an existing thread, add context reminder
+    if (threadId && userContext?.isAuthenticated && userContext?.name && userContext?.email) {
+      console.log('🔄 Adding authentication context reminder to existing thread');
+      await fetch(`https://api.openai.com/v1/threads/${currentThreadId}/messages`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+          'OpenAI-Beta': 'assistants=v2'
+        },
+        body: JSON.stringify({
+          role: 'user',
+          content: `[RECORDATORIO DE CONTEXTO]
+Usuario autenticado: ${userContext.name}
+Email: ${userContext.email}
+
+⚠️ IMPORTANTE: NO solicites nombre ni email. Ya los tienes. NUNCA uses request_user_contact_info.`
+        })
+      });
+    }
+
     // Add user message to thread
     const lastMessage = messages[messages.length - 1];
     await fetch(`https://api.openai.com/v1/threads/${currentThreadId}/messages`, {
