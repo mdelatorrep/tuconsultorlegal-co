@@ -131,7 +131,7 @@ serve(async (req) => {
               name: "search_legal_sources",
               description:
                 "Busca información legal específica en fuentes oficiales colombianas y en línea usando serper.dev. Utiliza esta función cuando necesites consultar legislación, jurisprudencia o normatividad colombiana actualizada.",
-              strict: true,
+              strict: false,
               parameters: {
                 type: "object",
                 properties: {
