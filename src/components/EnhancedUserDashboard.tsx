@@ -252,8 +252,8 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
     insights.push({
       id: 'welcome',
       type: 'achievement',
-      title: '¡Bienvenido a tu panel personalizado!',
-      description: 'Tu espacio seguro para gestionar todos tus documentos legales con confianza.',
+      title: '¡Bienvenido!',
+      description: 'Este es tu espacio para gestionar tus documentos legales de forma fácil y segura.',
       priority: 'high',
       icon: Sparkles
     });
@@ -263,9 +263,9 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
       insights.push({
         id: 'first_document',
         type: 'recommendation',
-        title: 'Crear tu primer documento',
-        description: 'Comienza con nuestros documentos más populares: contratos de arrendamiento o contratos laborales.',
-        action: 'Explorar documentos',
+        title: 'Crea tu primer documento',
+        description: 'Empieza con un contrato de arrendamiento o un contrato laboral.',
+        action: 'Ver documentos',
         priority: 'high',
         icon: Target
       });
@@ -275,8 +275,8 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
         insights.push({
           id: 'power_user',
           type: 'achievement',
-          title: '¡Usuario Experto!',
-          description: `Has completado ${completedDocs} documentos. Tu confianza en nuestros servicios es invaluable.`,
+          title: '¡Felicitaciones!',
+          description: `Ya has completado ${completedDocs} documentos con éxito.`,
           priority: 'medium',
           icon: Award
         });
@@ -288,8 +288,8 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
         insights.push({
           id: 'pending_docs',
           type: 'insight',
-          title: `${pendingDocs} documento${pendingDocs > 1 ? 's' : ''} en proceso`,
-          description: 'Nuestros abogados están revisando tus documentos. Te notificaremos cuando estén listos.',
+          title: `Tienes ${pendingDocs} documento${pendingDocs > 1 ? 's' : ''} en proceso`,
+          description: 'Un abogado está revisando tu documento. Te avisaremos cuando esté listo.',
           priority: 'medium',
           icon: Activity
         });
@@ -300,8 +300,8 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
     insights.push({
       id: 'security',
       type: 'insight',
-      title: 'Tu información está protegida',
-      description: 'Utilizamos encriptación de nivel bancario y cumplimos con las normativas de protección de datos.',
+      title: 'Tu información está segura',
+      description: 'Protegemos tus datos con la mejor tecnología disponible.',
       priority: 'low',
       icon: Shield
     });
@@ -629,7 +629,7 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
         <div className="mb-8 animate-slide-up">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-secondary" />
-            Insights Personalizados
+            Información Importante
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {smartInsights.map((insight) => (
@@ -671,7 +671,7 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
                   <p className="text-3xl font-bold text-primary">{stats.total}</p>
                   <p className="text-xs text-success flex items-center gap-1 mt-1">
                     <TrendingUp className="w-3 h-3" />
-                    Creciendo
+                    Activo
                   </p>
                 </div>
                 <div className="bg-primary/10 p-3 rounded-xl">
@@ -687,7 +687,7 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
                 <div>
                   <p className="text-sm text-muted-foreground">En Proceso</p>
                   <p className="text-3xl font-bold text-secondary">{stats.pending}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Bajo revisión</p>
+                  <p className="text-xs text-muted-foreground mt-1">En revisión</p>
                 </div>
                 <div className="bg-secondary/10 p-3 rounded-xl">
                   <Clock className="w-8 h-8 text-secondary" />
@@ -739,13 +739,13 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
                   <Plus className="w-6 h-6 text-white" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-lg mb-1">Nuevo Documento</h3>
+                  <h3 className="font-semibold text-lg mb-1">Crear Documento</h3>
                   <p className="text-sm text-muted-foreground mb-2">
-                    Crear un nuevo documento legal personalizado
+                    Solicita un nuevo documento legal
                   </p>
                   <div className="flex items-center text-xs text-primary font-medium">
                     <Zap className="w-3 h-3 mr-1" />
-                    Proceso rápido y seguro
+                    Rápido y fácil
                   </div>
                 </div>
                 <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-smooth" />
@@ -760,13 +760,13 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
                   <MessageCircle className="w-6 h-6 text-white" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-lg mb-1">Consulta Jurídica</h3>
+                  <h3 className="font-semibold text-lg mb-1">Hablar con Lexi</h3>
                   <p className="text-sm text-muted-foreground mb-2">
-                    Asesoría legal inteligente disponible 24/7
+                    Tu asistente legal disponible siempre
                   </p>
                   <div className="flex items-center text-xs text-secondary font-medium">
                     <Star className="w-3 h-3 mr-1" />
-                    IA especializada en derecho
+                    Respuestas inmediatas
                   </div>
                 </div>
                 <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-secondary transition-smooth" />
@@ -778,9 +778,9 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
         {/* Enhanced Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="animate-slide-up">
           <TabsList className="grid w-full grid-cols-3 mb-6">
-            <TabsTrigger value="overview" className="transition-smooth">Vista General</TabsTrigger>
-            <TabsTrigger value="documents" className="transition-smooth">Mis Documentos</TabsTrigger>
-            <TabsTrigger value="profile" className="transition-smooth">Mi Perfil</TabsTrigger>
+            <TabsTrigger value="overview" className="transition-smooth">Inicio</TabsTrigger>
+            <TabsTrigger value="documents" className="transition-smooth">Documentos</TabsTrigger>
+            <TabsTrigger value="profile" className="transition-smooth">Perfil</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -789,7 +789,7 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Activity className="w-5 h-5 text-primary" />
-                  Actividad Reciente
+                  Últimos Documentos
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -807,12 +807,11 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
                     {getStatusBadge(doc.status)}
                   </div>
                 ))}
-                {documents.length === 0 && (
                   <div className="text-center py-8">
                     <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">No hay actividad reciente</p>
+                    <p className="text-muted-foreground">Aún no has solicitado documentos</p>
+                    <p className="text-sm text-muted-foreground mt-2">Empieza creando tu primer documento</p>
                   </div>
-                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -1050,7 +1049,7 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
         onComplete={async () => {
           await markAsCompleted();
           setShowOnboarding(false);
-          toast.success('¡Tutorial completado!');
+          toast.success('¡Listo! Ya puedes usar tu portal');
         }}
         onSkip={() => {
           skipOnboarding();

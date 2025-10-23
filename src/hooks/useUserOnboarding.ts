@@ -59,19 +59,22 @@ export const useUserOnboarding = (): OnboardingStatus => {
     if (!user) return;
 
     try {
-      const { error } = await supabase.functions.invoke('update-user-onboarding', {
-        body: { userId: user.id }
-      });
+      // Update database first
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({ 
+          onboarding_completed: true,
+          onboarding_completed_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
 
       if (error) {
         console.error('Error marking onboarding as completed:', error);
-        // Fallback to localStorage
-        localStorage.setItem(STORAGE_KEY, 'true');
-        setCompleted(true);
-      } else {
-        localStorage.setItem(STORAGE_KEY, 'true');
-        setCompleted(true);
       }
+
+      // Always update localStorage to ensure it persists
+      localStorage.setItem(STORAGE_KEY, 'true');
+      setCompleted(true);
     } catch (error) {
       console.error('Error in markAsCompleted:', error);
       // Fallback to localStorage
@@ -81,11 +84,44 @@ export const useUserOnboarding = (): OnboardingStatus => {
   };
 
   const skipOnboarding = () => {
+    if (user) {
+      // Update database in background
+      supabase
+        .from('user_profiles')
+        .update({ 
+          onboarding_completed: true,
+          onboarding_completed_at: new Date().toISOString()
+        })
+        .eq('id', user.id)
+        .then(({ error }) => {
+          if (error) {
+            console.error('Error skipping onboarding in database:', error);
+          }
+        });
+    }
+    
+    // Always update localStorage immediately for instant UX
     localStorage.setItem(STORAGE_KEY, 'true');
     setCompleted(true);
   };
 
   const resetOnboarding = () => {
+    if (user) {
+      // Update database in background
+      supabase
+        .from('user_profiles')
+        .update({ 
+          onboarding_completed: false,
+          onboarding_completed_at: null
+        })
+        .eq('id', user.id)
+        .then(({ error }) => {
+          if (error) {
+            console.error('Error resetting onboarding in database:', error);
+          }
+        });
+    }
+    
     localStorage.setItem(STORAGE_KEY, 'false');
     setCompleted(false);
   };

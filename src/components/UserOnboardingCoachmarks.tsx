@@ -22,44 +22,30 @@ interface UserOnboardingCoachmarksProps {
 const onboardingSteps: OnboardingStep[] = [
   {
     id: 'welcome',
-    title: '¡Bienvenido a Tu Consultor Legal!',
-    description: 'Te guiaremos por las principales funcionalidades de tu portal legal personalizado. Este recorrido tomará solo 2 minutos.',
+    title: '¡Bienvenido! 👋',
+    description: 'Te vamos a mostrar cómo funciona tu portal. Solo tomará 1 minuto.',
     icon: <Sparkles className="w-8 h-8 text-primary" />,
     position: 'center'
   },
   {
-    id: 'dashboard',
-    title: 'Tu Panel de Control',
-    description: 'Aquí puedes ver todos tus documentos solicitados, consultas en progreso y estadísticas importantes. Todo organizado en un solo lugar.',
-    icon: <BarChart3 className="w-8 h-8 text-primary" />,
-    position: 'center'
-  },
-  {
     id: 'create-document',
-    title: 'Crear Documentos Legales',
-    description: 'Con solo unos clics puedes solicitar documentos legales profesionales. Nuestros abogados revisarán y personalizarán cada documento según tus necesidades.',
+    title: 'Crear Documentos',
+    description: 'Haz clic en "Nuevo Documento" para solicitar un documento legal. Un abogado lo revisará y te lo enviará.',
     icon: <FileText className="w-8 h-8 text-primary" />,
     position: 'center'
   },
   {
     id: 'chat-widget',
-    title: 'Conoce a Lexi - Tu Asesor Legal',
-    description: '¡Esto es importante! Lexi es tu asistente legal personal disponible 24/7. Puedes hacerle preguntas legales, pedir orientación sobre documentos o iniciar consultas especializadas.',
+    title: 'Habla con Lexi 💬',
+    description: 'Usa este botón para hablar con Lexi, tu asistente legal. Está disponible siempre que lo necesites.',
     icon: <MessageCircle className="w-8 h-8 text-accent" />,
     targetSelector: '[data-chat-widget]',
     position: 'bottom-right'
   },
   {
-    id: 'track-documents',
-    title: 'Seguimiento de Documentos',
-    description: 'Mantén el control del estado de todos tus documentos en tiempo real. Recibe notificaciones cuando estén listos para revisión o descarga.',
-    icon: <BarChart3 className="w-8 h-8 text-primary" />,
-    position: 'center'
-  },
-  {
     id: 'complete',
-    title: '¡Todo Listo!',
-    description: 'Ya conoces las funcionalidades principales. ¡Comienza ahora hablando con Lexi o crea tu primer documento legal!',
+    title: '¡Listo! ✓',
+    description: 'Ya puedes usar tu portal. Comienza creando un documento o habla con Lexi.',
     icon: <CheckCircle2 className="w-8 h-8 text-success" />,
     position: 'center'
   }
@@ -248,14 +234,14 @@ export const UserOnboardingCoachmarks: React.FC<UserOnboardingCoachmarksProps> =
                   Anterior
                 </Button>
 
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleSkip}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  Saltar tutorial
-                </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleSkip}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    Omitir
+                  </Button>
 
                 <Button
                   onClick={handleNext}
@@ -264,12 +250,12 @@ export const UserOnboardingCoachmarks: React.FC<UserOnboardingCoachmarksProps> =
                 >
                   {isLastStep ? (
                     <>
-                      Completar
+                      ¡Empezar!
                       <CheckCircle2 className="h-4 w-4" />
                     </>
                   ) : (
                     <>
-                      Siguiente
+                      Continuar
                       <ChevronRight className="h-4 w-4" />
                     </>
                   )}
