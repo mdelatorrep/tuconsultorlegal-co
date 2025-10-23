@@ -572,82 +572,80 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5">
-      {/* Enhanced Header with Security Indicators */}
-      <div className="bg-card/80 backdrop-blur-sm border-b shadow-soft sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <Button variant="ghost" size="sm" onClick={onBack} className="hover-lift">
-                <LogOut className="w-4 h-4 mr-2" />
-                Salir
-              </Button>
-              
-              <div className="flex items-center gap-4">
-                <div className="relative">
-                  <div className="w-12 h-12 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center text-white font-bold text-lg animate-pulse-subtle">
-                    {profile?.full_name?.charAt(0) || 'U'}
-                  </div>
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-success rounded-full border-2 border-card flex items-center justify-center">
-                    <Shield className="w-2 h-2 text-white" />
-                  </div>
-                </div>
-                
-                <div>
-                  <div className="inline-flex items-center bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-medium mb-1 hover-subtle transition-smooth">
-                    <User className="w-3 h-3 mr-1" />
-                    Panel Personal Verificado
-                    <Shield className="w-3 h-3 ml-1" />
-                  </div>
-                  <h1 className="text-xl font-bold">{getGreeting()}</h1>
-                  <p className="text-sm text-muted-foreground flex items-center gap-2">
-                    <Lock className="w-3 h-3" />
-                    Sesión segura • Datos protegidos
-                  </p>
-                </div>
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5 pb-20 md:pb-8">
+      {/* Mobile-First Header */}
+      <div className="bg-card/95 backdrop-blur-sm border-b shadow-soft sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-3">
+          {/* Mobile Layout */}
+          <div className="flex items-center justify-between md:hidden">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center text-white font-bold">
+                {profile?.full_name?.charAt(0) || 'U'}
+              </div>
+              <div>
+                <p className="font-semibold text-sm">Hola, {profile?.full_name?.split(' ')[0] || 'Usuario'}</p>
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Shield className="w-3 h-3" />
+                  Sesión segura
+                </p>
               </div>
             </div>
-            
-            <div className="flex items-center gap-3">
-              <Button variant="ghost" size="sm" className="hover-lift">
-                <Bell className="w-4 h-4" />
-              </Button>
-              <Button variant="ghost" size="sm" className="hover-lift">
-                <Settings className="w-4 h-4" />
-              </Button>
-              <Button onClick={handleLogout} variant="outline" className="hover-lift">
-                <LogOut className="w-4 h-4 mr-2" />
-                Cerrar Sesión
-              </Button>
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
+              <LogOut className="w-4 h-4" />
+            </Button>
+          </div>
+
+          {/* Desktop Layout */}
+          <div className="hidden md:flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <div className="w-12 h-12 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center text-white font-bold text-lg">
+                  {profile?.full_name?.charAt(0) || 'U'}
+                </div>
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-success rounded-full border-2 border-card flex items-center justify-center">
+                  <Shield className="w-2 h-2 text-white" />
+                </div>
+              </div>
+              <div>
+                <h1 className="text-xl font-bold">{getGreeting()}</h1>
+                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                  <Lock className="w-3 h-3" />
+                  Sesión segura • Datos protegidos
+                </p>
+              </div>
             </div>
+            <Button onClick={handleLogout} variant="outline" className="hover-lift">
+              <LogOut className="w-4 h-4 mr-2" />
+              Cerrar Sesión
+            </Button>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-6 py-8">
-        {/* Smart Insights Section */}
-        <div className="mb-8 animate-slide-up">
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-secondary" />
+      <div className="container mx-auto px-4 py-6 md:px-6 md:py-8">
+        {/* Smart Insights Section - Hidden on small mobile */}
+        <div className="mb-6 animate-slide-up hidden sm:block">
+          <h2 className="text-base md:text-lg font-semibold mb-3 md:mb-4 flex items-center gap-2">
+            <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-secondary" />
             Información Importante
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
             {smartInsights.map((insight) => (
               <Card key={insight.id} className="hover-lift transition-smooth cursor-pointer shadow-card">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
+                <CardContent className="p-3 md:p-4">
+                  <div className="flex items-start gap-2 md:gap-3">
                     <div className={`p-2 rounded-lg ${
                       insight.type === 'recommendation' ? 'bg-secondary/10' :
                       insight.type === 'achievement' ? 'bg-success/10' : 'bg-primary/10'
                     }`}>
-                      <insight.icon className={`w-4 h-4 ${
+                      <insight.icon className={`w-3 h-3 md:w-4 md:h-4 ${
                         insight.type === 'recommendation' ? 'text-secondary' :
                         insight.type === 'achievement' ? 'text-success' : 'text-primary'
                       }`} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-sm mb-1">{insight.title}</h3>
-                      <p className="text-xs text-muted-foreground mb-2">{insight.description}</p>
+                      <h3 className="font-medium text-xs md:text-sm mb-1">{insight.title}</h3>
+                      <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{insight.description}</p>
                       {insight.action && (
                         <Button size="sm" variant="ghost" className="text-xs p-0 h-auto font-medium">
                           {insight.action} <ChevronRight className="w-3 h-3 ml-1" />
@@ -661,77 +659,84 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
           </div>
         </div>
 
-        {/* Enhanced Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 animate-slide-up">
+        {/* Enhanced Stats Cards - Mobile Optimized */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8 animate-slide-up">
           <Card className="hover-lift transition-smooth shadow-card">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
+            <CardContent className="p-4 md:p-6">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                 <div>
-                  <p className="text-sm text-muted-foreground">Total Documentos</p>
-                  <p className="text-3xl font-bold text-primary">{stats.total}</p>
+                  <p className="text-xs md:text-sm text-muted-foreground">Total</p>
+                  <p className="text-2xl md:text-3xl font-bold text-primary">{stats.total}</p>
                   <p className="text-xs text-success flex items-center gap-1 mt-1">
                     <TrendingUp className="w-3 h-3" />
                     Activo
                   </p>
                 </div>
-                <div className="bg-primary/10 p-3 rounded-xl">
-                  <FileText className="w-8 h-8 text-primary" />
+                <div className="bg-primary/10 p-2 md:p-3 rounded-xl self-end md:self-auto">
+                  <FileText className="w-5 h-5 md:w-8 md:h-8 text-primary" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card className="hover-lift transition-smooth shadow-card">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
+            <CardContent className="p-4 md:p-6">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                 <div>
-                  <p className="text-sm text-muted-foreground">En Proceso</p>
-                  <p className="text-3xl font-bold text-secondary">{stats.pending}</p>
+                  <p className="text-xs md:text-sm text-muted-foreground">En Proceso</p>
+                  <p className="text-2xl md:text-3xl font-bold text-secondary">{stats.pending}</p>
                   <p className="text-xs text-muted-foreground mt-1">En revisión</p>
                 </div>
-                <div className="bg-secondary/10 p-3 rounded-xl">
-                  <Clock className="w-8 h-8 text-secondary" />
+                <div className="bg-secondary/10 p-2 md:p-3 rounded-xl self-end md:self-auto">
+                  <Clock className="w-5 h-5 md:w-8 md:h-8 text-secondary" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card className="hover-lift transition-smooth shadow-card">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
+            <CardContent className="p-4 md:p-6">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                 <div>
-                  <p className="text-sm text-muted-foreground">Completados</p>
-                  <p className="text-3xl font-bold text-success">{stats.completed}</p>
+                  <p className="text-xs md:text-sm text-muted-foreground">Completos</p>
+                  <p className="text-2xl md:text-3xl font-bold text-success">{stats.completed}</p>
                   <p className="text-xs text-success flex items-center gap-1 mt-1">
                     <CheckCircle className="w-3 h-3" />
                     Finalizados
                   </p>
                 </div>
-                <div className="bg-success/10 p-3 rounded-xl">
-                  <Award className="w-8 h-8 text-success" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="hover-lift transition-smooth shadow-card">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Valor Total</p>
-                  <p className="text-2xl font-bold text-primary">{formatPrice(stats.totalValue)}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Inversión total</p>
-                </div>
-                <div className="bg-success/10 p-3 rounded-xl">
-                  <DollarSign className="w-8 h-8 text-success" />
+                <div className="bg-success/10 p-2 md:p-3 rounded-xl self-end md:self-auto">
+                  <CheckCircle className="w-5 h-5 md:w-8 md:h-8 text-success" />
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Enhanced Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 animate-slide-up">
+        {/* Mobile Quick Actions - Floating buttons */}
+        <div className="grid grid-cols-2 gap-3 mb-6 md:hidden animate-slide-up">
+          <Button 
+            onClick={handleNewDocumentRequest}
+            className="h-20 flex-col gap-2"
+            size="lg"
+          >
+            <Plus className="w-6 h-6" />
+            <span className="text-sm">Crear Documento</span>
+          </Button>
+
+          <Button 
+            onClick={() => setShowConsultation(true)}
+            className="h-20 flex-col gap-2"
+            variant="secondary"
+            size="lg"
+          >
+            <MessageCircle className="w-6 h-6" />
+            <span className="text-sm">Hablar con Lexi</span>
+          </Button>
+        </div>
+
+        {/* Desktop Enhanced Quick Actions */}
+        <div className="hidden md:grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 animate-slide-up">
           <Card className="cursor-pointer hover-lift transition-smooth shadow-card group" onClick={handleNewDocumentRequest}>
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
@@ -775,12 +780,12 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
           </Card>
         </div>
 
-        {/* Enhanced Main Content Tabs */}
+        {/* Enhanced Main Content Tabs - Mobile Optimized */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="animate-slide-up">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
-            <TabsTrigger value="overview" className="transition-smooth">Inicio</TabsTrigger>
-            <TabsTrigger value="documents" className="transition-smooth">Documentos</TabsTrigger>
-            <TabsTrigger value="profile" className="transition-smooth">Perfil</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 mb-4 md:mb-6">
+            <TabsTrigger value="overview" className="transition-smooth text-xs md:text-sm">Inicio</TabsTrigger>
+            <TabsTrigger value="documents" className="transition-smooth text-xs md:text-sm">Documentos</TabsTrigger>
+            <TabsTrigger value="profile" className="transition-smooth text-xs md:text-sm">Perfil</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -816,13 +821,13 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
             </Card>
           </TabsContent>
 
-          <TabsContent value="documents" className="space-y-6">
-            {/* Enhanced Search */}
-            <div className="flex items-center gap-4">
-              <div className="relative flex-1 max-w-md">
+          <TabsContent value="documents" className="space-y-4 md:space-y-6">
+            {/* Enhanced Search - Mobile Optimized */}
+            <div className="flex items-center gap-3 md:gap-4">
+              <div className="relative flex-1">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar documentos..."
+                  placeholder="Buscar..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 transition-smooth hover-subtle"
@@ -830,72 +835,52 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
               </div>
             </div>
 
-            {/* Enhanced Documents List */}
-            <div className="space-y-4">
+            {/* Documents Grid - Mobile Optimized */}
+            <div className="space-y-3 md:space-y-4">
               {filteredDocuments.length === 0 ? (
                 <Card className="shadow-card">
-                  <CardContent className="p-12 text-center animate-scale-in">
-                    <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                      <FileText className="w-10 h-10 text-primary" />
-                    </div>
-                    <h3 className="font-semibold text-lg mb-2">No tienes documentos aún</h3>
-                    <p className="text-muted-foreground mb-6">
-                      Comienza creando tu primer documento legal con nuestro sistema inteligente
+                  <CardContent className="p-8 md:p-12 text-center">
+                    <FileText className="w-12 h-12 md:w-16 md:h-16 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="font-semibold text-base md:text-lg mb-2">No hay documentos</h3>
+                    <p className="text-xs md:text-sm text-muted-foreground mb-4 md:mb-6">
+                      {searchTerm ? 'No se encontraron documentos' : 'Crea tu primer documento legal'}
                     </p>
-                    <Button onClick={handleNewDocumentRequest} className="hover-lift">
+                    <Button onClick={handleNewDocumentRequest} className="w-full md:w-auto">
                       <Plus className="w-4 h-4 mr-2" />
-                      Crear Primer Documento
+                      Crear Documento
                     </Button>
                   </CardContent>
                 </Card>
               ) : (
-                filteredDocuments.map((doc, index) => (
-                  <Card key={doc.id} className="hover-lift transition-smooth shadow-card animate-slide-up" style={{ animationDelay: `${index * 0.1}s` }}>
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary-light rounded-xl flex items-center justify-center">
-                              <FileText className="w-6 h-6 text-white" />
-                            </div>
-                            <div>
-                              <h3 className="font-semibold text-lg">{doc.document_type}</h3>
-                              {getStatusBadge(doc.status)}
-                            </div>
+                filteredDocuments.map((doc) => (
+                  <Card key={doc.id} className="shadow-card hover-lift transition-smooth">
+                    <CardContent className="p-4 md:p-6">
+                      <div className="space-y-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-sm md:text-base mb-1 truncate">{doc.document_type}</h3>
+                            <p className="text-xs md:text-sm text-muted-foreground">Token: {doc.token}</p>
                           </div>
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground bg-muted/30 p-4 rounded-lg">
-                            <div className="flex items-center gap-2">
-                              <Calendar className="w-4 h-4 text-primary" />
-                              <span>Creado: {new Date(doc.created_at).toLocaleDateString('es-CO')}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <DollarSign className="w-4 h-4 text-success" />
-                              <span className="font-medium">{formatPrice(doc.price)}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Eye className="w-4 h-4 text-secondary" />
-                              <span className="font-mono text-xs">{doc.token}</span>
-                            </div>
+                          {getStatusBadge(doc.status)}
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-3 text-xs md:text-sm">
+                          <div>
+                            <p className="text-muted-foreground mb-1">Creado</p>
+                            <p className="font-medium">{new Date(doc.created_at).toLocaleDateString('es-CO', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground mb-1">Precio</p>
+                            <p className="font-medium">{formatPrice(doc.price)}</p>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2 ml-4">
-                          {doc.status === 'pagado' || doc.status === 'descargado' ? (
+                        <div className="pt-2">
+                          {doc.status === 'revision_usuario' ? (
                             <Button
                               size="sm"
+                              className="w-full"
                               onClick={() => handleDownloadDocument(doc.token)}
-                              className="hover-lift"
-                            >
-                              <Download className="w-4 h-4 mr-2" />
-                              Descargar
-                            </Button>
-                          ) : doc.status === 'revision_usuario' ? (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleDownloadDocument(doc.token)}
-                              className="hover-lift"
                             >
                               <FileText className="w-4 h-4 mr-2" />
                               Revisar y Pagar
@@ -904,8 +889,8 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
                             <Button
                               size="sm"
                               variant="outline"
+                              className="w-full"
                               onClick={() => handleDownloadDocument(doc.token)}
-                              className="hover-lift"
                             >
                               <Search className="w-4 h-4 mr-2" />
                               Ver Estado
@@ -920,33 +905,33 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
             </div>
           </TabsContent>
 
-          <TabsContent value="profile" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <TabsContent value="profile" className="space-y-4 md:space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
               {/* Profile Information */}
               <Card className="shadow-card">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="w-5 h-5 text-primary" />
+                <CardHeader className="pb-3 md:pb-4">
+                  <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                    <User className="w-4 h-4 md:w-5 md:h-5 text-primary" />
                     Mi Información
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 gap-4">
-                    <div className="p-4 bg-muted/30 rounded-lg">
-                      <label className="text-sm font-medium text-muted-foreground">Nombre completo</label>
-                      <p className="font-semibold mt-1">{profile?.full_name || 'No especificado'}</p>
+                <CardContent className="space-y-3 md:space-y-4">
+                  <div className="grid grid-cols-1 gap-3 md:gap-4">
+                    <div className="p-3 md:p-4 bg-muted/30 rounded-lg">
+                      <label className="text-xs md:text-sm font-medium text-muted-foreground">Nombre completo</label>
+                      <p className="font-semibold mt-1 text-sm md:text-base">{profile?.full_name || 'No especificado'}</p>
                     </div>
-                    <div className="p-4 bg-muted/30 rounded-lg">
-                      <label className="text-sm font-medium text-muted-foreground">Correo electrónico</label>
-                      <p className="font-semibold mt-1">{profile?.email || user?.email}</p>
+                    <div className="p-3 md:p-4 bg-muted/30 rounded-lg">
+                      <label className="text-xs md:text-sm font-medium text-muted-foreground">Correo electrónico</label>
+                      <p className="font-semibold mt-1 text-sm md:text-base break-all">{profile?.email || user?.email}</p>
                     </div>
-                    <div className="p-4 bg-muted/30 rounded-lg">
-                      <label className="text-sm font-medium text-muted-foreground">Teléfono</label>
-                      <p className="font-semibold mt-1">{profile?.phone || 'No especificado'}</p>
+                    <div className="p-3 md:p-4 bg-muted/30 rounded-lg">
+                      <label className="text-xs md:text-sm font-medium text-muted-foreground">Teléfono</label>
+                      <p className="font-semibold mt-1 text-sm md:text-base">{profile?.phone || 'No especificado'}</p>
                     </div>
-                    <div className="p-4 bg-muted/30 rounded-lg">
-                      <label className="text-sm font-medium text-muted-foreground">Miembro desde</label>
-                      <p className="font-semibold mt-1">
+                    <div className="p-3 md:p-4 bg-muted/30 rounded-lg">
+                      <label className="text-xs md:text-sm font-medium text-muted-foreground">Miembro desde</label>
+                      <p className="font-semibold mt-1 text-sm md:text-base">
                         {profile?.created_at ? new Date(profile.created_at).toLocaleDateString('es-CO') : 'No disponible'}
                       </p>
                     </div>
@@ -956,47 +941,47 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
 
               {/* Security & Privacy */}
               <Card className="shadow-card">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Shield className="w-5 h-5 text-success" />
+                <CardHeader className="pb-3 md:pb-4">
+                  <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                    <Shield className="w-4 h-4 md:w-5 md:h-5 text-success" />
                     Seguridad y Privacidad
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-3">
+                <CardContent className="space-y-3 md:space-y-4">
+                  <div className="space-y-2 md:space-y-3">
                     <div className="flex items-center justify-between p-3 bg-success/10 rounded-lg">
                       <div className="flex items-center gap-2">
-                        <Lock className="w-4 h-4 text-success" />
-                        <span className="text-sm">Encriptación Activa</span>
+                        <Lock className="w-4 h-4 text-success flex-shrink-0" />
+                        <span className="text-xs md:text-sm">Encriptación Activa</span>
                       </div>
-                      <Badge variant="default" className="bg-success text-white">Activo</Badge>
+                      <Badge variant="default" className="bg-success text-white text-xs">Activo</Badge>
                     </div>
                     
                     <div className="flex items-center justify-between p-3 bg-success/10 rounded-lg">
                       <div className="flex items-center gap-2">
-                        <Shield className="w-4 h-4 text-success" />
-                        <span className="text-sm">Autenticación Segura</span>
+                        <Shield className="w-4 h-4 text-success flex-shrink-0" />
+                        <span className="text-xs md:text-sm">Autenticación Segura</span>
                       </div>
-                      <Badge variant="default" className="bg-success text-white">Verificado</Badge>
+                      <Badge variant="default" className="bg-success text-white text-xs">Verificado</Badge>
                     </div>
                     
                     <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg">
                       <div className="flex items-center gap-2">
-                        <Eye className="w-4 h-4 text-primary" />
-                        <span className="text-sm">Datos Personales</span>
+                        <Eye className="w-4 h-4 text-primary flex-shrink-0" />
+                        <span className="text-xs md:text-sm">Datos Personales</span>
                       </div>
-                      <Badge variant="outline">Protegido</Badge>
+                      <Badge variant="outline" className="text-xs">Protegido</Badge>
                     </div>
                   </div>
                   
-                  <div className="pt-4 border-t space-y-3">
-                    <h4 className="font-semibold text-sm">Gestionar cuenta</h4>
+                  <div className="pt-3 md:pt-4 border-t space-y-2 md:space-y-3">
+                    <h4 className="font-semibold text-xs md:text-sm">Gestionar cuenta</h4>
                     <div className="flex flex-col gap-2">
                       <ChangeEmailDialog
                         trigger={
-                          <Button variant="outline" size="sm" className="w-full justify-start">
+                          <Button variant="outline" size="sm" className="w-full justify-start text-xs md:text-sm">
                             <Mail className="w-4 h-4 mr-2" />
-                            Cambiar correo electrónico
+                            Cambiar correo
                           </Button>
                         }
                         onChangeEmail={async (newEmail) => {
@@ -1021,7 +1006,7 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
                       
                       <PasswordResetDialog
                         trigger={
-                          <Button variant="outline" size="sm" className="w-full justify-start">
+                          <Button variant="outline" size="sm" className="w-full justify-start text-xs md:text-sm">
                             <Lock className="w-4 h-4 mr-2" />
                             Cambiar contraseña
                           </Button>
@@ -1030,10 +1015,9 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
                     </div>
                   </div>
                   
-                  <div className="pt-4 border-t">
+                  <div className="pt-3 md:pt-4 border-t">
                     <p className="text-xs text-muted-foreground">
-                      Tu información está protegida con encriptación de nivel bancario. 
-                      Cumplimos con todas las normativas de protección de datos.
+                      Tu información está protegida con encriptación de nivel bancario.
                     </p>
                   </div>
                 </CardContent>
