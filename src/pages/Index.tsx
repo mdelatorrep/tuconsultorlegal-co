@@ -28,7 +28,6 @@ import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { useUserAuth } from "@/hooks/useUserAuth";
-import { useAuthTypeDetection } from "@/hooks/useAuthTypeDetection";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function Index() {
