@@ -16,8 +16,16 @@ export const PWAUpdatePrompt = () => {
     },
   });
 
-  const handleUpdate = () => {
-    updateServiceWorker(true);
+  const handleUpdate = async () => {
+    try {
+      await updateServiceWorker(true);
+      // Force page reload after service worker update
+      window.location.reload();
+    } catch (error) {
+      console.error('Error updating service worker:', error);
+      // Force reload even if update fails
+      window.location.reload();
+    }
   };
 
   return (
@@ -28,9 +36,9 @@ export const PWAUpdatePrompt = () => {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: -100, opacity: 0 }}
           transition={{ duration: 0.3 }}
-          className="fixed top-20 left-1/2 -translate-x-1/2 z-[9999] max-w-md w-full px-4"
+          className="fixed top-4 sm:top-20 inset-x-0 z-[9999] px-4 flex justify-center"
         >
-          <div className="bg-background border-2 border-primary/50 rounded-xl shadow-2xl p-4">
+          <div className="bg-background border-2 border-primary/50 rounded-xl shadow-2xl p-4 w-full max-w-md">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
               <RefreshCw className="w-5 h-5 text-primary flex-shrink-0" />
               <div className="flex-1 min-w-0">
