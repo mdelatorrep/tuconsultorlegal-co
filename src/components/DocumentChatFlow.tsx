@@ -93,9 +93,13 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
       setDataProcessingConsent(true);
     } else {
       const accepted = localStorage.getItem(`terms_accepted_${agentId}`);
+      const dataConsent = localStorage.getItem(`data_consent_${agentId}`);
       if (accepted === 'true') {
         setTermsAccepted(true);
         setShowTermsDialog(false);
+      }
+      if (dataConsent === 'true') {
+        setDataProcessingConsent(true);
       }
     }
   }, [agentId, isAuthenticated]);
@@ -508,27 +512,57 @@ ${userContextInfo}`;
         body: requestBody
       });
       
-      // 🚨 Manejo específico de rate limit
+      // 🚨 Manejo específico de rate limit con retry automático
       if (error) {
         console.error('❌ OpenAI Agent error:', error);
         console.error('❌ Error details:', JSON.stringify(error, null, 2));
         
-        // Detectar error de rate limit
+        // Detectar error de rate limit (429)
         if (error.message?.includes('rate_limit') || error.message?.includes('Rate limit') || error.message?.includes('429')) {
-          toast.error('El sistema está procesando muchas solicitudes. Por favor espera 1 minuto e intenta de nuevo.');
+          console.log('⏳ Rate limit detectado, reintentando en 2 segundos...');
           setIsRateLimited(true);
-          setTimeout(() => {
-            setIsRateLimited(false);
-            toast.info('Ya puedes enviar mensajes nuevamente');
-          }, 60000); // 60 segundos
+          
+          // Esperar 2 segundos y reintentar automáticamente
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          // Reintentar la llamada
+          const { data: retryData, error: retryError } = await supabase.functions.invoke('agent-workflow-orchestrator', {
+            body: requestBody
+          });
+          
+          setIsRateLimited(false);
+          
+          if (retryError) {
+            // Si el reintento también falla, mostrar error
+            toast.error('El sistema está ocupado. Por favor intenta de nuevo en un momento.');
+            setSending(false);
+            return;
+          }
+          
+          // Reintento exitoso, continuar con la respuesta
+          if (retryData.threadId) {
+            setThreadId(retryData.threadId);
+          }
+          
+          const assistantMessage: Message = {
+            role: 'assistant',
+            content: retryData.message,
+            timestamp: new Date(),
+            showGenerateButton: shouldShowGenerateButton(retryData.message)
+          };
+          
+          const extractedData = extractInformationFromMessage(userMessage.content);
+          setCollectedData(prev => ({ ...prev, ...extractedData }));
+          setMessages(prev => [...prev, assistantMessage]);
+          maintainInputFocus();
           setSending(false);
           return;
         }
         
-        toast.error(`Error con el asistente: ${error.message || 'Error desconocido'}`);
+        // Para otros errores, mostrar mensaje pero sin toast agresivo
+        console.error('⚠️ Error no crítico, intentando fallback...');
         
         // Fallback to original chat system
-        console.log('⚠️ Falling back to document-chat...');
         const { data: fallbackData, error: fallbackError } = await supabase.functions.invoke('document-chat', {
           body: {
             messages: updatedMessages.map(msg => ({ role: msg.role, content: msg.content })),
@@ -539,7 +573,9 @@ ${userContextInfo}`;
 
         if (fallbackError) {
           console.error('Fallback chat also failed:', fallbackError);
-          throw fallbackError;
+          toast.error(`Error al procesar tu mensaje. Por favor intenta nuevamente.`);
+          setSending(false);
+          return;
         }
 
         const assistantMessage: Message = {
@@ -787,8 +823,9 @@ ${userContextInfo}`;
 
   // Manejar la aceptación de términos
   const handleContinue = () => {
-    if (acceptedTerms && acceptedPrivacy) {
+    if (acceptedTerms && acceptedPrivacy && dataProcessingConsent) {
       localStorage.setItem(`terms_accepted_${agentId}`, 'true');
+      localStorage.setItem(`data_consent_${agentId}`, 'true');
       
       // ✅ SOLO limpiar si NO hay conversación activa
       const existingChat = localStorage.getItem(`chat_${agentId}`);
@@ -803,7 +840,7 @@ ${userContextInfo}`;
     }
   };
 
-  const canContinue = acceptedTerms && acceptedPrivacy;
+  const canContinue = acceptedTerms && acceptedPrivacy && dataProcessingConsent;
 
   // Card de aceptación de términos - SE MUESTRA PRIMERO (antes que loading)
   if (!termsAccepted && showTermsDialog) {
@@ -884,6 +921,30 @@ ${userContextInfo}`;
                         >
                           Política de Privacidad
                         </a>
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Checkbox Tratamiento de Datos Personales */}
+                  <div className="flex items-start space-x-3">
+                    <Checkbox
+                      id="dataProcessing"
+                      checked={dataProcessingConsent}
+                      onCheckedChange={(checked) => setDataProcessingConsent(checked as boolean)}
+                      className="mt-1"
+                    />
+                    <div className="space-y-1 flex-1">
+                      <Label 
+                        htmlFor="dataProcessing" 
+                        className="text-sm font-medium cursor-pointer"
+                      >
+                        Acepto el Tratamiento de Datos Personales *
+                      </Label>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Acepto el tratamiento de mis datos personales conforme a la Ley 1581 de 2012 
+                        (Ley de Habeas Data en Colombia) y autorizo a tuconsultorlegal.co para recopilar, 
+                        almacenar, usar y circular mi información personal para los fines relacionados con 
+                        la gestión y seguimiento de este documento legal.
                       </p>
                     </div>
                   </div>
