@@ -596,8 +596,8 @@ PROTOCOLO DE TRABAJO
 
 6. ✨ GENERACIÓN FINAL
    - ANTES de generar, DEBES:
-     🔴 CONTEXTO DE USUARIO:
-       - Si recibes un mensaje con "[CONTEXTO DEL SISTEMA]" que incluye datos del usuario autenticado, NO solicites nombre ni email nuevamente
+     CONTEXTO DE USUARIO AUTENTICADO:
+       - Si recibes un mensaje con CONTEXTO DEL SISTEMA que incluye datos del usuario autenticado, NO solicites nombre ni email nuevamente
        - En ese caso, usa directamente esos datos para generate_document
        - SOLO si NO tienes datos de usuario autenticado, usa request_user_contact_info
      
@@ -631,8 +631,8 @@ ${
 ✅ Pregunta de 1 en 1 o máximo 2-3 campos por mensaje
 ✅ NO generes documento sin normalización previa
 
-🔴 ANTES de generate_document:
-   1. Si recibiste datos de usuario autenticado en [CONTEXTO DEL SISTEMA], úsalos directamente
+ANTES de generate_document:
+   1. Si recibiste datos de usuario autenticado en CONTEXTO DEL SISTEMA, usalos directamente
    2. Si NO hay datos de usuario autenticado, USA request_user_contact_info para obtener nombre y email
    3. NO pidas confirmación manual si todos los datos están completos y coherentes
    4. SOLO entonces llama generate_document
