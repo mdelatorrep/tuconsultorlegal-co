@@ -346,14 +346,35 @@ Email: ${userContext.email}
       console.log(`✅ Deleted ${idsToDelete.length} duplicate conversations`);
     }
     
-    // Now upsert the current conversation
+    // 🔥 CRITICAL: Get existing conversation_data to preserve collected_data and placeholder_mapping
+    const { data: existingConv } = await supabase
+      .from('agent_conversations')
+      .select('conversation_data')
+      .eq('openai_agent_id', openaiAgent.id)
+      .eq('thread_id', currentThreadId)
+      .maybeSingle();
+    
+    // Merge existing collected_data and placeholder_mapping with new conversationData
+    const mergedConversationData = {
+      ...conversationData,
+      collected_data: existingConv?.conversation_data?.collected_data || {},
+      placeholder_mapping: existingConv?.conversation_data?.placeholder_mapping || {}
+    };
+    
+    console.log('💾 Merging conversation data:', {
+      hasCollectedData: Object.keys(mergedConversationData.collected_data).length > 0,
+      hasPlaceholderMapping: Object.keys(mergedConversationData.placeholder_mapping).length > 0,
+      collectedDataKeys: Object.keys(mergedConversationData.collected_data)
+    });
+    
+    // Now upsert the current conversation with merged data
     await supabase
       .from('agent_conversations')
       .upsert({
         openai_agent_id: openaiAgent.id,
         thread_id: currentThreadId,
         document_token_id: documentTokenId,
-        conversation_data: conversationData,
+        conversation_data: mergedConversationData,
         status: runStatus === 'completed' ? 'completed' : 'active'
       }, {
         onConflict: 'thread_id,openai_agent_id'
