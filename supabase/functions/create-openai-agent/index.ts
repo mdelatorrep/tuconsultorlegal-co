@@ -144,13 +144,14 @@ serve(async (req) => {
             type: "function",
             function: {
               name: "store_collected_data",
-              description: "Guarda/actualiza en base de datos los placeholders recopilados para esta conversación",
+              description: "🔴 OBLIGATORIO: Guarda/actualiza en base de datos los placeholders recopilados DESPUÉS DE CADA RESPUESTA del usuario. SIEMPRE llama esta función inmediatamente después de que el usuario proporcione información, antes de hacer la siguiente pregunta.",
               parameters: {
                 type: "object",
                 properties: {
                   data: {
                     type: "object",
-                    description: "Objeto clave-valor con placeholders y respuestas del usuario",
+                    description: "Objeto clave-valor con los placeholders y las respuestas del usuario. Ejemplo: {\"nombre_completo\": \"JUAN PÉREZ\", \"cedula\": \"1.234.567\"}",
+                    additionalProperties: true
                   },
                   merge: {
                     type: "boolean",
@@ -565,6 +566,13 @@ PROTOCOLO DE TRABAJO
    - Adapta el lenguaje según la audiencia (${legalAgent.target_audience})
    - Explica por qué necesitas cada información
    - Referencia fuentes oficiales cuando sea apropiado
+   
+   🔴 OBLIGATORIO DESPUÉS DE CADA RESPUESTA DEL USUARIO:
+   - SIEMPRE llama store_collected_data con los datos que acabas de recopilar
+   - Formato: { "nombre_campo": "valor proporcionado por usuario" }
+   - Ejemplo: Si usuario dice "Mi nombre es Juan Pérez", inmediatamente llama:
+     store_collected_data({ data: { "nombre_completo": "Juan Pérez" } })
+   - NO hagas la siguiente pregunta sin antes guardar los datos
 
 3. ✅ VALIDACIÓN Y CONFIRMACIÓN
    - Usa validate_information para verificar completitud
@@ -630,17 +638,31 @@ ${
    ✓ Los datos son coherentes y sin contradicciones
    ✓ No hay ambigüedades en la información
 
-🔴 FLUJO OBLIGATORIO:
-   Recopilar → Validar → Normalizar → Solicitar Contacto → Generar
+🔴 FLUJO OBLIGATORIO POR CADA RESPUESTA:
+   1. Recibir respuesta del usuario
+   2. INMEDIATAMENTE llamar store_collected_data con los datos
+   3. Hacer siguiente pregunta o validar
+
+🔴 FLUJO COMPLETO DEL DOCUMENTO:
+   Recopilar+Guardar (ciclo) → Validar → Normalizar → Solicitar Contacto → Generar
 
 EJEMPLO DE FLUJO COMPLETO
 
-1. Recopilar información del documento (bloques estructurados)
-2. Validar información completa (sin pedir confirmación manual si está completa)
-3. Normalizar datos automáticamente
-4. Solicitar datos de contacto: "Para finalizar, necesito tus datos de contacto para enviarte el documento y el link de seguimiento. ¿Cuál es tu nombre completo y correo electrónico?"
-5. Generar documento con user_name y user_email
-6. Compartir token y link con detalles específicos: "✅ ¡Listo! Tu documento Certificado de Paz y Salvo ha sido generado. Token: ABC123. Link: https://tuconsultorlegal.co/documento/ABC123. Precio: $50.000. Entrega: 15 de octubre..."
+PASO A PASO CON GUARDADO:
+1. Preguntar: "¿Cuál es tu nombre completo?"
+2. Usuario responde: "Juan Pérez González"
+3. INMEDIATAMENTE llamar: store_collected_data({ data: { "nombre_completo": "Juan Pérez González" } })
+4. Preguntar: "¿Cuál es tu número de cédula?"
+5. Usuario responde: "1234567890"
+6. INMEDIATAMENTE llamar: store_collected_data({ data: { "cedula": "1234567890" } })
+7. Continuar hasta recopilar toda la información
+8. Validar información completa (sin pedir confirmación manual si está completa)
+9. Normalizar datos automáticamente
+10. Solicitar datos de contacto: "Para finalizar, necesito tus datos de contacto para enviarte el documento y el link de seguimiento. ¿Cuál es tu nombre completo y correo electrónico?"
+11. Usuario proporciona contacto
+12. INMEDIATAMENTE llamar: request_user_contact_info({ user_name: "...", user_email: "..." })
+13. Generar documento con user_name y user_email
+14. Compartir token y link con detalles específicos: "✅ ¡Listo! Tu documento ha sido generado. Token: ABC123. Link: https://tuconsultorlegal.co/documento/ABC123. Precio: $50.000. Entrega: 15 de octubre..."
 
 ${
   hasStructuredConversation && conversationBlocks && conversationBlocks.length > 0
