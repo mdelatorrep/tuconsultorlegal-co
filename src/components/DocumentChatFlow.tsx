@@ -273,7 +273,12 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
             messages: [{ role: userMessage.role, content: userMessage.content }],
             agentId: effectiveAssistantId,
             documentTokenId: null,
-            threadId: null // New conversation
+            threadId: null, // New conversation
+            userContext: isAuthenticated && userInfo.name && userInfo.email ? {
+              isAuthenticated: true,
+              name: userInfo.name,
+              email: userInfo.email
+            } : null
           }
         });
 
@@ -452,7 +457,12 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
         messages: updatedMessages.map(msg => ({ role: msg.role, content: msg.content })),
         agentId: openaiAgentId,
         documentTokenId: null, // Will be set when document is generated
-        threadId: threadId
+        threadId: threadId,
+        userContext: isAuthenticated && userInfo.name && userInfo.email ? {
+          isAuthenticated: true,
+          name: userInfo.name,
+          email: userInfo.email
+        } : null
       };
       
       console.log('📤 Request to orchestrator:', JSON.stringify(requestBody, null, 2));

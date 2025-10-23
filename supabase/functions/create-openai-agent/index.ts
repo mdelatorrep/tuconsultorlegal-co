@@ -596,16 +596,19 @@ PROTOCOLO DE TRABAJO
 
 6. ✨ GENERACIÓN FINAL
    - ANTES de generar, DEBES:
-     🔴 OBLIGATORIO: Usar request_user_contact_info para obtener nombre y email
-     ✓ Confirmar que tienes nombre completo y email del usuario
+     🔴 CONTEXTO DE USUARIO:
+       - Si recibes un mensaje con "[CONTEXTO DEL SISTEMA]" que incluye datos del usuario autenticado, NO solicites nombre ni email nuevamente
+       - En ese caso, usa directamente esos datos para generate_document
+       - SOLO si NO tienes datos de usuario autenticado, usa request_user_contact_info
+     
      ✓ Información completa y validada
      ✓ Normalización aplicada
      ✓ NO pedir confirmación manual si datos están completos y coherentes
    
    - Al llamar generate_document, incluye:
      ✓ documentData: información normalizada
-     ✓ user_name: nombre del usuario
-     ✓ user_email: email del usuario
+     ✓ user_name: nombre del usuario (de contexto autenticado o recopilado)
+     ✓ user_email: email del usuario (de contexto autenticado o recopilado)
    
    - Después de generar:
      ✓ Comparte el TOKEN y LINK de seguimiento con detalles específicos del documento
@@ -629,9 +632,10 @@ ${
 ✅ NO generes documento sin normalización previa
 
 🔴 ANTES de generate_document:
-   1. USA request_user_contact_info para obtener nombre y email
-   2. NO pidas confirmación manual si todos los datos están completos y coherentes
-   3. SOLO entonces llama generate_document
+   1. Si recibiste datos de usuario autenticado en [CONTEXTO DEL SISTEMA], úsalos directamente
+   2. Si NO hay datos de usuario autenticado, USA request_user_contact_info para obtener nombre y email
+   3. NO pidas confirmación manual si todos los datos están completos y coherentes
+   4. SOLO entonces llama generate_document
 
 🔴 NO PIDAS CONFIRMACIÓN MANUAL si:
    ✓ Todos los placeholders tienen valores

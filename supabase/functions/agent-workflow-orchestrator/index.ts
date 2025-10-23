@@ -18,7 +18,7 @@ serve(async (req) => {
 
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const { messages, agentId, documentTokenId, threadId } = await req.json();
+    const { messages, agentId, documentTokenId, threadId, userContext } = await req.json();
 
     console.log('Starting workflow orchestration for agent:', agentId);
 
@@ -52,6 +52,23 @@ serve(async (req) => {
 
       const thread = await threadResponse.json();
       currentThreadId = thread.id;
+      
+      // If user is authenticated, add their info to the thread context
+      if (userContext?.isAuthenticated && userContext?.name && userContext?.email) {
+        console.log('👤 Usuario autenticado detectado:', { name: userContext.name, email: userContext.email });
+        await fetch(`https://api.openai.com/v1/threads/${currentThreadId}/messages`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openAIApiKey}`,
+            'Content-Type': 'application/json',
+            'OpenAI-Beta': 'assistants=v2'
+          },
+          body: JSON.stringify({
+            role: 'user',
+            content: `[CONTEXTO DEL SISTEMA - NO RESPONDER] Usuario autenticado: ${userContext.name}, Email: ${userContext.email}. No solicites estos datos nuevamente, ya los tienes disponibles.`
+          })
+        });
+      }
     }
 
     // Add user message to thread
@@ -246,17 +263,30 @@ serve(async (req) => {
     console.log('Assistant response length:', messageContent.length, 'characters');
 
     // Save conversation to database
+    const conversationData: any = {
+      last_message: latestMessage,
+      run_status: runStatus,
+      run_id: run.id
+    };
+    
+    // Include authenticated user context if provided
+    if (userContext?.isAuthenticated && userContext?.name && userContext?.email) {
+      conversationData.user_contact = {
+        user_name: userContext.name,
+        user_email: userContext.email,
+        from_auth: true,
+        collected_at: new Date().toISOString()
+      };
+      console.log('💾 Saved authenticated user context to conversation');
+    }
+    
     await supabase
       .from('agent_conversations')
       .upsert({
         openai_agent_id: openaiAgent.id,
         thread_id: currentThreadId,
         document_token_id: documentTokenId,
-        conversation_data: {
-          last_message: latestMessage,
-          run_status: runStatus,
-          run_id: run.id
-        },
+        conversation_data: conversationData,
         status: runStatus === 'completed' ? 'completed' : 'active'
       });
 
@@ -700,10 +730,10 @@ async function handleRequestClarification(args: any) {
 }
 
 async function handleRequestUserContactInfo(supabase: any, args: any, openaiAgentId: string, threadId: string) {
-  console.log('Storing user contact info:', args);
+  console.log('📧 Storing user contact info:', args);
   
   try {
-    // Get existing conversation
+    // Get existing conversation to check if user context exists
     const { data: conversation } = await supabase
       .from('agent_conversations')
       .select('conversation_data')
@@ -713,7 +743,14 @@ async function handleRequestUserContactInfo(supabase: any, args: any, openaiAgen
       .limit(1)
       .maybeSingle();
     
-    // Store contact info in conversation data
+    // Check if user data already exists from authenticated session
+    const existingUserContact = conversation?.conversation_data?.user_contact;
+    if (existingUserContact?.user_name && existingUserContact?.user_email) {
+      console.log('✅ Using existing authenticated user data:', existingUserContact);
+      return `Perfecto. Utilizaré los datos de tu sesión actual: ${existingUserContact.user_name} (${existingUserContact.user_email}). Procederé con la generación del documento.`;
+    }
+    
+    // Store new contact info
     const { error: contactError } = await supabase
       .from('agent_conversations')
       .update({
@@ -734,6 +771,7 @@ async function handleRequestUserContactInfo(supabase: any, args: any, openaiAgen
       return `Error al almacenar los datos de contacto: ${contactError.message}`;
     }
     
+    console.log('✅ Contact info stored successfully');
     return `Perfecto, ${args.user_name}. He registrado tu correo ${args.user_email}. Una vez generemos el documento, te enviaremos el link de seguimiento a este correo.`;
     
   } catch (error) {
