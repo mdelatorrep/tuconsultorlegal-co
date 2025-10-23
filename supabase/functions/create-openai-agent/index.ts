@@ -113,6 +113,19 @@ serve(async (req) => {
           {
             type: "function",
             function: {
+              name: "get_collected_data",
+              description:
+                "🔴 LLAMAR PRIMERO SIEMPRE: Recupera datos previamente recopilados en esta conversación. DEBES llamar esta función INMEDIATAMENTE después de cada mensaje del usuario ANTES de hacer cualquier otra cosa. Esto evita pedir información duplicada. Sin parámetros.",
+              parameters: {
+                type: "object",
+                properties: {},
+                required: [],
+              },
+            },
+          },
+          {
+            type: "function",
+            function: {
               name: "search_legal_sources",
               description:
                 "Busca información legal específica en fuentes oficiales colombianas y en línea usando serper.dev. Utiliza esta función cuando necesites consultar legislación, jurisprudencia o normatividad colombiana actualizada.",
@@ -588,9 +601,15 @@ PROTOCOLO DE TRABAJO
    
    ⚠️⚠️⚠️ PROTOCOLO CRÍTICO - NUNCA OMITIR ⚠️⚠️⚠️
    
-   DESPUÉS DE CADA RESPUESTA DEL USUARIO, SIGUE ESTOS PASOS EN ORDEN:
-   
-   PASO 1️⃣: LEE la última respuesta del usuario palabra por palabra
+    DESPUÉS DE CADA RESPUESTA DEL USUARIO, SIGUE ESTOS PASOS EN ORDEN:
+    
+    PASO 0️⃣: 🔴 PRIMERO - RECUPERA LOS DATOS PREVIOS
+    - LLAMA get_collected_data() INMEDIATAMENTE
+    - ANALIZA qué información ya tienes guardada
+    - NO PIDAS DE NUEVO información que ya fue recopilada
+    - Si ya tienes un dato, confírmalo en lugar de volver a preguntarlo
+    
+    PASO 1️⃣: LEE la última respuesta del usuario palabra por palabra
    PASO 2️⃣: IDENTIFICA qué campos de información contiene
    PASO 3️⃣: EXTRAE los valores específicos (nombres, números, fechas, etc.)
    PASO 4️⃣: LLAMA store_collected_data con un objeto que contenga esos valores

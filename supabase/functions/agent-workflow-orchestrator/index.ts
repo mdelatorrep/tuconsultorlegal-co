@@ -226,6 +226,14 @@ Email: ${userContext.email}
                 output = await handleNormalizeInformation(functionArgs);
                 break;
               
+              case 'get_collected_data':
+                output = await handleGetCollectedData(
+                  supabase,
+                  openaiAgent.id,
+                  currentThreadId
+                );
+                break;
+              
               case 'store_collected_data':
                 output = await handleStoreCollectedData(
                   supabase,
@@ -420,6 +428,57 @@ Email: ${userContext.email}
 });
 
 // Function handlers
+async function handleGetCollectedData(supabase: any, openaiAgentId: string, threadId: string) {
+  console.log('🔍 Getting collected data for threadId:', threadId, 'openaiAgentId:', openaiAgentId);
+  
+  try {
+    const { data: conversation, error } = await supabase
+      .from('agent_conversations')
+      .select('conversation_data')
+      .eq('thread_id', threadId)
+      .eq('openai_agent_id', openaiAgentId)
+      .maybeSingle();
+    
+    if (error) {
+      console.error('Error retrieving conversation data:', error);
+      return JSON.stringify({
+        success: false,
+        error: 'No se pudo recuperar datos previos',
+        collected_data: {},
+        placeholder_mapping: {}
+      });
+    }
+    
+    const collectedData = conversation?.conversation_data?.collected_data || {};
+    const placeholderMapping = conversation?.conversation_data?.placeholder_mapping || {};
+    const userContact = conversation?.conversation_data?.user_contact || null;
+    
+    console.log('✅ Retrieved collected data:', {
+      dataKeys: Object.keys(collectedData),
+      mappingKeys: Object.keys(placeholderMapping),
+      hasUserContact: !!userContact
+    });
+    
+    return JSON.stringify({
+      success: true,
+      collected_data: collectedData,
+      placeholder_mapping: placeholderMapping,
+      user_contact: userContact,
+      message: Object.keys(collectedData).length > 0 
+        ? `Se recuperaron ${Object.keys(collectedData).length} datos previamente recopilados: ${Object.keys(collectedData).join(', ')}`
+        : 'No hay datos previos. Esta es una conversación nueva.'
+    });
+  } catch (error) {
+    console.error('Exception in handleGetCollectedData:', error);
+    return JSON.stringify({
+      success: false,
+      error: error.message,
+      collected_data: {},
+      placeholder_mapping: {}
+    });
+  }
+}
+
 async function handleGenerateDocument(supabase: any, args: any, legalAgent: any, documentTokenId: string, threadId: string, openaiAgentId: string) {
   console.log('Generating document with data from args:', args);
   
