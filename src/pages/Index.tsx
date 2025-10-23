@@ -25,7 +25,6 @@ import ComingSoonPage from "@/components/ComingSoonPage";
 import { LawyerAuthProvider } from "@/components/LawyerAuthProvider";
 import { LogRocketProvider } from "@/components/LogRocketProvider";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
-import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -288,7 +287,6 @@ export default function Index() {
 
   return (
     <LogRocketProvider>
-      <PWAUpdatePrompt />
       <OfflineIndicator />
       <PWAInstallPrompt />
       
