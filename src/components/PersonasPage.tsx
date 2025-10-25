@@ -123,21 +123,96 @@ export default function PersonasPage({ onOpenChat, onNavigate }: PersonasPagePro
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Hero Section - Apple Style */}
-      <section className="pt-16 pb-12 px-6">
-        <div className="max-w-7xl mx-auto text-center">
-          <h1 className="text-5xl md:text-7xl font-semibold text-foreground mb-6 tracking-tight">
-            Portal Personas
-          </h1>
-          <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto mb-12 font-light">
-            Accede a servicios legales inteligentes diseñados para ti
-          </p>
+      {/* Hero Section - High Impact Design */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-[#010f24] via-[#011838] to-[#010f24]">
+        {/* Animated Background Pattern */}
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width=%2260%22%20height=%2260%22%20viewBox=%220%200%2060%2060%22%20xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cg%20fill=%22none%22%20fill-rule=%22evenodd%22%3E%3Cg%20fill=%22%23ffffff%22%20fill-opacity=%220.05%22%3E%3Ccircle%20cx=%2230%22%20cy=%2230%22%20r=%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] animate-pulse"></div>
+        
+        {/* Glow Effect */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] md:w-[800px] md:h-[800px] bg-[#0372e8]/10 rounded-full blur-[120px]"></div>
+        
+        <div className="relative container mx-auto px-6 py-16 md:py-24">
+          <div className="max-w-4xl mx-auto text-center space-y-8">
+            {/* Badge */}
+            <div className="inline-flex items-center bg-white/20 backdrop-blur-sm border border-white/30 text-white px-4 py-2 rounded-full text-sm font-medium animate-fade-in">
+              <Shield className="w-4 h-4 mr-2" />
+              Servicios Legales para Personas
+              <Check className="w-4 h-4 ml-2 text-green-300" />
+            </div>
+
+            {/* Main Title */}
+            <div className="space-y-4 animate-fade-in">
+              <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold text-white leading-tight tracking-tight">
+                Tu Asesoría Legal
+                <span className="block bg-gradient-to-r from-[#f2bb31] to-[#ffd666] bg-clip-text text-transparent mt-2">
+                  Inteligente
+                </span>
+              </h1>
+              
+              <p className="text-xl md:text-2xl text-white/80 max-w-2xl mx-auto font-light leading-relaxed">
+                Documentos legales personalizados con inteligencia artificial. 
+                <span className="block mt-2 text-white/60">Rápido, seguro y accesible.</span>
+              </p>
+            </div>
+
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4 animate-fade-in">
+              <Button 
+                size="lg"
+                className="bg-gradient-to-r from-[#f2bb31] to-[#ffd666] text-[#010f24] hover:shadow-xl hover:shadow-yellow-500/20 transition-all duration-300 font-semibold px-8 py-6 text-lg group"
+                onClick={() => {
+                  const element = document.getElementById('documentos-section');
+                  element?.scrollIntoView({ behavior: 'smooth' });
+                }}
+              >
+                Comenzar Ahora
+                <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+              </Button>
+              
+              <Button 
+                size="lg"
+                variant="outline"
+                className="bg-white/10 border-white/30 text-white hover:bg-white/20 backdrop-blur-sm px-8 py-6 text-lg"
+                onClick={() => onOpenChat("Necesito asesoría legal")}
+              >
+                <MessageCircle className="w-5 h-5 mr-2" />
+                Chat con IA
+              </Button>
+            </div>
+
+            {/* Trust Indicators */}
+            <div className="flex flex-wrap justify-center items-center gap-6 pt-8 text-white/60 text-sm animate-fade-in">
+              <div className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-green-300" />
+                <span>100% Seguro</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-green-300" />
+                <span>Documentos Personalizados</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-green-300" />
+                <span>Respuesta Inmediata</span>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* Main Navigation Cards - 4 Sections */}
-      <section className="pb-20 px-6">
-        <div className="max-w-7xl mx-auto grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <section className="py-16 px-6 bg-background">
+        <div className="max-w-7xl mx-auto">
+          {/* Section Header */}
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              ¿Qué necesitas hoy?
+            </h2>
+            <p className="text-muted-foreground text-lg">
+              Elige una opción para comenzar
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           
           {/* 1. Documentos por Categorías */}
           <div className="group relative bg-card rounded-3xl p-8 border border-border hover:border-primary/50 transition-all duration-300 cursor-pointer hover:shadow-lg">
@@ -249,6 +324,7 @@ export default function PersonasPage({ onOpenChat, onNavigate }: PersonasPagePro
               {isAuthenticated ? 'Iniciar chat' : 'Requiere cuenta'}
               <ArrowRight className={`w-4 h-4 ${isAuthenticated ? 'group-hover:translate-x-1' : ''} transition-transform`} />
             </Button>
+          </div>
           </div>
         </div>
       </section>
