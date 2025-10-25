@@ -125,7 +125,7 @@ export default function Header({
               <User className="w-4 h-4" />
               <span>Personas</span>
             </button>
-            <button onClick={() => handleNavClick("empresas")} className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-smooth font-medium text-sm ${currentPage === "empresas" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+            <button onClick={() => window.location.hash = 'proximamente-empresas'} className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-smooth font-medium text-sm ${currentPage === "empresas" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
               <Users className="w-4 h-4" />
               <span>Empresas</span>
               <Badge variant="secondary" className="text-xs px-1.5 py-0.5">Próximamente</Badge>
@@ -193,7 +193,7 @@ export default function Header({
                 </button>
                 
                 {/* Business Users */}
-                <button onClick={() => handleNavClick("empresas")} className={`p-4 rounded-xl border-2 transition-smooth ${currentPage === "empresas" ? "bg-success/10 border-success text-success" : "border-border hover:border-success/30 hover:bg-muted/30"}`}>
+                <button onClick={() => window.location.hash = 'proximamente-empresas'} className={`p-4 rounded-xl border-2 transition-smooth ${currentPage === "empresas" ? "bg-success/10 border-success text-success" : "border-border hover:border-success/30 hover:bg-muted/30"}`}>
                   <div className="flex items-center gap-4">
                     <div className="p-2 bg-success/10 rounded-lg">
                       <Users className="w-6 h-6 text-success" />
