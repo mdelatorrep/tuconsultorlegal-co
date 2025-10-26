@@ -19,7 +19,9 @@ import {
   Search,
   Calendar,
   DollarSign,
-  ArrowLeft
+  ArrowLeft,
+  ArrowRight,
+  Users
 } from 'lucide-react';
 import { Input } from './ui/input';
 import { useDocumentPayment } from './document-payment/useDocumentPayment';
@@ -27,6 +29,15 @@ import DocumentChatFlow from './DocumentChatFlow';
 import DocumentCreationSuccess from './DocumentCreationSuccess';
 import UserDocumentSelector from './UserDocumentSelector';
 import LegalConsultationChat from './LegalConsultationChat';
+import { useFreeDocuments } from '@/hooks/useFreeDocuments';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
+import Autoplay from "embla-carousel-autoplay";
 
 interface UserDashboardPageProps {
   onBack: () => void;
@@ -74,6 +85,16 @@ export default function UserDashboardPage({ onBack, onOpenChat }: UserDashboardP
   const [showConsultation, setShowConsultation] = useState(false);
 
   const { handleVerifyTrackingCode } = useDocumentPayment();
+  const { documents: freeDocuments, loading: loadingFreeDocuments } = useFreeDocuments();
+
+  const iconMap: { [key: string]: any } = {
+    FileText: FileText,
+    Users: Users,
+    CreditCard: CreditCard,
+    Clock: Clock,
+    CheckCircle: CheckCircle,
+    AlertCircle: AlertCircle,
+  };
 
   useEffect(() => {
     loadUserData();
@@ -476,6 +497,75 @@ export default function UserDashboardPage({ onBack, onOpenChat }: UserDashboardP
             </CardContent>
           </Card>
         </div>
+
+        {/* Free Documents Section */}
+        {!loadingFreeDocuments && freeDocuments.length > 0 && (
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold">Documentos Gratuitos</h2>
+                <p className="text-muted-foreground">Genera estos documentos sin costo alguno</p>
+              </div>
+            </div>
+            
+            <Carousel
+              opts={{
+                align: "start",
+                loop: true,
+              }}
+              plugins={[
+                Autoplay({
+                  delay: 4000,
+                  stopOnInteraction: true,
+                }),
+              ]}
+              className="w-full"
+            >
+              <CarouselContent>
+                {freeDocuments.map((doc) => {
+                  const IconComponent = iconMap[doc.frontend_icon || 'FileText'] || FileText;
+                  return (
+                    <CarouselItem key={doc.id} className="md:basis-1/2 lg:basis-1/3">
+                      <Card className="h-[340px] flex flex-col hover:shadow-lg transition-shadow">
+                        <CardContent className="p-6 flex flex-col flex-1">
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="bg-success/10 p-3 rounded-lg">
+                              <IconComponent className="w-8 h-8 text-success" />
+                            </div>
+                            <Badge variant="secondary" className="bg-success/10 text-success border-success/20">
+                              Gratis
+                            </Badge>
+                          </div>
+                          
+                          <h3 className="font-bold text-lg mb-2 line-clamp-2">
+                            {doc.document_name}
+                          </h3>
+                          
+                          <p className="text-sm text-muted-foreground mb-4 flex-1 line-clamp-3">
+                            {doc.document_description}
+                          </p>
+                          
+                          <div className="mt-auto pt-4 border-t">
+                            <Button 
+                              className="w-full"
+                              variant="success"
+                              onClick={() => handleAgentSelected(doc.id)}
+                            >
+                              {doc.button_cta || 'Generar'}
+                              <ArrowRight className="w-4 h-4 ml-2" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </CarouselItem>
+                  );
+                })}
+              </CarouselContent>
+              <CarouselPrevious className="hidden md:flex" />
+              <CarouselNext className="hidden md:flex" />
+            </Carousel>
+          </div>
+        )}
 
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
