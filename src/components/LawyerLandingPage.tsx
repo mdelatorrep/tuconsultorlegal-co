@@ -222,16 +222,7 @@ export default function LawyerLandingPage({
 
           {/* Grid de Features */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-            {features.map((feature, index) => (
-              <Card 
-                key={index} 
-                className={`cursor-pointer transition-all duration-500 hover:shadow-hero group ${
-                  activeFeature === index 
-                    ? 'border-primary shadow-card scale-105 bg-gradient-to-br from-background to-primary/5' 
-                    : 'border-border hover:border-primary/50'
-                }`}
-                onClick={() => setActiveFeature(index)}
-              >
+            {features.map((feature, index) => <Card key={index} className={`cursor-pointer transition-all duration-500 hover:shadow-hero group ${activeFeature === index ? 'border-primary shadow-card scale-105 bg-gradient-to-br from-background to-primary/5' : 'border-border hover:border-primary/50'}`} onClick={() => setActiveFeature(index)}>
                 <CardContent className="p-6">
                   <div className="space-y-4">
                     {/* Icon y Badge */}
@@ -239,12 +230,10 @@ export default function LawyerLandingPage({
                       <div className={`p-4 rounded-xl bg-gradient-to-r ${feature.color} shadow-soft transition-transform group-hover:scale-110`}>
                         <feature.icon className="w-8 h-8 text-white" />
                       </div>
-                      {activeFeature === index && (
-                        <Badge className="bg-success/20 text-success border-success/30">
+                      {activeFeature === index && <Badge className="bg-success/20 text-success border-success/30">
                           <Zap className="w-3 h-3 mr-1" />
                           Activo
-                        </Badge>
-                      )}
+                        </Badge>}
                     </div>
                     
                     {/* Content */}
@@ -266,57 +255,14 @@ export default function LawyerLandingPage({
                     </div>
                   </div>
                 </CardContent>
-              </Card>
-            ))}
+              </Card>)}
           </div>
 
           {/* Live Demo Visual - Full Width */}
           <div className="relative max-w-4xl mx-auto">
             <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-brand-blue-light/10 rounded-3xl blur-3xl"></div>
             <Card className="relative bg-white shadow-hero border-0">
-              <CardContent className="p-8">
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className={`p-2 rounded-lg bg-gradient-to-r ${features[activeFeature].color}`}>
-                        {(() => {
-                          const ActiveIcon = features[activeFeature].icon;
-                          return <ActiveIcon className="w-5 h-5 text-white" />;
-                        })()}
-                      </div>
-                      <h3 className="font-semibold text-xl">
-                        {features[activeFeature].title}
-                      </h3>
-                    </div>
-                    <Badge className={`bg-gradient-to-r ${features[activeFeature].color} text-white border-0`}>
-                      <Sparkles className="w-3 h-3 mr-1" />
-                      IA Activa
-                    </Badge>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <div className="p-4 bg-brand-gray-light rounded-lg">
-                      <div className="text-sm text-muted-foreground mb-2">Consulta de ejemplo:</div>
-                      <div className="font-medium">{features[activeFeature].demo}</div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2 text-sm">
-                      <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
-                      <span className="text-muted-foreground">Procesando con IA avanzada...</span>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      {[1, 2, 3].map(i => (
-                        <div 
-                          key={i} 
-                          className="h-3 bg-brand-gray-light rounded animate-pulse" 
-                          style={{ width: `${Math.random() * 40 + 60}%` }}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
+              
             </Card>
           </div>
         </div>
