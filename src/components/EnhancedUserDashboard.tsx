@@ -965,38 +965,23 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
                               size="sm"
                               variant="outline"
                               className="flex-1"
-                              onClick={() => handleDownloadDocument(doc.token)}
+                              onClick={() => handleViewDetails(doc)}
                             >
-                              <Search className="w-4 h-4 mr-2" />
-                              Ver Estado
+                              <Info className="w-4 h-4 mr-2" />
+                              Ver Detalles
                             </Button>
                           )}
 
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button size="sm" variant="ghost" className="h-9 w-9 p-0">
-                                <MoreVertical className="w-4 h-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleViewDetails(doc)}>
-                                <Info className="w-4 h-4 mr-2" />
-                                Ver Detalles
-                              </DropdownMenuItem>
-                              {canDeleteDocument(doc.status) && (
-                                <>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem 
-                                    onClick={() => setDocumentToDelete(doc.id)}
-                                    className="text-destructive focus:text-destructive"
-                                  >
-                                    <Trash2 className="w-4 h-4 mr-2" />
-                                    Eliminar
-                                  </DropdownMenuItem>
-                                </>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          {canDeleteDocument(doc.status) && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setDocumentToDelete(doc.id)}
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </CardContent>

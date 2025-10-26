@@ -127,11 +127,39 @@ export const DocumentDetailsDialog: React.FC<DocumentDetailsDialogProps> = ({
 
           {/* Información enviada */}
           <div className="space-y-3">
-            <h3 className="font-semibold text-sm text-muted-foreground">INFORMACIÓN ENVIADA</h3>
-            <div className="bg-muted/30 p-4 rounded-lg">
-              <pre className="text-sm whitespace-pre-wrap font-sans text-foreground">
-                {document.document_content || 'Sin información detallada'}
-              </pre>
+            <h3 className="font-semibold text-sm text-muted-foreground">TU INFORMACIÓN</h3>
+            <div className="bg-muted/30 p-4 rounded-lg space-y-2">
+              {document.document_content ? (
+                (() => {
+                  try {
+                    // Try to parse as JSON first
+                    const parsed = JSON.parse(document.document_content);
+                    return (
+                      <div className="space-y-3">
+                        {Object.entries(parsed).map(([key, value]) => (
+                          <div key={key} className="border-b border-border/50 pb-2 last:border-0">
+                            <p className="text-xs font-medium text-muted-foreground uppercase mb-1">
+                              {key.replace(/_/g, ' ')}
+                            </p>
+                            <p className="text-sm font-semibold">
+                              {typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  } catch {
+                    // If not JSON, show as formatted text
+                    return (
+                      <pre className="text-sm whitespace-pre-wrap font-sans text-foreground">
+                        {document.document_content}
+                      </pre>
+                    );
+                  }
+                })()
+              ) : (
+                <p className="text-sm text-muted-foreground">Sin información detallada</p>
+              )}
             </div>
           </div>
 

@@ -41,6 +41,7 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [documentGenerated, setDocumentGenerated] = useState(false);
   const [isRateLimited, setIsRateLimited] = useState(false);
   const [userInfo, setUserInfo] = useState({ name: '', email: '' });
   const [showUserForm, setShowUserForm] = useState(false);
@@ -698,7 +699,15 @@ ${userContextInfo}`;
     userEmail: string, 
     userId: string | null = null
   ) => {
+    // Prevent duplicate generation
+    if (documentGenerated || generating) {
+      console.log('⚠️ Document generation already in progress or completed');
+      return;
+    }
+
     try {
+      setDocumentGenerated(true); // Mark as generated immediately to prevent duplicates
+      
       const processedConversation = await processConversationData();
       
       const { data, error } = await supabase.functions.invoke('generate-document-from-chat', {
@@ -716,7 +725,10 @@ ${userContextInfo}`;
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        setDocumentGenerated(false); // Reset on error so user can retry
+        throw error;
+      }
 
       if (isAuthenticated) {
         toast.success(
@@ -747,6 +759,7 @@ ${userContextInfo}`;
     } catch (error) {
       console.error('Error generating document:', error);
       toast.error('Error al generar el documento');
+      setDocumentGenerated(false); // Reset on error
     } finally {
       setGenerating(false);
     }
@@ -1089,10 +1102,10 @@ ${userContextInfo}`;
                 </Button>
                 <Button
                   onClick={handleSubmit}
-                  disabled={!userInfo.name.trim() || !userInfo.email.trim() || !dataProcessingConsent || generating}
+                  disabled={!userInfo.name.trim() || !userInfo.email.trim() || !dataProcessingConsent || generating || documentGenerated}
                   className="flex-1"
                 >
-                  {generating ? 'Generando...' : 'Generar Documento'}
+                  {generating ? 'Generando...' : documentGenerated ? 'Documento Generado' : 'Generar Documento'}
                 </Button>
               </div>
             </CardContent>
@@ -1188,7 +1201,7 @@ ${userContextInfo}`;
                           </div>
                           <Button 
                             onClick={generateDocument}
-                            disabled={generating}
+                            disabled={generating || documentGenerated}
                             className="w-full bg-green-600 hover:bg-green-700 text-white rounded-xl"
                             size="sm"
                           >
@@ -1196,6 +1209,11 @@ ${userContextInfo}`;
                               <>
                                 <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/20 border-t-white mr-2" />
                                 Generando...
+                              </>
+                            ) : documentGenerated ? (
+                              <>
+                                <FileText className="w-4 h-4 mr-2" />
+                                Documento Generado
                               </>
                             ) : (
                               <>
