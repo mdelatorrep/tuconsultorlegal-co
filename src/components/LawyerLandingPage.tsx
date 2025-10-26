@@ -103,17 +103,13 @@ export default function LawyerLandingPage({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => document.getElementById('login-section')?.scrollIntoView({
-                  behavior: 'smooth'
-                })}
+                onClick={() => window.location.href = '/auth-abogados'}
               >
                 Iniciar Sesión
               </Button>
               <Button
                 size="sm"
-                onClick={() => document.getElementById('login-section')?.scrollIntoView({
-                  behavior: 'smooth'
-                })}
+                onClick={() => window.location.href = '/auth-abogados'}
               >
                 <User className="w-4 h-4 mr-2" />
                 Registrarse
@@ -163,9 +159,7 @@ export default function LawyerLandingPage({
                   <Button 
                     size="lg" 
                     variant="accent" 
-                    onClick={() => document.getElementById('login-section')?.scrollIntoView({
-                      behavior: 'smooth'
-                    })} 
+                    onClick={() => window.location.href = '/auth-abogados'} 
                     className="font-semibold px-8 py-6 shadow-glow transition-all duration-300 hover:scale-105"
                   >
                     <User className="w-5 h-5 mr-2" />
@@ -176,9 +170,7 @@ export default function LawyerLandingPage({
                   <Button 
                     variant="outline" 
                     size="lg" 
-                    onClick={() => document.getElementById('login-section')?.scrollIntoView({
-                      behavior: 'smooth'
-                    })} 
+                    onClick={() => window.location.href = '/auth-abogados'} 
                     className="border-white/50 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white px-8 py-6"
                   >
                     <Scale className="w-5 h-5 mr-2" />
@@ -366,67 +358,21 @@ export default function LawyerLandingPage({
         </div>
       </section>
 
-      {/* Login Section - Simplified & Clear */}
-      <section id="login-section" className="py-20 bg-gradient-to-b from-brand-gray-light to-background">
-        <div className="container mx-auto px-6">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-12">
-              <Badge className="mb-4">
-                <Shield className="w-4 h-4 mr-2" />
-                Acceso Seguro
-              </Badge>
-              <h2 className="text-4xl font-bold mb-4">
-                <span className="text-primary">Inicia Sesión</span> o{' '}
-                <span className="text-primary">Crea tu Cuenta</span>
-              </h2>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Comienza en menos de 2 minutos. Sin tarjeta de crédito requerida para probar.
-              </p>
-            </div>
-
-            <div className="grid lg:grid-cols-2 gap-12 items-start">
-              {/* Benefits */}
-              <div className="space-y-8">
-                <h3 className="text-2xl font-semibold mb-6">¿Por qué elegir nuestra plataforma?</h3>
-                
-                <div className="space-y-6">
-                  {["IA especializada en derecho colombiano", "Integración completa con tu flujo de trabajo", "Seguridad bancaria para datos confidenciales", "Soporte técnico especializado 24/7", "Actualizaciones constantes de jurisprudencia", "ROI comprobado desde el primer mes"].map((benefit, index) => <div key={index} className="flex items-center space-x-3">
-                      <CheckCircle className="w-5 h-5 text-success flex-shrink-0" />
-                      <span className="text-muted-foreground">{benefit}</span>
-                    </div>)}
-                </div>
-
-                <Card className="border-success/20 bg-success/5">
-                  <CardContent className="p-6">
-                    <div className="flex items-start space-x-3">
-                      <Shield className="w-6 h-6 text-success flex-shrink-0 mt-1" />
-                      <div>
-                        <h4 className="font-semibold mb-2">Garantía de Satisfacción</h4>
-                        <p className="text-sm text-muted-foreground">
-                          30 días de prueba gratuita. Si no estás completamente satisfecho, 
-                          te devolvemos el 100% de tu inversión.
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Login Form */}
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-brand-blue-light/5 rounded-3xl blur-3xl"></div>
-                <div className="relative">
-                  <LawyerLogin onLoginSuccess={() => window.location.reload()} />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-primary via-primary-light to-brand-blue-light">
-        
+      <section className="py-20 bg-gradient-to-r from-primary via-primary-light to-brand-blue-light text-center text-white">
+        <div className="container mx-auto px-6">
+          <h2 className="text-4xl font-bold mb-6">¿Listo para transformar tu práctica legal?</h2>
+          <Button 
+            size="lg" 
+            variant="secondary"
+            onClick={() => window.location.href = '/auth-abogados'}
+            className="font-semibold px-8 py-6"
+          >
+            <User className="w-5 h-5 mr-2" />
+            Comenzar Ahora
+            <ArrowRight className="w-5 h-5 ml-2" />
+          </Button>
+        </div>
       </section>
     </div>;
 }

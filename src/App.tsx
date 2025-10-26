@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AdminPage from "./components/AdminPage";
+import LawyerAuthPage from "./components/LawyerAuthPage";
 import { SubscriptionSuccessPage } from "./components/SubscriptionSuccessPage";
 import { SubscriptionErrorPage } from "./components/SubscriptionErrorPage";
 import { useAuthManager } from "@/hooks/useAuthManager";
@@ -46,6 +47,7 @@ const AppContent = () => {
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/admin" element={<AdminPage />} />
+          <Route path="/auth-abogados" element={<LawyerAuthPage />} />
           <Route path="/documento/:token" element={<Index />} />
           <Route path="/subscription-success" element={<SubscriptionSuccessPage />} />
           <Route path="/subscription-error" element={<SubscriptionErrorPage />} />
