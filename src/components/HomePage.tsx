@@ -1,12 +1,14 @@
-import { FileText, Star, Users, Building2, Scale } from "lucide-react";
+import { FileText, Star, Users, Building2, Scale, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePopularDocuments } from "@/hooks/usePopularDocuments";
 import { useSEO } from "@/hooks/useSEO";
 import ServiceStatusAlert from "./ServiceStatusAlert";
 import { motion } from "framer-motion";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import Autoplay from "embla-carousel-autoplay";
 import { useRef } from "react";
+import { supabase } from "@/integrations/supabase/client";
 interface HomePageProps {
   onOpenChat: (message?: string) => void;
   onNavigate: (page: string) => void;
@@ -232,48 +234,88 @@ export default function HomePage({
                 <p className="text-xl text-slate-600 font-[300]">Creados por expertos. Listos para usar.</p>
               </div>
 
-              {/* Carrusel con autoscroll */}
-              {loadingDocs ? <div className="flex gap-6 overflow-x-hidden">
-                  {[1, 2, 3, 4, 5, 6].map(i => <div key={i} className="min-w-[280px] max-w-[280px] bg-white/10 backdrop-blur-sm rounded-[24px] p-8 animate-pulse flex-shrink-0">
-                      <div className="w-16 h-16 rounded-2xl bg-white/20 mb-6"></div>
-                      <div className="h-6 bg-white/20 rounded mb-3"></div>
-                      <div className="h-4 bg-white/20 rounded"></div>
-                    </div>)}
-                </div> : popularDocuments.length > 0 ? <div className="relative w-full overflow-hidden">
-                  <motion.div className="flex gap-8" animate={{
-                x: ["0%", "-50%"] // desplazamiento continuo
-              }} transition={{
-                repeat: Infinity,
-                repeatType: "loop",
-                duration: 25,
-                // velocidad del scroll
-                ease: "linear"
-              }} style={{
-                willChange: "transform"
-              }}>
-                    {/* duplicamos la lista para un loop sin salto */}
-                    {[...popularDocuments, ...popularDocuments].map((doc, index) => <motion.div key={`${doc.id}-${index}`} whileHover={{
-                  scale: 1.05
-                }} transition={{
-                  type: "spring",
-                  stiffness: 200,
-                  damping: 15
-                }} className="min-w-[280px] max-w-[280px] bg-white rounded-[24px] p-8 flex-shrink-0 hover:shadow-[0_12px_40px_rgba(3,114,232,0.3)] border border-white/10 hover:border-[#0372e8]/30 transition-all duration-500 cursor-pointer" onClick={() => onOpenChat(`Quiero crear un ${doc.name.toLowerCase()}`)}>
-                        <div className="w-14 h-14 rounded-2xl bg-[#0372e8]/10 flex items-center justify-center mb-5">
-                          <FileText className="w-7 h-7 text-[#0372e8]" />
-                        </div>
-                        <h3 className="text-base font-[600] text-[#010f24] mb-2 leading-tight line-clamp-2">
-                          {doc.name}
-                        </h3>
-                        <p className="text-slate-600 font-[300] text-sm leading-relaxed line-clamp-3">
-                          {doc.description}
-                        </p>
-                      </motion.div>)}
-                  </motion.div>
-                </div> : <div className="text-center py-12">
-                  <FileText className="w-16 h-16 text-white/30 mx-auto mb-4" />
-                  <p className="text-white/70 font-[300]">No hay documentos disponibles en este momento</p>
-                </div>}
+              {/* Scroll lateral con documentos */}
+              {loadingDocs ? (
+                <div className="flex gap-6 overflow-x-hidden">
+                  {[1, 2, 3, 4, 5, 6].map(i => (
+                    <div key={i} className="min-w-[320px] max-w-[320px] bg-white rounded-[24px] p-8 animate-pulse flex-shrink-0">
+                      <div className="w-16 h-16 rounded-2xl bg-slate-200 mb-6"></div>
+                      <div className="h-6 bg-slate-200 rounded mb-3"></div>
+                      <div className="h-4 bg-slate-200 rounded mb-4"></div>
+                      <div className="h-10 bg-slate-200 rounded"></div>
+                    </div>
+                  ))}
+                </div>
+              ) : popularDocuments.length > 0 ? (
+                <ScrollArea className="w-full whitespace-nowrap">
+                  <div className="flex gap-6 pb-4">
+                    {popularDocuments.map((doc) => {
+                      const handleDocumentAction = async () => {
+                        try {
+                          // Get full agent details
+                          const { data: agent, error } = await supabase
+                            .from('legal_agents')
+                            .select('*')
+                            .eq('id', doc.id)
+                            .single();
+
+                          if (error) throw error;
+                          
+                          // Navigate to personas page and trigger document creation
+                          onNavigate('personas');
+                          setTimeout(() => {
+                            onOpenChat(`Quiero crear un ${doc.name.toLowerCase()}`);
+                          }, 500);
+                        } catch (error) {
+                          console.error('Error loading agent:', error);
+                        }
+                      };
+
+                      return (
+                        <motion.div 
+                          key={doc.id} 
+                          whileHover={{ scale: 1.02 }} 
+                          transition={{ type: "spring", stiffness: 200, damping: 15 }}
+                          className="inline-block min-w-[320px] max-w-[320px] bg-white rounded-[24px] p-8 hover:shadow-[0_12px_40px_rgba(3,114,232,0.3)] border border-slate-200 hover:border-[#0372e8]/30 transition-all duration-500"
+                        >
+                          <div className="w-14 h-14 rounded-2xl bg-[#0372e8]/10 flex items-center justify-center mb-5">
+                            <FileText className="w-7 h-7 text-[#0372e8]" />
+                          </div>
+                          
+                          <h3 className="text-lg font-[600] text-[#010f24] mb-2 leading-tight line-clamp-2">
+                            {doc.name}
+                          </h3>
+                          
+                          <p className="text-slate-600 font-[300] text-sm leading-relaxed line-clamp-3 mb-6">
+                            {doc.description}
+                          </p>
+
+                          <div className="flex items-center justify-between pt-4 border-t border-slate-200">
+                            <span className="text-xl font-[600] text-[#0372e8]">
+                              Gratis
+                            </span>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={handleDocumentAction}
+                              className="hover:bg-[#0372e8]/5 text-[#0372e8] font-[500]"
+                            >
+                              Generar 
+                              <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                            </Button>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                  <ScrollBar orientation="horizontal" className="h-2" />
+                </ScrollArea>
+              ) : (
+                <div className="text-center py-12">
+                  <FileText className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                  <p className="text-slate-500 font-[300]">No hay documentos disponibles en este momento</p>
+                </div>
+              )}
             </div>
           </div>
         </section>
