@@ -202,7 +202,7 @@ export default function LawyerLandingPage({
       </section>
 
       {/* Features Showcase */}
-      <section id="demo-section" className="py-20 bg-gradient-to-b from-background to-brand-gray-light">
+      <section id="demo-section" className="py-20 bg-gradient-to-b from-background via-muted/20 to-muted/40">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
             <Badge className="mb-6">
@@ -269,7 +269,7 @@ export default function LawyerLandingPage({
       </section>
 
       {/* Testimonials */}
-      <section className="py-20 bg-background">
+      <section className="py-20 bg-gradient-to-b from-muted/40 to-background">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
             <Badge className="mb-6">
@@ -305,7 +305,7 @@ export default function LawyerLandingPage({
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-primary via-primary-light to-brand-blue-light text-center text-white">
+      <section className="py-20 bg-gradient-to-br from-brand-dark via-primary to-brand-dark text-center text-white">
         <div className="container mx-auto px-6">
           <h2 className="text-4xl font-bold mb-6">¿Listo para transformar tu práctica legal?</h2>
           <Button size="lg" variant="secondary" onClick={() => window.location.href = '/auth-abogados'} className="font-semibold px-8 py-6">
