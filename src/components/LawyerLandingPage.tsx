@@ -92,31 +92,7 @@ export default function LawyerLandingPage({
   return <div className="min-h-screen bg-background">
       {/* Sticky Quick Access Bar */}
       <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b shadow-sm">
-        <div className="container mx-auto px-6 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Scale className="h-5 w-5 text-primary" />
-              <span className="font-semibold text-primary">Portal Abogados</span>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => window.location.href = '/auth-abogados'}
-              >
-                Iniciar Sesión
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => window.location.href = '/auth-abogados'}
-              >
-                <User className="w-4 h-4 mr-2" />
-                Registrarse
-              </Button>
-            </div>
-          </div>
-        </div>
+        
       </div>
 
       {/* Hero Section - Unified Brand Identity */}
@@ -156,36 +132,21 @@ export default function LawyerLandingPage({
               {/* Clear CTAs for Login/Register */}
               <div className="space-y-4">
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <Button 
-                    size="lg" 
-                    variant="accent" 
-                    onClick={() => window.location.href = '/auth-abogados'} 
-                    className="font-semibold px-8 py-6 shadow-glow transition-all duration-300 hover:scale-105"
-                  >
+                  <Button size="lg" variant="accent" onClick={() => window.location.href = '/auth-abogados'} className="font-semibold px-8 py-6 shadow-glow transition-all duration-300 hover:scale-105">
                     <User className="w-5 h-5 mr-2" />
                     Crear Cuenta Gratis
                     <ArrowRight className="w-5 h-5 ml-2" />
                   </Button>
                   
-                  <Button 
-                    variant="outline" 
-                    size="lg" 
-                    onClick={() => window.location.href = '/auth-abogados'} 
-                    className="border-white/50 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white px-8 py-6"
-                  >
+                  <Button variant="outline" size="lg" onClick={() => window.location.href = '/auth-abogados'} className="border-white/50 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white px-8 py-6">
                     <Scale className="w-5 h-5 mr-2" />
                     Ya tengo cuenta
                   </Button>
                 </div>
                 
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => document.getElementById('demo-section')?.scrollIntoView({
-                    behavior: 'smooth'
-                  })} 
-                  className="text-white/80 hover:text-white hover:bg-white/10 mx-auto"
-                >
+                <Button variant="ghost" size="sm" onClick={() => document.getElementById('demo-section')?.scrollIntoView({
+                behavior: 'smooth'
+              })} className="text-white/80 hover:text-white hover:bg-white/10 mx-auto">
                   <Play className="w-4 h-4 mr-2" />
                   Ver cómo funciona
                   <ChevronRight className="w-4 h-4 ml-1" />
@@ -362,12 +323,7 @@ export default function LawyerLandingPage({
       <section className="py-20 bg-gradient-to-r from-primary via-primary-light to-brand-blue-light text-center text-white">
         <div className="container mx-auto px-6">
           <h2 className="text-4xl font-bold mb-6">¿Listo para transformar tu práctica legal?</h2>
-          <Button 
-            size="lg" 
-            variant="secondary"
-            onClick={() => window.location.href = '/auth-abogados'}
-            className="font-semibold px-8 py-6"
-          >
+          <Button size="lg" variant="secondary" onClick={() => window.location.href = '/auth-abogados'} className="font-semibold px-8 py-6">
             <User className="w-5 h-5 mr-2" />
             Comenzar Ahora
             <ArrowRight className="w-5 h-5 ml-2" />
