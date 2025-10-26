@@ -180,6 +180,27 @@ export const useLawyerAuth = () => {
         console.error('Missing required fields:', { email: !!email, password: !!password, fullName: !!fullName });
         return false;
       }
+
+      // VALIDAR TIPO DE USUARIO ANTES DE REGISTRAR
+      console.log('=== VALIDATING USER TYPE ===');
+      const { data: validationData, error: validationError } = await supabase.functions.invoke('validate-user-type', {
+        body: {
+          email: email.trim().toLowerCase(),
+          requestedType: 'lawyer'
+        }
+      });
+
+      if (validationError) {
+        console.error('Validation error:', validationError);
+        throw new Error('Error al validar el tipo de usuario');
+      }
+
+      if (!validationData.canRegister) {
+        console.error('Cannot register:', validationData.error);
+        throw new Error(validationData.error);
+      }
+
+      console.log('Validation passed, proceeding with signup');
       
       const redirectUrl = `${window.location.origin}/#abogados`;
       console.log('Redirect URL:', redirectUrl);

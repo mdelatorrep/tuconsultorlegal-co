@@ -90,6 +90,39 @@ export default function UserAuthPage({ onBack, onAuthSuccess }: UserAuthPageProp
     setIsLoading(true);
 
     try {
+      // VALIDAR TIPO DE USUARIO ANTES DE REGISTRAR
+      console.log('Validating user type before signup');
+      const { data: validationData, error: validationError } = await supabase.functions.invoke('validate-user-type', {
+        body: {
+          email: email.trim().toLowerCase(),
+          requestedType: 'user'
+        }
+      });
+
+      if (validationError) {
+        console.error('Validation error:', validationError);
+        toast.error('Error al validar el usuario');
+        setIsLoading(false);
+        return;
+      }
+
+      if (!validationData.canRegister) {
+        console.error('Cannot register:', validationData.error);
+        toast.error(validationData.error);
+        
+        // Si ya existe con otro tipo, redirigir al login correcto
+        if (validationData.loginUrl) {
+          setTimeout(() => {
+            window.location.href = validationData.loginUrl;
+          }, 2000);
+        }
+        
+        setIsLoading(false);
+        return;
+      }
+
+      console.log('Validation passed, proceeding with signup');
+      
       const redirectUrl = `${window.location.origin}/`;
       
       const { data, error } = await supabase.auth.signUp({
