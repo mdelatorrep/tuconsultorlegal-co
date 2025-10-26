@@ -21,13 +21,10 @@ export default function LawyerLandingPage({
   const [isVisible, setIsVisible] = useState(false);
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, align: 'start' });
   const demoScrollRef = useRef<HTMLDivElement>(null);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   useEffect(() => {
     setIsVisible(true);
-    const interval = setInterval(() => {
-      setActiveFeature(prev => (prev + 1) % 6);
-    }, 3000);
-    return () => clearInterval(interval);
   }, []);
 
   // Sync carousel with active feature
@@ -37,6 +34,13 @@ export default function LawyerLandingPage({
     }
   }, [activeFeature, emblaApi]);
 
+  // Reset scroll position when feature changes
+  useEffect(() => {
+    if (demoScrollRef.current) {
+      demoScrollRef.current.scrollTop = 0;
+    }
+  }, [activeFeature]);
+
   // Handle scroll detection for auto-advance
   useEffect(() => {
     const demoScroll = demoScrollRef.current;
@@ -44,18 +48,28 @@ export default function LawyerLandingPage({
 
     const handleScroll = () => {
       const { scrollTop, scrollHeight, clientHeight } = demoScroll;
-      const isAtBottom = scrollTop + clientHeight >= scrollHeight - 10;
+      const isAtBottom = scrollTop + clientHeight >= scrollHeight - 50;
       
-      if (isAtBottom) {
-        setTimeout(() => {
-          setActiveFeature(prev => (prev + 1) % 6);
-        }, 500);
+      // Clear previous timeout
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+      
+      if (isAtBottom && activeFeature < features.length - 1) {
+        scrollTimeoutRef.current = setTimeout(() => {
+          setActiveFeature(prev => (prev + 1) % features.length);
+        }, 800);
       }
     };
 
     demoScroll.addEventListener('scroll', handleScroll);
-    return () => demoScroll.removeEventListener('scroll', handleScroll);
-  }, []);
+    return () => {
+      demoScroll.removeEventListener('scroll', handleScroll);
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, [activeFeature]);
 
   const scrollToPrev = () => {
     setActiveFeature(prev => (prev - 1 + 6) % 6);
@@ -360,67 +374,96 @@ export default function LawyerLandingPage({
             </div>
           </div>
 
-          {/* Live Demo Visual - Full Width */}
-          <div className="relative max-w-5xl mx-auto">
+          {/* Live Demo Visual - Laptop Mockup */}
+          <div className="relative max-w-7xl mx-auto">
             <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-primary/10 rounded-3xl blur-3xl"></div>
-            <Card className="relative bg-white shadow-hero border-0 overflow-hidden">
-              <CardContent className="p-4 sm:p-6 lg:p-8">
-                <div className="space-y-4 sm:space-y-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-                    <div className="space-y-1">
-                      <h3 className="text-lg sm:text-xl lg:text-2xl font-bold">{features[activeFeature].title}</h3>
-                      <p className="text-sm sm:text-base text-muted-foreground">{features[activeFeature].description}</p>
-                    </div>
-                    <Badge className={`bg-gradient-to-r ${features[activeFeature].color} text-white border-0 self-start sm:self-center whitespace-nowrap text-xs sm:text-sm`}>
-                      {(() => {
-                      const ActiveIcon = features[activeFeature].icon;
-                      return <ActiveIcon className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />;
-                    })()}
-                      Demo en Vivo
-                    </Badge>
+            
+            {/* Laptop Frame */}
+            <div className="relative">
+              {/* Screen */}
+              <div className="relative bg-gray-900 rounded-t-2xl p-2 sm:p-3 shadow-2xl">
+                {/* Browser Header */}
+                <div className="bg-gray-800 rounded-t-xl p-2 sm:p-3 flex items-center gap-2">
+                  <div className="flex gap-1.5">
+                    <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-red-500"></div>
+                    <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-yellow-500"></div>
+                    <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-green-500"></div>
                   </div>
-                  
-                  {/* Animated Component Carousel */}
-                  <div className="relative rounded-xl overflow-hidden shadow-soft border border-border/50">
-                    <div className="relative w-full h-[500px] sm:h-[600px] lg:h-[700px] bg-muted/30">
-                      {features.map((feature, index) => {
-                        const DemoComponent = feature.component;
-                        return <div key={index} className={`absolute inset-0 transition-all duration-700 ${activeFeature === index ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
-                          <div 
-                            ref={activeFeature === index ? demoScrollRef : null}
-                            className="w-full h-full overflow-auto transform scale-[0.7] sm:scale-[0.85] lg:scale-100 origin-top-left scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent"
-                          >
-                            <DemoComponent />
-                          </div>
-                        </div>;
-                      })}
-                    </div>
-                    
-                    {/* Scroll Hint */}
-                    <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full flex items-center gap-1 animate-bounce">
-                      <span>↓ Scroll para avanzar</span>
-                    </div>
-                    
-                    {/* Navigation Dots */}
-                    <div className="absolute bottom-2 sm:bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 sm:gap-2 bg-black/50 backdrop-blur-sm px-2 sm:px-3 py-1.5 sm:py-2 rounded-full">
-                      {features.map((_, index) => <button key={index} onClick={() => setActiveFeature(index)} className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full transition-all duration-300 ${activeFeature === index ? 'bg-white w-4 sm:w-6' : 'bg-white/50 hover:bg-white/75'}`} aria-label={`Ver demo ${index + 1}`} />)}
-                    </div>
-                  </div>
-                  
-                  {/* Demo Info */}
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 pt-4 border-t border-border/50">
-                    <div className="flex items-start sm:items-center text-xs sm:text-sm text-muted-foreground">
-                      <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 mr-2 text-primary flex-shrink-0 mt-0.5 sm:mt-0" />
-                      <span className="line-clamp-2 sm:line-clamp-1">Ejemplo: {features[activeFeature].demo}</span>
-                    </div>
-                    <Button variant="outline" size="sm" onClick={() => window.location.href = '/auth-abogados'} className="text-xs sm:text-sm whitespace-nowrap w-full sm:w-auto">
-                      Probar Ahora
-                      <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 ml-2" />
-                    </Button>
+                  <div className="flex-1 bg-gray-700 rounded px-3 py-1 text-[10px] sm:text-xs text-gray-400 ml-2">
+                    {features[activeFeature].title}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+                
+                {/* Demo Content */}
+                <div className="relative bg-white rounded-b-xl overflow-hidden">
+                  <div className="relative w-full h-[400px] sm:h-[500px] lg:h-[600px]">
+                    {features.map((feature, index) => {
+                      const DemoComponent = feature.component;
+                      return <div 
+                        key={index} 
+                        className={`absolute inset-0 transition-all duration-700 ${activeFeature === index ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}
+                      >
+                        <div 
+                          ref={activeFeature === index ? demoScrollRef : null}
+                          className="w-full h-full overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-primary/30 scrollbar-track-gray-100"
+                          style={{ scrollBehavior: 'smooth' }}
+                        >
+                          <DemoComponent />
+                        </div>
+                      </div>;
+                    })}
+                  </div>
+                  
+                  {/* Scroll Indicator */}
+                  <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-sm text-white text-xs px-3 py-2 rounded-lg flex items-center gap-2 animate-bounce pointer-events-none">
+                    <span>↓ Scroll para siguiente demo</span>
+                  </div>
+                  
+                  {/* Navigation Dots */}
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 bg-black/70 backdrop-blur-sm px-4 py-2 rounded-full">
+                    {features.map((_, index) => <button 
+                      key={index} 
+                      onClick={() => setActiveFeature(index)} 
+                      className={`rounded-full transition-all duration-300 ${
+                        activeFeature === index 
+                          ? 'bg-white w-8 h-2' 
+                          : 'bg-white/50 hover:bg-white/75 w-2 h-2'
+                      }`} 
+                      aria-label={`Ver demo ${index + 1}`} 
+                    />)}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Laptop Base */}
+              <div className="relative">
+                <div className="h-2 sm:h-3 bg-gradient-to-b from-gray-800 to-gray-900"></div>
+                <div className="h-3 sm:h-4 bg-gradient-to-b from-gray-900 to-gray-950 rounded-b-2xl"></div>
+                <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-gray-700 to-transparent"></div>
+              </div>
+            </div>
+            
+            {/* Feature Info Below */}
+            <div className="mt-8 text-center space-y-4">
+              <div className="space-y-2">
+                <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold">{features[activeFeature].title}</h3>
+                <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto">{features[activeFeature].description}</p>
+              </div>
+              
+              <div className="flex items-center justify-center gap-3 text-sm text-muted-foreground">
+                <Sparkles className="w-4 h-4 text-primary" />
+                <span>Ejemplo: {features[activeFeature].demo}</span>
+              </div>
+              
+              <Button 
+                size="lg" 
+                onClick={() => window.location.href = '/auth-abogados'} 
+                className="mt-4"
+              >
+                Probar Ahora
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
           </div>
         </div>
       </section>
