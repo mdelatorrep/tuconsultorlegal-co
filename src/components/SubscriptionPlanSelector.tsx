@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Check, Star, Crown } from 'lucide-react';
+import { Check, Star, Crown, Scale, Sparkles } from 'lucide-react';
 import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -16,13 +16,15 @@ interface SubscriptionPlanSelectorProps {
   showCycleToggle?: boolean;
   defaultCycle?: 'monthly' | 'yearly';
   className?: string;
+  showSuccessMessage?: boolean;
 }
 
 export const SubscriptionPlanSelector: React.FC<SubscriptionPlanSelectorProps> = ({
   onPlanSelected,
   showCycleToggle = true,
   defaultCycle = 'monthly',
-  className = ''
+  className = '',
+  showSuccessMessage = true
 }) => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>(defaultCycle);
   const [isCreating, setIsCreating] = useState(false);
@@ -187,90 +189,144 @@ export const SubscriptionPlanSelector: React.FC<SubscriptionPlanSelectorProps> =
         onDecline={handleTermsDecline}
       />
       
-      <div className={`space-y-6 ${className}`}>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {plans.map((plan) => {
+      <div className={`min-h-screen bg-gradient-to-br from-background via-muted/30 to-background py-8 px-4 sm:px-6 lg:px-8 ${className}`}>
+        <div className="max-w-7xl mx-auto">
+          {/* Header Section */}
+          <div className="text-center mb-12 animate-slide-up">
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 mb-6">
+              <Scale className="h-10 w-10 text-primary" />
+            </div>
+            
+            {showSuccessMessage && (
+              <div className="mb-6 p-4 bg-primary/5 border border-primary/20 rounded-lg max-w-2xl mx-auto">
+                <p className="text-primary font-semibold flex items-center justify-center gap-2">
+                  <Sparkles className="h-5 w-5" />
+                  ¡Felicidades! Tu cuenta ha sido creada exitosamente.
+                </p>
+              </div>
+            )}
+            
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4">
+              Selecciona tu Plan
+            </h1>
+            <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
+              Elige el plan que mejor se adapte a tus necesidades profesionales
+            </p>
+          </div>
+
+          {/* Plans Grid */}
+          <div className="grid gap-6 sm:gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 mb-8">
+            {plans.map((plan) => {
           const pricing = formatPrice(plan.monthlyPrice, plan.yearlyPrice, plan.currency);
           const isPopular = isPlanPopular(plan.name);
           const isFree = plan.monthlyPrice === 0;
 
-          return (
-            <Card 
-              key={plan.id} 
-              className={`relative transition-all duration-200 hover:shadow-lg ${
-                isPopular ? 'border-primary shadow-md' : ''
-              }`}
-            >
-              {isPopular && (
-                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                  <Badge className="bg-primary text-primary-foreground">
-                    Más Popular
-                  </Badge>
-                </div>
-              )}
-
-              <CardHeader className="text-center pb-4">
-                <div className="flex justify-center mb-2">
-                  {getPlanIcon(plan.name)}
-                </div>
-                <CardTitle className="text-xl">{plan.name}</CardTitle>
-                <CardDescription className="text-sm">
-                  {plan.description}
-                </CardDescription>
-                
-                <div className="mt-4">
-                  <div className="text-3xl font-bold text-foreground">
-                    {pricing.price}
-                    <span className="text-lg font-normal text-muted-foreground">
-                      {pricing.period}
-                    </span>
-                  </div>
-                  {pricing.savings && (
-                    <p className="text-sm text-green-600 mt-1">
-                      {pricing.savings}
-                    </p>
-                  )}
-                </div>
-              </CardHeader>
-
-              <CardContent className="space-y-4">
-                <ul className="space-y-2">
-                  {plan.features.map((feature, index) => (
-                    <li key={index} className="flex items-start space-x-2">
-                      <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                      <span className="text-sm text-muted-foreground">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <Button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    console.log('🖱️ Button clicked!');
-                    handleSelectPlan(plan);
-                  }}
-                  className={`w-full transition-all duration-200 ${
+              return (
+                <Card 
+                  key={plan.id} 
+                  className={`relative h-full flex flex-col transition-all duration-300 hover-lift-subtle ${
                     isPopular 
-                      ? 'bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl' 
-                      : isFree 
-                      ? 'bg-secondary hover:bg-secondary/90' 
-                      : 'bg-accent hover:bg-accent/90 hover:shadow-md'
+                      ? 'border-2 border-primary shadow-elevated scale-105' 
+                      : 'border border-border hover:border-primary/50'
                   }`}
-                  disabled={isLoading || isCreating}
                 >
-                  {(isLoading || isCreating) ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Procesando...</span>
+                  {isPopular && (
+                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
+                      <Badge className="bg-gradient-to-r from-primary to-primary-light text-primary-foreground px-4 py-1.5 text-sm font-semibold shadow-lg">
+                        <Crown className="h-3.5 w-3.5 mr-1 inline" />
+                        Más Popular
+                      </Badge>
                     </div>
-                  ) : (
-                    isFree ? 'Seleccionar Plan Gratuito' : 'Seleccionar Plan'
                   )}
-                </Button>
-              </CardContent>
-            </Card>
-          );
-          })}
+
+                  <CardHeader className="text-center pb-6 pt-8">
+                    <div className="flex justify-center mb-4">
+                      <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full ${
+                        isPopular ? 'bg-primary/10' : 'bg-muted'
+                      }`}>
+                        {getPlanIcon(plan.name)}
+                      </div>
+                    </div>
+                    
+                    <CardTitle className="text-2xl font-bold mb-2">
+                      {plan.name}
+                    </CardTitle>
+                    
+                    <CardDescription className="text-sm min-h-[40px] px-2">
+                      {plan.description}
+                    </CardDescription>
+                    
+                    <div className="mt-6 mb-2">
+                      <div className="flex items-baseline justify-center gap-1">
+                        <span className="text-4xl sm:text-5xl font-bold text-foreground">
+                          {pricing.price}
+                        </span>
+                        <span className="text-lg text-muted-foreground font-medium">
+                          {pricing.period}
+                        </span>
+                      </div>
+                      {pricing.savings && (
+                        <div className="mt-2 inline-block px-3 py-1 bg-green-500/10 rounded-full">
+                          <p className="text-sm text-green-600 font-medium">
+                            💰 {pricing.savings}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="flex-1 flex flex-col space-y-6 px-6 pb-6">
+                    <div className="flex-1">
+                      <ul className="space-y-3">
+                        {plan.features.map((feature, index) => (
+                          <li key={index} className="flex items-start gap-3">
+                            <div className="flex-shrink-0 w-5 h-5 rounded-full bg-green-500/10 flex items-center justify-center mt-0.5">
+                              <Check className="h-3.5 w-3.5 text-green-600" />
+                            </div>
+                            <span className="text-sm text-foreground leading-relaxed">
+                              {feature}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <Button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        console.log('🖱️ Button clicked!');
+                        handleSelectPlan(plan);
+                      }}
+                      size="lg"
+                      className={`w-full transition-all duration-300 font-semibold ${
+                        isPopular 
+                          ? 'bg-primary hover:bg-primary-light shadow-lg hover:shadow-xl hover:scale-105' 
+                          : isFree 
+                          ? 'bg-secondary hover:bg-secondary-dark text-secondary-foreground' 
+                          : 'bg-muted hover:bg-muted/80 text-foreground hover:shadow-md'
+                      }`}
+                      disabled={isLoading || isCreating}
+                    >
+                      {(isLoading || isCreating) ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                          <span>Procesando...</span>
+                        </div>
+                      ) : (
+                        isFree ? 'Comenzar Gratis' : 'Seleccionar Plan'
+                      )}
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          {/* Footer Note */}
+          <div className="text-center text-sm text-muted-foreground max-w-2xl mx-auto">
+            <p>Todos los planes incluyen soporte técnico y actualizaciones gratuitas.</p>
+            <p className="mt-2">Puedes cambiar o cancelar tu plan en cualquier momento.</p>
+          </div>
         </div>
       </div>
     </>
