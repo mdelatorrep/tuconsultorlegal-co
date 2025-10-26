@@ -96,9 +96,9 @@ export default function LawyerLandingPage({
       </div>
 
       {/* Hero Section - Unified Brand Identity */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-brand-dark via-brand-dark/95 to-brand-dark">
+      <section className="relative overflow-hidden bg-gradient-to-br from-[#010f24] via-[#011838] to-[#010f24]">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width=%2260%22%20height=%2260%22%20viewBox=%220%200%2060%2060%22%20xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cg%20fill=%22none%22%20fill-rule=%22evenodd%22%3E%3Cg%20fill=%22%23ffffff%22%20fill-opacity=%220.05%22%3E%3Ccircle%20cx=%2230%22%20cy=%2230%22%20r=%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] animate-pulse"></div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/10 rounded-full blur-[120px]"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#0372e8]/10 rounded-full blur-[120px]"></div>
         
         <div className="relative container mx-auto px-6 py-20">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -202,7 +202,7 @@ export default function LawyerLandingPage({
       </section>
 
       {/* Features Showcase */}
-      <section id="demo-section" className="py-20 bg-gradient-to-b from-background via-background to-muted/30">
+      <section id="demo-section" className="py-20 bg-gradient-to-b from-background to-brand-gray-light">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
             <Badge className="mb-6">
@@ -269,7 +269,7 @@ export default function LawyerLandingPage({
       </section>
 
       {/* Testimonials */}
-      <section className="py-20 bg-muted/20">
+      <section className="py-20 bg-background">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
             <Badge className="mb-6">
@@ -305,7 +305,7 @@ export default function LawyerLandingPage({
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-primary via-primary to-primary-light text-center text-white">
+      <section className="py-20 bg-gradient-to-r from-primary via-primary-light to-brand-blue-light text-center text-white">
         <div className="container mx-auto px-6">
           <h2 className="text-4xl font-bold mb-6">¿Listo para transformar tu práctica legal?</h2>
           <Button size="lg" variant="secondary" onClick={() => window.location.href = '/auth-abogados'} className="font-semibold px-8 py-6">
