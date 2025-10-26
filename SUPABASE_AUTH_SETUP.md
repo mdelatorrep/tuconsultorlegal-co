@@ -10,9 +10,10 @@ Este documento detalla la configuración necesaria para habilitar todas las func
 - El link de confirmación los redirige a `/#abogados`
 
 ### 2. **Email de Bienvenida Automático**
-- Edge function `send-lawyer-welcome-email` envía un email personalizado
-- Se ejecuta automáticamente después del registro exitoso
-- Incluye información sobre las funcionalidades disponibles y un CTA para acceder al dashboard
+- Sistema integrado con la infraestructura SMTP existente
+- Plantilla `lawyer_welcome` en tabla `email_templates`
+- Se envía automáticamente después del registro exitoso vía función `send-email`
+- Email personalizado con información sobre funcionalidades y CTA para acceder al dashboard
 
 ### 3. **Cambio de Email**
 - Componente `LawyerChangeEmailDialog` integrado en el dashboard
@@ -55,20 +56,14 @@ Este documento detalla la configuración necesaria para habilitar todas las func
    http://localhost:5173/
    ```
 
-### Paso 3: Configurar Resend para Emails
+### Paso 3: Verificar Configuración SMTP
 
-La edge function `send-lawyer-welcome-email` requiere una API key de Resend:
+El sistema utiliza la configuración SMTP existente en la tabla `email_configuration`. No requiere configuración adicional de Resend.
 
-1. Crea una cuenta en [Resend.com](https://resend.com)
-2. Valida tu dominio en https://resend.com/domains
-3. Genera una API key en https://resend.com/api-keys
-4. En Supabase, ve a **Settings > Edge Functions > Secrets**
-5. Añade el secret `RESEND_API_KEY` con tu API key
-
-**Nota:** Actualiza el `from` en la edge function con tu dominio verificado:
-```typescript
-from: "Tu Consultor Legal <noreply@tudominio.com>",
-```
+**Verificar que existe:**
+- Tabla `email_configuration` con configuración activa
+- Secret `SMTP_PASSWORD` configurado en Supabase
+- Plantilla `lawyer_welcome` en tabla `email_templates` (✅ Ya creada via migración)
 
 ### Paso 4: Personalizar Templates de Email (Opcional pero Recomendado)
 
@@ -118,15 +113,17 @@ Puedes personalizar las plantillas de email en **Authentication > Email Template
 
 ## 📊 Monitoreo
 
-Puedes ver los logs de la edge function en:
-https://supabase.com/dashboard/project/tkaezookvtpulfpaffes/functions/send-lawyer-welcome-email/logs
+Puedes ver los logs de emails enviados en:
+- **Tabla `email_notifications_log`**: Historial de todos los emails enviados
+- **Función send-email logs**: https://supabase.com/dashboard/project/tkaezookvtpulfpaffes/functions/send-email/logs
 
 ## 🐛 Troubleshooting
 
 ### Los emails no llegan:
-- Verifica que `RESEND_API_KEY` esté configurado correctamente
-- Verifica que el dominio esté validado en Resend
-- Revisa los logs de la edge function
+- Verifica que `SMTP_PASSWORD` esté configurado correctamente
+- Verifica que la configuración en `email_configuration` esté activa
+- Revisa los logs de la función `send-email`
+- Verifica la tabla `email_notifications_log` para ver el estado de los envíos
 
 ### Error "requested path is invalid":
 - Verifica que todas las URLs de redirect estén configuradas en Supabase
@@ -136,8 +133,13 @@ https://supabase.com/dashboard/project/tkaezookvtpulfpaffes/functions/send-lawye
 - Verifica que `emailRedirectTo` esté configurado en el código
 - Asegúrate de que la URL esté en la lista de Redirect URLs permitidas
 
+### El email de bienvenida no se envía:
+- Verifica que la plantilla `lawyer_welcome` exista en `email_templates` y esté activa
+- Revisa los logs del navegador para ver si hay errores
+- Verifica la tabla `email_notifications_log` para ver intentos fallidos
+
 ## 📚 Referencias
 
 - [Supabase Auth Documentation](https://supabase.com/docs/guides/auth)
-- [Resend Documentation](https://resend.com/docs)
 - [Email Templates Guide](https://supabase.com/docs/guides/auth/auth-email-templates)
+- [SMTP Configuration](https://supabase.com/docs/guides/auth/auth-smtp)
