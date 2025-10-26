@@ -21,7 +21,7 @@ export default function LawyerLandingPage({
   const [isVisible, setIsVisible] = useState(false);
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, align: 'start' });
   const demoScrollRef = useRef<HTMLDivElement>(null);
-  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const autoScrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
   useEffect(() => {
     setIsVisible(true);
@@ -34,39 +34,44 @@ export default function LawyerLandingPage({
     }
   }, [activeFeature, emblaApi]);
 
-  // Reset scroll position when feature changes
-  useEffect(() => {
-    if (demoScrollRef.current) {
-      demoScrollRef.current.scrollTop = 0;
-    }
-  }, [activeFeature]);
-
-  // Handle scroll detection for auto-advance
+  // Auto-scroll logic - scrolls automatically for the user
   useEffect(() => {
     const demoScroll = demoScrollRef.current;
     if (!demoScroll) return;
 
-    const handleScroll = () => {
-      const { scrollTop, scrollHeight, clientHeight } = demoScroll;
-      const isAtBottom = scrollTop + clientHeight >= scrollHeight - 50;
-      
-      // Clear previous timeout
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-      
-      if (isAtBottom && activeFeature < features.length - 1) {
-        scrollTimeoutRef.current = setTimeout(() => {
-          setActiveFeature(prev => (prev + 1) % features.length);
-        }, 800);
-      }
-    };
+    // Reset scroll to top when feature changes
+    demoScroll.scrollTop = 0;
 
-    demoScroll.addEventListener('scroll', handleScroll);
+    // Clear any existing interval
+    if (autoScrollIntervalRef.current) {
+      clearInterval(autoScrollIntervalRef.current);
+    }
+
+    // Start auto-scrolling
+    autoScrollIntervalRef.current = setInterval(() => {
+      const { scrollTop, scrollHeight, clientHeight } = demoScroll;
+      const isAtBottom = scrollTop + clientHeight >= scrollHeight - 20;
+      
+      if (isAtBottom) {
+        // We've reached the bottom, wait a bit then go to next feature
+        if (autoScrollIntervalRef.current) {
+          clearInterval(autoScrollIntervalRef.current);
+        }
+        setTimeout(() => {
+          setActiveFeature(prev => (prev + 1) % features.length);
+        }, 2000); // Wait 2 seconds at the bottom before advancing
+      } else {
+        // Continue scrolling down smoothly
+        demoScroll.scrollBy({
+          top: 2, // Scroll 2px at a time for smooth animation
+          behavior: 'smooth'
+        });
+      }
+    }, 30); // Update every 30ms for smooth scrolling
+
     return () => {
-      demoScroll.removeEventListener('scroll', handleScroll);
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
+      if (autoScrollIntervalRef.current) {
+        clearInterval(autoScrollIntervalRef.current);
       }
     };
   }, [activeFeature]);
@@ -414,9 +419,10 @@ export default function LawyerLandingPage({
                     })}
                   </div>
                   
-                  {/* Scroll Indicator */}
-                  <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-sm text-white text-xs px-3 py-2 rounded-lg flex items-center gap-2 animate-bounce pointer-events-none">
-                    <span>↓ Scroll para siguiente demo</span>
+                  {/* Auto-scroll Indicator */}
+                  <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-sm text-white text-xs px-3 py-2 rounded-lg flex items-center gap-2 pointer-events-none">
+                    <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+                    <span>Auto-scroll activo</span>
                   </div>
                   
                   {/* Navigation Dots */}
