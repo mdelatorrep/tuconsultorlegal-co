@@ -1,5 +1,14 @@
 project_id = "tkaezookvtpulfpaffes"
 
+[functions.save-agent-draft]
+verify_jwt = false
+
+[functions.delete-agent-draft]
+verify_jwt = false
+
+[functions.get-agent-drafts]
+verify_jwt = false
+
 [functions.clear-agent-conversations]
 verify_jwt = false
 
