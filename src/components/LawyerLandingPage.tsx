@@ -382,13 +382,13 @@ export default function LawyerLandingPage({
                   
                   {/* Animated Component Carousel */}
                   <div className="relative rounded-xl overflow-hidden shadow-soft border border-border/50">
-                    <div className="relative w-full aspect-[4/3] sm:aspect-video bg-muted/30">
+                    <div className="relative w-full h-[500px] sm:h-[600px] lg:h-[700px] bg-muted/30">
                       {features.map((feature, index) => {
                         const DemoComponent = feature.component;
                         return <div key={index} className={`absolute inset-0 transition-all duration-700 ${activeFeature === index ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
                           <div 
                             ref={activeFeature === index ? demoScrollRef : null}
-                            className="w-full h-full overflow-auto transform scale-[0.5] sm:scale-[0.65] lg:scale-[0.85] origin-top-left scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent"
+                            className="w-full h-full overflow-auto transform scale-[0.7] sm:scale-[0.85] lg:scale-100 origin-top-left scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent"
                           >
                             <DemoComponent />
                           </div>
@@ -396,9 +396,9 @@ export default function LawyerLandingPage({
                       })}
                     </div>
                     
-                    {/* Scroll Hint for Mobile */}
-                    <div className="md:hidden absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
-                      <span>↓ Scroll para ver más</span>
+                    {/* Scroll Hint */}
+                    <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full flex items-center gap-1 animate-bounce">
+                      <span>↓ Scroll para avanzar</span>
                     </div>
                     
                     {/* Navigation Dots */}
