@@ -220,65 +220,104 @@ export default function LawyerLandingPage({
             </p>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Interactive Feature Demo */}
-            <div className="space-y-6">
-              {features.map((feature, index) => <Card key={index} className={`cursor-pointer transition-all duration-500 hover:shadow-card ${activeFeature === index ? 'border-primary shadow-card scale-105' : 'border-border hover:border-primary/50'}`} onClick={() => setActiveFeature(index)}>
-                  <CardContent className="p-6">
-                    <div className="flex items-start space-x-4">
-                      <div className={`p-3 rounded-xl bg-gradient-to-r ${feature.color} shadow-soft`}>
-                        <feature.icon className="w-6 h-6 text-white" />
+          {/* Grid de Features */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            {features.map((feature, index) => (
+              <Card 
+                key={index} 
+                className={`cursor-pointer transition-all duration-500 hover:shadow-hero group ${
+                  activeFeature === index 
+                    ? 'border-primary shadow-card scale-105 bg-gradient-to-br from-background to-primary/5' 
+                    : 'border-border hover:border-primary/50'
+                }`}
+                onClick={() => setActiveFeature(index)}
+              >
+                <CardContent className="p-6">
+                  <div className="space-y-4">
+                    {/* Icon y Badge */}
+                    <div className="flex items-start justify-between">
+                      <div className={`p-4 rounded-xl bg-gradient-to-r ${feature.color} shadow-soft transition-transform group-hover:scale-110`}>
+                        <feature.icon className="w-8 h-8 text-white" />
                       </div>
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-lg mb-2">{feature.title}</h3>
-                        <p className="text-muted-foreground mb-3">{feature.description}</p>
-                        <div className="text-sm text-primary font-medium">
-                          Ejemplo: {feature.demo}
-                        </div>
-                      </div>
-                      <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform ${activeFeature === index ? 'rotate-90' : ''}`} />
-                    </div>
-                  </CardContent>
-                </Card>)}
-            </div>
-
-            {/* Live Demo Visual */}
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-brand-blue-light/10 rounded-3xl blur-3xl"></div>
-              <Card className="relative bg-white shadow-hero border-0">
-                <CardContent className="p-8">
-                  <div className="space-y-6">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold text-lg">
-                        {features[activeFeature].title}
-                      </h3>
-                      <Badge className={`bg-gradient-to-r ${features[activeFeature].color} text-white border-0`}>
-                        <Sparkles className="w-3 h-3 mr-1" />
-                        IA Activa
-                      </Badge>
+                      {activeFeature === index && (
+                        <Badge className="bg-success/20 text-success border-success/30">
+                          <Zap className="w-3 h-3 mr-1" />
+                          Activo
+                        </Badge>
+                      )}
                     </div>
                     
-                    <div className="space-y-4">
-                      <div className="p-4 bg-brand-gray-light rounded-lg">
-                        <div className="text-sm text-muted-foreground mb-2">Consulta:</div>
-                        <div className="font-medium">{features[activeFeature].demo}</div>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2 text-sm">
-                        <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
-                        <span className="text-muted-foreground">Procesando con IA...</span>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        {[1, 2, 3].map(i => <div key={i} className="h-3 bg-brand-gray-light rounded animate-pulse" style={{
-                        width: `${Math.random() * 40 + 60}%`
-                      }}></div>)}
+                    {/* Content */}
+                    <div className="space-y-2">
+                      <h3 className="font-bold text-lg">{feature.title}</h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {feature.description}
+                      </p>
+                    </div>
+                    
+                    {/* Demo Preview */}
+                    <div className="pt-4 border-t border-border/50">
+                      <div className="flex items-start space-x-2">
+                        <Sparkles className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                        <p className="text-xs text-muted-foreground italic">
+                          {feature.demo}
+                        </p>
                       </div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
-            </div>
+            ))}
+          </div>
+
+          {/* Live Demo Visual - Full Width */}
+          <div className="relative max-w-4xl mx-auto">
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-brand-blue-light/10 rounded-3xl blur-3xl"></div>
+            <Card className="relative bg-white shadow-hero border-0">
+              <CardContent className="p-8">
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className={`p-2 rounded-lg bg-gradient-to-r ${features[activeFeature].color}`}>
+                        {(() => {
+                          const ActiveIcon = features[activeFeature].icon;
+                          return <ActiveIcon className="w-5 h-5 text-white" />;
+                        })()}
+                      </div>
+                      <h3 className="font-semibold text-xl">
+                        {features[activeFeature].title}
+                      </h3>
+                    </div>
+                    <Badge className={`bg-gradient-to-r ${features[activeFeature].color} text-white border-0`}>
+                      <Sparkles className="w-3 h-3 mr-1" />
+                      IA Activa
+                    </Badge>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="p-4 bg-brand-gray-light rounded-lg">
+                      <div className="text-sm text-muted-foreground mb-2">Consulta de ejemplo:</div>
+                      <div className="font-medium">{features[activeFeature].demo}</div>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2 text-sm">
+                      <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
+                      <span className="text-muted-foreground">Procesando con IA avanzada...</span>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      {[1, 2, 3].map(i => (
+                        <div 
+                          key={i} 
+                          className="h-3 bg-brand-gray-light rounded animate-pulse" 
+                          style={{ width: `${Math.random() * 40 + 60}%` }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>
