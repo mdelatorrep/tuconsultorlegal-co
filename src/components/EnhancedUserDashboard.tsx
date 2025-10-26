@@ -396,12 +396,11 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
 
   const handleDeleteDocument = async (documentId: string) => {
     try {
-      // Delete by ID and either user_id OR user_email for backwards compatibility
+      // Delete by ID - RLS policy will handle authorization
       const { error } = await supabase
         .from('document_tokens')
         .delete()
-        .eq('id', documentId)
-        .or(`user_id.eq.${user?.id},user_email.eq.${user?.email}`);
+        .eq('id', documentId);
 
       if (error) throw error;
 
