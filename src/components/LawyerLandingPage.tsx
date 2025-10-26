@@ -112,43 +112,43 @@ export default function LawyerLandingPage({
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width=%2260%22%20height=%2260%22%20viewBox=%220%200%2060%2060%22%20xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cg%20fill=%22none%22%20fill-rule=%22evenodd%22%3E%3Cg%20fill=%22%23ffffff%22%20fill-opacity=%220.05%22%3E%3Ccircle%20cx=%2230%22%20cy=%2230%22%20r=%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] animate-pulse"></div>
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#0372e8]/10 rounded-full blur-[120px]"></div>
         
-        <div className="relative container mx-auto px-6 py-20">
+        <div className="relative container mx-auto px-4 sm:px-6 py-12 sm:py-16 lg:py-20">
           <div className="max-w-4xl mx-auto">
             {/* Hero Content */}
-            <div className={`space-y-8 text-center transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+            <div className={`space-y-6 sm:space-y-8 text-center transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
               {/* Professional Badge */}
-              <div className="inline-flex items-center bg-white/20 backdrop-blur-sm border border-white/30 text-white px-4 py-2 rounded-full text-sm font-medium mx-auto">
-                <Scale className="w-4 h-4 mr-2" />
-                Portal Exclusivo para Abogados
-                <Shield className="w-4 h-4 ml-2 text-yellow-300" />
+              <div className="inline-flex items-center bg-white/20 backdrop-blur-sm border border-white/30 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium mx-auto">
+                <Scale className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
+                <span className="whitespace-nowrap">Portal Exclusivo para Abogados</span>
+                <Shield className="w-3 h-3 sm:w-4 sm:h-4 ml-2 text-yellow-300" />
               </div>
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 
                 
-                <h1 className="text-5xl lg:text-7xl font-bold text-white leading-tight">
+                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold text-white leading-tight px-4">
                   El Futuro de la
                   <span className="block bg-gradient-to-r from-[#f2bb31] to-[#ffd666] bg-clip-text text-transparent">
                     Práctica Legal
                   </span>
                 </h1>
                 
-                <p className="text-xl text-white/90 max-w-3xl mx-auto leading-relaxed">
+                <p className="text-base sm:text-lg lg:text-xl text-white/90 max-w-3xl mx-auto leading-relaxed px-4">
                   Revoluciona tu despacho con inteligencia artificial avanzada. 
                   Automatiza, analiza y optimiza cada aspecto de tu práctica profesional.
                 </p>
               </div>
 
               {/* Clear CTAs for Login/Register */}
-              <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Button size="lg" variant="accent" onClick={() => window.location.href = '/auth-abogados'} className="font-semibold px-8 py-6 shadow-glow transition-all duration-300 hover:scale-105">
-                    <User className="w-5 h-5 mr-2" />
+              <div className="space-y-3 sm:space-y-4 px-4">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center max-w-lg mx-auto">
+                  <Button size="lg" variant="accent" onClick={() => window.location.href = '/auth-abogados'} className="font-semibold px-6 sm:px-8 py-4 sm:py-6 shadow-glow transition-all duration-300 hover:scale-105 text-sm sm:text-base w-full sm:w-auto">
+                    <User className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                     Crear Cuenta Gratis
-                    <ArrowRight className="w-5 h-5 ml-2" />
+                    <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />
                   </Button>
                   
-                  <Button variant="outline" size="lg" onClick={() => window.location.href = '/auth-abogados'} className="border-white/50 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white px-8 py-6">
-                    <Scale className="w-5 h-5 mr-2" />
+                  <Button variant="outline" size="lg" onClick={() => window.location.href = '/auth-abogados'} className="border-white/50 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white px-6 sm:px-8 py-4 sm:py-6 text-sm sm:text-base w-full sm:w-auto">
+                    <Scale className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                     Ya tengo cuenta
                   </Button>
                 </div>
@@ -156,22 +156,22 @@ export default function LawyerLandingPage({
                 <div className="flex justify-center">
                   <Button variant="ghost" size="sm" onClick={() => document.getElementById('demo-section')?.scrollIntoView({
                   behavior: 'smooth'
-                })} className="text-white/80 hover:text-white hover:bg-white/10">
-                    <Play className="w-4 h-4 mr-2" />
+                })} className="text-white/80 hover:text-white hover:bg-white/10 text-xs sm:text-sm">
+                    <Play className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
                     Ver cómo funciona
-                    <ChevronRight className="w-4 h-4 ml-1" />
+                    <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 ml-1" />
                   </Button>
                 </div>
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 pt-8 border-t border-white/20 max-w-4xl mx-auto">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 pt-6 sm:pt-8 border-t border-white/20 max-w-4xl mx-auto px-4">
                 {stats.map((stat, index) => <div key={index} className="text-center">
-                    <div className="flex justify-center mb-2">
-                      <stat.icon className="w-6 h-6 text-success" />
+                    <div className="flex justify-center mb-1 sm:mb-2">
+                      <stat.icon className="w-5 h-5 sm:w-6 sm:h-6 text-success" />
                     </div>
-                    <div className="text-2xl font-bold text-white">{stat.value}</div>
-                    <div className="text-sm text-white/80">{stat.label}</div>
+                    <div className="text-xl sm:text-2xl font-bold text-white">{stat.value}</div>
+                    <div className="text-xs sm:text-sm text-white/80">{stat.label}</div>
                   </div>)}
               </div>
             </div>
@@ -180,26 +180,26 @@ export default function LawyerLandingPage({
       </section>
 
       {/* Features Showcase */}
-      <section id="demo-section" className="py-20 bg-muted/30">
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-16">
-            <Badge className="mb-6">
-              <Brain className="w-4 h-4 mr-2" />
+      <section id="demo-section" className="py-12 sm:py-16 lg:py-20 bg-muted/30">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="text-center mb-10 sm:mb-16">
+            <Badge className="mb-4 sm:mb-6 text-xs sm:text-sm">
+              <Brain className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
               Capacidades Avanzadas
             </Badge>
-            <h2 className="text-4xl font-bold mb-6">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 sm:mb-6 px-4">
               Herramientas que 
               <span className="text-primary"> Transforman </span>
               tu Práctica
             </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+            <p className="text-base sm:text-lg lg:text-xl text-muted-foreground max-w-3xl mx-auto px-4">
               Cada herramienta está diseñada específicamente para abogados, 
               con IA entrenada en derecho colombiano y mejores prácticas internacionales.
             </p>
           </div>
 
           {/* Grid de Features */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-12">
             {features.map((feature, index) => <Card key={index} className={`cursor-pointer transition-all duration-500 hover:shadow-hero group ${activeFeature === index ? 'border-primary shadow-card scale-105 bg-gradient-to-br from-background to-primary/5' : 'border-border hover:border-primary/50'}`} onClick={() => setActiveFeature(index)}>
                 <CardContent className="p-6">
                   <div className="space-y-4">
@@ -240,17 +240,17 @@ export default function LawyerLandingPage({
           <div className="relative max-w-5xl mx-auto">
             <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-primary/10 rounded-3xl blur-3xl"></div>
             <Card className="relative bg-white shadow-hero border-0 overflow-hidden">
-              <CardContent className="p-8">
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between">
+              <CardContent className="p-4 sm:p-6 lg:p-8">
+                <div className="space-y-4 sm:space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
                     <div className="space-y-1">
-                      <h3 className="text-2xl font-bold">{features[activeFeature].title}</h3>
-                      <p className="text-muted-foreground">{features[activeFeature].description}</p>
+                      <h3 className="text-lg sm:text-xl lg:text-2xl font-bold">{features[activeFeature].title}</h3>
+                      <p className="text-sm sm:text-base text-muted-foreground">{features[activeFeature].description}</p>
                     </div>
-                    <Badge className={`bg-gradient-to-r ${features[activeFeature].color} text-white border-0`}>
+                    <Badge className={`bg-gradient-to-r ${features[activeFeature].color} text-white border-0 self-start sm:self-center whitespace-nowrap text-xs sm:text-sm`}>
                       {(() => {
                       const ActiveIcon = features[activeFeature].icon;
-                      return <ActiveIcon className="w-4 h-4 mr-2" />;
+                      return <ActiveIcon className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />;
                     })()}
                       Demo en Vivo
                     </Badge>
@@ -276,14 +276,14 @@ export default function LawyerLandingPage({
                   </div>
                   
                   {/* Demo Info */}
-                  <div className="flex items-center justify-between pt-4 border-t border-border/50">
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <Sparkles className="w-4 h-4 mr-2 text-primary" />
-                      Ejemplo: {features[activeFeature].demo}
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 pt-4 border-t border-border/50">
+                    <div className="flex items-start sm:items-center text-xs sm:text-sm text-muted-foreground">
+                      <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 mr-2 text-primary flex-shrink-0 mt-0.5 sm:mt-0" />
+                      <span className="line-clamp-2 sm:line-clamp-1">Ejemplo: {features[activeFeature].demo}</span>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => window.location.href = '/auth-abogados'}>
+                    <Button variant="outline" size="sm" onClick={() => window.location.href = '/auth-abogados'} className="text-xs sm:text-sm whitespace-nowrap w-full sm:w-auto">
                       Probar Ahora
-                      <ArrowRight className="w-4 h-4 ml-2" />
+                      <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 ml-2" />
                     </Button>
                   </div>
                 </div>
@@ -294,19 +294,19 @@ export default function LawyerLandingPage({
       </section>
 
       {/* Testimonials */}
-      <section className="py-20 bg-background">
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-16">
-            <Badge className="mb-6">
-              <Star className="w-4 h-4 mr-2" />
+      <section className="py-12 sm:py-16 lg:py-20 bg-background">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="text-center mb-10 sm:mb-16">
+            <Badge className="mb-4 sm:mb-6 text-xs sm:text-sm">
+              <Star className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
               Testimonios
             </Badge>
-            <h2 className="text-4xl font-bold mb-6">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 sm:mb-6 px-4">
               Casos de <span className="text-primary">Éxito</span> Reales
             </h2>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
             {testimonials.map((testimonial, index) => <Card key={index} className="border-0 shadow-card hover:shadow-hero transition-all duration-300">
                 <CardContent className="p-6">
                   <div className="space-y-4">
@@ -330,13 +330,13 @@ export default function LawyerLandingPage({
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-[#010f24] via-[#0372e8] to-[#011838] text-center text-white">
-        <div className="container mx-auto px-6">
-          <h2 className="text-4xl font-bold mb-6">¿Listo para transformar tu práctica legal?</h2>
-          <Button size="lg" variant="secondary" onClick={() => window.location.href = '/auth-abogados'} className="font-semibold px-8 py-6">
-            <User className="w-5 h-5 mr-2" />
+      <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-r from-[#010f24] via-[#0372e8] to-[#011838] text-center text-white">
+        <div className="container mx-auto px-4 sm:px-6">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 sm:mb-6 px-4">¿Listo para transformar tu práctica legal?</h2>
+          <Button size="lg" variant="secondary" onClick={() => window.location.href = '/auth-abogados'} className="font-semibold px-6 sm:px-8 py-4 sm:py-6 text-sm sm:text-base w-full sm:w-auto max-w-xs sm:max-w-none mx-4 sm:mx-0">
+            <User className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
             Comenzar Ahora
-            <ArrowRight className="w-5 h-5 ml-2" />
+            <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />
           </Button>
         </div>
       </section>
