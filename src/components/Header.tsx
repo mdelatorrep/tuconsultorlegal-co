@@ -44,12 +44,6 @@ export default function Header({
   const isLawyer = lawyerAuthenticated && lawyerUser;
   const user = isLawyer ? lawyerUser : regularUser;
   const navItems = [{
-    id: "precios",
-    label: "Precios",
-    description: "Transparencia total",
-    icon: DollarSign,
-    color: "text-muted-foreground"
-  }, {
     id: "blog",
     label: "Recursos",
     description: "Guías y artículos",
@@ -90,19 +84,6 @@ export default function Header({
             </DropdownMenuItem>
           );
         })}
-        {!isAuthenticated && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={() => handleNavClick("abogados")}
-              className="cursor-pointer"
-            >
-              <Shield className="w-4 h-4 mr-2" />
-              <span>Portal Abogados</span>
-              <Badge variant="outline" className="ml-auto text-xs">Pro</Badge>
-            </DropdownMenuItem>
-          </>
-        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -124,6 +105,10 @@ export default function Header({
             <button onClick={() => handleNavClick("personas")} className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-smooth font-medium text-sm ${currentPage === "personas" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
               <User className="w-4 h-4" />
               <span>Personas</span>
+            </button>
+            <button onClick={() => handleNavClick("abogados")} className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-smooth font-medium text-sm ${currentPage === "abogados" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+              <Shield className="w-4 h-4" />
+              <span>Abogados</span>
             </button>
             <button onClick={() => window.location.hash = 'proximamente-empresas'} className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-smooth font-medium text-sm ${currentPage === "empresas" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
               <Users className="w-4 h-4" />
