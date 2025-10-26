@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Scale, Brain, Search, Eye, PenTool, Target, Users, Bot, BarChart3, Shield, Zap, Sparkles, ChevronRight, Play, ArrowRight, CheckCircle, Star, Rocket, User } from 'lucide-react';
+import { Scale, Brain, Search, Eye, PenTool, Target, Users, Bot, BarChart3, Shield, Zap, Sparkles, ChevronRight, Play, ArrowRight, CheckCircle, Star, Rocket, User, ChevronLeft } from 'lucide-react';
 import LawyerLogin from './LawyerLogin';
 import DemoResearchMockup from './demo/DemoResearchMockup';
 import DemoAnalysisMockup from './demo/DemoAnalysisMockup';
@@ -10,6 +10,7 @@ import DemoDraftingMockup from './demo/DemoDraftingMockup';
 import DemoStrategyMockup from './demo/DemoStrategyMockup';
 import DemoCRMMockup from './demo/DemoCRMMockup';
 import DemoAgentsMockup from './demo/DemoAgentsMockup';
+import useEmblaCarousel from 'embla-carousel-react';
 interface LawyerLandingPageProps {
   onOpenChat: (message: string) => void;
 }
@@ -18,6 +19,9 @@ export default function LawyerLandingPage({
 }: LawyerLandingPageProps) {
   const [activeFeature, setActiveFeature] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, align: 'start' });
+  const demoScrollRef = useRef<HTMLDivElement>(null);
+  
   useEffect(() => {
     setIsVisible(true);
     const interval = setInterval(() => {
@@ -25,6 +29,41 @@ export default function LawyerLandingPage({
     }, 3000);
     return () => clearInterval(interval);
   }, []);
+
+  // Sync carousel with active feature
+  useEffect(() => {
+    if (emblaApi) {
+      emblaApi.scrollTo(activeFeature);
+    }
+  }, [activeFeature, emblaApi]);
+
+  // Handle scroll detection for auto-advance
+  useEffect(() => {
+    const demoScroll = demoScrollRef.current;
+    if (!demoScroll) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = demoScroll;
+      const isAtBottom = scrollTop + clientHeight >= scrollHeight - 10;
+      
+      if (isAtBottom) {
+        setTimeout(() => {
+          setActiveFeature(prev => (prev + 1) % 6);
+        }, 500);
+      }
+    };
+
+    demoScroll.addEventListener('scroll', handleScroll);
+    return () => demoScroll.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToPrev = () => {
+    setActiveFeature(prev => (prev - 1 + 6) % 6);
+  };
+
+  const scrollToNext = () => {
+    setActiveFeature(prev => (prev + 1) % 6);
+  };
   const features = [{
     title: "Investigación Legal IA",
     description: "Análisis avanzado de jurisprudencia y normativa con inteligencia artificial",
@@ -198,42 +237,127 @@ export default function LawyerLandingPage({
             </p>
           </div>
 
-          {/* Grid de Features */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-12">
-            {features.map((feature, index) => <Card key={index} className={`cursor-pointer transition-all duration-500 hover:shadow-hero group ${activeFeature === index ? 'border-primary shadow-card scale-105 bg-gradient-to-br from-background to-primary/5' : 'border-border hover:border-primary/50'}`} onClick={() => setActiveFeature(index)}>
-                <CardContent className="p-6">
-                  <div className="space-y-4">
-                    {/* Icon y Badge */}
-                    <div className="flex items-start justify-between">
-                      <div className={`p-4 rounded-xl bg-gradient-to-r ${feature.color} shadow-soft transition-transform group-hover:scale-110`}>
-                        <feature.icon className="w-8 h-8 text-white" />
+          {/* Carousel for Mobile, Grid for Desktop */}
+          <div className="mb-8 sm:mb-12">
+            {/* Mobile Carousel */}
+            <div className="md:hidden">
+              <div className="overflow-hidden" ref={emblaRef}>
+                <div className="flex gap-4">
+                  {features.map((feature, index) => (
+                    <div key={index} className="flex-[0_0_85%] min-w-0">
+                      <Card 
+                        className={`cursor-pointer transition-all duration-500 hover:shadow-hero h-full ${activeFeature === index ? 'border-primary shadow-card bg-gradient-to-br from-background to-primary/5' : 'border-border'}`} 
+                        onClick={() => setActiveFeature(index)}
+                      >
+                        <CardContent className="p-6">
+                          <div className="space-y-4">
+                            {/* Icon y Badge */}
+                            <div className="flex items-start justify-between">
+                              <div className={`p-4 rounded-xl bg-gradient-to-r ${feature.color} shadow-soft transition-transform`}>
+                                <feature.icon className="w-8 h-8 text-white" />
+                              </div>
+                              {activeFeature === index && <Badge className="bg-success/20 text-success border-success/30">
+                                  <Zap className="w-3 h-3 mr-1" />
+                                  Activo
+                                </Badge>}
+                            </div>
+                            
+                            {/* Content */}
+                            <div className="space-y-2">
+                              <h3 className="font-bold text-lg">{feature.title}</h3>
+                              <p className="text-sm text-muted-foreground leading-relaxed">
+                                {feature.description}
+                              </p>
+                            </div>
+                            
+                            {/* Demo Preview */}
+                            <div className="pt-4 border-t border-border/50">
+                              <div className="flex items-start space-x-2">
+                                <Sparkles className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                                <p className="text-xs text-muted-foreground italic">
+                                  {feature.demo}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Carousel Navigation */}
+              <div className="flex justify-center items-center gap-4 mt-4">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={scrollToPrev}
+                  disabled={activeFeature === 0}
+                  className="h-8 w-8"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <div className="flex gap-2">
+                  {features.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setActiveFeature(index)}
+                      className={`h-2 rounded-full transition-all ${
+                        activeFeature === index ? 'bg-primary w-8' : 'bg-muted w-2'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={scrollToNext}
+                  disabled={activeFeature === features.length - 1}
+                  className="h-8 w-8"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Desktop Grid */}
+            <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              {features.map((feature, index) => <Card key={index} className={`cursor-pointer transition-all duration-500 hover:shadow-hero group ${activeFeature === index ? 'border-primary shadow-card scale-105 bg-gradient-to-br from-background to-primary/5' : 'border-border hover:border-primary/50'}`} onClick={() => setActiveFeature(index)}>
+                  <CardContent className="p-6">
+                    <div className="space-y-4">
+                      {/* Icon y Badge */}
+                      <div className="flex items-start justify-between">
+                        <div className={`p-4 rounded-xl bg-gradient-to-r ${feature.color} shadow-soft transition-transform group-hover:scale-110`}>
+                          <feature.icon className="w-8 h-8 text-white" />
+                        </div>
+                        {activeFeature === index && <Badge className="bg-success/20 text-success border-success/30">
+                            <Zap className="w-3 h-3 mr-1" />
+                            Activo
+                          </Badge>}
                       </div>
-                      {activeFeature === index && <Badge className="bg-success/20 text-success border-success/30">
-                          <Zap className="w-3 h-3 mr-1" />
-                          Activo
-                        </Badge>}
-                    </div>
-                    
-                    {/* Content */}
-                    <div className="space-y-2">
-                      <h3 className="font-bold text-lg">{feature.title}</h3>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        {feature.description}
-                      </p>
-                    </div>
-                    
-                    {/* Demo Preview */}
-                    <div className="pt-4 border-t border-border/50">
-                      <div className="flex items-start space-x-2">
-                        <Sparkles className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                        <p className="text-xs text-muted-foreground italic">
-                          {feature.demo}
+                      
+                      {/* Content */}
+                      <div className="space-y-2">
+                        <h3 className="font-bold text-lg">{feature.title}</h3>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {feature.description}
                         </p>
                       </div>
+                      
+                      {/* Demo Preview */}
+                      <div className="pt-4 border-t border-border/50">
+                        <div className="flex items-start space-x-2">
+                          <Sparkles className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                          <p className="text-xs text-muted-foreground italic">
+                            {feature.demo}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>)}
+                  </CardContent>
+                </Card>)}
+            </div>
           </div>
 
           {/* Live Demo Visual - Full Width */}
@@ -262,11 +386,19 @@ export default function LawyerLandingPage({
                       {features.map((feature, index) => {
                         const DemoComponent = feature.component;
                         return <div key={index} className={`absolute inset-0 transition-all duration-700 ${activeFeature === index ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
-                          <div className="w-full h-full overflow-auto transform scale-[0.5] sm:scale-[0.65] lg:scale-[0.85] origin-top-left">
+                          <div 
+                            ref={activeFeature === index ? demoScrollRef : null}
+                            className="w-full h-full overflow-auto transform scale-[0.5] sm:scale-[0.65] lg:scale-[0.85] origin-top-left scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent"
+                          >
                             <DemoComponent />
                           </div>
                         </div>;
                       })}
+                    </div>
+                    
+                    {/* Scroll Hint for Mobile */}
+                    <div className="md:hidden absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                      <span>↓ Scroll para ver más</span>
                     </div>
                     
                     {/* Navigation Dots */}
