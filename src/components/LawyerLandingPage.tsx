@@ -258,11 +258,11 @@ export default function LawyerLandingPage({
                   
                   {/* Animated Component Carousel */}
                   <div className="relative rounded-xl overflow-hidden shadow-soft border border-border/50">
-                    <div className="relative w-full aspect-video bg-muted/30">
+                    <div className="relative w-full aspect-[4/3] sm:aspect-video bg-muted/30">
                       {features.map((feature, index) => {
                         const DemoComponent = feature.component;
                         return <div key={index} className={`absolute inset-0 transition-all duration-700 ${activeFeature === index ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
-                          <div className="w-full h-full overflow-auto transform scale-[0.85] origin-top-left">
+                          <div className="w-full h-full overflow-auto transform scale-[0.5] sm:scale-[0.65] lg:scale-[0.85] origin-top-left">
                             <DemoComponent />
                           </div>
                         </div>;
@@ -270,8 +270,8 @@ export default function LawyerLandingPage({
                     </div>
                     
                     {/* Navigation Dots */}
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 bg-black/50 backdrop-blur-sm px-3 py-2 rounded-full">
-                      {features.map((_, index) => <button key={index} onClick={() => setActiveFeature(index)} className={`w-2 h-2 rounded-full transition-all duration-300 ${activeFeature === index ? 'bg-white w-6' : 'bg-white/50 hover:bg-white/75'}`} aria-label={`Ver demo ${index + 1}`} />)}
+                    <div className="absolute bottom-2 sm:bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 sm:gap-2 bg-black/50 backdrop-blur-sm px-2 sm:px-3 py-1.5 sm:py-2 rounded-full">
+                      {features.map((_, index) => <button key={index} onClick={() => setActiveFeature(index)} className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full transition-all duration-300 ${activeFeature === index ? 'bg-white w-4 sm:w-6' : 'bg-white/50 hover:bg-white/75'}`} aria-label={`Ver demo ${index + 1}`} />)}
                     </div>
                   </div>
                   
