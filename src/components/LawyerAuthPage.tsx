@@ -1,29 +1,33 @@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Shield, CheckCircle, Scale } from 'lucide-react';
+import { Shield, CheckCircle } from 'lucide-react';
 import LawyerLogin from './LawyerLogin';
+import Header from './Header';
 
 export default function LawyerAuthPage() {
+  const handleNavigate = (page: string) => {
+    if (page === 'home') {
+      window.location.href = '/';
+    } else if (page === 'abogados') {
+      window.location.href = '/#abogados';
+    } else {
+      window.location.href = `/#${page}`;
+    }
+  };
+
+  const handleOpenChat = (message?: string) => {
+    // Navigate to home and open chat
+    window.location.href = '/' + (message ? `?chat=${encodeURIComponent(message)}` : '');
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-brand-gray-light to-background">
-      {/* Sticky Quick Access Bar */}
-      <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b shadow-sm">
-        <div className="container mx-auto px-6 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Scale className="h-5 w-5 text-primary" />
-              <span className="font-semibold text-primary">Portal Abogados</span>
-            </div>
-            
-            <a 
-              href="/#abogados" 
-              className="text-sm text-muted-foreground hover:text-primary transition-colors"
-            >
-              Volver al Portal
-            </a>
-          </div>
-        </div>
-      </div>
+      {/* Header del Home */}
+      <Header 
+        currentPage="auth-abogados" 
+        onNavigate={handleNavigate}
+        onOpenChat={handleOpenChat}
+      />
 
       {/* Login Section */}
       <section className="py-20">
