@@ -177,38 +177,6 @@ export default function LawyerLandingPage({
               </div>
             </div>
 
-            {/* Hero Visual */}
-            <div className={`relative transition-all duration-1000 delay-300 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-10'}`}>
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-success/20 to-brand-gold/20 rounded-3xl blur-3xl animate-pulse"></div>
-                <Card className="relative bg-white/10 backdrop-blur-lg border-white/20 p-8 shadow-hero">
-                  <CardContent className="p-0">
-                    <div className="space-y-6">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-white font-semibold">Panel de Control IA</h3>
-                        <Badge className="bg-success text-white border-success/30">
-                          <Zap className="w-3 h-3 mr-1" />
-                          En Vivo
-                        </Badge>
-                      </div>
-                      
-                      <div className="space-y-4">
-                        {features.slice(0, 3).map((feature, index) => <div key={index} className="flex items-center space-x-3 text-white/90">
-                            <div className={`p-2 rounded-lg bg-gradient-to-r ${feature.color}`}>
-                              <feature.icon className="w-4 h-4 text-white" />
-                            </div>
-                            <div className="flex-1">
-                              <div className="font-medium">{feature.title}</div>
-                              <div className="text-sm text-white/70">{feature.description}</div>
-                            </div>
-                            <CheckCircle className="w-5 h-5 text-success" />
-                          </div>)}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
           </div>
         </div>
       </section>
