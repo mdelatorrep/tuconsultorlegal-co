@@ -181,7 +181,7 @@ export const useLawyerAuth = () => {
         return false;
       }
       
-      const redirectUrl = `${window.location.origin}/`;
+      const redirectUrl = `${window.location.origin}/#abogados`;
       console.log('Redirect URL:', redirectUrl);
       
       console.log('Calling supabase.auth.signUp...');
@@ -229,6 +229,19 @@ export const useLawyerAuth = () => {
       console.log('=== LAWYER SIGNUP SUCCESS ===');
       console.log('User created with ID:', data.user.id);
       
+      // Send welcome email (non-blocking)
+      setTimeout(async () => {
+        try {
+          await supabase.functions.invoke('send-lawyer-welcome-email', {
+            body: { email: email.trim().toLowerCase(), fullName }
+          });
+          console.log('Welcome email sent successfully');
+        } catch (emailError) {
+          console.error('Error sending welcome email:', emailError);
+          // Don't block signup if email fails
+        }
+      }, 0);
+      
       // Even if email confirmation is required, we can still show the subscription plans
       // The user will complete the subscription flow and then confirm their email
       return true;
@@ -245,7 +258,7 @@ export const useLawyerAuth = () => {
 
   const resetPassword = async (email: string): Promise<boolean> => {
     try {
-      const redirectUrl = `${window.location.origin}/auth/reset-password`;
+      const redirectUrl = `${window.location.origin}/#abogados`;
       
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: redirectUrl
@@ -259,6 +272,24 @@ export const useLawyerAuth = () => {
       return true;
     } catch (error) {
       console.error('Reset password error:', error);
+      return false;
+    }
+  };
+
+  const updateEmail = async (newEmail: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase.auth.updateUser({
+        email: newEmail
+      });
+
+      if (error) {
+        console.error('Update email error:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Update email error:', error);
       return false;
     }
   };
@@ -328,6 +359,7 @@ export const useLawyerAuth = () => {
     signUpWithEmailAndPassword,
     resetPassword,
     updatePassword,
+    updateEmail,
     logout,
     checkAuthStatus,
     getAuthHeaders,

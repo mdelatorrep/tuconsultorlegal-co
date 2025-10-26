@@ -26,7 +26,7 @@ import LawyerOnboardingCoachmarks from "./LawyerOnboardingCoachmarks";
 import { useLawyerOnboarding } from "@/hooks/useLawyerOnboarding";
 import { SubscriptionManager } from "./SubscriptionManager";
 import { SubscriptionStatusIndicator } from "./SubscriptionStatusIndicator";
-import { ChangeEmailDialog } from "./ChangeEmailDialog";
+import { LawyerChangeEmailDialog } from "./LawyerChangeEmailDialog";
 import { PasswordResetDialog } from "./PasswordResetDialog";
 
 interface DocumentToken {
@@ -75,6 +75,9 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const { toast } = useToast();
   const { isAuthenticated, isLoading: authLoading, user, logout, checkAuthStatus } = useLawyerAuth();
   const isMobile = useIsMobile();
+  
+  // Email change dialog state
+  const [showChangeEmailDialog, setShowChangeEmailDialog] = useState(false);
   
   // Onboarding system
   const { 
@@ -999,35 +1002,15 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
               {/* Logout Button */}
               <div className="p-4 border-t mt-auto space-y-2">
                 <div className={`space-y-2 ${isMobile ? 'hidden lg:flex lg:flex-col' : 'flex flex-col'}`}>
-                  <ChangeEmailDialog
-                    trigger={
-                      <Button variant="outline" size="sm" className="w-full justify-start text-xs">
-                        <Mail className="h-3 w-3 mr-2" />
-                        Cambiar Email
-                      </Button>
-                    }
-                    onChangeEmail={async (newEmail) => {
-                      const { error } = await supabase.auth.updateUser({
-                        email: newEmail
-                      });
-                      
-                      if (error) {
-                        toast({
-                          title: "Error",
-                          description: error.message,
-                          variant: "destructive"
-                        });
-                        return { error };
-                      }
-                      
-                      toast({
-                        title: "Correo actualizado",
-                        description: "Revisa tu nuevo correo para confirmar el cambio"
-                      });
-                      
-                      return { error: null as any };
-                    }}
-                  />
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full justify-start text-xs"
+                    onClick={() => setShowChangeEmailDialog(true)}
+                  >
+                    <Mail className="h-3 w-3 mr-2" />
+                    Cambiar Email
+                  </Button>
                   
                   <PasswordResetDialog
                     trigger={
@@ -1792,6 +1775,12 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
           onSkip={() => user?.id && skipOnboarding(user.id)}
         />
       )}
+      
+      {/* Change Email Dialog */}
+      <LawyerChangeEmailDialog 
+        open={showChangeEmailDialog}
+        onOpenChange={setShowChangeEmailDialog}
+      />
     </SidebarProvider>
     </>
   );
