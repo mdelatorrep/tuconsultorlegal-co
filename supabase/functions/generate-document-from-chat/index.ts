@@ -264,7 +264,8 @@ FORMATO DE RESPUESTA: Devuelve únicamente el documento final usando la plantill
         sla_hours: sla_hours || 4,
         sla_deadline: slaDeadline.toISOString(),
         status: 'solicitado',
-        sla_status: 'on_time'
+        sla_status: 'on_time',
+        form_data: collected_data || {}
       })
       .select()
       .single();

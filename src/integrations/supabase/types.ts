@@ -999,6 +999,7 @@ export type Database = {
           created_at: string
           document_content: string
           document_type: string
+          form_data: Json | null
           id: string
           lawyer_comments: string | null
           lawyer_comments_date: string | null
@@ -1021,6 +1022,7 @@ export type Database = {
           created_at?: string
           document_content: string
           document_type: string
+          form_data?: Json | null
           id?: string
           lawyer_comments?: string | null
           lawyer_comments_date?: string | null
@@ -1043,6 +1045,7 @@ export type Database = {
           created_at?: string
           document_content?: string
           document_type?: string
+          form_data?: Json | null
           id?: string
           lawyer_comments?: string | null
           lawyer_comments_date?: string | null
