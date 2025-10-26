@@ -7,12 +7,10 @@ import DocumentChatFlow from "./DocumentChatFlow";
 import DocumentCreationSuccess from "./DocumentCreationSuccess";
 import { useUserAuth } from "@/hooks/useUserAuth";
 import { IntelligentDocumentSearch } from "./IntelligentDocumentSearch";
-
 interface PersonasPageProps {
   onOpenChat: (message: string) => void;
   onNavigate?: (page: string) => void;
 }
-
 interface AgentService {
   id: string;
   document_name: string;
@@ -24,29 +22,30 @@ interface AgentService {
   category: string;
   ai_prompt: string;
 }
-
-export default function PersonasPage({ onOpenChat, onNavigate }: PersonasPageProps) {
+export default function PersonasPage({
+  onOpenChat,
+  onNavigate
+}: PersonasPageProps) {
   const [services, setServices] = useState<AgentService[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState<'list' | 'form' | 'success'>('list');
   const [selectedAgent, setSelectedAgent] = useState<string>('');
   const [documentToken, setDocumentToken] = useState<string>('');
   const [searchCode, setSearchCode] = useState('');
-  const { isAuthenticated } = useUserAuth();
-
+  const {
+    isAuthenticated
+  } = useUserAuth();
   useEffect(() => {
     loadServices();
   }, []);
-
   const loadServices = async () => {
     try {
-      const { data: agents, error } = await supabase
-        .from('legal_agents')
-        .select('*')
-        .eq('status', 'active')
-        .in('target_audience', ['personas', 'ambos'])
-        .order('category', { ascending: true });
-
+      const {
+        data: agents,
+        error
+      } = await supabase.from('legal_agents').select('*').eq('status', 'active').in('target_audience', ['personas', 'ambos']).order('category', {
+        ascending: true
+      });
       if (error) throw error;
       setServices(agents || []);
     } catch (error) {
@@ -55,34 +54,28 @@ export default function PersonasPage({ onOpenChat, onNavigate }: PersonasPagePro
       setLoading(false);
     }
   };
-
   const handleDocumentAction = (service: AgentService) => {
     setSelectedAgent(service.id);
     setCurrentView('form');
   };
-
   const handleFormBack = () => {
     setCurrentView('list');
     setSelectedAgent('');
   };
-
   const handleFormComplete = (token: string) => {
     setDocumentToken(token);
     setCurrentView('success');
   };
-
   const handleSuccessBack = () => {
     setCurrentView('list');
     setSelectedAgent('');
     setDocumentToken('');
   };
-
   const handleNavigateToTracking = () => {
     if (onNavigate) {
       onNavigate('documento');
     }
   };
-
   const handleSearchDocument = () => {
     if (searchCode.trim()) {
       if (onNavigate) {
@@ -91,14 +84,15 @@ export default function PersonasPage({ onOpenChat, onNavigate }: PersonasPagePro
       }
     }
   };
-
   const groupedServices = services.reduce((acc, service) => {
     if (!acc[service.category]) {
       acc[service.category] = [];
     }
     acc[service.category].push(service);
     return acc;
-  }, {} as { [key: string]: AgentService[] });
+  }, {} as {
+    [key: string]: AgentService[];
+  });
 
   // Show chat flow if agent is selected
   if (currentView === 'form' && selectedAgent) {
@@ -109,20 +103,15 @@ export default function PersonasPage({ onOpenChat, onNavigate }: PersonasPagePro
   if (currentView === 'success' && documentToken) {
     return <DocumentCreationSuccess token={documentToken} onBack={handleSuccessBack} onNavigateToTracking={handleNavigateToTracking} />;
   }
-
   if (loading) {
-    return (
-      <div className="container mx-auto px-6 py-20">
+    return <div className="container mx-auto px-6 py-20">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">Cargando...</p>
         </div>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="min-h-screen bg-background">
+  return <div className="min-h-screen bg-background">
       {/* Hero Section - High Impact Design */}
       <section className="relative overflow-hidden bg-gradient-to-br from-[#010f24] via-[#011838] to-[#010f24]">
         {/* Animated Background Pattern */}
@@ -157,24 +146,17 @@ export default function PersonasPage({ onOpenChat, onNavigate }: PersonasPagePro
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4 animate-fade-in">
-              <Button 
-                size="lg"
-                className="bg-gradient-to-r from-[#f2bb31] to-[#ffd666] text-[#010f24] hover:shadow-xl hover:shadow-yellow-500/20 transition-all duration-300 font-semibold px-8 py-6 text-lg group"
-                onClick={() => {
-                  const element = document.getElementById('documentos-section');
-                  element?.scrollIntoView({ behavior: 'smooth' });
-                }}
-              >
+              <Button size="lg" className="bg-gradient-to-r from-[#f2bb31] to-[#ffd666] text-[#010f24] hover:shadow-xl hover:shadow-yellow-500/20 transition-all duration-300 font-semibold px-8 py-6 text-lg group" onClick={() => {
+              const element = document.getElementById('documentos-section');
+              element?.scrollIntoView({
+                behavior: 'smooth'
+              });
+            }}>
                 Comenzar Ahora
                 <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
               </Button>
               
-              <Button 
-                size="lg"
-                variant="outline"
-                className="bg-white/10 border-white/30 text-white hover:bg-white/20 backdrop-blur-sm px-8 py-6 text-lg"
-                onClick={() => onOpenChat("Necesito asesoría legal")}
-              >
+              <Button size="lg" variant="outline" className="bg-white/10 border-white/30 text-white hover:bg-white/20 backdrop-blur-sm px-8 py-6 text-lg" onClick={() => onOpenChat("Necesito asesoría legal")}>
                 <MessageCircle className="w-5 h-5 mr-2" />
                 Chat con IA
               </Button>
@@ -201,155 +183,11 @@ export default function PersonasPage({ onOpenChat, onNavigate }: PersonasPagePro
 
       {/* Main Navigation Cards - 4 Sections */}
       <section className="py-16 px-6 bg-background">
-        <div className="max-w-7xl mx-auto">
-          {/* Section Header */}
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              ¿Qué necesitas hoy?
-            </h2>
-            <p className="text-muted-foreground text-lg">
-              Elige una opción para comenzar
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          
-          {/* 1. Documentos por Categorías */}
-          <div className="group relative bg-card rounded-3xl p-8 border border-border hover:border-primary/50 transition-all duration-300 cursor-pointer hover:shadow-lg">
-            <div className="mb-6">
-              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                <FileText className="w-7 h-7 text-primary" />
-              </div>
-              <h3 className="text-2xl font-semibold mb-2">Documentos</h3>
-              <p className="text-muted-foreground text-sm">Genera documentos legales personalizados</p>
-            </div>
-            <Button 
-              variant="ghost" 
-              className="w-full justify-between group-hover:bg-primary/5"
-              onClick={() => {
-                const element = document.getElementById('documentos-section');
-                element?.scrollIntoView({ behavior: 'smooth' });
-              }}
-            >
-              Ver opciones
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Button>
-          </div>
-
-          {/* 2. Seguimiento de Documentos */}
-          <div className="group relative bg-card rounded-3xl p-8 border border-border hover:border-primary/50 transition-all duration-300 cursor-pointer hover:shadow-lg">
-            <div className="mb-6">
-              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                <Search className="w-7 h-7 text-primary" />
-              </div>
-              <h3 className="text-2xl font-semibold mb-2">Seguimiento</h3>
-              <p className="text-muted-foreground text-sm">Rastrea tus documentos generados</p>
-            </div>
-            <div className="space-y-3">
-              <Input
-                placeholder="Código de seguimiento"
-                value={searchCode}
-                onChange={(e) => setSearchCode(e.target.value)}
-                className="bg-background"
-                onKeyDown={(e) => e.key === 'Enter' && handleSearchDocument()}
-              />
-              <Button 
-                variant="ghost" 
-                className="w-full justify-between group-hover:bg-primary/5"
-                onClick={handleSearchDocument}
-              >
-                Buscar
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </div>
-          </div>
-
-          {/* 3. Autenticación */}
-          <div className="group relative bg-card rounded-3xl p-8 border border-border hover:border-primary/50 transition-all duration-300 cursor-pointer hover:shadow-lg">
-            <div className="mb-6">
-              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                <User className="w-7 h-7 text-primary" />
-              </div>
-              <h3 className="text-2xl font-semibold mb-2">
-                {isAuthenticated ? 'Mi Cuenta' : 'Acceso'}
-              </h3>
-              <p className="text-muted-foreground text-sm">
-                {isAuthenticated ? 'Gestiona tu perfil y documentos' : 'Inicia sesión o regístrate'}
-              </p>
-            </div>
-            <Button 
-              variant="ghost" 
-              className="w-full justify-between group-hover:bg-primary/5"
-              onClick={() => onNavigate && onNavigate('user-dashboard')}
-            >
-              {isAuthenticated ? 'Ir al panel' : 'Acceder'}
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Button>
-          </div>
-
-          {/* 4. Asistente Legal */}
-          <div className={`group relative rounded-3xl p-8 border transition-all duration-300 cursor-pointer ${
-            isAuthenticated 
-              ? 'bg-card border-border hover:border-primary/50 hover:shadow-lg' 
-              : 'bg-muted/30 border-muted cursor-not-allowed'
-          }`}>
-            <div className="mb-6">
-              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 ${
-                isAuthenticated ? 'bg-primary/10' : 'bg-muted/50'
-              }`}>
-                {isAuthenticated ? (
-                  <MessageCircle className="w-7 h-7 text-primary" />
-                ) : (
-                  <Lock className="w-7 h-7 text-muted-foreground" />
-                )}
-              </div>
-              <h3 className="text-2xl font-semibold mb-2">
-                Asistente Legal
-              </h3>
-              <p className="text-muted-foreground text-sm">
-                {isAuthenticated 
-                  ? 'Consulta legal personalizada 24/7' 
-                  : 'Solo para usuarios registrados'
-                }
-              </p>
-            </div>
-            <Button 
-              variant="ghost" 
-              className={`w-full justify-between ${
-                isAuthenticated ? 'group-hover:bg-primary/5' : 'opacity-50 cursor-not-allowed'
-              }`}
-              onClick={() => isAuthenticated && onOpenChat("Necesito asesoría legal personalizada")}
-              disabled={!isAuthenticated}
-            >
-              {isAuthenticated ? 'Iniciar chat' : 'Requiere cuenta'}
-              <ArrowRight className={`w-4 h-4 ${isAuthenticated ? 'group-hover:translate-x-1' : ''} transition-transform`} />
-            </Button>
-          </div>
-          </div>
-        </div>
+        
       </section>
 
       {/* Trust Indicators */}
-      <section className="pb-20 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-muted/30 rounded-3xl p-12">
-            <div className="grid md:grid-cols-3 gap-8 text-center">
-              <div>
-                <div className="text-4xl font-semibold mb-2">+5,000</div>
-                <p className="text-muted-foreground">Documentos generados</p>
-              </div>
-              <div>
-                <div className="text-4xl font-semibold mb-2">24/7</div>
-                <p className="text-muted-foreground">Soporte disponible</p>
-              </div>
-              <div>
-                <div className="text-4xl font-semibold mb-2">100%</div>
-                <p className="text-muted-foreground">Datos encriptados</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      
 
       {/* Documents Section */}
       <section id="documentos-section" className="pb-20 px-6">
@@ -361,11 +199,9 @@ export default function PersonasPage({ onOpenChat, onNavigate }: PersonasPagePro
 
           {/* Intelligent Search */}
           <div className="mb-16">
-            <IntelligentDocumentSearch
-              audience="personas"
-              onDocumentSelect={(documentId) => handleDocumentAction({ id: documentId } as AgentService)}
-              placeholder="Busca documentos con lenguaje natural... Ej: 'necesito un contrato de arrendamiento'"
-            />
+            <IntelligentDocumentSearch audience="personas" onDocumentSelect={documentId => handleDocumentAction({
+            id: documentId
+          } as AgentService)} placeholder="Busca documentos con lenguaje natural... Ej: 'necesito un contrato de arrendamiento'" />
           </div>
 
           <div className="border-t pt-12">
@@ -373,17 +209,11 @@ export default function PersonasPage({ onOpenChat, onNavigate }: PersonasPagePro
           </div>
 
           {/* Categories */}
-          {Object.entries(groupedServices).map(([category, categoryServices]) => (
-            <div key={category} className="mb-16">
+          {Object.entries(groupedServices).map(([category, categoryServices]) => <div key={category} className="mb-16">
               <h3 className="text-2xl font-semibold mb-8 pb-4 border-b">{category}</h3>
               
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {categoryServices.map((service) => (
-                  <div
-                    key={service.id}
-                    className="group bg-card rounded-2xl p-6 border border-border hover:border-primary/50 transition-all duration-300 cursor-pointer hover:shadow-lg"
-                    onClick={() => handleDocumentAction(service)}
-                  >
+                {categoryServices.map(service => <div key={service.id} className="group bg-card rounded-2xl p-6 border border-border hover:border-primary/50 transition-all duration-300 cursor-pointer hover:shadow-lg" onClick={() => handleDocumentAction(service)}>
                     <h4 className="text-xl font-semibold mb-3 group-hover:text-primary transition-colors">
                       {service.document_name}
                     </h4>
@@ -398,21 +228,17 @@ export default function PersonasPage({ onOpenChat, onNavigate }: PersonasPagePro
                         Generar <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                       </Button>
                     </div>
-                  </div>
-                ))}
+                  </div>)}
               </div>
-            </div>
-          ))}
+            </div>)}
 
-          {services.length === 0 && (
-            <div className="text-center py-20">
+          {services.length === 0 && <div className="text-center py-20">
               <div className="bg-muted/30 rounded-3xl p-12 max-w-2xl mx-auto">
                 <FileText className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-2xl font-semibold mb-2">Servicios en Preparación</h3>
                 <p className="text-muted-foreground">Nuestros expertos están perfeccionando los servicios.</p>
               </div>
-            </div>
-          )}
+            </div>}
         </div>
       </section>
 
@@ -423,17 +249,11 @@ export default function PersonasPage({ onOpenChat, onNavigate }: PersonasPagePro
           <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
             Nuestro equipo de expertos legales está disponible para asesorarte en casos específicos
           </p>
-          <Button 
-            variant="default" 
-            size="lg"
-            onClick={() => onNavigate("user-dashboard")}
-            className="rounded-full px-8"
-          >
+          <Button variant="default" size="lg" onClick={() => onNavigate("user-dashboard")} className="rounded-full px-8">
             Consultar con un experto
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </div>
       </section>
-    </div>
-  );
+    </div>;
 }
