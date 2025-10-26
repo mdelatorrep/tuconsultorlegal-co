@@ -113,11 +113,11 @@ export default function LawyerLandingPage({
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#0372e8]/10 rounded-full blur-[120px]"></div>
         
         <div className="relative container mx-auto px-6 py-20">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="max-w-4xl mx-auto">
             {/* Hero Content */}
-            <div className={`space-y-8 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-10'}`}>
+            <div className={`space-y-8 text-center transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
               {/* Professional Badge */}
-              <div className="inline-flex items-center bg-white/20 backdrop-blur-sm border border-white/30 text-white px-4 py-2 rounded-full text-sm font-medium">
+              <div className="inline-flex items-center bg-white/20 backdrop-blur-sm border border-white/30 text-white px-4 py-2 rounded-full text-sm font-medium mx-auto">
                 <Scale className="w-4 h-4 mr-2" />
                 Portal Exclusivo para Abogados
                 <Shield className="w-4 h-4 ml-2 text-yellow-300" />
@@ -125,14 +125,14 @@ export default function LawyerLandingPage({
               <div className="space-y-4">
                 
                 
-                <h1 className="text-5xl lg:text-6xl font-bold text-white leading-tight">
+                <h1 className="text-5xl lg:text-7xl font-bold text-white leading-tight">
                   El Futuro de la
                   <span className="block bg-gradient-to-r from-[#f2bb31] to-[#ffd666] bg-clip-text text-transparent">
                     Práctica Legal
                   </span>
                 </h1>
                 
-                <p className="text-xl text-white/90 max-w-lg leading-relaxed">
+                <p className="text-xl text-white/90 max-w-3xl mx-auto leading-relaxed">
                   Revoluciona tu despacho con inteligencia artificial avanzada. 
                   Automatiza, analiza y optimiza cada aspecto de tu práctica profesional.
                 </p>
@@ -140,7 +140,7 @@ export default function LawyerLandingPage({
 
               {/* Clear CTAs for Login/Register */}
               <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Button size="lg" variant="accent" onClick={() => window.location.href = '/auth-abogados'} className="font-semibold px-8 py-6 shadow-glow transition-all duration-300 hover:scale-105">
                     <User className="w-5 h-5 mr-2" />
                     Crear Cuenta Gratis
@@ -153,17 +153,19 @@ export default function LawyerLandingPage({
                   </Button>
                 </div>
                 
-                <Button variant="ghost" size="sm" onClick={() => document.getElementById('demo-section')?.scrollIntoView({
-                behavior: 'smooth'
-              })} className="text-white/80 hover:text-white hover:bg-white/10 mx-auto">
-                  <Play className="w-4 h-4 mr-2" />
-                  Ver cómo funciona
-                  <ChevronRight className="w-4 h-4 ml-1" />
-                </Button>
+                <div className="flex justify-center">
+                  <Button variant="ghost" size="sm" onClick={() => document.getElementById('demo-section')?.scrollIntoView({
+                  behavior: 'smooth'
+                })} className="text-white/80 hover:text-white hover:bg-white/10">
+                    <Play className="w-4 h-4 mr-2" />
+                    Ver cómo funciona
+                    <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
+                </div>
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 pt-8 border-t border-white/20">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 pt-8 border-t border-white/20 max-w-4xl mx-auto">
                 {stats.map((stat, index) => <div key={index} className="text-center">
                     <div className="flex justify-center mb-2">
                       <stat.icon className="w-6 h-6 text-success" />
@@ -171,39 +173,6 @@ export default function LawyerLandingPage({
                     <div className="text-2xl font-bold text-white">{stat.value}</div>
                     <div className="text-sm text-white/80">{stat.label}</div>
                   </div>)}
-              </div>
-            </div>
-
-            {/* Hero Visual */}
-            <div className={`relative transition-all duration-1000 delay-300 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-10'}`}>
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-success/20 to-brand-gold/20 rounded-3xl blur-3xl animate-pulse"></div>
-                <Card className="relative bg-white/10 backdrop-blur-lg border-white/20 p-8 shadow-hero">
-                  <CardContent className="p-0">
-                    <div className="space-y-6">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-white font-semibold">Panel de Control IA</h3>
-                        <Badge className="bg-success text-white border-success/30">
-                          <Zap className="w-3 h-3 mr-1" />
-                          En Vivo
-                        </Badge>
-                      </div>
-                      
-                      <div className="space-y-4">
-                        {features.slice(0, 3).map((feature, index) => <div key={index} className="flex items-center space-x-3 text-white/90">
-                            <div className={`p-2 rounded-lg bg-gradient-to-r ${feature.color}`}>
-                              <feature.icon className="w-4 h-4 text-white" />
-                            </div>
-                            <div className="flex-1">
-                              <div className="font-medium">{feature.title}</div>
-                              <div className="text-sm text-white/70">{feature.description}</div>
-                            </div>
-                            <CheckCircle className="w-5 h-5 text-success" />
-                          </div>)}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
               </div>
             </div>
           </div>
