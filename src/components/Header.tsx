@@ -178,7 +178,10 @@ export default function Header({
                 </button>
                 
                 {/* Business Users */}
-                <button onClick={() => window.location.hash = 'proximamente-empresas'} className={`p-4 rounded-xl border-2 transition-smooth ${currentPage === "empresas" ? "bg-success/10 border-success text-success" : "border-border hover:border-success/30 hover:bg-muted/30"}`}>
+                <button onClick={() => {
+                  setMobileMenuOpen(false);
+                  window.location.hash = 'proximamente-empresas';
+                }} className={`p-4 rounded-xl border-2 transition-smooth ${currentPage === "empresas" ? "bg-success/10 border-success text-success" : "border-border hover:border-success/30 hover:bg-muted/30"}`}>
                   <div className="flex items-center gap-4">
                     <div className="p-2 bg-success/10 rounded-lg">
                       <Users className="w-6 h-6 text-success" />
@@ -194,7 +197,7 @@ export default function Header({
                 </button>
                 
                 {/* Professional Portal */}
-                <button onClick={() => onNavigate("abogados")} className={`p-4 rounded-xl border-2 transition-smooth ${currentPage === "abogados" ? "bg-warning/10 border-warning text-warning" : "border-border hover:border-warning/30 hover:bg-muted/30"}`}>
+                <button onClick={() => handleNavClick("abogados")} className={`p-4 rounded-xl border-2 transition-smooth ${currentPage === "abogados" ? "bg-warning/10 border-warning text-warning" : "border-border hover:border-warning/30 hover:bg-muted/30"}`}>
                   <div className="flex items-center gap-4">
                     <div className="p-2 bg-warning/10 rounded-lg">
                       <Shield className="w-6 h-6 text-warning" />
