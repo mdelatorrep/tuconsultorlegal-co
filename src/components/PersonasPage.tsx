@@ -146,17 +146,42 @@ export default function PersonasPage({
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4 animate-fade-in">
-              <Button size="lg" className="bg-gradient-to-r from-[#f2bb31] to-[#ffd666] text-[#010f24] hover:shadow-xl hover:shadow-yellow-500/20 transition-all duration-300 font-semibold px-8 py-6 text-lg group" onClick={() => {
-              const element = document.getElementById('documentos-section');
-              element?.scrollIntoView({
-                behavior: 'smooth'
-              });
-            }}>
-                Comenzar Ahora
+              <Button 
+                size="lg" 
+                className="bg-gradient-to-r from-[#f2bb31] to-[#ffd666] text-[#010f24] hover:shadow-xl hover:shadow-yellow-500/20 transition-all duration-300 font-semibold px-8 py-6 text-lg group" 
+                onClick={() => {
+                  const element = document.getElementById('documentos-section');
+                  element?.scrollIntoView({
+                    behavior: 'smooth'
+                  });
+                }}
+              >
+                Crear Documento
                 <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
               </Button>
               
-              
+              <Button 
+                size="lg"
+                variant="outline"
+                className="border-white/50 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white px-8 py-6 text-lg font-semibold group"
+                onClick={() => {
+                  if (onNavigate) {
+                    onNavigate(isAuthenticated ? 'user-dashboard' : 'auth');
+                  }
+                }}
+              >
+                {isAuthenticated ? (
+                  <>
+                    <User className="w-5 h-5 mr-2" />
+                    Mi Portal Personal
+                  </>
+                ) : (
+                  <>
+                    <LogIn className="w-5 h-5 mr-2" />
+                    Iniciar Sesión
+                  </>
+                )}
+              </Button>
             </div>
 
             {/* Trust Indicators */}
