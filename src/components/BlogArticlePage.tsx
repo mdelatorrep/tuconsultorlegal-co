@@ -83,10 +83,41 @@ export default function BlogArticlePage({ articleId, onOpenChat, onNavigate }: B
 
   const formatContent = (content: string) => {
     let formatted = content;
-    formatted = formatted.replace(/^# (.*$)/gm, '<h1 class="text-3xl font-bold mb-6 text-foreground">$1</h1>');
-    formatted = formatted.replace(/^## (.*$)/gm, '<h2 class="text-2xl font-bold mb-4 mt-8 text-foreground">$1</h2>');
+    
+    // Headers (process from most specific to least specific)
+    formatted = formatted.replace(/^##### (.*$)/gm, '<h5 class="text-lg font-bold mb-3 mt-6 text-foreground">$1</h5>');
+    formatted = formatted.replace(/^#### (.*$)/gm, '<h4 class="text-xl font-bold mb-3 mt-6 text-foreground">$1</h4>');
+    formatted = formatted.replace(/^### (.*$)/gm, '<h3 class="text-2xl font-bold mb-4 mt-7 text-foreground">$1</h3>');
+    formatted = formatted.replace(/^## (.*$)/gm, '<h2 class="text-3xl font-bold mb-4 mt-8 text-foreground">$1</h2>');
+    formatted = formatted.replace(/^# (.*$)/gm, '<h1 class="text-4xl font-bold mb-6 mt-8 text-foreground">$1</h1>');
+    
+    // Bold and italic
+    formatted = formatted.replace(/\*\*\*(.*?)\*\*\*/g, '<strong class="font-bold italic">$1</strong>');
     formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold">$1</strong>');
-    formatted = formatted.replace(/^([^#->\n].+)$/gm, '<p class="mb-4 text-muted-foreground leading-relaxed">$1</p>');
+    formatted = formatted.replace(/\*(.*?)\*/g, '<em class="italic">$1</em>');
+    
+    // Links
+    formatted = formatted.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">$1</a>');
+    
+    // Unordered lists
+    formatted = formatted.replace(/^\* (.+)$/gm, '<li class="ml-6 mb-2">$1</li>');
+    formatted = formatted.replace(/^- (.+)$/gm, '<li class="ml-6 mb-2">$1</li>');
+    formatted = formatted.replace(/(<li class="ml-6 mb-2">.*<\/li>\n?)+/g, '<ul class="list-disc mb-4 text-muted-foreground">$&</ul>');
+    
+    // Ordered lists
+    formatted = formatted.replace(/^\d+\. (.+)$/gm, '<li class="ml-6 mb-2">$1</li>');
+    formatted = formatted.replace(/(<li class="ml-6 mb-2">.*<\/li>\n?)+/g, (match) => {
+      if (!match.includes('list-disc')) {
+        return `<ol class="list-decimal mb-4 text-muted-foreground">${match}</ol>`;
+      }
+      return match;
+    });
+    
+    // Line breaks
+    formatted = formatted.replace(/\n\n/g, '<br/><br/>');
+    
+    // Paragraphs (must be last to avoid conflicts)
+    formatted = formatted.replace(/^(?!<[ohl]|<li|<br)([^<\n].+)$/gm, '<p class="mb-4 text-muted-foreground leading-relaxed">$1</p>');
     
     // Sanitize HTML to prevent XSS attacks
     return DOMPurify.sanitize(formatted, {
