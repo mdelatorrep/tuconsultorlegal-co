@@ -907,6 +907,54 @@ export type Database = {
           },
         ]
       }
+      custom_document_requests: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          description: string
+          document_type: string
+          id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+          urgency: string
+          user_email: string
+          user_id: string | null
+          user_name: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          description: string
+          document_type: string
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          urgency?: string
+          user_email: string
+          user_id?: string | null
+          user_name: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          description?: string
+          document_type?: string
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          urgency?: string
+          user_email?: string
+          user_id?: string | null
+          user_name?: string
+        }
+        Relationships: []
+      }
       document_categories: {
         Row: {
           category_type: string | null

@@ -21,7 +21,8 @@ import {
   DollarSign,
   ArrowLeft,
   ArrowRight,
-  Users
+  Users,
+  FileQuestion
 } from 'lucide-react';
 import { Input } from './ui/input';
 import { useDocumentPayment } from './document-payment/useDocumentPayment';
@@ -29,6 +30,7 @@ import DocumentChatFlow from './DocumentChatFlow';
 import DocumentCreationSuccess from './DocumentCreationSuccess';
 import UserDocumentSelector from './UserDocumentSelector';
 import LegalConsultationChat from './LegalConsultationChat';
+import { CustomDocumentRequestDialog } from './CustomDocumentRequestDialog';
 import { useFreeDocuments } from '@/hooks/useFreeDocuments';
 import {
   Carousel,
@@ -83,6 +85,7 @@ export default function UserDashboardPage({ onBack, onOpenChat }: UserDashboardP
   
   // Consultation states
   const [showConsultation, setShowConsultation] = useState(false);
+  const [showCustomRequestDialog, setShowCustomRequestDialog] = useState(false);
 
   const { handleVerifyTrackingCode } = useDocumentPayment();
   const { documents: freeDocuments, loading: loadingFreeDocuments } = useFreeDocuments();
@@ -464,7 +467,7 @@ export default function UserDashboardPage({ onBack, onOpenChat }: UserDashboardP
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={handleNewDocumentRequest}>
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
@@ -491,6 +494,22 @@ export default function UserDashboardPage({ onBack, onOpenChat }: UserDashboardP
                   <h3 className="font-semibold">Consulta Jurídica</h3>
                   <p className="text-sm text-muted-foreground">
                     Hacer una consulta legal con IA
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setShowCustomRequestDialog(true)}>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="bg-accent/10 p-3 rounded-lg">
+                  <FileQuestion className="w-6 h-6 text-accent" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">Solicitar Documento</h3>
+                  <p className="text-sm text-muted-foreground">
+                    ¿No lo encuentras? Solicítalo aquí
                   </p>
                 </div>
               </div>
@@ -702,6 +721,12 @@ export default function UserDashboardPage({ onBack, onOpenChat }: UserDashboardP
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Custom Document Request Dialog */}
+      <CustomDocumentRequestDialog 
+        open={showCustomRequestDialog}
+        onOpenChange={setShowCustomRequestDialog}
+      />
     </div>
   );
 }

@@ -42,6 +42,7 @@ import { Progress } from "./ui/progress";
 import { Separator } from "./ui/separator";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "./ui/sidebar";
 import LawyerPermissionsDialog from './LawyerPermissionsDialog';
+import { AdminCustomDocumentRequests } from './AdminCustomDocumentRequests';
 
 interface Lawyer {
   id: string;
@@ -757,6 +758,7 @@ function AdminPage() {
       items: [
         { id: 'blogs', label: 'Blog Jurídico', icon: BookOpen, count: pendingBlogsCount },
         { id: 'messages', label: 'Consultas de Usuarios', icon: MessageCircle, count: unreadMessagesCount },
+        { id: 'custom-requests', label: 'Solicitudes Personalizadas', icon: FileCheck, count: 0 },
       ]
     },
     {
@@ -1460,6 +1462,9 @@ function AdminPage() {
       case 'subscriptions':
         return <SubscriptionAdminManager authHeaders={getAuthHeaders()} />;
         
+      case 'custom-requests':
+        return <AdminCustomDocumentRequests />;
+        
       default:
         return (
           <div className="text-center py-12">
@@ -1485,13 +1490,14 @@ function AdminPage() {
                     {currentSection?.label || 'Dashboard'}
                   </h1>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {currentView === 'dashboard' ? 'Vista general del sistema jurídico' :
+                     {currentView === 'dashboard' ? 'Vista general del sistema jurídico' :
                      currentView === 'lawyers' ? 'Gestiona abogados registrados en el sistema' :
                      currentView === 'requests' ? 'Revisa solicitudes de acceso pendientes' :
                      currentView === 'agents' ? 'Administra agentes legales de IA' :
                      currentView === 'openai' ? 'Configuración de OpenAI y modelos' :
                      currentView === 'blogs' ? 'Gestiona contenido del blog jurídico' :
                      currentView === 'messages' ? 'Responde consultas de usuarios' :
+                     currentView === 'custom-requests' ? 'Gestiona solicitudes de documentos personalizados' :
                      currentView === 'knowledge' ? 'Administra la base de conocimiento' :
                      currentView === 'stats' ? 'Visualiza estadísticas del sistema' :
                      currentView === 'categories' ? 'Configura categorías de documentos' :
