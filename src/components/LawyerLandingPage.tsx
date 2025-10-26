@@ -258,27 +258,33 @@ export default function LawyerLandingPage({
 
           {/* Carousel for Mobile, Grid for Desktop */}
           <div className="mb-8 sm:mb-12">
-            {/* Mobile Carousel */}
-            <div className="md:hidden">
+            {/* Carousel - Visible en todas las resoluciones */}
+            <div className="w-full">
               <div className="overflow-hidden" ref={emblaRef}>
-                <div className="flex gap-4">
+                <div className="flex gap-4 sm:gap-6">
                   {features.map((feature, index) => (
-                    <div key={index} className="flex-[0_0_85%] min-w-0">
+                    <div key={index} className="flex-[0_0_85%] sm:flex-[0_0_70%] md:flex-[0_0_45%] lg:flex-[0_0_30%] min-w-0">
                       <Card 
-                        className={`cursor-pointer transition-all duration-500 hover:shadow-hero h-full ${activeFeature === index ? 'border-primary shadow-card bg-gradient-to-br from-background to-primary/5' : 'border-border'}`} 
+                        className={`h-full cursor-pointer transition-all duration-500 hover:shadow-hero group ${
+                          activeFeature === index 
+                            ? 'border-primary shadow-card scale-105 bg-gradient-to-br from-background to-primary/5' 
+                            : 'border-border hover:border-primary/50'
+                        }`}
                         onClick={() => setActiveFeature(index)}
                       >
                         <CardContent className="p-6">
                           <div className="space-y-4">
                             {/* Icon y Badge */}
                             <div className="flex items-start justify-between">
-                              <div className={`p-4 rounded-xl bg-gradient-to-r ${feature.color} shadow-soft transition-transform`}>
+                              <div className={`p-4 rounded-xl bg-gradient-to-r ${feature.color} shadow-soft transition-transform group-hover:scale-110`}>
                                 <feature.icon className="w-8 h-8 text-white" />
                               </div>
-                              {activeFeature === index && <Badge className="bg-success/20 text-success border-success/30">
+                              {activeFeature === index && (
+                                <Badge className="bg-success/20 text-success border-success/30">
                                   <Zap className="w-3 h-3 mr-1" />
                                   Activo
-                                </Badge>}
+                                </Badge>
+                              )}
                             </div>
                             
                             {/* Content */}
@@ -307,15 +313,15 @@ export default function LawyerLandingPage({
               </div>
               
               {/* Carousel Navigation */}
-              <div className="flex justify-center items-center gap-4 mt-4">
+              <div className="flex justify-center items-center gap-4 mt-6">
                 <Button
                   variant="outline"
                   size="icon"
                   onClick={scrollToPrev}
                   disabled={activeFeature === 0}
-                  className="h-8 w-8"
+                  className="h-10 w-10"
                 >
-                  <ChevronLeft className="h-4 w-4" />
+                  <ChevronLeft className="h-5 w-5" />
                 </Button>
                 <div className="flex gap-2">
                   {features.map((_, index) => (
@@ -333,49 +339,11 @@ export default function LawyerLandingPage({
                   size="icon"
                   onClick={scrollToNext}
                   disabled={activeFeature === features.length - 1}
-                  className="h-8 w-8"
+                  className="h-10 w-10"
                 >
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight className="h-5 w-5" />
                 </Button>
               </div>
-            </div>
-
-            {/* Desktop Grid */}
-            <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {features.map((feature, index) => <Card key={index} className={`cursor-pointer transition-all duration-500 hover:shadow-hero group ${activeFeature === index ? 'border-primary shadow-card scale-105 bg-gradient-to-br from-background to-primary/5' : 'border-border hover:border-primary/50'}`} onClick={() => setActiveFeature(index)}>
-                  <CardContent className="p-6">
-                    <div className="space-y-4">
-                      {/* Icon y Badge */}
-                      <div className="flex items-start justify-between">
-                        <div className={`p-4 rounded-xl bg-gradient-to-r ${feature.color} shadow-soft transition-transform group-hover:scale-110`}>
-                          <feature.icon className="w-8 h-8 text-white" />
-                        </div>
-                        {activeFeature === index && <Badge className="bg-success/20 text-success border-success/30">
-                            <Zap className="w-3 h-3 mr-1" />
-                            Activo
-                          </Badge>}
-                      </div>
-                      
-                      {/* Content */}
-                      <div className="space-y-2">
-                        <h3 className="font-bold text-lg">{feature.title}</h3>
-                        <p className="text-sm text-muted-foreground leading-relaxed">
-                          {feature.description}
-                        </p>
-                      </div>
-                      
-                      {/* Demo Preview */}
-                      <div className="pt-4 border-t border-border/50">
-                        <div className="flex items-start space-x-2">
-                          <Sparkles className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                          <p className="text-xs text-muted-foreground italic">
-                            {feature.demo}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>)}
             </div>
           </div>
 
