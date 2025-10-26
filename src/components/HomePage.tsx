@@ -51,20 +51,20 @@ export default function HomePage({
   const mainFeatures = [{
     icon: <Users className="w-8 h-8 text-slate-700" />,
     title: "Personas",
-    subtitle: "Accede a contratos y asesoría legal sin complicaciones.",
+    subtitle: "Crea contratos y documentos jurídicos válidos en minutos con IA, respaldados por abogados profesionales.",
     action: "Explorar servicios",
     onClick: () => onNavigate("personas")
   }, {
     icon: <Building2 className="w-8 h-8 text-slate-700" />,
     title: "Empresas",
-    subtitle: "Portal empresarial próximamente disponible.",
+    subtitle: "Gestión legal empresarial integral: contratos corporativos, compliance y asesoría estratégica en una sola plataforma.",
     action: "Unirse a lista de espera",
     onClick: () => onNavigate("proximamente-empresas"),
     badge: "Próximamente"
   } as const, {
     icon: <Scale className="w-8 h-8 text-slate-700" />,
     title: "Abogados",
-    subtitle: "Potencia tu práctica con IA y gestión automatizada.",
+    subtitle: "Revoluciona tu práctica: análisis con IA, investigación jurídica, redacción automatizada y CRM especializado en un solo lugar.",
     action: "Portal Abogados",
     onClick: () => onNavigate("lawyer-landing")
   }];
