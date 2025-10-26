@@ -396,11 +396,12 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
 
   const handleDeleteDocument = async (documentId: string) => {
     try {
+      // Delete by ID and either user_id OR user_email for backwards compatibility
       const { error } = await supabase
         .from('document_tokens')
         .delete()
         .eq('id', documentId)
-        .eq('user_id', user?.id); // Security: only delete own documents
+        .or(`user_id.eq.${user?.id},user_email.eq.${user?.email}`);
 
       if (error) throw error;
 
