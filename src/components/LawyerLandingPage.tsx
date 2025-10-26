@@ -4,6 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Scale, Brain, Search, Eye, PenTool, Target, Users, Bot, BarChart3, Shield, Zap, Sparkles, ChevronRight, Play, ArrowRight, CheckCircle, Star, Rocket, User } from 'lucide-react';
 import LawyerLogin from './LawyerLogin';
+import demoResearch from '@/assets/demo-research.png';
+import demoAnalysis from '@/assets/demo-analysis.png';
+import demoDrafting from '@/assets/demo-drafting.png';
+import demoStrategy from '@/assets/demo-strategy.png';
+import demoCrm from '@/assets/demo-crm.png';
+import demoAgents from '@/assets/demo-agents.png';
 interface LawyerLandingPageProps {
   onOpenChat: (message: string) => void;
 }
@@ -24,37 +30,43 @@ export default function LawyerLandingPage({
     description: "Análisis avanzado de jurisprudencia y normativa con inteligencia artificial",
     icon: Search,
     color: "from-blue-500 to-blue-600",
-    demo: "Buscar precedentes sobre contratos de arrendamiento en Colombia"
+    demo: "Buscar precedentes sobre contratos de arrendamiento en Colombia",
+    image: demoResearch
   }, {
     title: "Análisis Documental",
     description: "Revisión automática de documentos legales con detección de riesgos",
     icon: Eye,
     color: "from-purple-500 to-purple-600",
-    demo: "Analizar contrato de compraventa para identificar cláusulas problemáticas"
+    demo: "Analizar contrato de compraventa para identificar cláusulas problemáticas",
+    image: demoAnalysis
   }, {
     title: "Redacción Inteligente",
     description: "Generación de documentos legales con plantillas personalizadas",
     icon: PenTool,
     color: "from-green-500 to-green-600",
-    demo: "Redactar demanda civil por incumplimiento contractual"
+    demo: "Redactar demanda civil por incumplimiento contractual",
+    image: demoDrafting
   }, {
     title: "Estrategia Legal",
     description: "Análisis predictivo y planificación estratégica de casos",
     icon: Target,
     color: "from-orange-500 to-orange-600",
-    demo: "Desarrollar estrategia para litigio comercial complejo"
+    demo: "Desarrollar estrategia para litigio comercial complejo",
+    image: demoStrategy
   }, {
     title: "Gestión de Clientes",
     description: "CRM especializado para despachos con seguimiento de casos",
     icon: Users,
     color: "from-indigo-500 to-indigo-600",
-    demo: "Gestionar cartera de 150+ clientes con automatización"
+    demo: "Gestionar cartera de 150+ clientes con automatización",
+    image: demoCrm
   }, {
     title: "Agentes IA Personalizados",
     description: "Crea asistentes especializados para áreas específicas del derecho",
     icon: Bot,
     color: "from-pink-500 to-pink-600",
-    demo: "Agente especializado en derecho laboral colombiano"
+    demo: "Agente especializado en derecho laboral colombiano",
+    image: demoAgents
   }];
   const stats = [{
     value: "500+",
@@ -259,10 +271,52 @@ export default function LawyerLandingPage({
           </div>
 
           {/* Live Demo Visual - Full Width */}
-          <div className="relative max-w-4xl mx-auto">
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-brand-blue-light/10 rounded-3xl blur-3xl"></div>
-            <Card className="relative bg-white shadow-hero border-0">
-              
+          <div className="relative max-w-5xl mx-auto">
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-primary/10 rounded-3xl blur-3xl"></div>
+            <Card className="relative bg-white shadow-hero border-0 overflow-hidden">
+              <CardContent className="p-8">
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <h3 className="text-2xl font-bold">{features[activeFeature].title}</h3>
+                      <p className="text-muted-foreground">{features[activeFeature].description}</p>
+                    </div>
+                    <Badge className={`bg-gradient-to-r ${features[activeFeature].color} text-white border-0`}>
+                      {(() => {
+                        const ActiveIcon = features[activeFeature].icon;
+                        return <ActiveIcon className="w-4 h-4 mr-2" />;
+                      })()}
+                      Demo en Vivo
+                    </Badge>
+                  </div>
+                  
+                  {/* Animated Image Carousel */}
+                  <div className="relative rounded-xl overflow-hidden shadow-soft border border-border/50">
+                    <div className="relative w-full aspect-video bg-muted/30">
+                      {features.map((feature, index) => <div key={index} className={`absolute inset-0 transition-all duration-700 ${activeFeature === index ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
+                          <img src={feature.image} alt={feature.title} className="w-full h-full object-cover" />
+                        </div>)}
+                    </div>
+                    
+                    {/* Navigation Dots */}
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 bg-black/50 backdrop-blur-sm px-3 py-2 rounded-full">
+                      {features.map((_, index) => <button key={index} onClick={() => setActiveFeature(index)} className={`w-2 h-2 rounded-full transition-all duration-300 ${activeFeature === index ? 'bg-white w-6' : 'bg-white/50 hover:bg-white/75'}`} aria-label={`Ver demo ${index + 1}`} />)}
+                    </div>
+                  </div>
+                  
+                  {/* Demo Info */}
+                  <div className="flex items-center justify-between pt-4 border-t border-border/50">
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <Sparkles className="w-4 h-4 mr-2 text-primary" />
+                      Ejemplo: {features[activeFeature].demo}
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => window.location.href = '/auth-abogados'}>
+                      Probar Ahora
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
             </Card>
           </div>
         </div>
