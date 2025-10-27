@@ -1,34 +1,59 @@
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+
 interface PrivacyPolicyPageProps {
   onOpenChat: (message?: string) => void;
 }
 
 export default function PrivacyPolicyPage({ onOpenChat }: PrivacyPolicyPageProps) {
+  const [content, setContent] = useState<{ title: string; content: string } | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadContent();
+  }, []);
+
+  const loadContent = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('legal_content')
+        .select('title, content')
+        .eq('page_key', 'privacy-policy')
+        .single();
+
+      if (error) throw error;
+      setContent(data);
+    } catch (error) {
+      console.error('Error loading privacy policy:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Cargando...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-6 py-20">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <h1 className="text-4xl md:text-5xl font-extrabold text-primary mb-4">
-              Política de Privacidad y Tratamiento de Datos Personales
+              {content?.title || 'Política de Privacidad y Tratamiento de Datos Personales'}
             </h1>
             <p className="text-lg text-muted-foreground">TUCONSULTORLEGAL.CO</p>
-            <p className="text-sm text-muted-foreground mt-2">Fecha de última actualización: 5 de julio de 2025</p>
           </div>
 
-          <div className="prose max-w-none space-y-8">
-            <div className="bg-card p-6 rounded-lg border">
-              <p className="text-foreground leading-relaxed">
-                En <strong>TU CONSULTOR LEGAL S.A.S.</strong>, sociedad legalmente constituida en Colombia e
-                identificada con NIT [Número de NIT de la empresa], estamos comprometidos con la protección de tu
-                privacidad y la seguridad de tu información. Esta Política de Privacidad describe cómo recopilamos,
-                usamos, almacenamos, compartimos y protegemos tus datos personales, en cumplimiento estricto de la Ley
-                Estatutaria 1581 de 2012, el Decreto 1377 de 2013 y demás normas concordantes en Colombia.
-              </p>
-              <p className="text-foreground leading-relaxed mt-4">
-                Al utilizar los servicios de nuestra plataforma www.tuconsultorlegal.co (en adelante, la "Plataforma"),
-                manifiestas haber leído, entendido y aceptado los términos de esta política.
-              </p>
-            </div>
+          <div className="prose prose-lg max-w-none space-y-8">
+            <div 
+              className="bg-card p-6 rounded-lg border"
+              dangerouslySetInnerHTML={{ __html: content?.content || '' }}
+            />
 
             <section>
               <h2 className="text-2xl font-bold text-primary mb-4">1. RESPONSABLE DEL TRATAMIENTO</h2>

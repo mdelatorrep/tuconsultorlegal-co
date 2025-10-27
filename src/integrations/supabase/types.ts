@@ -1676,6 +1676,36 @@ export type Database = {
           },
         ]
       }
+      legal_content: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          last_updated: string
+          page_key: string
+          title: string
+          updated_by: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          last_updated?: string
+          page_key: string
+          title: string
+          updated_by?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          last_updated?: string
+          page_key?: string
+          title?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       legal_tools_results: {
         Row: {
           created_at: string

@@ -27,6 +27,7 @@ import { LogRocketProvider } from "@/components/LogRocketProvider";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { useUserAuth } from "@/hooks/useUserAuth";
+import IntellectualPropertyPage from "@/components/IntellectualPropertyPage";
 import { useAuthTypeDetection } from "@/hooks/useAuthTypeDetection";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -290,6 +291,8 @@ export default function Index() {
         return <TermsAndConditionsPage onOpenChat={handleOpenChat} />;
       case "privacidad":
         return <PrivacyPolicyPage onOpenChat={handleOpenChat} />;
+      case "propiedad-intelectual":
+        return <IntellectualPropertyPage onOpenChat={handleOpenChat} />;
       case "proximamente-empresas":
         return <ComingSoonPage onBack={() => handleNavigate("empresas")} type="business" title="Portal Empresarial" />;
     }

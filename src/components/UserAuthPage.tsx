@@ -338,11 +338,23 @@ export default function UserAuthPage({ onBack, onAuthSuccess }: UserAuthPageProp
                       checked={termsAccepted}
                       onCheckedChange={(checked) => setTermsAccepted(checked as boolean)}
                     />
-                    <Label htmlFor="terms" className="text-sm">
+                    <Label htmlFor="terms" className="text-sm leading-relaxed">
                       Acepto los{' '}
-                      <span className="text-primary underline cursor-pointer">
+                      <a 
+                        href="/terminos" 
+                        target="_blank"
+                        className="text-primary underline hover:text-primary/80"
+                      >
                         términos y condiciones
-                      </span>
+                      </a>
+                      {' '}y la{' '}
+                      <a 
+                        href="/privacidad" 
+                        target="_blank"
+                        className="text-primary underline hover:text-primary/80"
+                      >
+                        política de privacidad
+                      </a>
                     </Label>
                   </div>
 

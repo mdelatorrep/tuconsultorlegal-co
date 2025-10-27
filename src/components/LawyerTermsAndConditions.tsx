@@ -228,7 +228,23 @@ export const LawyerTermsAndConditions: React.FC<LawyerTermsAndConditionsProps> =
             <div className="flex items-start space-x-2">
               <Checkbox id="terms" checked={agreedToTerms} onCheckedChange={(checked) => setAgreedToTerms(!!checked)} />
               <label htmlFor="terms" className="text-sm text-muted-foreground leading-relaxed cursor-pointer">
-                He leído y acepto los <strong>Términos y Condiciones Generales</strong> de tuconsultorlegal.co
+                He leído y acepto los{' '}
+                <a 
+                  href="/terminos" 
+                  target="_blank"
+                  className="text-primary underline hover:text-primary/80 font-semibold"
+                >
+                  Términos y Condiciones Generales
+                </a>
+                {' '}y la{' '}
+                <a 
+                  href="/privacidad" 
+                  target="_blank"
+                  className="text-primary underline hover:text-primary/80 font-semibold"
+                >
+                  Política de Privacidad
+                </a>
+                {' '}de tuconsultorlegal.co
               </label>
             </div>
 

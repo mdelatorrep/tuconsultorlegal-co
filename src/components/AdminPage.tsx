@@ -21,6 +21,7 @@ import LawyerTrainingManager from "./LawyerTrainingManager";
 import CategoryManager from "./CategoryManager";
 import SubscriptionAdminManager from "./admin/SubscriptionAdminManager";
 import { EmailConfigManager } from "./admin/EmailConfigManager";
+import { LegalContentManager } from "./admin/LegalContentManager";
 import { 
   Copy, Users, Bot, BarChart3, Clock, CheckCircle, Lock, Unlock, Trash2, Check, X, Plus, 
   Loader2, MessageCircle, BookOpen, Settings, Zap, Mail, Phone, Bell, LogOut, UserCheck, 
@@ -757,6 +758,7 @@ function AdminPage() {
       label: "Contenido & Comunicación",
       items: [
         { id: 'blogs', label: 'Blog Jurídico', icon: BookOpen, count: pendingBlogsCount },
+        { id: 'legal-content', label: 'Contenido Legal', icon: FileText, count: 0 },
         { id: 'messages', label: 'Consultas de Usuarios', icon: MessageCircle, count: unreadMessagesCount },
         { id: 'custom-requests', label: 'Solicitudes Personalizadas', icon: FileCheck, count: 0 },
       ]
@@ -1404,6 +1406,9 @@ function AdminPage() {
       case 'blogs':
         return <AdminBlogManager onBack={() => setCurrentView('dashboard')} authHeaders={getAuthHeaders()} />;
         
+      case 'legal-content':
+        return <LegalContentManager />;
+        
       case 'config':
         return <SystemConfigManager />;
         
@@ -1496,6 +1501,7 @@ function AdminPage() {
                      currentView === 'agents' ? 'Administra agentes legales de IA' :
                      currentView === 'openai' ? 'Configuración de OpenAI y modelos' :
                      currentView === 'blogs' ? 'Gestiona contenido del blog jurídico' :
+                     currentView === 'legal-content' ? 'Edita términos, privacidad y propiedad intelectual' :
                      currentView === 'messages' ? 'Responde consultas de usuarios' :
                      currentView === 'custom-requests' ? 'Gestiona solicitudes de documentos personalizados' :
                      currentView === 'knowledge' ? 'Administra la base de conocimiento' :

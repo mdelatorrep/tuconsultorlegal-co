@@ -1,31 +1,59 @@
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+
 interface TermsAndConditionsPageProps {
   onOpenChat: (message?: string) => void;
 }
 
 export default function TermsAndConditionsPage({ onOpenChat }: TermsAndConditionsPageProps) {
+  const [content, setContent] = useState<{ title: string; content: string } | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadContent();
+  }, []);
+
+  const loadContent = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('legal_content')
+        .select('title, content')
+        .eq('page_key', 'terms-and-conditions')
+        .single();
+
+      if (error) throw error;
+      setContent(data);
+    } catch (error) {
+      console.error('Error loading terms:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Cargando...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-6 py-20">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-5xl font-extrabold text-primary mb-4">Términos y Condiciones de Uso</h1>
+            <h1 className="text-4xl md:text-5xl font-extrabold text-primary mb-4">
+              {content?.title || 'Términos y Condiciones de Uso'}
+            </h1>
             <p className="text-lg text-muted-foreground">TUCONSULTORLEGAL.CO</p>
-            <p className="text-sm text-muted-foreground mt-2">Fecha de última actualización: 5 de julio de 2025</p>
           </div>
 
-          <div className="prose max-w-none space-y-8">
-            <div className="bg-card p-6 rounded-lg border">
-              <p className="text-foreground leading-relaxed">
-                ¡Bienvenido a <strong>tuconsultorlegal.co</strong>! Antes de utilizar nuestros servicios, te pedimos que
-                leas detenidamente los siguientes Términos y Condiciones (en adelante, "T&C"). Al acceder y utilizar
-                nuestra plataforma, aceptas y te comprometes a cumplir con lo aquí estipulado. Si no estás de acuerdo
-                con estos T&C, por favor, no utilices nuestros servicios.
-              </p>
-              <p className="text-foreground leading-relaxed mt-4">
-                Este sitio web es operado por <strong>TU CONSULTOR LEGAL S.A.S.</strong>, una sociedad legalmente
-                constituida en Colombia.
-              </p>
-            </div>
+          <div className="prose prose-lg max-w-none space-y-8">
+            <div 
+              className="bg-card p-6 rounded-lg border"
+              dangerouslySetInnerHTML={{ __html: content?.content || '' }}
+            />
 
             <section>
               <h2 className="text-2xl font-bold text-primary mb-4">1. DEFINICIONES</h2>
