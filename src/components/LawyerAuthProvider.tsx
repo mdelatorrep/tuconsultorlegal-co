@@ -7,7 +7,7 @@ interface LawyerAuthContextType {
   user: any;
   session: any;
   loginWithEmailAndPassword: (email: string, password: string) => Promise<boolean>;
-  signUpWithEmailAndPassword: (email: string, password: string, fullName: string) => Promise<boolean>;
+  signUpWithEmailAndPassword: (email: string, password: string, fullName: string) => Promise<{ success: boolean; requiresConfirmation: boolean }>;
   resetPassword: (email: string) => Promise<boolean>;
   updatePassword: (newPassword: string) => Promise<boolean>;
   logout: () => Promise<void>;

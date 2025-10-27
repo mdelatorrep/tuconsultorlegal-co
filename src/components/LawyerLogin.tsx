@@ -113,17 +113,30 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
       console.log('Form data:', { email, fullName, passwordLength: password.length });
       
       console.log('=== CALLING SIGNUP FUNCTION ===');
-      const success = await signUpWithEmailAndPassword(email, password, fullName);
+      const result = await signUpWithEmailAndPassword(email, password, fullName);
       console.log('=== SIGNUP FUNCTION RETURNED ===');
-      console.log('Signup result:', success);
+      console.log('Signup result:', result);
       
-      if (success) {
-        console.log('=== REGISTRATION SUCCESS - MOVING TO PLAN SELECTION ===');
-        toast({
-          title: "¡Registro exitoso!",
-          description: "Ahora selecciona tu plan de suscripción.",
-        });
-        setViewMode('select-plan');
+      if (result.success) {
+        if (result.requiresConfirmation) {
+          // Email confirmation required
+          console.log('=== EMAIL CONFIRMATION REQUIRED ===');
+          toast({
+            title: "¡Registro exitoso!",
+            description: "Revisa tu email para confirmar tu cuenta antes de continuar con la selección del plan.",
+            duration: 6000
+          });
+          // Switch to login view
+          setViewMode('login');
+        } else {
+          // Auto-confirmed, proceed to plan selection
+          console.log('=== REGISTRATION SUCCESS - MOVING TO PLAN SELECTION ===');
+          toast({
+            title: "¡Registro exitoso!",
+            description: "Ahora selecciona tu plan de suscripción.",
+          });
+          setViewMode('select-plan');
+        }
       } else {
         console.log('=== REGISTRATION FAILED - SHOWING ERROR MESSAGE ===');
         setErrorMessage('Error al registrar la cuenta. Intenta nuevamente.');

@@ -170,7 +170,7 @@ export const useLawyerAuth = () => {
     }
   };
 
-  const signUpWithEmailAndPassword = async (email: string, password: string, fullName: string): Promise<boolean> => {
+  const signUpWithEmailAndPassword = async (email: string, password: string, fullName: string): Promise<{ success: boolean; requiresConfirmation: boolean }> => {
     try {
       console.log('=== LAWYER SIGNUP START ===');
       console.log('Attempting signup with:', { email, fullName });
@@ -178,7 +178,7 @@ export const useLawyerAuth = () => {
       // Verify inputs
       if (!email || !password || !fullName) {
         console.error('Missing required fields:', { email: !!email, password: !!password, fullName: !!fullName });
-        return false;
+        return { success: false, requiresConfirmation: false };
       }
 
       // VALIDAR TIPO DE USUARIO ANTES DE REGISTRAR
@@ -239,16 +239,18 @@ export const useLawyerAuth = () => {
           throw new Error('Este email ya está registrado. Intenta iniciar sesión en su lugar.');
         }
         
-        return false;
+        return { success: false, requiresConfirmation: false };
       }
 
       if (!data.user) {
         console.error('No user returned from signup');
-        return false;
+        return { success: false, requiresConfirmation: false };
       }
 
+      const requiresConfirmation = !data.session;
       console.log('=== LAWYER SIGNUP SUCCESS ===');
       console.log('User created with ID:', data.user.id);
+      console.log('Session present:', !!data.session, '- Email confirmation required:', requiresConfirmation);
       
       // Send welcome email (non-blocking) using existing send-email infrastructure
       setTimeout(async () => {
@@ -305,9 +307,7 @@ export const useLawyerAuth = () => {
         }
       }, 0);
       
-      // Even if email confirmation is required, we can still show the subscription plans
-      // The user will complete the subscription flow and then confirm their email
-      return true;
+      return { success: true, requiresConfirmation };
     } catch (error) {
       console.error('=== SIGNUP CATCH ERROR ===');
       console.error('Error details:', {
@@ -315,7 +315,7 @@ export const useLawyerAuth = () => {
         name: error?.name || 'Unknown',
         stack: error?.stack || 'No stack trace'
       });
-      return false;
+      return { success: false, requiresConfirmation: false };
     }
   };
 

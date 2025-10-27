@@ -148,11 +148,19 @@ export default function UserAuthPage({ onBack, onAuthSuccess }: UserAuthPageProp
       }
 
       if (data.user) {
-        if (data.user.email_confirmed_at) {
+        // Check if email confirmation is required
+        const requiresConfirmation = !data.session;
+        
+        if (requiresConfirmation) {
+          // Email confirmation required - show message and don't log in
+          toast.success('¡Cuenta creada! Revisa tu email para confirmar tu cuenta antes de iniciar sesión.', {
+            duration: 6000
+          });
+          setActiveTab('login');
+        } else {
+          // Auto-confirmed (confirmation disabled in Supabase) - allow immediate access
           toast.success('¡Cuenta creada exitosamente! Puedes comenzar a usar la plataforma.');
           onAuthSuccess();
-        } else {
-          toast.success('¡Cuenta creada! Revisa tu email para confirmar tu cuenta.');
         }
       }
     } catch (error: any) {
