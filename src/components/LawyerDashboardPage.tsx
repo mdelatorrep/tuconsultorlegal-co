@@ -686,19 +686,6 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
     }
   };
 
-  // Show landing page if not authenticated as lawyer
-  if (!isAuthenticated) {
-    return <LawyerLandingPage onOpenChat={onOpenChat} />;
-  }
-
-  // Additional verification: ensure user is actually a lawyer
-  if (isAuthenticated && user && !user.canCreateAgents && !user.canCreateBlogs && !user.canUseAiTools) {
-    // This might be a regular user who somehow accessed the lawyer route
-    // Redirect them to appropriate landing page
-    console.warn('Non-lawyer user attempted to access lawyer dashboard');
-    return <LawyerLandingPage onOpenChat={onOpenChat} />;
-  }
-
   // Show loading if auth is still loading
   if (authLoading || onboardingLoading) {
     return (
@@ -711,6 +698,19 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
         </div>
       </div>
     );
+  }
+
+  // Show landing page if not authenticated as lawyer
+  if (!isAuthenticated) {
+    return <LawyerLandingPage onOpenChat={onOpenChat} />;
+  }
+
+  // Additional verification: ensure user is actually a lawyer
+  if (isAuthenticated && user && !user.canCreateAgents && !user.canCreateBlogs && !user.canUseAiTools) {
+    // This might be a regular user who somehow accessed the lawyer route
+    // Redirect them to appropriate landing page
+    console.warn('Non-lawyer user attempted to access lawyer dashboard');
+    return <LawyerLandingPage onOpenChat={onOpenChat} />;
   }
 
   // Sidebar menu configuration
