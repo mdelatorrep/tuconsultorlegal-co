@@ -1075,12 +1075,12 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
       </AlertDialog>
 
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background overflow-hidden">
+      <div className="min-h-screen flex w-full bg-background">
         <Sidebar 
           className={`${isMobile ? 'w-14' : 'w-64'} transition-all duration-300 border-r flex-shrink-0`}
           data-tour="lawyer-sidebar"
           collapsible={isMobile ? "icon" : "none"}
-          variant="sidebar"
+          variant="inset"
           side="left"
         >
           <SidebarContent>
