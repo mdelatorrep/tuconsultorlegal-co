@@ -341,17 +341,23 @@ export default function UserAuthPage({ onBack, onAuthSuccess }: UserAuthPageProp
                     <Label htmlFor="terms" className="text-sm leading-relaxed">
                       Acepto los{' '}
                       <a 
-                        href="/terminos" 
-                        target="_blank"
+                        href="#terminos" 
                         className="text-primary underline hover:text-primary/80"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          window.location.hash = 'terminos';
+                        }}
                       >
                         términos y condiciones
                       </a>
                       {' '}y la{' '}
                       <a 
-                        href="/privacidad" 
-                        target="_blank"
+                        href="#privacidad" 
                         className="text-primary underline hover:text-primary/80"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          window.location.hash = 'privacidad';
+                        }}
                       >
                         política de privacidad
                       </a>

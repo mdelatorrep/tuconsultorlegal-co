@@ -481,10 +481,12 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
                   >
                     Acepto la{' '}
                     <a 
-                      href="/privacidad" 
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      href="#privacidad" 
                       className="text-primary underline hover:text-primary/80 font-medium"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        window.location.hash = 'privacidad';
+                      }}
                     >
                       Política de Privacidad
                     </a>
@@ -507,19 +509,23 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
                   >
                     Acepto los{' '}
                     <a 
-                      href="/terminos" 
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      href="#terminos" 
                       className="text-primary underline hover:text-primary/80 font-medium"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        window.location.hash = 'terminos';
+                      }}
                     >
                       Términos y Condiciones
                     </a>
                     {' '}y la{' '}
                     <a 
-                      href="/propiedad-intelectual" 
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      href="#propiedad-intelectual" 
                       className="text-primary underline hover:text-primary/80 font-medium"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        window.location.hash = 'propiedad-intelectual';
+                      }}
                     >
                       Política de Propiedad Intelectual
                     </a>
