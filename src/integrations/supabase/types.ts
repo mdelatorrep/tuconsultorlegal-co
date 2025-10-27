@@ -2174,6 +2174,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_type_registry: {
+        Row: {
+          created_at: string | null
+          updated_at: string | null
+          user_id: string
+          user_type: string
+        }
+        Insert: {
+          created_at?: string | null
+          updated_at?: string | null
+          user_id: string
+          user_type: string
+        }
+        Update: {
+          created_at?: string | null
+          updated_at?: string | null
+          user_id?: string
+          user_type?: string
+        }
+        Relationships: []
+      }
       venue_spaces: {
         Row: {
           amenities: Json | null

@@ -25,28 +25,48 @@ export const useAuthTypeDetection = (): AuthTypeDetection => {
       }
 
       try {
-        // Check if user is a lawyer
-        const { data: lawyerProfile, error: lawyerError } = await supabase
-          .from('lawyer_profiles')
-          .select('*')
-          .eq('id', supabaseUser.id)
+        // CAPA 1: Verificar user_type_registry primero (más rápido y confiable)
+        const { data: registryData } = await supabase
+          .from('user_type_registry')
+          .select('user_type')
+          .eq('user_id', supabaseUser.id)
           .single();
 
-        if (lawyerProfile && !lawyerError) {
-          setUserType('lawyer');
-        } else {
-          // Check if user has a regular profile
-          const { data: userProfile } = await supabase
-            .from('user_profiles')
-            .select('*')
+        if (registryData) {
+          setUserType(registryData.user_type as UserType);
+          setLoading(false);
+          return;
+        }
+
+        // CAPA 2: Verificar metadata del usuario
+        const isLawyer = supabaseUser.user_metadata?.is_lawyer === true;
+
+        if (isLawyer) {
+          // Verificar que efectivamente tiene perfil de abogado
+          const { data: lawyerProfile } = await supabase
+            .from('lawyer_profiles')
+            .select('id')
             .eq('id', supabaseUser.id)
             .single();
 
-          setUserType(userProfile ? 'user' : 'guest');
+          if (lawyerProfile) {
+            setUserType('lawyer');
+            setLoading(false);
+            return;
+          }
         }
+
+        // CAPA 3: Verificar perfil de usuario regular
+        const { data: userProfile } = await supabase
+          .from('user_profiles')
+          .select('id')
+          .eq('id', supabaseUser.id)
+          .single();
+
+        setUserType(userProfile ? 'user' : 'guest');
       } catch (error) {
-        console.error('Error detecting user type:', error);
-        setUserType('user'); // Default to user if detection fails
+        console.error('[AUTH] Error detecting user type:', error);
+        setUserType('guest'); // Default to guest si hay error
       } finally {
         setLoading(false);
       }
