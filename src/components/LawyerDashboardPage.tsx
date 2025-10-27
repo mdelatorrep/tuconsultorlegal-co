@@ -905,7 +905,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
     }
   };
 
-  // If not dashboard view, show module content with sidebar
+  // If not dashboard view, show module content directly (modules already have their own sidebar)
   if (currentView !== 'dashboard') {
     return (
       <>
@@ -929,125 +929,8 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
           </AlertDialogContent>
         </AlertDialog>
 
-      <SidebarProvider>
-        <div className="min-h-screen flex w-full">
-          <Sidebar 
-            className={`${isMobile ? 'w-16 lg:w-64' : 'w-64'} transition-all duration-300`}
-            collapsible="icon"
-            variant={isMobile ? "floating" : "sidebar"}
-            side="left"
-          >
-            <SidebarContent>
-              {/* Header del Sidebar */}
-              <div className="p-4 border-b">
-                <h2 className={`text-lg font-semibold text-foreground ${isMobile ? 'hidden lg:block' : ''}`}>
-                  Portal Abogados
-                </h2>
-                <p className={`text-sm text-muted-foreground ${isMobile ? 'hidden lg:block' : ''}`}>
-                  {user?.name}
-                </p>
-              </div>
-
-              {/* Menu Items */}
-              {menuItems.map((section, index) => (
-                <SidebarGroup key={index}>
-                  <SidebarGroupLabel className={isMobile ? 'hidden lg:block' : ''}>
-                    {section.title}
-                  </SidebarGroupLabel>
-                  <SidebarGroupContent>
-                    <SidebarMenu>
-                      {section.items.map((item) => (
-                        <SidebarMenuItem key={item.view}>
-                          <SidebarMenuButton 
-                            onClick={() => setCurrentView(item.view)}
-                            className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                              currentView === item.view 
-                                ? 'bg-primary text-primary-foreground' 
-                                : 'hover:bg-muted'
-                            } ${isMobile ? 'justify-center lg:justify-start' : ''}`}
-                            title={isMobile ? item.title : undefined}
-                          >
-                            <item.icon className="h-4 w-4 flex-shrink-0" />
-                            <span className={`flex items-center gap-2 ${isMobile ? 'hidden lg:flex' : ''}`}>
-                              {item.title}
-                              {item.isPremium && (
-                                <>
-                                  <Lock className="h-3 w-3 text-amber-500" />
-                                  <Crown className="h-3 w-3 text-amber-500" />
-                                </>
-                              )}
-                            </span>
-                            {/* Mobile premium indicators */}
-                            {isMobile && item.isPremium && (
-                              <div className="absolute top-1 right-1 lg:hidden">
-                                <Crown className="h-2 w-2 text-amber-500" />
-                              </div>
-                            )}
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
-                      ))}
-                    </SidebarMenu>
-                  </SidebarGroupContent>
-                </SidebarGroup>
-              ))}
-
-              {/* Logout Button */}
-              <div className="p-4 border-t mt-auto space-y-2">
-                <div className={`space-y-2 ${isMobile ? 'hidden lg:flex lg:flex-col' : 'flex flex-col'}`}>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-full justify-start text-xs"
-                    onClick={() => setShowChangeEmailDialog(true)}
-                  >
-                    <Mail className="h-3 w-3 mr-2" />
-                    Cambiar Email
-                  </Button>
-                  
-                  <PasswordResetDialog
-                    trigger={
-                      <Button variant="outline" size="sm" className="w-full justify-start text-xs">
-                        <Lock className="h-3 w-3 mr-2" />
-                        Cambiar Contraseña
-                      </Button>
-                    }
-                  />
-                </div>
-                
-                <Button
-                  onClick={() => {
-                    console.log('=== LOGOUT BUTTON CLICKED ===');
-                    console.log('User:', user);
-                    console.log('IsAuthenticated:', isAuthenticated);
-                    console.log('About to call logout function...');
-                    logout();
-                  }}
-                  variant="outline"
-                  className={`w-full flex items-center gap-2 ${isMobile ? 'justify-center lg:justify-start px-2 lg:px-4' : ''}`}
-                  title={isMobile ? 'Cerrar Sesión' : undefined}
-                >
-                  <LogOut className="h-4 w-4" />
-                  <span className={isMobile ? 'hidden lg:inline' : ''}>Cerrar Sesión</span>
-                </Button>
-              </div>
-            </SidebarContent>
-          </Sidebar>
-
-          <main className="flex-1 min-w-0">
-            <header className="h-12 lg:h-14 flex items-center border-b px-2 lg:px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-              <SidebarTrigger className="mr-2 lg:mr-4" />
-              <h1 className="text-base lg:text-lg font-semibold truncate">
-                {menuItems
-                  .flatMap((section: any) => section.items)
-                  .find((item: any) => item.view === currentView)?.title || 'Panel'}
-              </h1>
-            </header>
-            <div className="flex-1 overflow-hidden">
-              {renderModuleContent()}
-            </div>
-          </main>
-        </div>
-      </SidebarProvider>
+        {/* Modules already have their own SidebarProvider and UnifiedSidebar */}
+        {renderModuleContent()}
       </>
     );
   }
