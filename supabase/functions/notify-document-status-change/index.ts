@@ -55,10 +55,16 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Obtener datos del documento
+    // Obtener datos del documento incluyendo información del abogado creador
     const { data: document, error: docError } = await supabaseClient
       .from('document_tokens')
-      .select('*')
+      .select(`
+        *,
+        legal_agents!legal_agent_id (
+          id,
+          created_by
+        )
+      `)
       .eq('id', document_token_id)
       .single();
 
@@ -174,8 +180,70 @@ Deno.serve(async (req) => {
 
     console.log(`Notification sent successfully to ${recipientEmail}`);
 
+    // Enviar notificación adicional al abogado creador si existe
+    let lawyerNotificationSent = false;
+    if (document.legal_agents?.created_by) {
+      try {
+        const { data: creatorLawyer } = await supabaseClient
+          .from('lawyer_profiles')
+          .select('email, full_name')
+          .eq('id', document.legal_agents.created_by)
+          .single();
+
+        if (creatorLawyer) {
+          const lawyerVariables: Record<string, any> = {
+            ...variables,
+            lawyer_name: creatorLawyer.full_name,
+            user_name: document.user_name || 'Usuario',
+            user_email: document.user_email || '',
+            document_type: document.document_type,
+            tracking_code: document.token,
+            created_at: new Date(document.created_at).toLocaleDateString('es-CO'),
+            status: new_status
+          };
+
+          // Usar una plantilla genérica o la misma para el abogado
+          const lawyerSubject = `Nuevo documento: ${document.document_type}`;
+          const lawyerHtml = `
+            <h2>Documento ${new_status}</h2>
+            <p>Hola ${creatorLawyer.full_name},</p>
+            <p>Te informamos que un documento de tu autoría ha cambiado de estado:</p>
+            <ul>
+              <li><strong>Tipo de documento:</strong> ${document.document_type}</li>
+              <li><strong>Usuario:</strong> ${document.user_name} (${document.user_email})</li>
+              <li><strong>Estado:</strong> ${new_status}</li>
+              <li><strong>Código:</strong> ${document.token}</li>
+              <li><strong>Fecha:</strong> ${lawyerVariables.created_at}</li>
+            </ul>
+            <p><a href="${lawyerVariables.dashboard_url}">Ver en el dashboard</a></p>
+          `;
+
+          await supabaseClient.functions.invoke('send-email', {
+            body: {
+              to: creatorLawyer.email,
+              subject: lawyerSubject,
+              html: lawyerHtml,
+              template_key: 'lawyer_document_notification',
+              document_token_id,
+              recipient_type: 'lawyer'
+            }
+          });
+
+          lawyerNotificationSent = true;
+          console.log(`Notification sent to creator lawyer: ${creatorLawyer.email}`);
+        }
+      } catch (lawyerError) {
+        console.error('Error sending notification to creator lawyer:', lawyerError);
+        // No fallar si no se puede notificar al abogado
+      }
+    }
+
     return new Response(
-      JSON.stringify({ success: true, message: 'Notification sent successfully' }),
+      JSON.stringify({ 
+        success: true, 
+        message: 'Notification sent successfully',
+        lawyer_notified: lawyerNotificationSent
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {

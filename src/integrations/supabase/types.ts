@@ -1003,6 +1003,7 @@ export type Database = {
           id: string
           lawyer_comments: string | null
           lawyer_comments_date: string | null
+          legal_agent_id: string | null
           price: number
           reviewed_by_lawyer_id: string | null
           reviewed_by_lawyer_name: string | null
@@ -1026,6 +1027,7 @@ export type Database = {
           id?: string
           lawyer_comments?: string | null
           lawyer_comments_date?: string | null
+          legal_agent_id?: string | null
           price: number
           reviewed_by_lawyer_id?: string | null
           reviewed_by_lawyer_name?: string | null
@@ -1049,6 +1051,7 @@ export type Database = {
           id?: string
           lawyer_comments?: string | null
           lawyer_comments_date?: string | null
+          legal_agent_id?: string | null
           price?: number
           reviewed_by_lawyer_id?: string | null
           reviewed_by_lawyer_name?: string | null
@@ -1065,6 +1068,20 @@ export type Database = {
           user_observations?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "document_tokens_legal_agent_id_fkey"
+            columns: ["legal_agent_id"]
+            isOneToOne: false
+            referencedRelation: "legal_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_tokens_legal_agent_id_fkey"
+            columns: ["legal_agent_id"]
+            isOneToOne: false
+            referencedRelation: "openai_agent_analytics"
+            referencedColumns: ["legal_agent_id"]
+          },
           {
             foreignKeyName: "document_tokens_reviewed_by_lawyer_id_fkey"
             columns: ["reviewed_by_lawyer_id"]

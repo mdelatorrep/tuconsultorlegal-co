@@ -721,7 +721,8 @@ ${userContextInfo}`;
           sla_hours: agent.sla_hours || 4,
           collected_data: { ...collectedData, ...processedConversation },
           placeholder_fields: agent.placeholder_fields,
-          price: agent.price
+          price: agent.price,
+          legal_agent_id: agent.id
         }
       });
 
