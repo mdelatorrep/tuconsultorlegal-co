@@ -252,60 +252,64 @@ export const useLawyerAuth = () => {
       console.log('User created with ID:', data.user.id);
       console.log('Session present:', !!data.session, '- Email confirmation required:', requiresConfirmation);
       
-      // Send welcome email (non-blocking) using existing send-email infrastructure
-      setTimeout(async () => {
-        try {
-          const baseUrl = window.location.origin;
-          const dashboardUrl = `${baseUrl}/#abogados`;
-          const currentYear = new Date().getFullYear().toString();
-          
-          // Fetch template and prepare email
-          const { data: template, error: templateError } = await supabase
-            .from('email_templates')
-            .select('*')
-            .eq('template_key', 'lawyer_welcome')
-            .eq('is_active', true)
-            .single();
-          
-          if (templateError || !template) {
-            console.error('Error fetching welcome email template:', templateError);
-            return;
-          }
-          
-          // Replace variables in template
-          const variables: Record<string, string> = {
-            lawyer_name: fullName,
-            dashboard_url: dashboardUrl,
-            current_year: currentYear,
-            site_url: baseUrl
-          };
-          
-          let subject = template.subject;
-          let html = template.html_body;
-          
-          Object.entries(variables).forEach(([key, value]) => {
-            const regex = new RegExp(`{{${key}}}`, 'g');
-            subject = subject.replace(regex, value);
-            html = html.replace(regex, value);
-          });
-          
-          // Send email via send-email function
-          await supabase.functions.invoke('send-email', {
-            body: {
-              to: email.trim().toLowerCase(),
-              subject,
-              html,
-              template_key: 'lawyer_welcome',
-              recipient_type: 'lawyer'
+      // Only send welcome email if email confirmation is NOT required (i.e., if there's a session)
+      if (!requiresConfirmation) {
+        setTimeout(async () => {
+          try {
+            const baseUrl = window.location.origin;
+            const dashboardUrl = `${baseUrl}/#abogados`;
+            const currentYear = new Date().getFullYear().toString();
+            
+            // Fetch template and prepare email
+            const { data: template, error: templateError } = await supabase
+              .from('email_templates')
+              .select('*')
+              .eq('template_key', 'lawyer_welcome')
+              .eq('is_active', true)
+              .single();
+            
+            if (templateError || !template) {
+              console.error('Error fetching welcome email template:', templateError);
+              return;
             }
-          });
-          
-          console.log('Welcome email sent successfully');
-        } catch (emailError) {
-          console.error('Error sending welcome email:', emailError);
-          // Don't block signup if email fails
-        }
-      }, 0);
+            
+            // Replace variables in template
+            const variables: Record<string, string> = {
+              lawyer_name: fullName,
+              dashboard_url: dashboardUrl,
+              current_year: currentYear,
+              site_url: baseUrl
+            };
+            
+            let subject = template.subject;
+            let html = template.html_body;
+            
+            Object.entries(variables).forEach(([key, value]) => {
+              const regex = new RegExp(`{{${key}}}`, 'g');
+              subject = subject.replace(regex, value);
+              html = html.replace(regex, value);
+            });
+            
+            // Send email via send-email function
+            await supabase.functions.invoke('send-email', {
+              body: {
+                to: email.trim().toLowerCase(),
+                subject,
+                html,
+                template_key: 'lawyer_welcome',
+                recipient_type: 'lawyer'
+              }
+            });
+            
+            console.log('Welcome email sent successfully');
+          } catch (emailError) {
+            console.error('Error sending welcome email:', emailError);
+            // Don't block signup if email fails
+          }
+        }, 0);
+      } else {
+        console.log('Email confirmation required - welcome email will not be sent until user confirms');
+      }
       
       return { success: true, requiresConfirmation };
     } catch (error) {
