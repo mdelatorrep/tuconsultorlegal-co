@@ -9,8 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { Menu, X, MessageCircle, FileText, Scale, Users, Phone, Newspaper, DollarSign, Shield, FileText as DocumentIcon, Gavel, User, LogIn, MoreHorizontal } from "lucide-react";
-import { useUserAuth } from "@/hooks/useUserAuth";
-import { useLawyerAuthContext } from "@/components/LawyerAuthProvider";
+import { useAuthTypeDetection } from "@/hooks/useAuthTypeDetection";
 import logoImage from "/logo-tcl.png";
 interface HeaderProps {
   currentPage: string;
@@ -23,26 +22,10 @@ export default function Header({
   onOpenChat
 }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const {
-    isAuthenticated: userAuthenticated,
-    user: regularUser
-  } = useUserAuth();
   
-  // Try to get lawyer auth context if available
-  let lawyerAuthenticated = false;
-  let lawyerUser = null;
-  try {
-    const lawyerAuth = useLawyerAuthContext();
-    lawyerAuthenticated = lawyerAuth.isAuthenticated;
-    lawyerUser = lawyerAuth.user;
-  } catch (error) {
-    // LawyerAuthProvider not available in this context
-  }
-  
-  // Determine authentication state and user type
-  const isAuthenticated = userAuthenticated || lawyerAuthenticated;
-  const isLawyer = lawyerAuthenticated && lawyerUser;
-  const user = isLawyer ? lawyerUser : regularUser;
+  // Use the improved auth type detection
+  const { userType, isAuthenticated, user, loading } = useAuthTypeDetection();
+  const isLawyer = userType === 'lawyer';
   const navItems = [{
     id: "blog",
     label: "Recursos",
