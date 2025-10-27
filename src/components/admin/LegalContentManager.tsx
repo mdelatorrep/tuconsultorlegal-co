@@ -4,10 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { FileText, Save, RefreshCw } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
 interface LegalContent {
   id: string;
@@ -23,6 +24,27 @@ export function LegalContentManager() {
   const [saving, setSaving] = useState(false);
   const [selectedPage, setSelectedPage] = useState<string>('terms-and-conditions');
   const [editingContent, setEditingContent] = useState<LegalContent | null>(null);
+
+  // Configuración del editor rico
+  const modules = {
+    toolbar: [
+      [{ 'header': [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'indent': '-1'}, { 'indent': '+1' }],
+      ['link'],
+      [{ 'color': [] }, { 'background': [] }],
+      [{ 'align': [] }],
+      ['clean']
+    ],
+  };
+
+  const formats = [
+    'header',
+    'bold', 'italic', 'underline', 'strike',
+    'list', 'bullet', 'indent',
+    'link', 'color', 'background', 'align'
+  ];
 
   useEffect(() => {
     loadContents();
@@ -190,28 +212,22 @@ export function LegalContentManager() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="content">Contenido (HTML)</Label>
-                      <Textarea
-                        id="content"
-                        value={editingContent.content}
-                        onChange={(e) =>
-                          setEditingContent({ ...editingContent, content: e.target.value })
-                        }
-                        placeholder="Contenido en formato HTML..."
-                        className="min-h-[400px] font-mono text-sm"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Puedes usar HTML para dar formato al contenido. Etiquetas soportadas: h1, h2,
-                        h3, p, ul, li, strong, em, a, br
+                      <Label htmlFor="content">Contenido</Label>
+                      <div className="border rounded-md">
+                        <ReactQuill
+                          theme="snow"
+                          value={editingContent.content}
+                          onChange={(value) =>
+                            setEditingContent({ ...editingContent, content: value })
+                          }
+                          modules={modules}
+                          formats={formats}
+                          className="h-96"
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-14">
+                        Utiliza el editor para dar formato al contenido. Los cambios se guardarán en HTML.
                       </p>
-                    </div>
-
-                    <div className="bg-muted p-4 rounded-lg">
-                      <h4 className="font-semibold mb-2">Vista Previa:</h4>
-                      <div
-                        className="prose prose-sm max-w-none"
-                        dangerouslySetInnerHTML={{ __html: editingContent.content }}
-                      />
                     </div>
 
                     <div className="flex justify-between items-center pt-4">
