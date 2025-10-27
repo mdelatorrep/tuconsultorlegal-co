@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,10 +29,36 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
   const [errorMessage, setErrorMessage] = useState('');
   const [dataProcessingConsent, setDataProcessingConsent] = useState(false);
   const [intellectualPropertyConsent, setIntellectualPropertyConsent] = useState(false);
+  const [showEmailConfirmedMessage, setShowEmailConfirmedMessage] = useState(false);
   
   const { loginWithEmailAndPassword, signUpWithEmailAndPassword, resetPassword, updatePassword } = useLawyerAuth();
   const { toast } = useToast();
   const { createSubscription } = useSubscription();
+
+  // Detectar confirmación de email al cargar el componente
+  useEffect(() => {
+    const hash = window.location.hash;
+    
+    // Verificar si la URL contiene parámetros de confirmación de email
+    if (hash.includes('access_token=') && hash.includes('type=signup')) {
+      console.log('Email confirmation detected');
+      setShowEmailConfirmedMessage(true);
+      setViewMode('login');
+      
+      // Mostrar toast de confirmación
+      toast({
+        title: "¡Email confirmado exitosamente!",
+        description: "Tu cuenta ha sido activada. Ahora puedes iniciar sesión.",
+        duration: 8000,
+      });
+      
+      // Limpiar la URL después de 2 segundos
+      setTimeout(() => {
+        window.history.replaceState({}, document.title, '/#abogados');
+        setShowEmailConfirmedMessage(false);
+      }, 2000);
+    }
+  }, [toast]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -330,6 +356,15 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
               <h3 className="text-2xl font-bold text-center mb-2">{getTitle()}</h3>
               <p className="text-muted-foreground text-center text-sm">{getDescription()}</p>
             </div>
+
+            {showEmailConfirmedMessage && (
+              <Alert className="mb-4 bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-900">
+                <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                <AlertDescription className="text-green-800 dark:text-green-300">
+                  ¡Email confirmado exitosamente! Tu cuenta ha sido activada. Ahora puedes iniciar sesión con tus credenciales.
+                </AlertDescription>
+              </Alert>
+            )}
 
             {errorMessage && (
               <Alert variant="destructive" className="mb-4">
