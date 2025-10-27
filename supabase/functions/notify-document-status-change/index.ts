@@ -135,9 +135,9 @@ Deno.serve(async (req) => {
     }
 
     // Preparar variables para la plantilla
-    const baseUrl = Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '').replace('https://', '') || '';
-    const trackingUrl = `https://${baseUrl}.lovable.app/#documento?code=${encodeURIComponent(document.token)}`;
-    const dashboardUrl = `https://${baseUrl}.lovable.app/#admin`;
+    const productionUrl = 'https://tuconsultorlegal.co';
+    const trackingUrl = `${productionUrl}/#documento?code=${encodeURIComponent(document.token)}`;
+    const dashboardUrl = `${productionUrl}/#admin`;
 
     const variables: Record<string, any> = {
       user_name: document.user_name || 'Usuario',
