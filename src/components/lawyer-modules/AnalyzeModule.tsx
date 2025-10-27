@@ -132,12 +132,7 @@ Tamaño: ${(file.size / 1024).toFixed(2)} KB`;
       const analysisResult: AnalysisResult = {
         fileName: file.name,
         documentType: data.documentType || 'Documento Legal',
-        clauses: data.clauses || [{
-          name: 'Análisis General',
-          content: 'Documento procesado correctamente',
-          riskLevel: 'medium' as const,
-          recommendation: 'Revisar contenido detalladamente'
-        }],
+        clauses: data.clauses || [],
         risks: data.risks || [{
           type: 'Revisión Requerida',
           description: 'El documento requiere revisión manual adicional',
@@ -436,26 +431,40 @@ Tamaño: ${(file.size / 1024).toFixed(2)} KB`;
               <CardTitle>Análisis de Cláusulas</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {analysis.clauses.map((clause, index) => (
-                  <div key={index} className="border rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold">{clause.name}</h4>
-                      {getRiskBadge(clause.riskLevel)}
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      {clause.content}
-                    </p>
-                    {clause.recommendation && (
-                      <div className="bg-yellow-50 border border-yellow-200 rounded p-3 mt-2">
-                        <p className="text-sm">
-                          <strong>Recomendación:</strong> {clause.recommendation}
-                        </p>
-                      </div>
-                    )}
+              {analysis.clauses.length === 0 ? (
+                <div className="text-center py-8 px-4">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-orange-100 mb-4">
+                    <FileText className="h-8 w-8 text-orange-600" />
                   </div>
-                ))}
-              </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    No se encontraron cláusulas
+                  </h3>
+                  <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                    El documento analizado no contiene cláusulas identificables. Esto puede deberse a que el documento tiene un formato no estándar o no contiene secciones contractuales tradicionales.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {analysis.clauses.map((clause, index) => (
+                    <div key={index} className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="font-semibold">{clause.name}</h4>
+                        {getRiskBadge(clause.riskLevel)}
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        {clause.content}
+                      </p>
+                      {clause.recommendation && (
+                        <div className="bg-yellow-50 border border-yellow-200 rounded p-3 mt-2">
+                          <p className="text-sm">
+                            <strong>Recomendación:</strong> {clause.recommendation}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
