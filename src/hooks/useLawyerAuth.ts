@@ -39,8 +39,9 @@ export const useLawyerAuth = () => {
       } else if (event === 'SIGNED_IN' && session?.user) {
         setSession(session);
         // Defer any Supabase calls to avoid blocking the callback
+        // Validate subscription ONLY on sign in
         setTimeout(() => {
-          fetchLawyerProfile(session.user);
+          fetchLawyerProfile(session.user, true);
         }, 0);
         setIsLoading(false);
       } else if (event === 'TOKEN_REFRESHED' && session) {
@@ -54,10 +55,12 @@ export const useLawyerAuth = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchLawyerProfile = async (authUser: User) => {
+  const fetchLawyerProfile = async (authUser: User, validateSub: boolean = false) => {
     try {
-      // First, validate subscription and update permissions
-      await validateSubscriptionStatus(authUser);
+      // Only validate subscription when explicitly requested
+      if (validateSub) {
+        await validateSubscriptionStatus(authUser);
+      }
       
       const { data: profile, error } = await supabase
         .from('lawyer_profiles')

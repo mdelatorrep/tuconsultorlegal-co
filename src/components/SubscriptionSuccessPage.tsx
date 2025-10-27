@@ -4,32 +4,40 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, ArrowRight, Download, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useLawyerAuth } from '@/hooks/useLawyerAuth';
 
 export const SubscriptionSuccessPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
+  const { validateAndRefreshSubscription } = useLawyerAuth();
 
   const subscriptionId = searchParams.get('subscription_id');
   const planName = searchParams.get('plan_name');
   const externalId = searchParams.get('external_id');
 
   useEffect(() => {
+    // Validate subscription ONCE when arriving from successful payment
+    const validatePayment = async () => {
+      try {
+        await validateAndRefreshSubscription();
+      } catch (error) {
+        console.error('Error validating subscription on success page:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    validatePayment();
+
     // Show success toast
     toast({
       title: "¡Suscripción Exitosa!",
       description: `Tu suscripción al ${planName || 'plan seleccionado'} ha sido activada correctamente.`,
       variant: "default"
     });
-
-    // Simulate loading for better UX
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, [planName, toast]);
+  }, []); // Empty deps - only run once on mount
 
   const handleGoToDashboard = () => {
     navigate('/#abogados');
