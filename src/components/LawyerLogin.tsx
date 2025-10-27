@@ -464,73 +464,67 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
                 />
               </div>
 
-              {/* Consentimientos de Datos y Propiedad Intelectual */}
-              <div className="space-y-4 pt-4 border-t border-gray-200">
-                <div className="flex items-start space-x-3">
+              {/* Consentimientos Legales */}
+              <div className="space-y-3 pt-4 border-t">
+                {/* Política de Privacidad */}
+                <div className="flex items-start space-x-2">
                   <Checkbox
                     id="dataProcessingConsent"
                     checked={dataProcessingConsent}
                     onCheckedChange={(checked) => setDataProcessingConsent(checked as boolean)}
                     disabled={isLoading}
-                    className="mt-1"
+                    className="mt-0.5"
                   />
-                  <div className="space-y-1">
-                    <Label 
-                      htmlFor="dataProcessingConsent" 
-                      className="text-sm font-medium cursor-pointer"
+                  <Label 
+                    htmlFor="dataProcessingConsent" 
+                    className="text-sm leading-relaxed cursor-pointer"
+                  >
+                    Acepto la{' '}
+                    <a 
+                      href="/privacidad" 
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary underline hover:text-primary/80 font-medium"
                     >
-                      Tratamiento de Datos Personales *
-                    </Label>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      Acepto el tratamiento de mis datos personales conforme a la Ley 1581 de 2012 (Ley de Habeas Data en Colombia) y autorizo a tuconsultorlegal.co para recopilar, almacenar, usar y circular mi información personal para los fines relacionados con el servicio de la plataforma. 
-                      <a 
-                        href="/privacidad" 
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline ml-1"
-                      >
-                        Ver Política de Privacidad
-                      </a>
-                    </p>
-                  </div>
+                      Política de Privacidad
+                    </a>
+                    {' '}y el tratamiento de datos personales conforme a la Ley 1581 de 2012 *
+                  </Label>
                 </div>
 
-                <div className="flex items-start space-x-3">
+                {/* Términos y Condiciones */}
+                <div className="flex items-start space-x-2">
                   <Checkbox
-                    id="intellectualPropertyConsent"
+                    id="termsConsent"
                     checked={intellectualPropertyConsent}
                     onCheckedChange={(checked) => setIntellectualPropertyConsent(checked as boolean)}
                     disabled={isLoading}
-                    className="mt-1"
+                    className="mt-0.5"
                   />
-                  <div className="space-y-1">
-                    <Label 
-                      htmlFor="intellectualPropertyConsent" 
-                      className="text-sm font-medium cursor-pointer"
+                  <Label 
+                    htmlFor="termsConsent" 
+                    className="text-sm leading-relaxed cursor-pointer"
+                  >
+                    Acepto los{' '}
+                    <a 
+                      href="/terminos" 
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary underline hover:text-primary/80 font-medium"
                     >
-                      Propiedad Intelectual *
-                    </Label>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      Reconozco y acepto que todos los contenidos, metodologías, algoritmos y tecnologías desarrolladas en la plataforma son propiedad exclusiva de tuconsultorlegal.co, conforme a la legislación colombiana de propiedad intelectual y derechos de autor.
-                      <a 
-                        href="/terminos" 
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline ml-1"
-                      >
-                        Ver Términos y Condiciones
-                      </a>
-                      {' '}y{' '}
-                      <a 
-                        href="/propiedad-intelectual" 
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline"
-                      >
-                        Propiedad Intelectual
-                      </a>
-                    </p>
-                  </div>
+                      Términos y Condiciones
+                    </a>
+                    {' '}y la{' '}
+                    <a 
+                      href="/propiedad-intelectual" 
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary underline hover:text-primary/80 font-medium"
+                    >
+                      Política de Propiedad Intelectual
+                    </a>
+                    {' '}*
+                  </Label>
                 </div>
               </div>
               
