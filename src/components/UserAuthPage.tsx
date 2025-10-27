@@ -4,9 +4,10 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { Alert, AlertDescription } from './ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { ArrowLeft, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Mail, Lock, User, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { Checkbox } from './ui/checkbox';
 import { PasswordResetDialog } from './PasswordResetDialog';
 import { MagicLinkDialog } from './MagicLinkDialog';
@@ -20,6 +21,7 @@ export default function UserAuthPage({ onBack, onAuthSuccess }: UserAuthPageProp
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [activeTab, setActiveTab] = useState('login');
+  const [showEmailConfirmedMessage, setShowEmailConfirmedMessage] = useState(false);
   
   // Form data
   const [email, setEmail] = useState('');
@@ -37,6 +39,27 @@ export default function UserAuthPage({ onBack, onAuthSuccess }: UserAuthPageProp
       }
     };
     checkAuth();
+    
+    // Detectar confirmación de email al cargar el componente
+    const hash = window.location.hash;
+    
+    // Verificar si la URL contiene parámetros de confirmación de email
+    if (hash.includes('access_token=') && hash.includes('type=signup')) {
+      console.log('Email confirmation detected for user');
+      setShowEmailConfirmedMessage(true);
+      setActiveTab('login');
+      
+      // Mostrar toast de confirmación
+      toast.success('¡Email confirmado exitosamente! Tu cuenta ha sido activada. Ahora puedes iniciar sesión.', {
+        duration: 8000,
+      });
+      
+      // Limpiar la URL después de 2 segundos
+      setTimeout(() => {
+        window.history.replaceState({}, document.title, '/');
+        setShowEmailConfirmedMessage(false);
+      }, 2000);
+    }
   }, [onAuthSuccess]);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -196,6 +219,15 @@ export default function UserAuthPage({ onBack, onAuthSuccess }: UserAuthPageProp
               </TabsList>
 
               <TabsContent value="login" className="space-y-4 mt-6">
+                {showEmailConfirmedMessage && (
+                  <Alert className="mb-4 bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-900">
+                    <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    <AlertDescription className="text-green-800 dark:text-green-300">
+                      ¡Email confirmado exitosamente! Tu cuenta ha sido activada. Ahora puedes iniciar sesión con tus credenciales.
+                    </AlertDescription>
+                  </Alert>
+                )}
+                
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="login-email">Correo electrónico</Label>
