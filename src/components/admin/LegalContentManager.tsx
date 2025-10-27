@@ -122,6 +122,38 @@ export function LegalContentManager() {
     );
   }
 
+  // Si no hay contenido después de cargar, mostrar botón de inicialización
+  if (contents.length === 0) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              Gestión de Contenido Legal
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col items-center justify-center p-12 text-center space-y-4">
+              <FileText className="w-16 h-16 text-muted-foreground" />
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold">No hay contenido legal configurado</h3>
+                <p className="text-sm text-muted-foreground max-w-md">
+                  Inicializa el contenido legal para comenzar a editar las páginas de Términos y Condiciones, 
+                  Política de Privacidad y Propiedad Intelectual.
+                </p>
+              </div>
+              <Button onClick={initializeContent} size="lg">
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Inicializar Contenido Legal
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <Card>
