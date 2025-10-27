@@ -27,10 +27,12 @@ import { LogRocketProvider } from "@/components/LogRocketProvider";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { useUserAuth } from "@/hooks/useUserAuth";
+import { useAuthTypeDetection } from "@/hooks/useAuthTypeDetection";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function Index() {
   const { user, loading: authLoading, isAuthenticated } = useUserAuth();
+  const { userType, loading: userTypeLoading } = useAuthTypeDetection();
   const [currentPage, setCurrentPage] = useState("home");
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [documentToken, setDocumentToken] = useState<string | null>(null);
@@ -148,9 +150,9 @@ export default function Index() {
 
   const handleAuthSuccess = () => {
     setShowUserAuth(false);
-    setShowUserDashboard(true);
     setShowUserTypeSelector(false);
     setSelectedUserType(null);
+    // Don't set showUserDashboard yet - let the effect handle it based on userType
   };
 
   const handleBackFromAuth = () => {
@@ -182,8 +184,23 @@ export default function Index() {
     setCurrentPage("home");
   };
 
+  // Auto-redirect authenticated users to their correct dashboard
+  useEffect(() => {
+    if (!authLoading && !userTypeLoading && isAuthenticated && userType) {
+      // If user is authenticated and is a lawyer, redirect to lawyer dashboard
+      if (userType === 'lawyer' && currentPage !== 'abogados' && !showUserDashboard) {
+        console.log('Lawyer detected, redirecting to lawyer dashboard');
+        handleNavigate('abogados');
+      } 
+      // If user is authenticated and is a regular user, show user dashboard when requested
+      else if (userType === 'user' && showUserDashboard === false && currentPage === 'user-dashboard') {
+        setShowUserDashboard(true);
+      }
+    }
+  }, [authLoading, userTypeLoading, isAuthenticated, userType, currentPage, showUserDashboard]);
+
   // Only show loading for protected routes
-  if (authLoading && (showUserDashboard || currentPage === "abogados")) {
+  if ((authLoading || userTypeLoading) && (showUserDashboard || currentPage === "abogados")) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
