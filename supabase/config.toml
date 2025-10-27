@@ -3,9 +3,6 @@ project_id = "tkaezookvtpulfpaffes"
 [functions.validate-user-type]
 verify_jwt = false
 
-[functions.save-agent-draft]
-verify_jwt = false
-
 [functions.delete-agent-draft]
 verify_jwt = false
 
@@ -21,7 +18,6 @@ verify_jwt = false
 [functions.create-document-token]
 verify_jwt = false
 
-
 [functions.track-pricing-click]
 verify_jwt = false
 
@@ -29,9 +25,6 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.create-payment-config]
-verify_jwt = false
-
-[functions.generate-sitemap]
 verify_jwt = false
 
 [functions.ai-training-validator]
