@@ -1,8 +1,9 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Upload, FileText, AlertTriangle, CheckCircle, Eye, Loader2, Sparkles, Shield, TrendingUp, Clock, Scan, Target } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Upload, FileText, AlertTriangle, CheckCircle, Eye, Loader2, Sparkles, Shield, TrendingUp, Clock, Scan, Target, History } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -36,8 +37,42 @@ interface AnalysisResult {
 export default function AnalyzeModule({ user, currentView, onViewChange, onLogout }: AnalyzeModuleProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
+  const [analysisHistory, setAnalysisHistory] = useState<AnalysisResult[]>([]);
+  const [activeTab, setActiveTab] = useState("analyze");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  // Load analysis history on mount
+  useEffect(() => {
+    loadAnalysisHistory();
+  }, [user.id]);
+
+  const loadAnalysisHistory = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('legal_tools_results')
+        .select('*')
+        .eq('lawyer_id', user.id)
+        .eq('tool_type', 'analysis')
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (error) throw error;
+
+      const history = data?.map((item: any) => ({
+        fileName: item.input_data?.fileName || 'Documento',
+        documentType: (item.output_data as any)?.documentType || 'Documento Legal',
+        clauses: (item.output_data as any)?.clauses || [],
+        risks: (item.output_data as any)?.risks || [],
+        recommendations: (item.output_data as any)?.recommendations || [],
+        timestamp: item.created_at
+      })) || [];
+
+      setAnalysisHistory(history);
+    } catch (error) {
+      console.error('Error loading analysis history:', error);
+    }
+  };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -173,6 +208,7 @@ Tamaño: ${(file.size / 1024).toFixed(2)} KB`;
       }
 
       setAnalysis(analysisResult);
+      loadAnalysisHistory(); // Reload history
       
       toast({
         title: "Análisis completado",
@@ -262,8 +298,20 @@ Tamaño: ${(file.size / 1024).toFixed(2)} KB`;
 
           <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 lg:py-8">
             <div className="max-w-7xl mx-auto">
-              <div className="space-y-4 lg:space-y-8">
-                {/* Hero Section */}
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+                <TabsList className="grid w-full max-w-md grid-cols-2">
+                  <TabsTrigger value="analyze" className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    Nuevo Análisis
+                  </TabsTrigger>
+                  <TabsTrigger value="history" className="flex items-center gap-2">
+                    <History className="h-4 w-4" />
+                    Historial ({analysisHistory.length})
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="analyze" className="space-y-4 lg:space-y-8">
+                 {/* Hero Section */}
                 <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-orange-500/10 via-orange-500/5 to-transparent border border-orange-500/20 p-8">
                   <div className="absolute inset-0 bg-grid-pattern opacity-10"></div>
                   <div className="relative">
@@ -515,7 +563,84 @@ Tamaño: ${(file.size / 1024).toFixed(2)} KB`;
                     </CardContent>
                   </Card>
                 )}
-              </div>
+                </TabsContent>
+
+                <TabsContent value="history" className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Historial de Análisis</CardTitle>
+                      <CardDescription>
+                        Revisa tus análisis de documentos previos
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {analysisHistory.length === 0 ? (
+                        <div className="text-center py-12">
+                          <Eye className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                          <h3 className="text-lg font-semibold mb-2">No hay análisis previos</h3>
+                          <p className="text-muted-foreground">
+                            Los análisis de documentos aparecerán aquí
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {analysisHistory.map((item, index) => (
+                            <Card key={index}>
+                              <CardHeader>
+                                <div className="flex items-start justify-between">
+                                  <div>
+                                    <CardTitle className="text-lg">{item.fileName}</CardTitle>
+                                    <CardDescription>
+                                      {item.documentType} • {new Date(item.timestamp).toLocaleDateString()}
+                                    </CardDescription>
+                                  </div>
+                                </div>
+                              </CardHeader>
+                              <CardContent className="space-y-4">
+                                {item.risks.length > 0 && (
+                                  <div>
+                                    <h4 className="font-semibold mb-2 flex items-center gap-2">
+                                      <AlertTriangle className="h-4 w-4 text-orange-600" />
+                                      Riesgos Identificados ({item.risks.length})
+                                    </h4>
+                                    <div className="space-y-2">
+                                      {item.risks.slice(0, 3).map((risk, idx) => (
+                                        <div key={idx} className="text-sm">
+                                          <Badge variant="outline" className="mr-2">
+                                            {risk.severity}
+                                          </Badge>
+                                          {risk.type}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {item.clauses.length > 0 && (
+                                  <div>
+                                    <h4 className="font-semibold mb-2">
+                                      Cláusulas Analizadas: {item.clauses.length}
+                                    </h4>
+                                  </div>
+                                )}
+
+                                {item.recommendations.length > 0 && (
+                                  <div>
+                                    <h4 className="font-semibold mb-2 flex items-center gap-2">
+                                      <CheckCircle className="h-4 w-4 text-green-600" />
+                                      Recomendaciones ({item.recommendations.length})
+                                    </h4>
+                                  </div>
+                                )}
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              </Tabs>
             </div>
           </div>
         </main>

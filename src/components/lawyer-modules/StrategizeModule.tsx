@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Brain, Target, AlertTriangle, CheckCircle, Scale, Loader2, Sparkles, TrendingUp, Clock, Lightbulb, Shield } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Brain, Target, AlertTriangle, CheckCircle, Scale, Loader2, Sparkles, TrendingUp, Clock, Lightbulb, Shield, History } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -47,7 +48,41 @@ export default function StrategizeModule({ user, currentView, onViewChange, onLo
   const [caseDescription, setCaseDescription] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analyses, setAnalyses] = useState<StrategicAnalysis[]>([]);
+  const [activeTab, setActiveTab] = useState("strategize");
   const { toast } = useToast();
+
+  // Load strategy history on mount
+  useEffect(() => {
+    loadStrategyHistory();
+  }, [user.id]);
+
+  const loadStrategyHistory = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('legal_tools_results')
+        .select('*')
+        .eq('lawyer_id', user.id)
+        .eq('tool_type', 'integration')
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (error) throw error;
+
+      const history = data?.map((item: any) => ({
+        caseDescription: item.input_data?.caseDescription || 'Caso analizado',
+        legalActions: (item.output_data as any)?.legalActions || [],
+        legalArguments: (item.output_data as any)?.legalArguments || [],
+        counterarguments: (item.output_data as any)?.counterarguments || [],
+        precedents: (item.output_data as any)?.precedents || [],
+        recommendations: (item.output_data as any)?.recommendations || [],
+        timestamp: item.created_at
+      })) || [];
+
+      setAnalyses(history);
+    } catch (error) {
+      console.error('Error loading strategy history:', error);
+    }
+  };
 
   const handleStrategicAnalysis = async () => {
     if (!caseDescription.trim()) {
@@ -85,6 +120,7 @@ export default function StrategizeModule({ user, currentView, onViewChange, onLo
       };
 
       setAnalyses(prev => [strategyResult, ...prev]);
+      loadStrategyHistory(); // Reload history
       setCaseDescription("");
       
       toast({
@@ -160,7 +196,19 @@ export default function StrategizeModule({ user, currentView, onViewChange, onLo
 
           <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 lg:py-8">
             <div className="max-w-7xl mx-auto">
-              <div className="space-y-4 lg:space-y-8">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+                <TabsList className="grid w-full max-w-md grid-cols-2">
+                  <TabsTrigger value="strategize" className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    Nuevo Análisis
+                  </TabsTrigger>
+                  <TabsTrigger value="history" className="flex items-center gap-2">
+                    <History className="h-4 w-4" />
+                    Historial ({analyses.length})
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="strategize" className="space-y-4 lg:space-y-8">
                 {/* Hero Section */}
                 <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-purple-500/10 via-purple-500/5 to-transparent border border-purple-500/20 p-8">
                   <div className="absolute inset-0 bg-grid-pattern opacity-10"></div>
@@ -438,7 +486,69 @@ export default function StrategizeModule({ user, currentView, onViewChange, onLo
                     </CardContent>
                   </Card>
                 )}
-              </div>
+                </TabsContent>
+
+                <TabsContent value="history">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Historial de Estrategias</CardTitle>
+                      <CardDescription>
+                        Revisa tus análisis estratégicos previos
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {analyses.length === 0 ? (
+                        <div className="text-center py-12">
+                          <Brain className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                          <h3 className="text-lg font-semibold mb-2">No hay estrategias previas</h3>
+                          <p className="text-muted-foreground">
+                            Los análisis estratégicos aparecerán aquí
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {analyses.map((analysis, index) => (
+                            <Card key={index}>
+                              <CardHeader>
+                                <CardDescription className="mb-2">
+                                  {new Date(analysis.timestamp).toLocaleDateString()}
+                                </CardDescription>
+                                <p className="text-sm line-clamp-2">
+                                  {analysis.caseDescription}
+                                </p>
+                              </CardHeader>
+                              <CardContent>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                  <div className="text-center p-3 bg-muted rounded-lg">
+                                    <Target className="h-6 w-6 mx-auto mb-1 text-blue-600" />
+                                    <p className="text-2xl font-bold">{analysis.legalActions.length}</p>
+                                    <p className="text-xs text-muted-foreground">Acciones</p>
+                                  </div>
+                                  <div className="text-center p-3 bg-muted rounded-lg">
+                                    <Scale className="h-6 w-6 mx-auto mb-1 text-green-600" />
+                                    <p className="text-2xl font-bold">{analysis.legalArguments.length}</p>
+                                    <p className="text-xs text-muted-foreground">Argumentos</p>
+                                  </div>
+                                  <div className="text-center p-3 bg-muted rounded-lg">
+                                    <Shield className="h-6 w-6 mx-auto mb-1 text-orange-600" />
+                                    <p className="text-2xl font-bold">{analysis.counterarguments.length}</p>
+                                    <p className="text-xs text-muted-foreground">Contraarg.</p>
+                                  </div>
+                                  <div className="text-center p-3 bg-muted rounded-lg">
+                                    <Lightbulb className="h-6 w-6 mx-auto mb-1 text-purple-600" />
+                                    <p className="text-2xl font-bold">{analysis.recommendations.length}</p>
+                                    <p className="text-xs text-muted-foreground">Recomend.</p>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              </Tabs>
             </div>
           </div>
         </main>
