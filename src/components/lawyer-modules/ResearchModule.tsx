@@ -88,16 +88,17 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
   useEffect(() => {
     loadPendingTasks();
     loadCompletedResults();
-    
-    // Set up polling for pending tasks
+  }, []);
+
+  // Separate effect for continuous polling that doesn't depend on pendingTasks
+  useEffect(() => {
+    // Set up continuous polling for pending tasks
     const pollInterval = setInterval(() => {
-      if (pendingTasks.length > 0) {
-        checkTaskUpdates();
-      }
+      checkTaskUpdates();
     }, 30000); // Check every 30 seconds
     
     return () => clearInterval(pollInterval);
-  }, [pendingTasks.length]);
+  }, []); // Empty dependency array for continuous polling
 
   const loadPendingTasks = async () => {
     try {
@@ -155,24 +156,57 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
   };
 
   const checkTaskUpdates = async () => {
-    for (const task of pendingTasks) {
-      try {
+    try {
+      // First, reload pending tasks to get current state
+      const { data: pendingData, error: pendingError } = await supabase
+        .from('legal_tools_results')
+        .select('*')
+        .eq('lawyer_id', user.id)
+        .eq('tool_type', 'research')
+        .eq('metadata->>status', 'initiated')
+        .order('created_at', { ascending: false });
+
+      if (pendingError) {
+        console.error('Error reloading pending tasks:', pendingError);
+        return;
+      }
+
+      const currentPending = pendingData?.map((item: any) => ({
+        task_id: item.metadata?.task_id || item.input_data?.task_id,
+        query: item.input_data?.query || 'Consulta en progreso',
+        started_at: item.created_at,
+        estimated_completion: new Date(Date.now() + 25 * 60 * 1000).toISOString(),
+        status: 'processing' as const
+      })).filter(task => task.task_id) || [];
+
+      console.log(`📡 Polling: Found ${currentPending.length} pending task(s)`);
+
+      // Check for completed or failed tasks
+      for (const task of currentPending) {
+        console.log(`📡 Checking task ${task.task_id}...`);
+        
         const { data, error } = await supabase
           .from('legal_tools_results')
           .select('*')
           .eq('lawyer_id', user.id)
           .eq('tool_type', 'research')
           .eq('metadata->>task_id', task.task_id)
-          .in('metadata->>status', ['completed', 'failed']);
+          .in('metadata->>status', ['completed', 'failed'])
+          .order('created_at', { ascending: false })
+          .limit(1);
 
-        if (error) continue;
+        if (error) {
+          console.error(`Error checking task ${task.task_id}:`, error);
+          continue;
+        }
 
         if (data && data.length > 0) {
           const completedTask = data[0];
           const taskStatus = (completedTask.metadata as any)?.status;
           
+          console.log(`📡 Task ${task.task_id} status: ${taskStatus}`);
+          
           if (taskStatus === 'completed') {
-            // Task completed successfully
             const newResult: ResearchResult = {
               query: task.query,
               findings: (completedTask.output_data as any)?.findings || 'Investigación completada',
@@ -191,7 +225,6 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
               description: `Tu consulta sobre "${task.query.substring(0, 50)}..." ha sido procesada exitosamente.`,
             });
           } else if (taskStatus === 'failed') {
-            // Task failed
             setPendingTasks(prev => prev.filter(t => t.task_id !== task.task_id));
             
             toast({
@@ -200,10 +233,16 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
               variant: "destructive",
             });
           }
+        } else {
+          console.log(`📡 Task ${task.task_id} still in progress (incomplete)`);
         }
-      } catch (error) {
-        console.error(`Error checking task ${task.task_id}:`, error);
       }
+
+      // Update pending tasks state
+      setPendingTasks(currentPending);
+      
+    } catch (error) {
+      console.error('Error in checkTaskUpdates:', error);
     }
   };
 
