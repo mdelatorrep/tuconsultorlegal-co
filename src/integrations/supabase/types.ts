@@ -1345,6 +1345,76 @@ export type Database = {
         }
         Relationships: []
       }
+      lawyer_documents: {
+        Row: {
+          content: string
+          created_at: string | null
+          document_type: string
+          id: string
+          is_monetized: boolean | null
+          lawyer_id: string
+          markdown_content: string | null
+          metadata: Json | null
+          monetized_agent_id: string | null
+          price: number | null
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          document_type: string
+          id?: string
+          is_monetized?: boolean | null
+          lawyer_id: string
+          markdown_content?: string | null
+          metadata?: Json | null
+          monetized_agent_id?: string | null
+          price?: number | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          document_type?: string
+          id?: string
+          is_monetized?: boolean | null
+          lawyer_id?: string
+          markdown_content?: string | null
+          metadata?: Json | null
+          monetized_agent_id?: string | null
+          price?: number | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lawyer_documents_lawyer_id_fkey"
+            columns: ["lawyer_id"]
+            isOneToOne: false
+            referencedRelation: "lawyer_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lawyer_documents_monetized_agent_id_fkey"
+            columns: ["monetized_agent_id"]
+            isOneToOne: false
+            referencedRelation: "legal_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lawyer_documents_monetized_agent_id_fkey"
+            columns: ["monetized_agent_id"]
+            isOneToOne: false
+            referencedRelation: "openai_agent_analytics"
+            referencedColumns: ["legal_agent_id"]
+          },
+        ]
+      }
       lawyer_profiles: {
         Row: {
           active: boolean
