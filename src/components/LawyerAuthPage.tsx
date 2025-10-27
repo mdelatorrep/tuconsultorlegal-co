@@ -89,7 +89,7 @@ export default function LawyerAuthPage() {
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-brand-blue-light/5 rounded-3xl blur-3xl"></div>
                 <div className="relative">
-                  <LawyerLogin onLoginSuccess={() => window.location.replace('/#abogados')} />
+                  <LawyerLogin onLoginSuccess={() => window.location.replace('/')} />
                 </div>
               </div>
             </div>

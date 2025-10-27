@@ -54,7 +54,7 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
       
       // Limpiar la URL después de 2 segundos
       setTimeout(() => {
-        window.history.replaceState({}, document.title, '/#abogados');
+        window.history.replaceState({}, document.title, '/');
         setShowEmailConfirmedMessage(false);
       }, 2000);
     }
