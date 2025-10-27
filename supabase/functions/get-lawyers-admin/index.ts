@@ -46,11 +46,10 @@ Deno.serve(async (req) => {
     console.log('Admin authenticated via JWT token');
     console.log('Fetching lawyers data...');
 
-    // Fetch all lawyer profiles (these are the registered lawyers)
+    // Fetch all lawyer profiles (including inactive ones for admin view)
     const { data: lawyers, error: lawyersError } = await supabase
       .from('lawyer_profiles')
       .select('*')
-      .eq('is_active', true)
       .order('created_at', { ascending: false });
 
     if (lawyersError) {

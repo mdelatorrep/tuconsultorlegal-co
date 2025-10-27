@@ -23,7 +23,7 @@ import SubscriptionAdminManager from "./admin/SubscriptionAdminManager";
 import { EmailConfigManager } from "./admin/EmailConfigManager";
 import { LegalContentManager } from "./admin/LegalContentManager";
 import { 
-  Copy, Users, Bot, BarChart3, Clock, CheckCircle, Lock, Unlock, Trash2, Check, X, Plus, 
+  Copy, Users, Bot, BarChart3, Clock, CheckCircle, Lock, Unlock, Trash2, Check, X, Plus, RefreshCw, 
   Loader2, MessageCircle, BookOpen, Settings, Zap, Mail, Phone, Bell, LogOut, UserCheck, 
   FileText, AlertCircle, Globe, Eye, EyeOff, Archive, Reply, User2, Timer, CreditCard, 
   ShieldCheck, Activity, Briefcase, Calendar, Building2, Award, Coffee, Sparkles, Gavel, 
@@ -226,13 +226,23 @@ function AdminPage() {
 
   const loadLawyers = async () => {
     try {
+      console.log('🔄 Loading lawyers from server...');
       const { data, error } = await supabase.functions.invoke('get-lawyers-admin', {
         headers: getAuthHeaders()
       });
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error loading lawyers:', error);
+        throw error;
+      }
+      console.log(`✅ Loaded ${data?.length || 0} lawyers:`, data);
       setLawyers(data || []);
     } catch (error) {
       console.error('Error loading lawyers:', error);
+      toast({
+        title: "Error",
+        description: "Error al cargar la lista de abogados. Por favor, recarga la página.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -986,9 +996,20 @@ function AdminPage() {
         return (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="w-5 h-5" />
-                Gestión de Abogados Colombianos
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Users className="w-5 h-5" />
+                  Gestión de Abogados Colombianos
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={loadLawyers}
+                  title="Actualizar lista de abogados"
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Actualizar
+                </Button>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">

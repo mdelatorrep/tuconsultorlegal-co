@@ -99,9 +99,12 @@ export default function LawyerPermissionsDialog({
 
       if (!data.success) {
         console.error('Function returned error:', data.error);
+        const errorMessage = data.error === 'Lawyer not found' 
+          ? 'Abogado no encontrado. Por favor, recarga la página para actualizar la lista.'
+          : `Error: ${data.error}`;
         toast({
           title: "Error",
-          description: `Error: ${data.error}`,
+          description: errorMessage,
           variant: "destructive"
         });
         return;
