@@ -484,12 +484,10 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
                     <p className="text-xs text-muted-foreground leading-relaxed">
                       Acepto el tratamiento de mis datos personales conforme a la Ley 1581 de 2012 (Ley de Habeas Data en Colombia) y autorizo a tuconsultorlegal.co para recopilar, almacenar, usar y circular mi información personal para los fines relacionados con el servicio de la plataforma. 
                       <a 
-                        href="#privacidad" 
+                        href="/privacidad" 
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="text-primary hover:underline ml-1"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          window.location.hash = 'privacidad';
-                        }}
                       >
                         Ver Política de Privacidad
                       </a>
@@ -515,14 +513,21 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
                     <p className="text-xs text-muted-foreground leading-relaxed">
                       Reconozco y acepto que todos los contenidos, metodologías, algoritmos y tecnologías desarrolladas en la plataforma son propiedad exclusiva de tuconsultorlegal.co, conforme a la legislación colombiana de propiedad intelectual y derechos de autor.
                       <a 
-                        href="#terminos" 
+                        href="/terminos" 
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="text-primary hover:underline ml-1"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          window.location.hash = 'terminos';
-                        }}
                       >
                         Ver Términos y Condiciones
+                      </a>
+                      {' '}y{' '}
+                      <a 
+                        href="/propiedad-intelectual" 
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline"
+                      >
+                        Propiedad Intelectual
                       </a>
                     </p>
                   </div>
