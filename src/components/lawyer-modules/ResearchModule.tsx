@@ -105,7 +105,8 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
         .from('legal_tools_results')
         .select('*')
         .eq('lawyer_id', user.id)
-        .eq('tool_type', 'research_initiated')
+        .eq('tool_type', 'research')
+        .eq('metadata->>status', 'initiated')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -130,7 +131,8 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
         .from('legal_tools_results')
         .select('*')
         .eq('lawyer_id', user.id)
-        .in('tool_type', ['research_completed', 'research'])
+        .eq('tool_type', 'research')
+        .eq('metadata->>status', 'completed')
         .order('created_at', { ascending: false })
         .limit(10);
 
@@ -159,15 +161,17 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
           .from('legal_tools_results')
           .select('*')
           .eq('lawyer_id', user.id)
+          .eq('tool_type', 'research')
           .eq('metadata->>task_id', task.task_id)
-          .in('tool_type', ['research_completed', 'research_failed']);
+          .in('metadata->>status', ['completed', 'failed']);
 
         if (error) continue;
 
         if (data && data.length > 0) {
           const completedTask = data[0];
+          const taskStatus = (completedTask.metadata as any)?.status;
           
-          if (completedTask.tool_type === 'research_completed') {
+          if (taskStatus === 'completed') {
             // Task completed successfully
             const newResult: ResearchResult = {
               query: task.query,
@@ -186,7 +190,7 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
               title: "🎉 Investigación completada",
               description: `Tu consulta sobre "${task.query.substring(0, 50)}..." ha sido procesada exitosamente.`,
             });
-          } else if (completedTask.tool_type === 'research_failed') {
+          } else if (taskStatus === 'failed') {
             // Task failed
             setPendingTasks(prev => prev.filter(t => t.task_id !== task.task_id));
             

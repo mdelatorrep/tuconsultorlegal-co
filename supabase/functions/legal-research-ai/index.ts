@@ -72,7 +72,8 @@ async function handleWebhook(req: Request): Promise<Response> {
       .from('legal_tools_results')
       .select('id')
       .eq('metadata->>task_id', taskId)
-      .in('tool_type', ['research_completed', 'research_failed'])
+      .eq('tool_type', 'research')
+      .in('metadata->>status', ['completed', 'failed'])
       .limit(1);
     
     if (existingResult && existingResult.length > 0) {
@@ -142,7 +143,7 @@ async function handleWebhook(req: Request): Promise<Response> {
         await saveToolResult(
           supabase,
           lawyerId,
-          'research_completed',
+          'research',
           { 
             task_id: webhookData.id,
             original_query: webhookData.metadata?.query || 'N/A'
@@ -153,6 +154,8 @@ async function handleWebhook(req: Request): Promise<Response> {
             conclusion
           },
           { 
+            status: 'completed',
+            task_id: webhookData.id,
             timestamp: new Date().toISOString(),
             model: webhookData.model || 'o4-mini-deep-research-2025-06-26',
             citations_count: annotations.length,
@@ -173,7 +176,7 @@ async function handleWebhook(req: Request): Promise<Response> {
         await saveToolResult(
           supabase,
           lawyerId,
-          'research_failed',
+          'research',
           { 
             task_id: webhookData.id,
             error: webhookData.error
@@ -183,6 +186,8 @@ async function handleWebhook(req: Request): Promise<Response> {
             failed_at: new Date().toISOString()
           },
           { 
+            status: 'failed',
+            task_id: webhookData.id,
             timestamp: new Date().toISOString(),
             background_mode: true
           }
@@ -484,7 +489,7 @@ Incluye citas específicas y fuentes verificables. Enfócate en análisis concre
         await saveToolResult(
           supabase,
           lawyerId,
-          'research_initiated',
+          'research',
           { 
             query,
             task_id: data.id
@@ -494,6 +499,7 @@ Incluye citas específicas y fuentes verificables. Enfócate en análisis concre
             estimated_completion_time: 30 // minutes
           },
           { 
+            status: 'initiated',
             task_id: data.id,
             timestamp: new Date().toISOString(),
             model: researchModel,
@@ -609,10 +615,12 @@ Incluye citas específicas y fuentes verificables. Enfócate en análisis concre
           { query },
           { findings, sources, conclusion },
           { 
+            status: 'completed',
             timestamp: new Date().toISOString(),
             model: researchModel,
             citations_count: annotations.length,
-            searches_count: webSearchCalls.length
+            searches_count: webSearchCalls.length,
+            reasoning_steps: reasoningSteps.length
           }
         );
       }
@@ -742,7 +750,7 @@ async function pollForCompletion(taskId: string, lawyerId: string | null, query:
             await saveToolResult(
               supabase,
               lawyerId,
-              'research_completed',
+              'research',
               { 
                 task_id: taskId,
                 original_query: query
@@ -753,6 +761,8 @@ async function pollForCompletion(taskId: string, lawyerId: string | null, query:
                 conclusion
               },
               { 
+                status: 'completed',
+                task_id: taskId,
                 timestamp: new Date().toISOString(),
                 model: data.model || 'o4-mini-deep-research-2025-06-26',
                 citations_count: annotations.length,
@@ -776,7 +786,7 @@ async function pollForCompletion(taskId: string, lawyerId: string | null, query:
             await saveToolResult(
               supabase,
               lawyerId,
-              'research_failed',
+              'research',
               { 
                 task_id: taskId,
                 error: data.error
@@ -786,6 +796,8 @@ async function pollForCompletion(taskId: string, lawyerId: string | null, query:
                 failed_at: new Date().toISOString()
               },
               { 
+                status: 'failed',
+                task_id: taskId,
                 timestamp: new Date().toISOString(),
                 background_mode: true
               }
