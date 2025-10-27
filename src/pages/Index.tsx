@@ -101,35 +101,27 @@ export default function Index() {
   }, []);
 
   const handleNavigate = (page: string, data?: any) => {
-    console.log('[NAVIGATION] handleNavigate called with:', { page, isAuthenticated, userType, data });
-    
     // Handle user dashboard access - requires authentication
     if (page === "user-dashboard") {
-      console.log('[NAVIGATION] User dashboard requested');
       if (!isAuthenticated) {
-        console.log('[NAVIGATION] Not authenticated, showing type selector');
         setShowUserTypeSelector(true);
         return;
       }
       
-      console.log('[NAVIGATION] Authenticated, showing user dashboard');
       setShowUserDashboard(true);
       return;
     }
     
     // Handle lawyer dashboard access
     if (page === "abogados") {
-      console.log('[NAVIGATION] Lawyer dashboard requested - setting page to abogados');
       setShowUserDashboard(false);
       setShowUserAuth(false);
       setShowUserTypeSelector(false);
       setCurrentPage("abogados");
       window.history.pushState(null, "", `#abogados`);
-      console.log('[NAVIGATION] ✅ currentPage set to abogados');
       return;
     }
     
-    console.log('[NAVIGATION] Setting page to:', page);
     setCurrentPage(page);
     if (page === "personas" || page === "empresas") {
       setConsultationType(page === "personas" ? 'personal' : 'business');
@@ -195,24 +187,13 @@ export default function Index() {
 
   // Auto-redirect authenticated users to their correct dashboard
   useEffect(() => {
-    console.log('[AUTO-REDIRECT] Effect running:', {
-      authLoading,
-      userTypeLoading,
-      isAuthenticated,
-      userType,
-      currentPage,
-      showUserDashboard
-    });
-
     if (!authLoading && !userTypeLoading && isAuthenticated && userType) {
       // If user is authenticated and is a lawyer, redirect to lawyer dashboard
       if (userType === 'lawyer' && currentPage !== 'abogados' && !showUserDashboard) {
-        console.log('[AUTO-REDIRECT] Lawyer detected, redirecting to lawyer dashboard');
         handleNavigate('abogados');
       } 
       // If user is authenticated and is a regular user, show user dashboard when requested
       else if (userType === 'user' && showUserDashboard === false && currentPage === 'user-dashboard') {
-        console.log('[AUTO-REDIRECT] Regular user detected, showing user dashboard');
         setShowUserDashboard(true);
       }
     }
@@ -267,8 +248,6 @@ export default function Index() {
   }
 
   const renderCurrentPage = () => {
-    console.log('[RENDER] Rendering page:', currentPage);
-    
     // Check for dynamic blog article routes first
     if (currentPage.startsWith("blog-articulo-")) {
       const slug = currentPage.replace("blog-articulo-", "");

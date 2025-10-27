@@ -7,11 +7,12 @@ import Header from './Header';
 export default function LawyerAuthPage() {
   const handleNavigate = (page: string) => {
     if (page === 'home') {
-      window.location.href = '/';
+      window.location.replace('/');
     } else if (page === 'abogados') {
-      window.location.href = '/#abogados';
+      // Forzar navegación completa al dashboard de abogados
+      window.location.replace('/#abogados');
     } else {
-      window.location.href = `/#${page}`;
+      window.location.replace(`/#${page}`);
     }
   };
 
@@ -88,7 +89,7 @@ export default function LawyerAuthPage() {
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-brand-blue-light/5 rounded-3xl blur-3xl"></div>
                 <div className="relative">
-                  <LawyerLogin onLoginSuccess={() => window.location.href = '/#abogados'} />
+                  <LawyerLogin onLoginSuccess={() => window.location.replace('/#abogados')} />
                 </div>
               </div>
             </div>

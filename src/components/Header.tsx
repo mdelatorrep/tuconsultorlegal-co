@@ -109,9 +109,7 @@ export default function Header({
           {isAuthenticated ? (
             <Button 
               onClick={() => {
-                console.log('[HEADER] Panel button clicked - userType:', userType, 'isLawyer:', isLawyer);
                 const targetPage = isLawyer ? "abogados" : "user-dashboard";
-                console.log('[HEADER] Navigating to:', targetPage);
                 onNavigate(targetPage);
               }} 
               variant="outline" 
