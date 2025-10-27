@@ -108,7 +108,12 @@ export default function Header({
         <div className="hidden lg:flex items-center space-x-3">
           {isAuthenticated ? (
             <Button 
-              onClick={() => onNavigate(isLawyer ? "abogados" : "user-dashboard")} 
+              onClick={() => {
+                console.log('[HEADER] Panel button clicked - userType:', userType, 'isLawyer:', isLawyer);
+                const targetPage = isLawyer ? "abogados" : "user-dashboard";
+                console.log('[HEADER] Navigating to:', targetPage);
+                onNavigate(targetPage);
+              }} 
               variant="outline" 
               size="sm"
             >
