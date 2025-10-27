@@ -705,14 +705,6 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
     return <LawyerLandingPage onOpenChat={onOpenChat} />;
   }
 
-  // Additional verification: ensure user is actually a lawyer
-  if (isAuthenticated && user && !user.canCreateAgents && !user.canCreateBlogs && !user.canUseAiTools) {
-    // This might be a regular user who somehow accessed the lawyer route
-    // Redirect them to appropriate landing page
-    console.warn('Non-lawyer user attempted to access lawyer dashboard');
-    return <LawyerLandingPage onOpenChat={onOpenChat} />;
-  }
-
   // Sidebar menu configuration
   const menuItems = [
     {
