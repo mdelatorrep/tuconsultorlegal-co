@@ -22,6 +22,9 @@ import CategoryManager from "./CategoryManager";
 import SubscriptionAdminManager from "./admin/SubscriptionAdminManager";
 import { EmailConfigManager } from "./admin/EmailConfigManager";
 import { LegalContentManager } from "./admin/LegalContentManager";
+import { AdminDashboard } from "./admin/AdminDashboard";
+import { AdminSidebar } from "./admin/AdminSidebar";
+import { AdminHeader } from "./admin/AdminHeader";
 import { 
   Copy, Users, Bot, BarChart3, Clock, CheckCircle, Lock, Unlock, Trash2, Check, X, Plus, RefreshCw, 
   Loader2, MessageCircle, BookOpen, Settings, Zap, Mail, Phone, Bell, LogOut, UserCheck, 
@@ -41,7 +44,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Progress } from "./ui/progress";
 import { Separator } from "./ui/separator";
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "./ui/sidebar";
+import { SidebarProvider } from "./ui/sidebar";
 import LawyerPermissionsDialog from './LawyerPermissionsDialog';
 import { AdminCustomDocumentRequests } from './AdminCustomDocumentRequests';
 
@@ -788,55 +791,6 @@ function AdminPage() {
 
   const currentSection = sidebarSections.flatMap(s => s.items).find(item => item.id === currentView);
 
-  const AdminSidebar = () => {
-    return (
-      <Sidebar className="w-64" collapsible="icon">
-        <SidebarTrigger className="m-2 self-end" />
-        
-        <SidebarContent>
-          <div className="p-4 border-b">
-            <h2 className="font-semibold text-sm text-foreground">Panel de Administración</h2>
-            <p className="text-xs text-muted-foreground">Sistema Jurídico Colombiano</p>
-            {user?.email && (
-              <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">
-                {user.email}
-              </p>
-            )}
-          </div>
-
-          {sidebarSections.map((section) => (
-            <SidebarGroup key={section.label}>
-              <SidebarGroupLabel className="text-xs font-medium text-muted-foreground">
-                {section.label}
-              </SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {section.items.map((item) => (
-                    <SidebarMenuItem key={item.id}>
-                      <SidebarMenuButton 
-                        isActive={currentView === item.id}
-                        onClick={() => setCurrentView(item.id)}
-                        className="w-full justify-start"
-                      >
-                        <item.icon className="w-4 h-4 mr-2" />
-                        <span className="flex-1">{item.label}</span>
-                        {item.count > 0 && (
-                          <Badge variant="destructive" className="ml-auto text-xs">
-                            {item.count}
-                          </Badge>
-                        )}
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          ))}
-        </SidebarContent>
-      </Sidebar>
-    );
-  };
-
   const createLawyer = async () => {
     try {
       setIsProcessing(true);
@@ -898,98 +852,14 @@ function AdminPage() {
     switch (currentView) {
       case 'dashboard':
         return (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total Abogados</p>
-                    <p className="text-2xl font-bold">{lawyers.length}</p>
-                  </div>
-                  <Users className="w-8 h-8 text-blue-500" />
-                </div>
-              </Card>
-              <Card className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Agentes Activos</p>
-                    <p className="text-2xl font-bold">{agents.filter(a => a.status === 'active').length}</p>
-                  </div>
-                  <Bot className="w-8 h-8 text-green-500" />
-                </div>
-              </Card>
-              <Card className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Consultas Pendientes</p>
-                    <p className="text-2xl font-bold">{unreadMessagesCount}</p>
-                  </div>
-                  <MessageCircle className="w-8 h-8 text-orange-500" />
-                </div>
-              </Card>
-              <Card className="p-6">
-                <div className="flex items-center justify-between">
-                </div>
-              </Card>
-            </div>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Actividad Reciente</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {agents.slice(0, 5).map((agent) => (
-                      <div key={agent.id} className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Bot className="w-4 h-4 text-blue-500" />
-                          <div>
-                            <p className="text-sm font-medium">{agent.name}</p>
-                            <p className="text-xs text-muted-foreground">{agent.category}</p>
-                          </div>
-                        </div>
-                        <Badge variant={agent.status === 'active' ? 'default' : 'secondary'}>
-                          {agent.status}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle>Estadísticas del Sistema</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">Agentes Pendientes</span>
-                      <div className="flex items-center gap-2">
-                        <Progress value={(pendingAgentsCount / Math.max(agents.length, 1)) * 100} className="w-20" />
-                        <span className="text-sm font-medium">{pendingAgentsCount}</span>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">Blogs en Revisión</span>
-                      <div className="flex items-center gap-2">
-                        <Progress value={(pendingBlogsCount / Math.max(blogPosts.length, 1)) * 100} className="w-20" />
-                        <span className="text-sm font-medium">{pendingBlogsCount}</span>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">Consultas Sin Responder</span>
-                      <div className="flex items-center gap-2">
-                        <Progress value={(unreadMessagesCount / Math.max(contactMessages.length, 1)) * 100} className="w-20" />
-                        <span className="text-sm font-medium">{unreadMessagesCount}</span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+          <AdminDashboard
+            lawyers={lawyers}
+            agents={agents}
+            unreadMessagesCount={unreadMessagesCount}
+            pendingAgentsCount={pendingAgentsCount}
+            pendingBlogsCount={pendingBlogsCount}
+            blogPosts={blogPosts}
+          />
         );
       
       case 'lawyers':
@@ -1502,197 +1372,44 @@ function AdminPage() {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-        <AdminSidebar />
+      <div className="flex min-h-screen w-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+        <AdminSidebar
+          currentView={currentView}
+          setCurrentView={setCurrentView}
+          unreadMessagesCount={unreadMessagesCount}
+          pendingAgentsCount={pendingAgentsCount}
+          pendingBlogsCount={pendingBlogsCount}
+          userEmail={user?.email}
+        />
         
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-4 md:p-6 overflow-y-auto">
           <div className="max-w-7xl mx-auto">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-              <div className="flex items-center gap-3">
-                <SidebarTrigger className="lg:hidden" />
-                <div>
-                  <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-                    {currentSection?.label || 'Dashboard'}
-                  </h1>
-                  <p className="text-sm text-muted-foreground mt-1">
-                     {currentView === 'dashboard' ? 'Vista general del sistema jurídico' :
-                     currentView === 'lawyers' ? 'Gestiona abogados registrados en el sistema' :
-                     currentView === 'requests' ? 'Revisa solicitudes de acceso pendientes' :
-                     currentView === 'agents' ? 'Administra agentes legales de IA' :
-                     currentView === 'openai' ? 'Configuración de OpenAI y modelos' :
-                     currentView === 'blogs' ? 'Gestiona contenido del blog jurídico' :
-                     currentView === 'legal-content' ? 'Edita términos, privacidad y propiedad intelectual' :
-                     currentView === 'messages' ? 'Responde consultas de usuarios' :
-                     currentView === 'custom-requests' ? 'Gestiona solicitudes de documentos personalizados' :
-                     currentView === 'knowledge' ? 'Administra la base de conocimiento' :
-                     currentView === 'stats' ? 'Visualiza estadísticas del sistema' :
-                     currentView === 'categories' ? 'Configura categorías de documentos' :
-                     currentView === 'subscriptions' ? 'Administra planes y suscripciones de dLocal' :
-                     currentView === 'email-config' ? 'Configura el sistema de notificaciones por email' :
-                     currentView === 'config' ? 'Configuración avanzada del sistema' :
-                     'Gestiona el portal administrativo'}
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-3">
-                {/* Notificaciones */}
-                <Popover open={showNotifications} onOpenChange={setShowNotifications}>
-                  <PopoverTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="relative"
-                      onClick={() => setShowNotifications(!showNotifications)}
-                    >
-                      <Bell className="w-4 h-4" />
-                      {(unreadMessagesCount > 0 || pendingAgentsCount > 0) && (
-                        <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full text-xs w-5 h-5 flex items-center justify-center">
-                          {unreadMessagesCount + pendingAgentsCount}
-                        </span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80 p-4" align="end">
-                    <div className="space-y-3">
-                      <h4 className="font-medium flex items-center gap-2">
-                        <Bell className="w-4 h-4" />
-                        Centro de Notificaciones
-                      </h4>
-                      <Separator />
-                      
-                      {unreadMessagesCount > 0 && (
-                        <div className="flex items-center justify-between p-2 bg-red-50 dark:bg-red-950/20 rounded-lg">
-                          <div className="flex items-center gap-2">
-                            <MessageCircle className="w-4 h-4 text-red-500" />
-                            <span className="text-sm">Consultas sin responder</span>
-                          </div>
-                          <Badge variant="destructive" className="text-xs">
-                            {unreadMessagesCount}
-                          </Badge>
-                        </div>
-                      )}
-                      
-                      {pendingAgentsCount > 0 && (
-                        <div className="flex items-center justify-between p-2 bg-orange-50 dark:bg-orange-950/20 rounded-lg">
-                          <div className="flex items-center gap-2">
-                            <Bot className="w-4 h-4 text-orange-500" />
-                            <span className="text-sm">Agentes pendientes de revisión</span>
-                          </div>
-                          <Badge variant="outline" className="text-xs">
-                            {pendingAgentsCount}
-                          </Badge>
-                        </div>
-                      )}
-                      
-                      
-                      {unreadMessagesCount === 0 && pendingAgentsCount === 0 && (
-                        <div className="text-center py-4 text-muted-foreground">
-                          <CheckCircle className="w-8 h-8 mx-auto mb-2 text-green-500" />
-                          <p className="text-sm">Todo al día</p>
-                          <p className="text-xs">No hay notificaciones pendientes</p>
-                        </div>
-                      )}
-                    </div>
-                  </PopoverContent>
-                </Popover>
+            <AdminHeader
+              currentView={currentView}
+              currentSection={currentSection}
+              unreadMessagesCount={unreadMessagesCount}
+              pendingAgentsCount={pendingAgentsCount}
+              onLogout={logout}
+              onClearMemory={async () => {
+                try {
+                  sonnerToast.loading("Limpiando memoria global...");
+                  AuthStorage.clearAllAgentMemory();
+                  
+                  const { data, error } = await supabase.functions.invoke('clear-agent-conversations', {
+                    body: { agentId: null }
+                  });
+                  
+                  if (error) throw error;
+                  sonnerToast.success(`✅ ${data.message}`);
+                  setTimeout(() => window.location.reload(), 1500);
+                } catch (error: any) {
+                  console.error('Error clearing memory:', error);
+                  sonnerToast.error("❌ Error al limpiar la memoria: " + error.message);
+                }
+              }}
+              onRefresh={loadData}
+            />
 
-                {/* Botón para limpiar memoria de agentes */}
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="flex items-center gap-2 text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:hover:bg-orange-950/20"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      <span className="hidden sm:inline">Limpiar Memoria</span>
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle className="flex items-center gap-2">
-                        <Trash2 className="w-5 h-5 text-orange-500" />
-                        Limpiar Memoria de Agentes
-                      </AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Esta acción eliminará toda la memoria almacenada de los agentes de chat para TODOS los usuarios, incluyendo:
-                        <ul className="list-disc list-inside mt-2 space-y-1">
-                          <li>Conversaciones activas de usuarios anónimos</li>
-                          <li>Thread IDs de OpenAI en la base de datos</li>
-                          <li>Historial de conversaciones</li>
-                          <li>Datos recolectados en sesiones</li>
-                        </ul>
-                        <p className="mt-3 font-semibold text-orange-600">⚠️ Los usuarios deberán iniciar conversaciones nuevas desde cero.</p>
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction 
-                        onClick={async () => {
-                          try {
-                            sonnerToast.loading("Limpiando memoria global...");
-                            
-                            // Limpiar memoria local del admin
-                            AuthStorage.clearAllAgentMemory();
-                            
-                            // Limpiar memoria en base de datos (para todos los usuarios)
-                            const { data, error } = await supabase.functions.invoke('clear-agent-conversations', {
-                              body: { agentId: null } // null = limpiar todos los agentes
-                            });
-                            
-                            if (error) throw error;
-                            
-                            sonnerToast.success(`✅ ${data.message}`);
-                            setTimeout(() => window.location.reload(), 1500);
-                          } catch (error: any) {
-                            console.error('Error clearing memory:', error);
-                            sonnerToast.error("❌ Error al limpiar la memoria: " + error.message);
-                          }
-                        }}
-                        className="bg-orange-600 hover:bg-orange-700 text-white"
-                      >
-                        Limpiar Memoria Global
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-
-                {/* Botón de cierre de sesión */}
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20">
-                      <LogOut className="w-4 h-4" />
-                      <span className="hidden sm:inline">Cerrar Sesión</span>
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle className="flex items-center gap-2">
-                        <LogOut className="w-5 h-5 text-red-500" />
-                        Confirmar Cierre de Sesión
-                      </AlertDialogTitle>
-                      <AlertDialogDescription>
-                        ¿Estás seguro de que deseas cerrar la sesión de administrador? 
-                        Tendrás que volver a iniciar sesión para acceder al panel.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction 
-                        onClick={logout}
-                        className="bg-red-600 hover:bg-red-700 text-white"
-                      >
-                        Cerrar Sesión
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            </div>
-
-            {/* Contenido dinámico */}
             {renderCurrentView()}
           </div>
         </main>
