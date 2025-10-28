@@ -38,7 +38,8 @@ import {
   Mail,
   MoreVertical,
   Trash2,
-  Info
+  Info,
+  FileQuestion
 } from 'lucide-react';
 import { Input } from './ui/input';
 import { useDocumentPayment } from './document-payment/useDocumentPayment';
@@ -54,6 +55,7 @@ import { ChangeEmailDialog } from './ChangeEmailDialog';
 import { PasswordResetDialog } from './PasswordResetDialog';
 import { MagicLinkDialog } from './MagicLinkDialog';
 import { DocumentDetailsDialog } from './DocumentDetailsDialog';
+import { CustomDocumentRequestDialog } from './CustomDocumentRequestDialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -132,6 +134,7 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
   const [selectedDocument, setSelectedDocument] = useState<DocumentToken | null>(null);
   const [showDocumentDetails, setShowDocumentDetails] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
+  const [showCustomRequestDialog, setShowCustomRequestDialog] = useState(false);
 
   const { handleVerifyTrackingCode } = useDocumentPayment();
   const { trackAnonymousUser, trackPageVisit, trackUserAction } = useUserTracking();
@@ -780,14 +783,14 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
         </div>
 
         {/* Mobile Quick Actions - Floating buttons */}
-        <div className="grid grid-cols-2 gap-3 mb-6 md:hidden animate-slide-up">
+        <div className="grid grid-cols-3 gap-3 mb-6 md:hidden animate-slide-up">
           <Button 
             onClick={handleNewDocumentRequest}
             className="h-20 flex-col gap-2"
             size="lg"
           >
             <Plus className="w-6 h-6" />
-            <span className="text-sm">Crear Documento</span>
+            <span className="text-xs">Crear Documento</span>
           </Button>
 
           <Button 
@@ -797,12 +800,22 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
             size="lg"
           >
             <MessageCircle className="w-6 h-6" />
-            <span className="text-sm">Hablar con Lexi</span>
+            <span className="text-xs">Hablar con Lexi</span>
+          </Button>
+
+          <Button 
+            onClick={() => setShowCustomRequestDialog(true)}
+            className="h-20 flex-col gap-2"
+            variant="outline"
+            size="lg"
+          >
+            <FileQuestion className="w-6 h-6" />
+            <span className="text-xs">Solicitar Doc.</span>
           </Button>
         </div>
 
         {/* Desktop Enhanced Quick Actions */}
-        <div className="hidden md:grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 animate-slide-up">
+        <div className="hidden md:grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 animate-slide-up">
           <Card className="cursor-pointer hover-lift transition-smooth shadow-card group" onClick={handleNewDocumentRequest}>
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
@@ -841,6 +854,27 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
                   </div>
                 </div>
                 <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-secondary transition-smooth" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="cursor-pointer hover-lift transition-smooth shadow-card group" onClick={() => setShowCustomRequestDialog(true)}>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="bg-gradient-to-br from-accent to-accent p-4 rounded-xl group-hover:scale-110 transition-bounce">
+                  <FileQuestion className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-lg mb-1">Solicitar Documento</h3>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    ¿No lo encuentras? Solicítalo aquí
+                  </p>
+                  <div className="flex items-center text-xs text-accent font-medium">
+                    <Target className="w-3 h-3 mr-1" />
+                    Personalizado
+                  </div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-accent transition-smooth" />
               </div>
             </CardContent>
           </Card>
@@ -1167,6 +1201,12 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Custom Document Request Dialog */}
+      <CustomDocumentRequestDialog 
+        open={showCustomRequestDialog}
+        onOpenChange={setShowCustomRequestDialog}
+      />
     </div>
   );
 }
