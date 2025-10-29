@@ -786,6 +786,76 @@ export default function UnifiedDocumentPage({ onOpenChat }: UnifiedDocumentPageP
                           </>
                         )}
                       </Button>
+
+                      {/* Manual payment confirmation button */}
+                      <div className="pt-2 border-t">
+                        <p className="text-xs text-muted-foreground text-center mb-2">
+                          ¿Ya completaste el pago pero el documento no se actualizó?
+                        </p>
+                        <Button
+                          onClick={async () => {
+                            const confirmed = window.confirm(
+                              '¿Estás seguro de que ya completaste el pago? Esta acción marcará el documento como pagado.'
+                            );
+                            
+                            if (confirmed) {
+                              setIsProcessingPayment(true);
+                              
+                              try {
+                                const { data, error } = await supabase.functions.invoke(
+                                  'manual-payment-confirmation',
+                                  {
+                                    body: { documentId: documentData.id }
+                                  }
+                                );
+                                
+                                if (error) {
+                                  console.error('Error confirming payment:', error);
+                                  toast({
+                                    title: "Error",
+                                    description: "No se pudo actualizar el estado. Contacta soporte.",
+                                    variant: "destructive",
+                                  });
+                                } else {
+                                  setDocumentData({ ...documentData, status: 'pagado' });
+                                  setPaymentCompleted(true);
+                                  toast({
+                                    title: "Estado actualizado",
+                                    description: "El documento ahora está disponible para descarga.",
+                                  });
+                                  // Refresh document data
+                                  await handleSearch();
+                                }
+                              } catch (error) {
+                                console.error('Error:', error);
+                                toast({
+                                  title: "Error",
+                                  description: "Ocurrió un error al actualizar el estado.",
+                                  variant: "destructive",
+                                });
+                              } finally {
+                                setIsProcessingPayment(false);
+                              }
+                            }
+                          }}
+                          variant="ghost"
+                          size="sm"
+                          className="w-full"
+                          disabled={isProcessingPayment}
+                        >
+                          {isProcessingPayment ? (
+                            <>
+                              <div className="animate-spin h-3 w-3 mr-2 border-2 border-current border-t-transparent rounded-full" />
+                              Actualizando...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="h-3 w-3 mr-2" />
+                              Confirmar Pago Completado
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     </div>
 
                     <div className="text-center text-sm text-muted-foreground">
@@ -819,6 +889,48 @@ export default function UnifiedDocumentPage({ onOpenChat }: UnifiedDocumentPageP
                       <Download className="h-4 w-4 mr-2" />
                       Descargar Documento PDF
                     </Button>
+                  </>
+                )}
+
+                {/* Manual payment verification for revision_usuario if payment was completed outside */}
+                {documentData.status === 'revision_usuario' && paymentCompleted && (
+                  <>
+                    <div className="text-center space-y-4 p-4 bg-warning/10 border border-warning rounded-lg">
+                      <AlertCircle className="h-8 w-8 mx-auto text-warning" />
+                      <h3 className="text-lg font-semibold">Verificando Pago</h3>
+                      <p className="text-sm text-muted-foreground">
+                        El pago fue procesado pero el estado del documento no se actualizó automáticamente.
+                      </p>
+                      <Button
+                        onClick={async () => {
+                          const { error } = await supabase
+                            .from('document_tokens')
+                            .update({ 
+                              status: 'pagado',
+                              updated_at: new Date().toISOString()
+                            })
+                            .eq('id', documentData.id);
+                          
+                          if (!error) {
+                            setDocumentData({ ...documentData, status: 'pagado' });
+                            toast({
+                              title: "Estado actualizado",
+                              description: "El documento ahora está disponible para descarga.",
+                            });
+                          } else {
+                            toast({
+                              title: "Error",
+                              description: "No se pudo actualizar el estado. Contacta soporte.",
+                              variant: "destructive",
+                            });
+                          }
+                        }}
+                        variant="outline"
+                        size="sm"
+                      >
+                        Actualizar Estado Manualmente
+                      </Button>
+                    </div>
                   </>
                 )}
 
