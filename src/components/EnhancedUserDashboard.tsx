@@ -385,7 +385,8 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
   const handleDownloadDocument = async (token: string) => {
     try {
       trackUserAction('download_document', { token });
-      await handleVerifyTrackingCode(token);
+      // Navigate to document page with token
+      window.location.hash = `#documento?code=${token}`;
     } catch (error) {
       console.error('Error downloading document:', error);
       toast.error('Error al descargar el documento');

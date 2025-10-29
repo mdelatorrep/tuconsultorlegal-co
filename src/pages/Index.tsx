@@ -101,13 +101,17 @@ export default function Index() {
   }, []);
 
   const handleNavigate = (page: string, data?: any) => {
+    console.log('Navigate to:', page, 'Auth:', isAuthenticated, 'UserType:', userType);
+    
     // Handle user dashboard access - requires authentication
     if (page === "user-dashboard") {
       if (!isAuthenticated) {
+        console.log('User not authenticated, showing type selector');
         setShowUserTypeSelector(true);
         return;
       }
       
+      console.log('User authenticated, showing dashboard');
       setShowUserDashboard(true);
       return;
     }
@@ -188,13 +192,22 @@ export default function Index() {
   // Auto-redirect authenticated users to their correct dashboard
   useEffect(() => {
     if (!authLoading && !userTypeLoading && isAuthenticated && userType) {
+      console.log('Auth detection:', { userType, currentPage, showUserDashboard, isAuthenticated });
+      
       // If user is authenticated and is a lawyer, redirect to lawyer dashboard
       if (userType === 'lawyer' && currentPage !== 'abogados' && !showUserDashboard) {
+        console.log('Redirecting lawyer to dashboard');
         handleNavigate('abogados');
       } 
       // If user is authenticated and is a regular user, show user dashboard when requested
       else if (userType === 'user' && showUserDashboard === false && currentPage === 'user-dashboard') {
+        console.log('Showing user dashboard');
         setShowUserDashboard(true);
+      }
+      // If regular user tries to access lawyer dashboard, redirect to home
+      else if (userType === 'user' && currentPage === 'abogados') {
+        console.log('Regular user attempted to access lawyer area, redirecting');
+        handleNavigate('home');
       }
     }
   }, [authLoading, userTypeLoading, isAuthenticated, userType, currentPage, showUserDashboard]);
