@@ -255,6 +255,7 @@ export default function Index() {
         <EnhancedUserDashboard
           onBack={handleBackFromDashboard}
           onOpenChat={handleOpenChat}
+          onNavigate={handleNavigate}
         />
       </LogRocketProvider>
     );

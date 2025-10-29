@@ -77,6 +77,7 @@ import {
 interface EnhancedUserDashboardProps {
   onBack: () => void;
   onOpenChat: (message?: string) => void;
+  onNavigate: (page: string, data?: any) => void;
 }
 
 interface UserProfile {
@@ -111,7 +112,7 @@ interface SmartInsight {
   icon: any;
 }
 
-export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUserDashboardProps) {
+export default function EnhancedUserDashboard({ onBack, onOpenChat, onNavigate }: EnhancedUserDashboardProps) {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [documents, setDocuments] = useState<DocumentToken[]>([]);
@@ -385,8 +386,10 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat }: EnhancedUs
   const handleDownloadDocument = async (token: string) => {
     try {
       trackUserAction('download_document', { token });
-      // Navigate to document page with token
-      window.location.hash = `#documento?code=${token}`;
+      // Navigate to document page using onNavigate
+      onNavigate('documento', { code: token });
+      // Also update the URL with the token parameter
+      window.history.pushState(null, "", `#documento?code=${token}`);
     } catch (error) {
       console.error('Error downloading document:', error);
       toast.error('Error al descargar el documento');
