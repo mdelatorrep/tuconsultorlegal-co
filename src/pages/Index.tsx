@@ -292,6 +292,8 @@ export default function Index() {
       case "documento-pago":
       case "estado-documento":
         return <UnifiedDocumentPage onOpenChat={handleOpenChat} />;
+      case "lawyer-landing":
+        return <LawyerLandingPage onOpenChat={handleOpenChat} />;
       case "abogados":
         return (
           <LawyerAuthProvider>

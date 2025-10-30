@@ -89,7 +89,7 @@ export default function Header({
               <User className="w-4 h-4" />
               <span>Personas</span>
             </button>
-            <button onClick={() => handleNavClick("abogados")} className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-smooth font-medium text-sm ${currentPage === "abogados" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+            <button onClick={() => handleNavClick("lawyer-landing")} className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-smooth font-medium text-sm ${currentPage === "lawyer-landing" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
               <Shield className="w-4 h-4" />
               <span>Abogados</span>
             </button>
@@ -183,7 +183,7 @@ export default function Header({
                 </button>
                 
                 {/* Professional Portal */}
-                <button onClick={() => handleNavClick("abogados")} className={`p-4 rounded-xl border-2 transition-smooth ${currentPage === "abogados" ? "bg-warning/10 border-warning text-warning" : "border-border hover:border-warning/30 hover:bg-muted/30"}`}>
+                <button onClick={() => handleNavClick("lawyer-landing")} className={`p-4 rounded-xl border-2 transition-smooth ${currentPage === "lawyer-landing" ? "bg-warning/10 border-warning text-warning" : "border-border hover:border-warning/30 hover:bg-muted/30"}`}>
                   <div className="flex items-center gap-4">
                     <div className="p-2 bg-warning/10 rounded-lg">
                       <Shield className="w-6 h-6 text-warning" />
