@@ -838,6 +838,53 @@ export type Database = {
           },
         ]
       }
+      crm_leads: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          lawyer_id: string
+          message: string
+          name: string
+          origin: string | null
+          phone: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          lawyer_id: string
+          message: string
+          name: string
+          origin?: string | null
+          phone?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          lawyer_id?: string
+          message?: string
+          name?: string
+          origin?: string | null
+          phone?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_leads_lawyer_id_fkey"
+            columns: ["lawyer_id"]
+            isOneToOne: false
+            referencedRelation: "lawyer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_tasks: {
         Row: {
           assigned_to: string | null
@@ -1459,6 +1506,59 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      lawyer_public_profiles: {
+        Row: {
+          bio: string | null
+          created_at: string | null
+          id: string
+          is_published: boolean | null
+          lawyer_id: string
+          profile_photo: string | null
+          services: Json | null
+          slug: string
+          specialties: string[] | null
+          testimonials: Json | null
+          updated_at: string | null
+          years_of_experience: number | null
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string | null
+          id?: string
+          is_published?: boolean | null
+          lawyer_id: string
+          profile_photo?: string | null
+          services?: Json | null
+          slug: string
+          specialties?: string[] | null
+          testimonials?: Json | null
+          updated_at?: string | null
+          years_of_experience?: number | null
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string | null
+          id?: string
+          is_published?: boolean | null
+          lawyer_id?: string
+          profile_photo?: string | null
+          services?: Json | null
+          slug?: string
+          specialties?: string[] | null
+          testimonials?: Json | null
+          updated_at?: string | null
+          years_of_experience?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lawyer_public_profiles_lawyer_id_fkey"
+            columns: ["lawyer_id"]
+            isOneToOne: true
+            referencedRelation: "lawyer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lawyer_subscriptions: {
         Row: {

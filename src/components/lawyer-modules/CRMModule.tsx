@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Briefcase, MessageSquare, FileText, Settings, BarChart3, User, Calendar, Phone, Clock, Brain, TrendingUp, Sparkles, Loader2 } from "lucide-react";
+import { Users, Briefcase, MessageSquare, FileText, Settings, BarChart3, User, Calendar, Phone, Clock, Brain, TrendingUp, Sparkles, Loader2, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -16,6 +16,7 @@ import CRMDocumentsView from "./crm/CRMDocumentsView";
 import CRMTasksView from "./crm/CRMTasksView";
 import CRMAutomationView from "./crm/CRMAutomationView";
 import CRMAnalyticsView from "./crm/CRMAnalyticsView";
+import CRMLeadsView from "./crm/CRMLeadsView";
 
 interface CRMModuleProps {
   user: any;
@@ -32,7 +33,7 @@ interface CRMStats {
 }
 
 export default function CRMModule({ user, currentView, onViewChange, onLogout }: CRMModuleProps) {
-  const [activeTab, setActiveTab] = useState<'clients' | 'cases' | 'communications' | 'documents' | 'tasks' | 'automation' | 'analytics'>('clients');
+  const [activeTab, setActiveTab] = useState<'clients' | 'cases' | 'communications' | 'documents' | 'tasks' | 'automation' | 'analytics' | 'leads'>('clients');
   const [searchTerm, setSearchTerm] = useState("");
   const [stats, setStats] = useState<CRMStats>({ clients: 0, cases: 0, tasks: 0, communications: 0 });
   const [isLoadingAI, setIsLoadingAI] = useState(false);
@@ -114,6 +115,8 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
         return <CRMAutomationView {...commonProps} />;
       case 'analytics':
         return <CRMAnalyticsView {...commonProps} />;
+      case 'leads':
+        return <CRMLeadsView {...commonProps} />;
       default:
         return <CRMClientsView {...commonProps} />;
     }
@@ -269,7 +272,7 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
 
                     {/* Enhanced Tabs Interface */}
                     <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full">
-                      <TabsList className="grid w-full grid-cols-6 bg-gradient-to-r from-blue-50 to-blue-100/50 rounded-xl p-1 border border-blue-200">
+                      <TabsList className="grid w-full grid-cols-7 bg-gradient-to-r from-blue-50 to-blue-100/50 rounded-xl p-1 border border-blue-200">
                         <TabsTrigger 
                           value="clients" 
                           className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-lg transition-all duration-200"
@@ -312,6 +315,13 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
                           <BarChart3 className="h-4 w-4" />
                           <span className="hidden sm:inline">Analíticas</span>
                         </TabsTrigger>
+                        <TabsTrigger 
+                          value="leads"
+                          className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-lg transition-all duration-200"
+                        >
+                          <UserPlus className="h-4 w-4" />
+                          <span className="hidden sm:inline">Leads</span>
+                        </TabsTrigger>
                       </TabsList>
 
                       <div className="mt-6">
@@ -334,6 +344,9 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
                           {renderTabContent()}
                         </TabsContent>
                         <TabsContent value="analytics" className="mt-0">
+                          {renderTabContent()}
+                        </TabsContent>
+                        <TabsContent value="leads" className="mt-0">
                           {renderTabContent()}
                         </TabsContent>
                       </div>

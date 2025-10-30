@@ -13,6 +13,7 @@ import PrivacyPolicyPage from "@/components/PrivacyPolicyPage";
 import TermsAndConditionsPage from "@/components/TermsAndConditionsPage";
 import CertificationVerificationPage from "@/components/CertificationVerificationPage";
 import ChatWidget from "@/components/ChatWidget";
+import LawyerPublicProfilePage from "@/components/LawyerPublicProfilePage";
 import DocumentFormFlow from "@/components/DocumentFormFlow";
 import DocumentCreationSuccess from "@/components/DocumentCreationSuccess";
 import UnifiedDocumentPage from "@/components/UnifiedDocumentPage";

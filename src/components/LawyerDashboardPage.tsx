@@ -823,6 +823,9 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
       case 'training':
         return <LawyerTrainingPage user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as any)} onLogout={logout} lawyerData={user} />;
       
+      case 'public-profile':
+        return <LawyerPublicProfileEditor lawyerId={user.id} lawyerName={user.name} />;
+      
       case 'research':
         if (!user?.canUseAiTools) {
           return (
