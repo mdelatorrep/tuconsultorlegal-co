@@ -195,10 +195,11 @@ export default function Index() {
       console.log('Auth detection:', { userType, currentPage, showUserDashboard, isAuthenticated });
       
       // If user is authenticated and is a lawyer, redirect to lawyer dashboard
-      if (userType === 'lawyer' && currentPage !== 'abogados' && !showUserDashboard) {
+      // BUT allow viewing the lawyer landing page
+      if (userType === 'lawyer' && currentPage !== 'abogados' && currentPage !== 'lawyer-landing' && !showUserDashboard) {
         console.log('Redirecting lawyer to dashboard');
         handleNavigate('abogados');
-      } 
+      }
       // If user is authenticated and is a regular user, show user dashboard when requested
       else if (userType === 'user' && showUserDashboard === false && currentPage === 'user-dashboard') {
         console.log('Showing user dashboard');
