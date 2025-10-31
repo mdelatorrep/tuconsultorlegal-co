@@ -801,6 +801,11 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
       title: "Cuenta",
       items: [
         {
+          title: "Perfil Público",
+          icon: User,
+          view: "public-profile" as const
+        },
+        {
           title: "Suscripción",
           icon: Crown,
           view: "subscription" as const
