@@ -50,3 +50,6 @@ verify_jwt = false
 
 [functions.intelligent-document-search]
 verify_jwt = false
+
+[functions.improve-lawyer-profile]
+verify_jwt = false

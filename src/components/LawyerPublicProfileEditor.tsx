@@ -19,7 +19,8 @@ import {
   CheckCircle,
   Link as LinkIcon,
   Upload,
-  X
+  X,
+  Sparkles
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -52,6 +53,9 @@ export default function LawyerPublicProfileEditor({ lawyerId, lawyerName }: Prop
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [improvingBio, setImprovingBio] = useState(false);
+  const [improvingSpecialties, setImprovingSpecialties] = useState(false);
+  const [improvingService, setImprovingService] = useState<number | null>(null);
   const [profile, setProfile] = useState<LawyerPublicProfile>({
     slug: "",
     profile_photo: "",
@@ -328,6 +332,134 @@ export default function LawyerPublicProfileEditor({ lawyerId, lawyerName }: Prop
     }
   };
 
+  const improveBioWithAI = async () => {
+    setImprovingBio(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('improve-lawyer-profile', {
+        body: {
+          type: 'bio',
+          input: profile.bio,
+          context: {
+            specialties: profile.specialties,
+            yearsOfExperience: profile.years_of_experience
+          }
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.improvedText) {
+        setProfile({ ...profile, bio: data.improvedText });
+        toast({
+          title: "Biografía mejorada",
+          description: "Tu biografía ha sido mejorada con IA",
+        });
+      }
+    } catch (error: any) {
+      console.error('Error improving bio:', error);
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo mejorar la biografía",
+        variant: "destructive"
+      });
+    } finally {
+      setImprovingBio(false);
+    }
+  };
+
+  const improveSpecialtiesWithAI = async () => {
+    setImprovingSpecialties(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('improve-lawyer-profile', {
+        body: {
+          type: 'specialties',
+          input: profile.specialties
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.improvedText) {
+        // Parse comma-separated specialties
+        const newSpecialties = data.improvedText
+          .split(',')
+          .map((s: string) => s.trim())
+          .filter((s: string) => s && !profile.specialties.includes(s));
+        
+        if (newSpecialties.length > 0) {
+          setProfile({
+            ...profile,
+            specialties: [...profile.specialties, ...newSpecialties]
+          });
+          toast({
+            title: "Especialidades sugeridas",
+            description: `Se agregaron ${newSpecialties.length} nuevas especialidades`,
+          });
+        } else {
+          toast({
+            title: "Sin cambios",
+            description: "No se encontraron nuevas especialidades para agregar",
+          });
+        }
+      }
+    } catch (error: any) {
+      console.error('Error improving specialties:', error);
+      toast({
+        title: "Error",
+        description: error.message || "No se pudieron sugerir especialidades",
+        variant: "destructive"
+      });
+    } finally {
+      setImprovingSpecialties(false);
+    }
+  };
+
+  const improveServiceWithAI = async (index: number) => {
+    const service = profile.services[index];
+    if (!service.name) {
+      toast({
+        title: "Nombre requerido",
+        description: "Por favor ingresa el nombre del servicio primero",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setImprovingService(index);
+    try {
+      const { data, error } = await supabase.functions.invoke('improve-lawyer-profile', {
+        body: {
+          type: 'service',
+          input: service.name,
+          context: {
+            specialties: profile.specialties
+          }
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.improvedText) {
+        const newServices = [...profile.services];
+        newServices[index].description = data.improvedText;
+        setProfile({ ...profile, services: newServices });
+        toast({
+          title: "Descripción generada",
+          description: "La descripción del servicio ha sido mejorada con IA",
+        });
+      }
+    } catch (error: any) {
+      console.error('Error improving service:', error);
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo mejorar la descripción",
+        variant: "destructive"
+      });
+    } finally {
+      setImprovingService(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -467,7 +599,28 @@ export default function LawyerPublicProfileEditor({ lawyerId, lawyerName }: Prop
           </div>
 
           <div>
-            <Label>Especialidades</Label>
+            <div className="flex items-center justify-between mb-2">
+              <Label>Especialidades</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={improveSpecialtiesWithAI}
+                disabled={improvingSpecialties}
+              >
+                {improvingSpecialties ? (
+                  <>
+                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                    Sugiriendo...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    Sugerir con IA
+                  </>
+                )}
+              </Button>
+            </div>
             <div className="flex gap-2 mb-2">
               <Input
                 value={newSpecialty}
@@ -492,7 +645,28 @@ export default function LawyerPublicProfileEditor({ lawyerId, lawyerName }: Prop
           </div>
 
           <div>
-            <Label htmlFor="bio">Biografía</Label>
+            <div className="flex items-center justify-between mb-2">
+              <Label htmlFor="bio">Biografía</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={improveBioWithAI}
+                disabled={improvingBio}
+              >
+                {improvingBio ? (
+                  <>
+                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                    Mejorando...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    Mejorar con IA
+                  </>
+                )}
+              </Button>
+            </div>
             <Textarea
               id="bio"
               value={profile.bio}
@@ -533,12 +707,36 @@ export default function LawyerPublicProfileEditor({ lawyerId, lawyerName }: Prop
                 onChange={(e) => updateService(index, 'name', e.target.value)}
                 placeholder="Nombre del servicio"
               />
-              <Textarea
-                value={service.description}
-                onChange={(e) => updateService(index, 'description', e.target.value)}
-                placeholder="Descripción breve"
-                rows={2}
-              />
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-muted-foreground">Descripción</Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => improveServiceWithAI(index)}
+                    disabled={improvingService === index}
+                  >
+                    {improvingService === index ? (
+                      <>
+                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                        Generando...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-3 w-3 mr-1" />
+                        Generar con IA
+                      </>
+                    )}
+                  </Button>
+                </div>
+                <Textarea
+                  value={service.description}
+                  onChange={(e) => updateService(index, 'description', e.target.value)}
+                  placeholder="Descripción breve"
+                  rows={2}
+                />
+              </div>
             </div>
           ))}
         </CardContent>
