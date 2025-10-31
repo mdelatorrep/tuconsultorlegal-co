@@ -28,6 +28,7 @@ import { SubscriptionManager } from "./SubscriptionManager";
 import { SubscriptionStatusIndicator } from "./SubscriptionStatusIndicator";
 import { LawyerChangeEmailDialog } from "./LawyerChangeEmailDialog";
 import { PasswordResetDialog } from "./PasswordResetDialog";
+import LawyerPublicProfileEditor from "./LawyerPublicProfileEditor";
 
 interface DocumentToken {
   id: string;
@@ -59,7 +60,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const [editedContent, setEditedContent] = useState("");
   const [lawyerComments, setLawyerComments] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager' | 'research' | 'analyze' | 'draft' | 'strategize' | 'subscription' | 'crm'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager' | 'research' | 'analyze' | 'draft' | 'strategize' | 'subscription' | 'crm' | 'public-profile'>('dashboard');
   const [isCheckingSpelling, setIsCheckingSpelling] = useState(false);
   const [showSendConfirmation, setShowSendConfirmation] = useState(false);
   const [spellCheckResults, setSpellCheckResults] = useState<{
