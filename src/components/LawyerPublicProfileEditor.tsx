@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,7 +17,9 @@ import {
   Loader2,
   AlertCircle,
   CheckCircle,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Upload,
+  X
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -49,6 +51,7 @@ export default function LawyerPublicProfileEditor({ lawyerId, lawyerName }: Prop
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [profile, setProfile] = useState<LawyerPublicProfile>({
     slug: "",
     profile_photo: "",
@@ -61,6 +64,7 @@ export default function LawyerPublicProfileEditor({ lawyerId, lawyerName }: Prop
   });
   const [newSpecialty, setNewSpecialty] = useState("");
   const [profileUrl, setProfileUrl] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchProfile();
@@ -220,6 +224,110 @@ export default function LawyerPublicProfileEditor({ lawyerId, lawyerName }: Prop
     });
   };
 
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Archivo inválido",
+        description: "Por favor selecciona una imagen válida",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "Archivo muy grande",
+        description: "La imagen debe ser menor a 5MB",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setUploadingPhoto(true);
+
+    try {
+      // Delete old photo if exists
+      if (profile.profile_photo) {
+        const oldPath = profile.profile_photo.split('/').pop();
+        if (oldPath) {
+          await supabase.storage
+            .from('lawyer-profiles')
+            .remove([`${lawyerId}/${oldPath}`]);
+        }
+      }
+
+      // Upload new photo
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${lawyerId}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('lawyer-profiles')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('lawyer-profiles')
+        .getPublicUrl(filePath);
+
+      setProfile({ ...profile, profile_photo: publicUrl });
+
+      toast({
+        title: "Foto subida",
+        description: "Tu foto de perfil ha sido actualizada",
+      });
+    } catch (error: any) {
+      console.error('Error uploading photo:', error);
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo subir la foto",
+        variant: "destructive"
+      });
+    } finally {
+      setUploadingPhoto(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const removePhoto = async () => {
+    if (!profile.profile_photo) return;
+
+    try {
+      const oldPath = profile.profile_photo.split('/').pop();
+      if (oldPath) {
+        await supabase.storage
+          .from('lawyer-profiles')
+          .remove([`${lawyerId}/${oldPath}`]);
+      }
+
+      setProfile({ ...profile, profile_photo: "" });
+
+      toast({
+        title: "Foto eliminada",
+        description: "Tu foto de perfil ha sido eliminada",
+      });
+    } catch (error: any) {
+      console.error('Error removing photo:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar la foto",
+        variant: "destructive"
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -294,13 +402,58 @@ export default function LawyerPublicProfileEditor({ lawyerId, lawyerName }: Prop
           </div>
 
           <div>
-            <Label htmlFor="profile_photo">URL de foto de perfil</Label>
-            <Input
-              id="profile_photo"
-              value={profile.profile_photo}
-              onChange={(e) => setProfile({ ...profile, profile_photo: e.target.value })}
-              placeholder="https://ejemplo.com/foto.jpg"
-            />
+            <Label htmlFor="profile_photo">Foto de perfil</Label>
+            <div className="space-y-3">
+              {profile.profile_photo && (
+                <div className="relative inline-block">
+                  <img 
+                    src={profile.profile_photo} 
+                    alt="Foto de perfil" 
+                    className="w-32 h-32 rounded-full object-cover border-2 border-gray-200"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                    onClick={removePhoto}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoUpload}
+                  className="hidden"
+                  id="photo-upload"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingPhoto}
+                >
+                  {uploadingPhoto ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Subiendo...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4 mr-2" />
+                      {profile.profile_photo ? "Cambiar foto" : "Subir foto"}
+                    </>
+                  )}
+                </Button>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Imagen JPG, PNG o WEBP. Máximo 5MB.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div>
