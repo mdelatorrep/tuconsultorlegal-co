@@ -53,6 +53,7 @@ interface ContactFormData {
   email: string;
   phone: string;
   message: string;
+  selectedService?: string;
 }
 
 export default function LawyerPublicProfilePage() {
@@ -66,9 +67,22 @@ export default function LawyerPublicProfilePage() {
     name: "",
     email: "",
     phone: "",
-    message: ""
+    message: "",
+    selectedService: ""
   });
   const contactFormRef = useRef<HTMLDivElement>(null);
+
+  const handleServiceClick = (serviceName: string) => {
+    setShowContactForm(true);
+    setFormData({
+      ...formData,
+      message: `Estoy interesado en el servicio: ${serviceName}\n\n`,
+      selectedService: serviceName
+    });
+    setTimeout(() => {
+      contactFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  };
 
   // Extract slug from URL params
   useEffect(() => {
@@ -156,7 +170,8 @@ export default function LawyerPublicProfilePage() {
         name: "",
         email: "",
         phone: "",
-        message: ""
+        message: "",
+        selectedService: ""
       });
       setShowContactForm(false);
     } catch (error) {
@@ -286,15 +301,36 @@ export default function LawyerPublicProfilePage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Briefcase className="h-5 w-5 text-blue-600" />
-                    Servicios ofrecidos
+                    Servicios Legales
                   </CardTitle>
+                  <CardDescription>
+                    Selecciona el servicio que necesitas y te contactaré para ayudarte
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
+                  <div className="grid gap-4">
                     {profile.services.map((service, index) => (
-                      <div key={index} className="p-4 rounded-lg bg-gradient-to-r from-blue-50 to-blue-100/50 border border-blue-200">
-                        <h4 className="font-semibold text-lg mb-2">{service.name}</h4>
-                        <p className="text-muted-foreground">{service.description}</p>
+                      <div 
+                        key={index} 
+                        className="group relative p-6 rounded-xl bg-gradient-to-br from-white to-blue-50/50 border-2 border-blue-100 hover:border-blue-300 hover:shadow-lg transition-all duration-300"
+                      >
+                        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                          <div className="flex-1">
+                            <h4 className="font-bold text-xl mb-3 text-foreground group-hover:text-blue-600 transition-colors">
+                              {service.name}
+                            </h4>
+                            <p className="text-muted-foreground leading-relaxed mb-4">
+                              {service.description}
+                            </p>
+                          </div>
+                          <Button
+                            onClick={() => handleServiceClick(service.name)}
+                            className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md hover:shadow-lg transition-all whitespace-nowrap"
+                          >
+                            <MessageSquare className="h-4 w-4 mr-2" />
+                            Solicitar servicio
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -356,6 +392,11 @@ export default function LawyerPublicProfilePage() {
                     <div>
                       <label className="text-sm font-medium mb-2 block">
                         Mensaje *
+                        {formData.selectedService && (
+                          <span className="ml-2 text-xs text-blue-600 font-normal">
+                            (Servicio seleccionado: {formData.selectedService})
+                          </span>
+                        )}
                       </label>
                       <Textarea
                         required
@@ -423,39 +464,6 @@ export default function LawyerPublicProfilePage() {
               </Card>
             )}
 
-            {/* Quick Contact */}
-            <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-200">
-              <CardHeader>
-                <CardTitle className="text-lg">Contacto rápido</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => {
-                    setShowContactForm(true);
-                    setTimeout(() => {
-                      contactFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }, 100);
-                  }}
-                >
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  Enviar mensaje
-                </Button>
-                {profile.lawyer_info?.email && (
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start"
-                    asChild
-                  >
-                    <a href={`mailto:${profile.lawyer_info.email}`}>
-                      <Mail className="h-4 w-4 mr-2" />
-                      Email
-                    </a>
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
           </div>
         </div>
       </main>
