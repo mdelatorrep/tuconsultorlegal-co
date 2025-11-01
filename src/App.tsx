@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AdminPage from "./components/AdminPage";
 import LawyerAuthPage from "./components/LawyerAuthPage";
+import LawyerPublicProfilePage from "./components/LawyerPublicProfilePage";
 import DemoScreenshotsPage from "./components/DemoScreenshotsPage";
 import DemoResearchMockup from "./components/demo/DemoResearchMockup";
 import DemoAnalysisMockup from "./components/demo/DemoAnalysisMockup";
@@ -55,6 +56,7 @@ const AppContent = () => {
           <Route path="/" element={<Index />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/auth-abogados" element={<LawyerAuthPage />} />
+          <Route path="/perfil/:slug" element={<LawyerPublicProfilePage />} />
           <Route path="/documento/:token" element={<Index />} />
           <Route path="/demo-screenshots" element={<DemoScreenshotsPage />} />
           <Route path="/demo/research" element={<DemoResearchMockup />} />

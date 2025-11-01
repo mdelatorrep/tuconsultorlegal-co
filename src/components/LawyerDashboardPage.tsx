@@ -914,8 +914,8 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
     }
   };
 
-  // If not dashboard view, show module content directly (modules already have their own sidebar)
-  if (currentView !== 'dashboard') {
+  // If not dashboard view and not public-profile, show module content directly (modules have their own sidebar)
+  if (currentView !== 'dashboard' && currentView !== 'public-profile' && currentView !== 'stats' && currentView !== 'subscription') {
     return (
       <>
         {/* Confirmation Dialog for Sending to Client */}
@@ -1073,9 +1073,17 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
 
           {/* Dashboard Content */}
           <div className="container mx-auto px-3 md:px-4 lg:px-6 py-3 md:py-4 lg:py-6">
-            <div className="max-w-7xl mx-auto space-y-4 md:space-y-6 lg:space-y-8">
-              {/* Welcome Section */}
-              <div className="mb-4 md:mb-6 lg:mb-8" data-tour="dashboard-welcome">
+            {/* Render specific view content or dashboard */}
+            {currentView === 'public-profile' ? (
+              <LawyerPublicProfileEditor lawyerId={user.id} lawyerName={user.name} />
+            ) : currentView === 'stats' ? (
+              <LawyerStatsSection />
+            ) : currentView === 'subscription' ? (
+              <SubscriptionManager />
+            ) : (
+              <div className="max-w-7xl mx-auto space-y-4 md:space-y-6 lg:space-y-8">
+                {/* Welcome Section */}
+                <div className="mb-4 md:mb-6 lg:mb-8" data-tour="dashboard-welcome">
                 <div className="flex flex-col space-y-3 md:space-y-4 lg:space-y-0 lg:flex-row lg:items-center lg:justify-between">
                   <div className="flex-1 min-w-0">
                     <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground truncate">
@@ -1643,10 +1651,11 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                       </div>
                     </CardContent>
                   </Card>
-                </div>
-              )}
+                  </div>
+                )}
 
-            </div>
+              </div>
+            )}
           </div>
         </main>
       </div>

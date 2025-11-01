@@ -69,27 +69,12 @@ export default function LawyerPublicProfilePage() {
     message: ""
   });
 
-  // Extract slug from URL (e.g., /perfil/juan-perez or #perfil/juan-perez)
+  // Extract slug from URL params
   useEffect(() => {
-    const getSlugFromUrl = () => {
-      const hash = window.location.hash;
-      const path = window.location.pathname;
-      
-      // Try to get slug from hash first (#perfil/juan-perez)
-      if (hash.includes('/perfil/')) {
-        return hash.split('/perfil/')[1].split('?')[0];
-      }
-      
-      // Then try pathname (/perfil/juan-perez)
-      if (path.includes('/perfil/')) {
-        return path.split('/perfil/')[1].split('?')[0];
-      }
-      
-      return null;
-    };
-
-    const slug = getSlugFromUrl();
-    if (slug) {
+    const pathSegments = location.pathname.split('/');
+    const slug = pathSegments[pathSegments.length - 1];
+    
+    if (slug && slug !== 'perfil') {
       fetchProfile(slug);
     } else {
       setLoading(false);

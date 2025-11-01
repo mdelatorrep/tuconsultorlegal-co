@@ -76,7 +76,7 @@ export default function LawyerPublicProfileEditor({ lawyerId, lawyerName }: Prop
 
   useEffect(() => {
     if (profile.slug) {
-      setProfileUrl(`${window.location.origin}/#perfil/${profile.slug}`);
+      setProfileUrl(`${window.location.origin}/perfil/${profile.slug}`);
     }
   }, [profile.slug]);
 
@@ -346,7 +346,10 @@ export default function LawyerPublicProfileEditor({ lawyerId, lawyerName }: Prop
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error(error.message || 'Error al llamar a la función');
+      }
 
       if (data?.improvedText) {
         setProfile({ ...profile, bio: data.improvedText });
@@ -354,12 +357,14 @@ export default function LawyerPublicProfileEditor({ lawyerId, lawyerName }: Prop
           title: "Biografía mejorada",
           description: "Tu biografía ha sido mejorada con IA",
         });
+      } else {
+        throw new Error('No se recibió respuesta de la IA');
       }
     } catch (error: any) {
       console.error('Error improving bio:', error);
       toast({
         title: "Error",
-        description: error.message || "No se pudo mejorar la biografía",
+        description: error.message || "No se pudo mejorar la biografía. Por favor intenta de nuevo.",
         variant: "destructive"
       });
     } finally {
@@ -377,7 +382,10 @@ export default function LawyerPublicProfileEditor({ lawyerId, lawyerName }: Prop
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error(error.message || 'Error al llamar a la función');
+      }
 
       if (data?.improvedText) {
         // Parse comma-separated specialties
@@ -401,12 +409,14 @@ export default function LawyerPublicProfileEditor({ lawyerId, lawyerName }: Prop
             description: "No se encontraron nuevas especialidades para agregar",
           });
         }
+      } else {
+        throw new Error('No se recibió respuesta de la IA');
       }
     } catch (error: any) {
       console.error('Error improving specialties:', error);
       toast({
         title: "Error",
-        description: error.message || "No se pudieron sugerir especialidades",
+        description: error.message || "No se pudieron sugerir especialidades. Por favor intenta de nuevo.",
         variant: "destructive"
       });
     } finally {
@@ -437,7 +447,10 @@ export default function LawyerPublicProfileEditor({ lawyerId, lawyerName }: Prop
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error(error.message || 'Error al llamar a la función');
+      }
 
       if (data?.improvedText) {
         const newServices = [...profile.services];
@@ -447,12 +460,14 @@ export default function LawyerPublicProfileEditor({ lawyerId, lawyerName }: Prop
           title: "Descripción generada",
           description: "La descripción del servicio ha sido mejorada con IA",
         });
+      } else {
+        throw new Error('No se recibió respuesta de la IA');
       }
     } catch (error: any) {
       console.error('Error improving service:', error);
       toast({
         title: "Error",
-        description: error.message || "No se pudo mejorar la descripción",
+        description: error.message || "No se pudo mejorar la descripción. Por favor intenta de nuevo.",
         variant: "destructive"
       });
     } finally {
@@ -529,7 +544,7 @@ export default function LawyerPublicProfileEditor({ lawyerId, lawyerName }: Prop
               placeholder="juan-perez-abogado"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Este será parte de tu URL: {window.location.origin}/#perfil/{profile.slug || 'tu-nombre'}
+              Este será parte de tu URL: {window.location.origin}/perfil/{profile.slug || 'tu-nombre'}
             </p>
           </div>
 
