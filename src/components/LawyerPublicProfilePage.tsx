@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -68,6 +68,7 @@ export default function LawyerPublicProfilePage() {
     phone: "",
     message: ""
   });
+  const contactFormRef = useRef<HTMLDivElement>(null);
 
   // Extract slug from URL params
   useEffect(() => {
@@ -244,7 +245,12 @@ export default function LawyerPublicProfilePage() {
               
               <Button 
                 size="lg"
-                onClick={() => setShowContactForm(!showContactForm)}
+                onClick={() => {
+                  setShowContactForm(true);
+                  setTimeout(() => {
+                    contactFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }, 100);
+                }}
                 className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-500 shadow-lg"
               >
                 <MessageSquare className="h-4 w-4 mr-2" />
@@ -298,7 +304,7 @@ export default function LawyerPublicProfilePage() {
 
             {/* Contact Form */}
             {showContactForm && (
-              <Card className="border-blue-200 shadow-lg">
+              <Card ref={contactFormRef} className="border-blue-200 shadow-lg scroll-mt-8">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Send className="h-5 w-5 text-blue-600" />
@@ -426,7 +432,12 @@ export default function LawyerPublicProfilePage() {
                 <Button 
                   variant="outline" 
                   className="w-full justify-start"
-                  onClick={() => setShowContactForm(true)}
+                  onClick={() => {
+                    setShowContactForm(true);
+                    setTimeout(() => {
+                      contactFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 100);
+                  }}
                 >
                   <MessageSquare className="h-4 w-4 mr-2" />
                   Enviar mensaje
