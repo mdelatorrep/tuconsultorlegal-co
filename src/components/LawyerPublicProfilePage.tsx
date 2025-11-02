@@ -218,7 +218,7 @@ export default function LawyerPublicProfilePage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-background to-blue-500/5">
+    <div className="min-h-screen flex flex-col bg-background">
       <Header 
         currentPage="perfil" 
         onNavigate={() => {}} 
@@ -227,13 +227,13 @@ export default function LawyerPublicProfilePage() {
       
       <main className="flex-1 container mx-auto px-4 py-8 max-w-6xl">
         {/* Hero Section */}
-        <Card className="mb-8 overflow-hidden border-0 shadow-xl bg-gradient-to-br from-white via-white to-blue-500/5">
-          <div className="bg-gradient-to-r from-blue-500 to-blue-600 h-32"></div>
+        <Card className="mb-8 overflow-hidden border-0 shadow-xl">
+          <div className="bg-primary h-32"></div>
           <CardContent className="relative pt-0 pb-8">
             <div className="flex flex-col md:flex-row gap-6 items-start md:items-end -mt-16 px-4">
-              <Avatar className="h-32 w-32 border-4 border-white shadow-xl">
+              <Avatar className="h-32 w-32 border-4 border-background shadow-xl">
                 <AvatarImage src={profile.profile_photo || undefined} />
-                <AvatarFallback className="text-2xl bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+                <AvatarFallback className="text-2xl bg-primary text-primary-foreground">
                   {profile.lawyer_info?.full_name.charAt(0) || 'A'}
                 </AvatarFallback>
               </Avatar>
@@ -244,7 +244,7 @@ export default function LawyerPublicProfilePage() {
                 </h1>
                 <div className="flex flex-wrap gap-2 mb-4">
                   {profile.specialties.map((specialty, index) => (
-                    <Badge key={index} variant="secondary" className="bg-blue-100 text-blue-700">
+                    <Badge key={index} variant="secondary">
                       <Briefcase className="h-3 w-3 mr-1" />
                       {specialty}
                     </Badge>
@@ -266,7 +266,7 @@ export default function LawyerPublicProfilePage() {
                     contactFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                   }, 100);
                 }}
-                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-500 shadow-lg"
+                className="shadow-lg"
               >
                 <MessageSquare className="h-4 w-4 mr-2" />
                 Solicita una consulta
@@ -283,7 +283,7 @@ export default function LawyerPublicProfilePage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <User className="h-5 w-5 text-blue-600" />
+                    <User className="h-5 w-5 text-primary" />
                     Acerca de mí
                   </CardTitle>
                 </CardHeader>
@@ -300,7 +300,7 @@ export default function LawyerPublicProfilePage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Briefcase className="h-5 w-5 text-blue-600" />
+                    <Briefcase className="h-5 w-5 text-primary" />
                     Servicios Legales
                   </CardTitle>
                   <CardDescription>
@@ -312,11 +312,11 @@ export default function LawyerPublicProfilePage() {
                     {profile.services.map((service, index) => (
                       <div 
                         key={index} 
-                        className="group relative p-6 rounded-xl bg-gradient-to-br from-white to-blue-50/50 border-2 border-blue-100 hover:border-blue-300 hover:shadow-lg transition-all duration-300"
+                        className="group relative p-6 rounded-xl bg-card border-2 border-border hover:border-primary hover:shadow-lg transition-all duration-300"
                       >
                         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                           <div className="flex-1">
-                            <h4 className="font-bold text-xl mb-3 text-foreground group-hover:text-blue-600 transition-colors">
+                            <h4 className="font-bold text-xl mb-3 text-foreground group-hover:text-primary transition-colors">
                               {service.name}
                             </h4>
                             <p className="text-muted-foreground leading-relaxed mb-4">
@@ -325,7 +325,7 @@ export default function LawyerPublicProfilePage() {
                           </div>
                           <Button
                             onClick={() => handleServiceClick(service.name)}
-                            className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md hover:shadow-lg transition-all whitespace-nowrap"
+                            className="shadow-md hover:shadow-lg transition-all whitespace-nowrap"
                           >
                             <MessageSquare className="h-4 w-4 mr-2" />
                             Solicitar servicio
@@ -340,10 +340,10 @@ export default function LawyerPublicProfilePage() {
 
             {/* Contact Form */}
             {showContactForm && (
-              <Card ref={contactFormRef} className="border-blue-200 shadow-lg scroll-mt-8">
+              <Card ref={contactFormRef} className="border-primary shadow-lg scroll-mt-8">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Send className="h-5 w-5 text-blue-600" />
+                    <Send className="h-5 w-5 text-primary" />
                     Envíame un mensaje
                   </CardTitle>
                   <CardDescription>
@@ -393,7 +393,7 @@ export default function LawyerPublicProfilePage() {
                       <label className="text-sm font-medium mb-2 block">
                         Mensaje *
                         {formData.selectedService && (
-                          <span className="ml-2 text-xs text-blue-600 font-normal">
+                          <span className="ml-2 text-xs text-primary font-normal">
                             (Servicio seleccionado: {formData.selectedService})
                           </span>
                         )}
@@ -410,7 +410,7 @@ export default function LawyerPublicProfilePage() {
                     <Button 
                       type="submit" 
                       disabled={submitting}
-                      className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-500"
+                      className="w-full"
                     >
                       {submitting ? (
                         <>
@@ -437,19 +437,19 @@ export default function LawyerPublicProfilePage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Star className="h-5 w-5 text-yellow-500" />
+                    <Star className="h-5 w-5 text-secondary" />
                     Testimonios
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     {profile.testimonials.map((testimonial, index) => (
-                      <div key={index} className="p-4 rounded-lg bg-gradient-to-br from-yellow-50 to-orange-50 border border-yellow-200">
+                      <div key={index} className="p-4 rounded-lg bg-muted border border-border">
                         <p className="text-sm italic mb-3 text-muted-foreground">
                           "{testimonial.comment}"
                         </p>
                         <div className="flex items-center gap-2">
-                          <div className="h-8 w-8 rounded-full bg-gradient-to-br from-yellow-400 to-orange-400 flex items-center justify-center text-white font-semibold">
+                          <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground font-semibold">
                             {testimonial.client_name.charAt(0)}
                           </div>
                           <div>
