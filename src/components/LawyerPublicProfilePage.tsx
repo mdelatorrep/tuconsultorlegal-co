@@ -107,7 +107,7 @@ export default function LawyerPublicProfilePage() {
         .from('lawyer_public_profiles')
         .select(`
           *,
-          lawyer_info:lawyer_profiles(full_name, email)
+          lawyer_profiles!inner(full_name, email)
         `)
         .eq('slug', slug)
         .eq('is_published', true)
@@ -115,7 +115,15 @@ export default function LawyerPublicProfilePage() {
 
       if (error) throw error;
 
-      setProfile(data as any);
+      // Transform the data to match our interface
+      const transformedData = {
+        ...data,
+        lawyer_info: Array.isArray(data.lawyer_profiles) 
+          ? data.lawyer_profiles[0] 
+          : data.lawyer_profiles
+      };
+
+      setProfile(transformedData as any);
     } catch (error) {
       console.error('Error fetching profile:', error);
       toast({
