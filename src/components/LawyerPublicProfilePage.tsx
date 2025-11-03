@@ -229,15 +229,33 @@ export default function LawyerPublicProfilePage() {
         {/* Hero Section - Premium Design */}
         <Card className="mb-8 overflow-hidden border-0 shadow-elevated hover:shadow-floating transition-all duration-500 animate-fade-in">
           {/* Elegant Header with Gradient */}
-          <div className="relative bg-gradient-to-r from-primary via-primary-light to-primary h-40 md:h-48">
+          <div className="relative bg-gradient-to-r from-primary via-primary-light to-primary pt-8 pb-24 md:pb-28 px-4 md:px-8">
             {/* Subtle Pattern Overlay */}
             <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDE2djRoLTR2LTRoNHptMCA4djRoLTR2LTRoNHptMCA4djRoLTR2LTRoNHptMCA4djRoLTR2LTRoNHoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-30"></div>
             
             {/* Premium Badge */}
-            <div className="absolute top-6 right-6">
-              <div className="bg-background/95 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg flex items-center gap-2 animate-scale-in">
-                <Award className="h-4 w-4 text-secondary" />
+            <div className="absolute top-6 right-6 z-10">
+              <div className="bg-white/95 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg flex items-center gap-2 animate-scale-in">
+                <Award className="h-4 w-4 text-primary" />
                 <span className="text-xs font-semibold text-foreground">Abogado Verificado</span>
+              </div>
+            </div>
+
+            {/* Nombre del Abogado en Header - Máximo Contraste */}
+            <div className="relative z-10 text-center md:text-left mt-8">
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2 tracking-tight leading-tight drop-shadow-lg">
+                {profile.lawyer_info?.full_name || 'Abogado Profesional'}
+              </h1>
+              <div className="flex flex-wrap justify-center md:justify-start gap-2 mt-4">
+                {profile.specialties.map((specialty, index) => (
+                  <Badge 
+                    key={index} 
+                    className="bg-white/20 hover:bg-white/30 text-white border-white/30 px-3 py-1.5 text-xs md:text-sm font-medium shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105 backdrop-blur-sm"
+                  >
+                    <Briefcase className="h-3 w-3 md:h-3.5 md:w-3.5 mr-1.5 flex-shrink-0" />
+                    <span className="truncate">{specialty}</span>
+                  </Badge>
+                ))}
               </div>
             </div>
           </div>
@@ -245,38 +263,20 @@ export default function LawyerPublicProfilePage() {
           <CardContent className="relative pt-0 pb-8 md:pb-12">
             <div className="flex flex-col md:flex-row gap-6 items-start -mt-16 md:-mt-20 px-4">
               {/* Professional Avatar with Ring */}
-              <div className="relative group flex-shrink-0">
+              <div className="relative group flex-shrink-0 mx-auto md:mx-0">
                 <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl group-hover:blur-2xl transition-all duration-500"></div>
                 <Avatar className="relative h-28 w-28 md:h-36 md:w-36 border-4 border-background shadow-floating ring-4 ring-primary/10 transition-all duration-500 hover:scale-105 hover:ring-primary/30">
                   <AvatarImage src={profile.profile_photo || undefined} className="object-cover" />
                   <AvatarFallback className="text-3xl md:text-4xl bg-primary text-primary-foreground font-bold">
-                    {profile.lawyer_info?.full_name.charAt(0) || 'A'}
+                    {profile.lawyer_info?.full_name?.charAt(0) || 'A'}
                   </AvatarFallback>
                 </Avatar>
               </div>
               
-              {/* Professional Info - Full Width on Mobile */}
-              <div className="flex-1 w-full min-w-0 space-y-4 bg-background/95 backdrop-blur-sm rounded-2xl p-6 shadow-elevated border border-border/50">
-                <div>
-                  <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold text-foreground mb-3 tracking-tight leading-tight break-words">
-                    {profile.lawyer_info?.full_name || 'Abogado Profesional'}
-                  </h1>
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {profile.specialties.map((specialty, index) => (
-                      <Badge 
-                        key={index} 
-                        variant="secondary"
-                        className="px-3 py-1.5 text-xs md:text-sm font-medium shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105"
-                      >
-                        <Briefcase className="h-3 w-3 md:h-3.5 md:w-3.5 mr-1.5 flex-shrink-0" />
-                        <span className="truncate">{specialty}</span>
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-                
+              {/* Professional Info */}
+              <div className="flex-1 w-full min-w-0 space-y-4">
                 {profile.years_of_experience && (
-                  <div className="flex items-center gap-3 text-sm md:text-base text-muted-foreground bg-muted/50 px-4 py-2.5 rounded-lg shadow-sm w-fit">
+                  <div className="flex items-center justify-center md:justify-start gap-3 text-sm md:text-base text-muted-foreground bg-muted/50 px-4 py-3 rounded-lg shadow-sm">
                     <div className="bg-primary/10 p-2 rounded-full flex-shrink-0">
                       <Clock className="h-4 w-4 text-primary" />
                     </div>
