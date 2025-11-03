@@ -243,11 +243,11 @@ export default function LawyerPublicProfilePage() {
           </div>
 
           <CardContent className="relative pt-0 pb-8 md:pb-12">
-            <div className="flex flex-col md:flex-row gap-6 items-start md:items-end -mt-20 md:-mt-24 px-4">
+            <div className="flex flex-col md:flex-row gap-6 items-start -mt-16 md:-mt-20 px-4">
               {/* Professional Avatar with Ring */}
-              <div className="relative group">
+              <div className="relative group flex-shrink-0">
                 <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl group-hover:blur-2xl transition-all duration-500"></div>
-                <Avatar className="relative h-32 w-32 md:h-40 md:w-40 border-4 border-background shadow-floating ring-4 ring-primary/10 transition-all duration-500 hover:scale-105 hover:ring-primary/30">
+                <Avatar className="relative h-28 w-28 md:h-36 md:w-36 border-4 border-background shadow-floating ring-4 ring-primary/10 transition-all duration-500 hover:scale-105 hover:ring-primary/30">
                   <AvatarImage src={profile.profile_photo || undefined} className="object-cover" />
                   <AvatarFallback className="text-3xl md:text-4xl bg-primary text-primary-foreground font-bold">
                     {profile.lawyer_info?.full_name.charAt(0) || 'A'}
@@ -255,53 +255,53 @@ export default function LawyerPublicProfilePage() {
                 </Avatar>
               </div>
               
-              {/* Professional Info */}
-              <div className="flex-1 mt-4 md:mt-0 space-y-4">
+              {/* Professional Info - Full Width on Mobile */}
+              <div className="flex-1 w-full min-w-0 space-y-4 bg-background/95 backdrop-blur-sm rounded-2xl p-6 shadow-elevated border border-border/50">
                 <div>
-                  <h1 className="text-3xl md:text-5xl font-bold text-foreground mb-3 tracking-tight leading-tight">
-                    {profile.lawyer_info?.full_name}
+                  <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold text-foreground mb-3 tracking-tight leading-tight break-words">
+                    {profile.lawyer_info?.full_name || 'Abogado Profesional'}
                   </h1>
                   <div className="flex flex-wrap gap-2 mb-4">
                     {profile.specialties.map((specialty, index) => (
                       <Badge 
                         key={index} 
                         variant="secondary"
-                        className="px-3 py-1.5 text-sm font-medium shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105"
+                        className="px-3 py-1.5 text-xs md:text-sm font-medium shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105"
                       >
-                        <Briefcase className="h-3.5 w-3.5 mr-1.5" />
-                        {specialty}
+                        <Briefcase className="h-3 w-3 md:h-3.5 md:w-3.5 mr-1.5 flex-shrink-0" />
+                        <span className="truncate">{specialty}</span>
                       </Badge>
                     ))}
                   </div>
                 </div>
                 
                 {profile.years_of_experience && (
-                  <div className="flex items-center gap-3 text-muted-foreground bg-muted/50 px-4 py-2.5 rounded-lg inline-flex shadow-sm">
-                    <div className="bg-primary/10 p-2 rounded-full">
+                  <div className="flex items-center gap-3 text-sm md:text-base text-muted-foreground bg-muted/50 px-4 py-2.5 rounded-lg shadow-sm w-fit">
+                    <div className="bg-primary/10 p-2 rounded-full flex-shrink-0">
                       <Clock className="h-4 w-4 text-primary" />
                     </div>
                     <span className="font-medium">{profile.years_of_experience} años de experiencia profesional</span>
                   </div>
                 )}
+                
+                {/* CTA Button - Full Width on Mobile */}
+                <Button 
+                  size="lg"
+                  onClick={() => {
+                    setShowContactForm(true);
+                    setTimeout(() => {
+                      contactFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 100);
+                  }}
+                  className="w-full md:w-auto shadow-elevated hover:shadow-floating transition-all duration-300 hover:scale-105 px-6 md:px-8 py-5 md:py-6 text-base font-semibold group relative overflow-hidden"
+                >
+                  <span className="relative z-10 flex items-center justify-center gap-2">
+                    <MessageSquare className="h-5 w-5 transition-transform group-hover:scale-110 flex-shrink-0" />
+                    Solicita una consulta
+                  </span>
+                  <div className="absolute inset-0 bg-primary-light opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                </Button>
               </div>
-              
-              {/* CTA Button - Premium */}
-              <Button 
-                size="lg"
-                onClick={() => {
-                  setShowContactForm(true);
-                  setTimeout(() => {
-                    contactFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  }, 100);
-                }}
-                className="shadow-elevated hover:shadow-floating transition-all duration-300 hover:scale-105 px-8 py-6 text-base font-semibold group relative overflow-hidden"
-              >
-                <span className="relative z-10 flex items-center gap-2">
-                  <MessageSquare className="h-5 w-5 transition-transform group-hover:scale-110" />
-                  Solicita una consulta
-                </span>
-                <div className="absolute inset-0 bg-primary-light opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              </Button>
             </div>
           </CardContent>
         </Card>
