@@ -154,7 +154,17 @@ export default function LawyerPublicProfilePage() {
     setSubmitting(true);
 
     try {
-      const { error } = await supabase
+      console.log('Attempting to create lead with data:', {
+        lawyer_id: profile.lawyer_id,
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone || null,
+        message: formData.message,
+        origin: 'Página de perfil público',
+        status: 'new'
+      });
+
+      const { data, error } = await supabase
         .from('crm_leads')
         .insert({
           lawyer_id: profile.lawyer_id,
@@ -164,9 +174,15 @@ export default function LawyerPublicProfilePage() {
           message: formData.message,
           origin: 'Página de perfil público',
           status: 'new'
-        });
+        })
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error details:', error);
+        throw error;
+      }
+
+      console.log('Lead created successfully:', data);
 
       toast({
         title: "¡Mensaje enviado!",
@@ -182,11 +198,18 @@ export default function LawyerPublicProfilePage() {
         selectedService: ""
       });
       setShowContactForm(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting contact:', error);
+      console.error('Error message:', error?.message);
+      console.error('Error details:', error?.details);
+      console.error('Error hint:', error?.hint);
+      
+      // Mostrar el mensaje de error específico de Supabase si está disponible
+      const errorMessage = error?.message || "No se pudo enviar tu mensaje. Intenta nuevamente.";
+      
       toast({
-        title: "Error",
-        description: "No se pudo enviar tu mensaje. Intenta nuevamente.",
+        title: "Error al enviar mensaje",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
