@@ -63,6 +63,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const [currentView, setCurrentView] = useState<'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager' | 'research' | 'analyze' | 'draft' | 'strategize' | 'subscription' | 'crm' | 'public-profile'>('dashboard');
   const [isCheckingSpelling, setIsCheckingSpelling] = useState(false);
   const [showSendConfirmation, setShowSendConfirmation] = useState(false);
+  const [newLeadsCount, setNewLeadsCount] = useState(0);
   const [spellCheckResults, setSpellCheckResults] = useState<{
     errors: Array<{
       word: string;
@@ -125,13 +126,14 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
     }
   };
 
-  // Fetch documents when authenticated and setup real-time updates
+  // Fetch documents and new leads count when authenticated and setup real-time updates
   useEffect(() => {
     if (isAuthenticated) {
       fetchDocuments();
+      fetchNewLeadsCount();
       
       // Setup real-time updates for document changes
-      const channel = supabase
+      const documentChannel = supabase
         .channel('document-tokens-changes')
         .on(
           'postgres_changes',
@@ -149,11 +151,31 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
         )
         .subscribe();
 
+      // Setup real-time updates for new leads
+      const leadsChannel = supabase
+        .channel('crm-leads-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'crm_leads',
+            filter: `lawyer_id=eq.${user?.id}`
+          },
+          (payload) => {
+            console.log('Leads real-time update:', payload);
+            // Refresh leads count when changes occur
+            fetchNewLeadsCount();
+          }
+        )
+        .subscribe();
+
       return () => {
-        supabase.removeChannel(channel);
+        supabase.removeChannel(documentChannel);
+        supabase.removeChannel(leadsChannel);
       };
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user?.id]);
 
   const fetchDocuments = async () => {
     try {
@@ -224,6 +246,27 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
       setDocuments([]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchNewLeadsCount = async () => {
+    try {
+      if (!user?.id) return;
+
+      const { count, error } = await supabase
+        .from('crm_leads')
+        .select('*', { count: 'exact', head: true })
+        .eq('lawyer_id', user.id)
+        .eq('status', 'new');
+
+      if (error) {
+        console.error('Error fetching new leads count:', error);
+        return;
+      }
+
+      setNewLeadsCount(count || 0);
+    } catch (error) {
+      console.error('Error:', error);
     }
   };
 
@@ -1177,6 +1220,41 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                 </div>
               )}
 
+              {/* 🔔 NEW LEADS NOTIFICATION */}
+              {newLeadsCount > 0 && (
+                <div className="mb-6 animate-fade-in">
+                  <Card className="border-2 border-blue-500 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 shadow-lg">
+                    <CardContent className="p-6">
+                      <div className="flex items-start gap-4">
+                        <div className="flex-shrink-0">
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center animate-pulse">
+                            <Mail className="h-6 w-6 text-white" />
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-lg font-bold text-blue-900 dark:text-blue-100 mb-1">
+                            ¡Tienes {newLeadsCount} {newLeadsCount === 1 ? 'nueva consulta' : 'nuevas consultas'}!
+                          </h3>
+                          <p className="text-sm text-blue-700 dark:text-blue-200 mb-3">
+                            {newLeadsCount === 1 
+                              ? 'Un cliente potencial ha solicitado tu asesoría.' 
+                              : `${newLeadsCount} clientes potenciales han solicitado tu asesoría.`
+                            }
+                          </p>
+                          <Button 
+                            onClick={() => setCurrentView('crm')}
+                            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md"
+                          >
+                            <Users className="h-4 w-4 mr-2" />
+                            Ver consultas en CRM
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+
               {/* 📄 ALL PENDING DOCUMENTS */}
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-4">
@@ -1518,9 +1596,17 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                     ].map((tool) => (
                       <Card 
                         key={tool.view} 
-                        className="group cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg border-0"
+                        className="group cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg border-0 relative"
                         onClick={() => setCurrentView(tool.view as any)}
                       >
+                        {/* Badge de notificación para CRM */}
+                        {tool.view === 'crm' && newLeadsCount > 0 && (
+                          <div className="absolute -top-2 -right-2 z-10">
+                            <Badge className="bg-destructive text-destructive-foreground px-2 py-1 text-xs font-bold animate-pulse shadow-lg">
+                              {newLeadsCount}
+                            </Badge>
+                          </div>
+                        )}
                         <CardContent className="p-4 text-center">
                           <div className={`w-12 h-12 rounded-lg bg-gradient-to-r ${tool.gradient} flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-300`}>
                             <tool.icon className="h-6 w-6 text-white" />
