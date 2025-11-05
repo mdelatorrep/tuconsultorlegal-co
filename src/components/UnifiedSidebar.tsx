@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Bot, Settings, Users, Crown, Lock } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface UnifiedSidebarProps {
   user: any;
@@ -10,8 +11,9 @@ interface UnifiedSidebarProps {
 }
 
 export default function UnifiedSidebar({ user, currentView, onViewChange, onLogout }: UnifiedSidebarProps) {
-  const { state } = useSidebar();
-  const collapsed = state === 'collapsed';
+  const { state, isMobile: sidebarIsMobile } = useSidebar();
+  const isMobile = useIsMobile();
+  const collapsed = state === 'collapsed' && !isMobile;
   
   // Sidebar menu configuration
   const menuItems = [
@@ -110,10 +112,10 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
 
   return (
     <Sidebar 
-      className={collapsed ? "w-14" : "w-64"}
-      collapsible="icon"
+      className={isMobile ? "w-72" : (collapsed ? "w-14" : "w-64")}
+      collapsible={isMobile ? "offcanvas" : "icon"}
     >
-      <SidebarTrigger className="m-2 self-end" />
+      {!isMobile && <SidebarTrigger className="m-2 self-end" />}
       
       <SidebarContent>
         {/* Header del Sidebar */}
