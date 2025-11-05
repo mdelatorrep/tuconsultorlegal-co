@@ -11,9 +11,10 @@ interface UnifiedSidebarProps {
 }
 
 export default function UnifiedSidebar({ user, currentView, onViewChange, onLogout }: UnifiedSidebarProps) {
-  const { state, isMobile: sidebarIsMobile } = useSidebar();
+  const { state, open } = useSidebar();
   const isMobile = useIsMobile();
-  const collapsed = state === 'collapsed' && !isMobile;
+  // En móvil (offcanvas), nunca colapsar. En desktop, usar el estado del sidebar
+  const collapsed = !isMobile && state === 'collapsed';
   
   // Sidebar menu configuration
   const menuItems = [
