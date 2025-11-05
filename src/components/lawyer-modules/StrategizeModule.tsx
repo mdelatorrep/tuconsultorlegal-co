@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Brain, Target, AlertTriangle, CheckCircle, Scale, Loader2, Sparkles, TrendingUp, Clock, Lightbulb, Shield, History } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Brain, Target, AlertTriangle, CheckCircle, Scale, Loader2, Sparkles, TrendingUp, Clock, Lightbulb, Shield, History, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -62,7 +63,7 @@ export default function StrategizeModule({ user, currentView, onViewChange, onLo
         .from('legal_tools_results')
         .select('*')
         .eq('lawyer_id', user.id)
-        .eq('tool_type', 'integration')
+        .eq('tool_type', 'strategy')
         .order('created_at', { ascending: false })
         .limit(20);
 
@@ -488,65 +489,118 @@ export default function StrategizeModule({ user, currentView, onViewChange, onLo
                 )}
                 </TabsContent>
 
-                <TabsContent value="history">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Historial de Estrategias</CardTitle>
-                      <CardDescription>
-                        Revisa tus análisis estratégicos previos
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {analyses.length === 0 ? (
-                        <div className="text-center py-12">
-                          <Brain className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                          <h3 className="text-lg font-semibold mb-2">No hay estrategias previas</h3>
-                          <p className="text-muted-foreground">
-                            Los análisis estratégicos aparecerán aquí
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="space-y-4">
-                          {analyses.map((analysis, index) => (
-                            <Card key={index}>
-                              <CardHeader>
-                                <CardDescription className="mb-2">
-                                  {new Date(analysis.timestamp).toLocaleDateString()}
-                                </CardDescription>
-                                <p className="text-sm line-clamp-2">
-                                  {analysis.caseDescription}
-                                </p>
-                              </CardHeader>
-                              <CardContent>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                  <div className="text-center p-3 bg-muted rounded-lg">
-                                    <Target className="h-6 w-6 mx-auto mb-1 text-blue-600" />
-                                    <p className="text-2xl font-bold">{analysis.legalActions.length}</p>
+                <TabsContent value="history" className="space-y-4">
+                  {analyses.length === 0 ? (
+                    <Card>
+                      <CardContent className="p-12 text-center">
+                        <Brain className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                        <h3 className="text-lg font-semibold mb-2">No hay estrategias previas</h3>
+                        <p className="text-muted-foreground">
+                          Los análisis estratégicos aparecerán aquí cuando completes tu primer análisis
+                        </p>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="p-4 bg-purple-50 border border-purple-200 rounded-xl">
+                        <h3 className="text-lg font-bold text-purple-900">
+                          Historial de Estrategias
+                        </h3>
+                        <p className="text-purple-700 text-sm">
+                          {analyses.length} análisis estratégico{analyses.length !== 1 ? 's' : ''} completado{analyses.length !== 1 ? 's' : ''}
+                        </p>
+                      </div>
+                      {analyses.map((analysis, index) => (
+                        <Collapsible key={index}>
+                          <Card className="hover:shadow-lg transition-shadow">
+                            <CollapsibleTrigger asChild>
+                              <CardHeader className="cursor-pointer hover:bg-purple-50/50 transition-colors">
+                                <div className="flex items-center justify-between gap-4">
+                                  <div className="flex-1 min-w-0">
+                                    <CardDescription className="mb-2 flex items-center gap-2">
+                                      <Clock className="h-3 w-3" />
+                                      {new Date(analysis.timestamp).toLocaleDateString('es-ES', {
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                      })}
+                                    </CardDescription>
+                                    <p className="text-sm line-clamp-2 text-gray-700">
+                                      {analysis.caseDescription}
+                                    </p>
+                                  </div>
+                                  <ChevronRight className="h-5 w-5 text-purple-600 flex-shrink-0" />
+                                </div>
+                                <div className="grid grid-cols-4 gap-2 mt-4">
+                                  <div className="text-center p-2 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+                                    <Target className="h-4 w-4 mx-auto mb-1 text-blue-600" />
+                                    <p className="text-lg font-bold">{analysis.legalActions.length}</p>
                                     <p className="text-xs text-muted-foreground">Acciones</p>
                                   </div>
-                                  <div className="text-center p-3 bg-muted rounded-lg">
-                                    <Scale className="h-6 w-6 mx-auto mb-1 text-green-600" />
-                                    <p className="text-2xl font-bold">{analysis.legalArguments.length}</p>
+                                  <div className="text-center p-2 bg-green-50 dark:bg-green-950/20 rounded-lg">
+                                    <Scale className="h-4 w-4 mx-auto mb-1 text-green-600" />
+                                    <p className="text-lg font-bold">{analysis.legalArguments.length}</p>
                                     <p className="text-xs text-muted-foreground">Argumentos</p>
                                   </div>
-                                  <div className="text-center p-3 bg-muted rounded-lg">
-                                    <Shield className="h-6 w-6 mx-auto mb-1 text-orange-600" />
-                                    <p className="text-2xl font-bold">{analysis.counterarguments.length}</p>
+                                  <div className="text-center p-2 bg-orange-50 dark:bg-orange-950/20 rounded-lg">
+                                    <Shield className="h-4 w-4 mx-auto mb-1 text-orange-600" />
+                                    <p className="text-lg font-bold">{analysis.counterarguments.length}</p>
                                     <p className="text-xs text-muted-foreground">Contraarg.</p>
                                   </div>
-                                  <div className="text-center p-3 bg-muted rounded-lg">
-                                    <Lightbulb className="h-6 w-6 mx-auto mb-1 text-purple-600" />
-                                    <p className="text-2xl font-bold">{analysis.recommendations.length}</p>
+                                  <div className="text-center p-2 bg-purple-50 dark:bg-purple-950/20 rounded-lg">
+                                    <Lightbulb className="h-4 w-4 mx-auto mb-1 text-purple-600" />
+                                    <p className="text-lg font-bold">{analysis.recommendations.length}</p>
                                     <p className="text-xs text-muted-foreground">Recomend.</p>
                                   </div>
                                 </div>
+                              </CardHeader>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                              <CardContent className="pt-0 space-y-4">
+                                {/* Legal Actions */}
+                                {analysis.legalActions.length > 0 && (
+                                  <div className="border-t pt-4">
+                                    <h4 className="font-semibold mb-3 flex items-center gap-2">
+                                      <Target className="h-4 w-4 text-blue-600" />
+                                      Vías de Acción Legal
+                                    </h4>
+                                    <div className="space-y-2">
+                                      {analysis.legalActions.map((action: any, idx: number) => (
+                                        <div key={idx} className="bg-blue-50 p-3 rounded-lg">
+                                          <p className="font-medium text-sm">{action.action}</p>
+                                          <Badge variant="outline" className="mt-1">{action.viability}</Badge>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Recommendations */}
+                                {analysis.recommendations.length > 0 && (
+                                  <div className="border-t pt-4">
+                                    <h4 className="font-semibold mb-3 flex items-center gap-2">
+                                      <Lightbulb className="h-4 w-4 text-purple-600" />
+                                      Recomendaciones
+                                    </h4>
+                                    <ul className="space-y-2">
+                                      {analysis.recommendations.map((rec: string, idx: number) => (
+                                        <li key={idx} className="text-sm flex items-start gap-2">
+                                          <span className="text-purple-600 mt-1">•</span>
+                                          <span>{rec}</span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
                               </CardContent>
-                            </Card>
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                            </CollapsibleContent>
+                          </Card>
+                        </Collapsible>
+                      ))}
+                    </div>
+                  )}
                 </TabsContent>
               </Tabs>
             </div>
