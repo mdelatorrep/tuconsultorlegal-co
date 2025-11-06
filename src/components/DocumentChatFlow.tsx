@@ -16,7 +16,7 @@ interface DocumentChatFlowProps {
 }
 
 interface Message {
-  role: 'user' | 'assistant' | 'system';
+  role: "user" | "assistant" | "system";
   content: string;
   timestamp: Date;
   showGenerateButton?: boolean;
@@ -37,24 +37,24 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
   const { user, isAuthenticated } = useUserAuth();
   const [agent, setAgent] = useState<AgentData | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [currentMessage, setCurrentMessage] = useState('');
+  const [currentMessage, setCurrentMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [documentGenerated, setDocumentGenerated] = useState(false);
   const [isRateLimited, setIsRateLimited] = useState(false);
-  const [userInfo, setUserInfo] = useState({ name: '', email: '' });
+  const [userInfo, setUserInfo] = useState({ name: "", email: "" });
   const [showUserForm, setShowUserForm] = useState(false);
   const [collectedData, setCollectedData] = useState<Record<string, any>>({});
   const [dataProcessingConsent, setDataProcessingConsent] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  
+
   // Estados para OpenAI
   const [threadId, setThreadId] = useState<string | null>(null);
   const [openaiAgentId, setOpenaiAgentId] = useState<string | null>(null);
-  
+
   // Estados para manejo de términos y condiciones
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showTermsDialog, setShowTermsDialog] = useState(true);
@@ -70,18 +70,14 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
 
   const loadUserProfile = async () => {
     if (!user) return;
-    
-    const { data } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('id', user.id)
-      .maybeSingle();
-    
+
+    const { data } = await supabase.from("user_profiles").select("*").eq("id", user.id).maybeSingle();
+
     if (data) {
       setUserProfile(data);
       setUserInfo({
-        name: data.full_name || user.user_metadata?.full_name || '',
-        email: user.email || ''
+        name: data.full_name || user.user_metadata?.full_name || "",
+        email: user.email || "",
       });
     }
   };
@@ -97,9 +93,9 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
     } else {
       const accepted = localStorage.getItem(`terms_accepted_${agentId}`);
       const dataConsent = localStorage.getItem(`data_consent_${agentId}`);
-      
+
       // IMPORTANTE: Solo ocultar el diálogo si AMBOS están aceptados
-      if (accepted === 'true' && dataConsent === 'true') {
+      if (accepted === "true" && dataConsent === "true") {
         setTermsAccepted(true);
         setShowTermsDialog(false);
         setAcceptedTerms(true);
@@ -133,20 +129,23 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
         messages,
         collectedData,
         userInfo,
-        threadId,  // ✅ GUARDAR threadId
-        openaiAgentId,  // ✅ GUARDAR openaiAgentId
+        threadId, // ✅ GUARDAR threadId
+        openaiAgentId, // ✅ GUARDAR openaiAgentId
         timestamp: Date.now(),
         agentId,
-        mode: 'chat'
+        mode: "chat",
       };
-      
+
       localStorage.setItem(`chat_${agentId}`, JSON.stringify(chatData));
-      
+
       // Sync with form flow data
-      localStorage.setItem(`document_session_${agentId}`, JSON.stringify({
-        ...chatData,
-        extractedFormData: collectedData
-      }));
+      localStorage.setItem(
+        `document_session_${agentId}`,
+        JSON.stringify({
+          ...chatData,
+          extractedFormData: collectedData,
+        }),
+      );
     }
   }, [messages, collectedData, userInfo, agentId, threadId, openaiAgentId]);
 
@@ -158,56 +157,56 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
         try {
           const parsed = JSON.parse(persistedData);
           const isRecent = Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000; // 24 hours
-          
+
           if (isRecent && parsed.messages.length > 1) {
             // Verificar si el threadId aún existe en la base de datos
             if (parsed.threadId && parsed.openaiAgentId) {
               const { data: conversation } = await supabase
-                .from('agent_conversations')
-                .select('id')
-                .eq('thread_id', parsed.threadId)
-                .eq('openai_agent_id', parsed.openaiAgentId)
+                .from("agent_conversations")
+                .select("id")
+                .eq("thread_id", parsed.threadId)
+                .eq("openai_agent_id", parsed.openaiAgentId)
                 .maybeSingle();
-              
+
               // Si no existe conversación en BD, limpiar localStorage
               if (!conversation) {
-                console.log('⚠️ ThreadId no válido (conversación limpiada por admin), iniciando nueva sesión');
+                console.log("⚠️ ThreadId no válido (conversación limpiada por admin), iniciando nueva sesión");
                 localStorage.removeItem(`chat_${agentId}`);
                 localStorage.removeItem(`document_session_${agentId}`);
                 return;
               }
             }
-            
+
             // Convert timestamp strings/numbers back to Date objects
             // Y recalcular showGenerateButton para cada mensaje
             const messagesWithDates = parsed.messages.map((msg: any) => ({
               ...msg,
               timestamp: new Date(msg.timestamp),
               // Recalcular showGenerateButton basado en el contenido actual
-              showGenerateButton: msg.role === 'assistant' ? shouldShowGenerateButton(msg.content) : false
+              showGenerateButton: msg.role === "assistant" ? shouldShowGenerateButton(msg.content) : false,
             }));
-            
+
             setMessages(messagesWithDates);
             setCollectedData(parsed.collectedData || {});
-            setUserInfo(parsed.userInfo || { name: '', email: '' });
-            
+            setUserInfo(parsed.userInfo || { name: "", email: "" });
+
             // ✅ RESTAURAR threadId y openaiAgentId solo si son válidos
             if (parsed.threadId) {
               setThreadId(parsed.threadId);
-              console.log('✅ ThreadId restored from localStorage:', parsed.threadId);
+              console.log("✅ ThreadId restored from localStorage:", parsed.threadId);
             }
             if (parsed.openaiAgentId) {
               setOpenaiAgentId(parsed.openaiAgentId);
-              console.log('✅ OpenAI AgentId restored from localStorage:', parsed.openaiAgentId);
+              console.log("✅ OpenAI AgentId restored from localStorage:", parsed.openaiAgentId);
             }
           }
         } catch (error) {
-          console.error('Error loading persisted chat data:', error);
+          console.error("Error loading persisted chat data:", error);
           localStorage.removeItem(`chat_${agentId}`);
         }
       }
     };
-    
+
     loadPersistedData();
   }, [agentId]);
 
@@ -217,114 +216,109 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
 
   const loadAgent = async () => {
     try {
-      console.log('🔍 Loading agent:', agentId);
-      const { data, error } = await supabase
-        .from('legal_agents')
-        .select('*')
-        .eq('id', agentId)
-        .maybeSingle();
+      console.log("🔍 Loading agent:", agentId);
+      const { data, error } = await supabase.from("legal_agents").select("*").eq("id", agentId).maybeSingle();
 
       if (error) throw error;
       if (!data) {
-        toast.error('Agente no encontrado');
+        toast.error("Agente no encontrado");
         return;
       }
-      
+
       setAgent(data);
-      
+
       // 🔑 VERIFICAR OPENAI ASSISTANT AL INICIO
-      console.log('🔍 Checking for OpenAI assistant...', { 
+      console.log("🔍 Checking for OpenAI assistant...", {
         openai_enabled: data.openai_enabled,
-        agentId 
+        agentId,
       });
-      
+
       let detectedAssistantId: string | null = null;
       if (data.openai_enabled) {
         const { data: openaiAgent, error: agentError } = await supabase
-          .from('openai_agents')
-          .select('openai_agent_id, status')
-          .eq('legal_agent_id', agentId)
-          .eq('status', 'active')
+          .from("openai_agents")
+          .select("openai_agent_id, status")
+          .eq("legal_agent_id", agentId)
+          .eq("status", "active")
           .maybeSingle();
 
         if (openaiAgent && openaiAgent.openai_agent_id) {
-          console.log('✅ OpenAI Assistant found:', openaiAgent.openai_agent_id);
+          console.log("✅ OpenAI Assistant found:", openaiAgent.openai_agent_id);
           detectedAssistantId = openaiAgent.openai_agent_id;
           setOpenaiAgentId(openaiAgent.openai_agent_id);
         } else {
-          console.log('⚠️ No active OpenAI assistant found, will use fallback chat');
+          console.log("⚠️ No active OpenAI assistant found, will use fallback chat");
         }
       } else {
-        console.log('ℹ️ OpenAI not enabled for this agent');
+        console.log("ℹ️ OpenAI not enabled for this agent");
       }
-      
-      console.log('✅ Agent loaded successfully:', {
+
+      console.log("✅ Agent loaded successfully:", {
         name: data.name,
         document_name: data.document_name,
         openai_enabled: data.openai_enabled,
-        has_assistant: !!detectedAssistantId
+        has_assistant: !!detectedAssistantId,
       });
-      
+
       // Only add initial message if there are no existing messages
       if (messages.length === 0) {
         const initialMessage: Message = {
-          role: 'user',
+          role: "user",
           content: `Quiero crear un ${data.document_name}. Por favor ayúdame con la información necesaria.`,
-          timestamp: new Date()
+          timestamp: new Date(),
         };
         setMessages([initialMessage]);
-        
-        console.log('📤 Sending initial request to assistant with ID:', detectedAssistantId);
+
+        console.log("📤 Sending initial request to assistant with ID:", detectedAssistantId);
         // Pass the assistantId directly to ensure it's used immediately
         await getInitialResponse(data, initialMessage, detectedAssistantId);
       }
     } catch (error) {
-      console.error('❌ Error loading agent:', error);
-      toast.error('Error al cargar el agente');
+      console.error("❌ Error loading agent:", error);
+      toast.error("Error al cargar el agente");
     } finally {
       setLoading(false);
     }
   };
 
-  const getInitialResponse = async (
-    agentData: AgentData, 
-    userMessage: Message, 
-    assistantId: string | null = null
-  ) => {
+  const getInitialResponse = async (agentData: AgentData, userMessage: Message, assistantId: string | null = null) => {
     try {
       const effectiveAssistantId = assistantId || openaiAgentId;
-      
-      console.log('🤖 Getting initial response for document:', agentData.document_name);
-      console.log('🔑 OpenAI Assistant:', { 
+
+      console.log("🤖 Getting initial response for document:", agentData.document_name);
+      console.log("🔑 OpenAI Assistant:", {
         passedAssistantId: assistantId,
         stateAssistantId: openaiAgentId,
-        effectiveAssistantId: effectiveAssistantId
+        effectiveAssistantId: effectiveAssistantId,
       });
-      
+
       // SI HAY OPENAI ASSISTANT, USARLO
       if (effectiveAssistantId) {
-        console.log('🚀 Using OpenAI orchestrator for initial response with assistant:', effectiveAssistantId);
-        
-        const { data, error } = await supabase.functions.invoke('agent-workflow-orchestrator', {
+        console.log("🚀 Using OpenAI orchestrator for initial response with assistant:", effectiveAssistantId);
+
+        const { data, error } = await supabase.functions.invoke("agent-workflow-orchestrator", {
           body: {
             messages: [{ role: userMessage.role, content: userMessage.content }],
             agentId: effectiveAssistantId,
             documentTokenId: null,
             threadId: null, // New conversation
-            userContext: isAuthenticated && userInfo.name && userInfo.email ? {
-              isAuthenticated: true,
-              name: userInfo.name,
-              email: userInfo.email
-            } : null
-          }
+            userContext:
+              isAuthenticated && userInfo.name && userInfo.email
+                ? {
+                    isAuthenticated: true,
+                    name: userInfo.name,
+                    email: userInfo.email,
+                  }
+                : null,
+          },
         });
 
         if (error) {
-          console.error('❌ OpenAI orchestrator error:', error);
+          console.error("❌ OpenAI orchestrator error:", error);
           throw error;
         }
 
-        console.log('✅ Initial response received from OpenAI');
+        console.log("✅ Initial response received from OpenAI");
 
         // Save threadId for future messages
         if (data.threadId) {
@@ -332,35 +326,36 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
         }
 
         const assistantMessage: Message = {
-          role: 'assistant',
+          role: "assistant",
           content: data.message,
           timestamp: new Date(),
-          showGenerateButton: shouldShowGenerateButton(data.message)
+          showGenerateButton: shouldShowGenerateButton(data.message),
         };
 
-        setMessages(prev => [...prev, assistantMessage]);
+        setMessages((prev) => [...prev, assistantMessage]);
         return;
       }
 
       // FALLBACK: Usar document-chat
-      console.log('📝 Using fallback document-chat');
-      
-      const userContextInfo = isAuthenticated && userInfo.name && userInfo.email 
-        ? `\n\nCONTEXTO DE USUARIO AUTENTICADO:
+      console.log("📝 Using fallback document-chat");
+
+      const userContextInfo =
+        isAuthenticated && userInfo.name && userInfo.email
+          ? `\n\nCONTEXTO DE USUARIO AUTENTICADO:
 - El usuario YA está registrado en el sistema
 - Nombre: ${userInfo.name}
 - Email: ${userInfo.email}
 - NO solicites su nombre ni correo electrónico, ya los tenemos
 - Enfócate ÚNICAMENTE en recopilar la información específica del documento`
-        : `\n\nCONTEXTO DE USUARIO ANÓNIMO:
+          : `\n\nCONTEXTO DE USUARIO ANÓNIMO:
 - El usuario NO está registrado
 - Deberás solicitar nombre y correo al FINAL, cuando tengas toda la información del documento`;
-      
+
       const enhancedPrompt = `${agentData.ai_prompt}
 
 REGLAS ESTRICTAS PARA RECOPILACIÓN DE INFORMACIÓN:
 1. Debes recopilar TODA la información necesaria para completar los siguientes placeholders de la plantilla:
-${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) => `   - {{${field.field || field.name}}}: ${field.description || field.label}`).join('\n') : ''}
+${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) => `   - {{${field.field || field.name}}}: ${field.description || field.label}`).join("\n") : ""}
 
 2. Haz UNA pregunta específica a la vez para recopilar cada campo
 3. Normaliza automáticamente:
@@ -379,63 +374,63 @@ ${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) =
 
 ${userContextInfo}`;
 
-      const { data, error } = await supabase.functions.invoke('document-chat', {
+      const { data, error } = await supabase.functions.invoke("document-chat", {
         body: {
           messages: [{ role: userMessage.role, content: userMessage.content }],
           agent_prompt: enhancedPrompt,
-          document_name: agentData.document_name
-        }
+          document_name: agentData.document_name,
+        },
       });
 
       if (error) throw error;
 
-      console.log('✅ Initial response received, length:', data.message?.length);
+      console.log("✅ Initial response received, length:", data.message?.length);
 
       const assistantMessage: Message = {
-        role: 'assistant',
+        role: "assistant",
         content: data.message,
         timestamp: new Date(),
-        showGenerateButton: shouldShowGenerateButton(data.message)
+        showGenerateButton: shouldShowGenerateButton(data.message),
       };
 
-      setMessages(prev => [...prev, assistantMessage]);
+      setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
-      console.error('❌ Error getting initial response:', error);
-      toast.error('Error al inicializar el chat');
+      console.error("❌ Error getting initial response:", error);
+      toast.error("Error al inicializar el chat");
     }
   };
 
   // Function to determine if generate button should be shown
   const shouldShowGenerateButton = (message: string): boolean => {
     const lowerMessage = message.toLowerCase();
-    
+
     // Frases que indican que el asistente HA COMPLETADO la recopilación
     const completionPhrases = [
-      'he recopilado toda la información',
-      'toda la información está completa',
-      'ya tengo toda la información',
-      'información completa',
-      '¿deseas proceder con la generación',
-      'proceder con la generación del documento',
-      'listo para generar el documento'
+      "he recopilado toda la información",
+      "toda la información está completa",
+      "ya tengo toda la información",
+      "información completa",
+      "¿deseas proceder con la generación",
+      "proceder con la generación del documento",
+      "listo para generar el documento",
     ];
-    
+
     // Frases que NO deben activar el botón (está pidiendo información)
     const excludePhrases = [
-      'necesito',
-      'ayúdame con',
-      'por favor',
-      'proporciona',
-      '¿cuál es',
-      '¿cuáles son',
-      'dime',
-      'indícame'
+      "necesito",
+      "ayúdame con",
+      "por favor",
+      "proporciona",
+      "¿cuál es",
+      "¿cuáles son",
+      "dime",
+      "indícame",
     ];
-    
+
     // Solo mostrar si contiene frase de completitud Y NO contiene frases de solicitud
-    const hasCompletionPhrase = completionPhrases.some(phrase => lowerMessage.includes(phrase));
-    const hasExcludePhrase = excludePhrases.some(phrase => lowerMessage.includes(phrase));
-    
+    const hasCompletionPhrase = completionPhrases.some((phrase) => lowerMessage.includes(phrase));
+    const hasExcludePhrase = excludePhrases.some((phrase) => lowerMessage.includes(phrase));
+
     return hasCompletionPhrase && !hasExcludePhrase;
   };
 
@@ -443,158 +438,168 @@ ${userContextInfo}`;
     if (!currentMessage.trim() || !agent || sending || isRateLimited) return;
 
     const userMessage: Message = {
-      role: 'user',
+      role: "user",
       content: currentMessage.trim(),
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
     const updatedMessages = [...messages, userMessage];
     setMessages(updatedMessages);
-    setCurrentMessage('');
+    setCurrentMessage("");
     setSending(true);
 
-    console.log('📨 Sending message:', {
+    console.log("📨 Sending message:", {
       messageLength: currentMessage.length,
       totalMessages: updatedMessages.length,
       hasOpenAIAgent: !!openaiAgentId,
       openaiAgentId: openaiAgentId,
-      threadId: threadId
+      threadId: threadId,
     });
 
     try {
       // 🎯 USAR OPENAI ASSISTANT SI ESTÁ DISPONIBLE
-      console.log('🎯 Using assistant:', { 
-        hasOpenAI: !!openaiAgentId, 
+      console.log("🎯 Using assistant:", {
+        hasOpenAI: !!openaiAgentId,
         agentId: openaiAgentId,
         threadId: threadId,
-        willUseFallback: !openaiAgentId
+        willUseFallback: !openaiAgentId,
       });
 
       if (!openaiAgentId) {
-        console.log('⚠️ No OpenAI assistant available, using fallback chat');
+        console.log("⚠️ No OpenAI assistant available, using fallback chat");
         // Fallback to original chat system if no OpenAI agent exists
-        const { data, error } = await supabase.functions.invoke('document-chat', {
+        const { data, error } = await supabase.functions.invoke("document-chat", {
           body: {
-            messages: updatedMessages.map(msg => ({ role: msg.role, content: msg.content })),
+            messages: updatedMessages.map((msg) => ({ role: msg.role, content: msg.content })),
             agent_prompt: agent.ai_prompt,
-            document_name: agent.document_name
-          }
+            document_name: agent.document_name,
+          },
         });
 
         if (error) throw error;
 
         const assistantMessage: Message = {
-          role: 'assistant',
+          role: "assistant",
           content: data.message,
           timestamp: new Date(),
-          showGenerateButton: shouldShowGenerateButton(data.message)
+          showGenerateButton: shouldShowGenerateButton(data.message),
         };
 
-        setMessages(prev => [...prev, assistantMessage]);
+        setMessages((prev) => [...prev, assistantMessage]);
         setSending(false);
         return;
       }
 
       // 🚀 USAR OPENAI WORKFLOW ORCHESTRATOR
-      console.log('🚀 Calling OpenAI orchestrator with:', {
+      console.log("🚀 Calling OpenAI orchestrator with:", {
         agentId: openaiAgentId,
         threadId,
         messageCount: updatedMessages.length,
-        lastMessageContent: updatedMessages[updatedMessages.length - 1].content.substring(0, 50)
+        lastMessageContent: updatedMessages[updatedMessages.length - 1].content.substring(0, 50),
       });
 
       const requestBody = {
-        messages: updatedMessages.map(msg => ({ role: msg.role, content: msg.content })),
+        messages: updatedMessages.map((msg) => ({ role: msg.role, content: msg.content })),
         agentId: openaiAgentId,
         documentTokenId: null, // Will be set when document is generated
         threadId: threadId,
-        userContext: isAuthenticated && userInfo.name && userInfo.email ? {
-          isAuthenticated: true,
-          name: userInfo.name,
-          email: userInfo.email
-        } : null
+        userContext:
+          isAuthenticated && userInfo.name && userInfo.email
+            ? {
+                isAuthenticated: true,
+                name: userInfo.name,
+                email: userInfo.email,
+              }
+            : null,
       };
-      
-      console.log('📤 Request to orchestrator:', JSON.stringify(requestBody, null, 2));
 
-      const { data, error } = await supabase.functions.invoke('agent-workflow-orchestrator', {
-        body: requestBody
+      console.log("📤 Request to orchestrator:", JSON.stringify(requestBody, null, 2));
+
+      const { data, error } = await supabase.functions.invoke("agent-workflow-orchestrator", {
+        body: requestBody,
       });
-      
+
       // 🚨 Manejo específico de rate limit con retry automático
       if (error) {
-        console.error('❌ OpenAI Agent error:', error);
-        console.error('❌ Error details:', JSON.stringify(error, null, 2));
-        
+        console.error("❌ OpenAI Agent error:", error);
+        console.error("❌ Error details:", JSON.stringify(error, null, 2));
+
         // Detectar error de rate limit (429)
-        if (error.message?.includes('rate_limit') || error.message?.includes('Rate limit') || error.message?.includes('429')) {
-          console.log('⏳ Rate limit detectado, reintentando en 2 segundos...');
+        if (
+          error.message?.includes("rate_limit") ||
+          error.message?.includes("Rate limit") ||
+          error.message?.includes("429")
+        ) {
+          console.log("⏳ Rate limit detectado, reintentando en 2 segundos...");
           setIsRateLimited(true);
-          
+
           // Esperar 2 segundos y reintentar automáticamente
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+
           // Reintentar la llamada
-          const { data: retryData, error: retryError } = await supabase.functions.invoke('agent-workflow-orchestrator', {
-            body: requestBody
-          });
-          
+          const { data: retryData, error: retryError } = await supabase.functions.invoke(
+            "agent-workflow-orchestrator",
+            {
+              body: requestBody,
+            },
+          );
+
           setIsRateLimited(false);
-          
+
           if (retryError) {
             // Si el reintento también falla, mostrar error
-            toast.error('El sistema está ocupado. Por favor intenta de nuevo en un momento.');
+            toast.error("El sistema está ocupado. Por favor intenta de nuevo en un momento.");
             setSending(false);
             return;
           }
-          
+
           // Reintento exitoso, continuar con la respuesta
           if (retryData.threadId) {
             setThreadId(retryData.threadId);
           }
-          
+
           const assistantMessage: Message = {
-            role: 'assistant',
+            role: "assistant",
             content: retryData.message,
             timestamp: new Date(),
-            showGenerateButton: shouldShowGenerateButton(retryData.message)
+            showGenerateButton: shouldShowGenerateButton(retryData.message),
           };
-          
+
           const extractedData = extractInformationFromMessage(userMessage.content);
-          setCollectedData(prev => ({ ...prev, ...extractedData }));
-          setMessages(prev => [...prev, assistantMessage]);
+          setCollectedData((prev) => ({ ...prev, ...extractedData }));
+          setMessages((prev) => [...prev, assistantMessage]);
           maintainInputFocus();
           setSending(false);
           return;
         }
-        
+
         // Para otros errores, mostrar mensaje pero sin toast agresivo
-        console.error('⚠️ Error no crítico, intentando fallback...');
-        
+        console.error("⚠️ Error no crítico, intentando fallback...");
+
         // Fallback to original chat system
-        const { data: fallbackData, error: fallbackError } = await supabase.functions.invoke('document-chat', {
+        const { data: fallbackData, error: fallbackError } = await supabase.functions.invoke("document-chat", {
           body: {
-            messages: updatedMessages.map(msg => ({ role: msg.role, content: msg.content })),
+            messages: updatedMessages.map((msg) => ({ role: msg.role, content: msg.content })),
             agent_prompt: agent.ai_prompt,
-            document_name: agent.document_name
-          }
+            document_name: agent.document_name,
+          },
         });
 
         if (fallbackError) {
-          console.error('Fallback chat also failed:', fallbackError);
+          console.error("Fallback chat also failed:", fallbackError);
           toast.error(`Error al procesar tu mensaje. Por favor intenta nuevamente.`);
           setSending(false);
           return;
         }
 
         const assistantMessage: Message = {
-          role: 'assistant',
+          role: "assistant",
           content: fallbackData.message,
           timestamp: new Date(),
-          showGenerateButton: shouldShowGenerateButton(fallbackData.message)
+          showGenerateButton: shouldShowGenerateButton(fallbackData.message),
         };
 
-        setMessages(prev => [...prev, assistantMessage]);
+        setMessages((prev) => [...prev, assistantMessage]);
         setSending(false);
         return;
       }
@@ -602,47 +607,47 @@ ${userContextInfo}`;
       // Update thread ID if new thread was created
       if (data.threadId) {
         if (!threadId) {
-          console.log('✅ New threadId received:', data.threadId);
+          console.log("✅ New threadId received:", data.threadId);
         } else {
-          console.log('✅ ThreadId confirmed:', data.threadId);
+          console.log("✅ ThreadId confirmed:", data.threadId);
         }
         setThreadId(data.threadId);
       } else {
-        console.warn('⚠️ No threadId in response');
+        console.warn("⚠️ No threadId in response");
       }
 
       // Verificar que recibimos una respuesta válida
       if (!data || !data.message) {
-        console.error('❌ No valid response received from orchestrator');
-        console.error('❌ Response data:', JSON.stringify(data, null, 2));
-        throw new Error('No se recibió una respuesta válida del asistente');
+        console.error("❌ No valid response received from orchestrator");
+        console.error("❌ Response data:", JSON.stringify(data, null, 2));
+        throw new Error("No se recibió una respuesta válida del asistente");
       }
-      
-      console.log('✅ Response received:', {
+
+      console.log("✅ Response received:", {
         messageLength: data.message?.length,
         hasThreadId: !!data.threadId,
-        runStatus: data.runStatus
+        runStatus: data.runStatus,
       });
 
       const assistantMessage: Message = {
-        role: 'assistant',
+        role: "assistant",
         content: data.message,
         timestamp: new Date(),
-        showGenerateButton: shouldShowGenerateButton(data.message)
+        showGenerateButton: shouldShowGenerateButton(data.message),
       };
 
       // Extract information from the conversation for placeholders
       const extractedData = extractInformationFromMessage(userMessage.content);
-      setCollectedData(prev => ({ ...prev, ...extractedData }));
+      setCollectedData((prev) => ({ ...prev, ...extractedData }));
 
       // Agregar el mensaje del asistente solo una vez
-      setMessages(prev => [...prev, assistantMessage]);
-      
+      setMessages((prev) => [...prev, assistantMessage]);
+
       // Mantener foco en el input después de recibir respuesta
       maintainInputFocus();
     } catch (error: any) {
-      console.error('Error sending message:', error);
-      const errorMsg = error?.message || 'Error desconocido al procesar tu mensaje';
+      console.error("Error sending message:", error);
+      const errorMsg = error?.message || "Error desconocido al procesar tu mensaje";
       toast.error(`Error: ${errorMsg}`);
       // Mantener foco incluso en caso de error
       maintainInputFocus();
@@ -653,15 +658,15 @@ ${userContextInfo}`;
 
   const extractInformationFromMessage = (content: string): Record<string, any> => {
     const extracted: Record<string, any> = {};
-    
+
     // Extract common patterns based on agent's placeholder fields
     if (agent?.placeholder_fields && Array.isArray(agent.placeholder_fields)) {
       agent.placeholder_fields.forEach((field: any) => {
-        if (field.type === 'text' || field.type === 'string') {
+        if (field.type === "text" || field.type === "string") {
           // Simple extraction based on field labels and common patterns
           const fieldLabel = field.label?.toLowerCase() || field.name?.toLowerCase();
           if (fieldLabel) {
-            const regex = new RegExp(`${fieldLabel}[:\\s]+([^\\n\\.]+)`, 'i');
+            const regex = new RegExp(`${fieldLabel}[:\\s]+([^\\n\\.]+)`, "i");
             const match = content.match(regex);
             if (match) {
               extracted[field.name] = match[1].trim();
@@ -670,49 +675,45 @@ ${userContextInfo}`;
         }
       });
     }
-    
+
     return extracted;
   };
 
   const generateDocument = async () => {
     // Usuario autenticado: usar datos del perfil directamente
     if (isAuthenticated && user) {
-      const userName = userProfile?.full_name || user.user_metadata?.full_name || '';
-      const userEmail = user.email || '';
-      
+      const userName = userProfile?.full_name || user.user_metadata?.full_name || "";
+      const userEmail = user.email || "";
+
       if (!userName || !userEmail) {
-        toast.error('No se pudo obtener tu información de perfil');
+        toast.error("No se pudo obtener tu información de perfil");
         return;
       }
-      
+
       setGenerating(true);
       await executeDocumentGeneration(userName, userEmail, user.id);
       return;
     }
-    
+
     // Usuario anónimo: mostrar formulario para recopilar información de contacto
     setShowUserForm(true);
   };
 
-  const executeDocumentGeneration = async (
-    userName: string, 
-    userEmail: string, 
-    userId: string | null = null
-  ) => {
+  const executeDocumentGeneration = async (userName: string, userEmail: string, userId: string | null = null) => {
     // Prevent duplicate generation
     if (documentGenerated || generating) {
-      console.log('⚠️ Document generation already in progress or completed');
+      console.log("⚠️ Document generation already in progress or completed");
       return;
     }
 
     try {
       setDocumentGenerated(true); // Mark as generated immediately to prevent duplicates
-      
+
       const processedConversation = await processConversationData();
-      
-      const { data, error } = await supabase.functions.invoke('generate-document-from-chat', {
+
+      const { data, error } = await supabase.functions.invoke("generate-document-from-chat", {
         body: {
-          conversation: messages.map(msg => ({ role: msg.role, content: msg.content })),
+          conversation: messages.map((msg) => ({ role: msg.role, content: msg.content })),
           template_content: agent.template_content,
           document_name: agent.document_name,
           user_email: userEmail,
@@ -722,8 +723,8 @@ ${userContextInfo}`;
           collected_data: { ...collectedData, ...processedConversation },
           placeholder_fields: agent.placeholder_fields,
           price: agent.price,
-          legal_agent_id: agent.id
-        }
+          legal_agent_id: agent.id,
+        },
       });
 
       if (error) {
@@ -737,7 +738,7 @@ ${userContextInfo}`;
             <p className="font-semibold">¡Documento generado!</p>
             <p className="text-sm">Puedes verlo en tu panel de documentos</p>
           </div>,
-          { duration: 5000 }
+          { duration: 5000 },
         );
       } else {
         const trackingUrl = `${window.location.origin}/seguimiento?token=${data.token}`;
@@ -745,21 +746,18 @@ ${userContextInfo}`;
           <div className="space-y-2">
             <p className="font-semibold">¡Documento generado exitosamente!</p>
             <p className="text-sm">Token: {data.token}</p>
-            <button 
-              onClick={() => window.open(trackingUrl, '_blank')}
-              className="text-primary underline text-sm"
-            >
+            <button onClick={() => window.open(trackingUrl, "_blank")} className="text-primary underline text-sm">
               Ver seguimiento
             </button>
           </div>,
-          { duration: 10000 }
+          { duration: 10000 },
         );
       }
 
       onComplete(data.token);
     } catch (error) {
-      console.error('Error generating document:', error);
-      toast.error('Error al generar el documento');
+      console.error("Error generating document:", error);
+      toast.error("Error al generar el documento");
       setDocumentGenerated(false); // Reset on error
     } finally {
       setGenerating(false);
@@ -767,9 +765,9 @@ ${userContextInfo}`;
   };
 
   const processConversationData = async () => {
-    const conversationText = messages.map(msg => msg.content).join('\n');
+    const conversationText = messages.map((msg) => msg.content).join("\n");
     const extractedData: Record<string, any> = {};
-    
+
     // Extract common information patterns
     const patterns = {
       nombres: /(?:mi nombre es|me llamo|soy)\s+([^,.\n]+)/gi,
@@ -778,15 +776,15 @@ ${userContextInfo}`;
       documentos: /(?:cédula|cc|nit|rut)\s*:?\s*(\d{1,3}(?:\.\d{3})*(?:\.\d{3})*)/gi,
       direcciones: /(?:dirección|vivo en|ubicado en)\s*:?\s*([^,.\n]+)/gi,
       telefonos: /(?:teléfono|celular|móvil)\s*:?\s*(\d+)/gi,
-      correos: /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/gi
+      correos: /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/gi,
     };
 
     // Extract and normalize data
     Object.entries(patterns).forEach(([key, pattern]) => {
       const matches = conversationText.match(pattern);
       if (matches) {
-        extractedData[key] = matches.map(match => 
-          key === 'nombres' || key === 'ciudades' ? match.toUpperCase() : match
+        extractedData[key] = matches.map((match) =>
+          key === "nombres" || key === "ciudades" ? match.toUpperCase() : match,
         );
       }
     });
@@ -795,7 +793,7 @@ ${userContextInfo}`;
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
     }
@@ -813,37 +811,39 @@ ${userContextInfo}`;
 
   // Función para limpiar formato Markdown y devolver texto limpio
   const cleanMarkdown = (text: string): string => {
-    if (!text) return '';
-    
-    return text
-      // Eliminar headers markdown (###, ##, #)
-      .replace(/^#{1,6}\s+/gm, '')
-      // Eliminar negritas (**texto** o __texto__)
-      .replace(/\*\*(.+?)\*\*/g, '$1')
-      .replace(/__(.+?)__/g, '$1')
-      // Eliminar cursivas (*texto* o _texto_)
-      .replace(/\*(.+?)\*/g, '$1')
-      .replace(/_(.+?)_/g, '$1')
-      // Eliminar listas con viñetas
-      .replace(/^\s*[-*+]\s+/gm, '• ')
-      // Eliminar listas numeradas
-      .replace(/^\s*\d+\.\s+/gm, '')
-      // Limpiar bloques de código
-      .replace(/```[\s\S]*?```/g, '')
-      .replace(/`([^`]+)`/g, '$1')
-      // Limpiar líneas horizontales
-      .replace(/^[-*_]{3,}$/gm, '')
-      // Normalizar espacios múltiples
-      .replace(/\n{3,}/g, '\n\n')
-      .trim();
+    if (!text) return "";
+
+    return (
+      text
+        // Eliminar headers markdown (###, ##, #)
+        .replace(/^#{1,6}\s+/gm, "")
+        // Eliminar negritas (**texto** o __texto__)
+        .replace(/\*\*(.+?)\*\*/g, "$1")
+        .replace(/__(.+?)__/g, "$1")
+        // Eliminar cursivas (*texto* o _texto_)
+        .replace(/\*(.+?)\*/g, "$1")
+        .replace(/_(.+?)_/g, "$1")
+        // Eliminar listas con viñetas
+        .replace(/^\s*[-*+]\s+/gm, "• ")
+        // Eliminar listas numeradas
+        .replace(/^\s*\d+\.\s+/gm, "")
+        // Limpiar bloques de código
+        .replace(/```[\s\S]*?```/g, "")
+        .replace(/`([^`]+)`/g, "$1")
+        // Limpiar líneas horizontales
+        .replace(/^[-*_]{3,}$/gm, "")
+        // Normalizar espacios múltiples
+        .replace(/\n{3,}/g, "\n\n")
+        .trim()
+    );
   };
 
   // Manejar la aceptación de términos
   const handleContinue = () => {
     if (acceptedTerms && acceptedPrivacy && dataProcessingConsent) {
-      localStorage.setItem(`terms_accepted_${agentId}`, 'true');
-      localStorage.setItem(`data_consent_${agentId}`, 'true');
-      
+      localStorage.setItem(`terms_accepted_${agentId}`, "true");
+      localStorage.setItem(`data_consent_${agentId}`, "true");
+
       // ✅ SOLO limpiar si NO hay conversación activa
       const existingChat = localStorage.getItem(`chat_${agentId}`);
       if (!existingChat) {
@@ -851,7 +851,7 @@ ${userContextInfo}`;
         localStorage.removeItem(`document_session_${agentId}`);
       }
       // Si YA existe un chat, NO borrarlo para mantener threadId
-      
+
       setTermsAccepted(true);
       setShowTermsDialog(false);
     }
@@ -877,7 +877,7 @@ ${userContextInfo}`;
                   </div>
                 </div>
               </CardHeader>
-              
+
               <CardContent className="space-y-6">
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   Antes de comenzar con tu documento, necesito que aceptes los siguientes términos para poder continuar:
@@ -893,17 +893,14 @@ ${userContextInfo}`;
                       className="mt-1"
                     />
                     <div className="space-y-1 flex-1">
-                      <Label 
-                        htmlFor="terms" 
-                        className="text-sm font-medium cursor-pointer"
-                      >
+                      <Label htmlFor="terms" className="text-sm font-medium cursor-pointer">
                         Acepto los Términos y Condiciones *
                       </Label>
                       <p className="text-xs text-muted-foreground">
-                        Lee nuestros{' '}
-                        <a 
-                          href="/terminos" 
-                          target="_blank" 
+                        Lee nuestros{" "}
+                        <a
+                          href="/#terminos"
+                          target="_blank"
                           rel="noopener noreferrer"
                           className="text-primary underline hover:text-primary/80 font-medium"
                         >
@@ -922,17 +919,14 @@ ${userContextInfo}`;
                       className="mt-1"
                     />
                     <div className="space-y-1 flex-1">
-                      <Label 
-                        htmlFor="privacy" 
-                        className="text-sm font-medium cursor-pointer"
-                      >
+                      <Label htmlFor="privacy" className="text-sm font-medium cursor-pointer">
                         Acepto la Política de Privacidad *
                       </Label>
                       <p className="text-xs text-muted-foreground">
-                        Lee nuestra{' '}
-                        <a 
-                          href="/privacidad" 
-                          target="_blank" 
+                        Lee nuestra{" "}
+                        <a
+                          href="/#privacidad"
+                          target="_blank"
                           rel="noopener noreferrer"
                           className="text-primary underline hover:text-primary/80 font-medium"
                         >
@@ -951,17 +945,14 @@ ${userContextInfo}`;
                       className="mt-1"
                     />
                     <div className="space-y-1 flex-1">
-                      <Label 
-                        htmlFor="dataProcessing" 
-                        className="text-sm font-medium cursor-pointer"
-                      >
+                      <Label htmlFor="dataProcessing" className="text-sm font-medium cursor-pointer">
                         Acepto el Tratamiento de Datos Personales *
                       </Label>
                       <p className="text-xs text-muted-foreground leading-relaxed">
-                        Acepto el tratamiento de mis datos personales conforme a la Ley 1581 de 2012 
-                        (Ley de Habeas Data en Colombia) y autorizo a tuconsultorlegal.co para recopilar, 
-                        almacenar, usar y circular mi información personal para los fines relacionados con 
-                        la gestión y seguimiento de este documento legal.
+                        Acepto el tratamiento de mis datos personales conforme a la Ley 1581 de 2012 (Ley de Habeas Data
+                        en Colombia) y autorizo a tuconsultorlegal.co para recopilar, almacenar, usar y circular mi
+                        información personal para los fines relacionados con la gestión y seguimiento de este documento
+                        legal.
                       </p>
                     </div>
                   </div>
@@ -969,24 +960,16 @@ ${userContextInfo}`;
 
                 <div className="bg-muted/50 rounded-lg p-3 border border-border">
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Al continuar, confirmas que has leído y aceptado ambos documentos. 
-                    Esta información es necesaria para procesar tu solicitud de forma segura.
+                    Al continuar, confirmas que has leído y aceptado ambos documentos. Esta información es necesaria
+                    para procesar tu solicitud de forma segura.
                   </p>
                 </div>
 
                 <div className="flex gap-3">
-                  <Button 
-                    variant="outline" 
-                    onClick={onBack}
-                    className="flex-1"
-                  >
+                  <Button variant="outline" onClick={onBack} className="flex-1">
                     Cancelar
                   </Button>
-                  <Button
-                    onClick={handleContinue}
-                    disabled={!canContinue}
-                    className="flex-1"
-                  >
+                  <Button onClick={handleContinue} disabled={!canContinue} className="flex-1">
                     Continuar
                   </Button>
                 </div>
@@ -1024,10 +1007,10 @@ ${userContextInfo}`;
   if (showUserForm && !isAuthenticated) {
     const handleSubmit = async () => {
       if (!userInfo.name.trim() || !userInfo.email.trim()) {
-        toast.error('Por favor completa toda la información requerida');
+        toast.error("Por favor completa toda la información requerida");
         return;
       }
-      
+
       await executeDocumentGeneration(userInfo.name, userInfo.email, null);
     };
 
@@ -1044,26 +1027,30 @@ ${userContextInfo}`;
                 Para finalizar la generación de tu documento, necesitamos tu información de contacto.
               </p>
             </CardHeader>
-            
+
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="user-name" className="text-sm font-medium">Nombre completo</label>
+                  <label htmlFor="user-name" className="text-sm font-medium">
+                    Nombre completo
+                  </label>
                   <Input
                     id="user-name"
                     value={userInfo.name}
-                    onChange={(e) => setUserInfo(prev => ({ ...prev, name: e.target.value }))}
+                    onChange={(e) => setUserInfo((prev) => ({ ...prev, name: e.target.value }))}
                     placeholder="Tu nombre completo"
                     className="mt-1"
                   />
                 </div>
                 <div>
-                  <label htmlFor="user-email" className="text-sm font-medium">Correo electrónico</label>
+                  <label htmlFor="user-email" className="text-sm font-medium">
+                    Correo electrónico
+                  </label>
                   <Input
                     id="user-email"
                     type="email"
                     value={userInfo.email}
-                    onChange={(e) => setUserInfo(prev => ({ ...prev, email: e.target.value }))}
+                    onChange={(e) => setUserInfo((prev) => ({ ...prev, email: e.target.value }))}
                     placeholder="tu@email.com"
                     className="mt-1"
                   />
@@ -1074,9 +1061,9 @@ ${userContextInfo}`;
                 <h4 className="font-medium mb-2 text-sm">Resumen del documento:</h4>
                 <p className="text-sm text-muted-foreground mb-2">{agent.document_name}</p>
                 <p className="text-base font-bold text-success">
-                  Precio: {agent.price === 0 ? 'GRATIS' : `$${agent.price.toLocaleString()} COP`}
+                  Precio: {agent.price === 0 ? "GRATIS" : `$${agent.price.toLocaleString()} COP`}
                 </p>
-                
+
                 {/* Mostrar resumen de información recopilada */}
                 {Object.keys(collectedData).length > 0 && (
                   <div className="border-t pt-3">
@@ -1094,19 +1081,21 @@ ${userContextInfo}`;
               </div>
 
               <div className="flex gap-3">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowUserForm(false)}
-                  className="flex-1"
-                >
+                <Button variant="outline" onClick={() => setShowUserForm(false)} className="flex-1">
                   Volver al chat
                 </Button>
                 <Button
                   onClick={handleSubmit}
-                  disabled={!userInfo.name.trim() || !userInfo.email.trim() || !dataProcessingConsent || generating || documentGenerated}
+                  disabled={
+                    !userInfo.name.trim() ||
+                    !userInfo.email.trim() ||
+                    !dataProcessingConsent ||
+                    generating ||
+                    documentGenerated
+                  }
                   className="flex-1"
                 >
-                  {generating ? 'Generando...' : documentGenerated ? 'Documento Generado' : 'Generar Documento'}
+                  {generating ? "Generando..." : documentGenerated ? "Documento Generado" : "Generar Documento"}
                 </Button>
               </div>
             </CardContent>
@@ -1116,7 +1105,7 @@ ${userContextInfo}`;
     );
   }
 
-  console.log('DocumentChatFlow rendering:', { loading, agent: !!agent, showUserForm, agentId });
+  console.log("DocumentChatFlow rendering:", { loading, agent: !!agent, showUserForm, agentId });
 
   return (
     <div className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm">
@@ -1126,10 +1115,10 @@ ${userContextInfo}`;
           {/* Header - WhatsApp style - Modal optimized */}
           <div className="bg-primary px-4 py-3 shadow-sm">
             <div className="flex items-center gap-3">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={onBack} 
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onBack}
                 className="text-primary-foreground hover:bg-primary-foreground/10 p-2"
               >
                 <ArrowLeft className="w-5 h-5" />
@@ -1145,31 +1134,29 @@ ${userContextInfo}`;
           </div>
 
           {/* Messages - Modal scrollable area */}
-          <div className="flex-1 overflow-y-auto px-4 py-3 bg-gray-50 dark:bg-gray-800" style={{ maxHeight: '60vh' }}>
+          <div className="flex-1 overflow-y-auto px-4 py-3 bg-gray-50 dark:bg-gray-800" style={{ maxHeight: "60vh" }}>
             {isAuthenticated && userInfo.name && (
               <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg flex items-center gap-2">
                 <User className="w-4 h-4 text-primary shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">Sesión iniciada como {userInfo.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Tu documento se vinculará automáticamente a tu cuenta
-                  </p>
+                  <p className="text-xs text-muted-foreground">Tu documento se vinculará automáticamente a tu cuenta</p>
                 </div>
               </div>
             )}
-            
+
             <div className="space-y-3 pb-4">
               {messages.map((message, index) => (
                 <div key={index} className="animate-fade-in">
-                  <div className={`flex gap-2 mb-1 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    {message.role === 'user' ? (
+                  <div className={`flex gap-2 mb-1 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
+                    {message.role === "user" ? (
                       /* User message - right side */
                       <div className="max-w-[80%] group">
                         <div className="bg-primary text-primary-foreground rounded-2xl rounded-tr-md px-4 py-2.5 shadow-sm">
                           <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{message.content}</p>
                           <div className="flex items-center justify-end gap-1 mt-1">
                             <span className="text-xs opacity-70">
-                              {message.timestamp.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+                              {message.timestamp.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
                             </span>
                           </div>
                         </div>
@@ -1183,14 +1170,14 @@ ${userContextInfo}`;
                           </p>
                           <div className="flex items-center justify-start gap-1 mt-1">
                             <span className="text-xs text-gray-500 dark:text-gray-400">
-                              {message.timestamp.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+                              {message.timestamp.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
                             </span>
                           </div>
                         </div>
                       </div>
                     )}
                   </div>
-                  
+
                   {/* Generate button as a special message */}
                   {message.showGenerateButton && (
                     <div className="flex justify-start mb-2 animate-fade-in">
@@ -1198,9 +1185,11 @@ ${userContextInfo}`;
                         <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl rounded-tl-md px-4 py-3 shadow-sm">
                           <div className="flex items-center gap-2 mb-2">
                             <FileText className="w-4 h-4 text-green-600 dark:text-green-400" />
-                            <span className="text-sm font-medium text-green-700 dark:text-green-300">¡Documento listo para generar!</span>
+                            <span className="text-sm font-medium text-green-700 dark:text-green-300">
+                              ¡Documento listo para generar!
+                            </span>
                           </div>
-                          <Button 
+                          <Button
                             onClick={generateDocument}
                             disabled={generating || documentGenerated}
                             className="w-full bg-green-600 hover:bg-green-700 text-white rounded-xl"
@@ -1219,7 +1208,7 @@ ${userContextInfo}`;
                             ) : (
                               <>
                                 <FileText className="w-4 h-4 mr-2" />
-                                {isAuthenticated ? 'Generar Documento' : 'Continuar con mis datos'}
+                                {isAuthenticated ? "Generar Documento" : "Continuar con mis datos"}
                               </>
                             )}
                           </Button>
@@ -1229,7 +1218,7 @@ ${userContextInfo}`;
                   )}
                 </div>
               ))}
-              
+
               {/* Typing indicator */}
               {sending && (
                 <div className="flex justify-start animate-fade-in">
@@ -1238,8 +1227,14 @@ ${userContextInfo}`;
                       <div className="flex items-center gap-2">
                         <div className="flex space-x-1">
                           <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                          <div
+                            className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                            style={{ animationDelay: "0.1s" }}
+                          ></div>
+                          <div
+                            className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                            style={{ animationDelay: "0.2s" }}
+                          ></div>
                         </div>
                         <span className="text-xs text-gray-500">Escribiendo...</span>
                       </div>
@@ -1247,7 +1242,7 @@ ${userContextInfo}`;
                   </div>
                 </div>
               )}
-              
+
               <div ref={messagesEndRef} />
             </div>
           </div>
@@ -1263,16 +1258,16 @@ ${userContextInfo}`;
                   onKeyPress={handleKeyPress}
                   placeholder={isRateLimited ? "Por favor espera 1 minuto..." : "Escribe un mensaje..."}
                   disabled={sending || isRateLimited}
-                  className={`pr-4 py-2.5 rounded-full bg-gray-100 dark:bg-gray-800 focus:bg-white dark:focus:bg-gray-700 transition-colors text-sm border ${isRateLimited ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  className={`pr-4 py-2.5 rounded-full bg-gray-100 dark:bg-gray-800 focus:bg-white dark:focus:bg-gray-700 transition-colors text-sm border ${isRateLimited ? "opacity-50 cursor-not-allowed" : ""}`}
                   autoComplete="off"
                   autoFocus
                 />
               </div>
-              <Button 
-                onClick={sendMessage} 
+              <Button
+                onClick={sendMessage}
                 disabled={sending || !currentMessage.trim() || isRateLimited}
                 size="icon"
-                className={`rounded-full w-10 h-10 shrink-0 bg-primary hover:bg-primary/90 ${isRateLimited ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`rounded-full w-10 h-10 shrink-0 bg-primary hover:bg-primary/90 ${isRateLimited ? "opacity-50 cursor-not-allowed" : ""}`}
               >
                 <Send className="w-4 h-4" />
               </Button>
