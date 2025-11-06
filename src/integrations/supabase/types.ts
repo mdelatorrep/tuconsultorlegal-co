@@ -2209,6 +2209,69 @@ export type Database = {
         }
         Relationships: []
       }
+      terms_acceptance_audit: {
+        Row: {
+          acceptance_context: string | null
+          acceptance_type: string
+          accepted_at: string
+          created_at: string
+          data_processing_consent: boolean
+          device_info: Json | null
+          id: string
+          intellectual_property_consent: boolean | null
+          ip_address: string | null
+          marketing_consent: boolean | null
+          metadata: Json | null
+          privacy_policy_version: string
+          terms_version: string
+          user_agent: string | null
+          user_email: string
+          user_id: string | null
+          user_name: string | null
+          user_type: string
+        }
+        Insert: {
+          acceptance_context?: string | null
+          acceptance_type: string
+          accepted_at?: string
+          created_at?: string
+          data_processing_consent?: boolean
+          device_info?: Json | null
+          id?: string
+          intellectual_property_consent?: boolean | null
+          ip_address?: string | null
+          marketing_consent?: boolean | null
+          metadata?: Json | null
+          privacy_policy_version?: string
+          terms_version?: string
+          user_agent?: string | null
+          user_email: string
+          user_id?: string | null
+          user_name?: string | null
+          user_type: string
+        }
+        Update: {
+          acceptance_context?: string | null
+          acceptance_type?: string
+          accepted_at?: string
+          created_at?: string
+          data_processing_consent?: boolean
+          device_info?: Json | null
+          id?: string
+          intellectual_property_consent?: boolean | null
+          ip_address?: string | null
+          marketing_consent?: boolean | null
+          metadata?: Json | null
+          privacy_policy_version?: string
+          terms_version?: string
+          user_agent?: string | null
+          user_email?: string
+          user_id?: string | null
+          user_name?: string | null
+          user_type?: string
+        }
+        Relationships: []
+      }
       training_interactions: {
         Row: {
           assistant_response: string

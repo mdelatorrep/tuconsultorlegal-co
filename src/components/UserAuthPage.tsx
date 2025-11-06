@@ -11,6 +11,7 @@ import { ArrowLeft, Mail, Lock, User, Eye, EyeOff, CheckCircle } from 'lucide-re
 import { Checkbox } from './ui/checkbox';
 import { PasswordResetDialog } from './PasswordResetDialog';
 import { MagicLinkDialog } from './MagicLinkDialog';
+import { useTermsAudit } from '@/hooks/useTermsAudit';
 
 interface UserAuthPageProps {
   onBack: () => void;
@@ -22,6 +23,7 @@ export default function UserAuthPage({ onBack, onAuthSuccess }: UserAuthPageProp
   const [showPassword, setShowPassword] = useState(false);
   const [activeTab, setActiveTab] = useState('login');
   const [showEmailConfirmedMessage, setShowEmailConfirmedMessage] = useState(false);
+  const { logRegistrationTerms } = useTermsAudit();
   
   // Form data
   const [email, setEmail] = useState('');
@@ -171,6 +173,17 @@ export default function UserAuthPage({ onBack, onAuthSuccess }: UserAuthPageProp
       }
 
       if (data.user) {
+        // AUDITORÍA: Registrar aceptación de términos (CUMPLIMIENTO REGULATORIO)
+        await logRegistrationTerms(
+          'user',
+          email,
+          fullName,
+          data.user.id,
+          true, // data_processing_consent
+          undefined, // intellectual_property_consent (no aplica para usuarios)
+          false // marketing_consent
+        );
+        
         // Check if email confirmation is required
         const requiresConfirmation = !data.session;
         

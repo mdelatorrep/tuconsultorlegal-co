@@ -10,6 +10,8 @@ import { Scale, Lock, Mail, User, Eye, EyeOff, ArrowLeft, CheckCircle, Shield } 
 import { useToast } from '@/hooks/use-toast';
 import { SubscriptionPlanSelector } from './SubscriptionPlanSelector';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useTermsAudit } from '@/hooks/useTermsAudit';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LawyerLoginProps {
   onLoginSuccess: () => void;
@@ -34,6 +36,7 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
   const { loginWithEmailAndPassword, signUpWithEmailAndPassword, resetPassword, updatePassword } = useLawyerAuth();
   const { toast } = useToast();
   const { createSubscription } = useSubscription();
+  const { logRegistrationTerms } = useTermsAudit();
 
   // Detectar confirmación de email al cargar el componente
   useEffect(() => {
@@ -144,6 +147,22 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
       console.log('Signup result:', result);
       
       if (result.success) {
+        // AUDITORÍA: Registrar aceptación de términos (CUMPLIMIENTO REGULATORIO)
+        // Obtener el ID del usuario recién creado
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+          await logRegistrationTerms(
+            'lawyer',
+            email,
+            fullName,
+            user.id,
+            dataProcessingConsent,
+            intellectualPropertyConsent,
+            false // marketing_consent
+          );
+        }
+        
         if (result.requiresConfirmation) {
           // Email confirmation required
           console.log('=== EMAIL CONFIRMATION REQUIRED ===');

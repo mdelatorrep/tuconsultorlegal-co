@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Send, User, Bot, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { useUserAuth } from "@/hooks/useUserAuth";
+import { useTermsAudit } from "@/hooks/useTermsAudit";
 
 interface DocumentChatFlowProps {
   agentId: string;
@@ -35,6 +36,7 @@ interface AgentData {
 
 export default function DocumentChatFlow({ agentId, onBack, onComplete }: DocumentChatFlowProps) {
   const { user, isAuthenticated } = useUserAuth();
+  const { logDocumentCreationTerms } = useTermsAudit();
   const [agent, setAgent] = useState<AgentData | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentMessage, setCurrentMessage] = useState("");
@@ -709,6 +711,17 @@ ${userContextInfo}`;
     try {
       setDocumentGenerated(true); // Mark as generated immediately to prevent duplicates
 
+      // AUDITORÍA: Registrar generación de documento (CUMPLIMIENTO REGULATORIO)
+      if (agent) {
+        await logDocumentCreationTerms(
+          userEmail,
+          agent.document_name || 'Documento',
+          agentId,
+          userId || undefined,
+          userName
+        );
+      }
+
       const processedConversation = await processConversationData();
 
       const { data, error } = await supabase.functions.invoke("generate-document-from-chat", {
@@ -839,10 +852,21 @@ ${userContextInfo}`;
   };
 
   // Manejar la aceptación de términos
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (acceptedTerms && acceptedPrivacy && dataProcessingConsent) {
       localStorage.setItem(`terms_accepted_${agentId}`, "true");
       localStorage.setItem(`data_consent_${agentId}`, "true");
+
+      // ✅ AUDITORÍA: Registrar aceptación de términos para usuarios anónimos
+      if (!isAuthenticated && agent) {
+        await logDocumentCreationTerms(
+          'anonymous@session.local', // Email temporal
+          agent.document_name || 'Documento',
+          agentId,
+          undefined,
+          'Usuario Anónimo'
+        );
+      }
 
       // ✅ SOLO limpiar si NO hay conversación activa
       const existingChat = localStorage.getItem(`chat_${agentId}`);
