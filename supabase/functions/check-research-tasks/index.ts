@@ -2,6 +2,31 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
+// Enhanced function to extract content from various OpenAI response formats
+function extractFinalContent(responseData: any): string {
+  if (!responseData || !responseData.output || !Array.isArray(responseData.output)) {
+    return 'No se pudo obtener respuesta del asistente de investigación';
+  }
+  
+  // Find the last output item with text content (support multiple formats)
+  for (let i = responseData.output.length - 1; i >= 0; i--) {
+    const item = responseData.output[i];
+    if (!item.content) continue;
+    
+    for (const content of item.content) {
+      // Support various content types
+      if (content.type === 'message' && content.text) {
+        return content.text;
+      }
+      if ((content.type === 'text' || content.type === 'input_text') && (content.text || content.value)) {
+        return content.text || content.value;
+      }
+    }
+  }
+  
+  return 'No se pudo obtener respuesta del asistente de investigación';
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -128,11 +153,56 @@ serve(async (req) => {
         console.log(`[CHECK-RESEARCH-TASKS] OpenAI status for ${taskId}:`, statusData.status);
 
         if (statusData.status === 'completed') {
-          // Extract results
-          const output = statusData.output || {};
-          const findings = output.findings || [];
-          const sources = output.sources || [];
-          const conclusion = output.conclusion || '';
+          // Extract results using the same logic as the webhook handler
+          console.log(`[CHECK-RESEARCH-TASKS] Extracting completed research for task ${taskId}`);
+          
+          // Extract the final content text
+          const findings = extractFinalContent(statusData);
+          
+          // Extract sources from annotations and web search calls
+          const finalOutput = statusData.output?.[statusData.output.length - 1];
+          const annotations = finalOutput?.content?.[0]?.annotations || [];
+          const webSearchCalls = statusData.output?.filter((item: any) => item.type === 'web_search_call') || [];
+          const reasoningSteps = statusData.output?.filter((item: any) => item.type === 'reasoning') || [];
+          
+          // Process sources
+          const sources = [];
+          
+          // Add sources from annotations
+          annotations.forEach((annotation: any, index: number) => {
+            if (annotation.url && annotation.title) {
+              sources.push({
+                title: annotation.title,
+                url: annotation.url,
+                type: 'citation',
+                index: index + 1
+              });
+            }
+          });
+          
+          // Add sources from web search calls
+          webSearchCalls.forEach((searchCall: any, index: number) => {
+            if (searchCall.action?.query) {
+              sources.push({
+                title: `Búsqueda: "${searchCall.action.query}"`,
+                type: 'search',
+                status: searchCall.status || 'completed',
+                index: sources.length + 1
+              });
+            }
+          });
+          
+          // Extract conclusion (look for patterns or use last paragraph)
+          let conclusion = "Consulte con un especialista para casos específicos.";
+          const conclusionMatch = findings.match(/conclusi[óo]n[:\s]*(.*?)(?:\n|$)/i);
+          if (conclusionMatch) {
+            conclusion = conclusionMatch[1].trim();
+          } else if (findings.length > 500) {
+            const paragraphs = findings.split('\n\n').filter((p: string) => p.trim());
+            if (paragraphs.length > 1) {
+              conclusion = paragraphs[paragraphs.length - 1].trim();
+            }
+          }
 
           const outputData = {
             findings,
@@ -151,7 +221,10 @@ serve(async (req) => {
                 ...task.metadata,
                 status: 'completed',
                 completed_at: new Date().toISOString(),
-                checked_by_cron: true
+                checked_by_cron: true,
+                citations_count: annotations.length,
+                searches_count: webSearchCalls.length,
+                reasoning_steps: reasoningSteps.length
               },
               updated_at: new Date().toISOString()
             })
@@ -163,8 +236,9 @@ serve(async (req) => {
             task_id: task.id,
             openai_task_id: taskId,
             status: 'completed',
-            findings_count: findings.length,
-            sources_count: sources.length
+            findings_length: findings.length,
+            sources_count: sources.length,
+            citations_count: annotations.length
           });
 
         } else if (statusData.status === 'failed') {

@@ -441,7 +441,11 @@ Incluye citas específicas y fuentes verificables. Enfócate en análisis concre
       },
       body: JSON.stringify({
         model: researchModel,
-        max_output_tokens: 1000, // Optimized for TPM efficiency on Tier 1
+        max_output_tokens: 50000, // Increased for complete deep research reports
+        reasoning: {
+          effort: "medium", // Medium reasoning depth for balanced performance
+          summary: "detailed" // Get detailed reasoning summary
+        },
         background: true, // Enable background mode for long-running tasks (5-30 min)
         input: [
           {
@@ -465,7 +469,7 @@ Incluye citas específicas y fuentes verificables. Enfócate en análisis concre
         ],
         tools: [
           {
-            type: 'web_search' // Use stable web_search instead of preview
+            type: 'web_search_preview' // Required for o4-mini-deep-research model
           }
         ]
       }),
