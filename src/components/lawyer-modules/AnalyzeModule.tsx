@@ -102,20 +102,32 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
     }
   };
 
-  const handleDeleteAnalysis = async (analysisId: string, index: number) => {
+  const handleDeleteAnalysis = async (analysisId: string | undefined, index: number) => {
+    if (!analysisId) {
+      toast.error('No se puede eliminar: ID no válido');
+      return;
+    }
+
     try {
+      console.log('Deleting analysis with ID:', analysisId);
+      
       const { error } = await supabase
         .from('legal_tools_results')
         .delete()
-        .eq('id', analysisId);
+        .eq('id', analysisId)
+        .eq('lawyer_id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase delete error:', error);
+        throw error;
+      }
 
+      // Actualizar el estado local solo si la eliminación fue exitosa
       setAnalysisHistory(prev => prev.filter((_, i) => i !== index));
       toast.success('Análisis eliminado correctamente');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting analysis:', error);
-      toast.error('Error al eliminar el análisis');
+      toast.error(`Error al eliminar: ${error.message || 'Error desconocido'}`);
     }
   };
 
