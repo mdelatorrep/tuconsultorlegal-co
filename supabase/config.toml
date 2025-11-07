@@ -56,3 +56,6 @@ verify_jwt = false
 
 [functions.improve-lawyer-profile]
 verify_jwt = false
+
+[functions.legal-document-analysis]
+verify_jwt = false
