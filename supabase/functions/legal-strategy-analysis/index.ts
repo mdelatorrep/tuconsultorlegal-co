@@ -106,17 +106,14 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Get strategy AI model and prompt from system config
-    const configModel = await getSystemConfig(supabase, 'strategy_ai_model', 'gpt-4o-mini');
+    const strategyModel = await getSystemConfig(supabase, 'strategy_ai_model', 'gpt-4o-mini');
     const strategyPrompt = await getSystemConfig(
       supabase, 
       'strategy_ai_prompt', 
       'Eres un asistente especializado en estrategia legal. Analiza casos y proporciona estrategias integrales incluyendo vías de acción, argumentos, contraargumentos y precedentes.'
     );
 
-    // Use valid OpenAI model
-    const strategyModel = configModel.includes('gpt-4.1') ? 'gpt-4o-mini' : 
-                         configModel.includes('o3-') || configModel.includes('o4-') ? 'gpt-4o-mini' : 
-                         configModel;
+    console.log(`Using strategy model from config: ${strategyModel}`);
 
     // Get OpenAI API key
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
