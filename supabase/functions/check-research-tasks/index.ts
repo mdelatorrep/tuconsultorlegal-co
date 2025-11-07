@@ -32,7 +32,7 @@ serve(async (req) => {
     const { data: pendingTasks, error: fetchError } = await supabase
       .from('legal_tools_results')
       .select('*')
-      .eq('tool_type', 'legal_research')
+      .eq('tool_type', 'research')
       .filter('metadata->>status', 'eq', 'initiated')
       .lt('created_at', twoMinutesAgo);
 
