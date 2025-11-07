@@ -39,7 +39,6 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [analysisHistory, setAnalysisHistory] = useState<AnalysisResult[]>([]);
-  const [activeTab, setActiveTab] = useState("analyze");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -320,7 +319,7 @@ Tamaño: ${(file.size / 1024).toFixed(2)} KB`;
 
           <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 lg:py-8">
             <div className="max-w-7xl mx-auto">
-              <Tabs defaultValue="analyze" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+              <Tabs defaultValue="analyze" className="space-y-4">
                 <TabsList className="grid w-full max-w-md grid-cols-2">
                   <TabsTrigger value="analyze" className="flex items-center gap-2">
                     <Sparkles className="h-4 w-4" />
