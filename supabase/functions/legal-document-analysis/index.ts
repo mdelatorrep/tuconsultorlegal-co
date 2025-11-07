@@ -380,15 +380,37 @@ Detecta automáticamente el tipo de documento y adapta el análisis según su na
     // Try to parse as JSON, fallback to structured response if parsing fails
     let analysis;
     try {
-      analysis = JSON.parse(content);
+      // Clean markdown code blocks if present
+      let cleanContent = content.trim();
+      
+      // Remove markdown code block syntax if present
+      if (cleanContent.startsWith('```json')) {
+        cleanContent = cleanContent.replace(/^```json\s*/i, '');
+      } else if (cleanContent.startsWith('```')) {
+        cleanContent = cleanContent.replace(/^```\s*/i, '');
+      }
+      
+      if (cleanContent.endsWith('```')) {
+        cleanContent = cleanContent.replace(/\s*```$/i, '');
+      }
+      
+      cleanContent = cleanContent.trim();
+      
+      console.log('Attempting to parse cleaned content:', cleanContent.substring(0, 200));
+      analysis = JSON.parse(cleanContent);
+      console.log('✅ Successfully parsed analysis result');
     } catch (e) {
+      console.error('Failed to parse OpenAI response:', e);
+      console.error('Raw content:', content);
+      
       // Fallback: create structured response from text
       analysis = {
         documentType: "Documento Legal",
+        documentCategory: "other",
         clauses: [
           {
             name: "Análisis General",
-            content: content.substring(0, 200) + "...",
+            content: content.substring(0, 300) + "...",
             riskLevel: "medium",
             recommendation: "Revisar con detalle"
           }
@@ -396,11 +418,11 @@ Detecta automáticamente el tipo de documento y adapta el análisis según su na
         risks: [
           {
             type: "Análisis Requerido",
-            description: "El documento requiere revisión manual",
+            description: "El documento requiere revisión manual debido a un error en el procesamiento automático",
             severity: "medium"
           }
         ],
-        recommendations: ["Revisar documento manualmente", "Consultar con especialista"]
+        recommendations: ["Revisar documento manualmente", "Consultar con especialista si es necesario"]
       };
     }
 
