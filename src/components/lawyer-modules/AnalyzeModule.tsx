@@ -1,12 +1,13 @@
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Upload, FileText, AlertTriangle, CheckCircle, Eye, Loader2, Sparkles, Shield, TrendingUp, Clock, Scan, Target, History, ChevronRight, FileSignature, MessageSquare, CheckSquare, BarChart, Mail } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from '@/integrations/supabase/client';
+import { AlertTriangle, FileText, Upload, CheckCircle, XCircle, AlertCircle, FileSignature, MessageSquare, CheckSquare, BarChart, Copy, Check, Download, Loader2, Eye, Sparkles, Shield, Target, History } from 'lucide-react';
+import { toast } from "sonner";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import UnifiedSidebar from "../UnifiedSidebar";
 
@@ -20,30 +21,46 @@ interface AnalyzeModuleProps {
 interface AnalysisResult {
   fileName: string;
   documentType: string;
-  documentCategory?: 'contract' | 'response' | 'brief' | 'report' | 'correspondence' | 'other';
-  clauses: {
+  documentCategory?: 'contrato' | 'respuesta_legal' | 'escrito_juridico' | 'informe' | 'correspondencia' | 'anexo' | 'otro';
+  detectionConfidence?: 'alta' | 'media' | 'baja';
+  summary?: string;
+  clauses?: Array<{
     name: string;
     content: string;
-    riskLevel: 'low' | 'medium' | 'high';
-    recommendation?: string;
-  }[];
-  risks: {
+    riskLevel: string;
+    recommendation: string;
+  }>;
+  risks?: Array<{
     type: string;
     description: string;
-    severity: 'low' | 'medium' | 'high';
-  }[];
-  recommendations: string[];
-  timestamp: string;
+    severity: string;
+    mitigation?: string;
+  }>;
+  recommendations?: string[];
+  keyDates?: Array<{
+    date: string;
+    description: string;
+    importance: string;
+  }>;
+  parties?: Array<{
+    name: string;
+    role: string;
+  }>;
+  legalReferences?: Array<{
+    reference: string;
+    context: string;
+  }>;
+  missingElements?: string[];
+  timestamp: Date;
 }
 
 export default function AnalyzeModule({ user, currentView, onViewChange, onLogout }: AnalyzeModuleProps) {
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
+  const [analysisStatus, setAnalysisStatus] = useState<'idle' | 'analyzing' | 'completed' | 'error'>('idle');
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [analysisHistory, setAnalysisHistory] = useState<AnalysisResult[]>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const { toast } = useToast();
+  const [copiedSection, setCopiedSection] = useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  // Load analysis history on mount
   useEffect(() => {
     loadAnalysisHistory();
   }, [user.id]);
@@ -62,11 +79,18 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
 
       const history = data?.map((item: any) => ({
         fileName: item.input_data?.fileName || 'Documento',
-        documentType: (item.output_data as any)?.documentType || 'Documento Legal',
-        clauses: (item.output_data as any)?.clauses || [],
-        risks: (item.output_data as any)?.risks || [],
-        recommendations: (item.output_data as any)?.recommendations || [],
-        timestamp: item.created_at
+        documentType: item.output_data?.documentType || 'Documento Legal',
+        documentCategory: item.output_data?.documentCategory || 'otro',
+        detectionConfidence: item.output_data?.detectionConfidence,
+        summary: item.output_data?.summary,
+        clauses: item.output_data?.clauses || [],
+        risks: item.output_data?.risks || [],
+        recommendations: item.output_data?.recommendations || [],
+        keyDates: item.output_data?.keyDates || [],
+        parties: item.output_data?.parties || [],
+        legalReferences: item.output_data?.legalReferences || [],
+        missingElements: item.output_data?.missingElements || [],
+        timestamp: new Date(item.created_at)
       })) || [];
 
       setAnalysisHistory(history);
@@ -79,7 +103,6 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Accept more file types
     const acceptedTypes = [
       'application/pdf',
       'application/msword',
@@ -89,28 +112,21 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
     ];
 
     if (!acceptedTypes.includes(file.type) && !file.type.includes('document')) {
-      toast({
-        title: "Tipo de archivo no soportado",
-        description: "Por favor sube un archivo PDF, DOC, DOCX o TXT.",
-        variant: "destructive",
-      });
+      toast.error("Tipo de archivo no soportado. Por favor sube un archivo PDF, DOC, DOCX o TXT.");
       return;
     }
 
-    setIsAnalyzing(true);
+    setAnalysisStatus('analyzing');
     try {
-      console.log('Iniciando análisis de documento:', file.name, 'Tipo:', file.type);
+      console.log('Analyzing document:', file.name);
       
       let fileContent = '';
-      
-      // Handle different file types
       let fileBase64 = null;
       
-      // Binary file types that need base64 encoding
       const binaryTypes = [
         'application/pdf',
-        'application/msword', // .doc
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       ];
       
       const isBinaryFile = binaryTypes.includes(file.type) || 
@@ -119,53 +135,26 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
                           file.name.toLowerCase().endsWith('.pdf');
       
       if (isBinaryFile) {
-        // For binary files (PDF, DOC, DOCX), convert to base64
         try {
           const arrayBuffer = await file.arrayBuffer();
           const uint8Array = new Uint8Array(arrayBuffer);
           fileBase64 = btoa(String.fromCharCode(...uint8Array));
-          
-          let fileTypeDescription = 'documento';
-          if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-            fileTypeDescription = 'PDF';
-          } else if (file.name.toLowerCase().endsWith('.doc')) {
-            fileTypeDescription = 'DOC (Word 97-2003)';
-          } else if (file.name.toLowerCase().endsWith('.docx')) {
-            fileTypeDescription = 'DOCX (Word)';
-          }
-          
-          fileContent = `Documento ${fileTypeDescription}: ${file.name}
-          
-Este es un archivo ${fileTypeDescription} que contiene información legal. El sistema analizará el contenido del documento para identificar cláusulas, riesgos y proporcionar recomendaciones especializadas.
-
-Tipo de archivo: ${fileTypeDescription}
-Nombre: ${file.name}
-Tamaño: ${(file.size / 1024).toFixed(2)} KB
-
-El contenido será procesado por el sistema de análisis de documentos legales con IA.`;
+          fileContent = `Documento ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
         } catch (binaryError) {
           console.error('Error processing binary file:', binaryError);
-          fileContent = `Error procesando archivo binario: ${file.name}. Inténtalo de nuevo.`;
+          toast.error('Error procesando el archivo');
+          setAnalysisStatus('error');
+          return;
         }
       } else {
-        // For text-based files, read the content
         try {
           fileContent = await file.text();
         } catch (textError) {
-          console.error('Error reading file as text:', textError);
-          fileContent = `Documento: ${file.name}
-          
-Este documento contiene información legal que será analizada por el sistema de IA.
-
-Tipo de archivo: ${file.type}
-Nombre: ${file.name}
-Tamaño: ${(file.size / 1024).toFixed(2)} KB`;
+          console.error('Error reading text file:', textError);
+          fileContent = `Documento: ${file.name}`;
         }
       }
 
-      console.log('Contenido extraído, longitud:', fileContent.length);
-      
-      // Call the legal document analysis function
       const { data, error } = await supabase.functions.invoke('legal-document-analysis', {
         body: { 
           documentContent: fileContent, 
@@ -174,166 +163,198 @@ Tamaño: ${(file.size / 1024).toFixed(2)} KB`;
         }
       });
 
-      console.log('Respuesta del análisis:', { data, error });
-
       if (error) {
-        console.error('Error en función edge:', error);
+        console.error('Error in analysis:', error);
         throw error;
       }
 
       if (!data || !data.success) {
-        console.error('Respuesta de análisis no exitosa:', data);
         throw new Error(data?.error || 'Error en el análisis del documento');
       }
 
-      const analysisResult: AnalysisResult = {
+      const result: AnalysisResult = {
         fileName: file.name,
         documentType: data.documentType || 'Documento Legal',
-        documentCategory: data.documentCategory || 'other',
+        documentCategory: data.documentCategory || 'otro',
+        detectionConfidence: data.detectionConfidence,
+        summary: data.summary,
         clauses: data.clauses || [],
-        risks: data.risks || [{
-          type: 'Revisión Requerida',
-          description: 'El documento requiere revisión manual adicional',
-          severity: 'medium' as const
-        }],
-        recommendations: data.recommendations || ['Revisar documento completo', 'Validar términos legales'],
-        timestamp: data.timestamp || new Date().toISOString()
+        risks: data.risks || [],
+        recommendations: data.recommendations || [],
+        keyDates: data.keyDates || [],
+        parties: data.parties || [],
+        legalReferences: data.legalReferences || [],
+        missingElements: data.missingElements || [],
+        timestamp: new Date(data.timestamp || Date.now())
       };
 
-      // Save to database
-      const { error: dbError } = await supabase
-        .from('legal_tools_results')
-        .insert({
-          lawyer_id: user.id,
-          tool_type: 'analysis',
-          input_data: { 
-            fileName: analysisResult.fileName,
-            fileType: file.type,
-            fileSize: file.size,
-            documentContent: fileContent.substring(0, 500) + '...' // Store truncated content for privacy
-          },
-          output_data: {
-            documentType: analysisResult.documentType,
-            clauses: analysisResult.clauses,
-            risks: analysisResult.risks,
-            recommendations: analysisResult.recommendations
-          },
-          metadata: { 
-            timestamp: analysisResult.timestamp,
-            originalFileSize: file.size,
-            processedAt: new Date().toISOString()
-          }
-        });
-
-      if (dbError) {
-        console.error('Error saving to database:', dbError);
-        // Don't throw here, just log the error
-      }
-
-      setAnalysis(analysisResult);
-      loadAnalysisHistory(); // Reload history
+      setAnalysisResult(result);
+      setAnalysisStatus('completed');
+      loadAnalysisHistory();
       
-      toast({
-        title: "Análisis completado",
-        description: `El documento "${file.name}" ha sido analizado exitosamente.`,
-      });
+      toast.success(`Análisis completado: "${file.name}"`);
       
     } catch (error) {
-      console.error("Error en análisis:", error);
-      // Create fallback analysis for better user experience
-      const fallbackAnalysis: AnalysisResult = {
-        fileName: file?.name || 'Documento',
-        documentType: 'Documento Legal',
-        clauses: [{
-          name: 'Análisis General',
-          content: `El documento "${file?.name || 'sin nombre'}" ha sido cargado para análisis. El sistema detectó contenido que requiere revisión legal.`,
-          riskLevel: 'medium' as const,
-          recommendation: 'Revisar el documento manualmente para una evaluación completa'
-        }],
-        risks: [{
-          type: 'Procesamiento Limitado',
-          description: 'No se pudo procesar completamente el contenido del documento. Se recomienda revisión manual.',
-          severity: 'medium' as const
-        }],
-        recommendations: [
-          'Revisar el documento original manualmente',
-          'Verificar que el formato del archivo sea compatible',
-          'Consultar con un especialista legal si es necesario'
-        ],
-        timestamp: new Date().toISOString()
-      };
-
-      setAnalysis(fallbackAnalysis);
-      
-      toast({
-        title: "Documento procesado",
-        description: `Se ha cargado "${file?.name || 'el documento'}" pero ocurrió un error en el análisis automático. Puedes revisar el contenido manualmente.`,
-        variant: "destructive",
-      });
-    } finally {
-      setIsAnalyzing(false);
+      console.error("Error in analysis:", error);
+      setAnalysisStatus('error');
+      toast.error("Error al analizar el documento. Por favor intenta nuevamente.");
     }
   };
 
-  const getRiskBadge = (level: 'low' | 'medium' | 'high') => {
-    switch (level) {
-      case 'high':
-        return <Badge variant="destructive">Alto Riesgo</Badge>;
-      case 'medium':
-        return <Badge variant="secondary" className="bg-orange-100 text-orange-800">Riesgo Medio</Badge>;
-      case 'low':
-        return <Badge variant="outline" className="bg-green-100 text-green-800">Bajo Riesgo</Badge>;
+  const copyToClipboard = async (text: string, sectionName: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedSection(sectionName);
+      toast.success(`${sectionName} copiado al portapapeles`);
+      setTimeout(() => setCopiedSection(null), 2000);
+    } catch (error) {
+      toast.error('Error al copiar al portapapeles');
     }
+  };
+
+  const getRiskBadge = (level: string) => {
+    const levels: Record<string, { color: string; icon: React.ReactNode }> = {
+      critical: { color: 'bg-red-500', icon: <XCircle className="w-4 h-4" /> },
+      high: { color: 'bg-orange-500', icon: <AlertCircle className="w-4 h-4" /> },
+      medium: { color: 'bg-yellow-500', icon: <AlertTriangle className="w-4 h-4" /> },
+      low: { color: 'bg-green-500', icon: <CheckCircle className="w-4 h-4" /> }
+    };
+
+    const levelInfo = levels[level.toLowerCase()] || levels['medium'];
+    
+    return (
+      <Badge className={`${levelInfo.color} text-white`}>
+        {levelInfo.icon}
+        <span className="ml-1 capitalize">{level}</span>
+      </Badge>
+    );
   };
 
   const getCategoryIcon = (category?: string) => {
-    switch (category) {
-      case 'contract':
-        return <FileSignature className="h-5 w-5" />;
-      case 'response':
-        return <MessageSquare className="h-5 w-5" />;
-      case 'brief':
-        return <CheckSquare className="h-5 w-5" />;
-      case 'report':
-        return <BarChart className="h-5 w-5" />;
-      case 'correspondence':
-        return <Mail className="h-5 w-5" />;
-      default:
-        return <FileText className="h-5 w-5" />;
-    }
+    const icons: Record<string, React.ReactNode> = {
+      contrato: <FileSignature className="w-5 h-5" />,
+      respuesta_legal: <MessageSquare className="w-5 h-5" />,
+      escrito_juridico: <CheckSquare className="w-5 h-5" />,
+      informe: <BarChart className="w-5 h-5" />,
+      correspondencia: <FileText className="w-5 h-5" />,
+      anexo: <FileText className="w-5 h-5" />,
+      otro: <FileText className="w-5 h-5" />
+    };
+    return icons[category || 'otro'] || icons['otro'];
   };
 
   const getCategoryLabel = (category?: string) => {
-    switch (category) {
-      case 'contract':
-        return 'Contrato';
-      case 'response':
-        return 'Respuesta Legal';
-      case 'brief':
-        return 'Escrito Jurídico';
-      case 'report':
-        return 'Informe';
-      case 'correspondence':
-        return 'Correspondencia';
-      default:
-        return 'Documento';
-    }
+    const labels: Record<string, string> = {
+      contrato: 'Contrato',
+      respuesta_legal: 'Respuesta Legal',
+      escrito_juridico: 'Escrito Jurídico',
+      informe: 'Informe',
+      correspondencia: 'Correspondencia',
+      anexo: 'Anexo',
+      otro: 'Otro'
+    };
+    return labels[category || 'otro'] || 'Documento';
   };
 
   const getElementLabel = (category?: string) => {
-    switch (category) {
-      case 'contract':
-        return 'Cláusulas';
-      case 'response':
-      case 'brief':
-        return 'Argumentos';
-      case 'report':
-        return 'Secciones';
-      case 'correspondence':
-        return 'Puntos Clave';
-      default:
-        return 'Elementos';
+    const labels: Record<string, string> = {
+      contrato: 'Cláusula',
+      respuesta_legal: 'Argumento',
+      escrito_juridico: 'Fundamento',
+      informe: 'Hallazgo',
+      correspondencia: 'Punto',
+      anexo: 'Sección',
+      otro: 'Elemento'
+    };
+    return labels[category || 'otro'] || 'Elemento';
+  };
+
+  const exportAnalysisToText = () => {
+    if (!analysisResult) return;
+    
+    let text = `ANÁLISIS DE DOCUMENTO: ${analysisResult.fileName}\n`;
+    text += `${'='.repeat(60)}\n\n`;
+    text += `Tipo: ${analysisResult.documentType}\n`;
+    text += `Categoría: ${getCategoryLabel(analysisResult.documentCategory)}\n`;
+    if (analysisResult.detectionConfidence) {
+      text += `Confianza: ${analysisResult.detectionConfidence}\n`;
     }
+    text += `Fecha: ${analysisResult.timestamp.toLocaleString()}\n\n`;
+    
+    if (analysisResult.summary) {
+      text += `RESUMEN:\n${analysisResult.summary}\n\n`;
+    }
+    
+    if (analysisResult.clauses && analysisResult.clauses.length > 0) {
+      text += `${getElementLabel(analysisResult.documentCategory).toUpperCase()}S:\n`;
+      analysisResult.clauses.forEach((clause, idx) => {
+        text += `\n${idx + 1}. ${clause.name}\n`;
+        text += `   Contenido: ${clause.content}\n`;
+        text += `   Nivel de riesgo: ${clause.riskLevel}\n`;
+        text += `   Recomendación: ${clause.recommendation}\n`;
+      });
+      text += '\n';
+    }
+    
+    if (analysisResult.risks && analysisResult.risks.length > 0) {
+      text += `RIESGOS IDENTIFICADOS:\n`;
+      analysisResult.risks.forEach((risk, idx) => {
+        text += `\n${idx + 1}. ${risk.type} [${risk.severity}]\n`;
+        text += `   ${risk.description}\n`;
+        if (risk.mitigation) {
+          text += `   Mitigación: ${risk.mitigation}\n`;
+        }
+      });
+      text += '\n';
+    }
+    
+    if (analysisResult.recommendations && analysisResult.recommendations.length > 0) {
+      text += `RECOMENDACIONES:\n`;
+      analysisResult.recommendations.forEach((rec, idx) => {
+        text += `${idx + 1}. ${rec}\n`;
+      });
+      text += '\n';
+    }
+    
+    if (analysisResult.keyDates && analysisResult.keyDates.length > 0) {
+      text += `FECHAS CLAVE:\n`;
+      analysisResult.keyDates.forEach((date, idx) => {
+        text += `${idx + 1}. ${date.date} [${date.importance}] - ${date.description}\n`;
+      });
+      text += '\n';
+    }
+    
+    if (analysisResult.parties && analysisResult.parties.length > 0) {
+      text += `PARTES INVOLUCRADAS:\n`;
+      analysisResult.parties.forEach((party, idx) => {
+        text += `${idx + 1}. ${party.name} - ${party.role}\n`;
+      });
+      text += '\n';
+    }
+    
+    if (analysisResult.legalReferences && analysisResult.legalReferences.length > 0) {
+      text += `REFERENCIAS LEGALES:\n`;
+      analysisResult.legalReferences.forEach((ref, idx) => {
+        text += `${idx + 1}. ${ref.reference}\n   ${ref.context}\n`;
+      });
+      text += '\n';
+    }
+    
+    if (analysisResult.missingElements && analysisResult.missingElements.length > 0) {
+      text += `ELEMENTOS FALTANTES:\n`;
+      analysisResult.missingElements.forEach((elem, idx) => {
+        text += `${idx + 1}. ${elem}\n`;
+      });
+    }
+    
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `analisis-${analysisResult.fileName.replace(/[^a-z0-9]/gi, '-')}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Análisis exportado correctamente');
   };
 
   return (
@@ -346,9 +367,7 @@ Tamaño: ${(file.size / 1024).toFixed(2)} KB`;
           onLogout={onLogout}
         />
 
-        {/* Main Content */}
         <main className="flex-1 min-w-0">
-          {/* Enhanced Header - Mobile First */}
           <header className="h-14 lg:h-16 border-b bg-gradient-to-r from-background/95 to-orange-500/10 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 relative overflow-hidden sticky top-0 z-40">
             <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 to-transparent opacity-50"></div>
             <div className="relative flex h-14 lg:h-16 items-center px-3 lg:px-6">
@@ -362,7 +381,7 @@ Tamaño: ${(file.size / 1024).toFixed(2)} KB`;
                     Análisis de Documentos
                   </h1>
                   <p className="text-xs lg:text-sm text-muted-foreground hidden sm:block truncate">
-                    Revisión inteligente y detección de riesgos
+                    Revisión inteligente con IA avanzada
                   </p>
                 </div>
               </div>
@@ -384,430 +403,431 @@ Tamaño: ${(file.size / 1024).toFixed(2)} KB`;
                 </TabsList>
 
                 <TabsContent value="analyze" className="space-y-4 lg:space-y-8">
-                 {/* Hero Section */}
-                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-orange-500/10 via-orange-500/5 to-transparent border border-orange-500/20 p-8">
-                  <div className="absolute inset-0 bg-grid-pattern opacity-10"></div>
-                  <div className="relative">
-                    <div className="flex items-center gap-4 mb-6">
-                      <div className="p-4 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl shadow-2xl">
-                        <Eye className="h-10 w-10 text-white" />
-                      </div>
-                      <div>
-                        <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-600 via-orange-500 to-orange-400 bg-clip-text text-transparent">
-                          Análisis Inteligente de Documentos
-                        </h1>
-                        <p className="text-lg text-muted-foreground mt-2">
-                          Revisión automatizada de contratos, detección de riesgos y recomendaciones expertas
-                        </p>
-                      </div>
-                    </div>
-                    
-                    {/* Stats Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
-                      <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                        <div className="flex items-center gap-3">
-                          <Target className="h-8 w-8 text-orange-600" />
-                          <div>
-                            <p className="text-2xl font-bold text-orange-600">{analysis ? 1 : 0}</p>
-                            <p className="text-sm text-muted-foreground">Documentos analizados</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                        <div className="flex items-center gap-3">
-                          <Shield className="h-8 w-8 text-red-600" />
-                          <div>
-                            <p className="text-2xl font-bold text-red-600">{analysis?.risks.length || 0}</p>
-                            <p className="text-sm text-muted-foreground">Riesgos detectados</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                        <div className="flex items-center gap-3">
-                          <CheckCircle className="h-8 w-8 text-emerald-600" />
-                          <div>
-                            <p className="text-2xl font-bold text-emerald-600">{analysis?.recommendations.length || 0}</p>
-                            <p className="text-sm text-muted-foreground">Recomendaciones</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Enhanced Upload Interface */}
-                <Card className="border-0 shadow-2xl bg-gradient-to-br from-white via-white to-orange-500/5 overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 via-transparent to-orange-500/10 opacity-50"></div>
-                  <CardHeader className="relative pb-6">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg">
-                        <Upload className="h-6 w-6 text-white" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-orange-500 bg-clip-text text-transparent">
-                          Análisis de Documento Legal
-                        </CardTitle>
-                        <CardDescription className="text-base mt-2">
-                          Sube un contrato o documento legal para obtener análisis completo de riesgos y recomendaciones
-                        </CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="relative space-y-6">
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={handleFileUpload}
-                      accept=".pdf,.doc,.docx,.txt,.rtf"
-                      className="hidden"
-                    />
-                    
-                    <div 
-                      className="border-2 border-dashed border-orange-200 rounded-xl p-8 text-center bg-gradient-to-br from-orange-50/50 to-white hover:border-orange-300 transition-colors duration-200 cursor-pointer"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <div className="space-y-4">
-                        <div className="relative">
-                          <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 to-orange-400/10 rounded-full blur-xl"></div>
-                          <div className="relative p-4 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-xl mx-auto w-fit">
-                            <FileText className="h-12 w-12 text-white" />
-                          </div>
+                  {/* Hero Section */}
+                  <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-orange-500/10 via-orange-500/5 to-transparent border border-orange-500/20 p-8">
+                    <div className="absolute inset-0 bg-grid-pattern opacity-10"></div>
+                    <div className="relative">
+                      <div className="flex items-center gap-4 mb-6">
+                        <div className="p-4 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl shadow-2xl">
+                          <Eye className="h-10 w-10 text-white" />
                         </div>
                         <div>
-                          <h3 className="text-lg font-semibold text-gray-900 mb-2">Arrastra tu documento aquí</h3>
-                          <p className="text-muted-foreground">o haz clic para seleccionar</p>
+                          <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-600 via-orange-500 to-orange-400 bg-clip-text text-transparent">
+                            Análisis Inteligente de Documentos
+                          </h1>
+                          <p className="text-lg text-muted-foreground mt-2">
+                            Análisis automático de todo tipo de documentos legales con detección de riesgos y recomendaciones expertas
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+                        <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                          <div className="flex items-center gap-3">
+                            <Target className="h-8 w-8 text-orange-600" />
+                            <div>
+                              <p className="text-2xl font-bold text-orange-600">{analysisHistory.length}</p>
+                              <p className="text-sm text-muted-foreground">Análisis realizados</p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                          <div className="flex items-center gap-3">
+                            <Shield className="h-8 w-8 text-red-600" />
+                            <div>
+                              <p className="text-2xl font-bold text-red-600">{analysisResult?.risks.length || 0}</p>
+                              <p className="text-sm text-muted-foreground">Riesgos detectados</p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                          <div className="flex items-center gap-3">
+                            <CheckCircle className="h-8 w-8 text-emerald-600" />
+                            <div>
+                              <p className="text-2xl font-bold text-emerald-600">{analysisResult?.recommendations?.length || 0}</p>
+                              <p className="text-sm text-muted-foreground">Recomendaciones</p>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
-                    
-                    <Button
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={isAnalyzing}
-                      className="w-full h-14 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-500 shadow-xl hover:shadow-2xl transition-all duration-300 text-lg font-semibold"
-                    >
-                      {isAnalyzing ? (
-                        <>
-                          <Loader2 className="h-5 w-5 mr-3 animate-spin" />
-                          <span className="animate-pulse">Analizando documento...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="h-5 w-5 mr-3" />
-                          Iniciar Análisis Inteligente
-                        </>
-                      )}
-                    </Button>
-                    
-                    <div className="bg-gradient-to-r from-orange-500/10 to-orange-400/5 rounded-xl p-4">
-                      <p className="text-sm text-orange-700 font-medium text-center">
-                        📄 Formatos soportados: PDF, DOC, DOCX, TXT, RTF | 🔒 Análisis seguro y confidencial
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-
-      {/* Analysis Results */}
-      {analysis && (
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg text-white">
-                  {getCategoryIcon(analysis.documentCategory)}
-                </div>
-                <div className="flex-1">
-                  <CardTitle className="flex items-center gap-2">
-                    {analysis.fileName}
-                    <Badge variant="secondary" className="ml-2">
-                      {getCategoryLabel(analysis.documentCategory)}
-                    </Badge>
-                  </CardTitle>
-                  <CardDescription>
-                    {analysis.documentType} | Analizado el {new Date(analysis.timestamp).toLocaleDateString()}
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-          </Card>
-
-          {/* Risks Overview */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-orange-600" />
-                Riesgos Identificados
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {analysis.risks.map((risk, index) => (
-                  <div key={index} className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
-                    <div className="mt-1">
-                      {getRiskBadge(risk.severity)}
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold">{risk.type}</h4>
-                      <p className="text-sm text-muted-foreground">{risk.description}</p>
-                    </div>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
 
-          {/* Clauses Analysis */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Scan className="h-5 w-5 text-orange-600" />
-                {getElementLabel(analysis.documentCategory)} Identificados
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {analysis.clauses.length === 0 ? (
-                <div className="text-center py-8 px-4">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-orange-100 mb-4">
-                    {getCategoryIcon(analysis.documentCategory)}
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    No se encontraron {getElementLabel(analysis.documentCategory).toLowerCase()}
-                  </h3>
-                  <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                    El documento analizado no contiene elementos identificables para este tipo de documento.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {analysis.clauses.map((clause, index) => (
-                    <div key={index} className="border rounded-lg p-4">
-                      <div className="flex items-start gap-3">
-                        <div className="flex-shrink-0 mt-1 text-orange-600">
-                          {getCategoryIcon(analysis.documentCategory)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-2">
-                            <h4 className="font-semibold">{clause.name}</h4>
-                            {getRiskBadge(clause.riskLevel)}
+                  {/* Upload Section */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Subir Documento para Análisis</CardTitle>
+                      <CardDescription>
+                        Soporta PDF, Word, y documentos de texto
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        className="hidden"
+                        accept=".pdf,.doc,.docx,.txt,.rtf"
+                        onChange={handleFileUpload}
+                      />
+                      <Button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={analysisStatus === 'analyzing'}
+                        size="lg"
+                        className="w-full"
+                      >
+                        {analysisStatus === 'analyzing' ? (
+                          <>
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                            Analizando...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="mr-2 h-5 w-5" />
+                            Seleccionar Documento
+                          </>
+                        )}
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  {/* Analysis Results */}
+                  {analysisResult && (
+                    <Card>
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            {getCategoryIcon(analysisResult.documentCategory)}
+                            <div>
+                              <CardTitle>Resultados del Análisis</CardTitle>
+                              <CardDescription>
+                                {analysisResult.fileName} • {analysisResult.documentType}
+                              </CardDescription>
+                            </div>
                           </div>
-                          <p className="text-sm text-muted-foreground mb-2">
-                            {clause.content}
-                          </p>
-                          {clause.recommendation && (
-                            <div className="bg-yellow-50 border border-yellow-200 rounded p-3 mt-2">
-                              <p className="text-sm">
-                                <strong>Recomendación:</strong> {clause.recommendation}
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={exportAnalysisToText}
+                            >
+                              <Download className="w-4 h-4 mr-2" />
+                              Exportar
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-2 mt-4">
+                          <Badge variant="secondary">
+                            {getCategoryLabel(analysisResult.documentCategory)}
+                          </Badge>
+                          {analysisResult.detectionConfidence && (
+                            <Badge variant="outline">
+                              Confianza: {analysisResult.detectionConfidence}
+                            </Badge>
+                          )}
+                          {analysisResult.clauses && (
+                            <Badge variant="outline">
+                              {analysisResult.clauses.length} {getElementLabel(analysisResult.documentCategory)}(s)
+                            </Badge>
+                          )}
+                          {analysisResult.risks && (
+                            <Badge variant="outline">
+                              {analysisResult.risks.length} Riesgo(s)
+                            </Badge>
+                          )}
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <ScrollArea className="h-[600px] pr-4">
+                          {analysisResult.summary && (
+                            <div className="mb-6">
+                              <div className="flex items-center justify-between mb-2">
+                                <h3 className="text-lg font-semibold">Resumen Ejecutivo</h3>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => copyToClipboard(analysisResult.summary!, 'Resumen')}
+                                >
+                                  {copiedSection === 'Resumen' ? (
+                                    <Check className="w-4 h-4 text-green-500" />
+                                  ) : (
+                                    <Copy className="w-4 h-4" />
+                                  )}
+                                </Button>
+                              </div>
+                              <p className="text-sm text-muted-foreground bg-muted p-4 rounded-lg">
+                                {analysisResult.summary}
                               </p>
                             </div>
                           )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
 
-          {/* Recommendations */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-green-600" />
-                Recomendaciones
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {analysis.recommendations.map((rec, index) => (
-                  <div key={index} className="flex items-start gap-2">
-                    <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
-                    <p className="text-sm">{rec}</p>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+                          {analysisResult.clauses && analysisResult.clauses.length > 0 && (
+                            <div className="mb-6">
+                              <div className="flex items-center justify-between mb-3">
+                                <h3 className="text-lg font-semibold">
+                                  {getElementLabel(analysisResult.documentCategory)}s Identificados
+                                </h3>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => copyToClipboard(
+                                    analysisResult.clauses!.map((c, i) => 
+                                      `${i + 1}. ${c.name}\n${c.content}\nRiesgo: ${c.riskLevel}\nRecomendación: ${c.recommendation}`
+                                    ).join('\n\n'),
+                                    'Elementos'
+                                  )}
+                                >
+                                  {copiedSection === 'Elementos' ? (
+                                    <Check className="w-4 h-4 text-green-500" />
+                                  ) : (
+                                    <Copy className="w-4 h-4" />
+                                  )}
+                                </Button>
+                              </div>
+                              <div className="space-y-3">
+                                {analysisResult.clauses.map((clause, index) => (
+                                  <Card key={index} className="border-l-4 border-l-primary">
+                                    <CardContent className="p-4">
+                                      <div className="flex items-start justify-between mb-2">
+                                        <h4 className="font-semibold text-base">{clause.name}</h4>
+                                        <div className="flex gap-2">
+                                          {getRiskBadge(clause.riskLevel)}
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => copyToClipboard(
+                                              `${clause.name}\n${clause.content}\nRiesgo: ${clause.riskLevel}\nRecomendación: ${clause.recommendation}`,
+                                              `Elemento ${index + 1}`
+                                            )}
+                                          >
+                                            {copiedSection === `Elemento ${index + 1}` ? (
+                                              <Check className="w-3 h-3 text-green-500" />
+                                            ) : (
+                                              <Copy className="w-3 h-3" />
+                                            )}
+                                          </Button>
+                                        </div>
+                                      </div>
+                                      <p className="text-sm text-muted-foreground mb-2">{clause.content}</p>
+                                      <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded">
+                                        <p className="text-sm"><strong>Recomendación:</strong> {clause.recommendation}</p>
+                                      </div>
+                                    </CardContent>
+                                  </Card>
+                                ))}
+                              </div>
+                            </div>
+                          )}
 
-                {!analysis && !isAnalyzing && (
-                  <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-gray-50 to-gray-100 overflow-hidden">
-                    <CardContent className="p-12 text-center">
-                      <div className="space-y-6">
-                        <div className="relative">
-                          <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 to-orange-400/10 rounded-full blur-2xl"></div>
-                          <div className="relative p-6 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl shadow-2xl mx-auto w-fit">
-                            <Scan className="h-16 w-16 text-white" />
-                          </div>
-                        </div>
-                        <div>
-                          <h3 className="text-2xl font-bold text-gray-900 mb-2">¡Inicia tu análisis legal inteligente!</h3>
-                          <p className="text-lg text-muted-foreground max-w-md mx-auto">
-                            Sube cualquier tipo de documento legal para obtener un análisis adaptado a su naturaleza
-                          </p>
-                        </div>
-                        <div className="bg-gradient-to-r from-orange-500/10 to-orange-400/5 rounded-xl p-6 max-w-2xl mx-auto">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-orange-700">
-                            <div className="flex items-center gap-2">
-                              <FileSignature className="h-4 w-4" />
-                              <span>Contratos y convenios</span>
+                          {analysisResult.risks && analysisResult.risks.length > 0 && (
+                            <div className="mb-6">
+                              <div className="flex items-center justify-between mb-3">
+                                <h3 className="text-lg font-semibold flex items-center gap-2">
+                                  <AlertTriangle className="w-5 h-5 text-orange-500" />
+                                  Riesgos Identificados
+                                </h3>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => copyToClipboard(
+                                    analysisResult.risks!.map((r, i) => 
+                                      `${i + 1}. ${r.type} [${r.severity}]\n${r.description}${r.mitigation ? `\nMitigación: ${r.mitigation}` : ''}`
+                                    ).join('\n\n'),
+                                    'Riesgos'
+                                  )}
+                                >
+                                  {copiedSection === 'Riesgos' ? (
+                                    <Check className="w-4 h-4 text-green-500" />
+                                  ) : (
+                                    <Copy className="w-4 h-4" />
+                                  )}
+                                </Button>
+                              </div>
+                              <div className="space-y-3">
+                                {analysisResult.risks.map((risk, index) => (
+                                  <Card key={index} className="border-l-4 border-l-orange-500">
+                                    <CardContent className="p-4">
+                                      <div className="flex items-start justify-between mb-2">
+                                        <h4 className="font-semibold text-base">{risk.type}</h4>
+                                        <div className="flex gap-2">
+                                          {getRiskBadge(risk.severity)}
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => copyToClipboard(
+                                              `${risk.type} [${risk.severity}]\n${risk.description}${risk.mitigation ? `\nMitigación: ${risk.mitigation}` : ''}`,
+                                              `Riesgo ${index + 1}`
+                                            )}
+                                          >
+                                            {copiedSection === `Riesgo ${index + 1}` ? (
+                                              <Check className="w-3 h-3 text-green-500" />
+                                            ) : (
+                                              <Copy className="w-3 h-3" />
+                                            )}
+                                          </Button>
+                                        </div>
+                                      </div>
+                                      <p className="text-sm text-muted-foreground mb-2">{risk.description}</p>
+                                      {risk.mitigation && (
+                                        <div className="bg-green-50 dark:bg-green-950 p-3 rounded">
+                                          <p className="text-sm"><strong>Mitigación:</strong> {risk.mitigation}</p>
+                                        </div>
+                                      )}
+                                    </CardContent>
+                                  </Card>
+                                ))}
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <MessageSquare className="h-4 w-4" />
-                              <span>Respuestas legales</span>
+                          )}
+
+                          {analysisResult.recommendations && analysisResult.recommendations.length > 0 && (
+                            <div className="mb-6">
+                              <div className="flex items-center justify-between mb-3">
+                                <h3 className="text-lg font-semibold flex items-center gap-2">
+                                  <CheckCircle className="w-5 h-5 text-green-500" />
+                                  Recomendaciones
+                                </h3>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => copyToClipboard(
+                                    analysisResult.recommendations!.map((r, i) => `${i + 1}. ${r}`).join('\n'),
+                                    'Recomendaciones'
+                                  )}
+                                >
+                                  {copiedSection === 'Recomendaciones' ? (
+                                    <Check className="w-4 h-4 text-green-500" />
+                                  ) : (
+                                    <Copy className="w-4 h-4" />
+                                  )}
+                                </Button>
+                              </div>
+                              <ul className="space-y-2">
+                                {analysisResult.recommendations.map((rec, index) => (
+                                  <li key={index} className="flex gap-2 items-start bg-muted p-3 rounded">
+                                    <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                                    <span className="text-sm">{rec}</span>
+                                  </li>
+                                ))}
+                              </ul>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <CheckSquare className="h-4 w-4" />
-                              <span>Escritos jurídicos</span>
+                          )}
+
+                          {analysisResult.keyDates && analysisResult.keyDates.length > 0 && (
+                            <div className="mb-6">
+                              <h3 className="text-lg font-semibold mb-3">Fechas Clave</h3>
+                              <div className="space-y-2">
+                                {analysisResult.keyDates.map((date, index) => (
+                                  <div key={index} className="flex items-center justify-between p-3 bg-muted rounded">
+                                    <div>
+                                      <p className="font-medium">{date.date}</p>
+                                      <p className="text-sm text-muted-foreground">{date.description}</p>
+                                    </div>
+                                    {getRiskBadge(date.importance)}
+                                  </div>
+                                ))}
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <BarChart className="h-4 w-4" />
-                              <span>Informes y dictámenes</span>
+                          )}
+
+                          {analysisResult.parties && analysisResult.parties.length > 0 && (
+                            <div className="mb-6">
+                              <h3 className="text-lg font-semibold mb-3">Partes Involucradas</h3>
+                              <div className="grid grid-cols-2 gap-2">
+                                {analysisResult.parties.map((party, index) => (
+                                  <div key={index} className="p-3 bg-muted rounded">
+                                    <p className="font-medium">{party.name}</p>
+                                    <p className="text-sm text-muted-foreground">{party.role}</p>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Mail className="h-4 w-4" />
-                              <span>Correspondencia legal</span>
+                          )}
+
+                          {analysisResult.legalReferences && analysisResult.legalReferences.length > 0 && (
+                            <div className="mb-6">
+                              <h3 className="text-lg font-semibold mb-3">Referencias Legales</h3>
+                              <div className="space-y-2">
+                                {analysisResult.legalReferences.map((ref, index) => (
+                                  <div key={index} className="p-3 bg-muted rounded">
+                                    <p className="font-medium text-sm">{ref.reference}</p>
+                                    <p className="text-xs text-muted-foreground mt-1">{ref.context}</p>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Sparkles className="h-4 w-4" />
-                              <span>Análisis adaptativo</span>
+                          )}
+
+                          {analysisResult.missingElements && analysisResult.missingElements.length > 0 && (
+                            <div>
+                              <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                                <AlertCircle className="w-5 h-5 text-yellow-500" />
+                                Elementos Faltantes
+                              </h3>
+                              <ul className="space-y-2">
+                                {analysisResult.missingElements.map((elem, index) => (
+                                  <li key={index} className="flex gap-2 items-start p-3 bg-yellow-50 dark:bg-yellow-950 rounded">
+                                    <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                                    <span className="text-sm">{elem}</span>
+                                  </li>
+                                ))}
+                              </ul>
                             </div>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
+                          )}
+                        </ScrollArea>
+                      </CardContent>
+                    </Card>
+                  )}
                 </TabsContent>
 
                 <TabsContent value="history" className="space-y-4">
                   {analysisHistory.length === 0 ? (
                     <Card>
                       <CardContent className="p-12 text-center">
-                        <Eye className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                        <History className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
                         <h3 className="text-lg font-semibold mb-2">No hay análisis previos</h3>
                         <p className="text-muted-foreground">
-                          Los análisis de documentos aparecerán aquí cuando completes tu primer análisis
+                          Los documentos que analices aparecerán aquí
                         </p>
                       </CardContent>
                     </Card>
                   ) : (
                     <div className="space-y-4">
-                      <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl">
-                        <h3 className="text-lg font-bold text-orange-900">
-                          Historial de Análisis de Documentos
-                        </h3>
-                        <p className="text-orange-700 text-sm">
-                          {analysisHistory.length} documento{analysisHistory.length !== 1 ? 's' : ''} analizado{analysisHistory.length !== 1 ? 's' : ''}
-                        </p>
-                      </div>
                       {analysisHistory.map((item, index) => (
-                        <Collapsible key={index}>
-                          <Card className="hover:shadow-lg transition-shadow">
-                            <CollapsibleTrigger asChild>
-                              <CardHeader className="cursor-pointer hover:bg-orange-50/50 transition-colors">
-                                 <div className="flex items-center justify-between gap-4">
-                                   <div className="flex-1 min-w-0">
-                                     <CardTitle className="text-lg flex items-center gap-2">
-                                       {getCategoryIcon(item.documentCategory)}
-                                       <span className="truncate">{item.fileName}</span>
-                                       <Badge variant="outline" className="ml-2 flex-shrink-0">
-                                         {getCategoryLabel(item.documentCategory)}
-                                       </Badge>
-                                     </CardTitle>
-                                      <CardDescription className="mt-1">
-                                       {item.documentType} • {new Date(item.timestamp).toLocaleDateString('es-ES', {
-                                         year: 'numeric',
-                                         month: 'long',
-                                         day: 'numeric'
-                                       })}
-                                     </CardDescription>
-                                   </div>
-                                   <ChevronRight className="h-5 w-5 text-orange-600 flex-shrink-0" />
-                                 </div>
-                                 <div className="grid grid-cols-3 gap-2 mt-4">
-                                   <div className="text-center p-2 bg-red-50 rounded-lg">
-                                     <AlertTriangle className="h-4 w-4 mx-auto mb-1 text-red-600" />
-                                     <p className="text-lg font-bold">{item.risks.length}</p>
-                                     <p className="text-xs text-muted-foreground">Riesgos</p>
-                                   </div>
-                                   <div className="text-center p-2 bg-blue-50 rounded-lg">
-                                     <div className="mx-auto mb-1 text-blue-600 inline-flex items-center justify-center">
-                                       {getCategoryIcon(item.documentCategory)}
-                                     </div>
-                                     <p className="text-lg font-bold">{item.clauses.length}</p>
-                                     <p className="text-xs text-muted-foreground truncate">{getElementLabel(item.documentCategory)}</p>
-                                   </div>
-                                   <div className="text-center p-2 bg-green-50 rounded-lg">
-                                     <CheckCircle className="h-4 w-4 mx-auto mb-1 text-green-600" />
-                                     <p className="text-lg font-bold">{item.recommendations.length}</p>
-                                     <p className="text-xs text-muted-foreground">Recomend.</p>
-                                   </div>
+                        <Card key={index}>
+                          <CardHeader>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                {getCategoryIcon(item.documentCategory)}
+                                <div>
+                                  <CardTitle className="text-base">{item.fileName}</CardTitle>
+                                  <CardDescription>
+                                    {item.documentType} • {item.timestamp.toLocaleDateString()}
+                                  </CardDescription>
                                 </div>
-                              </CardHeader>
-                            </CollapsibleTrigger>
-                            <CollapsibleContent>
-                              <CardContent className="pt-0 space-y-4">
-                                {item.risks.length > 0 && (
-                                  <div className="border-t pt-4">
-                                    <h4 className="font-semibold mb-3 flex items-center gap-2">
-                                      <AlertTriangle className="h-4 w-4 text-orange-600" />
-                                      Riesgos Identificados ({item.risks.length})
-                                    </h4>
-                                    <div className="space-y-2">
-                                      {item.risks.map((risk, idx) => (
-                                        <div key={idx} className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
-                                          <Badge 
-                                            variant={risk.severity === 'high' ? 'destructive' : 'outline'}
-                                            className="mt-0.5"
-                                          >
-                                            {risk.severity === 'high' ? 'Alto' : risk.severity === 'medium' ? 'Medio' : 'Bajo'}
-                                          </Badge>
-                                          <div className="flex-1">
-                                            <p className="font-medium text-sm">{risk.type}</p>
-                                            <p className="text-xs text-muted-foreground">{risk.description}</p>
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-
-                                 {item.clauses.length > 0 && (
-                                   <div className="border-t pt-4">
-                                     <h4 className="font-semibold mb-3">
-                                       {getElementLabel(item.documentCategory)} Analizados: {item.clauses.length}
-                                     </h4>
-                                     <div className="flex flex-wrap gap-2">{/* ... keep existing code */}
-                                      {item.clauses.map((clause, idx) => (
-                                        <Badge key={idx} variant="secondary">
-                                          {clause.name}
-                                        </Badge>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-
-                                {item.recommendations.length > 0 && (
-                                  <div className="border-t pt-4">
-                                    <h4 className="font-semibold mb-3 flex items-center gap-2">
-                                      <CheckCircle className="h-4 w-4 text-green-600" />
-                                      Recomendaciones ({item.recommendations.length})
-                                    </h4>
-                                    <ul className="space-y-2">
-                                      {item.recommendations.map((rec, idx) => (
-                                        <li key={idx} className="text-sm flex items-start gap-2">
-                                          <span className="text-green-600 mt-1">•</span>
-                                          <span>{rec}</span>
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  </div>
-                                )}
-                              </CardContent>
-                            </CollapsibleContent>
-                          </Card>
-                        </Collapsible>
+                              </div>
+                              <Badge variant="secondary">
+                                {getCategoryLabel(item.documentCategory)}
+                              </Badge>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="grid grid-cols-3 gap-4 text-sm">
+                              <div>
+                                <p className="text-muted-foreground">{getElementLabel(item.documentCategory)}s</p>
+                                <p className="font-semibold">{item.clauses?.length || 0}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Riesgos</p>
+                                <p className="font-semibold text-orange-600">{item.risks?.length || 0}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Recomendaciones</p>
+                                <p className="font-semibold text-green-600">{item.recommendations?.length || 0}</p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
                       ))}
                     </div>
                   )}
