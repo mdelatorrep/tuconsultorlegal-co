@@ -248,7 +248,7 @@ serve(async (req) => {
     const systemPrompt = await getSystemConfig(
       supabase, 
       'analysis_ai_prompt',
-      'Eres un experto analista legal. Analiza el documento y responde en formato JSON.'
+      'Eres un experto analista legal. Analiza el documento proporcionado y responde en formato JSON con la siguiente estructura: {documentType, documentCategory, detectionConfidence, summary, clauses: [{name, content, riskLevel, recommendation}], risks: [{type, description, severity, mitigation}], recommendations: [], keyDates: [], parties: [], legalReferences: [], missingElements: []}.'
     );
     
     console.log(`Using analysis model: ${aiModel}`);
@@ -259,27 +259,66 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    // Prepare content for analysis - prioritize PDF extracted text
-    const content = pdfExtractedText || documentContent || '';
-    const truncatedContent = content.substring(0, 8000);
+    // Prepare OpenAI request - send PDF directly if available
+    const requestBody: any = {
+      model: aiModel,
+      messages: [
+        {
+          role: "system",
+          content: systemPrompt
+        }
+      ],
+      temperature: 0.2,
+      max_tokens: 4000
+    };
 
-    // Build user prompt with enhanced context
-    let userPrompt = '';
-    if (pdfExtractedText && pdfExtractedText.length > 100) {
-      // We have good extracted text
-      userPrompt = `Analiza exhaustivamente el siguiente documento legal (${fileName}):
+    // Build user message based on file type
+    if (fileBase64 && fileName?.toLowerCase().endsWith('.pdf')) {
+      // Send PDF directly to OpenAI for processing
+      console.log('📄 Sending PDF directly to OpenAI for analysis');
+      
+      requestBody.messages.push({
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: `Analiza exhaustivamente este documento legal PDF llamado "${fileName}". Proporciona un análisis profundo y profesional en formato JSON siguiendo la estructura especificada en el prompt del sistema.`
+          },
+          {
+            type: "image_url",
+            image_url: {
+              url: fileBase64.startsWith('data:') ? fileBase64 : `data:application/pdf;base64,${fileBase64}`
+            }
+          }
+        ]
+      });
+    } else if (pdfExtractedText || documentContent) {
+      // Use extracted text for analysis
+      const content = pdfExtractedText || documentContent || '';
+      const truncatedContent = content.substring(0, 8000);
+      
+      console.log('📝 Using extracted text for analysis');
+      
+      requestBody.messages.push({
+        role: "user",
+        content: `Analiza exhaustivamente el siguiente documento legal (${fileName}):
 
 CONTENIDO DEL DOCUMENTO:
 ${truncatedContent}
 
-Proporciona un análisis profundo y profesional en formato JSON.`;
-    } else if (fileName?.toLowerCase().endsWith('.pdf')) {
-      // PDF but couldn't extract text - provide context
+Proporciona un análisis profundo y profesional en formato JSON.`
+      });
+    } else {
+      // Fallback: inferential analysis from filename
       const fileTypeInference = inferDocumentTypeFromFilename(fileName);
-      userPrompt = `Documento PDF: "${fileName}"
-Tamaño: ${(fileBase64?.length || 0 / 1.37).toFixed(0)} bytes aproximados
+      
+      console.log('⚠️ Using inferential analysis based on filename');
+      
+      requestBody.messages.push({
+        role: "user",
+        content: `Documento: "${fileName}"
 
-IMPORTANTE: Este es un archivo PDF del cual no se pudo extraer texto automáticamente. Sin embargo, puedes hacer un análisis inferencial basándote en:
+IMPORTANTE: Este es un documento del cual no se pudo extraer contenido automáticamente. Proporciona un análisis inferencial basándote en:
 1. El nombre del archivo sugiere que es: ${fileTypeInference.suggestedType}
 2. La categoría probable es: ${fileTypeInference.category}
 3. Elementos típicos esperados en este tipo de documento
@@ -287,39 +326,16 @@ IMPORTANTE: Este es un archivo PDF del cual no se pudo extraer texto automática
 ${fileTypeInference.typicalElements.length > 0 ? `ELEMENTOS TÍPICOS EN ESTE TIPO DE DOCUMENTO:
 ${fileTypeInference.typicalElements.join('\n')}` : ''}
 
-Por favor, proporciona un análisis estructurado en formato JSON indicando:
+Proporciona un análisis estructurado en formato JSON indicando:
 - El tipo de documento inferido
 - Los elementos legales típicos que debería contener
 - Riesgos comunes asociados a este tipo de documento
 - Recomendaciones generales para su revisión
 - IMPORTANTE: En el campo "detectionConfidence" indica "baja" ya que el análisis es inferencial
 
-Nota: Indica en el resumen que este es un análisis preliminar basado en el tipo de documento y que se recomienda revisión manual del PDF completo.`;
-    } else {
-      // Regular text document
-      userPrompt = `Analiza el siguiente documento legal (${fileName}):
-
-${truncatedContent}
-
-Proporciona un análisis detallado en formato JSON.`;
+Nota: Indica en el resumen que este es un análisis preliminar basado en el tipo de documento.`
+      });
     }
-
-    // Prepare OpenAI request
-    const requestBody: any = {
-      model: aiModel,
-      messages: [
-        {
-          role: "system",
-          content: systemPrompt
-        },
-        {
-          role: "user",
-          content: userPrompt
-        }
-      ],
-      temperature: 0.2, // Reduced for consistency
-      max_tokens: 4000 // Increased for deeper analysis
-    };
 
     console.log('Calling OpenAI API with model:', aiModel);
 
