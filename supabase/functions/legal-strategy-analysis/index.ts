@@ -115,7 +115,7 @@ serve(async (req) => {
 
     console.log(`Using strategy model from config: ${strategyModel}`);
 
-    // Get OpenAI API key
+    // Get OpenAI API key from environment
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openaiApiKey) {
       throw new Error('OpenAI API key not configured');
