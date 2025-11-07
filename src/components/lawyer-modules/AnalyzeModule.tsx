@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from '@/integrations/supabase/client';
-import { AlertTriangle, FileText, Upload, CheckCircle, XCircle, AlertCircle, FileSignature, MessageSquare, CheckSquare, BarChart, Copy, Check, Download, Loader2, Eye, Sparkles, Shield, Target, History } from 'lucide-react';
+import { AlertTriangle, FileText, Upload, CheckCircle, XCircle, AlertCircle, FileSignature, MessageSquare, CheckSquare, BarChart, Copy, Check, Download, Loader2, Eye, Sparkles, Shield, Target, History, Trash2, ChevronDown } from 'lucide-react';
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import UnifiedSidebar from "../UnifiedSidebar";
 
 interface AnalyzeModuleProps {
@@ -19,6 +20,7 @@ interface AnalyzeModuleProps {
 }
 
 interface AnalysisResult {
+  id?: string;
   fileName: string;
   documentType: string;
   documentCategory?: 'contrato' | 'respuesta_legal' | 'escrito_juridico' | 'informe' | 'correspondencia' | 'anexo' | 'otro';
@@ -78,6 +80,7 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
       if (error) throw error;
 
       const history = data?.map((item: any) => ({
+        id: item.id,
         fileName: item.input_data?.fileName || 'Documento',
         documentType: item.output_data?.documentType || 'Documento Legal',
         documentCategory: item.output_data?.documentCategory || 'otro',
@@ -96,6 +99,23 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
       setAnalysisHistory(history);
     } catch (error) {
       console.error('Error loading analysis history:', error);
+    }
+  };
+
+  const handleDeleteAnalysis = async (analysisId: string, index: number) => {
+    try {
+      const { error } = await supabase
+        .from('legal_tools_results')
+        .delete()
+        .eq('id', analysisId);
+
+      if (error) throw error;
+
+      setAnalysisHistory(prev => prev.filter((_, i) => i !== index));
+      toast.success('Análisis eliminado correctamente');
+    } catch (error) {
+      console.error('Error deleting analysis:', error);
+      toast.error('Error al eliminar el análisis');
     }
   };
 
@@ -794,40 +814,194 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
                   ) : (
                     <div className="space-y-4">
                       {analysisHistory.map((item, index) => (
-                        <Card key={index}>
-                          <CardHeader>
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                {getCategoryIcon(item.documentCategory)}
-                                <div>
-                                  <CardTitle className="text-base">{item.fileName}</CardTitle>
-                                  <CardDescription>
-                                    {item.documentType} • {item.timestamp.toLocaleDateString()}
-                                  </CardDescription>
+                        <Collapsible key={index}>
+                          <Card className="hover:shadow-lg transition-shadow">
+                            <CardHeader>
+                              <div className="flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                  {getCategoryIcon(item.documentCategory)}
+                                  <div className="min-w-0">
+                                    <CardTitle className="text-base truncate">{item.fileName}</CardTitle>
+                                    <CardDescription>
+                                      {item.documentType} • {item.timestamp.toLocaleDateString()}
+                                    </CardDescription>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                  <Badge variant="secondary">
+                                    {getCategoryLabel(item.documentCategory)}
+                                  </Badge>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleDeleteAnalysis(item.id, index)}
+                                    className="hover:bg-red-100 hover:text-red-600"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                  <CollapsibleTrigger asChild>
+                                    <Button variant="ghost" size="icon">
+                                      <ChevronDown className="h-4 w-4 transition-transform duration-200 data-[state=open]:rotate-180" />
+                                    </Button>
+                                  </CollapsibleTrigger>
                                 </div>
                               </div>
-                              <Badge variant="secondary">
-                                {getCategoryLabel(item.documentCategory)}
-                              </Badge>
-                            </div>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="grid grid-cols-3 gap-4 text-sm">
-                              <div>
-                                <p className="text-muted-foreground">{getElementLabel(item.documentCategory)}s</p>
-                                <p className="font-semibold">{item.clauses?.length || 0}</p>
+                              <div className="grid grid-cols-3 gap-2 mt-4">
+                                <div className="text-center p-2 bg-red-50 rounded-lg">
+                                  <AlertTriangle className="h-4 w-4 mx-auto mb-1 text-red-600" />
+                                  <p className="text-lg font-bold">{item.risks?.length || 0}</p>
+                                  <p className="text-xs text-muted-foreground">Riesgos</p>
+                                </div>
+                                <div className="text-center p-2 bg-blue-50 rounded-lg">
+                                  <FileText className="h-4 w-4 mx-auto mb-1 text-blue-600" />
+                                  <p className="text-lg font-bold">{item.clauses?.length || 0}</p>
+                                  <p className="text-xs text-muted-foreground">{getElementLabel(item.documentCategory)}s</p>
+                                </div>
+                                <div className="text-center p-2 bg-green-50 rounded-lg">
+                                  <CheckCircle className="h-4 w-4 mx-auto mb-1 text-green-600" />
+                                  <p className="text-lg font-bold">{item.recommendations?.length || 0}</p>
+                                  <p className="text-xs text-muted-foreground">Recomend.</p>
+                                </div>
                               </div>
-                              <div>
-                                <p className="text-muted-foreground">Riesgos</p>
-                                <p className="font-semibold text-orange-600">{item.risks?.length || 0}</p>
-                              </div>
-                              <div>
-                                <p className="text-muted-foreground">Recomendaciones</p>
-                                <p className="font-semibold text-green-600">{item.recommendations?.length || 0}</p>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
+                            </CardHeader>
+                            
+                            <CollapsibleContent>
+                              <CardContent className="pt-0 space-y-4">
+                                {item.summary && (
+                                  <div className="p-4 bg-muted/30 rounded-lg">
+                                    <h4 className="font-semibold mb-2 flex items-center gap-2">
+                                      <FileText className="h-4 w-4 text-orange-600" />
+                                      Resumen
+                                    </h4>
+                                    <p className="text-sm text-muted-foreground">{item.summary}</p>
+                                  </div>
+                                )}
+
+                                {item.risks && item.risks.length > 0 && (
+                                  <div className="border-t pt-4">
+                                    <h4 className="font-semibold mb-3 flex items-center gap-2">
+                                      <AlertTriangle className="h-4 w-4 text-orange-600" />
+                                      Riesgos Identificados ({item.risks.length})
+                                    </h4>
+                                    <div className="space-y-2">
+                                      {item.risks.map((risk, idx) => (
+                                        <div key={idx} className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
+                                          {getRiskBadge(risk.severity)}
+                                          <div className="flex-1">
+                                            <p className="font-medium text-sm">{risk.type}</p>
+                                            <p className="text-xs text-muted-foreground">{risk.description}</p>
+                                            {risk.mitigation && (
+                                              <p className="text-xs text-orange-600 mt-2">💡 {risk.mitigation}</p>
+                                            )}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {item.clauses && item.clauses.length > 0 && (
+                                  <div className="border-t pt-4">
+                                    <h4 className="font-semibold mb-3">
+                                      {getElementLabel(item.documentCategory)}s Analizad{getElementLabel(item.documentCategory) === 'Cláusula' ? 'as' : 'os'}: {item.clauses.length}
+                                    </h4>
+                                    <div className="space-y-3">
+                                      {item.clauses.map((clause, idx) => (
+                                        <div key={idx} className="p-3 bg-muted/30 rounded-lg">
+                                          <div className="flex items-center justify-between mb-2">
+                                            <p className="font-medium text-sm">{clause.name}</p>
+                                            {getRiskBadge(clause.riskLevel)}
+                                          </div>
+                                          <p className="text-sm text-muted-foreground mb-2">{clause.content}</p>
+                                          {clause.recommendation && (
+                                            <p className="text-xs text-orange-600">💡 {clause.recommendation}</p>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {item.recommendations && item.recommendations.length > 0 && (
+                                  <div className="border-t pt-4">
+                                    <h4 className="font-semibold mb-3 flex items-center gap-2">
+                                      <CheckCircle className="h-4 w-4 text-green-600" />
+                                      Recomendaciones ({item.recommendations.length})
+                                    </h4>
+                                    <ul className="space-y-2">
+                                      {item.recommendations.map((rec, idx) => (
+                                        <li key={idx} className="text-sm flex items-start gap-2">
+                                          <span className="text-green-600 mt-1">•</span>
+                                          <span>{rec}</span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+
+                                {item.keyDates && item.keyDates.length > 0 && (
+                                  <div className="border-t pt-4">
+                                    <h4 className="font-semibold mb-3">Fechas Clave</h4>
+                                    <div className="space-y-2">
+                                      {item.keyDates.map((date, idx) => (
+                                        <div key={idx} className="flex items-center gap-2 text-sm">
+                                          <Badge variant="outline">{date.importance}</Badge>
+                                          <span className="font-medium">{date.date}</span>
+                                          <span className="text-muted-foreground">- {date.description}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {item.parties && item.parties.length > 0 && (
+                                  <div className="border-t pt-4">
+                                    <h4 className="font-semibold mb-3">Partes Involucradas</h4>
+                                    <div className="space-y-2">
+                                      {item.parties.map((party, idx) => (
+                                        <div key={idx} className="flex items-center gap-2 text-sm">
+                                          <Badge variant="secondary">{party.role}</Badge>
+                                          <span>{party.name}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {item.legalReferences && item.legalReferences.length > 0 && (
+                                  <div className="border-t pt-4">
+                                    <h4 className="font-semibold mb-3">Referencias Legales</h4>
+                                    <div className="space-y-2">
+                                      {item.legalReferences.map((ref, idx) => (
+                                        <div key={idx} className="p-3 bg-muted/30 rounded-lg">
+                                          <p className="font-medium text-sm">{ref.reference}</p>
+                                          <p className="text-xs text-muted-foreground mt-1">{ref.context}</p>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {item.missingElements && item.missingElements.length > 0 && (
+                                  <div className="border-t pt-4">
+                                    <h4 className="font-semibold mb-3 flex items-center gap-2">
+                                      <AlertCircle className="h-4 w-4 text-yellow-600" />
+                                      Elementos Faltantes
+                                    </h4>
+                                    <ul className="space-y-1">
+                                      {item.missingElements.map((elem, idx) => (
+                                        <li key={idx} className="text-sm flex items-start gap-2">
+                                          <span className="text-yellow-600 mt-1">⚠</span>
+                                          <span>{elem}</span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                              </CardContent>
+                            </CollapsibleContent>
+                          </Card>
+                        </Collapsible>
                       ))}
                     </div>
                   )}
