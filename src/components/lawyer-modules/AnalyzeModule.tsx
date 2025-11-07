@@ -187,6 +187,13 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
         }
       }
 
+      console.log('Invoking edge function with:', {
+        fileName: file.name,
+        fileSize: file.size,
+        hasBase64: !!fileBase64,
+        contentLength: fileContent.length
+      });
+
       const { data, error } = await supabase.functions.invoke('legal-document-analysis', {
         body: { 
           documentContent: fileContent, 
@@ -195,13 +202,25 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
         }
       });
 
+      console.log('Edge function response:', { data, error });
+
       if (error) {
-        console.error('Error in analysis:', error);
+        console.error('Supabase function error:', error);
+        const errorMessage = error.message || 'Error desconocido al analizar el documento';
+        toast.error(`Error: ${errorMessage}`);
         throw error;
       }
 
-      if (!data || !data.success) {
-        throw new Error(data?.error || 'Error en el análisis del documento');
+      if (!data) {
+        console.error('No data returned from edge function');
+        toast.error('No se recibió respuesta del servidor');
+        throw new Error('No data returned');
+      }
+
+      if (!data.success) {
+        console.error('Analysis failed:', data.error);
+        toast.error(`Error en el análisis: ${data.error || 'Error desconocido'}`);
+        throw new Error(data.error || 'Error en el análisis del documento');
       }
 
       const result: AnalysisResult = {
@@ -226,10 +245,26 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
       
       toast.success(`Análisis completado: "${file.name}"`);
       
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error in analysis:", error);
       setAnalysisStatus('error');
-      toast.error("Error al analizar el documento. Por favor intenta nuevamente.");
+      
+      // Mostrar error más específico
+      const errorMessage = error?.message || 'Error desconocido';
+      if (errorMessage.includes('FunctionsHttpError')) {
+        toast.error("Error de conexión con el servidor. Por favor intenta nuevamente.");
+      } else if (errorMessage.includes('FunctionsRelayError')) {
+        toast.error("Error de comunicación. Verifica tu conexión a internet.");
+      } else if (errorMessage.includes('FunctionsFetchError')) {
+        toast.error("No se pudo conectar al servidor. Verifica tu conexión.");
+      } else {
+        toast.error(`Error: ${errorMessage}`);
+      }
+    } finally {
+      // Resetear el input para permitir cargar el mismo archivo nuevamente
+      if (event.target) {
+        event.target.value = '';
+      }
     }
   };
 

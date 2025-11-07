@@ -386,6 +386,7 @@ Nota: Indica en el resumen que este es un análisis preliminar basado en el tipo
     }
 
     console.log('Calling OpenAI API with model:', aiModel);
+    console.log('Request payload size:', JSON.stringify(requestBody).length, 'bytes');
 
     // Call OpenAI API
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -397,6 +398,8 @@ Nota: Indica en el resumen que este es un análisis preliminar basado en el tipo
       body: JSON.stringify(requestBody),
     });
 
+    console.log('OpenAI response status:', openaiResponse.status);
+
     if (!openaiResponse.ok) {
       const errorData = await openaiResponse.text();
       console.error('OpenAI API error:', errorData);
@@ -404,6 +407,7 @@ Nota: Indica en el resumen que este es un análisis preliminar basado en el tipo
     }
 
     const openaiData = await openaiResponse.json();
+    console.log('✅ OpenAI response parsed successfully');
     const responseContent = openaiData.choices[0].message.content;
 
     // Try to parse as JSON, fallback to structured response if parsing fails
@@ -498,11 +502,18 @@ Nota: Indica en el resumen que este es un análisis preliminar basado en el tipo
     );
 
   } catch (error) {
-    console.error('Error in legal-document-analysis function:', error);
+    console.error('❌ Error in legal-document-analysis function:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message || 'Internal server error' 
+        error: error.message || 'Error interno del servidor',
+        details: error.name ? `${error.name}: ${error.message}` : 'Error desconocido'
       }),
       { 
         status: 500, 
