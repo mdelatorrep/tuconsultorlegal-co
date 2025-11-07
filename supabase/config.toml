@@ -1,5 +1,8 @@
 project_id = "tkaezookvtpulfpaffes"
 
+[functions.check-research-tasks]
+verify_jwt = false
+
 [functions.validate-user-type]
 verify_jwt = false
 

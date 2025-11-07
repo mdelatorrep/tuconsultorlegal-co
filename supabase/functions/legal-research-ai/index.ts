@@ -510,15 +510,19 @@ Incluye citas específicas y fuentes verificables. Enfócate en análisis concre
         console.log(`✅ Research initiation saved for lawyer: ${lawyerId}`);
       }
       
-      // Set up background polling to check for completion
-      EdgeRuntime.waitUntil(pollForCompletion(data.id, lawyerId, query, supabase));
+      // Note: Background polling is handled by the check-research-tasks cron job
+      // EdgeRuntime.waitUntil(pollForCompletion(data.id, lawyerId, query, supabase));
+      
+      console.log(`[RESEARCH-AI] ✅ Background research task initiated with ID: ${data.id}`);
+      console.log(`[RESEARCH-AI] Task will be checked by cron job every 2 minutes`);
       
       return new Response(JSON.stringify({
         success: true,
         task_id: data.id,
         status: 'initiated',
         estimated_time: '5-30 minutos',
-        message: 'La investigación se está procesando en background. Recibirás una notificación cuando esté completa.'
+        message: 'La investigación se está procesando en background. Los resultados estarán disponibles pronto.',
+        note: 'Esta tarea será verificada automáticamente por nuestro servicio en segundo plano'
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
