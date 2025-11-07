@@ -242,6 +242,10 @@ serve(async (req) => {
           });
 
         } else if (statusData.status === 'failed') {
+          // Log full error details from OpenAI
+          console.error(`[CHECK-RESEARCH-TASKS] ❌ Task ${task.id} failed`);
+          console.error(`[CHECK-RESEARCH-TASKS] OpenAI error details:`, JSON.stringify(statusData.error || statusData, null, 2));
+          
           // Mark as failed
           await supabase
             .from('legal_tools_results')
@@ -250,20 +254,21 @@ serve(async (req) => {
                 ...task.metadata,
                 status: 'failed',
                 error: statusData.error || 'Research failed',
+                error_details: statusData.error ? JSON.stringify(statusData.error) : null,
+                incomplete_details: statusData.incomplete_details || null,
                 checked_at: new Date().toISOString(),
                 checked_by_cron: true
               },
               updated_at: new Date().toISOString()
             })
             .eq('id', task.id);
-
-          console.log(`[CHECK-RESEARCH-TASKS] ❌ Task ${task.id} failed`);
           
           results.push({
             task_id: task.id,
             openai_task_id: taskId,
             status: 'failed',
-            error: statusData.error
+            error: statusData.error,
+            incomplete_details: statusData.incomplete_details
           });
 
         } else {
