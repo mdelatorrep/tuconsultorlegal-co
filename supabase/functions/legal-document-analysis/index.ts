@@ -236,13 +236,13 @@ ${truncatedContent}`;
     }
 
     const openaiData = await openaiResponse.json();
-    const content = openaiData.choices[0].message.content;
+    const responseContent = openaiData.choices[0].message.content;
 
     // Try to parse as JSON, fallback to structured response if parsing fails
     let analysis;
     try {
       // Clean markdown code blocks if present
-      let cleanContent = content.trim();
+      let cleanContent = responseContent.trim();
       
       // Remove markdown code block syntax if present
       if (cleanContent.startsWith('```json')) {
@@ -262,7 +262,7 @@ ${truncatedContent}`;
       console.log('✅ Successfully parsed analysis result');
     } catch (e) {
       console.error('Failed to parse OpenAI response:', e);
-      console.error('Raw content:', content);
+      console.error('Raw content:', responseContent);
       
       // Fallback: create structured response from text
       analysis = {
@@ -273,7 +273,7 @@ ${truncatedContent}`;
         clauses: [
           {
             name: "Análisis General",
-            content: content.substring(0, 300) + "...",
+            content: responseContent.substring(0, 300) + "...",
             riskLevel: "medium",
             recommendation: "Revisar con detalle"
           }
