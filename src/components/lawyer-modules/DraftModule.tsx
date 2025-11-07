@@ -327,25 +327,79 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout 
                                 </div>
                                 Contenido del Borrador
                               </h4>
-                              <div className="bg-white border border-gray-200 p-8 rounded-lg max-h-[600px] overflow-y-auto shadow-sm">
-                                <div className="prose prose-lg max-w-none text-gray-800 leading-relaxed space-y-4">
-                                  {draft.content.split('\n\n').map((paragraph, idx) => (
-                                    <div key={idx} className="mb-4">
-                                      {paragraph.includes('**') ? (
-                                        <div className="font-bold text-lg text-blue-900 border-b border-blue-200 pb-2 mb-3">
-                                          {paragraph.replace(/\*\*/g, '')}
-                                        </div>
-                                      ) : paragraph.includes('###') ? (
-                                        <h3 className="font-semibold text-md text-gray-800 mt-6 mb-3">
-                                          {paragraph.replace(/###/g, '')}
+                              <div className="bg-white border-2 border-gray-300 p-12 rounded-lg max-h-[700px] overflow-y-auto shadow-lg" style={{
+                                fontFamily: 'Georgia, "Times New Roman", serif',
+                                lineHeight: '1.8'
+                              }}>
+                                <div className="max-w-none space-y-6">
+                                  {draft.content.split('\n\n').map((paragraph, idx) => {
+                                    const trimmed = paragraph.trim();
+                                    
+                                    // Title (bold text or starts with **)
+                                    if (trimmed.includes('**') || trimmed.match(/^[A-ZÁÉÍÓÚÑ\s]+$/)) {
+                                      return (
+                                        <h2 key={idx} className="font-bold text-xl text-center text-gray-900 uppercase tracking-wide border-b-2 border-gray-300 pb-3 mb-6 mt-8">
+                                          {trimmed.replace(/\*\*/g, '')}
+                                        </h2>
+                                      );
+                                    }
+                                    
+                                    // Section heading (starts with ### or numbered)
+                                    if (trimmed.includes('###') || trimmed.match(/^\d+\.|^[IVX]+\./)) {
+                                      return (
+                                        <h3 key={idx} className="font-bold text-lg text-gray-800 mt-8 mb-4 uppercase">
+                                          {trimmed.replace(/###/g, '').trim()}
                                         </h3>
-                                      ) : (
-                                        <p className="text-gray-700 leading-relaxed font-serif text-base">
-                                          {paragraph}
-                                        </p>
-                                      )}
+                                      );
+                                    }
+                                    
+                                    // Clause or numbered item
+                                    if (trimmed.match(/^CLÁUSULA|^Artículo|^Capítulo/i)) {
+                                      return (
+                                        <div key={idx} className="mb-6">
+                                          <p className="font-bold text-base text-gray-900 mb-2 uppercase">
+                                            {trimmed}
+                                          </p>
+                                        </div>
+                                      );
+                                    }
+                                    
+                                    // List item
+                                    if (trimmed.match(/^[-•]\s/) || trimmed.match(/^[a-z]\)/) || trimmed.match(/^\d+\)/)) {
+                                      return (
+                                        <div key={idx} className="ml-8 mb-2">
+                                          <p className="text-gray-700 text-base">
+                                            {trimmed}
+                                          </p>
+                                        </div>
+                                      );
+                                    }
+                                    
+                                    // Regular paragraph
+                                    return (
+                                      <p key={idx} className="text-gray-800 text-base text-justify leading-loose mb-4 indent-8">
+                                        {trimmed}
+                                      </p>
+                                    );
+                                  })}
+                                  
+                                  {/* Signature section */}
+                                  <div className="mt-16 pt-8 border-t-2 border-gray-300">
+                                    <div className="grid grid-cols-2 gap-12">
+                                      <div className="text-center">
+                                        <div className="border-t-2 border-gray-800 pt-2 mt-16">
+                                          <p className="text-sm font-semibold text-gray-900">PRIMERA PARTE</p>
+                                          <p className="text-xs text-gray-600 mt-1">Nombre y Firma</p>
+                                        </div>
+                                      </div>
+                                      <div className="text-center">
+                                        <div className="border-t-2 border-gray-800 pt-2 mt-16">
+                                          <p className="text-sm font-semibold text-gray-900">SEGUNDA PARTE</p>
+                                          <p className="text-xs text-gray-600 mt-1">Nombre y Firma</p>
+                                        </div>
+                                      </div>
                                     </div>
-                                  ))}
+                                  </div>
                                 </div>
                               </div>
                             </div>
