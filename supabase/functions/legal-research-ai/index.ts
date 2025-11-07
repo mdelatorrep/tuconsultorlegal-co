@@ -402,10 +402,10 @@ serve(async (req) => {
 
     // Get research AI model and prompt from system config - use deep research models
     const configModel = await getSystemConfig(supabase, 'research_ai_model', 'o4-mini-deep-research-2025-06-26');
-    const researchPrompt = await getSystemConfig(
+    const researchSystemPrompt = await getSystemConfig(
       supabase, 
-      'research_ai_prompt', 
-      'Eres un especialista en investigación jurídica colombiana. Analiza la consulta y proporciona respuestas detalladas basadas en legislación, jurisprudencia y normativa vigente con fuentes actualizadas.'
+      'research_system_prompt', 
+      'Eres un especialista en investigación jurídica colombiana. Analiza la consulta y proporciona respuestas detalladas basadas en legislación, jurisprudencia y normativa vigente con fuentes actualizadas.\n\nExperto en derecho colombiano. Produce informe estructurado con:\n\n1. Marco normativo (Constitución, códigos, decretos vigentes)\n2. Jurisprudencia reciente (Corte Constitucional, CSJ, Consejo de Estado)\n3. Aplicación práctica y recomendaciones\n\nIncluye citas específicas y fuentes verificables. Enfócate en análisis concreto con datos medibles.'
     );
 
     // Force use of o4-mini-deep-research as recommended
@@ -418,17 +418,10 @@ serve(async (req) => {
     }
 
     console.log(`Using deep research model: ${researchModel}`);
+    console.log(`Using system prompt from config: research_system_prompt`);
 
-    // Optimized system message (reduced tokens for TPM efficiency)
-    const systemMessage = `${researchPrompt}
-
-Experto en derecho colombiano. Produce informe estructurado con:
-
-1. Marco normativo (Constitución, códigos, decretos vigentes)
-2. Jurisprudencia reciente (Corte Constitucional, CSJ, Consejo de Estado)  
-3. Aplicación práctica y recomendaciones
-
-Incluye citas específicas y fuentes verificables. Enfócate en análisis concreto con datos medibles.`;
+    // Use the system prompt directly from database configuration
+    const systemMessage = researchSystemPrompt;
 
     // Use OpenAI Responses API with Deep Research and web search in background mode
     console.log('Starting deep research task in background mode...');
