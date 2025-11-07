@@ -133,23 +133,30 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
         .select('*')
         .eq('lawyer_id', user.id)
         .eq('tool_type', 'research')
-        .eq('metadata->>status', 'completed')
+        .in('metadata->>status', ['completed', 'failed'])
         .order('created_at', { ascending: false })
         .limit(10);
 
       if (error) throw error;
 
-      const completed = data?.map((item: any) => ({
-        query: item.input_data?.query || item.input_data?.original_query || 'Consulta completada',
-        findings: (item.output_data as any)?.findings || 'Resultados de investigación disponibles',
-        sources: (item.output_data as any)?.sources || ['Fuentes legales consultadas'],
-        timestamp: item.created_at,
-        conclusion: (item.output_data as any)?.conclusion || 'Análisis completado',
-        task_id: item.metadata?.task_id,
-        status: 'completed' as const
-      })) || [];
+      const results = data?.map((item: any) => {
+        const itemStatus = (item.metadata as any)?.status;
+        const isFailed = itemStatus === 'failed';
+        
+        return {
+          query: item.input_data?.query || item.input_data?.original_query || 'Consulta completada',
+          findings: isFailed 
+            ? `Error en la investigación: ${(item.metadata as any)?.error?.message || 'Error desconocido'}` 
+            : ((item.output_data as any)?.findings || 'Resultados de investigación disponibles'),
+          sources: isFailed ? [] : ((item.output_data as any)?.sources || ['Fuentes legales consultadas']),
+          timestamp: item.created_at,
+          conclusion: isFailed ? undefined : ((item.output_data as any)?.conclusion || 'Análisis completado'),
+          task_id: item.metadata?.task_id,
+          status: itemStatus as 'completed' | 'failed'
+        };
+      }) || [];
 
-      setResults(completed);
+      setResults(results);
     } catch (error) {
       console.error('Error loading completed results:', error);
     }
@@ -655,11 +662,18 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
                                       <CardTitle className="text-base lg:text-lg font-semibold text-gray-900 line-clamp-2 leading-tight">
                                         {result.query}
                                       </CardTitle>
-                                      <div className="flex items-center gap-2 mt-2">
-                                        <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 border-emerald-200 text-xs">
-                                          <CheckCircle2 className="h-3 w-3 mr-1" />
-                                          Completado
-                                        </Badge>
+                                       <div className="flex items-center gap-2 mt-2">
+                                        {result.status === 'failed' ? (
+                                          <Badge variant="destructive" className="bg-red-100 text-red-800 border-red-200 text-xs">
+                                            <AlertCircle className="h-3 w-3 mr-1" />
+                                            Fallido
+                                          </Badge>
+                                        ) : (
+                                          <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 border-emerald-200 text-xs">
+                                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                                            Completado
+                                          </Badge>
+                                        )}
                                         <Badge variant="outline" className="text-gray-600 border-gray-300 text-xs">
                                           <Clock className="h-3 w-3 mr-1" />
                                           {new Date(result.timestamp).toLocaleDateString('es-ES', {
