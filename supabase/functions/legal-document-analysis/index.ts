@@ -84,6 +84,80 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper function to infer document type from filename
+function inferDocumentTypeFromFilename(filename: string): {
+  suggestedType: string;
+  category: string;
+  typicalElements: string[];
+} {
+  const lower = filename.toLowerCase();
+  
+  if (lower.includes('contrato') || lower.includes('contract')) {
+    return {
+      suggestedType: 'Contrato',
+      category: 'contrato',
+      typicalElements: [
+        '- Identificación de las partes',
+        '- Objeto del contrato',
+        '- Obligaciones y derechos',
+        '- Condiciones de pago',
+        '- Plazos y vigencia',
+        '- Cláusulas de terminación',
+        '- Resolución de conflictos',
+        '- Jurisdicción aplicable'
+      ]
+    };
+  } else if (lower.includes('respuesta') || lower.includes('contestacion')) {
+    return {
+      suggestedType: 'Respuesta Legal',
+      category: 'respuesta_legal',
+      typicalElements: [
+        '- Identificación del proceso',
+        '- Argumentos de defensa',
+        '- Fundamentos legales',
+        '- Pruebas y evidencias',
+        '- Pretensiones',
+        '- Excepciones presentadas'
+      ]
+    };
+  } else if (lower.includes('demanda') || lower.includes('escrito')) {
+    return {
+      suggestedType: 'Escrito Jurídico',
+      category: 'escrito_juridico',
+      typicalElements: [
+        '- Hechos del caso',
+        '- Fundamentos de derecho',
+        '- Pretensiones',
+        '- Pruebas',
+        '- Peticiones al juez'
+      ]
+    };
+  } else if (lower.includes('informe') || lower.includes('dictamen')) {
+    return {
+      suggestedType: 'Informe Legal',
+      category: 'informe',
+      typicalElements: [
+        '- Antecedentes',
+        '- Análisis de situación',
+        '- Conclusiones',
+        '- Recomendaciones',
+        '- Referencias legales'
+      ]
+    };
+  }
+  
+  return {
+    suggestedType: 'Documento Legal',
+    category: 'otro',
+    typicalElements: [
+      '- Identificación de partes involucradas',
+      '- Objeto o propósito del documento',
+      '- Derechos y obligaciones',
+      '- Condiciones aplicables'
+    ]
+  };
+}
+
 // Helper function to save results to legal_tools_results table
 async function saveToolResult(supabase: any, lawyerId: string, toolType: string, inputData: any, outputData: any, metadata: any = {}) {
   try {
@@ -148,6 +222,10 @@ serve(async (req) => {
     if (fileBase64 && fileName?.toLowerCase().endsWith('.pdf')) {
       console.log('📄 Processing PDF file:', fileName);
       pdfExtractedText = await extractTextFromPDF(fileBase64);
+      
+      if (!pdfExtractedText) {
+        console.log('⚠️ Could not extract text from PDF, will analyze based on structure and metadata');
+      }
     }
 
     if (!pdfExtractedText && !documentContent) {
@@ -183,21 +261,47 @@ serve(async (req) => {
 
     // Prepare content for analysis - prioritize PDF extracted text
     const content = pdfExtractedText || documentContent || '';
-    const truncatedContent = content.substring(0, 8000); // Increased from 3000 to 8000
+    const truncatedContent = content.substring(0, 8000);
 
     // Build user prompt with enhanced context
     let userPrompt = '';
     if (pdfExtractedText && pdfExtractedText.length > 100) {
-      userPrompt = `Analiza exhaustivamente el siguiente documento legal${fileName ? ` (${fileName})` : ''}:
+      // We have good extracted text
+      userPrompt = `Analiza exhaustivamente el siguiente documento legal (${fileName}):
 
 CONTENIDO DEL DOCUMENTO:
 ${truncatedContent}
 
-Proporciona un análisis profundo y profesional.`;
-    } else {
-      userPrompt = `Analiza el siguiente documento legal${fileName ? ` (${fileName})` : ''}:
+Proporciona un análisis profundo y profesional en formato JSON.`;
+    } else if (fileName?.toLowerCase().endsWith('.pdf')) {
+      // PDF but couldn't extract text - provide context
+      const fileTypeInference = inferDocumentTypeFromFilename(fileName);
+      userPrompt = `Documento PDF: "${fileName}"
+Tamaño: ${(fileBase64?.length || 0 / 1.37).toFixed(0)} bytes aproximados
 
-${truncatedContent}`;
+IMPORTANTE: Este es un archivo PDF del cual no se pudo extraer texto automáticamente. Sin embargo, puedes hacer un análisis inferencial basándote en:
+1. El nombre del archivo sugiere que es: ${fileTypeInference.suggestedType}
+2. La categoría probable es: ${fileTypeInference.category}
+3. Elementos típicos esperados en este tipo de documento
+
+${fileTypeInference.typicalElements.length > 0 ? `ELEMENTOS TÍPICOS EN ESTE TIPO DE DOCUMENTO:
+${fileTypeInference.typicalElements.join('\n')}` : ''}
+
+Por favor, proporciona un análisis estructurado en formato JSON indicando:
+- El tipo de documento inferido
+- Los elementos legales típicos que debería contener
+- Riesgos comunes asociados a este tipo de documento
+- Recomendaciones generales para su revisión
+- IMPORTANTE: En el campo "detectionConfidence" indica "baja" ya que el análisis es inferencial
+
+Nota: Indica en el resumen que este es un análisis preliminar basado en el tipo de documento y que se recomienda revisión manual del PDF completo.`;
+    } else {
+      // Regular text document
+      userPrompt = `Analiza el siguiente documento legal (${fileName}):
+
+${truncatedContent}
+
+Proporciona un análisis detallado en formato JSON.`;
     }
 
     // Prepare OpenAI request
