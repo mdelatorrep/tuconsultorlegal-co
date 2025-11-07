@@ -101,15 +101,16 @@ serve(async (req) => {
     let processedContent = documentContent;
     if (fileBase64 && fileName?.toLowerCase().endsWith('.pdf')) {
       try {
-        // Enhanced PDF analysis based on filename patterns and common legal document structures
+        // Enhanced PDF analysis based on filename patterns and document structure
         const fileNameLower = fileName.toLowerCase();
         let documentTypeGuess = "Documento Legal";
-        let commonClauses = [];
+        let commonElements = [];
         let potentialRisks = [];
         
+        // Contract types
         if (fileNameLower.includes('contrato') || fileNameLower.includes('contract')) {
           documentTypeGuess = "Contrato";
-          commonClauses = [
+          commonElements = [
             { name: "Objeto del Contrato", riskLevel: "medium" },
             { name: "Obligaciones de las Partes", riskLevel: "high" },
             { name: "Condiciones de Pago", riskLevel: "high" },
@@ -119,14 +120,84 @@ serve(async (req) => {
             { type: "Términos de Pago", severity: "high" },
             { type: "Cláusulas de Rescisión", severity: "medium" }
           ];
-        } else if (fileNameLower.includes('convenio') || fileNameLower.includes('acuerdo')) {
-          documentTypeGuess = "Convenio o Acuerdo";
-          commonClauses = [
-            { name: "Términos del Acuerdo", riskLevel: "medium" },
-            { name: "Responsabilidades", riskLevel: "high" }
+        } 
+        // Legal responses
+        else if (fileNameLower.includes('respuesta') || fileNameLower.includes('contestacion') || 
+                 fileNameLower.includes('replica') || fileNameLower.includes('alegato')) {
+          documentTypeGuess = "Respuesta Legal";
+          commonElements = [
+            { name: "Argumentos Principales", riskLevel: "high" },
+            { name: "Fundamentos de Derecho", riskLevel: "high" },
+            { name: "Pruebas Aportadas", riskLevel: "medium" },
+            { name: "Solicitudes", riskLevel: "medium" }
           ];
           potentialRisks = [
-            { type: "Cumplimiento de Términos", severity: "medium" }
+            { type: "Argumentación Débil", severity: "high" },
+            { type: "Falta de Fundamento Legal", severity: "high" },
+            { type: "Inconsistencias", severity: "medium" }
+          ];
+        }
+        // Legal briefs and writings
+        else if (fileNameLower.includes('escrito') || fileNameLower.includes('memorial') || 
+                 fileNameLower.includes('demanda') || fileNameLower.includes('peticion')) {
+          documentTypeGuess = "Escrito Jurídico";
+          commonElements = [
+            { name: "Hechos", riskLevel: "high" },
+            { name: "Derecho Aplicable", riskLevel: "high" },
+            { name: "Pretensiones", riskLevel: "high" },
+            { name: "Pruebas", riskLevel: "medium" }
+          ];
+          potentialRisks = [
+            { type: "Claridad de Hechos", severity: "high" },
+            { type: "Base Legal Insuficiente", severity: "high" },
+            { type: "Pretensiones Mal Formuladas", severity: "medium" }
+          ];
+        }
+        // Reports and analysis
+        else if (fileNameLower.includes('informe') || fileNameLower.includes('reporte') || 
+                 fileNameLower.includes('analisis') || fileNameLower.includes('dictamen')) {
+          documentTypeGuess = "Informe Legal";
+          commonElements = [
+            { name: "Resumen Ejecutivo", riskLevel: "medium" },
+            { name: "Análisis de Situación", riskLevel: "high" },
+            { name: "Conclusiones", riskLevel: "high" },
+            { name: "Recomendaciones", riskLevel: "medium" }
+          ];
+          potentialRisks = [
+            { type: "Análisis Incompleto", severity: "high" },
+            { type: "Conclusiones Ambiguas", severity: "medium" },
+            { type: "Falta de Recomendaciones", severity: "low" }
+          ];
+        }
+        // Correspondence
+        else if (fileNameLower.includes('carta') || fileNameLower.includes('oficio') || 
+                 fileNameLower.includes('comunicacion') || fileNameLower.includes('notificacion')) {
+          documentTypeGuess = "Correspondencia Legal";
+          commonElements = [
+            { name: "Remitente y Destinatario", riskLevel: "low" },
+            { name: "Asunto", riskLevel: "medium" },
+            { name: "Contenido Principal", riskLevel: "high" },
+            { name: "Solicitud o Requerimiento", riskLevel: "medium" }
+          ];
+          potentialRisks = [
+            { type: "Claridad del Mensaje", severity: "medium" },
+            { type: "Formalidades Legales", severity: "low" },
+            { type: "Plazos Mencionados", severity: "medium" }
+          ];
+        }
+        // Agreements
+        else if (fileNameLower.includes('convenio') || fileNameLower.includes('acuerdo') || 
+                 fileNameLower.includes('pacto')) {
+          documentTypeGuess = "Convenio o Acuerdo";
+          commonElements = [
+            { name: "Términos del Acuerdo", riskLevel: "high" },
+            { name: "Responsabilidades", riskLevel: "high" },
+            { name: "Duración", riskLevel: "medium" },
+            { name: "Condiciones de Terminación", riskLevel: "medium" }
+          ];
+          potentialRisks = [
+            { type: "Cumplimiento de Términos", severity: "high" },
+            { type: "Desequilibrio de Obligaciones", severity: "medium" }
           ];
         }
         
@@ -136,13 +207,13 @@ ANÁLISIS PRELIMINAR BASADO EN ESTRUCTURA:
 Tipo de documento identificado: ${documentTypeGuess}
 Tamaño del archivo: ${fileBase64.length} bytes (codificado)
 
-ESTRUCTURA TÍPICA ESPERADA:
-${commonClauses.map(clause => `- ${clause.name} (Nivel de riesgo: ${clause.riskLevel})`).join('\n')}
+ELEMENTOS TÍPICOS ESPERADOS:
+${commonElements.map(element => `- ${element.name} (Nivel de importancia: ${element.riskLevel})`).join('\n')}
 
-ÁREAS DE RIESGO COMUNES:
-${potentialRisks.map(risk => `- ${risk.type} (Severidad: ${risk.severity})`).join('\n')}
+ÁREAS DE ANÁLISIS PRIORITARIAS:
+${potentialRisks.map(risk => `- ${risk.type} (Prioridad: ${risk.severity})`).join('\n')}
 
-Este documento PDF contiene información legal que será analizada en detalle por el sistema de IA para identificar cláusulas específicas, riesgos potenciales y proporcionar recomendaciones expertas.`;
+Este documento PDF contiene información legal que será analizada en detalle por el sistema de IA para identificar elementos específicos, riesgos potenciales y proporcionar recomendaciones expertas según el tipo de documento.`;
       } catch (error) {
         console.error('Error processing PDF:', error);
         processedContent = `Documento: ${fileName}\n\nEste documento PDF requiere análisis manual especializado.`;
@@ -169,13 +240,16 @@ Este documento PDF contiene información legal que será analizada en detalle po
     const analysisPrompt = await getSystemConfig(
       supabase, 
       'analysis_ai_prompt', 
-      'Eres un asistente especializado en análisis de documentos legales. Analiza contratos y documentos identificando riesgos, cláusulas problemáticas y proporcionando recomendaciones.'
+      'Eres un asistente especializado en análisis de documentos legales. Analiza todo tipo de documentos jurídicos (contratos, respuestas, informes, escritos, correspondencias) identificando elementos clave, riesgos y proporcionando recomendaciones específicas según el tipo de documento.'
     );
 
     // Use valid OpenAI model and limit content to prevent token overflow
     const analysisModel = configModel.includes('o4-mini') ? 'gpt-4o-mini' : 
                           configModel.includes('o3-') || configModel.includes('o4-') ? 'gpt-4o-mini' : 
                           'gpt-4o-mini';
+    
+    console.log(`Using analysis model: ${analysisModel}`);
+    console.log(`Processing content length: ${processedContent.length}`);
 
     // Get OpenAI API key
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -183,13 +257,10 @@ Este documento PDF contiene información legal que será analizada en detalle po
       throw new Error('OpenAI API key not configured');
     }
 
-    console.log(`Using analysis model: ${analysisModel}`);
-    console.log(`Processing content length: ${processedContent.length}`);
-
     // Truncate document content to prevent token limit issues
-    const truncatedContent = processedContent.substring(0, 2000);
+    const truncatedContent = processedContent.substring(0, 3000);
 
-    // Use standard chat completions for reliability
+    // Use standard chat completions for reliability with adaptive analysis
     const requestBody = {
       model: analysisModel,
       messages: [
@@ -197,48 +268,94 @@ Este documento PDF contiene información legal que será analizada en detalle po
           role: 'system',
           content: `${analysisPrompt}
 
-Instrucciones específicas:
-- Analiza cuidadosamente el documento legal proporcionado
-- Si es un PDF, utiliza la información estructural y el nombre del archivo para inferir el tipo y contenido
-- Identifica el tipo específico de documento (contrato, convenio, acuerdo, etc.)
-- Encuentra cláusulas importantes y evalúa su nivel de riesgo basándote en patrones legales comunes
-- Identifica riesgos potenciales específicos del tipo de documento y su severidad
-- Proporciona recomendaciones concretas y accionables para mejorar el documento
-- Para PDFs, enfócate en los riesgos típicos del tipo de documento identificado
+DETECCIÓN AUTOMÁTICA Y ANÁLISIS ADAPTATIVO:
 
-Responde en formato JSON con la siguiente estructura:
+1. PRIMERO, identifica automáticamente el tipo de documento entre:
+   - Contrato (contratos, convenios, acuerdos)
+   - Respuesta Legal (respuestas, contestaciones, réplicas, alegatos)
+   - Escrito Jurídico (escritos, memoriales, demandas, peticiones)
+   - Informe Legal (informes, reportes, análisis, dictámenes)
+   - Correspondencia (cartas, oficios, comunicaciones, notificaciones)
+   - Otro tipo de documento jurídico
+
+2. LUEGO, adapta el análisis según el tipo detectado:
+
+   Para CONTRATOS/CONVENIOS/ACUERDOS:
+   - Identifica cláusulas clave y su nivel de riesgo
+   - Evalúa desequilibrios contractuales
+   - Revisa términos de pago, obligaciones, rescisión
+   - Analiza resolución de conflictos
+
+   Para RESPUESTAS LEGALES/ALEGATOS:
+   - Evalúa solidez de argumentos
+   - Identifica fundamentos legales citados
+   - Revisa coherencia argumentativa
+   - Analiza pruebas aportadas
+   - Identifica debilidades argumentativas
+
+   Para ESCRITOS JURÍDICOS/DEMANDAS:
+   - Claridad de hechos expuestos
+   - Fundamento legal apropiado
+   - Coherencia de pretensiones
+   - Completitud probatoria
+   - Viabilidad jurídica
+
+   Para INFORMES LEGALES/DICTÁMENES:
+   - Completitud del análisis
+   - Claridad de conclusiones
+   - Pertinencia de recomendaciones
+   - Fundamentación técnica
+   - Aplicabilidad práctica
+
+   Para CORRESPONDENCIA:
+   - Claridad del mensaje
+   - Formalidades legales apropiadas
+   - Identificación de plazos
+   - Requerimientos explícitos
+   - Tono y profesionalismo
+
+3. ESTRUCTURA DE SALIDA adaptada al tipo:
+   - Para contratos: "clauses" (cláusulas)
+   - Para respuestas/escritos: "arguments" (argumentos) o "clauses"
+   - Para informes: "sections" (secciones) o "clauses"
+   - Para correspondencia: "keyPoints" (puntos clave) o "clauses"
+
+Responde SIEMPRE en formato JSON con esta estructura flexible:
 {
-  "documentType": "Tipo de documento identificado",
+  "documentType": "Tipo específico detectado",
+  "documentCategory": "contract|response|brief|report|correspondence|other",
   "clauses": [
     {
-      "name": "Nombre de la cláusula",
-      "content": "Extracto del contenido",
+      "name": "Nombre del elemento clave",
+      "content": "Extracto o descripción",
       "riskLevel": "low|medium|high",
-      "recommendation": "Recomendación específica (opcional)"
+      "recommendation": "Recomendación específica"
     }
   ],
   "risks": [
     {
-      "type": "Tipo de riesgo",
-      "description": "Descripción del riesgo",
+      "type": "Tipo de riesgo/debilidad",
+      "description": "Descripción contextual",
       "severity": "low|medium|high"
     }
   ],
-  "recommendations": ["Lista", "de", "recomendaciones", "generales"]
+  "recommendations": ["Recomendaciones", "específicas", "según tipo"]
 }`
         },
         {
           role: 'user',
-          content: `Analiza el siguiente documento legal:
+          content: `Analiza el siguiente documento legal con detección automática de tipo:
 
 NOMBRE DEL ARCHIVO: ${fileName || 'Documento'}
 
-CONTENIDO (primeros 2000 caracteres):
-${truncatedContent}`
+CONTENIDO (primeros 3000 caracteres):
+${truncatedContent}
+
+Detecta automáticamente el tipo de documento y adapta el análisis según su naturaleza.`
         }
       ],
       temperature: 0.3,
-      max_tokens: 1500
+      max_tokens: 2000
     };
 
     // Call OpenAI API

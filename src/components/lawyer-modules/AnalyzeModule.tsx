@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Upload, FileText, AlertTriangle, CheckCircle, Eye, Loader2, Sparkles, Shield, TrendingUp, Clock, Scan, Target, History, ChevronRight } from "lucide-react";
+import { Upload, FileText, AlertTriangle, CheckCircle, Eye, Loader2, Sparkles, Shield, TrendingUp, Clock, Scan, Target, History, ChevronRight, FileSignature, MessageSquare, CheckSquare, BarChart, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -20,6 +20,7 @@ interface AnalyzeModuleProps {
 interface AnalysisResult {
   fileName: string;
   documentType: string;
+  documentCategory?: 'contract' | 'response' | 'brief' | 'report' | 'correspondence' | 'other';
   clauses: {
     name: string;
     content: string;
@@ -188,6 +189,7 @@ Tamaño: ${(file.size / 1024).toFixed(2)} KB`;
       const analysisResult: AnalysisResult = {
         fileName: file.name,
         documentType: data.documentType || 'Documento Legal',
+        documentCategory: data.documentCategory || 'other',
         clauses: data.clauses || [],
         risks: data.risks || [{
           type: 'Revisión Requerida',
@@ -281,6 +283,56 @@ Tamaño: ${(file.size / 1024).toFixed(2)} KB`;
         return <Badge variant="secondary" className="bg-orange-100 text-orange-800">Riesgo Medio</Badge>;
       case 'low':
         return <Badge variant="outline" className="bg-green-100 text-green-800">Bajo Riesgo</Badge>;
+    }
+  };
+
+  const getCategoryIcon = (category?: string) => {
+    switch (category) {
+      case 'contract':
+        return <FileSignature className="h-5 w-5" />;
+      case 'response':
+        return <MessageSquare className="h-5 w-5" />;
+      case 'brief':
+        return <CheckSquare className="h-5 w-5" />;
+      case 'report':
+        return <BarChart className="h-5 w-5" />;
+      case 'correspondence':
+        return <Mail className="h-5 w-5" />;
+      default:
+        return <FileText className="h-5 w-5" />;
+    }
+  };
+
+  const getCategoryLabel = (category?: string) => {
+    switch (category) {
+      case 'contract':
+        return 'Contrato';
+      case 'response':
+        return 'Respuesta Legal';
+      case 'brief':
+        return 'Escrito Jurídico';
+      case 'report':
+        return 'Informe';
+      case 'correspondence':
+        return 'Correspondencia';
+      default:
+        return 'Documento';
+    }
+  };
+
+  const getElementLabel = (category?: string) => {
+    switch (category) {
+      case 'contract':
+        return 'Cláusulas';
+      case 'response':
+      case 'brief':
+        return 'Argumentos';
+      case 'report':
+        return 'Secciones';
+      case 'correspondence':
+        return 'Puntos Clave';
+      default:
+        return 'Elementos';
     }
   };
 
@@ -459,13 +511,22 @@ Tamaño: ${(file.size / 1024).toFixed(2)} KB`;
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                {analysis.fileName}
-              </CardTitle>
-              <CardDescription>
-                Tipo: {analysis.documentType} | Analizado el {new Date(analysis.timestamp).toLocaleDateString()}
-              </CardDescription>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg text-white">
+                  {getCategoryIcon(analysis.documentCategory)}
+                </div>
+                <div className="flex-1">
+                  <CardTitle className="flex items-center gap-2">
+                    {analysis.fileName}
+                    <Badge variant="secondary" className="ml-2">
+                      {getCategoryLabel(analysis.documentCategory)}
+                    </Badge>
+                  </CardTitle>
+                  <CardDescription>
+                    {analysis.documentType} | Analizado el {new Date(analysis.timestamp).toLocaleDateString()}
+                  </CardDescription>
+                </div>
+              </div>
             </CardHeader>
           </Card>
 
@@ -497,39 +558,49 @@ Tamaño: ${(file.size / 1024).toFixed(2)} KB`;
           {/* Clauses Analysis */}
           <Card>
             <CardHeader>
-              <CardTitle>Análisis de Cláusulas</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Scan className="h-5 w-5 text-orange-600" />
+                {getElementLabel(analysis.documentCategory)} Identificados
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {analysis.clauses.length === 0 ? (
                 <div className="text-center py-8 px-4">
                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-orange-100 mb-4">
-                    <FileText className="h-8 w-8 text-orange-600" />
+                    {getCategoryIcon(analysis.documentCategory)}
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    No se encontraron cláusulas
+                    No se encontraron {getElementLabel(analysis.documentCategory).toLowerCase()}
                   </h3>
                   <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                    El documento analizado no contiene cláusulas identificables. Esto puede deberse a que el documento tiene un formato no estándar o no contiene secciones contractuales tradicionales.
+                    El documento analizado no contiene elementos identificables para este tipo de documento.
                   </p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {analysis.clauses.map((clause, index) => (
                     <div key={index} className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-semibold">{clause.name}</h4>
-                        {getRiskBadge(clause.riskLevel)}
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-2">
-                        {clause.content}
-                      </p>
-                      {clause.recommendation && (
-                        <div className="bg-yellow-50 border border-yellow-200 rounded p-3 mt-2">
-                          <p className="text-sm">
-                            <strong>Recomendación:</strong> {clause.recommendation}
-                          </p>
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0 mt-1 text-orange-600">
+                          {getCategoryIcon(analysis.documentCategory)}
                         </div>
-                      )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="font-semibold">{clause.name}</h4>
+                            {getRiskBadge(clause.riskLevel)}
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-2">
+                            {clause.content}
+                          </p>
+                          {clause.recommendation && (
+                            <div className="bg-yellow-50 border border-yellow-200 rounded p-3 mt-2">
+                              <p className="text-sm">
+                                <strong>Recomendación:</strong> {clause.recommendation}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -570,15 +641,38 @@ Tamaño: ${(file.size / 1024).toFixed(2)} KB`;
                           </div>
                         </div>
                         <div>
-                          <h3 className="text-2xl font-bold text-gray-900 mb-2">¡Inicia tu análisis legal!</h3>
+                          <h3 className="text-2xl font-bold text-gray-900 mb-2">¡Inicia tu análisis legal inteligente!</h3>
                           <p className="text-lg text-muted-foreground max-w-md mx-auto">
-                            Sube cualquier documento legal para obtener un análisis completo de riesgos, cláusulas y recomendaciones
+                            Sube cualquier tipo de documento legal para obtener un análisis adaptado a su naturaleza
                           </p>
                         </div>
-                        <div className="bg-gradient-to-r from-orange-500/10 to-orange-400/5 rounded-xl p-4 max-w-lg mx-auto">
-                          <p className="text-sm text-orange-700 font-medium">
-                            🔍 Análisis automático de cláusulas, detección de riesgos y recomendaciones de mejora
-                          </p>
+                        <div className="bg-gradient-to-r from-orange-500/10 to-orange-400/5 rounded-xl p-6 max-w-2xl mx-auto">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-orange-700">
+                            <div className="flex items-center gap-2">
+                              <FileSignature className="h-4 w-4" />
+                              <span>Contratos y convenios</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <MessageSquare className="h-4 w-4" />
+                              <span>Respuestas legales</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <CheckSquare className="h-4 w-4" />
+                              <span>Escritos jurídicos</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <BarChart className="h-4 w-4" />
+                              <span>Informes y dictámenes</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Mail className="h-4 w-4" />
+                              <span>Correspondencia legal</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Sparkles className="h-4 w-4" />
+                              <span>Análisis adaptativo</span>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </CardContent>
@@ -612,38 +706,43 @@ Tamaño: ${(file.size / 1024).toFixed(2)} KB`;
                           <Card className="hover:shadow-lg transition-shadow">
                             <CollapsibleTrigger asChild>
                               <CardHeader className="cursor-pointer hover:bg-orange-50/50 transition-colors">
-                                <div className="flex items-center justify-between gap-4">
-                                  <div className="flex-1 min-w-0">
-                                    <CardTitle className="text-lg flex items-center gap-2">
-                                      <FileText className="h-5 w-5 text-orange-600" />
-                                      {item.fileName}
-                                    </CardTitle>
-                                    <CardDescription className="mt-1">
-                                      {item.documentType} • {new Date(item.timestamp).toLocaleDateString('es-ES', {
-                                        year: 'numeric',
-                                        month: 'long',
-                                        day: 'numeric'
-                                      })}
-                                    </CardDescription>
-                                  </div>
-                                  <ChevronRight className="h-5 w-5 text-orange-600 flex-shrink-0" />
-                                </div>
-                                <div className="grid grid-cols-3 gap-2 mt-4">
-                                  <div className="text-center p-2 bg-red-50 rounded-lg">
-                                    <AlertTriangle className="h-4 w-4 mx-auto mb-1 text-red-600" />
-                                    <p className="text-lg font-bold">{item.risks.length}</p>
-                                    <p className="text-xs text-muted-foreground">Riesgos</p>
-                                  </div>
-                                  <div className="text-center p-2 bg-blue-50 rounded-lg">
-                                    <FileText className="h-4 w-4 mx-auto mb-1 text-blue-600" />
-                                    <p className="text-lg font-bold">{item.clauses.length}</p>
-                                    <p className="text-xs text-muted-foreground">Cláusulas</p>
-                                  </div>
-                                  <div className="text-center p-2 bg-green-50 rounded-lg">
-                                    <CheckCircle className="h-4 w-4 mx-auto mb-1 text-green-600" />
-                                    <p className="text-lg font-bold">{item.recommendations.length}</p>
-                                    <p className="text-xs text-muted-foreground">Recomend.</p>
-                                  </div>
+                                 <div className="flex items-center justify-between gap-4">
+                                   <div className="flex-1 min-w-0">
+                                     <CardTitle className="text-lg flex items-center gap-2">
+                                       {getCategoryIcon(item.documentCategory)}
+                                       <span className="truncate">{item.fileName}</span>
+                                       <Badge variant="outline" className="ml-2 flex-shrink-0">
+                                         {getCategoryLabel(item.documentCategory)}
+                                       </Badge>
+                                     </CardTitle>
+                                      <CardDescription className="mt-1">
+                                       {item.documentType} • {new Date(item.timestamp).toLocaleDateString('es-ES', {
+                                         year: 'numeric',
+                                         month: 'long',
+                                         day: 'numeric'
+                                       })}
+                                     </CardDescription>
+                                   </div>
+                                   <ChevronRight className="h-5 w-5 text-orange-600 flex-shrink-0" />
+                                 </div>
+                                 <div className="grid grid-cols-3 gap-2 mt-4">
+                                   <div className="text-center p-2 bg-red-50 rounded-lg">
+                                     <AlertTriangle className="h-4 w-4 mx-auto mb-1 text-red-600" />
+                                     <p className="text-lg font-bold">{item.risks.length}</p>
+                                     <p className="text-xs text-muted-foreground">Riesgos</p>
+                                   </div>
+                                   <div className="text-center p-2 bg-blue-50 rounded-lg">
+                                     <div className="mx-auto mb-1 text-blue-600 inline-flex items-center justify-center">
+                                       {getCategoryIcon(item.documentCategory)}
+                                     </div>
+                                     <p className="text-lg font-bold">{item.clauses.length}</p>
+                                     <p className="text-xs text-muted-foreground truncate">{getElementLabel(item.documentCategory)}</p>
+                                   </div>
+                                   <div className="text-center p-2 bg-green-50 rounded-lg">
+                                     <CheckCircle className="h-4 w-4 mx-auto mb-1 text-green-600" />
+                                     <p className="text-lg font-bold">{item.recommendations.length}</p>
+                                     <p className="text-xs text-muted-foreground">Recomend.</p>
+                                   </div>
                                 </div>
                               </CardHeader>
                             </CollapsibleTrigger>
@@ -674,12 +773,12 @@ Tamaño: ${(file.size / 1024).toFixed(2)} KB`;
                                   </div>
                                 )}
 
-                                {item.clauses.length > 0 && (
-                                  <div className="border-t pt-4">
-                                    <h4 className="font-semibold mb-3">
-                                      Cláusulas Analizadas: {item.clauses.length}
-                                    </h4>
-                                    <div className="flex flex-wrap gap-2">
+                                 {item.clauses.length > 0 && (
+                                   <div className="border-t pt-4">
+                                     <h4 className="font-semibold mb-3">
+                                       {getElementLabel(item.documentCategory)} Analizados: {item.clauses.length}
+                                     </h4>
+                                     <div className="flex flex-wrap gap-2">{/* ... keep existing code */}
                                       {item.clauses.map((clause, idx) => (
                                         <Badge key={idx} variant="secondary">
                                           {clause.name}
