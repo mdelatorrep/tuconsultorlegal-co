@@ -259,7 +259,7 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    // Prepare OpenAI request - send PDF directly if available
+    // Prepare OpenAI request
     const requestBody: any = {
       model: aiModel,
       messages: [
@@ -274,24 +274,87 @@ serve(async (req) => {
 
     // Build user message based on file type
     if (fileBase64 && fileName?.toLowerCase().endsWith('.pdf')) {
-      // Send PDF directly to OpenAI for processing
-      console.log('📄 Sending PDF directly to OpenAI for analysis');
+      // Upload PDF to OpenAI and use file_id for processing
+      console.log('📄 Uploading PDF to OpenAI for analysis');
       
-      requestBody.messages.push({
-        role: "user",
-        content: [
-          {
-            type: "text",
-            text: `Analiza exhaustivamente este documento legal PDF llamado "${fileName}". Proporciona un análisis profundo y profesional en formato JSON siguiendo la estructura especificada en el prompt del sistema.`
+      try {
+        // Convert base64 to blob for upload
+        const base64Clean = fileBase64.replace(/^data:application\/pdf;base64,/, '');
+        const binaryString = atob(base64Clean);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        
+        // Create FormData for file upload
+        const formData = new FormData();
+        const blob = new Blob([bytes], { type: 'application/pdf' });
+        formData.append('file', blob, fileName);
+        formData.append('purpose', 'user_data');
+        
+        // Upload file to OpenAI
+        const uploadResponse = await fetch('https://api.openai.com/v1/files', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openaiApiKey}`,
           },
-          {
-            type: "image_url",
-            image_url: {
-              url: fileBase64.startsWith('data:') ? fileBase64 : `data:application/pdf;base64,${fileBase64}`
+          body: formData,
+        });
+        
+        if (!uploadResponse.ok) {
+          const uploadError = await uploadResponse.text();
+          console.error('Error uploading PDF to OpenAI:', uploadError);
+          throw new Error(`Failed to upload PDF: ${uploadResponse.status}`);
+        }
+        
+        const fileData = await uploadResponse.json();
+        console.log(`✅ PDF uploaded successfully. File ID: ${fileData.id}`);
+        
+        // Use file_id in chat completion
+        requestBody.messages.push({
+          role: "user",
+          content: [
+            {
+              type: "file",
+              file: {
+                file_id: fileData.id
+              }
+            },
+            {
+              type: "text",
+              text: `Analiza exhaustivamente este documento legal PDF llamado "${fileName}". Proporciona un análisis profundo y profesional en formato JSON siguiendo la estructura especificada en el prompt del sistema.`
             }
-          }
-        ]
-      });
+          ]
+        });
+      } catch (uploadError) {
+        console.error('Failed to upload PDF, falling back to text extraction:', uploadError);
+        // Fallback to text extraction if upload fails
+        const content = pdfExtractedText || documentContent || '';
+        const truncatedContent = content.substring(0, 8000);
+        
+        if (truncatedContent.length > 100) {
+          requestBody.messages.push({
+            role: "user",
+            content: `Analiza exhaustivamente el siguiente documento legal (${fileName}):
+
+CONTENIDO DEL DOCUMENTO:
+${truncatedContent}
+
+Proporciona un análisis profundo y profesional en formato JSON.`
+          });
+        } else {
+          // Last resort: inferential analysis
+          const fileTypeInference = inferDocumentTypeFromFilename(fileName);
+          requestBody.messages.push({
+            role: "user",
+            content: `Documento: "${fileName}"
+
+IMPORTANTE: Este es un documento del cual no se pudo extraer contenido. Proporciona un análisis inferencial basándote en el tipo de documento sugerido: ${fileTypeInference.suggestedType} (${fileTypeInference.category}).
+
+Proporciona un análisis estructurado en formato JSON con "detectionConfidence": "baja".`
+          });
+        }
+      }
     } else if (pdfExtractedText || documentContent) {
       // Use extracted text for analysis
       const content = pdfExtractedText || documentContent || '';
