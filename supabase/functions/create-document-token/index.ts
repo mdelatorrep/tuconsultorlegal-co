@@ -73,8 +73,9 @@ serve(async (req) => {
       .eq('status', 'active')
       .single();
 
-    // Use price if available, otherwise default to 50000
-    const price = agentData?.price || 50000;
+    // Use price if available, otherwise default to 0 (free)
+    // Changed from 50000 to 0 to avoid charging for documents without properly configured agents
+    const price = agentData?.price ?? 0;
 
     // Calculate SLA deadline
     const now = new Date();
