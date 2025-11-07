@@ -1098,12 +1098,14 @@ export default function UnifiedDocumentPage({ onOpenChat }: UnifiedDocumentPageP
                   </p>
                 </div>
                 <div 
-                  className="whitespace-pre-wrap text-sm leading-relaxed"
+                  className="prose prose-sm max-w-none text-justify"
                   style={{
                     userSelect: 'none',
                     WebkitUserSelect: 'none',
                     MozUserSelect: 'none',
-                    msUserSelect: 'none'
+                    msUserSelect: 'none',
+                    textAlign: 'justify',
+                    lineHeight: '1.8'
                   }}
                   onContextMenu={(e) => e.preventDefault()}
                   dangerouslySetInnerHTML={{

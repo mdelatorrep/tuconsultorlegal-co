@@ -127,10 +127,41 @@ const addFormattedText = (doc: jsPDF, text: string, x: number, startY: number, m
   return { currentY, pageNumber };
 };
 
-// Función para procesar párrafos manteniendo el formato
+// Función para procesar párrafos y limpiar HTML manteniendo el formato
 const processDocumentContent = (content: string): string[] => {
+  // Primero limpiar todas las etiquetas HTML pero preservar estructura
+  let cleaned = content
+    // Convert lists to readable format
+    .replace(/<li[^>]*>/gi, '\n• ')
+    .replace(/<\/li>/gi, '')
+    .replace(/<ul[^>]*>|<\/ul>/gi, '\n')
+    .replace(/<ol[^>]*>|<\/ol>/gi, '\n')
+    // Convert headings
+    .replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, '\n\n$1\n')
+    // Convert paragraphs
+    .replace(/<p[^>]*>/gi, '\n')
+    .replace(/<\/p>/gi, '\n')
+    // Convert line breaks
+    .replace(/<br\s*\/?>/gi, '\n')
+    // Remove remaining HTML tags
+    .replace(/<[^>]+>/g, '')
+    // Clean HTML entities
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    // Clean special characters
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\u2013\u2014]/g, "-")
+    .replace(/[\u2026]/g, "...")
+    .replace(/[\u00A0]/g, " ");
+
   // Dividir por dobles saltos de línea para párrafos
-  const paragraphs = content.split(/\n\s*\n/);
+  const paragraphs = cleaned.split(/\n\s*\n/);
   
   return paragraphs.map(paragraph => {
     // Limpiar espacios excesivos pero mantener la estructura

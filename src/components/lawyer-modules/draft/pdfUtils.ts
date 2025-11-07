@@ -1,28 +1,50 @@
 import jsPDF from "jspdf";
 
-// Función para limpiar texto HTML y markdown
+// Función para limpiar y preservar formato de texto HTML
 export const cleanTextForPDF = (html: string): string => {
   // Crear un elemento temporal para procesar HTML
   const temp = document.createElement("div");
   temp.innerHTML = html;
 
-  // Obtener texto plano
-  let text = temp.textContent || temp.innerText || "";
-
-  // Limpiar caracteres especiales problemáticos
-  text = text
-    .replace(/[\u2018\u2019]/g, "'") // Comillas simples curvas
-    .replace(/[\u201C\u201D]/g, '"') // Comillas dobles curvas
-    .replace(/[\u2013\u2014]/g, "-") // Guiones largos
-    .replace(/[\u2026]/g, "...") // Puntos suspensivos
-    .replace(/[\u00A0]/g, " ") // Espacios no separables
-    .replace(/[\u2022]/g, "-") // Bullets
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
+  // Procesar el HTML manteniendo la estructura básica
+  let text = html
+    // Primero convertir listas a formato legible
+    .replace(/<li[^>]*>/gi, '\n• ')
+    .replace(/<\/li>/gi, '')
+    .replace(/<ul[^>]*>|<\/ul>/gi, '\n')
+    .replace(/<ol[^>]*>|<\/ol>/gi, '\n')
+    // Convertir encabezados
+    .replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, '\n\n$1\n')
+    // Convertir párrafos
+    .replace(/<p[^>]*>/gi, '\n')
+    .replace(/<\/p>/gi, '\n')
+    // Convertir saltos de línea
+    .replace(/<br\s*\/?>/gi, '\n')
+    // Preservar negritas y cursivas con marcadores temporales
+    .replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**')
+    .replace(/<b[^>]*>(.*?)<\/b>/gi, '**$1**')
+    .replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*')
+    .replace(/<i[^>]*>(.*?)<\/i>/gi, '*$1*')
+    // Eliminar el resto de etiquetas HTML
+    .replace(/<[^>]+>/g, '')
+    // Limpiar entidades HTML
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'");
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    // Limpiar caracteres especiales problemáticos
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\u2013\u2014]/g, "-")
+    .replace(/[\u2026]/g, "...")
+    .replace(/[\u00A0]/g, " ")
+    // Limpiar múltiples espacios y saltos de línea
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n\s*\n\s*\n/g, '\n\n')
+    .trim();
 
   return text;
 };
@@ -69,34 +91,82 @@ export const generatePDF = async (content: string, title: string) => {
   for (const paragraph of paragraphs) {
     if (!paragraph.trim()) continue;
 
+    // Detectar negritas marcadas con **
+    const hasBold = paragraph.includes('**');
+    
     // Verificar si es un título (líneas cortas o que empiezan con números)
     const isTitle = paragraph.length < 100 && 
-                    (paragraph.match(/^\d+\./) || paragraph.match(/^[A-Z\s]+$/));
+                    (paragraph.match(/^\d+\./) || paragraph.match(/^[A-Z\s]+$/) || paragraph.match(/^\*\*/));
 
     if (isTitle) {
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
+      doc.setFontSize(13);
+      const cleanTitle = paragraph.replace(/\*\*/g, '');
+      const lines = doc.splitTextToSize(cleanTitle, maxWidth);
+      
+      for (const line of lines) {
+        if (yPosition + 8 > maxHeight + margin) {
+          doc.addPage();
+          yPosition = margin;
+        }
+        doc.text(line, margin, yPosition);
+        yPosition += 8;
+      }
+      yPosition += 4;
+    } else if (hasBold) {
+      // Manejar texto mixto con negritas
+      const parts = paragraph.split(/(\*\*.*?\*\*)/g);
+      doc.setFontSize(11);
+      
+      for (const part of parts) {
+        if (!part) continue;
+        
+        if (part.startsWith('**') && part.endsWith('**')) {
+          // Texto en negrita
+          doc.setFont("helvetica", "bold");
+          const boldText = part.replace(/\*\*/g, '');
+          const lines = doc.splitTextToSize(boldText, maxWidth);
+          
+          for (const line of lines) {
+            if (yPosition + 7 > maxHeight + margin) {
+              doc.addPage();
+              yPosition = margin;
+            }
+            doc.text(line, margin, yPosition);
+            yPosition += 7;
+          }
+        } else {
+          // Texto normal
+          doc.setFont("helvetica", "normal");
+          const lines = doc.splitTextToSize(part, maxWidth);
+          
+          for (const line of lines) {
+            if (yPosition + 7 > maxHeight + margin) {
+              doc.addPage();
+              yPosition = margin;
+            }
+            doc.text(line, margin, yPosition);
+            yPosition += 7;
+          }
+        }
+      }
+      yPosition += 3;
     } else {
+      // Texto normal sin formato especial
       doc.setFont("helvetica", "normal");
       doc.setFontSize(11);
-    }
+      const lines = doc.splitTextToSize(paragraph, maxWidth);
 
-    // Dividir el párrafo en líneas que quepan en el ancho de página
-    const lines = doc.splitTextToSize(paragraph, maxWidth);
-
-    for (const line of lines) {
-      // Verificar si necesitamos una nueva página
-      if (yPosition + 7 > maxHeight + margin) {
-        doc.addPage();
-        yPosition = margin;
+      for (const line of lines) {
+        if (yPosition + 7 > maxHeight + margin) {
+          doc.addPage();
+          yPosition = margin;
+        }
+        doc.text(line, margin, yPosition, { align: 'justify', maxWidth: maxWidth });
+        yPosition += 7;
       }
-
-      doc.text(line, margin, yPosition);
-      yPosition += 7;
+      yPosition += 3;
     }
-
-    // Espacio entre párrafos
-    yPosition += 3;
   }
 
   // Generar nombre de archivo limpio
