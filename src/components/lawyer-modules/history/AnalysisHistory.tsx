@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Eye, AlertTriangle, CheckCircle, FileText } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Eye, AlertTriangle, CheckCircle, FileText, ChevronRight } from "lucide-react";
 
 interface AnalysisResult {
   fileName: string;
@@ -42,102 +43,124 @@ export default function AnalysisHistory({ history }: AnalysisHistoryProps) {
   return (
     <div className="space-y-4">
       {history.map((item, index) => (
-        <Card key={index}>
-          <CardHeader>
-            <div className="flex items-start justify-between">
-              <div>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  {item.fileName}
-                </CardTitle>
-                <CardDescription>
-                  {item.documentType} • {new Date(item.timestamp).toLocaleDateString('es-ES', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {item.risks.length > 0 && (
-              <div>
-                <h4 className="font-semibold mb-2 flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-orange-600" />
-                  Riesgos Identificados ({item.risks.length})
-                </h4>
-                <div className="space-y-2">
-                  {item.risks.slice(0, 3).map((risk, idx) => (
-                    <div key={idx} className="flex items-start gap-3 p-2 bg-muted/30 rounded-lg">
-                      <Badge 
-                        variant={risk.severity === 'high' ? 'destructive' : 'outline'}
-                        className="mt-0.5"
-                      >
-                        {risk.severity === 'high' ? 'Alto' : risk.severity === 'medium' ? 'Medio' : 'Bajo'}
-                      </Badge>
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">{risk.type}</p>
-                        <p className="text-xs text-muted-foreground">{risk.description}</p>
-                      </div>
+        <Collapsible key={index}>
+          <Card className="hover:shadow-lg transition-shadow">
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-orange-50/50 transition-colors">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <FileText className="h-5 w-5 text-orange-600" />
+                      {item.fileName}
+                    </CardTitle>
+                    <CardDescription>
+                      {item.documentType} • {new Date(item.timestamp).toLocaleDateString('es-ES', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </CardDescription>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-orange-600 flex-shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-90" />
+                </div>
+                <div className="grid grid-cols-3 gap-2 mt-4">
+                  <div className="text-center p-2 bg-red-50 rounded-lg">
+                    <AlertTriangle className="h-4 w-4 mx-auto mb-1 text-red-600" />
+                    <p className="text-lg font-bold">{item.risks.length}</p>
+                    <p className="text-xs text-muted-foreground">Riesgos</p>
+                  </div>
+                  <div className="text-center p-2 bg-blue-50 rounded-lg">
+                    <FileText className="h-4 w-4 mx-auto mb-1 text-blue-600" />
+                    <p className="text-lg font-bold">{item.clauses.length}</p>
+                    <p className="text-xs text-muted-foreground">Cláusulas</p>
+                  </div>
+                  <div className="text-center p-2 bg-green-50 rounded-lg">
+                    <CheckCircle className="h-4 w-4 mx-auto mb-1 text-green-600" />
+                    <p className="text-lg font-bold">{item.recommendations.length}</p>
+                    <p className="text-xs text-muted-foreground">Recomend.</p>
+                  </div>
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="pt-0 space-y-4">
+                {item.risks.length > 0 && (
+                  <div className="border-t pt-4">
+                    <h4 className="font-semibold mb-3 flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4 text-orange-600" />
+                      Riesgos Identificados ({item.risks.length})
+                    </h4>
+                    <div className="space-y-2">
+                      {item.risks.map((risk, idx) => (
+                        <div key={idx} className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
+                          <Badge 
+                            variant={risk.severity === 'high' ? 'destructive' : 'outline'}
+                            className="mt-0.5"
+                          >
+                            {risk.severity === 'high' ? 'Alto' : risk.severity === 'medium' ? 'Medio' : 'Bajo'}
+                          </Badge>
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">{risk.type}</p>
+                            <p className="text-xs text-muted-foreground">{risk.description}</p>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                  {item.risks.length > 3 && (
-                    <p className="text-sm text-muted-foreground">
-                      +{item.risks.length - 3} riesgos más
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
+                  </div>
+                )}
 
-            {item.clauses.length > 0 ? (
-              <div>
-                <h4 className="font-semibold mb-2">
-                  Cláusulas Analizadas: {item.clauses.length}
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {item.clauses.slice(0, 5).map((clause, idx) => (
-                    <Badge key={idx} variant="secondary">
-                      {clause.name}
-                    </Badge>
-                  ))}
-                  {item.clauses.length > 5 && (
-                    <Badge variant="outline">
-                      +{item.clauses.length - 5} más
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="text-sm text-muted-foreground">
-                No se encontraron cláusulas en este documento
-              </div>
-            )}
+                {item.clauses.length > 0 && (
+                  <div className="border-t pt-4">
+                    <h4 className="font-semibold mb-3">
+                      Cláusulas Analizadas: {item.clauses.length}
+                    </h4>
+                    <div className="space-y-3">
+                      {item.clauses.map((clause, idx) => (
+                        <div key={idx} className="p-3 bg-muted/30 rounded-lg">
+                          <div className="flex items-center justify-between mb-2">
+                            <Badge variant="secondary">{clause.name}</Badge>
+                            <Badge 
+                              variant={
+                                clause.riskLevel === 'high' ? 'destructive' : 
+                                clause.riskLevel === 'medium' ? 'secondary' : 
+                                'outline'
+                              }
+                            >
+                              {clause.riskLevel === 'high' ? 'Riesgo Alto' : 
+                               clause.riskLevel === 'medium' ? 'Riesgo Medio' : 
+                               'Riesgo Bajo'}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">{clause.content}</p>
+                          {clause.recommendation && (
+                            <p className="text-xs text-orange-600 mt-2">💡 {clause.recommendation}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-            {item.recommendations.length > 0 && (
-              <div>
-                <h4 className="font-semibold mb-2 flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                  Recomendaciones ({item.recommendations.length})
-                </h4>
-                <ul className="space-y-1">
-                  {item.recommendations.slice(0, 3).map((rec, idx) => (
-                    <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
-                      <span className="text-green-600 mt-1">•</span>
-                      <span>{rec}</span>
-                    </li>
-                  ))}
-                  {item.recommendations.length > 3 && (
-                    <p className="text-sm text-muted-foreground pl-4">
-                      +{item.recommendations.length - 3} recomendaciones más
-                    </p>
-                  )}
-                </ul>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                {item.recommendations.length > 0 && (
+                  <div className="border-t pt-4">
+                    <h4 className="font-semibold mb-3 flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      Recomendaciones ({item.recommendations.length})
+                    </h4>
+                    <ul className="space-y-2">
+                      {item.recommendations.map((rec, idx) => (
+                        <li key={idx} className="text-sm flex items-start gap-2">
+                          <span className="text-green-600 mt-1">•</span>
+                          <span>{rec}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
       ))}
     </div>
   );

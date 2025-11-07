@@ -106,25 +106,46 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
       // Handle different file types
       let fileBase64 = null;
       
-      if (file.type === 'application/pdf') {
-        // For PDF files, convert to base64 and create descriptive content
+      // Binary file types that need base64 encoding
+      const binaryTypes = [
+        'application/pdf',
+        'application/msword', // .doc
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+      ];
+      
+      const isBinaryFile = binaryTypes.includes(file.type) || 
+                          file.name.toLowerCase().endsWith('.doc') ||
+                          file.name.toLowerCase().endsWith('.docx') ||
+                          file.name.toLowerCase().endsWith('.pdf');
+      
+      if (isBinaryFile) {
+        // For binary files (PDF, DOC, DOCX), convert to base64
         try {
           const arrayBuffer = await file.arrayBuffer();
           const uint8Array = new Uint8Array(arrayBuffer);
           fileBase64 = btoa(String.fromCharCode(...uint8Array));
           
-          fileContent = `Documento PDF: ${file.name}
+          let fileTypeDescription = 'documento';
+          if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+            fileTypeDescription = 'PDF';
+          } else if (file.name.toLowerCase().endsWith('.doc')) {
+            fileTypeDescription = 'DOC (Word 97-2003)';
+          } else if (file.name.toLowerCase().endsWith('.docx')) {
+            fileTypeDescription = 'DOCX (Word)';
+          }
           
-Este es un archivo PDF que contiene información legal. El sistema analizará el contenido del documento PDF para identificar cláusulas, riesgos y proporcionar recomendaciones especializadas.
+          fileContent = `Documento ${fileTypeDescription}: ${file.name}
+          
+Este es un archivo ${fileTypeDescription} que contiene información legal. El sistema analizará el contenido del documento para identificar cláusulas, riesgos y proporcionar recomendaciones especializadas.
 
-Tipo de archivo: PDF
+Tipo de archivo: ${fileTypeDescription}
 Nombre: ${file.name}
 Tamaño: ${(file.size / 1024).toFixed(2)} KB
 
-El contenido del PDF será procesado por el sistema de análisis de documentos legales con IA.`;
-        } catch (pdfError) {
-          console.error('Error processing PDF:', pdfError);
-          fileContent = `Error procesando PDF: ${file.name}. Inténtalo de nuevo.`;
+El contenido será procesado por el sistema de análisis de documentos legales con IA.`;
+        } catch (binaryError) {
+          console.error('Error processing binary file:', binaryError);
+          fileContent = `Error procesando archivo binario: ${file.name}. Inténtalo de nuevo.`;
         }
       } else {
         // For text-based files, read the content
