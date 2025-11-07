@@ -59,3 +59,39 @@ verify_jwt = false
 
 [functions.legal-document-analysis]
 verify_jwt = false
+
+[functions.dlocal-admin-validate-subscription]
+verify_jwt = false
+
+[functions.dlocal-admin-cancel-plan]
+verify_jwt = false
+
+[functions.dlocal-admin-create-plan]
+verify_jwt = false
+
+[functions.dlocal-admin-get-executions]
+verify_jwt = false
+
+[functions.dlocal-admin-get-subscriptions]
+verify_jwt = false
+
+[functions.dlocal-admin-modify-subscription]
+verify_jwt = false
+
+[functions.dlocal-admin-sync-subscriptions]
+verify_jwt = false
+
+[functions.dlocal-admin-update-plan]
+verify_jwt = false
+
+[functions.dlocal-create-subscription]
+verify_jwt = false
+
+[functions.dlocal-get-plans]
+verify_jwt = false
+
+[functions.dlocal-manage-subscription]
+verify_jwt = false
+
+[functions.dlocal-webhook]
+verify_jwt = false
