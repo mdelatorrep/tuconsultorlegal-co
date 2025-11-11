@@ -29,6 +29,7 @@ import { SubscriptionStatusIndicator } from "./SubscriptionStatusIndicator";
 import { LawyerChangeEmailDialog } from "./LawyerChangeEmailDialog";
 import { PasswordResetDialog } from "./PasswordResetDialog";
 import LawyerPublicProfileEditor from "./LawyerPublicProfileEditor";
+import UnifiedSidebar from "./UnifiedSidebar";
 
 interface DocumentToken {
   id: string;
@@ -749,114 +750,6 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
     return <LawyerLandingPage onOpenChat={onOpenChat} />;
   }
 
-  // Sidebar menu configuration
-  const menuItems = [
-    {
-      title: "Panel Principal",
-      items: [
-        {
-          title: "Dashboard",
-          icon: Home,
-          view: "dashboard" as const
-        }
-      ]
-    },
-    {
-      title: "Herramientas Legales",
-      items: [
-        {
-          title: "Investigación",
-          icon: Search,
-          view: "research" as const,
-          isPremium: !user?.canUseAiTools
-        },
-        {
-          title: "Análisis",
-          icon: Eye,
-          view: "analyze" as const,
-          isPremium: !user?.canUseAiTools
-        },
-        {
-          title: "Redacción",
-          icon: PenTool,
-          view: "draft" as const,
-          isPremium: !user?.canUseAiTools
-        },
-        {
-          title: "Estrategia",
-          icon: Target,
-          view: "strategize" as const,
-          isPremium: !user?.canUseAiTools
-        },
-        {
-          title: "Gestión de Clientes",
-          icon: Users,
-          view: "crm" as const,
-          isPremium: !user?.canUseAiTools
-        }
-      ]
-    },
-    ...(user?.canCreateAgents ? [{
-      title: "Gestión IA",
-      items: [
-        {
-          title: "Crear Agente",
-          icon: Bot,
-          view: "agent-creator" as const,
-          isPremium: false
-        },
-        {
-          title: "Gestionar Agentes",
-          icon: Settings,
-          view: "agent-manager" as const,
-          isPremium: false
-        },
-        {
-          title: "Métricas",
-          icon: BarChart3,
-          view: "stats" as const,
-          isPremium: false
-        }
-      ]
-    }] : []),
-    {
-      title: "Desarrollo",
-      items: [
-        {
-          title: "Formación IA",
-          icon: Brain,
-          view: "training" as const
-        }
-      ]
-    },
-    ...(user?.canCreateBlogs ? [{
-      title: "Contenido",
-      items: [
-        {
-          title: "Gestión Blog",
-          icon: BookOpen,
-          view: "blog-manager" as const,
-          isPremium: false
-        }
-      ]
-    }] : []),
-    {
-      title: "Cuenta",
-      items: [
-        {
-          title: "Perfil Público",
-          icon: User,
-          view: "public-profile" as const
-        },
-        {
-          title: "Suscripción",
-          icon: Crown,
-          view: "subscription" as const
-        }
-      ]
-    }
-  ];
-
   // Function to render module content
   const renderModuleContent = () => {
     switch (currentView) {
@@ -1011,93 +904,13 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
 
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
-        <Sidebar 
-          className={`${isMobile ? 'w-14' : 'w-64'} transition-all duration-300 border-r flex-shrink-0`}
-          data-tour="lawyer-sidebar"
-          collapsible={isMobile ? "icon" : "none"}
-          variant="inset"
-          side="left"
-        >
-          <SidebarContent>
-            {/* Header del Sidebar */}
-            <div className={`p-4 border-b ${isMobile ? 'p-2' : 'p-4'}`}>
-              <h2 className={`text-lg font-semibold text-foreground ${isMobile ? 'hidden' : 'block'}`}>
-                Portal Abogados
-              </h2>
-              <p className={`text-sm text-muted-foreground ${isMobile ? 'hidden' : 'block'}`}>
-                {user?.name}
-              </p>
-            </div>
-
-            {/* Menu Items */}
-            {menuItems.map((section, index) => (
-              <SidebarGroup 
-                key={index}
-                data-tour={
-                  section.title === "Herramientas Legales" ? "ai-tools-section" :
-                  section.title === "Gestión IA" ? "agent-management-section" :
-                  section.title === "Estadísticas" ? "stats-section" : undefined
-                }
-              >
-                <SidebarGroupLabel className={isMobile ? 'sr-only' : ''}>{section.title}</SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                     {section.items.map((item) => (
-                       <SidebarMenuItem key={item.view}>
-                         <SidebarMenuButton 
-                            onClick={() => setCurrentView(item.view)}
-                            className={`flex items-center ${isMobile ? 'justify-center p-2' : 'justify-between gap-3 px-3 py-2'} rounded-lg transition-colors ${
-                              currentView === item.view 
-                                ? 'bg-primary text-primary-foreground' 
-                                : 'hover:bg-muted'
-                            } ${(item as any).isPremium ? 'opacity-75' : ''}`}
-                            tooltip={isMobile ? item.title : undefined}
-                          >
-                            {isMobile ? (
-                              <item.icon className="h-5 w-5" />
-                            ) : (
-                              <>
-                                <div className="flex items-center gap-3">
-                                  <item.icon className="h-4 w-4" />
-                                  <span>{item.title}</span>
-                                </div>
-                                {(item as any).isPremium && (
-                                  <div className="flex items-center gap-1">
-                                    <Crown className="h-3 w-3 text-amber-500" />
-                                    <Lock className="h-3 w-3 text-muted-foreground" />
-                                  </div>
-                                )}
-                              </>
-                            )}
-                         </SidebarMenuButton>
-                       </SidebarMenuItem>
-                     ))}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-            ))}
-
-            {/* Logout Button */}
-            <div className={`border-t mt-auto ${isMobile ? 'p-2' : 'p-4'}`}>
-                <Button
-                  onClick={() => {
-                    console.log('=== LOGOUT BUTTON CLICKED (DASHBOARD) ===');
-                    console.log('User:', user);
-                    console.log('IsAuthenticated:', isAuthenticated);
-                    console.log('About to call logout function...');
-                    logout();
-                  }}
-                  variant="outline"
-                  size={isMobile ? "icon" : "default"}
-                  className={`${isMobile ? 'w-10 h-10' : 'w-full'} flex items-center ${isMobile ? 'justify-center' : 'gap-2'}`}
-                  title={isMobile ? "Cerrar Sesión" : undefined}
-                >
-                  <LogOut className="h-4 w-4" />
-                  {!isMobile && "Cerrar Sesión"}
-                </Button>
-            </div>
-          </SidebarContent>
-        </Sidebar>
+        {/* Import UnifiedSidebar component */}
+        <UnifiedSidebar 
+          user={user}
+          currentView={currentView}
+          onViewChange={(view) => setCurrentView(view as any)}
+          onLogout={logout}
+        />
 
         {/* Main Content */}
         <main className="flex-1 min-w-0 overflow-auto">
