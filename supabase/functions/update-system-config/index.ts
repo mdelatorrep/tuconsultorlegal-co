@@ -48,7 +48,9 @@ serve(async (req) => {
 
     if (adminError || !adminProfile) {
       console.error("Admin verification failed:", adminError);
-      throw new Error("User is not an authorized admin");
+      console.error("User ID attempting access:", userData.user.id);
+      console.error("User email:", userData.user.email);
+      throw new Error(`Usuario no autorizado como administrador. Solo los usuarios registrados en admin_profiles pueden modificar configuraciones del sistema. Email: ${userData.user.email}`);
     }
 
     // Parse and log request body

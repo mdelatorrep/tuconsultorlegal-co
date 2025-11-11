@@ -401,15 +401,12 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Get research AI model and prompt from system config - use deep research models
-    const configModel = await getSystemConfig(supabase, 'research_ai_model', 'o4-mini-deep-research-2025-06-26');
+    const researchModel = await getSystemConfig(supabase, 'research_ai_model', 'o4-mini-deep-research-2025-06-26');
     const researchSystemPrompt = await getSystemConfig(
       supabase, 
       'research_system_prompt', 
       'Eres un especialista en investigación jurídica colombiana. Analiza la consulta y proporciona respuestas detalladas basadas en legislación, jurisprudencia y normativa vigente con fuentes actualizadas.\n\nExperto en derecho colombiano. Produce informe estructurado con:\n\n1. Marco normativo (Constitución, códigos, decretos vigentes)\n2. Jurisprudencia reciente (Corte Constitucional, CSJ, Consejo de Estado)\n3. Aplicación práctica y recomendaciones\n\nIncluye citas específicas y fuentes verificables. Enfócate en análisis concreto con datos medibles.'
     );
-
-    // Force use of o4-mini-deep-research as recommended
-    const researchModel = 'o4-mini-deep-research-2025-06-26';
 
     // Get OpenAI API key
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
