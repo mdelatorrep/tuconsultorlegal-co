@@ -617,7 +617,8 @@ async function handleGenerateDocument(supabase: any, args: any, legalAgent: any,
         user_email: userEmail,
         user_name: userName,
         sla_hours: legalAgent.sla_hours || 4,
-        user_id: null
+        user_id: null,
+        legal_agent_id: legalAgent.id // ✅ CRÍTICO: Pasar el ID del agente legal
       }
     });
 

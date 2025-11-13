@@ -277,6 +277,7 @@ FORMATO DE RESPUESTA: Devuelve únicamente el documento final usando la plantill
         user_email: user_email,
         user_name: user_name,
         user_id: user_id || null,
+        legal_agent_id: template_id || null, // ✅ CRÍTICO: Pasar el ID del agente legal
         price: price || 0,
         sla_hours: sla_hours || 4,
         sla_deadline: slaDeadline.toISOString(),
