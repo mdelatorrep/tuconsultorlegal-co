@@ -295,6 +295,27 @@ FORMATO DE RESPUESTA: Devuelve únicamente el documento final usando la plantill
 
     console.log('Document generated and token created successfully');
 
+    // Send notification email for new document
+    try {
+      console.log('Sending notification email for document:', tokenData.id);
+      const notifyResponse = await supabase.functions.invoke('notify-document-status-change', {
+        body: {
+          document_token_id: tokenData.id,
+          new_status: 'solicitado'
+        }
+      });
+
+      if (notifyResponse.error) {
+        console.error('Error sending notification:', notifyResponse.error);
+        // Don't fail the request if notification fails, just log it
+      } else {
+        console.log('Notification sent successfully');
+      }
+    } catch (notifyError) {
+      console.error('Exception sending notification:', notifyError);
+      // Don't fail the request if notification fails
+    }
+
     return new Response(
       JSON.stringify({ 
         token,

@@ -110,6 +110,27 @@ serve(async (req) => {
 
     console.log('Document token created successfully:', data);
 
+    // Send notification email for new document
+    try {
+      console.log('Sending notification email for document:', data.id);
+      const notifyResponse = await supabase.functions.invoke('notify-document-status-change', {
+        body: {
+          document_token_id: data.id,
+          new_status: 'solicitado'
+        }
+      });
+
+      if (notifyResponse.error) {
+        console.error('Error sending notification:', notifyResponse.error);
+        // Don't fail the request if notification fails, just log it
+      } else {
+        console.log('Notification sent successfully');
+      }
+    } catch (notifyError) {
+      console.error('Exception sending notification:', notifyError);
+      // Don't fail the request if notification fails
+    }
+
     return new Response(
       JSON.stringify({ 
         token,
