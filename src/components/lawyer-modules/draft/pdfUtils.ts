@@ -1,52 +1,73 @@
 import jsPDF from "jspdf";
 
-// Función para limpiar y preservar formato de texto HTML
+// Interfaz para tokens de contenido con formato
+interface ContentToken {
+  text: string;
+  isBold?: boolean;
+  isItalic?: boolean;
+  isUnderline?: boolean;
+  isHeading?: number;
+  isList?: boolean;
+  isOrderedList?: boolean;
+}
+
+// Función mejorada para procesar HTML y extraer tokens con formato
+const processHtmlToTokens = (html: string): ContentToken[] => {
+  const tokens: ContentToken[] = [];
+  
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(`<div>${html}</div>`, 'text/html');
+  const container = doc.body.firstChild as HTMLElement;
+  
+  if (!container) return tokens;
+  
+  const processNode = (node: Node, parentFormat: Partial<ContentToken> = {}) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const text = node.textContent?.trim();
+      if (text) {
+        tokens.push({ text, ...parentFormat });
+      }
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      const element = node as HTMLElement;
+      const tagName = element.tagName.toLowerCase();
+      
+      const format: Partial<ContentToken> = { ...parentFormat };
+      
+      if (tagName === 'strong' || tagName === 'b') {
+        format.isBold = true;
+      } else if (tagName === 'em' || tagName === 'i') {
+        format.isItalic = true;
+      } else if (tagName === 'u') {
+        format.isUnderline = true;
+      } else if (tagName.match(/^h[1-6]$/)) {
+        format.isHeading = parseInt(tagName[1]);
+      } else if (tagName === 'li') {
+        format.isList = true;
+        const parentList = element.parentElement;
+        format.isOrderedList = parentList?.tagName.toLowerCase() === 'ol';
+      } else if (tagName === 'p' || tagName === 'div') {
+        if (tokens.length > 0) tokens.push({ text: '\n' });
+      } else if (tagName === 'br') {
+        tokens.push({ text: '\n' });
+        return;
+      }
+      
+      element.childNodes.forEach(child => processNode(child, format));
+      
+      if (tagName.match(/^h[1-6]$/) || tagName === 'p' || tagName === 'li') {
+        tokens.push({ text: '\n' });
+      }
+    }
+  };
+  
+  container.childNodes.forEach(node => processNode(node));
+  return tokens;
+};
+
+// Función para limpiar y preservar formato de texto HTML (legacy - mantener para compatibilidad)
 export const cleanTextForPDF = (html: string): string => {
-  // Crear un elemento temporal para procesar HTML
-  const temp = document.createElement("div");
-  temp.innerHTML = html;
-
-  // Procesar el HTML manteniendo la estructura básica
-  let text = html
-    // Primero convertir listas a formato legible
-    .replace(/<li[^>]*>/gi, '\n• ')
-    .replace(/<\/li>/gi, '')
-    .replace(/<ul[^>]*>|<\/ul>/gi, '\n')
-    .replace(/<ol[^>]*>|<\/ol>/gi, '\n')
-    // Convertir encabezados
-    .replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, '\n\n$1\n')
-    // Convertir párrafos
-    .replace(/<p[^>]*>/gi, '\n')
-    .replace(/<\/p>/gi, '\n')
-    // Convertir saltos de línea
-    .replace(/<br\s*\/?>/gi, '\n')
-    // Preservar negritas y cursivas con marcadores temporales
-    .replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**')
-    .replace(/<b[^>]*>(.*?)<\/b>/gi, '**$1**')
-    .replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*')
-    .replace(/<i[^>]*>(.*?)<\/i>/gi, '*$1*')
-    // Eliminar el resto de etiquetas HTML
-    .replace(/<[^>]+>/g, '')
-    // Limpiar entidades HTML
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&apos;/g, "'")
-    // Limpiar caracteres especiales problemáticos
-    .replace(/[\u2018\u2019]/g, "'")
-    .replace(/[\u201C\u201D]/g, '"')
-    .replace(/[\u2013\u2014]/g, "-")
-    .replace(/[\u2026]/g, "...")
-    .replace(/[\u00A0]/g, " ")
-    // Limpiar múltiples espacios y saltos de línea
-    .replace(/[ \t]+/g, ' ')
-    .replace(/\n\s*\n\s*\n/g, '\n\n')
-    .trim();
-
-  return text;
+  const tokens = processHtmlToTokens(html);
+  return tokens.map(t => t.text).join(' ');
 };
 
 // Función para generar PDF con formato
@@ -78,94 +99,68 @@ export const generatePDF = async (content: string, title: string) => {
   doc.line(margin, yPosition, pageWidth - margin, yPosition);
   yPosition += 10;
 
-  // Contenido
-  doc.setFontSize(11);
-  doc.setFont("helvetica", "normal");
+  // Contenido con formato HTML procesado
+  const tokens = processHtmlToTokens(content);
+  let listCounter = 0;
 
-  // Limpiar y procesar el contenido
-  const cleanContent = cleanTextForPDF(content);
-  
-  // Dividir por párrafos
-  const paragraphs = cleanContent.split(/\n\n+/);
-
-  for (const paragraph of paragraphs) {
-    if (!paragraph.trim()) continue;
-
-    // Detectar negritas marcadas con **
-    const hasBold = paragraph.includes('**');
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
     
-    // Verificar si es un título (líneas cortas o que empiezan con números)
-    const isTitle = paragraph.length < 100 && 
-                    (paragraph.match(/^\d+\./) || paragraph.match(/^[A-Z\s]+$/) || paragraph.match(/^\*\*/));
-
-    if (isTitle) {
+    const lineHeight = token.isHeading ? 10 : 7;
+    if (yPosition + lineHeight > maxHeight + margin) {
+      doc.addPage();
+      yPosition = margin;
+      listCounter = 0;
+    }
+    
+    if (token.isHeading) {
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(13);
-      const cleanTitle = paragraph.replace(/\*\*/g, '');
-      const lines = doc.splitTextToSize(cleanTitle, maxWidth);
-      
-      for (const line of lines) {
-        if (yPosition + 8 > maxHeight + margin) {
-          doc.addPage();
-          yPosition = margin;
-        }
-        doc.text(line, margin, yPosition);
-        yPosition += 8;
-      }
-      yPosition += 4;
-    } else if (hasBold) {
-      // Manejar texto mixto con negritas
-      const parts = paragraph.split(/(\*\*.*?\*\*)/g);
-      doc.setFontSize(11);
-      
-      for (const part of parts) {
-        if (!part) continue;
-        
-        if (part.startsWith('**') && part.endsWith('**')) {
-          // Texto en negrita
-          doc.setFont("helvetica", "bold");
-          const boldText = part.replace(/\*\*/g, '');
-          const lines = doc.splitTextToSize(boldText, maxWidth);
-          
-          for (const line of lines) {
-            if (yPosition + 7 > maxHeight + margin) {
-              doc.addPage();
-              yPosition = margin;
-            }
-            doc.text(line, margin, yPosition);
-            yPosition += 7;
-          }
-        } else {
-          // Texto normal
-          doc.setFont("helvetica", "normal");
-          const lines = doc.splitTextToSize(part, maxWidth);
-          
-          for (const line of lines) {
-            if (yPosition + 7 > maxHeight + margin) {
-              doc.addPage();
-              yPosition = margin;
-            }
-            doc.text(line, margin, yPosition);
-            yPosition += 7;
-          }
-        }
-      }
-      yPosition += 3;
+      const headingSizes = [16, 15, 14, 13, 12, 11];
+      doc.setFontSize(headingSizes[token.isHeading - 1] || 11);
     } else {
-      // Texto normal sin formato especial
-      doc.setFont("helvetica", "normal");
+      let fontStyle: 'normal' | 'bold' | 'italic' | 'bolditalic' = 'normal';
+      if (token.isBold && token.isItalic) fontStyle = 'bolditalic';
+      else if (token.isBold) fontStyle = 'bold';
+      else if (token.isItalic) fontStyle = 'italic';
+      
+      doc.setFont("helvetica", fontStyle);
       doc.setFontSize(11);
-      const lines = doc.splitTextToSize(paragraph, maxWidth);
-
-      for (const line of lines) {
-        if (yPosition + 7 > maxHeight + margin) {
-          doc.addPage();
-          yPosition = margin;
-        }
-        doc.text(line, margin, yPosition, { align: 'justify', maxWidth: maxWidth });
-        yPosition += 7;
+    }
+    
+    if (token.text === '\n') {
+      yPosition += token.isHeading ? 5 : 3;
+      listCounter = 0;
+      continue;
+    }
+    
+    let textToRender = token.text;
+    let xPosition = margin;
+    
+    if (token.isList) {
+      listCounter++;
+      const bullet = token.isOrderedList ? `${listCounter}. ` : '• ';
+      textToRender = bullet + textToRender;
+      xPosition = margin + 5;
+    }
+    
+    const lineMaxWidth = maxWidth - (token.isList ? 5 : 0);
+    const lines = doc.splitTextToSize(textToRender, lineMaxWidth);
+    
+    for (const line of lines) {
+      if (yPosition + lineHeight > maxHeight + margin) {
+        doc.addPage();
+        yPosition = margin;
       }
-      yPosition += 3;
+      
+      doc.text(line, xPosition, yPosition);
+      
+      if (token.isUnderline) {
+        const textWidth = doc.getTextWidth(line);
+        doc.setLineWidth(0.2);
+        doc.line(xPosition, yPosition + 1, xPosition + textWidth, yPosition + 1);
+      }
+      
+      yPosition += lineHeight;
     }
   }
 

@@ -19,13 +19,13 @@ const addHeader = (doc: jsPDF, pageNumber: number) => {
   
   // Título de la empresa
   doc.setTextColor(23, 37, 84);
-  doc.setFont('Arial', 'bold');
+  doc.setFont('helvetica', 'bold');
   doc.setFontSize(14);
   doc.text('TU CONSULTOR LEGAL', MARGIN_LEFT, MARGIN_TOP + 8);
   
   // Número de página (derecha)
   doc.setTextColor(100, 100, 100);
-  doc.setFont('Arial', 'normal');
+  doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   const pageText = `Página ${pageNumber}`;
   const pageTextWidth = doc.getTextWidth(pageText);
@@ -47,7 +47,7 @@ const addFooter = (doc: jsPDF, token: string, reviewedByLawyer?: string) => {
   
   // Información del token (izquierda)
   doc.setTextColor(60, 60, 60);
-  doc.setFont('Arial', 'normal');
+  doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   doc.text(`Token de verificación: ${token}`, MARGIN_LEFT, footerY + 6);
   
@@ -68,7 +68,6 @@ const addFooter = (doc: jsPDF, token: string, reviewedByLawyer?: string) => {
     doc.setTextColor(80, 80, 80);
     doc.setFontSize(9);
     const reviewText = `Documento revisado por: ${reviewedByLawyer}`;
-    const reviewTextWidth = doc.getTextWidth(reviewText);
     doc.text(reviewText, MARGIN_LEFT, footerY + 12);
   }
   
@@ -80,93 +79,174 @@ const addFooter = (doc: jsPDF, token: string, reviewedByLawyer?: string) => {
   doc.text(authText, (PAGE_WIDTH - authTextWidth) / 2, footerY + (reviewedByLawyer ? 18 : 12));
 };
 
-// Función para añadir texto preservando el formato original con saltos de página
-const addFormattedText = (doc: jsPDF, text: string, x: number, startY: number, maxWidth: number, lineHeight: number, documentData: any, startPageNumber: number): { currentY: number; pageNumber: number } => {
-  const lines = text.split('\n');
+// Interfaz para tokens de contenido con formato
+interface ContentToken {
+  text: string;
+  isBold?: boolean;
+  isItalic?: boolean;
+  isUnderline?: boolean;
+  isHeading?: number; // 1-6 para h1-h6
+  isList?: boolean;
+  isOrderedList?: boolean;
+  listLevel?: number;
+}
+
+// Función mejorada para procesar HTML y extraer tokens con formato
+const processHtmlContent = (html: string): ContentToken[] => {
+  const tokens: ContentToken[] = [];
+  
+  // Crear un elemento temporal para parsear HTML
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(`<div>${html}</div>`, 'text/html');
+  const container = doc.body.firstChild as HTMLElement;
+  
+  if (!container) return tokens;
+  
+  // Función recursiva para procesar nodos
+  const processNode = (node: Node, parentFormat: Partial<ContentToken> = {}) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const text = node.textContent?.trim();
+      if (text) {
+        tokens.push({
+          text,
+          ...parentFormat
+        });
+      }
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      const element = node as HTMLElement;
+      const tagName = element.tagName.toLowerCase();
+      
+      // Determinar formato basado en la etiqueta
+      const format: Partial<ContentToken> = { ...parentFormat };
+      
+      if (tagName === 'strong' || tagName === 'b') {
+        format.isBold = true;
+      } else if (tagName === 'em' || tagName === 'i') {
+        format.isItalic = true;
+      } else if (tagName === 'u') {
+        format.isUnderline = true;
+      } else if (tagName.match(/^h[1-6]$/)) {
+        format.isHeading = parseInt(tagName[1]);
+      } else if (tagName === 'li') {
+        format.isList = true;
+        // Determinar si es lista ordenada o no
+        const parentList = element.parentElement;
+        format.isOrderedList = parentList?.tagName.toLowerCase() === 'ol';
+      } else if (tagName === 'p' || tagName === 'div') {
+        // Agregar salto de línea antes de párrafos (excepto el primero)
+        if (tokens.length > 0) {
+          tokens.push({ text: '\n' });
+        }
+      } else if (tagName === 'br') {
+        tokens.push({ text: '\n' });
+        return;
+      }
+      
+      // Procesar hijos recursivamente
+      element.childNodes.forEach(child => processNode(child, format));
+      
+      // Agregar salto de línea después de ciertos elementos
+      if (tagName.match(/^h[1-6]$/) || tagName === 'p' || tagName === 'li') {
+        tokens.push({ text: '\n' });
+      }
+    }
+  };
+  
+  container.childNodes.forEach(node => processNode(node));
+  
+  return tokens;
+};
+
+// Función para renderizar tokens en PDF
+const renderTokensInPDF = (
+  doc: jsPDF, 
+  tokens: ContentToken[], 
+  startY: number, 
+  documentData: any,
+  startPageNumber: number
+): { currentY: number; pageNumber: number } => {
   let currentY = startY;
   let pageNumber = startPageNumber;
+  let listCounter = 0;
   
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
     
-    // Verificar si necesitamos una nueva página
+    // Verificar espacio en la página
+    const lineHeight = token.isHeading ? 10 : 7;
     if (currentY + lineHeight > PAGE_HEIGHT - MARGIN_BOTTOM - FOOTER_HEIGHT) {
-      // Añadir pie de página a la página actual
       addFooter(doc, documentData.token, documentData.reviewed_by_lawyer_name);
-      
-      // Nueva página
       doc.addPage();
       pageNumber++;
       addHeader(doc, pageNumber);
       currentY = MARGIN_TOP + 25;
+      listCounter = 0;
     }
     
-    if (line.trim() === '') {
-      // Línea vacía - añadir espacio
-      currentY += lineHeight;
+    // Configurar fuente según formato
+    if (token.isHeading) {
+      doc.setFont('helvetica', 'bold');
+      const headingSizes = [18, 16, 14, 13, 12, 11];
+      doc.setFontSize(headingSizes[token.isHeading - 1] || 12);
+      doc.setTextColor(23, 37, 84);
     } else {
-      // Procesar línea con contenido, dividiendo si es muy larga
-      const wrappedLines = doc.splitTextToSize(line, maxWidth);
+      // Determinar estilo de fuente
+      let fontStyle: 'normal' | 'bold' | 'italic' | 'bolditalic' = 'normal';
+      if (token.isBold && token.isItalic) fontStyle = 'bolditalic';
+      else if (token.isBold) fontStyle = 'bold';
+      else if (token.isItalic) fontStyle = 'italic';
       
-      for (const wrappedLine of wrappedLines) {
-        // Verificar espacio para cada línea envuelta
-        if (currentY + lineHeight > PAGE_HEIGHT - MARGIN_BOTTOM - FOOTER_HEIGHT) {
-          addFooter(doc, documentData.token, documentData.reviewed_by_lawyer_name);
-          doc.addPage();
-          pageNumber++;
-          addHeader(doc, pageNumber);
-          currentY = MARGIN_TOP + 25;
-        }
-        
-        doc.text(wrappedLine.trim(), x, currentY);
-        currentY += lineHeight;
+      doc.setFont('helvetica', fontStyle);
+      doc.setFontSize(11);
+      doc.setTextColor(0, 0, 0);
+    }
+    
+    // Procesar el texto
+    if (token.text === '\n') {
+      currentY += token.isHeading ? 5 : 3;
+      listCounter = 0;
+      continue;
+    }
+    
+    let textToRender = token.text;
+    let xPosition = MARGIN_LEFT;
+    
+    // Manejar listas
+    if (token.isList) {
+      listCounter++;
+      const bullet = token.isOrderedList ? `${listCounter}. ` : '• ';
+      textToRender = bullet + textToRender;
+      xPosition = MARGIN_LEFT + 5;
+    }
+    
+    // Dividir texto si es muy largo
+    const maxWidth = CONTENT_WIDTH - (token.isList ? 5 : 0);
+    const lines = doc.splitTextToSize(textToRender, maxWidth);
+    
+    for (const line of lines) {
+      // Verificar espacio nuevamente por si el texto es muy largo
+      if (currentY + lineHeight > PAGE_HEIGHT - MARGIN_BOTTOM - FOOTER_HEIGHT) {
+        addFooter(doc, documentData.token, documentData.reviewed_by_lawyer_name);
+        doc.addPage();
+        pageNumber++;
+        addHeader(doc, pageNumber);
+        currentY = MARGIN_TOP + 25;
       }
+      
+      doc.text(line, xPosition, currentY);
+      
+      // Agregar subrayado si es necesario
+      if (token.isUnderline) {
+        const textWidth = doc.getTextWidth(line);
+        doc.setLineWidth(0.2);
+        doc.line(xPosition, currentY + 1, xPosition + textWidth, currentY + 1);
+      }
+      
+      currentY += lineHeight;
     }
   }
   
   return { currentY, pageNumber };
-};
-
-// Función para procesar párrafos y limpiar HTML manteniendo el formato
-const processDocumentContent = (content: string): string[] => {
-  // Primero limpiar todas las etiquetas HTML pero preservar estructura
-  let cleaned = content
-    // Convert lists to readable format
-    .replace(/<li[^>]*>/gi, '\n• ')
-    .replace(/<\/li>/gi, '')
-    .replace(/<ul[^>]*>|<\/ul>/gi, '\n')
-    .replace(/<ol[^>]*>|<\/ol>/gi, '\n')
-    // Convert headings
-    .replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, '\n\n$1\n')
-    // Convert paragraphs
-    .replace(/<p[^>]*>/gi, '\n')
-    .replace(/<\/p>/gi, '\n')
-    // Convert line breaks
-    .replace(/<br\s*\/?>/gi, '\n')
-    // Remove remaining HTML tags
-    .replace(/<[^>]+>/g, '')
-    // Clean HTML entities
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&apos;/g, "'")
-    // Clean special characters
-    .replace(/[\u2018\u2019]/g, "'")
-    .replace(/[\u201C\u201D]/g, '"')
-    .replace(/[\u2013\u2014]/g, "-")
-    .replace(/[\u2026]/g, "...")
-    .replace(/[\u00A0]/g, " ");
-
-  // Dividir por dobles saltos de línea para párrafos
-  const paragraphs = cleaned.split(/\n\s*\n/);
-  
-  return paragraphs.map(paragraph => {
-    // Limpiar espacios excesivos pero mantener la estructura
-    return paragraph.replace(/\s+/g, ' ').trim();
-  }).filter(paragraph => paragraph.length > 0);
 };
 
 export const generatePDFDownload = (documentData: any, toast?: (options: any) => void) => {
@@ -176,7 +256,7 @@ export const generatePDFDownload = (documentData: any, toast?: (options: any) =>
     let pageNumber = 1;
     
     // Configurar fuente predeterminada
-    doc.setFont('Arial', 'normal');
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(12);
     
     // Añadir encabezado a la primera página
@@ -185,7 +265,7 @@ export const generatePDFDownload = (documentData: any, toast?: (options: any) =>
     // Título del documento
     let currentY = MARGIN_TOP + 25;
     doc.setTextColor(23, 37, 84);
-    doc.setFont('Arial', 'bold');
+    doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);
     
     const title = documentData.document_type || 'DOCUMENTO LEGAL';
@@ -204,19 +284,12 @@ export const generatePDFDownload = (documentData: any, toast?: (options: any) =>
     doc.line(MARGIN_LEFT, currentY, PAGE_WIDTH - MARGIN_RIGHT, currentY);
     currentY += 8;
     
-    // Contenido del documento
-    doc.setTextColor(0, 0, 0);
-    doc.setFont('Arial', 'normal');
-    doc.setFontSize(12);
-    
+    // Procesar contenido HTML
     const content = documentData.document_content || 'Contenido del documento no disponible.';
+    const tokens = processHtmlContent(content);
     
-    // Procesar el contenido manteniendo el formato original
-    const formattedContent = content.replace(/\r\n/g, '\n'); // Normalizar saltos de línea
-    
-    // Añadir contenido con manejo automático de páginas
-    const result = addFormattedText(doc, formattedContent, MARGIN_LEFT, currentY, CONTENT_WIDTH, 6, documentData, pageNumber);
-    currentY = result.currentY;
+    // Renderizar tokens en PDF
+    const result = renderTokensInPDF(doc, tokens, currentY, documentData, pageNumber);
     pageNumber = result.pageNumber;
     
     // Añadir pie de página a la última página

@@ -1,5 +1,10 @@
+import { sanitizeHtml } from '@/utils/htmlSanitizer';
+
 export const handlePreviewDocument = (documentData: any) => {
   if (!documentData) return;
+  
+  // Sanitizar HTML antes de renderizar
+  const sanitizedContent = sanitizeHtml(documentData.document_content);
   
   // Create a preview window with proper viewport and anti-aliasing settings
   const previewWindow = window.open('', '_blank', 'width=900,height=700,scrollbars=yes,resizable=yes');
@@ -51,10 +56,76 @@ export const handlePreviewDocument = (documentData: any) => {
               line-height: 1.3;
             }
             .content { 
-              white-space: pre-line;
               font-size: 1rem;
               line-height: 1.7;
               color: #444444;
+            }
+            /* Estilos para elementos HTML del editor */
+            .content p {
+              margin-bottom: 1em;
+            }
+            .content strong, .content b {
+              font-weight: 700;
+              color: #1a1a1a;
+            }
+            .content em, .content i {
+              font-style: italic;
+            }
+            .content u {
+              text-decoration: underline;
+            }
+            .content s {
+              text-decoration: line-through;
+            }
+            .content h1, .content h2, .content h3, .content h4, .content h5, .content h6 {
+              font-weight: 700;
+              color: #1a1a1a;
+              margin-top: 1.5em;
+              margin-bottom: 0.75em;
+              line-height: 1.3;
+            }
+            .content h1 { font-size: 2em; }
+            .content h2 { font-size: 1.75em; }
+            .content h3 { font-size: 1.5em; }
+            .content h4 { font-size: 1.25em; }
+            .content h5 { font-size: 1.1em; }
+            .content h6 { font-size: 1em; }
+            .content ul, .content ol {
+              margin: 1em 0;
+              padding-left: 2em;
+            }
+            .content ul {
+              list-style-type: disc;
+            }
+            .content ol {
+              list-style-type: decimal;
+            }
+            .content li {
+              margin-bottom: 0.5em;
+              line-height: 1.6;
+            }
+            .content blockquote {
+              border-left: 4px solid #ddd;
+              padding-left: 1em;
+              margin: 1em 0;
+              color: #666;
+              font-style: italic;
+            }
+            .content pre {
+              background: #f5f5f5;
+              padding: 1em;
+              border-radius: 4px;
+              overflow-x: auto;
+            }
+            .content code {
+              background: #f5f5f5;
+              padding: 0.2em 0.4em;
+              border-radius: 3px;
+              font-family: monospace;
+            }
+            .content a {
+              color: #3b82f6;
+              text-decoration: underline;
             }
             @media (max-width: 768px) {
               body {
@@ -69,7 +140,7 @@ export const handlePreviewDocument = (documentData: any) => {
         <body>
           <div class="watermark">VISTA PREVIA</div>
           <h1>${documentData.document_type}</h1>
-          <div class="content">${documentData.document_content}</div>
+          <div class="content">${sanitizedContent}</div>
         </body>
       </html>
     `);
