@@ -1,82 +1,113 @@
 import jsPDF from 'jspdf';
 
-// Configuración de márgenes y dimensiones
+// Configuración de márgenes y dimensiones - Layout elegante
 const PAGE_WIDTH = 210; // mm (A4)
 const PAGE_HEIGHT = 297; // mm (A4)
-const MARGIN_LEFT = 25; // mm - Margen izquierdo
-const MARGIN_RIGHT = 20; // mm - Margen derecho
-const MARGIN_TOP = 20; // mm - Margen superior
-const MARGIN_BOTTOM = 30; // mm - Margen inferior
+const MARGIN_LEFT = 20; // mm - Margen izquierdo elegante
+const MARGIN_RIGHT = 20; // mm - Margen derecho simétrico
+const MARGIN_TOP = 15; // mm - Margen superior moderno
+const MARGIN_BOTTOM = 25; // mm - Margen inferior
 const CONTENT_WIDTH = PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT; // Ancho disponible para contenido
-const HEADER_HEIGHT = 15; // mm
+const HEADER_HEIGHT = 20; // mm - Header más amplio
 const FOOTER_HEIGHT = 20; // mm
 
+// Paleta de colores moderna y profesional
+const COLORS = {
+  primary: [3, 114, 232], // Azul corporativo elegante
+  primaryDark: [1, 15, 36], // Azul oscuro sofisticado
+  accent: [242, 187, 49], // Dorado elegante para acentos
+  text: [40, 40, 40], // Gris oscuro para texto principal
+  textLight: [100, 100, 100], // Gris medio para texto secundario
+  divider: [220, 220, 220], // Líneas sutiles
+  white: [255, 255, 255],
+};
+
 const addHeader = (doc: jsPDF, pageNumber: number) => {
-  // Línea superior elegante
-  doc.setDrawColor(23, 37, 84); // Navy blue
-  doc.setLineWidth(2);
-  doc.line(MARGIN_LEFT, MARGIN_TOP, PAGE_WIDTH - MARGIN_RIGHT, MARGIN_TOP);
+  // Fondo sutil del header
+  doc.setFillColor(COLORS.primaryDark[0], COLORS.primaryDark[1], COLORS.primaryDark[2]);
+  doc.rect(0, 0, PAGE_WIDTH, HEADER_HEIGHT, 'F');
   
-  // Título de la empresa
-  doc.setTextColor(23, 37, 84);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(14);
-  doc.text('TU CONSULTOR LEGAL', MARGIN_LEFT, MARGIN_TOP + 8);
+  // Línea decorativa de acento
+  doc.setFillColor(COLORS.accent[0], COLORS.accent[1], COLORS.accent[2]);
+  doc.rect(0, HEADER_HEIGHT - 1, PAGE_WIDTH, 1, 'F');
   
-  // Número de página (derecha)
-  doc.setTextColor(100, 100, 100);
+  // Logo/Título de la empresa con tipografía elegante
+  doc.setTextColor(COLORS.white[0], COLORS.white[1], COLORS.white[2]);
+  doc.setFont('times', 'bold');
+  doc.setFontSize(16);
+  doc.text('TU CONSULTOR LEGAL', MARGIN_LEFT, MARGIN_TOP - 3);
+  
+  // Subtítulo elegante
+  doc.setFont('times', 'italic');
+  doc.setFontSize(9);
+  doc.setTextColor(COLORS.accent[0], COLORS.accent[1], COLORS.accent[2]);
+  doc.text('Excelencia Jurídica', MARGIN_LEFT, MARGIN_TOP + 3);
+  
+  // Número de página con estilo moderno
+  doc.setTextColor(COLORS.white[0], COLORS.white[1], COLORS.white[2]);
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
-  const pageText = `Página ${pageNumber}`;
+  doc.setFontSize(9);
+  const pageText = `${pageNumber}`;
   const pageTextWidth = doc.getTextWidth(pageText);
-  doc.text(pageText, PAGE_WIDTH - MARGIN_RIGHT - pageTextWidth, MARGIN_TOP + 8);
   
-  // Línea separadora inferior
-  doc.setDrawColor(200, 200, 200);
-  doc.setLineWidth(0.5);
-  doc.line(MARGIN_LEFT, MARGIN_TOP + 12, PAGE_WIDTH - MARGIN_RIGHT, MARGIN_TOP + 12);
+  // Círculo decorativo para el número de página
+  doc.setFillColor(COLORS.accent[0], COLORS.accent[1], COLORS.accent[2]);
+  doc.circle(PAGE_WIDTH - MARGIN_RIGHT - 5, MARGIN_TOP - 6, 4, 'F');
+  doc.setTextColor(COLORS.primaryDark[0], COLORS.primaryDark[1], COLORS.primaryDark[2]);
+  doc.text(pageText, PAGE_WIDTH - MARGIN_RIGHT - 5 - pageTextWidth / 2, MARGIN_TOP - 4);
 };
 
 const addFooter = (doc: jsPDF, token: string, reviewedByLawyer?: string) => {
-  const footerY = PAGE_HEIGHT - MARGIN_BOTTOM;
+  const footerY = PAGE_HEIGHT - MARGIN_BOTTOM + 3;
   
-  // Línea separadora superior
-  doc.setDrawColor(200, 200, 200);
-  doc.setLineWidth(0.5);
+  // Línea decorativa superior elegante
+  doc.setDrawColor(COLORS.accent[0], COLORS.accent[1], COLORS.accent[2]);
+  doc.setLineWidth(0.3);
   doc.line(MARGIN_LEFT, footerY, PAGE_WIDTH - MARGIN_RIGHT, footerY);
   
-  // Información del token (izquierda)
-  doc.setTextColor(60, 60, 60);
+  // Información del token con diseño moderno
+  doc.setTextColor(COLORS.textLight[0], COLORS.textLight[1], COLORS.textLight[2]);
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.text(`Token de verificación: ${token}`, MARGIN_LEFT, footerY + 6);
+  doc.setFontSize(8);
+  doc.text(`Token: ${token}`, MARGIN_LEFT, footerY + 5);
   
-  // Fecha de generación (centro)
+  // Fecha de generación con formato elegante
   const now = new Date();
-  const dateText = `Generado el ${now.toLocaleDateString('es-ES')} a las ${now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`;
+  const dateText = `${now.toLocaleDateString('es-ES', { 
+    day: '2-digit', 
+    month: 'long', 
+    year: 'numeric' 
+  })}`;
   const dateTextWidth = doc.getTextWidth(dateText);
-  doc.text(dateText, (PAGE_WIDTH - dateTextWidth) / 2, footerY + 6);
+  doc.text(dateText, (PAGE_WIDTH - dateTextWidth) / 2, footerY + 5);
   
-  // Sitio web (derecha)
-  doc.setTextColor(59, 130, 246);
+  // Sitio web con estilo de link
+  doc.setTextColor(COLORS.primary[0], COLORS.primary[1], COLORS.primary[2]);
+  doc.setFont('helvetica', 'italic');
   const webText = 'www.tuconsultorlegal.co';
   const webTextWidth = doc.getTextWidth(webText);
-  doc.text(webText, PAGE_WIDTH - MARGIN_RIGHT - webTextWidth, footerY + 6);
+  doc.text(webText, PAGE_WIDTH - MARGIN_RIGHT - webTextWidth, footerY + 5);
   
-  // Información del abogado revisor (si está disponible)
+  // Información del abogado revisor con diseño destacado
   if (reviewedByLawyer) {
-    doc.setTextColor(80, 80, 80);
-    doc.setFontSize(9);
-    const reviewText = `Documento revisado por: ${reviewedByLawyer}`;
-    doc.text(reviewText, MARGIN_LEFT, footerY + 12);
+    doc.setFillColor(COLORS.accent[0], COLORS.accent[1], COLORS.accent[2]);
+    doc.setDrawColor(COLORS.accent[0], COLORS.accent[1], COLORS.accent[2]);
+    doc.roundedRect(MARGIN_LEFT - 2, footerY + 8, 3, 3, 0.5, 0.5, 'FD');
+    
+    doc.setTextColor(COLORS.text[0], COLORS.text[1], COLORS.text[2]);
+    doc.setFont('times', 'italic');
+    doc.setFontSize(8);
+    const reviewText = `Revisado por: ${reviewedByLawyer}`;
+    doc.text(reviewText, MARGIN_LEFT + 3, footerY + 11);
   }
   
-  // Línea de autenticidad
-  doc.setTextColor(80, 80, 80);
-  doc.setFontSize(8);
-  const authText = 'Documento generado digitalmente por Tu Consultor Legal - Válido sin firma física';
+  // Línea de autenticidad con diseño moderno
+  doc.setTextColor(COLORS.textLight[0], COLORS.textLight[1], COLORS.textLight[2]);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+  const authText = 'Documento digital certificado - Válido sin firma';
   const authTextWidth = doc.getTextWidth(authText);
-  doc.text(authText, (PAGE_WIDTH - authTextWidth) / 2, footerY + (reviewedByLawyer ? 18 : 12));
+  doc.text(authText, (PAGE_WIDTH - authTextWidth) / 2, footerY + (reviewedByLawyer ? 16 : 11));
 };
 
 // Interfaz extendida para tokens de contenido con estilos inline
@@ -285,25 +316,27 @@ const renderTokensInPDF = (
       doc.addPage();
       pageNumber++;
       addHeader(doc, pageNumber);
-      currentY = MARGIN_TOP + 25;
+      currentY = HEADER_HEIGHT + 10;
       listCounter = 0;
     }
     
-    // Configurar fuente según formato
+    // Configurar fuente según formato con tipografía elegante
     if (token.isHeading) {
-      doc.setFont('helvetica', 'bold');
-      const headingSizes = [18, 16, 14, 13, 12, 11];
+      doc.setFont('times', 'bold');
+      const headingSizes = [20, 18, 16, 14, 13, 12];
       doc.setFontSize(headingSizes[token.isHeading - 1] || 12);
-      doc.setTextColor(23, 37, 84);
+      doc.setTextColor(COLORS.primaryDark[0], COLORS.primaryDark[1], COLORS.primaryDark[2]);
     } else {
-      // Determinar estilo de fuente
+      // Determinar estilo de fuente con Times para un look más profesional
+      let fontFamily: 'times' | 'helvetica' = 'times';
       let fontStyle: 'normal' | 'bold' | 'italic' | 'bolditalic' = 'normal';
+      
       if (token.isBold && token.isItalic) fontStyle = 'bolditalic';
       else if (token.isBold) fontStyle = 'bold';
       else if (token.isItalic) fontStyle = 'italic';
       
-      doc.setFont('helvetica', fontStyle);
-      doc.setFontSize(token.fontSize || 11);
+      doc.setFont(fontFamily, fontStyle);
+      doc.setFontSize(token.fontSize || 11.5);
       
       // Aplicar color si está definido
       if (token.color) {
@@ -311,10 +344,10 @@ const renderTokensInPDF = (
         if (rgb) {
           doc.setTextColor(rgb[0], rgb[1], rgb[2]);
         } else {
-          doc.setTextColor(0, 0, 0);
+          doc.setTextColor(COLORS.text[0], COLORS.text[1], COLORS.text[2]);
         }
       } else {
-        doc.setTextColor(0, 0, 0);
+        doc.setTextColor(COLORS.text[0], COLORS.text[1], COLORS.text[2]);
       }
     }
     
@@ -355,7 +388,7 @@ const renderTokensInPDF = (
         doc.addPage();
         pageNumber++;
         addHeader(doc, pageNumber);
-        currentY = MARGIN_TOP + 25;
+        currentY = HEADER_HEIGHT + 10;
       }
       
       // Calcular posición X según alineación
@@ -421,27 +454,43 @@ export const generatePDFDownload = (documentData: any, toast?: (options: any) =>
     // Añadir encabezado a la primera página
     addHeader(doc, pageNumber);
     
-    // Título del documento
-    let currentY = MARGIN_TOP + 25;
-    doc.setTextColor(23, 37, 84);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(16);
+    // Título del documento con diseño moderno y elegante
+    let currentY = HEADER_HEIGHT + 15;
+    
+    // Caja decorativa para el título
+    doc.setFillColor(COLORS.primaryDark[0], COLORS.primaryDark[1], COLORS.primaryDark[2]);
+    doc.roundedRect(MARGIN_LEFT - 3, currentY - 8, CONTENT_WIDTH + 6, 18, 2, 2, 'F');
+    
+    // Borde decorativo con color de acento
+    doc.setDrawColor(COLORS.accent[0], COLORS.accent[1], COLORS.accent[2]);
+    doc.setLineWidth(0.8);
+    doc.roundedRect(MARGIN_LEFT - 3, currentY - 8, CONTENT_WIDTH + 6, 18, 2, 2, 'S');
+    
+    // Título en tipografía elegante
+    doc.setTextColor(COLORS.white[0], COLORS.white[1], COLORS.white[2]);
+    doc.setFont('times', 'bold');
+    doc.setFontSize(18);
     
     const title = documentData.document_type || 'DOCUMENTO LEGAL';
-    const titleLines = doc.splitTextToSize(title.toUpperCase(), CONTENT_WIDTH);
-    titleLines.forEach((line: string) => {
+    const titleLines = doc.splitTextToSize(title.toUpperCase(), CONTENT_WIDTH - 10);
+    titleLines.forEach((line: string, index: number) => {
       const lineWidth = doc.getTextWidth(line);
-      doc.text(line, (PAGE_WIDTH - lineWidth) / 2, currentY); // Centrado
-      currentY += 8;
+      doc.text(line, (PAGE_WIDTH - lineWidth) / 2, currentY + (index * 7)); // Centrado
     });
     
-    currentY += 10; // Espacio después del título
+    currentY += 18 + (titleLines.length - 1) * 7;
     
-    // Línea separadora antes del contenido
-    doc.setDrawColor(220, 220, 220);
-    doc.setLineWidth(0.3);
-    doc.line(MARGIN_LEFT, currentY, PAGE_WIDTH - MARGIN_RIGHT, currentY);
+    // Línea decorativa elegante antes del contenido
     currentY += 8;
+    doc.setDrawColor(COLORS.accent[0], COLORS.accent[1], COLORS.accent[2]);
+    doc.setLineWidth(0.5);
+    doc.line(MARGIN_LEFT + 30, currentY, PAGE_WIDTH - MARGIN_RIGHT - 30, currentY);
+    
+    // Ornamento central
+    doc.setFillColor(COLORS.accent[0], COLORS.accent[1], COLORS.accent[2]);
+    doc.circle(PAGE_WIDTH / 2, currentY, 1.5, 'F');
+    
+    currentY += 10;
     
     // Procesar contenido HTML
     const content = documentData.document_content || 'Contenido del documento no disponible.';
