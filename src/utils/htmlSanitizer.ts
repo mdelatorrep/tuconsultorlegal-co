@@ -26,7 +26,14 @@ export const sanitizeHtml = (html: string): string => {
         'text-align': [/^left$/, /^right$/, /^center$/, /^justify$/],
         'font-weight': [/^bold$/, /^normal$/, /^\d+$/],
         'font-style': [/^italic$/, /^normal$/],
-        'text-decoration': [/^underline$/, /^line-through$/, /^none$/]
+        'text-decoration': [/^underline$/, /^line-through$/, /^none$/],
+        'font-size': [/^\d+px$/, /^\d+pt$/, /^\d+em$/, /^\d+rem$/, /^(xx-small|x-small|small|medium|large|x-large|xx-large)$/],
+        'line-height': [/^\d+(\.\d+)?$/, /^\d+px$/, /^\d+em$/, /^\d+%$/],
+        'margin': [/^\d+px$/, /^\d+em$/, /^auto$/],
+        'margin-top': [/^\d+px$/, /^\d+em$/],
+        'margin-bottom': [/^\d+px$/, /^\d+em$/],
+        'padding': [/^\d+px$/, /^\d+em$/],
+        'white-space': [/^pre$/, /^pre-wrap$/, /^normal$/]
       }
     }
   };

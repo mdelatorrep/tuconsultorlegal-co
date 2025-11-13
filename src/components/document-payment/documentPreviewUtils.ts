@@ -59,10 +59,17 @@ export const handlePreviewDocument = (documentData: any) => {
               font-size: 1rem;
               line-height: 1.7;
               color: #444444;
+              white-space: pre-wrap;
+              word-wrap: break-word;
+            }
+            /* Preservar estilos inline de ReactQuill */
+            .content * {
+              white-space: pre-wrap;
             }
             /* Estilos para elementos HTML del editor */
             .content p {
               margin-bottom: 1em;
+              white-space: pre-wrap;
             }
             .content strong, .content b {
               font-weight: 700;
