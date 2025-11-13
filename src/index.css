@@ -385,8 +385,67 @@ All colors MUST be HSL.
   }
 
   .ql-editor {
-    min-height: 400px;
+    min-height: 300px;
+    max-height: 500px;
+    overflow-y: auto;
+    padding: 15px;
+    line-height: 1.8;
     color: hsl(var(--foreground));
+  }
+
+  .ql-editor p {
+    margin-bottom: 1em;
+  }
+
+  .ql-editor strong {
+    font-weight: bold;
+    color: hsl(var(--foreground));
+  }
+
+  .ql-editor em {
+    font-style: italic;
+  }
+
+  .ql-editor u {
+    text-decoration: underline;
+  }
+
+  .ql-editor s {
+    text-decoration: line-through;
+  }
+
+  .ql-editor h1, .ql-editor h2, .ql-editor h3, 
+  .ql-editor h4, .ql-editor h5, .ql-editor h6 {
+    font-weight: 700;
+    color: hsl(var(--foreground));
+    margin-top: 1.5em;
+    margin-bottom: 0.75em;
+    line-height: 1.3;
+  }
+
+  .ql-editor h1 { font-size: 2em; }
+  .ql-editor h2 { font-size: 1.75em; }
+  .ql-editor h3 { font-size: 1.5em; }
+  .ql-editor h4 { font-size: 1.25em; }
+  .ql-editor h5 { font-size: 1.1em; }
+  .ql-editor h6 { font-size: 1em; }
+
+  .ql-editor ul, .ql-editor ol {
+    padding-left: 2em;
+    margin: 1em 0;
+  }
+
+  .ql-editor ul {
+    list-style-type: disc;
+  }
+
+  .ql-editor ol {
+    list-style-type: decimal;
+  }
+
+  .ql-editor li {
+    margin-bottom: 0.5em;
+    line-height: 1.6;
   }
 
   .ql-editor.ql-blank::before {
@@ -422,5 +481,36 @@ All colors MUST be HSL.
   .ql-toolbar button:focus .ql-fill,
   .ql-toolbar button.ql-active .ql-fill {
     fill: hsl(var(--primary)) !important;
+  }
+
+  /* Dark mode compatibility for ReactQuill */
+  .dark .ql-toolbar {
+    background: hsl(var(--muted));
+    border-color: hsl(var(--border));
+  }
+
+  .dark .ql-container {
+    background: hsl(var(--background));
+    border-color: hsl(var(--border));
+  }
+
+  .dark .ql-editor {
+    color: hsl(var(--foreground));
+  }
+
+  .dark .ql-editor.ql-blank::before {
+    color: hsl(var(--muted-foreground));
+  }
+
+  .dark .ql-stroke {
+    stroke: hsl(var(--foreground));
+  }
+
+  .dark .ql-fill {
+    fill: hsl(var(--foreground));
+  }
+
+  .dark .ql-picker-label {
+    color: hsl(var(--foreground));
   }
 }

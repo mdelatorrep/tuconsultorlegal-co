@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useBoldCheckout } from "./document-payment/useBoldCheckout";
 import { generatePDFDownload } from "./document-payment/pdfGenerator";
 import DOMPurify from 'dompurify';
+import { extractPlainText } from '@/utils/htmlSanitizer';
 
 interface UnifiedDocumentPageProps {
   onOpenChat: (message: string) => void;
@@ -616,11 +617,16 @@ export default function UnifiedDocumentPage({ onOpenChat }: UnifiedDocumentPageP
 
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Contenido (Vista Previa)</Label>
-                  <Textarea
-                    value={documentData.document_content?.substring(0, 200) + "..."}
-                    readOnly
-                    className="mt-2 h-32 resize-none bg-muted"
-                  />
+                  <div className="mt-2 p-3 bg-muted rounded-md border min-h-[100px] max-h-[150px] overflow-y-auto">
+                    <p className="text-sm text-muted-foreground line-clamp-6">
+                      {documentData.document_content 
+                        ? extractPlainText(documentData.document_content).substring(0, 300) + "..."
+                        : "Sin contenido disponible"}
+                    </p>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Haz clic en "Ver Vista Previa Completa" para ver el documento formateado
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">

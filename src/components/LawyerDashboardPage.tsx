@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Bot, Plus, Settings, LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Lock, Crown, Users, SpellCheck, AlertCircle, Clock, FileImage, Send, Mail } from "lucide-react";
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import LawyerStatsSection from "./LawyerStatsSection";
@@ -54,6 +56,23 @@ interface DocumentToken {
 interface LawyerDashboardPageProps {
   onOpenChat: (message: string) => void;
 }
+
+// ReactQuill configuration
+const quillModules = {
+  toolbar: [
+    [{ 'header': [1, 2, 3, false] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+    [{ 'align': [] }],
+    [{ 'color': [] }, { 'background': [] }],
+    ['clean']
+  ],
+};
+
+const quillFormats = [
+  'header', 'bold', 'italic', 'underline', 'strike',
+  'list', 'bullet', 'align', 'color', 'background'
+];
 
 export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageProps) {
   const [documents, setDocuments] = useState<DocumentToken[]>([]);
@@ -1298,12 +1317,20 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                               Vista Previa PDF
                             </Button>
                           </div>
-                          <Textarea
-                            value={editedContent}
-                            onChange={(e) => setEditedContent(e.target.value)}
-                            placeholder="Revisa y edita el contenido del documento según sea necesario..."
-                            className="min-h-[200px] font-mono text-sm"
-                          />
+                          <div className="border rounded-md bg-background">
+                            <ReactQuill
+                              theme="snow"
+                              value={editedContent}
+                              onChange={setEditedContent}
+                              modules={quillModules}
+                              formats={quillFormats}
+                              className="min-h-[300px]"
+                              placeholder="Revisa y edita el contenido del documento según sea necesario..."
+                            />
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Usa la barra de herramientas para dar formato al texto: negritas, cursivas, listas, alineación, colores, etc.
+                          </p>
                         </div>
 
                         {/* Lawyer Comments Section */}
