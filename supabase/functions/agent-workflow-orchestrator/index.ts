@@ -627,7 +627,7 @@ async function handleGenerateDocument(supabase: any, args: any, legalAgent: any,
     }
 
     const token = tokenData.token;
-    const trackingUrl = `https://tuconsultorlegal.co/documento/${token}`;
+    const trackingUrl = `https://tuconsultorlegal.co/#documento?code=${token}`;
 
     // Extract key document details for the response
     const documentDetails = [];
