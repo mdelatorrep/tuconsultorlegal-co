@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import OpenAIAgentDebug from "./OpenAIAgentDebug";
+import { sanitizeHtml } from "@/utils/htmlSanitizer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -1494,9 +1495,15 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                 
                 <div>
                   <h4 className="font-semibold mb-2">Plantilla del Documento</h4>
-                  <div className="p-4 bg-muted rounded-md text-xs font-mono max-h-40 overflow-y-auto">
-                    {selectedAgent.template_content}
-                  </div>
+                  <div 
+                    className="p-4 bg-muted rounded-md text-sm max-h-80 overflow-y-auto"
+                    style={{
+                      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                      lineHeight: '1.6',
+                      color: 'hsl(var(--foreground))'
+                    }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(selectedAgent.template_content) }}
+                  />
                 </div>
                 
                 <div>
