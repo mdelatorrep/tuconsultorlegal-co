@@ -38,12 +38,18 @@ export const getPreviewStyles = () => `
     line-height: 1.7;
     color: ${PREVIEW_COLORS.text};
     text-align: justify;
+    white-space: pre-wrap;
   }
 
   /* Preserve inline styles from ReactQuill editor */
   .preview-content * {
     /* Allow inline styles to take precedence */
     line-height: inherit;
+    white-space: pre-wrap;
+  }
+  
+  .preview-content div {
+    white-space: pre-wrap;
   }
 
   .preview-content p {
