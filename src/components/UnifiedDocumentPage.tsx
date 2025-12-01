@@ -1039,7 +1039,7 @@ export default function UnifiedDocumentPage({ onOpenChat }: UnifiedDocumentPageP
       {/* PDF Preview Dialog */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
         <DialogContent 
-          className={`bg-background border-border ${isPreviewMaximized ? 'max-w-[95vw] h-[95vh]' : 'max-w-4xl max-h-[85vh]'} p-0 transition-all duration-300`}
+          className={`bg-background border-border ${isPreviewMaximized ? 'max-w-[95vw] h-[95vh]' : 'max-w-4xl max-h-[85vh]'} p-0 transition-all duration-300 overflow-hidden flex flex-col`}
         >
           <DialogHeader className="px-6 py-4 border-b border-border bg-background z-50 sticky top-0">
             <div className="flex items-center justify-between">
@@ -1080,7 +1080,7 @@ export default function UnifiedDocumentPage({ onOpenChat }: UnifiedDocumentPageP
             </div>
           </DialogHeader>
           
-          <div className="relative overflow-y-auto overflow-x-hidden h-full bg-muted/30">
+          <div className="relative overflow-y-auto overflow-x-hidden flex-1 bg-muted/30">
             {/* Watermark overlay */}
             <div className="fixed inset-0 pointer-events-none z-10 select-none">
               <div 
