@@ -26,12 +26,13 @@ export const handlePreviewDocument = (documentData: any) => {
               line-height: 1.6;
             }
             body { 
-              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+              font-family: "Times New Roman", Times, serif;
+              font-size: 12pt;
               padding: 30px; 
               position: relative;
               margin: 0;
               background: #ffffff;
-              color: #333333;
+              color: #282828;
               max-width: 800px;
               margin: 0 auto;
               box-sizing: border-box;
@@ -49,31 +50,32 @@ export const handlePreviewDocument = (documentData: any) => {
               letter-spacing: 0.1em;
             }
             h1 {
+              font-family: Helvetica, Arial, sans-serif;
               font-size: 1.75rem;
               font-weight: 600;
-              color: #1a1a1a;
+              color: #0372E8;
               margin-bottom: 1.5rem;
               line-height: 1.3;
             }
             .content { 
-              font-size: 1rem;
+              font-family: "Times New Roman", Times, serif;
+              font-size: 12pt;
               line-height: 1.7;
-              color: #444444;
+              color: #282828;
               white-space: pre-wrap;
               word-wrap: break-word;
+              text-align: justify;
             }
-            /* Preservar estilos inline de ReactQuill */
+            /* Preserve inline styles from ReactQuill */
             .content * {
               white-space: pre-wrap;
             }
-            /* Estilos para elementos HTML del editor */
             .content p {
               margin-bottom: 1em;
               white-space: pre-wrap;
             }
             .content strong, .content b {
               font-weight: 700;
-              color: #1a1a1a;
             }
             .content em, .content i {
               font-style: italic;
@@ -84,9 +86,11 @@ export const handlePreviewDocument = (documentData: any) => {
             .content s {
               text-decoration: line-through;
             }
+            /* Headings with corporate color */
             .content h1, .content h2, .content h3, .content h4, .content h5, .content h6 {
+              font-family: Helvetica, Arial, sans-serif;
+              color: #0372E8;
               font-weight: 700;
-              color: #1a1a1a;
               margin-top: 1.5em;
               margin-bottom: 0.75em;
               line-height: 1.3;
@@ -131,8 +135,15 @@ export const handlePreviewDocument = (documentData: any) => {
               font-family: monospace;
             }
             .content a {
-              color: #3b82f6;
+              color: #0372E8;
               text-decoration: underline;
+            }
+            .content blockquote {
+              border-left: 4px solid #cccccc;
+              padding-left: 1em;
+              margin: 1em 0;
+              color: #666;
+              font-style: italic;
             }
             @media (max-width: 768px) {
               body {
