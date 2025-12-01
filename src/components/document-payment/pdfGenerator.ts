@@ -32,20 +32,12 @@ const addFooter = (doc: jsPDF, token: string, reviewedByLawyer?: string) => {
   doc.setLineWidth(0.3);
   doc.line(MARGIN_LEFT, footerY, PAGE_WIDTH - MARGIN_RIGHT, footerY);
 
-  // Información del token con diseño moderno
+  // Primera línea: Token (izquierda) y Revisado por (derecha)
   doc.setTextColor(COLORS.textLight[0], COLORS.textLight[1], COLORS.textLight[2]);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.text(`Token: ${token}`, MARGIN_LEFT, footerY + 5);
 
-  // Sitio web con estilo de link (centrado)
-  doc.setTextColor(COLORS.primary[0], COLORS.primary[1], COLORS.primary[2]);
-  doc.setFont("helvetica", "normal");
-  const webText = "www.tuconsultorlegal.co";
-  const webTextWidth = doc.getTextWidth(webText);
-  doc.text(webText, (PAGE_WIDTH - webTextWidth) / 2, footerY + 5);
-
-  // Información del abogado revisor con diseño destacado (alineado a la derecha)
   if (reviewedByLawyer) {
     doc.setTextColor(COLORS.text[0], COLORS.text[1], COLORS.text[2]);
     doc.setFont("helvetica", "bold");
@@ -54,6 +46,14 @@ const addFooter = (doc: jsPDF, token: string, reviewedByLawyer?: string) => {
     const reviewTextWidth = doc.getTextWidth(reviewText);
     doc.text(reviewText, PAGE_WIDTH - MARGIN_RIGHT - reviewTextWidth, footerY + 5);
   }
+
+  // Segunda línea: Sitio web centrado
+  doc.setTextColor(COLORS.primary[0], COLORS.primary[1], COLORS.primary[2]);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  const webText = "www.tuconsultorlegal.co";
+  const webTextWidth = doc.getTextWidth(webText);
+  doc.text(webText, (PAGE_WIDTH - webTextWidth) / 2, footerY + 11);
 };
 
 // Interfaz extendida para tokens de contenido con estilos inline
