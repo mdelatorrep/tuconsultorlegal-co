@@ -551,7 +551,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                   -moz-osx-font-smoothing: grayscale;
                 }
                 body {
-                  font-family: Arial, sans-serif;
+                  font-family: "Times New Roman", Times, serif;
                   background: #e5e5e5;
                   padding: 20px;
                 }
@@ -590,18 +590,19 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                   text-transform: uppercase;
                 }
                 .content {
-                  color: #000;
-                  font-size: 14px;
+                  font-family: "Times New Roman", Times, serif;
+                  color: #282828;
+                  font-size: 12pt;
                   line-height: 1.7;
                   text-align: justify;
                 }
-                /* Estilos para elementos HTML del editor */
+                /* Preserve inline styles from ReactQuill */
                 .content p {
                   margin-bottom: 1em;
+                  white-space: pre-wrap;
                 }
                 .content strong, .content b {
                   font-weight: 700;
-                  color: #000;
                 }
                 .content em, .content i {
                   font-style: italic;
@@ -612,17 +613,19 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                 .content s {
                   text-decoration: line-through;
                 }
+                /* Headings with corporate color */
                 .content h1, .content h2, .content h3, .content h4, .content h5, .content h6 {
+                  font-family: Helvetica, Arial, sans-serif;
+                  color: #0372E8;
                   font-weight: 700;
-                  color: #000;
                   margin-top: 1.5em;
                   margin-bottom: 0.75em;
                   line-height: 1.3;
                 }
-                .content h1 { font-size: 1.8em; }
-                .content h2 { font-size: 1.6em; }
-                .content h3 { font-size: 1.4em; }
-                .content h4 { font-size: 1.2em; }
+                .content h1 { font-size: 2em; }
+                .content h2 { font-size: 1.75em; }
+                .content h3 { font-size: 1.5em; }
+                .content h4 { font-size: 1.25em; }
                 .content h5 { font-size: 1.1em; }
                 .content h6 { font-size: 1em; }
                 .content ul, .content ol {
@@ -637,14 +640,18 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                 }
                 .content li {
                   margin-bottom: 0.5em;
-                  line-height: 1.6;
+                  line-height: 1.7;
                 }
                 .content blockquote {
-                  border-left: 4px solid #ccc;
+                  border-left: 4px solid #cccccc;
                   padding-left: 1em;
                   margin: 1em 0;
-                  color: #555;
+                  color: #666;
                   font-style: italic;
+                }
+                .content a {
+                  color: #0372E8;
+                  text-decoration: underline;
                 }
                 .footer {
                   position: fixed;
