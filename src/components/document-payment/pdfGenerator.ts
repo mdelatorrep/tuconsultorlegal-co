@@ -310,7 +310,7 @@ const renderTokensInPDF = (
       doc.setTextColor(COLORS.primaryDark[0], COLORS.primaryDark[1], COLORS.primaryDark[2]);
     } else {
       // Determinar estilo de fuente con Times para un look más profesional
-      let fontFamily: "helvetica" | "helvetica" = "times";
+      let fontFamily: "helvetica" | "times" = "times";
       let fontStyle: "normal" | "bold" | "italic" | "bolditalic" = "normal";
 
       if (token.isBold && token.isItalic) fontStyle = "bolditalic";
