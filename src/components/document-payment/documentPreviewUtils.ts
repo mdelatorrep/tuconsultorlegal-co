@@ -70,6 +70,9 @@ export const handlePreviewDocument = (documentData: any) => {
             .content * {
               white-space: pre-wrap;
             }
+            .content div {
+              white-space: pre-wrap;
+            }
             .content p {
               margin-bottom: 1em;
               white-space: pre-wrap;
