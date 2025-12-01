@@ -22,25 +22,7 @@ const COLORS = {
   white: [255, 255, 255],
 };
 
-const addHeader = (doc: jsPDF, pageNumber: number) => {
-  // Barra sólida azul oscuro corporativo (15mm de altura)
-  doc.setFillColor(COLORS.primaryDark[0], COLORS.primaryDark[1], COLORS.primaryDark[2]);
-  doc.rect(0, 0, PAGE_WIDTH, HEADER_HEIGHT, "F");
-
-  // Logo/Título de la empresa en blanco, mayúsculas, bold
-  doc.setTextColor(COLORS.white[0], COLORS.white[1], COLORS.white[2]);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.text("TU CONSULTOR LEGAL", MARGIN_LEFT, MARGIN_TOP - 3);
-
-  // Número de página en blanco, esquina superior derecha, sin adornos
-  doc.setTextColor(COLORS.white[0], COLORS.white[1], COLORS.white[2]);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  const pageText = `${pageNumber}`;
-  const pageTextWidth = doc.getTextWidth(pageText);
-  doc.text(pageText, PAGE_WIDTH - MARGIN_RIGHT - pageTextWidth, MARGIN_TOP - 3);
-};
+// Header eliminado para máxima limpieza - diseño minimalista sin elementos superiores
 
 const addFooter = (doc: jsPDF, token: string, reviewedByLawyer?: string) => {
   const footerY = PAGE_HEIGHT - MARGIN_BOTTOM + 3;
@@ -295,8 +277,7 @@ const renderTokensInPDF = (
       addFooter(doc, documentData.token, documentData.reviewed_by_lawyer_name);
       doc.addPage();
       pageNumber++;
-      addHeader(doc, pageNumber);
-      currentY = HEADER_HEIGHT + 10;
+      currentY = MARGIN_TOP;
       listCounter = 0;
     }
 
@@ -367,8 +348,7 @@ const renderTokensInPDF = (
         addFooter(doc, documentData.token, documentData.reviewed_by_lawyer_name);
         doc.addPage();
         pageNumber++;
-        addHeader(doc, pageNumber);
-        currentY = HEADER_HEIGHT + 10;
+        currentY = MARGIN_TOP;
       }
 
       // Calcular posición X según alineación
@@ -428,37 +408,15 @@ export const generatePDFDownload = (documentData: any, toast?: (options: any) =>
     let pageNumber = 1;
 
     // Configurar fuente predeterminada
+    // TODO: Para usar Montserrat, necesitas:
+    // 1. Descargar Montserrat-Regular.ttf y Montserrat-Bold.ttf desde Google Fonts
+    // 2. Convertirlos usando: https://rawgit.com/MrRio/jsPDF/master/fontconverter/fontconverter.html
+    // 3. Importar los archivos .js generados y usar doc.addFileToVFS() y doc.addFont()
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(12);
+    doc.setFontSize(11);
 
-    // Añadir encabezado a la primera página
-    addHeader(doc, pageNumber);
-
-    // Título del documento con diseño elegante y refinado
-    let currentY = HEADER_HEIGHT + 18;
-
-    // Título en tipografía elegante - 18pt, capitalizado, centrado, con espaciado generoso
-    doc.setTextColor(COLORS.text[0], COLORS.text[1], COLORS.text[2]);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(18);
-
-    const title = documentData.document_type || "Documento Legal";
-    const titleLines = doc.splitTextToSize(title, CONTENT_WIDTH - 40);
-    titleLines.forEach((line: string, index: number) => {
-      const lineWidth = doc.getTextWidth(line);
-      doc.text(line, (PAGE_WIDTH - lineWidth) / 2, currentY + index * 7);
-    });
-
-    currentY += 12 + (titleLines.length - 1) * 7;
-
-    // Línea de énfasis sutil y elegante (0.5mm de grosor, más corta)
-    const lineWidth = 40; // mm - línea más corta y centrada
-    const lineX = (PAGE_WIDTH - lineWidth) / 2;
-    doc.setDrawColor(COLORS.accent[0], COLORS.accent[1], COLORS.accent[2]);
-    doc.setLineWidth(0.5);
-    doc.line(lineX, currentY, lineX + lineWidth, currentY);
-
-    currentY += 15;
+    // Diseño ultra limpio: sin header, sin título - el contenido empieza directamente
+    let currentY = MARGIN_TOP;
 
     // Procesar contenido HTML
     const content = documentData.document_content || "Contenido del documento no disponible.";
