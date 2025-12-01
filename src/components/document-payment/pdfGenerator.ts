@@ -38,39 +38,22 @@ const addFooter = (doc: jsPDF, token: string, reviewedByLawyer?: string) => {
   doc.setFontSize(8);
   doc.text(`Token: ${token}`, MARGIN_LEFT, footerY + 5);
 
-  // Fecha de generación con formato elegante
-  const now = new Date();
-  const dateText = `${now.toLocaleDateString("es-ES", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  })}`;
-  const dateTextWidth = doc.getTextWidth(dateText);
-  doc.text(dateText, (PAGE_WIDTH - dateTextWidth) / 2, footerY + 5);
-
-  // Sitio web con estilo de link
+  // Sitio web con estilo de link (centrado)
   doc.setTextColor(COLORS.primary[0], COLORS.primary[1], COLORS.primary[2]);
   doc.setFont("helvetica", "normal");
   const webText = "www.tuconsultorlegal.co";
   const webTextWidth = doc.getTextWidth(webText);
-  doc.text(webText, PAGE_WIDTH - MARGIN_RIGHT - webTextWidth, footerY + 5);
+  doc.text(webText, (PAGE_WIDTH - webTextWidth) / 2, footerY + 5);
 
-  // Información del abogado revisor con diseño destacado
+  // Información del abogado revisor con diseño destacado (alineado a la derecha)
   if (reviewedByLawyer) {
     doc.setTextColor(COLORS.text[0], COLORS.text[1], COLORS.text[2]);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(8);
     const reviewText = `Revisado por: ${reviewedByLawyer}`;
-    doc.text(reviewText, MARGIN_LEFT, footerY + 11);
+    const reviewTextWidth = doc.getTextWidth(reviewText);
+    doc.text(reviewText, PAGE_WIDTH - MARGIN_RIGHT - reviewTextWidth, footerY + 5);
   }
-
-  // Línea de autenticidad con diseño moderno
-  doc.setTextColor(COLORS.textLight[0], COLORS.textLight[1], COLORS.textLight[2]);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7);
-  const authText = "Documento digital certificado - Válido sin firma";
-  const authTextWidth = doc.getTextWidth(authText);
-  doc.text(authText, (PAGE_WIDTH - authTextWidth) / 2, footerY + (reviewedByLawyer ? 14 : 11));
 };
 
 // Interfaz extendida para tokens de contenido con estilos inline
