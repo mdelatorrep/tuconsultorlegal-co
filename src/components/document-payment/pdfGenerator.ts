@@ -11,11 +11,11 @@ const CONTENT_WIDTH = PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT; // Ancho disponib
 const HEADER_HEIGHT = 15; // mm - Header más amplio
 const FOOTER_HEIGHT = 20; // mm
 
-// Paleta de colores moderna y profesional
+// Paleta de colores moderna y profesional - Minimalista Corporativo de Alto Contraste
 const COLORS = {
   primary: [3, 114, 232], // Azul corporativo elegante
-  primaryDark: [3, 114, 232], // Azul oscuro sofisticado
-  accent: [200, 220, 240], // Dorado elegante para acentos
+  primaryDark: [1, 15, 36], // Azul oscuro corporativo (header/headings)
+  accent: [3, 114, 232], // Azul corporativo para líneas de énfasis
   text: [40, 40, 40], // Gris oscuro para texto principal
   textLight: [100, 100, 100], // Gris medio para texto secundario
   divider: [220, 220, 220], // Líneas sutiles
@@ -23,25 +23,23 @@ const COLORS = {
 };
 
 const addHeader = (doc: jsPDF, pageNumber: number) => {
-  // Línea decorativa de acento
-  doc.setFillColor(COLORS.divider[0], COLORS.divider[1], COLORS.divider[2]);
-  doc.rect(0, HEADER_HEIGHT - 0.2, PAGE_WIDTH, 0.2, "F");
+  // Barra sólida azul oscuro corporativo (15mm de altura)
+  doc.setFillColor(COLORS.primaryDark[0], COLORS.primaryDark[1], COLORS.primaryDark[2]);
+  doc.rect(0, 0, PAGE_WIDTH, HEADER_HEIGHT, "F");
 
-  // Logo/Título de la empresa con tipografía elegante
-  doc.setTextColor(COLORS.primaryDark[0], COLORS.primaryDark[1], COLORS.primaryDark[2]);
+  // Logo/Título de la empresa en blanco, mayúsculas, bold
+  doc.setTextColor(COLORS.white[0], COLORS.white[1], COLORS.white[2]);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
+  doc.setFontSize(14);
   doc.text("TU CONSULTOR LEGAL", MARGIN_LEFT, MARGIN_TOP - 3);
 
-  // Número de página con estilo moderno
-  doc.setTextColor(COLORS.textLight[0], COLORS.textLight[1], COLORS.textLight[2]);
+  // Número de página en blanco, esquina superior derecha, sin adornos
+  doc.setTextColor(COLORS.white[0], COLORS.white[1], COLORS.white[2]);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   const pageText = `${pageNumber}`;
   const pageTextWidth = doc.getTextWidth(pageText);
-
-  // Círculo decorativo para el número de página
-  doc.text(pageText, PAGE_WIDTH - MARGIN_RIGHT, MARGIN_TOP);
+  doc.text(pageText, PAGE_WIDTH - MARGIN_RIGHT - pageTextWidth, MARGIN_TOP - 3);
 };
 
 const addFooter = (doc: jsPDF, token: string, reviewedByLawyer?: string) => {
@@ -78,7 +76,7 @@ const addFooter = (doc: jsPDF, token: string, reviewedByLawyer?: string) => {
   // Información del abogado revisor con diseño destacado
   if (reviewedByLawyer) {
     doc.setTextColor(COLORS.text[0], COLORS.text[1], COLORS.text[2]);
-    doc.setFont("helvetica", "normal");
+    doc.setFont("helvetica", "bold");
     doc.setFontSize(8);
     const reviewText = `Revisado por: ${reviewedByLawyer}`;
     doc.text(reviewText, MARGIN_LEFT, footerY + 11);
@@ -309,8 +307,8 @@ const renderTokensInPDF = (
       doc.setFontSize(headingSizes[token.isHeading - 1] || 12);
       doc.setTextColor(COLORS.primaryDark[0], COLORS.primaryDark[1], COLORS.primaryDark[2]);
     } else {
-      // Determinar estilo de fuente con Times para un look más profesional
-      let fontFamily: "helvetica" | "times" = "times";
+      // Determinar estilo de fuente con Helvetica para un look moderno y minimalista
+      let fontFamily: "helvetica" | "times" = "helvetica";
       let fontStyle: "normal" | "bold" | "italic" | "bolditalic" = "normal";
 
       if (token.isBold && token.isItalic) fontStyle = "bolditalic";
@@ -439,19 +437,24 @@ export const generatePDFDownload = (documentData: any, toast?: (options: any) =>
     // Título del documento con diseño moderno y elegante
     let currentY = HEADER_HEIGHT + 15;
 
-    // Título en tipografía elegante
+    // Título en tipografía elegante - 26pt, mayúsculas, centrado
     doc.setTextColor(COLORS.text[0], COLORS.text[1], COLORS.text[2]);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(24);
+    doc.setFontSize(26);
 
     const title = documentData.document_type || "DOCUMENTO LEGAL";
     const titleLines = doc.splitTextToSize(title.toUpperCase(), CONTENT_WIDTH - 10);
     titleLines.forEach((line: string, index: number) => {
       const lineWidth = doc.getTextWidth(line);
-      doc.text(line, (PAGE_WIDTH - lineWidth) / 2, currentY + index * 7); // Centrado
+      doc.text(line, (PAGE_WIDTH - lineWidth) / 2, currentY + index * 8); // Centrado
     });
 
-    currentY += 18 + (titleLines.length - 1) * 7;
+    currentY += 20 + (titleLines.length - 1) * 8;
+
+    // Línea de énfasis azul corporativo (1.5mm de grosor)
+    doc.setDrawColor(COLORS.accent[0], COLORS.accent[1], COLORS.accent[2]);
+    doc.setLineWidth(1.5);
+    doc.line(MARGIN_LEFT, currentY, PAGE_WIDTH - MARGIN_RIGHT, currentY);
 
     currentY += 10;
 
