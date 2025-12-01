@@ -303,9 +303,9 @@ const renderTokensInPDF = (
     // Configurar fuente según formato con tipografía elegante
     if (token.isHeading) {
       doc.setFont("helvetica", "bold");
-      const headingSizes = [20, 18, 16, 14, 13, 12];
-      doc.setFontSize(headingSizes[token.isHeading - 1] || 12);
-      doc.setTextColor(COLORS.primaryDark[0], COLORS.primaryDark[1], COLORS.primaryDark[2]);
+      const headingSizes = [16, 14, 13, 12, 11, 10];
+      doc.setFontSize(headingSizes[token.isHeading - 1] || 11);
+      doc.setTextColor(COLORS.text[0], COLORS.text[1], COLORS.text[2]);
     } else {
       // Determinar estilo de fuente con Helvetica para un look moderno y minimalista
       let fontFamily: "helvetica" | "times" = "helvetica";
@@ -316,7 +316,7 @@ const renderTokensInPDF = (
       else if (token.isItalic) fontStyle = "italic";
 
       doc.setFont(fontFamily, fontStyle);
-      doc.setFontSize(token.fontSize || 11.5);
+      doc.setFontSize(token.fontSize || 11);
 
       // Aplicar color si está definido
       if (token.color) {
@@ -434,29 +434,31 @@ export const generatePDFDownload = (documentData: any, toast?: (options: any) =>
     // Añadir encabezado a la primera página
     addHeader(doc, pageNumber);
 
-    // Título del documento con diseño moderno y elegante
-    let currentY = HEADER_HEIGHT + 15;
+    // Título del documento con diseño elegante y refinado
+    let currentY = HEADER_HEIGHT + 18;
 
-    // Título en tipografía elegante - 26pt, mayúsculas, centrado
+    // Título en tipografía elegante - 18pt, capitalizado, centrado, con espaciado generoso
     doc.setTextColor(COLORS.text[0], COLORS.text[1], COLORS.text[2]);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(26);
+    doc.setFontSize(18);
 
-    const title = documentData.document_type || "DOCUMENTO LEGAL";
-    const titleLines = doc.splitTextToSize(title.toUpperCase(), CONTENT_WIDTH - 10);
+    const title = documentData.document_type || "Documento Legal";
+    const titleLines = doc.splitTextToSize(title, CONTENT_WIDTH - 40);
     titleLines.forEach((line: string, index: number) => {
       const lineWidth = doc.getTextWidth(line);
-      doc.text(line, (PAGE_WIDTH - lineWidth) / 2, currentY + index * 8); // Centrado
+      doc.text(line, (PAGE_WIDTH - lineWidth) / 2, currentY + index * 7);
     });
 
-    currentY += 20 + (titleLines.length - 1) * 8;
+    currentY += 12 + (titleLines.length - 1) * 7;
 
-    // Línea de énfasis azul corporativo (1.5mm de grosor)
+    // Línea de énfasis sutil y elegante (0.5mm de grosor, más corta)
+    const lineWidth = 40; // mm - línea más corta y centrada
+    const lineX = (PAGE_WIDTH - lineWidth) / 2;
     doc.setDrawColor(COLORS.accent[0], COLORS.accent[1], COLORS.accent[2]);
-    doc.setLineWidth(1.5);
-    doc.line(MARGIN_LEFT, currentY, PAGE_WIDTH - MARGIN_RIGHT, currentY);
+    doc.setLineWidth(0.5);
+    doc.line(lineX, currentY, lineX + lineWidth, currentY);
 
-    currentY += 10;
+    currentY += 15;
 
     // Procesar contenido HTML
     const content = documentData.document_content || "Contenido del documento no disponible.";
