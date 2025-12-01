@@ -73,6 +73,12 @@ export const handlePreviewDocument = (documentData: any) => {
             .content p {
               margin-bottom: 1em;
               white-space: pre-wrap;
+              line-height: 1.7;
+            }
+            .content br {
+              display: block;
+              content: "";
+              margin: 0.5em 0;
             }
             .content strong, .content b {
               font-weight: 700;

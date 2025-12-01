@@ -50,6 +50,13 @@ export const getPreviewStyles = () => `
     margin-bottom: 1em;
     white-space: pre-wrap;
     word-wrap: break-word;
+    line-height: 1.7;
+  }
+
+  .preview-content br {
+    display: block;
+    content: "";
+    margin: 0.5em 0;
   }
 
   /* Bold and italic - preserve color from inline styles */
