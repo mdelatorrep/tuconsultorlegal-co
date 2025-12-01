@@ -14,7 +14,7 @@ import { useBoldCheckout } from "./document-payment/useBoldCheckout";
 import { generatePDFDownload } from "./document-payment/pdfGenerator";
 import DOMPurify from 'dompurify';
 import { extractPlainText } from '@/utils/htmlSanitizer';
-import { PREVIEW_COLORS } from './document-payment/documentPreviewStyles';
+import { PREVIEW_COLORS, getPreviewStyles } from './document-payment/documentPreviewStyles';
 
 interface UnifiedDocumentPageProps {
   onOpenChat: (message: string) => void;
@@ -1097,40 +1097,7 @@ export default function UnifiedDocumentPage({ onOpenChat }: UnifiedDocumentPageP
             {/* Document content */}
             <div className="relative z-0 p-8">
               <div className="max-w-4xl mx-auto bg-background rounded-lg shadow-lg p-8 select-none">
-                <style>{`
-                  .preview-content strong, .preview-content b { font-weight: 700; }
-                  .preview-content em, .preview-content i { font-style: italic; }
-                  .preview-content u { text-decoration: underline; }
-                  .preview-content s { text-decoration: line-through; }
-                  .preview-content h1, .preview-content h2, .preview-content h3,
-                  .preview-content h4, .preview-content h5, .preview-content h6 {
-                    font-family: Helvetica, Arial, sans-serif;
-                    color: ${PREVIEW_COLORS.primaryDark};
-                    font-weight: 700;
-                    margin-top: 1.5em;
-                    margin-bottom: 0.75em;
-                    line-height: 1.3;
-                  }
-                  .preview-content h1 { font-size: 2em; }
-                  .preview-content h2 { font-size: 1.75em; }
-                  .preview-content h3 { font-size: 1.5em; }
-                  .preview-content h4 { font-size: 1.25em; }
-                  .preview-content h5 { font-size: 1.1em; }
-                  .preview-content h6 { font-size: 1em; }
-                  .preview-content ul, .preview-content ol { margin: 1em 0; padding-left: 2em; }
-                  .preview-content ul { list-style-type: disc; }
-                  .preview-content ol { list-style-type: decimal; }
-                  .preview-content li { margin-bottom: 0.5em; line-height: 1.7; }
-                  .preview-content p { margin-bottom: 1em; white-space: pre-wrap; }
-                  .preview-content blockquote {
-                    border-left: 4px solid ${PREVIEW_COLORS.lightGray};
-                    padding-left: 1em;
-                    margin: 1em 0;
-                    color: #666;
-                    font-style: italic;
-                  }
-                  .preview-content a { color: ${PREVIEW_COLORS.primaryDark}; text-decoration: underline; }
-                `}</style>
+                <style>{getPreviewStyles()}</style>
                 <div className="border-b-2 border-foreground pb-4 mb-6">
                   <h1 className="text-2xl font-bold mb-2" style={{ fontFamily: 'Helvetica, Arial, sans-serif', color: PREVIEW_COLORS.primaryDark }}>
                     {documentData?.document_type}
@@ -1141,13 +1108,8 @@ export default function UnifiedDocumentPage({ onOpenChat }: UnifiedDocumentPageP
                   </p>
                 </div>
                 <div 
-                  className="preview-content max-w-none"
+                  className="preview-content"
                   style={{
-                    fontFamily: '"Times New Roman", Times, serif',
-                    fontSize: '12pt',
-                    lineHeight: '1.7',
-                    color: '#282828',
-                    textAlign: 'justify',
                     userSelect: 'none',
                     WebkitUserSelect: 'none',
                     MozUserSelect: 'none',
