@@ -236,6 +236,21 @@ export default function UnifiedDocumentPage({ onOpenChat }: UnifiedDocumentPageP
       setPaymentCompleted(true);
       setDocumentData({ ...data, status: 'pagado' });
       
+      // 🔔 Enviar notificación por email para pago aprobado
+      try {
+        await supabase.functions.invoke('notify-document-status-change', {
+          body: {
+            document_token_id: data.id,
+            new_status: 'pagado',
+            old_status: data.status
+          }
+        });
+        console.log('Email notification sent for payment approval');
+      } catch (notifError) {
+        console.error('Error sending email notification:', notifError);
+        // No bloqueamos el flujo si falla la notificación
+      }
+      
       toast({
         title: "¡Pago confirmado!",
         description: "Tu pago ha sido procesado exitosamente. Puedes descargar el documento.",
@@ -275,6 +290,21 @@ export default function UnifiedDocumentPage({ onOpenChat }: UnifiedDocumentPageP
             variant: "destructive",
           });
         } else {
+          // 🔔 Enviar notificación por email para documento gratuito
+          try {
+            await supabase.functions.invoke('notify-document-status-change', {
+              body: {
+                document_token_id: documentData.id,
+                new_status: 'pagado',
+                old_status: documentData.status
+              }
+            });
+            console.log('Email notification sent for free document');
+          } catch (notifError) {
+            console.error('Error sending email notification:', notifError);
+            // No bloqueamos el flujo si falla la notificación
+          }
+
           setPaymentCompleted(true);
           setDocumentData({ ...documentData, status: 'pagado' });
           toast({
@@ -436,6 +466,21 @@ export default function UnifiedDocumentPage({ onOpenChat }: UnifiedDocumentPageP
           variant: "destructive",
         });
         return;
+      }
+
+      // 🔔 Enviar notificación por email al abogado
+      try {
+        await supabase.functions.invoke('notify-document-status-change', {
+          body: {
+            document_token_id: documentData.id,
+            new_status: 'en_revision_abogado',
+            old_status: documentData.status
+          }
+        });
+        console.log('Email notification sent to lawyer successfully');
+      } catch (notifError) {
+        console.error('Error sending email notification:', notifError);
+        // No bloqueamos el flujo si falla la notificación
       }
 
       toast({

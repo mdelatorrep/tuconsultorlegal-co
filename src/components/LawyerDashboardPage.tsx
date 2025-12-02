@@ -478,6 +478,21 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
 
       console.log('Document sent to client successfully');
 
+      // 🔔 Enviar notificación por email
+      try {
+        await supabase.functions.invoke('notify-document-status-change', {
+          body: {
+            document_token_id: selectedDocument.id,
+            new_status: 'revision_usuario',
+            old_status: selectedDocument.status
+          }
+        });
+        console.log('Email notification sent successfully');
+      } catch (notifError) {
+        console.error('Error sending email notification:', notifError);
+        // No bloqueamos el flujo si falla la notificación
+      }
+
       // Update local state immediately
       setDocuments(prev => prev.map(doc => 
         doc.id === selectedDocument.id 
@@ -528,214 +543,197 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
       return;
     }
 
-    // Sanitizar HTML antes de renderizar (importado dinámicamente)
+    // Sanitizar HTML antes de renderizar
     import('@/utils/htmlSanitizer').then(({ sanitizeHtml }) => {
       const sanitizedContent = sanitizeHtml(editedContent);
 
       // Crear ventana de preview con el formato del PDF
       const previewWindow = window.open('', '_blank', 'width=900,height=700,scrollbars=yes,resizable=yes');
       if (previewWindow) {
+        // Usar los estilos compartidos de documentPreviewStyles.ts para consistencia
+        const sharedStyles = `
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+          }
+          body {
+            font-family: "Times New Roman", Times, serif;
+            background: #e5e5e5;
+            padding: 20px;
+          }
+          .pdf-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            padding: 60px 50px 80px;
+            min-height: 1000px;
+            position: relative;
+          }
+          .content {
+            font-family: "Times New Roman", Times, serif;
+            color: #282828;
+            font-size: 12pt;
+            line-height: 1.7;
+            text-align: justify;
+          }
+          /* Preserve inline styles from ReactQuill */
+          .content * {
+            line-height: inherit;
+            white-space: pre-wrap;
+          }
+          .content div {
+            white-space: pre-wrap;
+          }
+          .content p {
+            margin-bottom: 1em;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            line-height: 1.7;
+          }
+          .content br {
+            display: block;
+            content: "";
+            margin: 0.5em 0;
+          }
+          .content strong, .content b {
+            font-weight: 700;
+          }
+          .content em, .content i {
+            font-style: italic;
+          }
+          .content u {
+            text-decoration: underline;
+          }
+          .content s {
+            text-decoration: line-through;
+          }
+          /* Headings with corporate color */
+          .content h1, .content h2, .content h3, .content h4, .content h5, .content h6 {
+            font-family: Helvetica, Arial, sans-serif;
+            color: #0372E8;
+            font-weight: 700;
+            margin-top: 1.5em;
+            margin-bottom: 0.75em;
+            line-height: 1.3;
+          }
+          .content h1 { font-size: 2em; }
+          .content h2 { font-size: 1.75em; }
+          .content h3 { font-size: 1.5em; }
+          .content h4 { font-size: 1.25em; }
+          .content h5 { font-size: 1.1em; }
+          .content h6 { font-size: 1em; }
+          .content ul, .content ol {
+            margin: 1em 0;
+            padding-left: 2em;
+          }
+          .content ul {
+            list-style-type: disc;
+          }
+          .content ol {
+            list-style-type: decimal;
+          }
+          .content li {
+            margin-bottom: 0.5em;
+            line-height: 1.7;
+          }
+          .content blockquote {
+            border-left: 4px solid #cccccc;
+            padding-left: 1em;
+            margin: 1em 0;
+            color: #666;
+            font-style: italic;
+          }
+          .content a {
+            color: #0372E8;
+            text-decoration: underline;
+          }
+          .footer {
+            position: absolute;
+            bottom: 30px;
+            left: 50px;
+            right: 50px;
+            border-top: 1px solid #ccc;
+            padding-top: 10px;
+            font-size: 10px;
+            color: #666;
+          }
+          .footer-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 3px;
+          }
+          .footer-center {
+            text-align: center;
+            margin-top: 5px;
+            font-size: 9px;
+          }
+          .watermark {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 80px;
+            color: rgba(200, 200, 200, 0.2);
+            font-weight: bold;
+            pointer-events: none;
+            z-index: -1;
+          }
+          @media print {
+            body {
+              background: white;
+              padding: 0;
+            }
+            .pdf-container {
+              box-shadow: none;
+              padding: 25mm 20mm;
+            }
+          }
+        `;
+
         previewWindow.document.write(`
           <!DOCTYPE html>
           <html lang="es">
             <head>
               <meta charset="UTF-8">
               <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <title>Vista Previa PDF - ${selectedDocument.document_type}</title>
-              <style>
-                * {
-                  margin: 0;
-                  padding: 0;
-                  box-sizing: border-box;
-                  -webkit-font-smoothing: antialiased;
-                  -moz-osx-font-smoothing: grayscale;
-                }
-                body {
-                  font-family: "Times New Roman", Times, serif;
-                  background: #e5e5e5;
-                  padding: 20px;
-                }
-                .pdf-container {
-                  max-width: 800px;
-                  margin: 0 auto;
-                  background: white;
-                  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-                  padding: 40px 50px;
-                  min-height: 1000px;
-                  position: relative;
-                }
-                .header {
-                  border-bottom: 3px solid #172554;
-                  padding-bottom: 15px;
-                  margin-bottom: 30px;
-                  display: flex;
-                  justify-content: space-between;
-                  align-items: center;
-                }
-                .header h1 {
-                  color: #172554;
-                  font-size: 18px;
-                  font-weight: bold;
-                }
-                .header .page-number {
-                  color: #666;
-                  font-size: 12px;
-                }
-                .title {
-                  text-align: center;
-                  color: #172554;
-                  font-size: 22px;
-                  font-weight: bold;
-                  margin: 30px 0 40px 0;
-                  text-transform: uppercase;
-                }
-                .content {
-                  font-family: "Times New Roman", Times, serif;
-                  color: #282828;
-                  font-size: 12pt;
-                  line-height: 1.7;
-                  text-align: justify;
-                }
-                /* Preserve inline styles from ReactQuill */
-                .content p {
-                  margin-bottom: 1em;
-                  white-space: pre-wrap;
-                }
-                .content strong, .content b {
-                  font-weight: 700;
-                }
-                .content em, .content i {
-                  font-style: italic;
-                }
-                .content u {
-                  text-decoration: underline;
-                }
-                .content s {
-                  text-decoration: line-through;
-                }
-                /* Headings with corporate color */
-                .content h1, .content h2, .content h3, .content h4, .content h5, .content h6 {
-                  font-family: Helvetica, Arial, sans-serif;
-                  color: #0372E8;
-                  font-weight: 700;
-                  margin-top: 1.5em;
-                  margin-bottom: 0.75em;
-                  line-height: 1.3;
-                }
-                .content h1 { font-size: 2em; }
-                .content h2 { font-size: 1.75em; }
-                .content h3 { font-size: 1.5em; }
-                .content h4 { font-size: 1.25em; }
-                .content h5 { font-size: 1.1em; }
-                .content h6 { font-size: 1em; }
-                .content ul, .content ol {
-                  margin: 1em 0;
-                  padding-left: 2em;
-                }
-                .content ul {
-                  list-style-type: disc;
-                }
-                .content ol {
-                  list-style-type: decimal;
-                }
-                .content li {
-                  margin-bottom: 0.5em;
-                  line-height: 1.7;
-                }
-                .content blockquote {
-                  border-left: 4px solid #cccccc;
-                  padding-left: 1em;
-                  margin: 1em 0;
-                  color: #666;
-                  font-style: italic;
-                }
-                .content a {
-                  color: #0372E8;
-                  text-decoration: underline;
-                }
-                .footer {
-                  position: fixed;
-                  bottom: 40px;
-                  left: 50px;
-                  right: 50px;
-                  border-top: 1px solid #ccc;
-                  padding-top: 15px;
-                  font-size: 11px;
-                  color: #666;
-                }
-                .footer-row {
-                  display: flex;
-                  justify-content: space-between;
-                  margin-bottom: 5px;
-                }
-                .footer-center {
-                  text-align: center;
-                  margin-top: 8px;
-                  font-size: 10px;
-                }
-                .watermark {
-                  position: fixed;
-                  top: 50%;
-                  left: 50%;
-                  transform: translate(-50%, -50%) rotate(-45deg);
-                  font-size: 80px;
-                  color: rgba(200, 200, 200, 0.2);
-                  font-weight: bold;
-                  pointer-events: none;
-                  z-index: -1;
-                }
-                @media print {
-                  body {
-                    background: white;
-                    padding: 0;
-                  }
-                  .pdf-container {
-                    box-shadow: none;
-                    padding: 25mm 20mm;
-                  }
-                }
-              </style>
+              <title>Vista Previa - ${selectedDocument.document_type}</title>
+              <style>${sharedStyles}</style>
             </head>
             <body>
               <div class="watermark">VISTA PREVIA</div>
               <div class="pdf-container">
-                <div class="header">
-                  <h1>TU CONSULTOR LEGAL</h1>
-                  <div class="page-number">Página 1</div>
-                </div>
-                
-                <div class="title">${selectedDocument.document_type}</div>
-                
                 <div class="content">${sanitizedContent}</div>
               
-              <div class="footer">
-                <div class="footer-row">
-                  <span>Token: ${selectedDocument.token}</span>
-                  <span>Generado: ${new Date().toLocaleDateString('es-ES')}</span>
-                  <span style="color: #3b82f6;">www.tuconsultorlegal.co</span>
-                </div>
-                ${user?.name ? `<div style="margin-top: 5px; font-size: 10px;">Documento revisado por: ${user.name}</div>` : ''}
-                <div class="footer-center">
-                  Documento generado digitalmente por Tu Consultor Legal - Válido sin firma física
+                <div class="footer">
+                  <div class="footer-row">
+                    <span>Token: ${selectedDocument.token}</span>
+                    <span>Revisado por: ${user?.name || 'Abogado'}</span>
+                  </div>
+                  <div class="footer-center">
+                    www.tuconsultorlegal.co
+                  </div>
                 </div>
               </div>
-            </div>
-          </body>
-        </html>
-      `);
-      previewWindow.document.close();
-      
-      toast({
-        title: "Vista previa generada",
-        description: "Se ha abierto una vista previa del documento en una nueva ventana",
-      });
-    } else {
-      toast({
-        title: "Error",
-        description: "No se pudo abrir la ventana de vista previa. Verifica que los pop-ups estén habilitados.",
-        variant: "destructive",
-      });
-    }
+            </body>
+          </html>
+        `);
+        previewWindow.document.close();
+        
+        toast({
+          title: "Vista previa generada",
+          description: "Se ha abierto una vista previa del documento en una nueva ventana",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "No se pudo abrir la ventana de vista previa. Verifica que los pop-ups estén habilitados.",
+          variant: "destructive",
+        });
+      }
     });
   };
 
