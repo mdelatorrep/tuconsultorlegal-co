@@ -637,7 +637,7 @@ async function handleGenerateDocument(supabase: any, args: any, legalAgent: any,
     }
 
     const token = tokenData.token;
-    const tokenId = tokenData.id; // 🔥 CRÍTICO: Extraer el ID del token
+    const tokenId = tokenData.document_id; // 🔥 CRÍTICO: La clave correcta es "document_id"
     const trackingUrl = `https://tuconsultorlegal.co/#documento?code=${token}`;
 
     // Extract key document details for the response

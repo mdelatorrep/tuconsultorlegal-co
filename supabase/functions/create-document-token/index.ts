@@ -26,7 +26,8 @@ const DocumentTokenSchema = z.object({
     .min(1, 'SLA hours must be at least 1')
     .max(72, 'SLA hours cannot exceed 72')
     .optional(),
-  user_id: z.string().uuid('Invalid user ID format').optional().nullable()
+  user_id: z.string().uuid('Invalid user ID format').optional().nullable(),
+  legal_agent_id: z.string().uuid('Invalid legal agent ID format').optional().nullable()
 });
 
 serve(async (req) => {
@@ -60,7 +61,7 @@ serve(async (req) => {
       throw error;
     }
 
-    const { document_content, document_type, user_email, user_name, sla_hours, user_id } = validatedData;
+    const { document_content, document_type, user_email, user_name, sla_hours, user_id, legal_agent_id } = validatedData;
 
     // Generate unique token
     const token = crypto.randomUUID().replace(/-/g, '').substring(0, 12).toUpperCase();
@@ -95,7 +96,8 @@ serve(async (req) => {
         sla_deadline: slaDeadline.toISOString(),
         status: 'solicitado',
         sla_status: 'on_time',
-        user_id: user_id || null
+        user_id: user_id || null,
+        legal_agent_id: legal_agent_id || null // ✅ CRÍTICO: Guardar ID del agente legal
       })
       .select()
       .single();
