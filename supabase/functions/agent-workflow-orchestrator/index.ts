@@ -17,7 +17,8 @@ serve(async (req) => {
 
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const { messages, agentId, documentTokenId, threadId, userContext } = await req.json();
+    const { messages, agentId, documentTokenId: initialDocumentTokenId, threadId, userContext } = await req.json();
+    let documentTokenId = initialDocumentTokenId;
 
     console.log('Starting workflow orchestration for agent:', agentId);
 
