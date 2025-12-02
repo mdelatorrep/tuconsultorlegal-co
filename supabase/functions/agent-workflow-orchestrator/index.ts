@@ -225,7 +225,7 @@ Email: ${userContext.email}
                 break;
               
               case 'generate_document':
-                output = await handleGenerateDocument(
+                const generateResult = await handleGenerateDocument(
                   supabase, 
                   functionArgs, 
                   openaiAgent.legal_agents, 
@@ -233,6 +233,14 @@ Email: ${userContext.email}
                   currentThreadId,
                   openaiAgent.id
                 );
+                // 🔥 CRÍTICO: Actualizar documentTokenId si se generó exitosamente
+                if (typeof generateResult === 'object' && generateResult.tokenId) {
+                  documentTokenId = generateResult.tokenId;
+                  console.log('✅ Document token ID updated:', documentTokenId);
+                  output = generateResult.message;
+                } else {
+                  output = generateResult;
+                }
                 break;
                 
               case 'validate_information':
@@ -627,6 +635,7 @@ async function handleGenerateDocument(supabase: any, args: any, legalAgent: any,
     }
 
     const token = tokenData.token;
+    const tokenId = tokenData.id; // 🔥 CRÍTICO: Extraer el ID del token
     const trackingUrl = `https://tuconsultorlegal.co/#documento?code=${token}`;
 
     // Extract key document details for the response
@@ -641,7 +650,7 @@ async function handleGenerateDocument(supabase: any, args: any, legalAgent: any,
       ? `\n\n📄 **Detalles del documento:**\n${documentDetails.slice(0, 5).join('\n')}`
       : '';
 
-    return `✅ ¡Documento "${legalAgent.name}" generado exitosamente!
+    const message = `✅ ¡Documento "${legalAgent.name}" generado exitosamente!
 
 📋 **Token:** ${token}
 🔗 **Seguimiento:** ${trackingUrl}
@@ -664,6 +673,12 @@ Con este link podrás:
 ✓ Descargar tu documento final
 
 ¿Necesitas algo más? 😊`;
+    
+    // 🔥 CRÍTICO: Devolver tanto el mensaje como el ID del token para actualizar la conversación
+    return {
+      message,
+      tokenId
+    };
     
   } catch (error) {
     console.error('Error generating document:', error);
