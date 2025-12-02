@@ -234,12 +234,13 @@ Email: ${userContext.email}
                   openaiAgent.id
                 );
                 // 🔥 CRÍTICO: Actualizar documentTokenId si se generó exitosamente
-                if (typeof generateResult === 'object' && generateResult.tokenId) {
+                if (generateResult && typeof generateResult === 'object' && 'tokenId' in generateResult) {
                   documentTokenId = generateResult.tokenId;
                   console.log('✅ Document token ID updated:', documentTokenId);
                   output = generateResult.message;
                 } else {
-                  output = generateResult;
+                  // Es un string (mensaje de error o resultado directo)
+                  output = String(generateResult);
                 }
                 break;
                 
