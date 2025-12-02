@@ -95,3 +95,6 @@ verify_jwt = false
 
 [functions.dlocal-webhook]
 verify_jwt = false
+
+[functions.fix-agent-instructions]
+verify_jwt = false
