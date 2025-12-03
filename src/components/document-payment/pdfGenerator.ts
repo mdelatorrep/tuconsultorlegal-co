@@ -11,14 +11,14 @@ const CONTENT_WIDTH = PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT; // Ancho disponib
 const HEADER_HEIGHT = 15; // mm - Header más amplio
 const FOOTER_HEIGHT = 20; // mm
 
-// Paleta de colores moderna y profesional - Minimalista Corporativo de Alto Contraste
+// Paleta de colores corporativa - Consistente con documentPreviewStyles.ts
 const COLORS = {
-  primary: [3, 114, 232], // Azul corporativo elegante
-  primaryDark: [1, 15, 36], // Azul oscuro corporativo (header/headings)
+  primary: [3, 114, 232], // #0372E8 - Azul corporativo
+  primaryDark: [3, 114, 232], // #0372E8 - Mismo azul para headings (consistente con preview)
   accent: [3, 114, 232], // Azul corporativo para líneas de énfasis
-  text: [40, 40, 40], // Gris oscuro para texto principal
+  text: [40, 40, 40], // #282828 - Gris oscuro para texto principal
   textLight: [100, 100, 100], // Gris medio para texto secundario
-  divider: [220, 220, 220], // Líneas sutiles
+  divider: [204, 204, 204], // #cccccc - Consistente con lightGray del preview
   white: [255, 255, 255],
 };
 
@@ -264,15 +264,16 @@ const renderTokensInPDF = (
       listCounter = 0;
     }
 
-    // Configurar fuente según formato con tipografía elegante
+    // Configurar fuente según formato - Times New Roman para cuerpo (consistente con preview)
     if (token.isHeading) {
+      // Headings usan Helvetica con color azul corporativo
       doc.setFont("helvetica", "bold");
       const headingSizes = [16, 14, 13, 12, 11, 10];
       doc.setFontSize(headingSizes[token.isHeading - 1] || 11);
-      doc.setTextColor(COLORS.text[0], COLORS.text[1], COLORS.text[2]);
+      doc.setTextColor(COLORS.primaryDark[0], COLORS.primaryDark[1], COLORS.primaryDark[2]);
     } else {
-      // Determinar estilo de fuente con Helvetica para un look moderno y minimalista
-      let fontFamily: "helvetica" | "times" = "helvetica";
+      // Cuerpo usa Times para consistencia con documentPreviewStyles.ts
+      let fontFamily: "helvetica" | "times" = "times";
       let fontStyle: "normal" | "bold" | "italic" | "bolditalic" = "normal";
 
       if (token.isBold && token.isItalic) fontStyle = "bolditalic";
@@ -280,7 +281,7 @@ const renderTokensInPDF = (
       else if (token.isItalic) fontStyle = "italic";
 
       doc.setFont(fontFamily, fontStyle);
-      doc.setFontSize(token.fontSize || 11);
+      doc.setFontSize(token.fontSize || 12); // 12pt consistente con preview
 
       // Aplicar color si está definido
       if (token.color) {
@@ -390,13 +391,9 @@ export const generatePDFDownload = (documentData: any, toast?: (options: any) =>
     const doc = new jsPDF("p", "mm", "a4");
     let pageNumber = 1;
 
-    // Configurar fuente predeterminada
-    // TODO: Para usar Montserrat, necesitas:
-    // 1. Descargar Montserrat-Regular.ttf y Montserrat-Bold.ttf desde Google Fonts
-    // 2. Convertirlos usando: https://rawgit.com/MrRio/jsPDF/master/fontconverter/fontconverter.html
-    // 3. Importar los archivos .js generados y usar doc.addFileToVFS() y doc.addFont()
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(11);
+    // Configurar fuente predeterminada - Times New Roman para documentos legales
+    doc.setFont("times", "normal");
+    doc.setFontSize(12);
 
     // Diseño ultra limpio: sin header, sin título - el contenido empieza directamente
     let currentY = MARGIN_TOP;

@@ -70,7 +70,13 @@ export const cleanTextForPDF = (html: string): string => {
   return tokens.map(t => t.text).join(' ');
 };
 
-// Función para generar PDF con formato
+// Colores corporativos consistentes con pdfGenerator.ts y documentPreviewStyles.ts
+const COLORS = {
+  primaryDark: [3, 114, 232], // #0372E8 - Azul corporativo para headings
+  text: [40, 40, 40], // #282828 - Gris oscuro para texto
+};
+
+// Función para generar PDF con formato - Consistente con pdfGenerator.ts
 export const generatePDF = async (content: string, title: string) => {
   const doc = new jsPDF({
     orientation: "portrait",
@@ -87,14 +93,16 @@ export const generatePDF = async (content: string, title: string) => {
 
   let yPosition = margin;
 
-  // Título
+  // Título con fuente Helvetica y color azul corporativo
   doc.setFontSize(16);
   doc.setFont("helvetica", "bold");
+  doc.setTextColor(COLORS.primaryDark[0], COLORS.primaryDark[1], COLORS.primaryDark[2]);
   const cleanTitle = cleanTextForPDF(title);
   doc.text(cleanTitle, margin, yPosition);
   yPosition += 10;
 
   // Línea separadora
+  doc.setDrawColor(204, 204, 204); // #cccccc consistente
   doc.setLineWidth(0.5);
   doc.line(margin, yPosition, pageWidth - margin, yPosition);
   yPosition += 10;
@@ -114,17 +122,21 @@ export const generatePDF = async (content: string, title: string) => {
     }
     
     if (token.isHeading) {
+      // Headings: Helvetica bold con color azul corporativo
       doc.setFont("helvetica", "bold");
+      doc.setTextColor(COLORS.primaryDark[0], COLORS.primaryDark[1], COLORS.primaryDark[2]);
       const headingSizes = [16, 15, 14, 13, 12, 11];
       doc.setFontSize(headingSizes[token.isHeading - 1] || 11);
     } else {
+      // Cuerpo: Times New Roman con color gris oscuro (consistente con documentPreviewStyles)
       let fontStyle: 'normal' | 'bold' | 'italic' | 'bolditalic' = 'normal';
       if (token.isBold && token.isItalic) fontStyle = 'bolditalic';
       else if (token.isBold) fontStyle = 'bold';
       else if (token.isItalic) fontStyle = 'italic';
       
-      doc.setFont("helvetica", fontStyle);
-      doc.setFontSize(11);
+      doc.setFont("times", fontStyle);
+      doc.setTextColor(COLORS.text[0], COLORS.text[1], COLORS.text[2]);
+      doc.setFontSize(12); // 12pt consistente con preview
     }
     
     if (token.text === '\n') {

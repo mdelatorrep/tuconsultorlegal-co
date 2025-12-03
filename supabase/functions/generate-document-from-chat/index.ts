@@ -194,36 +194,48 @@ FORMATO DE RESPUESTA: Devuelve únicamente el documento final usando la plantill
       throw new Error('No document content generated');
     }
 
-    // Clean HTML tags from document content but preserve basic formatting
-    console.log('Cleaning HTML tags from document content...');
-    documentContent = documentContent
-      // Keep paragraph breaks
-      .replace(/<p[^>]*>/gi, '\n')
-      .replace(/<\/p>/gi, '\n\n')
-      // Convert lists to readable format
-      .replace(/<li[^>]*>/gi, '\n• ')
-      .replace(/<\/li>/gi, '')
-      .replace(/<ul[^>]*>|<\/ul>/gi, '\n')
-      .replace(/<ol[^>]*>|<\/ol>/gi, '\n')
-      // Preserve bold and italic with markers
-      .replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**')
-      .replace(/<b[^>]*>(.*?)<\/b>/gi, '**$1**')
-      .replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*')
-      .replace(/<i[^>]*>(.*?)<\/i>/gi, '*$1*')
-      // Convert line breaks
-      .replace(/<br\s*\/?>/gi, '\n')
-      // Remove remaining HTML tags
-      .replace(/<[^>]+>/g, '')
-      // Clean HTML entities
-      .replace(/&nbsp;/gi, ' ')
-      .replace(/&amp;/gi, '&')
-      .replace(/&lt;/gi, '<')
-      .replace(/&gt;/gi, '>')
-      .replace(/&quot;/gi, '"')
-      .replace(/&#39;/gi, "'")
-      // Clean multiple line breaks
-      .replace(/\n\s*\n\s*\n/g, '\n\n')
-      .trim();
+    // Convert plain text content to structured HTML for consistent rendering
+    console.log('Converting document content to structured HTML...');
+    
+    // Check if content already has HTML structure
+    const hasHtmlStructure = /<(p|div|br|strong|em|h[1-6]|ul|ol|li)[^>]*>/i.test(documentContent);
+    
+    if (!hasHtmlStructure) {
+      // Convert plain text to HTML paragraphs
+      documentContent = documentContent
+        // Clean HTML entities first
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&amp;/gi, '&')
+        .replace(/&lt;/gi, '<')
+        .replace(/&gt;/gi, '>')
+        .replace(/&quot;/gi, '"')
+        .replace(/&#39;/gi, "'")
+        // Convert markdown-style bold to HTML
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        // Convert markdown-style italic to HTML  
+        .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+        // Split by double line breaks into paragraphs
+        .split(/\n\s*\n/)
+        .map(paragraph => paragraph.trim())
+        .filter(paragraph => paragraph.length > 0)
+        .map(paragraph => {
+          // Convert single line breaks to <br> within paragraphs
+          const withBreaks = paragraph.replace(/\n/g, '<br>');
+          return `<p class="ql-align-justify">${withBreaks}</p>`;
+        })
+        .join('\n');
+    } else {
+      // Content already has HTML - just clean entities
+      documentContent = documentContent
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&amp;/gi, '&')
+        .replace(/&lt;/gi, '<')
+        .replace(/&gt;/gi, '>')
+        .replace(/&quot;/gi, '"')
+        .replace(/&#39;/gi, "'");
+    }
+    
+    console.log('Document content converted to HTML structure');
 
     // Check for unreplaced placeholders
     const placeholderRegex = /\{\{([^}]+)\}\}/g;
