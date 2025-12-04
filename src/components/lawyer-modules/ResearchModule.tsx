@@ -102,7 +102,16 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
 
   const loadPendingTasks = async () => {
     try {
-      const { data, error } = await supabase
+      // Load from new research_queue table
+      const { data: queueData, error: queueError } = await supabase
+        .from('research_queue')
+        .select('*')
+        .eq('lawyer_id', user.id)
+        .in('status', ['pending', 'processing', 'rate_limited'])
+        .order('created_at', { ascending: false });
+
+      // Also check legacy legal_tools_results for initiated tasks
+      const { data: legacyData, error: legacyError } = await supabase
         .from('legal_tools_results')
         .select('*')
         .eq('lawyer_id', user.id)
@@ -110,15 +119,32 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
         .eq('metadata->>status', 'initiated')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      const pending: PendingTask[] = [];
 
-      const pending = data?.map((item: any) => ({
-        task_id: item.metadata?.task_id || item.input_data?.task_id,
-        query: item.input_data?.query || 'Consulta en progreso',
-        started_at: item.created_at,
-        estimated_completion: new Date(Date.now() + 25 * 60 * 1000).toISOString(), // 25 min estimate
-        status: 'processing' as const
-      })).filter(task => task.task_id) || [];
+      // Add queue tasks
+      queueData?.forEach((item: any) => {
+        pending.push({
+          task_id: item.id,
+          query: item.query || 'Consulta en progreso',
+          started_at: item.created_at,
+          estimated_completion: new Date(Date.now() + 25 * 60 * 1000).toISOString(),
+          status: item.status === 'rate_limited' ? 'processing' as const : 'processing' as const
+        });
+      });
+
+      // Add legacy tasks (if not already in queue)
+      legacyData?.forEach((item: any) => {
+        const taskId = item.metadata?.task_id || item.input_data?.task_id;
+        if (taskId && !pending.some(p => p.task_id === taskId)) {
+          pending.push({
+            task_id: taskId,
+            query: item.input_data?.query || 'Consulta en progreso',
+            started_at: item.created_at,
+            estimated_completion: new Date(Date.now() + 25 * 60 * 1000).toISOString(),
+            status: 'processing' as const
+          });
+        }
+      });
 
       setPendingTasks(pending);
     } catch (error) {
@@ -164,94 +190,49 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
 
   const checkTaskUpdates = async () => {
     try {
-      // First, reload pending tasks to get current state
-      const { data: pendingData, error: pendingError } = await supabase
-        .from('legal_tools_results')
+      // Check queue table for completed/failed tasks
+      const { data: queueCompleted, error: queueError } = await supabase
+        .from('research_queue')
         .select('*')
         .eq('lawyer_id', user.id)
-        .eq('tool_type', 'research')
-        .eq('metadata->>status', 'initiated')
-        .order('created_at', { ascending: false });
+        .in('status', ['completed', 'failed'])
+        .order('completed_at', { ascending: false })
+        .limit(5);
 
-      if (pendingError) {
-        console.error('Error reloading pending tasks:', pendingError);
-        return;
-      }
+      // Reload pending to update counts
+      await loadPendingTasks();
+      await loadCompletedResults();
 
-      const currentPending = pendingData?.map((item: any) => ({
-        task_id: item.metadata?.task_id || item.input_data?.task_id,
-        query: item.input_data?.query || 'Consulta en progreso',
-        started_at: item.created_at,
-        estimated_completion: new Date(Date.now() + 25 * 60 * 1000).toISOString(),
-        status: 'processing' as const
-      })).filter(task => task.task_id) || [];
+      // Show toast for newly completed items
+      if (queueCompleted && queueCompleted.length > 0) {
+        const recentlyCompleted = queueCompleted.filter(t => {
+          const completedAt = new Date(t.completed_at);
+          const now = new Date();
+          return (now.getTime() - completedAt.getTime()) < 60000; // Within last minute
+        });
 
-      console.log(`📡 Polling: Found ${currentPending.length} pending task(s)`);
-
-      // Check for completed or failed tasks
-      for (const task of currentPending) {
-        console.log(`📡 Checking task ${task.task_id}...`);
-        
-        const { data, error } = await supabase
-          .from('legal_tools_results')
-          .select('*')
-          .eq('lawyer_id', user.id)
-          .eq('tool_type', 'research')
-          .eq('metadata->>task_id', task.task_id)
-          .in('metadata->>status', ['completed', 'failed'])
-          .order('created_at', { ascending: false })
-          .limit(1);
-
-        if (error) {
-          console.error(`Error checking task ${task.task_id}:`, error);
-          continue;
-        }
-
-        if (data && data.length > 0) {
-          const completedTask = data[0];
-          const taskStatus = (completedTask.metadata as any)?.status;
-          
-          console.log(`📡 Task ${task.task_id} status: ${taskStatus}`);
-          
-          if (taskStatus === 'completed') {
-            const newResult: ResearchResult = {
-              query: task.query,
-              findings: (completedTask.output_data as any)?.findings || 'Investigación completada',
-              sources: (completedTask.output_data as any)?.sources || ['Fuentes consultadas'],
-              timestamp: completedTask.created_at,
-              conclusion: (completedTask.output_data as any)?.conclusion || 'Análisis finalizado',
-              task_id: task.task_id,
-              status: 'completed'
-            };
-
-            setResults(prev => [newResult, ...prev.filter(r => r.task_id !== task.task_id)]);
-            setPendingTasks(prev => prev.filter(t => t.task_id !== task.task_id));
-            
+        recentlyCompleted.forEach(task => {
+          if (task.status === 'completed') {
             toast({
               title: "🎉 Investigación completada",
-              description: `Tu consulta sobre "${task.query.substring(0, 50)}..." ha sido procesada exitosamente.`,
+              description: `Tu consulta sobre "${task.query?.substring(0, 50)}..." ha sido procesada exitosamente.`,
             });
-          } else if (taskStatus === 'failed') {
-            setPendingTasks(prev => prev.filter(t => t.task_id !== task.task_id));
-            
+          } else if (task.status === 'failed') {
             toast({
               title: "⚠️ Investigación fallida",
-              description: "Hubo un problema procesando tu consulta. Por favor intenta nuevamente.",
+              description: task.last_error || "Hubo un problema procesando tu consulta. Por favor intenta nuevamente.",
               variant: "destructive",
             });
           }
-        } else {
-          console.log(`📡 Task ${task.task_id} still in progress (incomplete)`);
-        }
+        });
       }
-
-      // Update pending tasks state
-      setPendingTasks(currentPending);
       
     } catch (error) {
       console.error('Error in checkTaskUpdates:', error);
     }
   };
+
+
 
   const handleSearch = async () => {
     if (!query.trim()) {
@@ -295,8 +276,26 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
         throw new Error(data.error || 'Error en la investigación');
       }
 
-      // Handle background task response
-      if (data.task_id) {
+      // Handle queue response (new system)
+      if (data.queue_id) {
+        const newTask: PendingTask = {
+          task_id: data.queue_id,
+          query: query,
+          started_at: new Date().toISOString(),
+          estimated_completion: new Date(Date.now() + 25 * 60 * 1000).toISOString(),
+          status: 'initiated' as const
+        };
+
+        setPendingTasks(prev => [newTask, ...prev]);
+        setQuery("");
+        setProgress(100);
+
+        toast({
+          title: "🚀 Investigación en cola",
+          description: data.message || `Tu consulta está en cola. Tiempo estimado: ${data.estimated_time || '5-30 minutos'}`,
+        });
+      } else if (data.task_id) {
+        // Legacy background task response
         const newTask: PendingTask = {
           task_id: data.task_id,
           query: query,
