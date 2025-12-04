@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import OpenAIAgentDebug from "./OpenAIAgentDebug";
 import { sanitizeHtml } from "@/utils/htmlSanitizer";
+import RichTextTemplateEditor from "@/components/RichTextTemplateEditor";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -1854,13 +1855,11 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                           Re-analizar Plantilla
                         </Button>
                       </div>
-                      <Textarea
-                        id="template_content"
+                      <RichTextTemplateEditor
                         value={editingAgent.template_content}
-                        onChange={(e) => handleEditFieldChange('template_content', e.target.value)}
+                        onChange={(value) => handleEditFieldChange('template_content', value)}
                         placeholder="Contenido de la plantilla del documento. Usa {{campo}} para placeholders."
-                        rows={10}
-                        className="font-mono text-sm"
+                        minHeight="300px"
                       />
                       <p className="text-xs text-muted-foreground mt-1">
                         Placeholders detectados: {extractPlaceholdersFromTemplate(editingAgent.template_content).length}

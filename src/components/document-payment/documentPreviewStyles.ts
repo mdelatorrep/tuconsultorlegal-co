@@ -51,6 +51,17 @@ export const getPreviewStyles = () => `
   .preview-content div {
     white-space: pre-wrap;
   }
+  
+  /* ReactQuill alignment classes */
+  .preview-content .ql-align-center {
+    text-align: center;
+  }
+  .preview-content .ql-align-right {
+    text-align: right;
+  }
+  .preview-content .ql-align-justify {
+    text-align: justify;
+  }
 
   .preview-content p {
     margin-bottom: 1em;

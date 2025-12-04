@@ -4,9 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Save, Download, X, DollarSign, Loader2 } from "lucide-react";
-import ReactQuill from "react-quill";
-import "react-quill/dist/quill.snow.css";
+import { Save, Download, X, Loader2 } from "lucide-react";
+import RichTextTemplateEditor from "@/components/RichTextTemplateEditor";
 import { generatePDF } from "./pdfUtils";
 
 interface DocumentEditorProps {
@@ -33,31 +32,6 @@ export default function DocumentEditor({
   const [isSaving, setIsSaving] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const { toast } = useToast();
-
-  const modules = {
-    toolbar: [
-      [{ header: [1, 2, 3, false] }],
-      ["bold", "italic", "underline", "strike"],
-      [{ list: "ordered" }, { list: "bullet" }],
-      [{ indent: "-1" }, { indent: "+1" }],
-      [{ align: [] }],
-      ["link"],
-      ["clean"],
-    ],
-  };
-
-  const formats = [
-    "header",
-    "bold",
-    "italic",
-    "underline",
-    "strike",
-    "list",
-    "bullet",
-    "indent",
-    "align",
-    "link",
-  ];
 
   const handleSave = async () => {
     if (!title.trim()) {
@@ -153,16 +127,12 @@ export default function DocumentEditor({
             <label className="text-sm font-medium mb-2 block">
               Contenido
             </label>
-            <div className="border rounded-md">
-              <ReactQuill
-                theme="snow"
-                value={content}
-                onChange={setContent}
-                modules={modules}
-                formats={formats}
-                className="h-96"
-              />
-            </div>
+            <RichTextTemplateEditor
+              value={content}
+              onChange={setContent}
+              placeholder="Escribe el contenido del documento..."
+              minHeight="350px"
+            />
           </div>
 
           <div className="flex gap-2 pt-12">

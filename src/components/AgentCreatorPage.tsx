@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, ArrowLeft, ArrowRight, CheckCircle, Loader2, Copy, Wand2, Bold, Italic, Underline, Type, AlignLeft, AlignCenter, AlignRight, AlignJustify, List, ListOrdered, Quote, Indent, Outdent, Save, FileText, Trash2 } from "lucide-react";
+import { Sparkles, ArrowLeft, ArrowRight, CheckCircle, Loader2, Copy, Wand2, Save, FileText, Trash2 } from "lucide-react";
+import RichTextTemplateEditor from "@/components/RichTextTemplateEditor";
 import { ConversationGuideBuilder } from "@/components/ConversationGuideBuilder";
 import { FieldInstructionsManager } from "@/components/FieldInstructionsManager";
 
@@ -1481,83 +1482,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
     }
   };
 
-  // Rich text editor functions
-  const handleTextFormat = (format: string) => {
-    const textarea = document.getElementById('docTemplate') as HTMLTextAreaElement;
-    if (!textarea) return;
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = formData.docTemplate.substring(start, end);
-    let formattedText = '';
-
-    switch (format) {
-      case 'bold':
-        formattedText = `**${selectedText}**`;
-        break;
-      case 'italic':
-        formattedText = `*${selectedText}*`;
-        break;
-      case 'underline':
-        formattedText = `<u>${selectedText}</u>`;
-        break;
-      case 'h1':
-        formattedText = `# ${selectedText}`;
-        break;
-      case 'h2':
-        formattedText = `## ${selectedText}`;
-        break;
-      case 'h3':
-        formattedText = `### ${selectedText}`;
-        break;
-      case 'left':
-        formattedText = `<div align="left">${selectedText}</div>`;
-        break;
-      case 'center':
-        formattedText = `<center>${selectedText}</center>`;
-        break;
-      case 'right':
-        formattedText = `<div align="right">${selectedText}</div>`;
-        break;
-      case 'justify':
-        formattedText = `<div align="justify">${selectedText}</div>`;
-        break;
-      case 'list':
-        const listItems = selectedText.split('\n').filter(line => line.trim())
-          .map(item => `• ${item.trim()}`).join('\n');
-        formattedText = listItems;
-        break;
-      case 'orderedList':
-        const orderedItems = selectedText.split('\n').filter(line => line.trim())
-          .map((item, index) => `${index + 1}. ${item.trim()}`).join('\n');
-        formattedText = orderedItems;
-        break;
-      case 'quote':
-        formattedText = `> ${selectedText}`;
-        break;
-      case 'indent':
-        const indentedText = selectedText.split('\n')
-          .map(line => `    ${line}`).join('\n');
-        formattedText = indentedText;
-        break;
-      case 'outdent':
-        const outdentedText = selectedText.split('\n')
-          .map(line => line.replace(/^    /, '')).join('\n');
-        formattedText = outdentedText;
-        break;
-      default:
-        formattedText = selectedText;
-    }
-
-    const newText = formData.docTemplate.substring(0, start) + formattedText + formData.docTemplate.substring(end);
-    setFormData(prev => ({ ...prev, docTemplate: newText }));
-
-    // Restore cursor position
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start + formattedText.length, start + formattedText.length);
-    }, 0);
-  };
+  // handleTextFormat function removed - now using RichTextTemplateEditor with ReactQuill
 
   return (
     <div className="container mx-auto px-6 py-8">
@@ -2051,203 +1976,26 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
                   </div>
                 )}
 
-                {/* Rich Text Editor Toolbar */}
+                {/* Rich Text Editor usando ReactQuill para consistencia con preview y PDF */}
                 <div className="border border-input rounded-lg overflow-hidden">
-                  {/* Formatting Toolbar */}
-                  <div className="flex flex-wrap gap-1 p-2 bg-muted/50 border-b border-input">
-                    {/* Text Formatting */}
-                    <div className="flex gap-1 border-r border-input pr-2 mr-2">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleTextFormat('bold')}
-                        className="h-8 w-8 p-0"
-                        title="Negrita"
-                      >
-                        <Bold className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleTextFormat('italic')}
-                        className="h-8 w-8 p-0"
-                        title="Cursiva"
-                      >
-                        <Italic className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleTextFormat('underline')}
-                        className="h-8 w-8 p-0"
-                        title="Subrayado"
-                      >
-                        <Underline className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    
-                    {/* Headings */}
-                    <div className="flex gap-1 border-r border-input pr-2 mr-2">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleTextFormat('h1')}
-                        className="h-8 px-2 text-xs font-bold"
-                        title="Título 1"
-                      >
-                        H1
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleTextFormat('h2')}
-                        className="h-8 px-2 text-xs font-bold"
-                        title="Título 2"
-                      >
-                        H2
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleTextFormat('h3')}
-                        className="h-8 px-2 text-xs font-bold"
-                        title="Título 3"
-                      >
-                        H3
-                      </Button>
-                    </div>
-                    
-                    {/* Alignment */}
-                    <div className="flex gap-1 border-r border-input pr-2 mr-2">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleTextFormat('left')}
-                        className="h-8 w-8 p-0"
-                        title="Alinear a la izquierda"
-                      >
-                        <AlignLeft className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleTextFormat('center')}
-                        className="h-8 w-8 p-0"
-                        title="Centrar"
-                      >
-                        <AlignCenter className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleTextFormat('right')}
-                        className="h-8 w-8 p-0"
-                        title="Alinear a la derecha"
-                      >
-                        <AlignRight className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleTextFormat('justify')}
-                        className="h-8 w-8 p-0"
-                        title="Justificar texto"
-                      >
-                        <AlignJustify className="h-4 w-4" />
-                      </Button>
-                    </div>
-
-                    {/* Lists and Indentation */}
-                    <div className="flex gap-1 border-r border-input pr-2 mr-2">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleTextFormat('list')}
-                        className="h-8 w-8 p-0"
-                        title="Lista con viñetas"
-                      >
-                        <List className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleTextFormat('orderedList')}
-                        className="h-8 w-8 p-0"
-                        title="Lista numerada"
-                      >
-                        <ListOrdered className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleTextFormat('quote')}
-                        className="h-8 w-8 p-0"
-                        title="Cita"
-                      >
-                        <Quote className="h-4 w-4" />
-                      </Button>
-                    </div>
-
-                    {/* Indentation */}
-                    <div className="flex gap-1">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleTextFormat('indent')}
-                        className="h-8 w-8 p-0"
-                        title="Aumentar sangría"
-                      >
-                        <Indent className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleTextFormat('outdent')}
-                        className="h-8 w-8 p-0"
-                        title="Disminuir sangría"
-                      >
-                        <Outdent className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  {/* Text Area */}
-                  <Textarea
-                    id="docTemplate"
+                  <RichTextTemplateEditor
                     value={formData.docTemplate}
-                    onChange={(e) => handleInputChange('docTemplate', e.target.value)}
+                    onChange={(value) => handleInputChange('docTemplate', value)}
                     placeholder="Ej: CONTRATO DE PROMESA DE COMPRAVENTA... Entre los suscritos a saber: {{nombre_promitente_vendedor}}, mayor de edad..."
-                    rows={15}
-                    className="font-mono text-sm border-0 rounded-none resize-none focus-visible:ring-0"
+                    minHeight="350px"
                   />
                 </div>
                 
                 {/* Help text for formatting */}
                 <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
                   <p className="text-xs text-blue-700 dark:text-blue-300 mb-2">
-                    <strong>💡 Cómo usar el editor:</strong> Selecciona el texto que deseas formatear y luego haz clic en los botones de formato.
+                    <strong>💡 Cómo usar el editor:</strong> Usa la barra de herramientas para dar formato a tu documento.
                   </p>
                   <div className="text-xs text-blue-600 dark:text-blue-400 space-y-1">
                     <p><strong>Formato disponible:</strong> Negrita, cursiva, subrayado, títulos (H1-H3)</p>
-                    <p><strong>Alineación:</strong> Izquierda, centro, derecha, <strong>justificado</strong></p>
-                    <p><strong>Listas:</strong> Con viñetas, numeradas, citas</p>
-                    <p><strong>Sangría:</strong> Aumentar o disminuir sangría de texto</p>
-                    <p>Los placeholders como <code>{"{{nombre_campo}}"}</code> no se verán afectados por el formateo.</p>
+                    <p><strong>Alineación:</strong> Izquierda, centro, derecha, justificado</p>
+                    <p><strong>Listas:</strong> Con viñetas o numeradas</p>
+                    <p><strong>Importante:</strong> Los placeholders como <code>{"{{nombre_campo}}"}</code> se detectan automáticamente.</p>
                   </div>
                 </div>
 
