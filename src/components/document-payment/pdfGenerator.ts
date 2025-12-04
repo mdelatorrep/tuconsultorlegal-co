@@ -157,6 +157,12 @@ const processHtmlContent = (html: string): ContentToken[] => {
       // Determinar formato basado en la etiqueta
       const format: Partial<ContentToken> = { ...parentFormat };
 
+      // Detectar alineación por clases de ReactQuill
+      const className = element.className || '';
+      if (className.includes('ql-align-center')) format.textAlign = 'center';
+      else if (className.includes('ql-align-right')) format.textAlign = 'right';
+      else if (className.includes('ql-align-justify')) format.textAlign = 'justify';
+
       // Parsear estilos inline
       const style = element.getAttribute("style");
       if (style) {
@@ -180,7 +186,7 @@ const processHtmlContent = (html: string): ContentToken[] => {
           if (size) format.fontSize = size;
         }
 
-        // Extraer text-align
+        // Extraer text-align (sobrescribe clases si hay estilo inline)
         if (styles["text-align"]) {
           format.textAlign = styles["text-align"] as any;
         }

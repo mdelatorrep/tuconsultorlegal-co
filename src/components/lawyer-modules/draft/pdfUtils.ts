@@ -9,9 +9,11 @@ interface ContentToken {
   isHeading?: number;
   isList?: boolean;
   isOrderedList?: boolean;
+  textAlign?: 'left' | 'center' | 'right' | 'justify';
 }
 
 // Función mejorada para procesar HTML y extraer tokens con formato
+// Compatible con salida de ReactQuill
 const processHtmlToTokens = (html: string): ContentToken[] => {
   const tokens: ContentToken[] = [];
   
@@ -32,6 +34,18 @@ const processHtmlToTokens = (html: string): ContentToken[] => {
       const tagName = element.tagName.toLowerCase();
       
       const format: Partial<ContentToken> = { ...parentFormat };
+      
+      // Detectar alineación por clases de ReactQuill
+      const className = element.className || '';
+      if (className.includes('ql-align-center')) format.textAlign = 'center';
+      else if (className.includes('ql-align-right')) format.textAlign = 'right';
+      else if (className.includes('ql-align-justify')) format.textAlign = 'justify';
+      
+      // Detectar alineación por atributo style
+      const styleAttr = element.getAttribute('style') || '';
+      if (styleAttr.includes('text-align: center')) format.textAlign = 'center';
+      else if (styleAttr.includes('text-align: right')) format.textAlign = 'right';
+      else if (styleAttr.includes('text-align: justify')) format.textAlign = 'justify';
       
       if (tagName === 'strong' || tagName === 'b') {
         format.isBold = true;
@@ -158,18 +172,43 @@ export const generatePDF = async (content: string, title: string) => {
     const lineMaxWidth = maxWidth - (token.isList ? 5 : 0);
     const lines = doc.splitTextToSize(textToRender, lineMaxWidth);
     
-    for (const line of lines) {
+    for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+      const line = lines[lineIdx];
       if (yPosition + lineHeight > maxHeight + margin) {
         doc.addPage();
         yPosition = margin;
       }
       
-      doc.text(line, xPosition, yPosition);
+      // Aplicar alineación
+      let finalX = xPosition;
+      const lineWidth = doc.getTextWidth(line);
+      
+      if (token.textAlign === 'center') {
+        finalX = margin + (lineMaxWidth - lineWidth) / 2;
+      } else if (token.textAlign === 'right') {
+        finalX = pageWidth - margin - lineWidth;
+      } else if (token.textAlign === 'justify' && lineIdx < lines.length - 1) {
+        // Justificación solo para líneas intermedias
+        const words = line.split(' ');
+        if (words.length > 1) {
+          const totalWordsWidth = words.reduce((sum, word) => sum + doc.getTextWidth(word), 0);
+          const spaceWidth = (lineMaxWidth - totalWordsWidth) / (words.length - 1);
+          let currentX = xPosition;
+          words.forEach((word, idx) => {
+            doc.text(word, currentX, yPosition);
+            currentX += doc.getTextWidth(word) + (idx < words.length - 1 ? spaceWidth : 0);
+          });
+          yPosition += lineHeight;
+          continue;
+        }
+      }
+      
+      doc.text(line, finalX, yPosition);
       
       if (token.isUnderline) {
         const textWidth = doc.getTextWidth(line);
         doc.setLineWidth(0.2);
-        doc.line(xPosition, yPosition + 1, xPosition + textWidth, yPosition + 1);
+        doc.line(finalX, yPosition + 1, finalX + textWidth, yPosition + 1);
       }
       
       yPosition += lineHeight;
