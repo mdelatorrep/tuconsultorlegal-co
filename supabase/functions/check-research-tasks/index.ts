@@ -74,6 +74,7 @@ serve(async (req) => {
     let failedCount = 0;
     let stillProcessingCount = 0;
     let timedOutCount = 0;
+    let rateLimitedCount = 0;
 
     for (const task of allTasks) {
       const isQueueTask = task.source === 'queue';
@@ -245,28 +246,89 @@ serve(async (req) => {
 
         } else if (data.status === 'failed') {
           const errorMessage = data.error?.message || data.incomplete_details?.reason || 'Unknown error';
+          const errorCode = data.error?.code || data.incomplete_details?.reason || '';
+          
+          // Check if this is a rate limit error that can be retried
+          const isRateLimitError = errorCode === 'rate_limit_exceeded' || 
+                                   errorMessage.toLowerCase().includes('rate limit') ||
+                                   errorMessage.toLowerCase().includes('rate_limit') ||
+                                   errorMessage.toLowerCase().includes('too many requests') ||
+                                   errorCode === 'max_tokens';
           
           if (isQueueTask) {
-            await supabase
-              .from('research_queue')
-              .update({ 
-                status: 'failed',
-                last_error: errorMessage,
-                completed_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', task.id);
-
-            if (task.result_id) {
+            const currentRetryCount = task.retry_count || 0;
+            const maxRetries = task.max_retries || 5;
+            
+            // If rate limit and retries available, schedule retry with exponential backoff
+            if (isRateLimitError && currentRetryCount < maxRetries) {
+              // Exponential backoff: 5min * 2^retry_count, max 30 minutes
+              const backoffMinutes = Math.min(30, 5 * Math.pow(2, currentRetryCount));
+              const nextRetryAt = new Date(Date.now() + backoffMinutes * 60 * 1000).toISOString();
+              
               await supabase
-                .from('legal_tools_results')
-                .update({
-                  output_data: { error: errorMessage },
-                  metadata: { status: 'failed', error: errorMessage, error_details: data.error }
+                .from('research_queue')
+                .update({ 
+                  status: 'rate_limited',
+                  retry_count: currentRetryCount + 1,
+                  next_retry_at: nextRetryAt,
+                  last_error: `Rate limit: ${errorMessage}. Reintento #${currentRetryCount + 1} en ${backoffMinutes} minutos.`,
+                  openai_task_id: null, // Clear task ID so it can be re-submitted
+                  updated_at: new Date().toISOString()
                 })
-                .eq('id', task.result_id);
+                .eq('id', task.id);
+              
+              if (task.result_id) {
+                await supabase
+                  .from('legal_tools_results')
+                  .update({
+                    metadata: { 
+                      status: 'rate_limited',
+                      error: errorMessage,
+                      retry_count: currentRetryCount + 1,
+                      next_retry_at: nextRetryAt,
+                      error_code: errorCode
+                    }
+                  })
+                  .eq('id', task.result_id);
+              }
+              
+              rateLimitedCount++;
+              console.log(`⏰ Task ${taskId} rate limited, retry #${currentRetryCount + 1} scheduled for ${nextRetryAt}`);
+              
+            } else {
+              // Mark as permanently failed (no retries left or non-recoverable error)
+              await supabase
+                .from('research_queue')
+                .update({ 
+                  status: 'failed',
+                  last_error: currentRetryCount >= maxRetries 
+                    ? `Máximo de reintentos (${maxRetries}) excedido. ${errorMessage}`
+                    : errorMessage,
+                  completed_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', task.id);
+
+              if (task.result_id) {
+                await supabase
+                  .from('legal_tools_results')
+                  .update({
+                    output_data: { error: errorMessage },
+                    metadata: { 
+                      status: 'failed', 
+                      error: errorMessage, 
+                      error_details: data.error,
+                      final_retry_count: currentRetryCount
+                    }
+                  })
+                  .eq('id', task.result_id);
+              }
+              
+              failedCount++;
+              console.log(`❌ Task ${taskId} failed permanently: ${errorMessage}`);
             }
           } else {
+            // Legacy task handling
             await supabase
               .from('legal_tools_results')
               .update({
@@ -274,10 +336,10 @@ serve(async (req) => {
                 updated_at: new Date().toISOString()
               })
               .eq('id', task.id);
+            
+            failedCount++;
+            console.log(`❌ Legacy task ${taskId} failed: ${errorMessage}`);
           }
-
-          failedCount++;
-          console.log(`❌ Task ${taskId} failed: ${errorMessage}`);
 
         } else {
           // Still in progress
@@ -319,7 +381,7 @@ serve(async (req) => {
       console.log('Queue processor trigger skipped');
     }
 
-    console.log(`📊 Check complete: ${completedCount} completed, ${failedCount} failed, ${stillProcessingCount} processing, ${timedOutCount} timed out`);
+    console.log(`📊 Check complete: ${completedCount} completed, ${failedCount} failed, ${stillProcessingCount} processing, ${timedOutCount} timed out, ${rateLimitedCount} rate limited`);
 
     return new Response(
       JSON.stringify({
@@ -328,6 +390,7 @@ serve(async (req) => {
         failed: failedCount,
         still_processing: stillProcessingCount,
         timed_out: timedOutCount,
+        rate_limited: rateLimitedCount,
         total_checked: allTasks.length
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

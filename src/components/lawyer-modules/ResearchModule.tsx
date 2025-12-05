@@ -26,7 +26,9 @@ interface PendingTask {
   query: string;
   started_at: string;
   estimated_completion: string;
-  status: 'initiated' | 'processing' | 'completed' | 'failed';
+  status: 'initiated' | 'processing' | 'completed' | 'failed' | 'rate_limited' | 'pending';
+  retry_count?: number;
+  next_retry_at?: string;
 }
 
 interface ResearchModuleProps {
@@ -127,8 +129,10 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
           task_id: item.id,
           query: item.query || 'Consulta en progreso',
           started_at: item.created_at,
-          estimated_completion: new Date(Date.now() + 25 * 60 * 1000).toISOString(),
-          status: item.status === 'rate_limited' ? 'processing' as const : 'processing' as const
+          estimated_completion: item.next_retry_at || new Date(Date.now() + 25 * 60 * 1000).toISOString(),
+          status: item.status as PendingTask['status'],
+          retry_count: item.retry_count || 0,
+          next_retry_at: item.next_retry_at
         });
       });
 
@@ -534,56 +538,113 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
                       </h3>
                     </div>
                     
-                    {pendingTasks.map((task, index) => (
-                      <Card key={task.task_id} className="border-0 shadow-xl bg-gradient-to-br from-white via-white to-orange-50 overflow-hidden">
-                        <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 via-transparent to-orange-500/10 opacity-50"></div>
-                        <CardHeader className="relative pb-4">
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex-1">
-                              <CardTitle className="text-xl font-bold text-gray-900 mb-2 leading-tight">
-                                {task.query.length > 120 
-                                  ? `${task.query.substring(0, 120)}...` 
-                                  : task.query
+                    {pendingTasks.map((task, index) => {
+                      const isRateLimited = task.status === 'rate_limited';
+                      const isPending = task.status === 'pending';
+                      const nextRetryTime = task.next_retry_at ? new Date(task.next_retry_at) : null;
+                      const minutesUntilRetry = nextRetryTime ? Math.max(0, Math.round((nextRetryTime.getTime() - Date.now()) / 60000)) : null;
+                      
+                      return (
+                        <Card key={task.task_id} className={`border-0 shadow-xl overflow-hidden ${
+                          isRateLimited 
+                            ? 'bg-gradient-to-br from-white via-white to-amber-50' 
+                            : 'bg-gradient-to-br from-white via-white to-orange-50'
+                        }`}>
+                          <div className={`absolute inset-0 opacity-50 ${
+                            isRateLimited 
+                              ? 'bg-gradient-to-br from-amber-500/5 via-transparent to-amber-500/10'
+                              : 'bg-gradient-to-br from-orange-500/5 via-transparent to-orange-500/10'
+                          }`}></div>
+                          <CardHeader className="relative pb-4">
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex-1">
+                                <CardTitle className="text-xl font-bold text-gray-900 mb-2 leading-tight">
+                                  {task.query.length > 120 
+                                    ? `${task.query.substring(0, 120)}...` 
+                                    : task.query
+                                  }
+                                </CardTitle>
+                              </div>
+                              {isRateLimited ? (
+                                <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-200 whitespace-nowrap">
+                                  <Clock className="h-3 w-3 mr-1" />
+                                  En espera de reintento
+                                </Badge>
+                              ) : isPending ? (
+                                <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-200 whitespace-nowrap">
+                                  <Hourglass className="h-3 w-3 mr-1" />
+                                  En cola
+                                </Badge>
+                              ) : (
+                                <Badge variant="secondary" className="bg-orange-100 text-orange-800 border-orange-200 whitespace-nowrap animate-pulse">
+                                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                  Procesando
+                                </Badge>
+                              )}
+                            </div>
+                          </CardHeader>
+                          <CardContent className="relative space-y-4">
+                            {isRateLimited ? (
+                              <div className="bg-gradient-to-br from-amber-50 via-white to-amber-50 border border-amber-200/60 p-4 rounded-xl">
+                                <div className="flex items-center gap-3 mb-3">
+                                  <Clock className="h-5 w-5 text-amber-600" />
+                                  <span className="font-semibold text-amber-800">Reintento programado</span>
+                                </div>
+                                <p className="text-sm text-amber-700 mb-3">
+                                  Tu investigación está siendo reprogramada debido a límites temporales del servicio de IA.
+                                  Se reintentará automáticamente. {task.retry_count && task.retry_count > 0 && `(Reintento #${task.retry_count})`}
+                                </p>
+                                <div className="space-y-2">
+                                  {minutesUntilRetry !== null && minutesUntilRetry > 0 && (
+                                    <div className="flex justify-between text-xs text-amber-600">
+                                      <span>Próximo reintento en:</span>
+                                      <span className="font-semibold">{minutesUntilRetry} min</span>
+                                    </div>
+                                  )}
+                                  {minutesUntilRetry === 0 && (
+                                    <div className="flex justify-between text-xs text-amber-600">
+                                      <span>Estado:</span>
+                                      <span className="font-semibold">Reintentando ahora...</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="bg-gradient-to-br from-orange-50 via-white to-orange-50 border border-orange-200/60 p-4 rounded-xl">
+                                <div className="flex items-center gap-3 mb-3">
+                                  <Clock className="h-5 w-5 text-orange-600" />
+                                  <span className="font-semibold text-orange-800">Deep Research en progreso</span>
+                                </div>
+                                <p className="text-sm text-orange-700 mb-3">
+                                  Tu consulta está siendo procesada por nuestro sistema de investigación avanzado con IA. 
+                                  Esto incluye análisis de jurisprudencia, normativa vigente y búsqueda web especializada.
+                                </p>
+                                <div className="space-y-2">
+                                  <div className="flex justify-between text-xs text-orange-600">
+                                    <span>Tiempo transcurrido:</span>
+                                    <span>{Math.round((Date.now() - new Date(task.started_at).getTime()) / 60000)} min</span>
+                                  </div>
+                                  <div className="flex justify-between text-xs text-orange-600">
+                                    <span>Tiempo estimado total:</span>
+                                    <span>5-30 minutos</span>
+                                  </div>
+                                </div>
+                                <Progress value={Math.min(90, (Date.now() - new Date(task.started_at).getTime()) / (30 * 60 * 1000) * 100)} className="mt-3 h-2" />
+                              </div>
+                            )}
+                            
+                            <div className={`${isRateLimited ? 'bg-amber-50 border-amber-200' : 'bg-blue-50 border-blue-200'} border rounded-lg p-3`}>
+                              <p className={`text-xs ${isRateLimited ? 'text-amber-800' : 'text-blue-800'} text-center`}>
+                                {isRateLimited 
+                                  ? '⏳ Tu investigación será procesada automáticamente cuando el servicio esté disponible.'
+                                  : '💡 Recibirás una notificación cuando tu investigación esté lista. Puedes continuar usando otras funciones mientras tanto.'
                                 }
-                              </CardTitle>
+                              </p>
                             </div>
-                            <Badge variant="secondary" className="bg-orange-100 text-orange-800 border-orange-200 whitespace-nowrap animate-pulse">
-                              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                              Procesando
-                            </Badge>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="relative space-y-4">
-                          <div className="bg-gradient-to-br from-orange-50 via-white to-orange-50 border border-orange-200/60 p-4 rounded-xl">
-                            <div className="flex items-center gap-3 mb-3">
-                              <Clock className="h-5 w-5 text-orange-600" />
-                              <span className="font-semibold text-orange-800">Deep Research en progreso</span>
-                            </div>
-                            <p className="text-sm text-orange-700 mb-3">
-                              Tu consulta está siendo procesada por nuestro sistema de investigación avanzado con IA. 
-                              Esto incluye análisis de jurisprudencia, normativa vigente y búsqueda web especializada.
-                            </p>
-                            <div className="space-y-2">
-                              <div className="flex justify-between text-xs text-orange-600">
-                                <span>Tiempo transcurrido:</span>
-                                <span>{Math.round((Date.now() - new Date(task.started_at).getTime()) / 60000)} min</span>
-                              </div>
-                              <div className="flex justify-between text-xs text-orange-600">
-                                <span>Tiempo estimado total:</span>
-                                <span>5-30 minutos</span>
-                              </div>
-                            </div>
-                            <Progress value={Math.min(90, (Date.now() - new Date(task.started_at).getTime()) / (30 * 60 * 1000) * 100)} className="mt-3 h-2" />
-                          </div>
-                          
-                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                            <p className="text-xs text-blue-800 text-center">
-                              💡 <strong>Tip:</strong> Recibirás una notificación cuando tu investigación esté lista. Puedes continuar usando otras funciones mientras tanto.
-                            </p>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
                 )}
 
