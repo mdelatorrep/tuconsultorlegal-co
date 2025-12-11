@@ -67,6 +67,7 @@ interface LegalAgent {
   frontend_icon: string | null;
   sla_enabled: boolean;
   sla_hours: number;
+  openai_enabled?: boolean;
 }
 
 interface AgentManagerPageProps {
@@ -521,17 +522,19 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
         });
       }
 
-      setAgents(agents.map(agent => 
-        agent.id === editingAgent.id ? editingAgent : agent
-      ));
-      
       setHasUnsavedChanges(false);
       
-      // ✅ CRITICAL: Update OpenAI assistant if agent has OpenAI enabled
-      const updatedAgent = agents.find(a => a.id === editingAgent.id);
-      if (updatedAgent && (updatedAgent as any).openai_enabled) {
+      // ✅ CRITICAL: Check database directly if OpenAI agent exists for this legal agent
+      const { data: openaiAgent } = await supabase
+        .from('openai_agents')
+        .select('id')
+        .eq('legal_agent_id', editingAgent.id)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if (openaiAgent) {
         try {
-          console.log('🔄 Recreating OpenAI assistant with updated conversation blocks...');
+          console.log('🔄 Recreating OpenAI assistant with updated data...');
           
           const { data: openaiData, error: openaiError } = await supabase.functions.invoke('create-openai-agent', {
             body: {
@@ -562,6 +565,23 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
         } catch (openaiError) {
           console.error('Error updating OpenAI assistant:', openaiError);
         }
+      }
+
+      // Refresh agent data from database after save
+      const { data: refreshedAgent } = await supabase
+        .from('legal_agents')
+        .select('*')
+        .eq('id', editingAgent.id)
+        .single();
+
+      if (refreshedAgent) {
+        setAgents(agents.map(agent => 
+          agent.id === editingAgent.id ? (refreshedAgent as LegalAgent) : agent
+        ));
+      } else {
+        setAgents(agents.map(agent => 
+          agent.id === editingAgent.id ? editingAgent : agent
+        ));
       }
       
       if (!silent) {
