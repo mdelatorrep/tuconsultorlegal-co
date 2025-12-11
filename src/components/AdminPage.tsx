@@ -25,6 +25,10 @@ import { LegalContentManager } from "./admin/LegalContentManager";
 import { AdminDashboard } from "./admin/AdminDashboard";
 import { AdminSidebar } from "./admin/AdminSidebar";
 import { AdminHeader } from "./admin/AdminHeader";
+import { DocumentsManager } from "./admin/DocumentsManager";
+import { UsersManager } from "./admin/UsersManager";
+import { SystemMonitoring } from "./admin/SystemMonitoring";
+import { RevenueAnalytics } from "./admin/RevenueAnalytics";
 import { 
   Copy, Users, Bot, BarChart3, Clock, CheckCircle, Lock, Unlock, Trash2, Check, X, Plus, RefreshCw, 
   Loader2, MessageCircle, BookOpen, Settings, Zap, Mail, Phone, Bell, LogOut, UserCheck, 
@@ -1360,6 +1364,18 @@ function AdminPage() {
         
       case 'custom-requests':
         return <AdminCustomDocumentRequests />;
+      
+      case 'documents':
+        return <DocumentsManager />;
+      
+      case 'users':
+        return <UsersManager />;
+      
+      case 'monitoring':
+        return <SystemMonitoring />;
+      
+      case 'revenue':
+        return <RevenueAnalytics />;
         
       default:
         return (

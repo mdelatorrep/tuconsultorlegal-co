@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Activity, Users, Bot, BarChart3, BookOpen, MessageCircle, 
   Settings, Mail, Tag, CreditCard, Database, FileText, 
-  FileCheck, Zap, Shield
+  FileCheck, Zap, Shield, DollarSign, UserCheck, Server
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -41,6 +41,13 @@ export const AdminSidebar = ({
       label: "Usuarios & Roles",
       items: [
         { id: 'lawyers', label: 'Abogados', icon: Users, count: 0 },
+        { id: 'users', label: 'Usuarios Finales', icon: UserCheck, count: 0 },
+      ]
+    },
+    {
+      label: "Documentos",
+      items: [
+        { id: 'documents', label: 'Docs Generados', icon: FileText, count: 0 },
       ]
     },
     {
@@ -68,10 +75,17 @@ export const AdminSidebar = ({
       ]
     },
     {
-      label: "Sistema & Analytics",
+      label: "Finanzas",
       items: [
         { id: 'subscriptions', label: 'Suscripciones', icon: CreditCard, count: 0 },
+        { id: 'revenue', label: 'Ingresos & Pagos', icon: DollarSign, count: 0 },
+      ]
+    },
+    {
+      label: "Sistema & Analytics",
+      items: [
         { id: 'stats', label: 'Estadísticas', icon: BarChart3, count: 0 },
+        { id: 'monitoring', label: 'Monitoreo', icon: Server, count: 0 },
         { id: 'config', label: 'Config Sistema', icon: Settings, count: 0 },
       ]
     }
