@@ -356,6 +356,19 @@ serve(async (req) => {
       throw insertError;
     }
 
+    // ✅ CRITICAL: Update legal_agents to mark OpenAI as enabled
+    const { error: updateError } = await supabase
+      .from("legal_agents")
+      .update({ openai_enabled: true })
+      .eq("id", legal_agent_id);
+
+    if (updateError) {
+      console.error(`Warning: Could not update openai_enabled flag:`, updateError);
+      // Non-fatal error, continue anyway since agent was created
+    } else {
+      console.log(`✅ Updated legal_agents.openai_enabled = true for ${legal_agent_id}`);
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
