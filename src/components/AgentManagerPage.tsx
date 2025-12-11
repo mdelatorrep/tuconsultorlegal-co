@@ -1715,40 +1715,28 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                 <div className="flex-1 overflow-y-auto mt-4">
                   {/* TAB 1: INFORMACIÓN BÁSICA */}
                   <TabsContent value="basic" className="space-y-4 mt-0">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <Label htmlFor="name">Nombre del Agente *</Label>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={handleImproveDocInfo}
-                            disabled={isImprovingDocInfo}
-                          >
-                            {isImprovingDocInfo ? (
-                              <RefreshCw className="h-3 w-3 animate-spin" />
-                            ) : (
-                              <Wand2 className="h-3 w-3" />
-                            )}
-                          </Button>
-                        </div>
-                        <Input
-                          id="name"
-                          value={editingAgent.name}
-                          onChange={(e) => handleEditFieldChange('name', e.target.value)}
-                          placeholder="Nombre del agente"
-                        />
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Label htmlFor="name">Nombre del Agente *</Label>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={handleImproveDocInfo}
+                          disabled={isImprovingDocInfo}
+                        >
+                          {isImprovingDocInfo ? (
+                            <RefreshCw className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Wand2 className="h-3 w-3" />
+                          )}
+                        </Button>
                       </div>
-                      
-                      <div>
-                        <Label htmlFor="document_name">Nombre del Documento</Label>
-                        <Input
-                          id="document_name"
-                          value={editingAgent.document_name || ''}
-                          onChange={(e) => handleEditFieldChange('document_name', e.target.value)}
-                          placeholder="Nombre del documento"
-                        />
-                      </div>
+                      <Input
+                        id="name"
+                        value={editingAgent.name}
+                        onChange={(e) => handleEditFieldChange('name', e.target.value)}
+                        placeholder="Nombre del agente"
+                      />
                     </div>
 
                     {/* AI Suggestions for Doc Info */}
@@ -1800,17 +1788,6 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                       />
                     </div>
 
-                    <div>
-                      <Label htmlFor="document_description">Descripción del Documento</Label>
-                      <Textarea
-                        id="document_description"
-                        value={editingAgent.document_description || ''}
-                        onChange={(e) => handleEditFieldChange('document_description', e.target.value)}
-                        placeholder="Descripción del documento"
-                        rows={3}
-                      />
-                    </div>
-
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="category">Categoría *</Label>
@@ -1856,7 +1833,7 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                     </div>
                   </TabsContent>
 
-                  {/* TAB 2: PLANTILLA Y PROMPT */}
+                  {/* TAB 2: PLANTILLA */}
                   <TabsContent value="template" className="space-y-4 mt-0">
                     <div>
                       <div className="flex items-center justify-between mb-2">
@@ -1883,27 +1860,6 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                       />
                       <p className="text-xs text-muted-foreground mt-1">
                         Placeholders detectados: {extractPlaceholdersFromTemplate(editingAgent.template_content).length}
-                      </p>
-                    </div>
-
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <Label htmlFor="ai_prompt">
-                          Prompt de IA 
-                          <Badge variant="secondary" className="ml-2 text-xs">Auto-generado</Badge>
-                        </Label>
-                      </div>
-                      <Textarea
-                        id="ai_prompt"
-                        value={editingAgent.ai_prompt || 'El prompt se genera automáticamente al re-procesar la plantilla...'}
-                        readOnly
-                        disabled
-                        rows={8}
-                        className="font-mono text-sm bg-muted/30 cursor-not-allowed"
-                      />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        💡 Este prompt se genera automáticamente basado en: nombre, descripción, categoría, plantilla, bloques de conversación, instrucciones de campos y audiencia objetivo. 
-                        Usa el botón <strong>"Re-analizar Plantilla"</strong> arriba para regenerarlo cuando cambies alguno de estos campos.
                       </p>
                     </div>
                   </TabsContent>
@@ -2009,38 +1965,6 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
 
                   {/* TAB 4: CONFIGURACIÓN */}
                   <TabsContent value="config" className="space-y-4 mt-0">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="button_cta">Texto del Botón</Label>
-                        <Input
-                          id="button_cta"
-                          value={editingAgent.button_cta || 'Generar Documento'}
-                          onChange={(e) => handleEditFieldChange('button_cta', e.target.value)}
-                          placeholder="Texto del botón de acción"
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="frontend_icon">Ícono del Frontend</Label>
-                        <Select
-                          value={editingAgent.frontend_icon || 'FileText'}
-                          onValueChange={(value) => handleEditFieldChange('frontend_icon', value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecciona un ícono" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="FileText">📄 Documento</SelectItem>
-                            <SelectItem value="Scale">⚖️ Balanza</SelectItem>
-                            <SelectItem value="Building">🏢 Edificio</SelectItem>
-                            <SelectItem value="Users">👥 Usuarios</SelectItem>
-                            <SelectItem value="Shield">🛡️ Escudo</SelectItem>
-                            <SelectItem value="Gavel">🔨 Martillo</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
                     <div className="space-y-4 p-4 border border-border rounded-lg bg-muted/50">
                       <div className="flex items-center justify-between">
                         <div>
@@ -2079,34 +2003,6 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
                           </Select>
                         </div>
                       )}
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4">
-                      <div>
-                        <Label htmlFor="price">Precio (COP)</Label>
-                        <Input
-                          id="price"
-                          type="number"
-                          min="0"
-                          value={editingAgent.price || 0}
-                          onChange={(e) => handleEditFieldChange('price', parseInt(e.target.value) || 0)}
-                          placeholder="Precio (0 = gratis)"
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Ingresa 0 para hacer el documento gratuito
-                        </p>
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="price_justification">Justificación del Precio</Label>
-                      <Textarea
-                        id="price_justification"
-                        value={editingAgent.price_justification || ''}
-                        onChange={(e) => handleEditFieldChange('price_justification', e.target.value)}
-                        placeholder="Justificación del precio"
-                        rows={3}
-                      />
                     </div>
                   </TabsContent>
                 </div>
