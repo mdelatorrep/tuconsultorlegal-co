@@ -1,11 +1,47 @@
 import DOMPurify from 'dompurify';
 
 /**
+ * Limpieza previa de formato de Microsoft Office
+ * Elimina clases Mso* y estilos mso-* que DOMPurify no filtra
+ */
+const cleanMicrosoftFormat = (html: string): string => {
+  if (!html) return '';
+  
+  return html
+    // Eliminar clases de Microsoft Office (Mso*)
+    .replace(/class="[^"]*"/gi, (match) => {
+      const cleaned = match.replace(/Mso[a-zA-Z0-9_-]*/gi, '').replace(/\s+/g, ' ').trim();
+      return cleaned === 'class=""' || cleaned === 'class=" "' ? '' : cleaned;
+    })
+    // Eliminar estilos de Microsoft Office (mso-*)
+    .replace(/style="[^"]*"/gi, (match) => {
+      const styleContent = match.slice(7, -1);
+      const cleanedProps = styleContent.split(';').filter(prop => {
+        const trimmed = prop.trim().toLowerCase();
+        return !trimmed.startsWith('mso-') && 
+               !trimmed.includes('tab-stops') && 
+               !trimmed.includes('layout-grid') &&
+               trimmed.length > 0;
+      });
+      return cleanedProps.length > 0 ? `style="${cleanedProps.join(';')}"` : '';
+    })
+    // Eliminar tags de Office XML
+    .replace(/<o:[^>]*>[\s\S]*?<\/o:[^>]*>/gi, '')
+    .replace(/<o:[^>]*\/>/gi, '')
+    .replace(/<w:[^>]*>[\s\S]*?<\/w:[^>]*>/gi, '')
+    .replace(/<w:[^>]*\/>/gi, '');
+};
+
+/**
  * Sanitiza contenido HTML para prevenir XSS
  * Permite solo etiquetas y atributos seguros comúnmente usados en editores de texto
+ * Incluye limpieza previa de formato de Microsoft Office
  */
 export const sanitizeHtml = (html: string): string => {
-  // Configurar DOMPurify con whitelist de etiquetas y atributos permitidos
+  // Paso 1: Limpiar formato de Microsoft Office
+  const preCleaned = cleanMicrosoftFormat(html);
+  
+  // Paso 2: Configurar DOMPurify con whitelist de etiquetas y atributos permitidos
   const config = {
     ALLOWED_TAGS: [
       'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 
@@ -16,7 +52,7 @@ export const sanitizeHtml = (html: string): string => {
     ],
     ALLOWED_ATTR: [
       'style', // Para colores y alineación
-      'class', // Para clases CSS
+      'class', // Para clases CSS (solo ql-* de Quill)
       'href', 'target', 'rel' // Para enlaces (si se usan)
     ],
     ALLOWED_STYLES: {
@@ -38,7 +74,7 @@ export const sanitizeHtml = (html: string): string => {
     }
   };
 
-  return DOMPurify.sanitize(html, config);
+  return DOMPurify.sanitize(preCleaned, config);
 };
 
 /**
