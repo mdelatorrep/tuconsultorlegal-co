@@ -6,6 +6,73 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper function to send agent status notification emails
+async function sendAgentStatusEmail(
+  supabase: any,
+  templateKey: string,
+  lawyerEmail: string,
+  lawyerName: string,
+  agentName: string,
+  agentId: string,
+  reason?: string
+) {
+  try {
+    // Fetch the template
+    const { data: template, error: templateError } = await supabase
+      .from('email_templates')
+      .select('*')
+      .eq('template_key', templateKey)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (templateError || !template) {
+      console.error(`Email template not found: ${templateKey}`, templateError);
+      return;
+    }
+
+    // Prepare variables
+    const variables: Record<string, string> = {
+      lawyer_name: lawyerName,
+      agent_name: agentName,
+      agent_url: `https://tuconsultorlegal.co/#abogados?view=agentes&agent=${agentId}`,
+      share_url: `https://tuconsultorlegal.co/#documento?agent=${agentId}`,
+      dashboard_url: 'https://tuconsultorlegal.co/#abogados?view=agentes',
+      site_url: 'https://tuconsultorlegal.co',
+      current_year: new Date().getFullYear().toString(),
+      reason: reason || 'No se proporcionó un motivo específico.'
+    };
+
+    // Replace variables in template
+    let subject = template.subject;
+    let htmlBody = template.html_body;
+    
+    for (const [key, value] of Object.entries(variables)) {
+      const regex = new RegExp(`{{${key}}}`, 'g');
+      subject = subject.replace(regex, value);
+      htmlBody = htmlBody.replace(regex, value);
+    }
+
+    // Send email
+    const { error: emailError } = await supabase.functions.invoke('send-email', {
+      body: {
+        to: lawyerEmail,
+        subject: subject,
+        html: htmlBody,
+        template_key: templateKey,
+        recipient_type: 'lawyer'
+      }
+    });
+
+    if (emailError) {
+      console.error(`Error sending ${templateKey} email:`, emailError);
+    } else {
+      console.log(`✅ ${templateKey} email sent to ${lawyerEmail}`);
+    }
+  } catch (error) {
+    console.error(`Error in sendAgentStatusEmail for ${templateKey}:`, error);
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -49,7 +116,7 @@ serve(async (req) => {
     }
 
     // Validate required fields
-    const { agent_id, user_id, is_admin } = requestData;
+    const { agent_id, user_id, is_admin, rejection_reason } = requestData;
     
     if (!agent_id) {
       console.error('❌ Missing agent_id');
@@ -112,6 +179,9 @@ serve(async (req) => {
     }
 
     console.log('✅ Found agent to update:', existingAgent.name);
+
+    // Store old status for comparison
+    const oldStatus = existingAgent.status;
 
     // Prepare update data - only include fields that are provided
     const updateData: any = {
@@ -214,6 +284,44 @@ serve(async (req) => {
           console.error('❌ Error updating field instructions:', instructionsError);
         } else {
           console.log('✅ Field instructions updated successfully');
+        }
+      }
+    }
+
+    // ✅ SEND STATUS CHANGE NOTIFICATIONS TO LAWYER (creator)
+    const newStatus = requestData.status;
+    if (newStatus && newStatus !== oldStatus && existingAgent.created_by) {
+      console.log(`📧 Status changed from ${oldStatus} to ${newStatus}, checking notification...`);
+      
+      // Get the lawyer who created the agent
+      const { data: creatorLawyer } = await supabase
+        .from('lawyer_profiles')
+        .select('email, full_name')
+        .eq('id', existingAgent.created_by)
+        .single();
+
+      if (creatorLawyer) {
+        if (newStatus === 'approved') {
+          // Agent was approved - send approval notification
+          await sendAgentStatusEmail(
+            supabase,
+            'lawyer_agent_approved',
+            creatorLawyer.email,
+            creatorLawyer.full_name,
+            existingAgent.name,
+            agent_id
+          );
+        } else if (newStatus === 'rejected' || newStatus === 'suspended' || newStatus === 'draft') {
+          // Agent was rejected/suspended - send rejection notification
+          await sendAgentStatusEmail(
+            supabase,
+            'lawyer_agent_rejected',
+            creatorLawyer.email,
+            creatorLawyer.full_name,
+            existingAgent.name,
+            agent_id,
+            rejection_reason || 'El agente necesita revisión antes de ser publicado.'
+          );
         }
       }
     }

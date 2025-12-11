@@ -56,24 +56,10 @@ Deno.serve(async (req) => {
     );
 
     const body: NotifyRequest = await req.json();
-    const { document_token_id, new_status } = body;
+    const { document_token_id, new_status, old_status } = body;
 
-    console.log(`Processing notification for document ${document_token_id}, status: ${new_status}`);
+    console.log(`Processing notification for document ${document_token_id}, status: ${new_status}, old_status: ${old_status}`);
 
-    // Get all template configurations for this status
-    const templateConfigs = STATUS_TO_TEMPLATE[new_status];
-    
-    if (!templateConfigs || templateConfigs.length === 0) {
-      console.log(`No email template configured for status: ${new_status}`);
-      return new Response(JSON.stringify({ 
-        success: true,
-        message: 'No notification configured for this status'
-      }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-    
     // Fetch the document token details with legal agent info
     const { data: document, error: docError } = await supabaseClient
       .from('document_tokens')
@@ -92,6 +78,32 @@ Deno.serve(async (req) => {
     if (docError || !document) {
       console.error('Error fetching document:', docError);
       throw new Error('Document not found');
+    }
+
+    // ✅ SPECIAL CASE: Detect if user sent observations (en_revision_abogado with user_observations)
+    let templateConfigs = STATUS_TO_TEMPLATE[new_status];
+    const hasUserObservations = new_status === 'en_revision_abogado' && 
+                                document.user_observations && 
+                                document.user_observations.trim().length > 0;
+    
+    if (hasUserObservations) {
+      console.log('📝 User observations detected - using special template for lawyer');
+      // Override lawyer template to use observations-specific one
+      templateConfigs = [
+        { key: 'lawyer_user_observations', recipient: 'lawyer' },
+        { key: 'document_in_review', recipient: 'user' }
+      ];
+    }
+    
+    if (!templateConfigs || templateConfigs.length === 0) {
+      console.log(`No email template configured for status: ${new_status}`);
+      return new Response(JSON.stringify({ 
+        success: true,
+        message: 'No notification configured for this status'
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
     console.log(`Processing ${templateConfigs.length} notifications for status: ${new_status}`);
@@ -175,14 +187,14 @@ Deno.serve(async (req) => {
           document_type: document.legal_agents?.name || document.document_type,
           token: document.token,
           price: document.legal_agents?.price || document.price || 0,
-          sla_deadline: new Date(document.sla_deadline).toLocaleDateString('es-CO', {
+          sla_deadline: document.sla_deadline ? new Date(document.sla_deadline).toLocaleDateString('es-CO', {
             weekday: 'long',
             year: 'numeric',
             month: 'long',
             day: 'numeric',
             hour: '2-digit',
             minute: '2-digit'
-          }),
+          }) : 'No definido',
           tracking_url: `https://tuconsultorlegal.co/#documento?code=${document.token}`,
           site_url: 'https://tuconsultorlegal.co',
           dashboard_url: 'https://tuconsultorlegal.co/#abogados',
@@ -192,7 +204,9 @@ Deno.serve(async (req) => {
             month: 'long',
             day: 'numeric'
           }),
-          lawyer_name: recipientName
+          lawyer_name: recipientName,
+          // ✅ Add observations-specific variables
+          observations_summary: document.user_observations || 'Sin observaciones adicionales'
         };
 
         // Replace variables in subject and body

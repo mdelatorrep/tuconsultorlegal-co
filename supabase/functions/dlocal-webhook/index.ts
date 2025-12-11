@@ -29,6 +29,75 @@ const verifyDLocalSignature = async (payload: string, signature: string, secret:
   return signature === computedSignature;
 };
 
+// Helper function to send subscription notification emails
+async function sendSubscriptionEmail(
+  supabase: any,
+  templateKey: string,
+  lawyerEmail: string,
+  lawyerName: string,
+  planName: string,
+  endDate?: string
+) {
+  try {
+    // Fetch the template
+    const { data: template, error: templateError } = await supabase
+      .from('email_templates')
+      .select('*')
+      .eq('template_key', templateKey)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (templateError || !template) {
+      console.error(`Email template not found: ${templateKey}`, templateError);
+      return;
+    }
+
+    // Prepare variables
+    const variables: Record<string, string> = {
+      lawyer_name: lawyerName,
+      plan_name: planName || 'Premium',
+      dashboard_url: 'https://tuconsultorlegal.co/#abogados',
+      reactivation_url: 'https://tuconsultorlegal.co/#abogados?view=suscripcion',
+      site_url: 'https://tuconsultorlegal.co',
+      current_year: new Date().getFullYear().toString(),
+      end_date: endDate || new Date().toLocaleDateString('es-CO', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })
+    };
+
+    // Replace variables in template
+    let subject = template.subject;
+    let htmlBody = template.html_body;
+    
+    for (const [key, value] of Object.entries(variables)) {
+      const regex = new RegExp(`{{${key}}}`, 'g');
+      subject = subject.replace(regex, value);
+      htmlBody = htmlBody.replace(regex, value);
+    }
+
+    // Send email
+    const { error: emailError } = await supabase.functions.invoke('send-email', {
+      body: {
+        to: lawyerEmail,
+        subject: subject,
+        html: htmlBody,
+        template_key: templateKey,
+        recipient_type: 'lawyer'
+      }
+    });
+
+    if (emailError) {
+      console.error(`Error sending ${templateKey} email:`, emailError);
+    } else {
+      console.log(`✅ ${templateKey} email sent to ${lawyerEmail}`);
+    }
+  } catch (error) {
+    console.error(`Error in sendSubscriptionEmail for ${templateKey}:`, error);
+  }
+}
+
 serve(async (req) => {
   console.log(`🌐 Webhook request received: ${req.method} ${req.url}`);
   console.log('📋 Headers:', Object.fromEntries(req.headers.entries()));
@@ -103,17 +172,19 @@ serve(async (req) => {
 
     // First, try to find the lawyer by external_id (preferred) or email
     let lawyerId = null;
+    let lawyerProfile: { id: string; email: string; full_name: string } | null = null;
     
     // Try external_id first (most reliable for linking)
     if (externalId) {
       const { data: lawyer } = await supabase
         .from('lawyer_profiles')
-        .select('id, email')
+        .select('id, email, full_name')
         .eq('id', externalId)
         .maybeSingle();
       
       if (lawyer) {
         lawyerId = lawyer.id;
+        lawyerProfile = lawyer;
         console.log(`✅ Found lawyer by external_id: ${lawyerId} (${lawyer.email})`);
       } else {
         console.log(`⚠️ No lawyer found for external_id: ${externalId}`);
@@ -124,12 +195,13 @@ serve(async (req) => {
     if (!lawyerId && userEmail) {
       const { data: lawyer } = await supabase
         .from('lawyer_profiles')
-        .select('id')
+        .select('id, email, full_name')
         .eq('email', userEmail)
         .maybeSingle();
       
       if (lawyer) {
         lawyerId = lawyer.id;
+        lawyerProfile = lawyer;
         console.log(`✅ Found lawyer by email: ${lawyerId} for email: ${userEmail}`);
       } else {
         console.log(`⚠️ No lawyer found for email: ${userEmail}`);
@@ -141,18 +213,25 @@ serve(async (req) => {
       updated_at: new Date().toISOString()
     };
 
+    // Track if status changed for notification purposes
+    let shouldSendActivatedEmail = false;
+    let shouldSendCancelledEmail = false;
+
     switch (status) {
       case 'active':
         updateData.status = 'active';
         updateData.current_period_start = new Date().toISOString();
         // Set period end to 30 days from now for monthly billing
         updateData.current_period_end = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        shouldSendActivatedEmail = true;
         break;
       case 'cancelled':
         updateData.status = 'cancelled';
+        shouldSendCancelledEmail = true;
         break;
       case 'expired':
         updateData.status = 'expired';
+        shouldSendCancelledEmail = true;
         break;
       case 'pending':
         updateData.status = 'pending';
@@ -232,7 +311,7 @@ serve(async (req) => {
       );
     }
 
-    // If subscription is now active, update lawyer permissions
+    // If subscription is now active, update lawyer permissions and send notification
     if (status === 'active' && subscription && subscription.lawyer_id) {
       await supabase
         .from('lawyer_profiles')
@@ -244,6 +323,41 @@ serve(async (req) => {
         .eq('id', subscription.lawyer_id);
 
       console.log(`✅ Updated permissions for lawyer: ${subscription.lawyer_id}`);
+
+      // Send activation email notification
+      if (shouldSendActivatedEmail && lawyerProfile) {
+        await sendSubscriptionEmail(
+          supabase,
+          'lawyer_subscription_activated',
+          lawyerProfile.email,
+          lawyerProfile.full_name,
+          'Premium'
+        );
+      }
+    }
+
+    // Send cancellation/expiration email
+    if (shouldSendCancelledEmail && lawyerProfile && subscription) {
+      const endDate = subscription.current_period_end 
+        ? new Date(subscription.current_period_end).toLocaleDateString('es-CO', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          })
+        : new Date().toLocaleDateString('es-CO', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          });
+
+      await sendSubscriptionEmail(
+        supabase,
+        'lawyer_subscription_cancelled',
+        lawyerProfile.email,
+        lawyerProfile.full_name,
+        'Premium',
+        endDate
+      );
     }
 
     // Log the webhook for audit
@@ -258,7 +372,8 @@ serve(async (req) => {
           plan_id: planId,
           amount,
           currency,
-          lawyer_id: subscription?.lawyer_id
+          lawyer_id: subscription?.lawyer_id,
+          email_sent: shouldSendActivatedEmail ? 'activated' : (shouldSendCancelledEmail ? 'cancelled' : 'none')
         },
         created_at: new Date().toISOString()
       });
