@@ -1,6 +1,7 @@
-import { useMemo } from "react";
-import ReactQuill from "react-quill";
+import { useMemo, useCallback, useRef } from "react";
+import ReactQuill, { Quill } from "react-quill";
 import "react-quill/dist/quill.snow.css";
+import { cleanWordHtml, isWordHtml } from "@/utils/wordHtmlSanitizer";
 
 interface RichTextTemplateEditorProps {
   value: string;
@@ -19,6 +20,8 @@ interface RichTextTemplateEditorProps {
  * - Editor de documentos (DocumentEditor)
  * - Vista previa de documentos
  * - Generación de PDF
+ * 
+ * Incluye sanitización automática de contenido pegado desde Microsoft Word/Office.
  */
 export default function RichTextTemplateEditor({
   value,
@@ -28,6 +31,46 @@ export default function RichTextTemplateEditor({
   className = "",
   readOnly = false,
 }: RichTextTemplateEditorProps) {
+  const quillRef = useRef<ReactQuill>(null);
+
+  // Handler para sanitizar contenido pegado desde Word
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    const clipboardData = e.clipboardData;
+    if (!clipboardData) return;
+
+    // Obtener HTML del clipboard
+    const htmlContent = clipboardData.getData('text/html');
+    
+    // Si no hay HTML o no es de Word, dejar que Quill lo maneje normalmente
+    if (!htmlContent || !isWordHtml(htmlContent)) {
+      return;
+    }
+
+    // Prevenir el comportamiento por defecto
+    e.preventDefault();
+
+    // Limpiar el HTML de Word
+    const cleanedHtml = cleanWordHtml(htmlContent);
+
+    // Obtener la instancia del editor
+    const quill = quillRef.current?.getEditor();
+    if (!quill) return;
+
+    // Obtener la posición actual del cursor
+    const range = quill.getSelection(true);
+    
+    // Insertar el contenido limpio usando el clipboard de Quill
+    if (range) {
+      // Eliminar cualquier selección existente
+      if (range.length > 0) {
+        quill.deleteText(range.index, range.length);
+      }
+      
+      // Usar dangerouslyPasteHTML para insertar el HTML limpio
+      quill.clipboard.dangerouslyPasteHTML(range.index, cleanedHtml, 'user');
+    }
+  }, []);
+
   // Configuración del módulo de toolbar - consistente en toda la aplicación
   const modules = useMemo(() => ({
     toolbar: [
@@ -39,6 +82,10 @@ export default function RichTextTemplateEditor({
       ["link"],
       ["clean"],
     ],
+    clipboard: {
+      // Permitir solo formatos seguros
+      matchVisual: false,
+    },
   }), []);
 
   // Formatos permitidos
@@ -56,8 +103,12 @@ export default function RichTextTemplateEditor({
   ];
 
   return (
-    <div className={`rich-text-template-editor ${className}`}>
+    <div 
+      className={`rich-text-template-editor ${className}`}
+      onPaste={handlePaste}
+    >
       <ReactQuill
+        ref={quillRef}
         theme="snow"
         value={value}
         onChange={onChange}
