@@ -195,44 +195,60 @@ FORMATO DE RESPUESTA: Devuelve únicamente el documento final usando la plantill
     }
 
     // Convert plain text content to structured HTML for consistent rendering
+    // Ensures compatibility with preview CSS (.ql-align-*) and PDF generator
     console.log('Converting document content to structured HTML...');
     
     // Check if content already has HTML structure
     const hasHtmlStructure = /<(p|div|br|strong|em|h[1-6]|ul|ol|li)[^>]*>/i.test(documentContent);
     
+    // Clean HTML entities first (always needed)
+    const cleanEntities = (text: string) => text
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/&amp;/gi, '&')
+      .replace(/&lt;/gi, '<')
+      .replace(/&gt;/gi, '>')
+      .replace(/&quot;/gi, '"')
+      .replace(/&#39;/gi, "'");
+    
     if (!hasHtmlStructure) {
-      // Convert plain text to HTML paragraphs
-      documentContent = documentContent
-        // Clean HTML entities first
-        .replace(/&nbsp;/gi, ' ')
-        .replace(/&amp;/gi, '&')
-        .replace(/&lt;/gi, '<')
-        .replace(/&gt;/gi, '>')
-        .replace(/&quot;/gi, '"')
-        .replace(/&#39;/gi, "'")
+      // Convert plain text to HTML paragraphs with ReactQuill-compatible classes
+      documentContent = cleanEntities(documentContent)
+        // Convert markdown-style headings to HTML (## Title -> <h2>)
+        .replace(/^###\s+(.+)$/gm, '<h3 class="ql-align-left">$1</h3>')
+        .replace(/^##\s+(.+)$/gm, '<h2 class="ql-align-left">$1</h2>')
+        .replace(/^#\s+(.+)$/gm, '<h1 class="ql-align-left">$1</h1>')
         // Convert markdown-style bold to HTML
         .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
         // Convert markdown-style italic to HTML  
         .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-        // Split by double line breaks into paragraphs
-        .split(/\n\s*\n/)
+        // Convert markdown-style underline to HTML
+        .replace(/__([^_]+)__/g, '<u>$1</u>');
+      
+      // Split by double line breaks into paragraphs (but preserve headings)
+      const parts = documentContent.split(/\n\s*\n/);
+      documentContent = parts
         .map(paragraph => paragraph.trim())
         .filter(paragraph => paragraph.length > 0)
         .map(paragraph => {
+          // Don't wrap headings in <p> tags
+          if (paragraph.startsWith('<h1') || paragraph.startsWith('<h2') || paragraph.startsWith('<h3') ||
+              paragraph.startsWith('<h4') || paragraph.startsWith('<h5') || paragraph.startsWith('<h6')) {
+            return paragraph;
+          }
           // Convert single line breaks to <br> within paragraphs
           const withBreaks = paragraph.replace(/\n/g, '<br>');
           return `<p class="ql-align-justify">${withBreaks}</p>`;
         })
         .join('\n');
     } else {
-      // Content already has HTML - just clean entities
-      documentContent = documentContent
-        .replace(/&nbsp;/gi, ' ')
-        .replace(/&amp;/gi, '&')
-        .replace(/&lt;/gi, '<')
-        .replace(/&gt;/gi, '>')
-        .replace(/&quot;/gi, '"')
-        .replace(/&#39;/gi, "'");
+      // Content already has HTML - clean entities and ensure alignment classes
+      documentContent = cleanEntities(documentContent);
+      
+      // Add ql-align-justify to paragraphs that don't have alignment class
+      documentContent = documentContent.replace(
+        /<p(?![^>]*class="[^"]*ql-align)([^>]*)>/gi, 
+        '<p class="ql-align-justify"$1>'
+      );
     }
     
     console.log('Document content converted to HTML structure');
