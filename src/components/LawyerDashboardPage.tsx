@@ -833,10 +833,10 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const renderModuleContent = () => {
     switch (currentView) {
       case 'agent-creator':
-        return <AgentCreatorPage onBack={() => setCurrentView('dashboard')} lawyerData={user} />;
+        return <AgentCreatorPage user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as any)} onLogout={logout} lawyerData={user} />;
       
       case 'agent-manager':
-        return <AgentManagerPage onBack={() => setCurrentView('dashboard')} lawyerData={user} />;
+        return <AgentManagerPage user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as any)} onLogout={logout} lawyerData={user} />;
       
       case 'blog-manager':
         return <LawyerBlogManager onBack={() => setCurrentView('dashboard')} lawyerData={user} />;
@@ -905,7 +905,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
       
       
       case 'stats':
-        return <LawyerStatsSection />;
+        return <LawyerStatsSection user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as any)} onLogout={logout} />;
       
       case 'subscription':
         return <SubscriptionManager />;
@@ -1012,7 +1012,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
             {currentView === 'public-profile' ? (
               <LawyerPublicProfileEditor lawyerId={user.id} lawyerName={user.name} />
             ) : currentView === 'stats' ? (
-              <LawyerStatsSection />
+              <LawyerStatsSection user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as any)} onLogout={logout} />
             ) : currentView === 'subscription' ? (
               <SubscriptionManager />
             ) : (

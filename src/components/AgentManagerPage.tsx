@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthManager } from "@/hooks/useAuthManager";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import UnifiedSidebar from "./UnifiedSidebar";
 import { 
   ArrowLeft, 
   Edit, 
@@ -71,11 +73,14 @@ interface LegalAgent {
 }
 
 interface AgentManagerPageProps {
-  onBack: () => void;
+  user: any;
+  currentView: string;
+  onViewChange: (view: string) => void;
+  onLogout: () => void;
   lawyerData: any;
 }
 
-export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPageProps) {
+export default function AgentManagerPage({ user, currentView, onViewChange, onLogout, lawyerData }: AgentManagerPageProps) {
   const [agents, setAgents] = useState<LegalAgent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedAgent, setSelectedAgent] = useState<LegalAgent | null>(null);
@@ -957,22 +962,44 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
   }
 
   return (
-    <div className="container mx-auto px-6 py-8">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
-          <Button variant="ghost" onClick={onBack}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Volver al Dashboard
-          </Button>
-        </div>
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-gradient-to-br from-background via-background to-indigo-500/5">
+        <UnifiedSidebar 
+          user={user}
+          currentView={currentView}
+          onViewChange={onViewChange}
+          onLogout={onLogout}
+        />
 
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-primary mb-2">
-                Gestión de Agentes Legales
-              </h1>
+        <main className="flex-1 min-w-0">
+          <header className="h-14 lg:h-16 border-b bg-gradient-to-r from-background/95 to-indigo-500/10 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 relative overflow-hidden sticky top-0 z-40">
+            <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-transparent opacity-50"></div>
+            <div className="relative flex h-14 lg:h-16 items-center px-3 lg:px-6">
+              <SidebarTrigger className="mr-2 lg:mr-4 hover:bg-indigo-500/10 rounded-lg p-2 transition-all duration-200 flex-shrink-0" />
+              <div className="flex items-center gap-2 lg:gap-3 min-w-0">
+                <div className="p-1.5 lg:p-2 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg lg:rounded-xl shadow-lg flex-shrink-0">
+                  <Settings className="h-4 w-4 lg:h-6 lg:w-6 text-white" />
+                </div>
+                <div className="min-w-0">
+                  <h1 className="text-base lg:text-xl font-bold bg-gradient-to-r from-indigo-600 to-indigo-500 bg-clip-text text-transparent truncate">
+                    Gestionar Agentes
+                  </h1>
+                  <p className="text-xs lg:text-sm text-muted-foreground hidden sm:block truncate">
+                    Administra y configura tus agentes legales
+                  </p>
+                </div>
+              </div>
+            </div>
+          </header>
+
+          <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 lg:py-8">
+            <div className="max-w-6xl mx-auto">
+              <div className="mb-8">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h1 className="text-3xl font-bold text-primary mb-2">
+                      Gestión de Agentes Legales
+                    </h1>
               <p className="text-lg text-muted-foreground">
                 Administra tus agentes creados: activa, suspende o modifica según sea necesario.
               </p>
@@ -2040,7 +2067,10 @@ export default function AgentManagerPage({ onBack, lawyerData }: AgentManagerPag
             )}
           </DialogContent>
         </Dialog>
+            </div>
+          </div>
+        </main>
       </div>
-    </div>
+    </SidebarProvider>
   );
 }

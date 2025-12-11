@@ -9,17 +9,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, ArrowLeft, ArrowRight, CheckCircle, Loader2, Copy, Wand2, Save, FileText, Trash2 } from "lucide-react";
+import { Sparkles, ArrowLeft, ArrowRight, CheckCircle, Loader2, Copy, Wand2, Save, FileText, Trash2, Bot } from "lucide-react";
 import RichTextTemplateEditor from "@/components/RichTextTemplateEditor";
 import { ConversationGuideBuilder } from "@/components/ConversationGuideBuilder";
 import { FieldInstructionsManager } from "@/components/FieldInstructionsManager";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import UnifiedSidebar from "./UnifiedSidebar";
 
 interface AgentCreatorPageProps {
-  onBack: () => void;
+  user: any;
+  currentView: string;
+  onViewChange: (view: string) => void;
+  onLogout: () => void;
   lawyerData: any;
 }
 
-export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPageProps) {
+export default function AgentCreatorPage({ user, currentView, onViewChange, onLogout, lawyerData }: AgentCreatorPageProps) {
   console.log('=== AGENT CREATOR PAGE LOADED ===');
   console.log('=== LAWYER DATA DEBUG ===');
   const [currentStep, setCurrentStep] = useState(1);
@@ -1465,7 +1470,7 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
           isEditing: false,
         });
         setCurrentStep(1);
-        onBack();
+        onViewChange('dashboard');
       } else {
         // Mantener en paso 5 mostrando confirmación de envío
         setCurrentStep(5);
@@ -1485,148 +1490,170 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
   // handleTextFormat function removed - now using RichTextTemplateEditor with ReactQuill
 
   return (
-    <div className="container mx-auto px-6 py-8">
-      <div className="max-w-4xl mx-auto">
-        {/* Token Status Alert */}
-        {!lawyerData?.canCreateAgents && (
-          <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-4 bg-amber-500 rounded-full"></div>
-              <h3 className="font-medium text-amber-800 dark:text-amber-200">
-                Acceso Limitado
-              </h3>
-            </div>
-            <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-              Tu cuenta aún no tiene permisos para crear agentes. Puedes explorar la funcionalidad, pero no podrás guardar borradores ni crear agentes. 
-              <br />
-              Contacta al administrador para obtener acceso completo.
-            </p>
-          </div>
-        )}
-        
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
-          <Button variant="ghost" onClick={onBack}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Volver al Dashboard
-          </Button>
-          
-          <div className="flex gap-2 ml-auto">
-            {/* Save Draft Button */}
-            <Button 
-              variant="outline" 
-              onClick={() => saveDraft()}
-              disabled={isSavingDraft || !lawyerData?.canCreateAgents}
-              className="flex items-center gap-2"
-            >
-              {isSavingDraft ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="h-4 w-4" />
-              )}
-              {isSavingDraft ? 'Guardando...' : 'Guardar Borrador'}
-            </Button>
-            
-            {/* Drafts Button */}
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                setShowDrafts(true);
-                loadDrafts();
-              }}
-              className="flex items-center gap-2"
-              
-            >
-              <FileText className="h-4 w-4" />
-              Borradores ({drafts.length})
-            </Button>
-          </div>
-        </div>
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-gradient-to-br from-background via-background to-purple-500/5">
+        <UnifiedSidebar 
+          user={user}
+          currentView={currentView}
+          onViewChange={onViewChange}
+          onLogout={onLogout}
+        />
 
-        {/* Drafts Modal */}
-        {showDrafts && (
-          <Card className="mb-6">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Borradores Guardados</CardTitle>
-                <CardDescription>
-                  Selecciona un borrador para continuar o elimina los que ya no necesites.
-                </CardDescription>
+        <main className="flex-1 min-w-0">
+          <header className="h-14 lg:h-16 border-b bg-gradient-to-r from-background/95 to-purple-500/10 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 relative overflow-hidden sticky top-0 z-40">
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-transparent opacity-50"></div>
+            <div className="relative flex h-14 lg:h-16 items-center px-3 lg:px-6">
+              <SidebarTrigger className="mr-2 lg:mr-4 hover:bg-purple-500/10 rounded-lg p-2 transition-all duration-200 flex-shrink-0" />
+              <div className="flex items-center gap-2 lg:gap-3 min-w-0">
+                <div className="p-1.5 lg:p-2 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg lg:rounded-xl shadow-lg flex-shrink-0">
+                  <Bot className="h-4 w-4 lg:h-6 lg:w-6 text-white" />
+                </div>
+                <div className="min-w-0">
+                  <h1 className="text-base lg:text-xl font-bold bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent truncate">
+                    Crear Agente
+                  </h1>
+                  <p className="text-xs lg:text-sm text-muted-foreground hidden sm:block truncate">
+                    Crea servicios de documentos legales con IA
+                  </p>
+                </div>
               </div>
-              <Button variant="ghost" onClick={() => setShowDrafts(false)}>
-                ✕
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {isLoadingDrafts ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                  <span className="ml-2">Cargando borradores...</span>
-                </div>
-              ) : drafts.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  No tienes borradores guardados
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {drafts.map((draft) => (
-                    <div key={draft.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex-1">
-                        <h4 className="font-medium">{draft.draft_name}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          Paso {draft.step_completed} • {new Date(draft.updated_at).toLocaleString()}
-                        </p>
-                        {draft.doc_cat && (
-                          <Badge variant="outline" className="mt-1">
-                            {draft.doc_cat}
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex gap-2">
-                        <Button 
-                          size="sm" 
-                          onClick={() => loadDraft(draft)}
-                          className="bg-emerald-600 hover:bg-emerald-700"
-                        >
-                          Cargar
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => deleteDraft(draft.id, draft.draft_name)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                  
-                  <div className="flex justify-end pt-4">
-                    <Button variant="outline" onClick={clearDraft}>
-                      Empezar Nuevo Agente
-                    </Button>
+            </div>
+          </header>
+
+          <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 lg:py-8">
+            <div className="max-w-4xl mx-auto">
+              {/* Token Status Alert */}
+              {!lawyerData?.canCreateAgents && (
+                <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 bg-amber-500 rounded-full"></div>
+                    <h3 className="font-medium text-amber-800 dark:text-amber-200">
+                      Acceso Limitado
+                    </h3>
                   </div>
+                  <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                    Tu cuenta aún no tiene permisos para crear agentes. Puedes explorar la funcionalidad, pero no podrás guardar borradores ni crear agentes. 
+                    <br />
+                    Contacta al administrador para obtener acceso completo.
+                  </p>
                 </div>
               )}
-            </CardContent>
-          </Card>
-        )}
+              
+              {/* Drafts and Save Buttons */}
+              <div className="flex gap-2 mb-6 justify-end">
+                {/* Save Draft Button */}
+                <Button 
+                  variant="outline" 
+                  onClick={() => saveDraft()}
+                  disabled={isSavingDraft || !lawyerData?.canCreateAgents}
+                  className="flex items-center gap-2"
+                >
+                  {isSavingDraft ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4" />
+                  )}
+                  {isSavingDraft ? 'Guardando...' : 'Guardar Borrador'}
+                </Button>
+                
+                {/* Drafts Button */}
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowDrafts(true);
+                    loadDrafts();
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  <FileText className="h-4 w-4" />
+                  Borradores ({drafts.length})
+                </Button>
+              </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-3xl text-primary">Creador de Agentes Legales</CardTitle>
-            <CardDescription>
-              Crea un nuevo servicio de documento legal para los clientes en 5 sencillos pasos.
-              {currentDraftId && (
-                <span className="block mt-2 text-emerald-600">
-                  <Save className="h-4 w-4 inline mr-1" />
-                  Borrador guardado automáticamente
-                </span>
+              {/* Drafts Modal */}
+              {showDrafts && (
+                <Card className="mb-6">
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                      <CardTitle>Borradores Guardados</CardTitle>
+                      <CardDescription>
+                        Selecciona un borrador para continuar o elimina los que ya no necesites.
+                      </CardDescription>
+                    </div>
+                    <Button variant="ghost" onClick={() => setShowDrafts(false)}>
+                      ✕
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    {isLoadingDrafts ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                        <span className="ml-2">Cargando borradores...</span>
+                      </div>
+                    ) : drafts.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        No tienes borradores guardados
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {drafts.map((draft) => (
+                          <div key={draft.id} className="flex items-center justify-between p-4 border rounded-lg">
+                            <div className="flex-1">
+                              <h4 className="font-medium">{draft.draft_name}</h4>
+                              <p className="text-sm text-muted-foreground">
+                                Paso {draft.step_completed} • {new Date(draft.updated_at).toLocaleString()}
+                              </p>
+                              {draft.doc_cat && (
+                                <Badge variant="outline" className="mt-1">
+                                  {draft.doc_cat}
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex gap-2">
+                              <Button 
+                                size="sm" 
+                                onClick={() => loadDraft(draft)}
+                                className="bg-emerald-600 hover:bg-emerald-700"
+                              >
+                                Cargar
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => deleteDraft(draft.id, draft.draft_name)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                        
+                        <div className="flex justify-end pt-4">
+                          <Button variant="outline" onClick={clearDraft}>
+                            Empezar Nuevo Agente
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               )}
-            </CardDescription>
-          </CardHeader>
 
-          <CardContent>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-3xl text-primary">Creador de Agentes Legales</CardTitle>
+                  <CardDescription>
+                    Crea un nuevo servicio de documento legal para los clientes en 5 sencillos pasos.
+                    {currentDraftId && (
+                      <span className="block mt-2 text-emerald-600">
+                        <Save className="h-4 w-4 inline mr-1" />
+                        Borrador guardado automáticamente
+                      </span>
+                    )}
+                  </CardDescription>
+                </CardHeader>
+
+                <CardContent>
             {/* Steps Indicator */}
             {isMobile ? (
               // Mobile stepper - current step indicator
@@ -2279,9 +2306,12 @@ export default function AgentCreatorPage({ onBack, lawyerData }: AgentCreatorPag
 
               </div>
             )}
-          </CardContent>
-        </Card>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </main>
       </div>
-    </div>
+    </SidebarProvider>
   );
 }
