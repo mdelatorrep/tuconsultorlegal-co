@@ -146,6 +146,25 @@ export const getPreviewStyles = () => `
     font-style: italic;
   }
 
+  /* Tables */
+  .preview-content table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1em 0;
+  }
+
+  .preview-content th,
+  .preview-content td {
+    border: 1px solid ${PREVIEW_COLORS.lightGray};
+    padding: 0.5em;
+    text-align: left;
+  }
+
+  .preview-content th {
+    background: #f5f5f5;
+    font-weight: 700;
+  }
+
   /* Code blocks */
   .preview-content pre {
     background: #f5f5f5;
