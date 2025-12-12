@@ -126,12 +126,6 @@ Deno.serve(async (req) => {
       })
       .select()
       .single();
-        template_key: template_key || 'custom',
-        subject,
-        status: 'pending'
-      })
-      .select()
-      .single();
 
     if (logError) {
       console.error('Error creating log:', logError);
