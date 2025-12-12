@@ -89,6 +89,30 @@ export default function ContactPage({ onOpenChat, onNavigate }: ContactPageProps
 
       if (error) throw error;
 
+      // Enviar email de confirmación al usuario
+      try {
+        await supabase.functions.invoke('send-email', {
+          body: {
+            to: formData.email,
+            subject: `Hemos recibido tu mensaje, ${formData.name}`,
+            html: '', // El edge function usará la plantilla
+            template_key: 'contact_confirmation_user',
+            recipient_type: 'user',
+            variables: {
+              user_name: formData.name,
+              consultation_type: formData.consultation_type,
+              message_preview: formData.message.substring(0, 200) + (formData.message.length > 200 ? '...' : ''),
+              site_url: 'https://tuconsultorlegal.co',
+              current_year: new Date().getFullYear().toString()
+            }
+          }
+        });
+        console.log('Contact confirmation email sent successfully');
+      } catch (emailError) {
+        console.error('Error sending confirmation email:', emailError);
+        // No bloqueamos el flujo si falla el email
+      }
+
       toast({
         title: "¡Mensaje enviado!",
         description: "Hemos recibido tu mensaje. Te contactaremos pronto.",

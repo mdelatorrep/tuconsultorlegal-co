@@ -483,6 +483,37 @@ export default function UnifiedDocumentPage({ onOpenChat }: UnifiedDocumentPageP
         // No bloqueamos el flujo si falla la notificación
       }
 
+      // 🔔 Enviar confirmación por email al usuario
+      if (documentData.user_email) {
+        try {
+          await supabase.functions.invoke('send-email', {
+            body: {
+              to: documentData.user_email,
+              subject: `Tus observaciones han sido enviadas: ${documentData.document_type}`,
+              html: '', // El edge function usará la plantilla
+              template_key: 'user_observations_confirmation',
+              recipient_type: 'user',
+              variables: {
+                user_name: documentData.user_name || 'Usuario',
+                document_type: documentData.document_type,
+                tracking_code: documentData.token,
+                observation_date: new Date().toLocaleDateString('es-CO', { 
+                  year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+                }),
+                observations_preview: userObservations.trim().substring(0, 300) + (userObservations.length > 300 ? '...' : ''),
+                document_url: `https://tuconsultorlegal.co/#documento?code=${documentData.token}`,
+                site_url: 'https://tuconsultorlegal.co',
+                current_year: new Date().getFullYear().toString()
+              }
+            }
+          });
+          console.log('User observations confirmation email sent successfully');
+        } catch (emailError) {
+          console.error('Error sending user confirmation email:', emailError);
+          // No bloqueamos el flujo si falla el email
+        }
+      }
+
       toast({
         title: "Observaciones enviadas",
         description: "Tus observaciones han sido enviadas al abogado para revisión.",

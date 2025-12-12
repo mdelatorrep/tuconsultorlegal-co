@@ -59,6 +59,49 @@ export function CustomDocumentRequestDialog({ open, onOpenChange }: CustomDocume
 
       if (error) throw error;
 
+      // Enviar email de confirmación al usuario
+      const userEmail = user?.email || 'anónimo@tuconsultorlegal.co';
+      const userName = user?.user_metadata?.full_name || 'Usuario';
+      
+      const urgencyLabels: Record<string, string> = {
+        low: 'Baja',
+        normal: 'Normal',
+        high: 'Alta',
+        urgent: 'Urgente'
+      };
+      
+      const urgencyClasses: Record<string, string> = {
+        low: 'urgency-normal',
+        normal: 'urgency-normal',
+        high: 'urgency-urgent',
+        urgent: 'urgency-very-urgent'
+      };
+
+      try {
+        await supabase.functions.invoke('send-email', {
+          body: {
+            to: userEmail,
+            subject: 'Tu solicitud de documento ha sido recibida',
+            html: '', // El edge function usará la plantilla
+            template_key: 'custom_document_request_user',
+            recipient_type: 'user',
+            variables: {
+              user_name: userName,
+              document_type: formData.documentType.trim(),
+              urgency: urgencyLabels[formData.urgency] || 'Normal',
+              urgency_class: urgencyClasses[formData.urgency] || 'urgency-normal',
+              description_preview: formData.description.trim().substring(0, 300) + (formData.description.length > 300 ? '...' : ''),
+              site_url: 'https://tuconsultorlegal.co',
+              current_year: new Date().getFullYear().toString()
+            }
+          }
+        });
+        console.log('Custom document request confirmation email sent successfully');
+      } catch (emailError) {
+        console.error('Error sending confirmation email:', emailError);
+        // No bloqueamos el flujo si falla el email
+      }
+
       toast.success("Solicitud enviada exitosamente", {
         description: "Nos pondremos en contacto contigo pronto"
       });
