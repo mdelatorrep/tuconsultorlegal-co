@@ -13,6 +13,17 @@ interface SendEmailRequest {
   template_key?: string;
   document_token_id?: string;
   recipient_type: 'user' | 'lawyer' | 'admin';
+  variables?: Record<string, string>;
+}
+
+// Función para reemplazar variables en el template
+function replaceVariables(text: string, variables: Record<string, string>): string {
+  let result = text;
+  for (const [key, value] of Object.entries(variables)) {
+    const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
+    result = result.replace(regex, value || '');
+  }
+  return result;
 }
 
 Deno.serve(async (req) => {
@@ -27,16 +38,56 @@ Deno.serve(async (req) => {
     );
 
     const body: SendEmailRequest = await req.json();
-    const { to, subject, html, template_key, document_token_id, recipient_type } = body;
+    const { to, subject, html, template_key, document_token_id, recipient_type, variables } = body;
 
-    if (!to || !subject || !html || !recipient_type) {
+    if (!to || !recipient_type) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields' }),
+        JSON.stringify({ error: 'Missing required fields: to and recipient_type are required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Sending email to ${to} with subject: ${subject}`);
+    let finalSubject = subject;
+    let finalHtml = html;
+
+    // Si se proporciona template_key y no hay HTML, cargar la plantilla de la base de datos
+    if (template_key && (!html || html.trim() === '')) {
+      console.log(`Loading email template: ${template_key}`);
+      
+      const { data: templateData, error: templateError } = await supabaseClient
+        .from('email_templates')
+        .select('subject, html_body')
+        .eq('template_key', template_key)
+        .eq('is_active', true)
+        .single();
+
+      if (templateError || !templateData) {
+        console.error('Error loading template:', templateError);
+        return new Response(
+          JSON.stringify({ error: `Email template '${template_key}' not found or inactive` }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      finalSubject = templateData.subject;
+      finalHtml = templateData.html_body;
+
+      // Reemplazar variables si se proporcionan
+      if (variables && Object.keys(variables).length > 0) {
+        finalSubject = replaceVariables(finalSubject, variables);
+        finalHtml = replaceVariables(finalHtml, variables);
+      }
+    }
+
+    // Validar que tenemos subject y html después de cargar plantilla
+    if (!finalSubject || !finalHtml) {
+      return new Response(
+        JSON.stringify({ error: 'Missing subject or html content. Either provide html directly or use a valid template_key with variables.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`Sending email to ${to} with subject: ${finalSubject}`);
 
     // Obtener configuración SMTP
     const { data: config, error: configError } = await supabaseClient
@@ -70,6 +121,12 @@ Deno.serve(async (req) => {
         recipient_email: to,
         recipient_type,
         template_key: template_key || 'custom',
+        subject: finalSubject,
+        status: 'pending'
+      })
+      .select()
+      .single();
+        template_key: template_key || 'custom',
         subject,
         status: 'pending'
       })
@@ -102,7 +159,7 @@ Deno.serve(async (req) => {
 
       // Limpiar espacios en blanco al final de cada línea para evitar "=20" en quoted-printable
       // y normalizar saltos de línea para cumplir con RFC 822
-      const cleanedHtml = html
+      const cleanedHtml = finalHtml
         .split('\n')
         .map(line => line.trimEnd())
         .join('\n')
@@ -112,7 +169,7 @@ Deno.serve(async (req) => {
       await client.send({
         from: `${config.smtp_from_name} <${config.smtp_from_email}>`,
         to: to,
-        subject: subject,
+        subject: finalSubject,
         content: 'auto',
         html: cleanedHtml,
       });
