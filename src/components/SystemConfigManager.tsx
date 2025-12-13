@@ -133,6 +133,14 @@ export default function SystemConfigManager() {
       icon: 'Brain',
       configs: [
         {
+          key: 'document_chat_ai_model',
+          name: 'Modelo IA para Chat de Documentos',
+          description: 'Modelo utilizado para el agente conversacional que interactúa con usuarios para crear documentos',
+          defaultValue: 'gpt-4o-mini',
+          type: 'select',
+          options: []
+        },
+        {
           key: 'agent_creation_ai_model',
           name: 'Modelo IA para Creación de Agentes',
           description: 'Modelo utilizado para generar y optimizar agentes legales',
