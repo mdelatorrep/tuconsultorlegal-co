@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { 
   Users, Bot, MessageCircle, FileText, TrendingUp, 
-  Activity, CheckCircle, Clock, AlertCircle
+  Activity, CheckCircle, Clock, AlertCircle, ChevronRight
 } from "lucide-react";
 
 interface DashboardProps {
@@ -13,6 +13,7 @@ interface DashboardProps {
   pendingAgentsCount: number;
   pendingBlogsCount: number;
   blogPosts: any[];
+  onNavigate?: (view: string) => void;
 }
 
 export const AdminDashboard = ({
@@ -21,7 +22,8 @@ export const AdminDashboard = ({
   unreadMessagesCount,
   pendingAgentsCount,
   pendingBlogsCount,
-  blogPosts
+  blogPosts,
+  onNavigate
 }: DashboardProps) => {
   const stats = [
     {
@@ -65,7 +67,8 @@ export const AdminDashboard = ({
       count: pendingAgentsCount,
       icon: Bot,
       color: "text-orange-600",
-      status: pendingAgentsCount > 0 ? "warning" : "success"
+      status: pendingAgentsCount > 0 ? "warning" : "success",
+      targetView: "agents"
     },
     {
       type: "blog",
@@ -73,7 +76,8 @@ export const AdminDashboard = ({
       count: pendingBlogsCount,
       icon: FileText,
       color: "text-purple-600",
-      status: pendingBlogsCount > 0 ? "warning" : "success"
+      status: pendingBlogsCount > 0 ? "warning" : "success",
+      targetView: "blogs"
     },
     {
       type: "message",
@@ -81,9 +85,16 @@ export const AdminDashboard = ({
       count: unreadMessagesCount,
       icon: MessageCircle,
       color: "text-red-600",
-      status: unreadMessagesCount > 0 ? "error" : "success"
+      status: unreadMessagesCount > 0 ? "error" : "success",
+      targetView: "messages"
     }
   ];
+
+  const handleTaskClick = (targetView: string) => {
+    if (onNavigate) {
+      onNavigate(targetView);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -165,8 +176,15 @@ export const AdminDashboard = ({
             <div className="space-y-4">
               {recentActivity.map((item, index) => {
                 const Icon = item.icon;
+                const isClickable = item.count > 0 && onNavigate;
                 return (
-                  <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <div 
+                    key={index} 
+                    className={`flex items-center justify-between p-3 rounded-lg bg-muted/50 ${
+                      isClickable ? 'cursor-pointer hover:bg-muted transition-colors' : ''
+                    }`}
+                    onClick={() => isClickable && handleTaskClick(item.targetView)}
+                  >
                     <div className="flex items-center gap-3">
                       <Icon className={`w-5 h-5 ${item.color}`} />
                       <div>
@@ -176,11 +194,16 @@ export const AdminDashboard = ({
                         </p>
                       </div>
                     </div>
-                    {item.count > 0 ? (
-                      <Badge variant="destructive">{item.count}</Badge>
-                    ) : (
-                      <CheckCircle className="w-5 h-5 text-green-500" />
-                    )}
+                    <div className="flex items-center gap-2">
+                      {item.count > 0 ? (
+                        <>
+                          <Badge variant="destructive">{item.count}</Badge>
+                          {onNavigate && <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+                        </>
+                      ) : (
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                      )}
+                    </div>
                   </div>
                 );
               })}
