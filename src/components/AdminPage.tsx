@@ -703,6 +703,56 @@ function AdminPage() {
     }
   };
 
+  const handleMarkAsRead = async (messageId: string) => {
+    try {
+      const { error } = await supabase
+        .from('contact_messages')
+        .update({ is_read: true, status: 'responded', responded_at: new Date().toISOString() })
+        .eq('id', messageId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Mensaje marcado",
+        description: "El mensaje ha sido marcado como respondido",
+      });
+
+      await loadContactMessages();
+    } catch (error) {
+      console.error('Error marking message as read:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el mensaje",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleArchiveMessage = async (messageId: string) => {
+    try {
+      const { error } = await supabase
+        .from('contact_messages')
+        .update({ status: 'archived', is_read: true })
+        .eq('id', messageId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Mensaje archivado",
+        description: "El mensaje ha sido archivado correctamente",
+      });
+
+      await loadContactMessages();
+    } catch (error) {
+      console.error('Error archiving message:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo archivar el mensaje",
+        variant: "destructive",
+      });
+    }
+  };
+
   const loadBlogPosts = async () => {
     try {
       const { data, error } = await supabase.functions.invoke('manage-blog-posts?action=list', {
@@ -1322,33 +1372,67 @@ function AdminPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {contactMessages.map((message) => (
-                  <div key={message.id} className="p-4 border rounded-lg">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-medium">{message.name}</h4>
-                          <Badge variant={message.is_read ? 'default' : 'destructive'}>
-                            {message.is_read ? 'Leído' : 'Sin leer'}
-                          </Badge>
+                {contactMessages.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <MessageCircle className="w-12 h-12 mx-auto mb-2 opacity-20" />
+                    <p className="text-sm">No hay consultas de usuarios</p>
+                  </div>
+                ) : (
+                  contactMessages.map((message) => (
+                    <div key={message.id} className="p-4 border rounded-lg">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="font-medium">{message.name}</h4>
+                            <Badge variant={message.is_read ? 'default' : 'destructive'}>
+                              {message.is_read ? 'Leído' : 'Sin leer'}
+                            </Badge>
+                            {message.status === 'responded' && (
+                              <Badge variant="outline" className="text-green-600 border-green-600">
+                                Respondido
+                              </Badge>
+                            )}
+                            {message.status === 'archived' && (
+                              <Badge variant="secondary">Archivado</Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground">{message.email}</p>
+                          {message.phone && (
+                            <p className="text-sm text-muted-foreground flex items-center gap-1">
+                              <Phone className="w-3 h-3" /> {message.phone}
+                            </p>
+                          )}
+                          <p className="text-sm mt-2">{message.message}</p>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            {format(new Date(message.created_at), "dd 'de' MMMM 'de' yyyy 'a las' HH:mm", { locale: es })}
+                          </p>
                         </div>
-                        <p className="text-sm text-muted-foreground">{message.email}</p>
-                        <p className="text-sm mt-2">{message.message}</p>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          {format(new Date(message.created_at), "dd 'de' MMMM 'de' yyyy 'a las' HH:mm", { locale: es })}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button size="sm" variant="outline">
-                          <Reply className="w-4 h-4" />
-                        </Button>
-                        <Button size="sm" variant="outline">
-                          <Archive className="w-4 h-4" />
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          {message.status !== 'responded' && message.status !== 'archived' && (
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => handleMarkAsRead(message.id)}
+                              title="Marcar como respondido"
+                            >
+                              <Reply className="w-4 h-4" />
+                            </Button>
+                          )}
+                          {message.status !== 'archived' && (
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => handleArchiveMessage(message.id)}
+                              title="Archivar mensaje"
+                            >
+                              <Archive className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>
