@@ -1,8 +1,29 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+const getSystemConfig = async (supabaseClient: any, configKey: string, defaultValue: string): Promise<string> => {
+  try {
+    const { data, error } = await supabaseClient
+      .from('system_config')
+      .select('config_value')
+      .eq('config_key', configKey)
+      .single();
+    
+    if (error || !data) {
+      console.log(`Using default value for ${configKey}:`, defaultValue);
+      return defaultValue;
+    }
+    
+    return data.config_value;
+  } catch (e) {
+    console.error(`Error fetching config ${configKey}:`, e);
+    return defaultValue;
+  }
 };
 
 serve(async (req) => {
@@ -15,6 +36,20 @@ serve(async (req) => {
     if (!openaiApiKey) {
       throw new Error('OpenAI API key not configured');
     }
+
+    // Initialize Supabase client for config lookup
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error('Supabase configuration missing');
+    }
+    
+    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Get configured model from system_config
+    const configuredModel = await getSystemConfig(supabaseClient, 'document_chat_ai_model', 'gpt-4o-mini');
+    console.log('Using AI model for document chat:', configuredModel);
 
     const { message, messages, agent_prompt, document_name, sessionId, agentType, context } = await req.json();
 
@@ -57,7 +92,7 @@ Responde SOLO en formato JSON:
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
+          model: configuredModel,
           messages: [
             {
               role: 'system',
@@ -139,7 +174,7 @@ FORMATO DE RESPUESTA:
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
+          model: configuredModel,
           messages: [
             {
               role: 'system',
@@ -213,7 +248,7 @@ IMPORTANTE - FORMATO DE RESPUESTA:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: configuredModel,
         messages: [
           {
             role: 'system',
