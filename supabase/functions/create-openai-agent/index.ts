@@ -84,16 +84,31 @@ serve(async (req) => {
 
     // Resolve model from system config (fallback to default)
     let model = "gpt-4.1-2025-04-14";
+    let temperature = 0;
     try {
       const { data: modelRow } = await supabase
         .from("system_config")
         .select("config_value")
-        .eq("config_key", "agent_creation_ai_model")
+        .eq("config_key", "openai_assistant_model")
         .maybeSingle();
       if (modelRow?.config_value) model = modelRow.config_value;
+      
+      const { data: tempRow } = await supabase
+        .from("system_config")
+        .select("config_value")
+        .eq("config_key", "openai_assistant_temperature")
+        .maybeSingle();
+      if (tempRow?.config_value) {
+        const parsedTemp = parseFloat(tempRow.config_value);
+        if (!isNaN(parsedTemp) && parsedTemp >= 0 && parsedTemp <= 2) {
+          temperature = parsedTemp;
+        }
+      }
     } catch (e) {
-      console.warn("Could not read agent_creation_ai_model, using default");
+      console.warn("Could not read assistant config, using defaults");
     }
+
+    console.log(`Creating OpenAI Assistant with model: ${model}, temperature: ${temperature}`);
 
     // Create new OpenAI Agent
     const openAIResponse = await fetch("https://api.openai.com/v1/assistants", {
@@ -107,7 +122,7 @@ serve(async (req) => {
         model: model,
         name: `${legalAgent.name} - Asistente de Documentos`,
         instructions: agentInstructions,
-        temperature: 0,
+        temperature: temperature,
         tools: [
           {
             type: "function",
