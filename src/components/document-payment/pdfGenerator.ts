@@ -278,21 +278,52 @@ const groupTokensByParagraph = (tokens: ContentToken[]): Paragraph[] => {
   return paragraphs;
 };
 
-// Crear segmentos con estilo para una línea de texto
-const createStyledSegments = (tokens: ContentToken[], startIdx: number, endIdx: number): StyledSegment[] => {
+// Crear segmentos con estilo para una línea de texto a partir del texto de la línea
+const createStyledSegmentsFromLineText = (tokens: ContentToken[], lineText: string): StyledSegment[] => {
   const segments: StyledSegment[] = [];
+  
+  // Concatenamos todo el texto de los tokens para buscar dónde está lineText
+  const fullText = tokens.map(t => t.text).join('');
+  
+  // Encontrar dónde empieza lineText en fullText (puede haber variaciones menores de espacios)
+  // Usamos una búsqueda más flexible
+  let lineStartInFull = fullText.indexOf(lineText);
+  
+  // Si no encontramos exacto, buscar sin espacios extra
+  if (lineStartInFull === -1) {
+    // Intentar encontrar la posición aproximada basándonos en palabras
+    const lineWords = lineText.trim().split(/\s+/);
+    if (lineWords.length > 0) {
+      const firstWord = lineWords[0];
+      const lastWord = lineWords[lineWords.length - 1];
+      const firstIdx = fullText.indexOf(firstWord);
+      if (firstIdx !== -1) {
+        lineStartInFull = firstIdx;
+      }
+    }
+  }
+  
+  if (lineStartInFull === -1) {
+    // Fallback: renderizar todo como texto normal
+    return [{ text: lineText, isBold: false, isItalic: false, isUnderline: false }];
+  }
+  
+  const lineEndInFull = lineStartInFull + lineText.length;
+  
+  // Ahora recorrer los tokens y extraer los segmentos correspondientes
   let charCount = 0;
-
+  let lineCharIdx = 0;
+  
   for (const token of tokens) {
     const tokenStart = charCount;
     const tokenEnd = charCount + token.text.length;
-
+    
     // Si el token está dentro del rango de la línea
-    if (tokenEnd > startIdx && tokenStart < endIdx) {
-      const segmentStart = Math.max(0, startIdx - tokenStart);
-      const segmentEnd = Math.min(token.text.length, endIdx - tokenStart);
-      const text = token.text.substring(segmentStart, segmentEnd);
-
+    if (tokenEnd > lineStartInFull && tokenStart < lineEndInFull) {
+      const segmentStartInToken = Math.max(0, lineStartInFull - tokenStart);
+      const segmentEndInToken = Math.min(token.text.length, lineEndInFull - tokenStart);
+      const text = token.text.substring(segmentStartInToken, segmentEndInToken);
+      
       if (text) {
         segments.push({
           text,
@@ -301,12 +332,30 @@ const createStyledSegments = (tokens: ContentToken[], startIdx: number, endIdx: 
           isUnderline: token.isUnderline,
           color: token.color ? parseColor(token.color) || undefined : undefined,
         });
+        lineCharIdx += text.length;
       }
     }
-
+    
     charCount += token.text.length;
   }
-
+  
+  // Verificar que cubrimos toda la línea
+  const segmentText = segments.map(s => s.text).join('');
+  if (segmentText.length < lineText.length && segments.length > 0) {
+    // Hay caracteres faltantes, ajustar el último segmento o agregar uno nuevo
+    const missing = lineText.substring(segmentText.length);
+    if (missing.trim()) {
+      const lastStyle = segments[segments.length - 1];
+      segments.push({
+        text: missing,
+        isBold: lastStyle?.isBold || false,
+        isItalic: lastStyle?.isItalic || false,
+        isUnderline: lastStyle?.isUnderline || false,
+        color: lastStyle?.color,
+      });
+    }
+  }
+  
   return segments;
 };
 
@@ -475,19 +524,11 @@ const renderParagraphsInPDF = (
 
           let currentX = MARGIN_LEFT + xOffset;
 
-          // Para justificación, necesitamos mapear cada palabra a sus segmentos de estilo
-          let charOffset = lineIdx === 0 ? bulletPrefix.length : 0;
-          for (let lineI = 0; lineI < lineIdx; lineI++) {
-            charOffset += lines[lineI].length - (lineI === 0 ? bulletPrefix.length : 0);
-          }
-
           for (let wIdx = 0; wIdx < words.length; wIdx++) {
             const word = words[wIdx];
-            const wordStart = charOffset;
-            const wordEnd = charOffset + word.length;
 
-            // Obtener segmentos para esta palabra
-            const segments = createStyledSegments(paragraph.tokens, wordStart - bulletPrefix.length, wordEnd - bulletPrefix.length);
+            // Obtener segmentos para esta palabra usando el nuevo método
+            const segments = createStyledSegmentsFromLineText(paragraph.tokens, word);
 
             if (segments.length > 0) {
               renderMixedLine(doc, segments, currentX, currentY, fontSize, !!paragraph.isHeading);
@@ -504,7 +545,6 @@ const renderParagraphsInPDF = (
               doc.text(word, currentX, currentY);
             }
 
-            charOffset += word.length + 1; // +1 for space
             if (wIdx < words.length - 1) {
               currentX += doc.getTextWidth(word) + spaceWidth;
             }
@@ -516,20 +556,6 @@ const renderParagraphsInPDF = (
       }
 
       // Renderizado normal (no justificado) con estilos mixtos
-      // Calcular qué parte del texto original corresponde a esta línea
-      let charStart = 0;
-      for (let i = 0; i < lineIdx; i++) {
-        charStart += lines[i].length;
-        // Ajustar por el bullet en la primera línea
-        if (i === 0 && bulletPrefix) {
-          charStart -= bulletPrefix.length;
-        }
-      }
-
-      // Si es la primera línea, quitar el bullet del conteo
-      const lineTextStart = lineIdx === 0 ? 0 : charStart;
-      const lineTextEnd = lineTextStart + line.length - (lineIdx === 0 ? bulletPrefix.length : 0);
-
       // Si es la primera línea, renderizar bullet primero
       if (lineIdx === 0 && bulletPrefix) {
         if (paragraph.isHeading) {
@@ -544,11 +570,9 @@ const renderParagraphsInPDF = (
         lineX += doc.getTextWidth(bulletPrefix);
       }
 
-      // Obtener segmentos con estilo para la línea actual
+      // Obtener segmentos con estilo para la línea actual usando el texto de la línea
       const actualLineText = lineIdx === 0 ? line.substring(bulletPrefix.length) : line;
-      const lineCharStart = lineIdx === 0 ? 0 : charStart;
-      const lineCharEnd = lineCharStart + actualLineText.length;
-      const segments = createStyledSegments(paragraph.tokens, lineCharStart, lineCharEnd);
+      const segments = createStyledSegmentsFromLineText(paragraph.tokens, actualLineText);
 
       if (segments.length > 0) {
         renderMixedLine(doc, segments, lineX, currentY, fontSize, !!paragraph.isHeading);
