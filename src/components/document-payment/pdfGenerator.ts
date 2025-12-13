@@ -121,6 +121,7 @@ const parseFontSize = (fontSize: string): number | null => {
 };
 
 // Función mejorada para procesar HTML y extraer tokens con formato Y estilos inline
+/*
 const processHtmlContent = (html: string): ContentToken[] => {
   const tokens: ContentToken[] = [];
 
@@ -236,7 +237,105 @@ const processHtmlContent = (html: string): ContentToken[] => {
 
   return tokens;
 };
+*/
 
+const processHtmlContent = (html: string): ContentToken[] => {
+  const tokens: ContentToken[] = [];
+
+  // Limpieza previa del HTML para eliminar parrafos vacios redundantes que generan saltos dobles
+  // Reemplaza <p><br></p> por <br> para simplificar el tokenizado
+  const cleanHtml = html.replace(/<p[^>]*>\s*<br\s*\/?>\s*<\/p>/gi, "<br>");
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(`<div>${cleanHtml}</div>`, "text/html");
+  const container = doc.body.firstChild as HTMLElement;
+
+  if (!container) return tokens;
+
+  const processNode = (node: Node, parentFormat: Partial<ContentToken> = {}) => {
+    // Caso especial: Saltos de línea explícitos
+    if (node.nodeName.toLowerCase() === "br") {
+      // Solo agregar salto si el último token no es ya un salto (evitar dobles saltos accidentales)
+      if (tokens.length === 0 || tokens[tokens.length - 1].text !== "\n") {
+        tokens.push({ text: "\n" });
+      }
+      return;
+    }
+
+    if (node.nodeType === Node.TEXT_NODE) {
+      const text = node.textContent;
+      if (text && text !== "\n") {
+        // Ignoramos saltos de línea puros del editor de código
+        tokens.push({
+          text: text, // No hacemos trim() completo para respetar espacios entre palabras
+          ...parentFormat,
+        });
+      }
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      const element = node as HTMLElement;
+      const tagName = element.tagName.toLowerCase();
+      const format: Partial<ContentToken> = { ...parentFormat };
+
+      // ... (Mismo código de extracción de estilos que tenías antes: class, style, color, etc.) ...
+      const className = element.className || "";
+      if (className.includes("ql-align-center")) format.textAlign = "center";
+      else if (className.includes("ql-align-right")) format.textAlign = "right";
+      else if (className.includes("ql-align-justify")) format.textAlign = "justify";
+
+      const style = element.getAttribute("style");
+      if (style) {
+        // ... (Tu lógica existente de parseo de estilos styles.color, font-size, etc.) ...
+        const styles = style.split(";").reduce(
+          (acc, s) => {
+            const [key, value] = s.split(":").map((v) => v.trim());
+            if (key && value) acc[key] = value;
+            return acc;
+          },
+          {} as Record<string, string>,
+        );
+        if (styles.color) format.color = styles.color;
+        if (styles["font-size"]) {
+          const size = parseFontSize(styles["font-size"]);
+          if (size) format.fontSize = size;
+        }
+        if (styles["text-align"]) format.textAlign = styles["text-align"] as any;
+      }
+
+      if (tagName === "strong" || tagName === "b") format.isBold = true;
+      if (tagName === "em" || tagName === "i") format.isItalic = true;
+      if (tagName === "u") format.isUnderline = true;
+      if (tagName.match(/^h[1-6]$/)) format.isHeading = parseInt(tagName[1]);
+
+      // Manejo de listas
+      if (tagName === "li") {
+        format.isList = true;
+        const parentList = element.parentElement;
+        format.isOrderedList = parentList?.tagName.toLowerCase() === "ol";
+        // Agregar salto antes del item si no es el primero
+        if (tokens.length > 0 && tokens[tokens.length - 1].text !== "\n") {
+          tokens.push({ text: "\n" });
+        }
+      }
+
+      // Procesar hijos
+      element.childNodes.forEach((child) => processNode(child, format));
+
+      // Bloques que fuerzan salto de línea al final
+      const blockTags = ["p", "div", "h1", "h2", "h3", "h4", "h5", "h6", "li"];
+      if (blockTags.includes(tagName)) {
+        // Solo agregar salto si no existe ya uno al final
+        if (tokens.length > 0 && tokens[tokens.length - 1].text !== "\n") {
+          tokens.push({ text: "\n" });
+        }
+      }
+    }
+  };
+
+  container.childNodes.forEach((node) => processNode(node));
+  return tokens;
+};
+
+/*
 // Función para renderizar tokens en PDF con soporte de estilos inline
 const renderTokensInPDF = (
   doc: jsPDF,
@@ -379,6 +478,155 @@ const renderTokensInPDF = (
       doc.text(line, finalXPosition, currentY);
 
       // Agregar subrayado si es necesario
+      if (token.isUnderline) {
+        doc.setLineWidth(0.2);
+        doc.line(finalXPosition, currentY + 1, finalXPosition + lineWidth, currentY + 1);
+      }
+
+      currentY += lineHeight;
+    }
+  }
+
+  return { currentY, pageNumber };
+};
+*/
+
+const renderTokensInPDF = (
+  doc: jsPDF,
+  tokens: ContentToken[],
+  startY: number,
+  documentData: any,
+  startPageNumber: number,
+): { currentY: number; pageNumber: number } => {
+  let currentY = startY;
+  let pageNumber = startPageNumber;
+  let listCounter = 0;
+  let currentParagraphAlign: "left" | "center" | "right" | "justify" = "left";
+
+  // Altura segura del footer
+  const SAFE_BOTTOM = PAGE_HEIGHT - MARGIN_BOTTOM - FOOTER_HEIGHT;
+
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
+
+    if (token.textAlign) currentParagraphAlign = token.textAlign;
+
+    const baseFontSize = token.fontSize || (token.isHeading ? 14 : 12); // Ajustado heading default a 14
+    const lineHeight = baseFontSize * 0.45; // Reducido ligeramente el factor de interlineado (más compacto)
+
+    // --- LÓGICA DE PROTECCIÓN DE FIRMA (Lookahead) ---
+    // Si estamos cerca del final y detectamos líneas cortas consecutivas (firma),
+    // intentamos saltar página antes para que no queden cortadas.
+    const remainingSpace = SAFE_BOTTOM - currentY;
+
+    // Si queda poco espacio (menos de 40mm) y este token parece ser el inicio de un bloque de firma
+    // (Texto corto, negrita o mayúsculas, cerca del final del documento)
+    const isEndBlock = i > tokens.length - 10; // Estamos en los últimos 10 tokens
+    if (remainingSpace < 40 && remainingSpace > 0 && isEndBlock && token.text !== "\n") {
+      addFooter(doc, documentData.token, documentData.reviewed_by_lawyer_name);
+      doc.addPage();
+      pageNumber++;
+      currentY = MARGIN_TOP;
+    }
+    // ------------------------------------------------
+
+    // Verificación estándar de salto de página
+    if (currentY + lineHeight > SAFE_BOTTOM) {
+      addFooter(doc, documentData.token, documentData.reviewed_by_lawyer_name);
+      doc.addPage();
+      pageNumber++;
+      currentY = MARGIN_TOP;
+      listCounter = 0;
+    }
+
+    // Configuración de fuentes (Igual que tu código original)
+    if (token.isHeading) {
+      doc.setFont("helvetica", "bold");
+      const headingSizes = [16, 14, 13, 12, 11, 10];
+      doc.setFontSize(headingSizes[token.isHeading - 1] || 12);
+      doc.setTextColor(COLORS.primaryDark[0], COLORS.primaryDark[1], COLORS.primaryDark[2]);
+    } else {
+      let fontFamily: "helvetica" | "times" = "times";
+      let fontStyle: "normal" | "bold" | "italic" | "bolditalic" = "normal";
+      if (token.isBold && token.isItalic) fontStyle = "bolditalic";
+      else if (token.isBold) fontStyle = "bold";
+      else if (token.isItalic) fontStyle = "italic";
+
+      doc.setFont(fontFamily, fontStyle);
+      doc.setFontSize(token.fontSize || 12);
+
+      if (token.color) {
+        const rgb = parseColor(token.color);
+        if (rgb) doc.setTextColor(rgb[0], rgb[1], rgb[2]);
+        else doc.setTextColor(COLORS.text[0], COLORS.text[1], COLORS.text[2]);
+      } else {
+        doc.setTextColor(COLORS.text[0], COLORS.text[1], COLORS.text[2]);
+      }
+    }
+
+    // Procesar salto de línea
+    if (token.text === "\n") {
+      // Si el salto de línea es muy "alto", podemos reducirlo si es un espacio vacío decorativo
+      currentY += lineHeight;
+      listCounter = 0;
+      currentParagraphAlign = "left";
+      continue;
+    }
+
+    if (!token.text.trim()) continue;
+
+    let textToRender = token.text;
+    let xPosition = MARGIN_LEFT;
+
+    if (token.isList) {
+      listCounter++;
+      const bullet = token.isOrderedList ? `${listCounter}. ` : "• ";
+      textToRender = bullet + textToRender;
+      xPosition = MARGIN_LEFT + 5;
+    }
+
+    const maxWidth = CONTENT_WIDTH - (token.isList ? 5 : 0);
+    const lines = doc.splitTextToSize(textToRender, maxWidth);
+
+    for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+      const line = lines[lineIndex];
+
+      if (currentY + lineHeight > SAFE_BOTTOM) {
+        addFooter(doc, documentData.token, documentData.reviewed_by_lawyer_name);
+        doc.addPage();
+        pageNumber++;
+        currentY = MARGIN_TOP;
+      }
+
+      let finalXPosition = xPosition;
+      const lineWidth = doc.getTextWidth(line);
+
+      // Lógica de alineación
+      if (currentParagraphAlign === "center") {
+        finalXPosition = MARGIN_LEFT + (CONTENT_WIDTH - lineWidth) / 2;
+      } else if (currentParagraphAlign === "right") {
+        finalXPosition = PAGE_WIDTH - MARGIN_RIGHT - lineWidth;
+      } else if (currentParagraphAlign === "justify" && lineIndex < lines.length - 1) {
+        // (Tu lógica de justificación existente se mantiene igual)
+        const words = line.split(" ");
+        if (words.length > 1) {
+          const totalSpaceWidth = maxWidth - words.reduce((sum, word) => sum + doc.getTextWidth(word), 0);
+          const spaceWidth = totalSpaceWidth / (words.length - 1);
+          let currentX = xPosition;
+          words.forEach((word, idx) => {
+            doc.text(word, currentX, currentY);
+            if (idx < words.length - 1) currentX += doc.getTextWidth(word) + spaceWidth;
+          });
+          if (token.isUnderline) {
+            doc.setLineWidth(0.2);
+            doc.line(xPosition, currentY + 1, xPosition + maxWidth, currentY + 1);
+          }
+          currentY += lineHeight;
+          continue;
+        }
+      }
+
+      doc.text(line, finalXPosition, currentY);
       if (token.isUnderline) {
         doc.setLineWidth(0.2);
         doc.line(finalXPosition, currentY + 1, finalXPosition + lineWidth, currentY + 1);
