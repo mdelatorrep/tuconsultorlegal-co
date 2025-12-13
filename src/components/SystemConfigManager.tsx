@@ -141,6 +141,21 @@ export default function SystemConfigManager() {
           options: []
         },
         {
+          key: 'openai_assistant_model',
+          name: 'Modelo para OpenAI Assistants',
+          description: 'Modelo utilizado para los Assistants de OpenAI que generan documentos legales',
+          defaultValue: 'gpt-4.1-2025-04-14',
+          type: 'select',
+          options: []
+        },
+        {
+          key: 'openai_assistant_temperature',
+          name: 'Temperatura de Assistants',
+          description: 'Temperatura para la generación de respuestas (0 = más preciso, 1 = más creativo)',
+          defaultValue: '0',
+          type: 'text'
+        },
+        {
           key: 'agent_creation_ai_model',
           name: 'Modelo IA para Creación de Agentes',
           description: 'Modelo utilizado para generar y optimizar agentes legales',
