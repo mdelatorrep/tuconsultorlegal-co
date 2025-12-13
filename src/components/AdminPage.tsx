@@ -176,6 +176,12 @@ function AdminPage() {
   const [currentView, setCurrentView] = useState('dashboard');
   const [selectedLawyerForPermissions, setSelectedLawyerForPermissions] = useState<Lawyer | null>(null);
   const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
+  
+  // Estado para responder mensajes
+  const [replyDialogOpen, setReplyDialogOpen] = useState(false);
+  const [selectedMessageForReply, setSelectedMessageForReply] = useState<ContactMessage | null>(null);
+  const [replyContent, setReplyContent] = useState('');
+  const [isSendingReply, setIsSendingReply] = useState(false);
 
   // Conversación del agente (Guía)
   const [convBlocks, setConvBlocks] = useState<ConversationBlock[]>([]);
@@ -703,28 +709,89 @@ function AdminPage() {
     }
   };
 
-  const handleMarkAsRead = async (messageId: string) => {
-    try {
-      const { error } = await supabase
-        .from('contact_messages')
-        .update({ is_read: true, status: 'responded', responded_at: new Date().toISOString() })
-        .eq('id', messageId);
+  const handleOpenReplyDialog = (message: ContactMessage) => {
+    setSelectedMessageForReply(message);
+    setReplyContent('');
+    setReplyDialogOpen(true);
+  };
 
-      if (error) throw error;
-
-      toast({
-        title: "Mensaje marcado",
-        description: "El mensaje ha sido marcado como respondido",
-      });
-
-      await loadContactMessages();
-    } catch (error) {
-      console.error('Error marking message as read:', error);
+  const handleSendReply = async () => {
+    if (!selectedMessageForReply || !replyContent.trim()) {
       toast({
         title: "Error",
-        description: "No se pudo actualizar el mensaje",
+        description: "Por favor escribe una respuesta",
         variant: "destructive",
       });
+      return;
+    }
+
+    setIsSendingReply(true);
+    try {
+      // Enviar email de respuesta
+      const { data, error: emailError } = await supabase.functions.invoke('send-email', {
+        body: {
+          to: selectedMessageForReply.email,
+          subject: `Re: Consulta desde Tu Consultor Legal`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <div style="background: linear-gradient(135deg, #0372E8, #0056b3); padding: 20px; text-align: center;">
+                <h1 style="color: white; margin: 0;">Tu Consultor Legal</h1>
+              </div>
+              <div style="padding: 30px; background: #f9f9f9;">
+                <p style="color: #333;">Hola <strong>${selectedMessageForReply.name}</strong>,</p>
+                <p style="color: #333;">Gracias por contactarnos. A continuación nuestra respuesta:</p>
+                <div style="background: white; padding: 20px; border-left: 4px solid #0372E8; margin: 20px 0;">
+                  ${replyContent.replace(/\n/g, '<br>')}
+                </div>
+                <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+                <p style="color: #666; font-size: 12px;">Tu mensaje original:</p>
+                <p style="color: #999; font-size: 12px; font-style: italic;">${selectedMessageForReply.message}</p>
+              </div>
+              <div style="background: #333; padding: 20px; text-align: center;">
+                <p style="color: #999; margin: 0; font-size: 12px;">
+                  © ${new Date().getFullYear()} Tu Consultor Legal | www.tuconsultorlegal.co
+                </p>
+              </div>
+            </div>
+          `,
+          template_key: 'admin_reply',
+          recipient_type: 'user'
+        }
+      });
+
+      if (emailError) throw emailError;
+
+      // Actualizar el mensaje como respondido
+      const { error: updateError } = await supabase
+        .from('contact_messages')
+        .update({ 
+          is_read: true, 
+          status: 'responded', 
+          responded_at: new Date().toISOString(),
+          admin_notes: replyContent
+        })
+        .eq('id', selectedMessageForReply.id);
+
+      if (updateError) throw updateError;
+
+      toast({
+        title: "Respuesta enviada",
+        description: `Se ha enviado la respuesta a ${selectedMessageForReply.email}`,
+      });
+
+      setReplyDialogOpen(false);
+      setSelectedMessageForReply(null);
+      setReplyContent('');
+      await loadContactMessages();
+    } catch (error: any) {
+      console.error('Error sending reply:', error);
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo enviar la respuesta",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingReply(false);
     }
   };
 
@@ -1412,8 +1479,8 @@ function AdminPage() {
                             <Button 
                               size="sm" 
                               variant="outline"
-                              onClick={() => handleMarkAsRead(message.id)}
-                              title="Marcar como respondido"
+                              onClick={() => handleOpenReplyDialog(message)}
+                              title="Responder mensaje"
                             >
                               <Reply className="w-4 h-4" />
                             </Button>
@@ -1821,6 +1888,81 @@ function AdminPage() {
                 >
                   <X className="h-4 w-4 mr-2" />
                   Cancelar
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo de responder mensaje */}
+      <Dialog open={replyDialogOpen} onOpenChange={(open) => {
+        setReplyDialogOpen(open);
+        if (!open) {
+          setSelectedMessageForReply(null);
+          setReplyContent('');
+        }
+      }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Reply className="w-5 h-5" />
+              Responder Consulta
+            </DialogTitle>
+            <DialogDescription>
+              Escribe tu respuesta para {selectedMessageForReply?.name}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedMessageForReply && (
+            <div className="space-y-4">
+              <div className="p-4 bg-muted rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <p className="font-medium">{selectedMessageForReply.name}</p>
+                    <p className="text-sm text-muted-foreground">{selectedMessageForReply.email}</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {format(new Date(selectedMessageForReply.created_at), "dd/MM/yyyy HH:mm", { locale: es })}
+                  </p>
+                </div>
+                <p className="text-sm">{selectedMessageForReply.message}</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="reply-content">Tu respuesta</Label>
+                <Textarea
+                  id="reply-content"
+                  value={replyContent}
+                  onChange={(e) => setReplyContent(e.target.value)}
+                  placeholder="Escribe tu respuesta aquí..."
+                  className="min-h-[150px]"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setReplyDialogOpen(false)}
+                  disabled={isSendingReply}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={handleSendReply}
+                  disabled={isSendingReply || !replyContent.trim()}
+                >
+                  {isSendingReply ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Enviando...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4 mr-2" />
+                      Enviar Respuesta
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
