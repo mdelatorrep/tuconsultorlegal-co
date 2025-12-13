@@ -863,6 +863,7 @@ function AdminPage() {
             pendingAgentsCount={pendingAgentsCount}
             pendingBlogsCount={pendingBlogsCount}
             blogPosts={blogPosts}
+            onNavigate={setCurrentView}
           />
         );
       
