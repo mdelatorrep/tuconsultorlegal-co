@@ -83,16 +83,18 @@ serve(async (req) => {
       });
     }
 
-    // Get configured OpenAI model
+    // Get configured OpenAI model and prompts
     const selectedModel = await getSystemConfig(supabase, 'agent_creation_ai_model', 'gpt-4o-mini');
-    const customSystemPrompt = await getSystemConfig(supabase, 'agent_creation_system_prompt', null);
+    // Instrucciones del procesador (reglas estrictas para formato de respuesta)
+    const processorInstructions = await getSystemConfig(supabase, 'agent_prompt_processor_instructions', null);
+    // ADN base del agente (comportamiento y personalidad)
+    const baseDNA = await getSystemConfig(supabase, 'agent_creation_system_prompt', null);
 
     logResponsesRequest(selectedModel, 'process-agent-ai', true);
 
     // 1. Enhance the initial prompt using Responses API
-    const enhanceInstructions = customSystemPrompt || `Eres un experto en crear prompts para asistentes legales de IA. Tu trabajo es mejorar prompts básicos y convertirlos en instrucciones claras, profesionales y efectivas para agentes de IA que ayudan a crear documentos legales en Colombia.
-
-PÚBLICO OBJETIVO: ${targetAudience === 'empresas' ? 'Empresas y clientes corporativos' : 'Personas (clientes individuales)'}
+    // Combine processor instructions with base DNA context
+    const defaultProcessorInstructions = `Eres un experto en crear prompts para asistentes legales de IA. Tu trabajo es mejorar prompts básicos y convertirlos en instrucciones claras, profesionales y efectivas para agentes de IA que ayudan a crear documentos legales en Colombia.
 
 REGLAS IMPORTANTES:
 1. RESPONDE ÚNICAMENTE CON EL PROMPT MEJORADO EN TEXTO PLANO
@@ -103,9 +105,16 @@ REGLAS IMPORTANTES:
 6. Mantén el contexto legal colombiano
 7. Asegúrate de que sea claro y actionable
 8. NO uses caracteres especiales de markdown
-9. ${targetAudience === 'empresas' ? 'Enfócate en terminología corporativa y considera aspectos empresariales específicos' : 'Usa lenguaje claro y accesible para personas naturales'}
 
-OBJETIVO: Devolver únicamente el prompt mejorado en texto plano, adaptado para ${targetAudience === 'empresas' ? 'empresas' : 'personas naturales'}, sin formato adicional.`;
+OBJETIVO: Devolver únicamente el prompt mejorado en texto plano, sin formato adicional ni explicaciones.`;
+
+    const enhanceInstructions = `${processorInstructions || defaultProcessorInstructions}
+
+PÚBLICO OBJETIVO: ${targetAudience === 'empresas' ? 'Empresas y clientes corporativos' : 'Personas (clientes individuales)'}
+${targetAudience === 'empresas' ? 'Enfócate en terminología corporativa y considera aspectos empresariales específicos.' : 'Usa lenguaje claro y accesible para personas naturales.'}
+
+${baseDNA ? `USA ESTE ADN BASE COMO GUÍA DE COMPORTAMIENTO PARA EL AGENTE:
+${baseDNA}` : ''}`;
 
     const enhanceInput = `Mejora este prompt para un agente que ayuda a crear: "${docName}"
 

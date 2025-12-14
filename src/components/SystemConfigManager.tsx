@@ -83,9 +83,17 @@ export default function SystemConfigManager() {
         },
         {
           id: 'agent_creation',
-          name: 'Creación de Agentes',
-          description: 'Genera y optimiza configuraciones de agentes legales',
+          name: 'ADN de Agentes',
+          description: 'Define el comportamiento y personalidad base de los agentes legales',
           promptKey: 'agent_creation_system_prompt',
+          modelKey: 'agent_creation_ai_model',
+          colorClass: 'border-l-purple-500'
+        },
+        {
+          id: 'agent_prompt_processor',
+          name: 'Procesador de Prompts',
+          description: 'Instrucciones estrictas para mejorar prompts (sin explicaciones ni saludos)',
+          promptKey: 'agent_prompt_processor_instructions',
           modelKey: 'agent_creation_ai_model',
           colorClass: 'border-l-purple-500'
         }
