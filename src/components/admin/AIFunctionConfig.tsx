@@ -239,6 +239,19 @@ export default function AIFunctionConfig({
                       {currentModel.length > 25 ? currentModel.substring(0, 25) + '...' : currentModel}
                     </Badge>
                   )}
+                  {reasoningEffortKey && currentReasoningEffort && (
+                    <Badge 
+                      variant="outline" 
+                      className={`text-xs ${
+                        currentReasoningEffort === 'high' ? 'border-orange-500 text-orange-600' :
+                        currentReasoningEffort === 'medium' ? 'border-blue-500 text-blue-600' :
+                        'border-green-500 text-green-600'
+                      }`}
+                    >
+                      <Zap className="w-3 h-3 mr-1" />
+                      {currentReasoningEffort === 'high' ? 'Alto' : currentReasoningEffort === 'medium' ? 'Medio' : 'Bajo'}
+                    </Badge>
+                  )}
                 </div>
                 <p className="text-sm text-muted-foreground">{description}</p>
               </div>
