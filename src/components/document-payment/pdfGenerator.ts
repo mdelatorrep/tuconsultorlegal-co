@@ -613,7 +613,11 @@ export const generatePDFDownload = (documentData: any, toast?: (options: any) =>
 
     let currentY = MARGIN_TOP;
 
-    const content = documentData.document_content || "Contenido del documento no disponible.";
+    let content = documentData.document_content || "Contenido del documento no disponible.";
+    
+    // Eliminar el primer H1 que sea el título del documento (no fue parte de la plantilla del abogado)
+    content = content.replace(/<h1[^>]*>[\s\S]*?<\/h1>/i, '');
+    
     const tokens = processHtmlContent(content);
     const paragraphs = groupTokensByParagraph(tokens);
 
