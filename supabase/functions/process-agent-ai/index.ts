@@ -93,22 +93,14 @@ serve(async (req) => {
     logResponsesRequest(selectedModel, 'process-agent-ai', true);
 
     // 1. Enhance the initial prompt using Responses API
-    // Combine processor instructions with base DNA context
-    const defaultProcessorInstructions = `Eres un experto en crear prompts para asistentes legales de IA. Tu trabajo es mejorar prompts básicos y convertirlos en instrucciones claras, profesionales y efectivas para agentes de IA que ayudan a crear documentos legales en Colombia.
+    if (!processorInstructions) {
+      console.error('❌ agent_prompt_processor_instructions not configured in system_config');
+      return new Response(JSON.stringify({ 
+        error: 'Configuración faltante: agent_prompt_processor_instructions no está configurado en el sistema' 
+      }), { status: 500, headers: securityHeaders });
+    }
 
-REGLAS IMPORTANTES:
-1. RESPONDE ÚNICAMENTE CON EL PROMPT MEJORADO EN TEXTO PLANO
-2. NO incluyas explicaciones, comentarios, ni texto adicional
-3. NO uses estructura markdown (##, **, _, etc.)
-4. NO incluyas encabezados, títulos o secciones explicativas
-5. El prompt debe ser directo y profesional
-6. Mantén el contexto legal colombiano
-7. Asegúrate de que sea claro y actionable
-8. NO uses caracteres especiales de markdown
-
-OBJETIVO: Devolver únicamente el prompt mejorado en texto plano, sin formato adicional ni explicaciones.`;
-
-    const enhanceInstructions = `${processorInstructions || defaultProcessorInstructions}
+    const enhanceInstructions = `${processorInstructions}
 
 PÚBLICO OBJETIVO: ${targetAudience === 'empresas' ? 'Empresas y clientes corporativos' : 'Personas (clientes individuales)'}
 ${targetAudience === 'empresas' ? 'Enfócate en terminología corporativa y considera aspectos empresariales específicos.' : 'Usa lenguaje claro y accesible para personas naturales.'}

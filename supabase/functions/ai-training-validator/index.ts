@@ -53,31 +53,14 @@ Deno.serve(async (req) => {
 
     // Get configured model and prompt
     const selectedModel = await getSystemConfig('content_optimization_model', 'gpt-4.1-2025-04-14');
-    const systemPrompt = await getSystemConfig('ai_training_validator_prompt', `Eres un experto evaluador en formación legal especializado en IA para abogados.
-
-CRITERIOS DE EVALUACIÓN:
-- Precisión técnica (30%): Corrección de conceptos
-- Aplicabilidad práctica (25%): Relevancia para ejercicio legal real  
-- Completitud (20%): Cobertura integral de la pregunta
-- Pensamiento crítico (15%): Análisis profundo
-- Claridad comunicativa (10%): Estructura y expresión clara
-
-INSTRUCCIONES:
-1. Evalúa cada respuesta objetivamente
-2. Proporciona puntuación específica (0-100)
-3. Incluye feedback constructivo detallado
-4. Determina si el candidato debe aprobar (≥70 puntos)
-
-FORMATO DE RESPUESTA (JSON):
-{
-  "passed": boolean,
-  "totalScore": number,
-  "maxScore": number,
-  "questionResults": [{"questionId": "string", "score": number, "maxScore": number, "feedback": "string", "strengths": [], "improvements": []}],
-  "overallFeedback": "string",
-  "recommendations": [],
-  "nextSteps": "string"
-}`);
+    const systemPrompt = await getSystemConfig('ai_training_validator_prompt', '');
+    
+    if (!systemPrompt) {
+      console.error('❌ ai_training_validator_prompt not configured in system_config');
+      return new Response(JSON.stringify({ error: 'Configuración faltante: ai_training_validator_prompt' }), { 
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
+    }
 
     logResponsesRequest(selectedModel, 'ai-training-validator', true);
 

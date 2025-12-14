@@ -56,9 +56,18 @@ serve(async (req) => {
     }
 
     const configuredModel = await getSystemConfig(supabase, 'prompt_optimizer_model', 'gpt-4.1-2025-04-14');
+    const promptOptimizerInstructions = await getSystemConfig(supabase, 'prompt_optimizer_instructions', '');
+    
+    if (!promptOptimizerInstructions) {
+      console.error('❌ prompt_optimizer_instructions not configured in system_config');
+      return new Response(JSON.stringify({ error: 'Configuración faltante: prompt_optimizer_instructions' }), { 
+        status: 500, headers: securityHeaders 
+      });
+    }
+    
     logResponsesRequest(configuredModel, 'improve-prompt-ai', true);
 
-    const instructions = `Eres un experto en optimización de prompts para asistentes de IA especializados en la generación de documentos legales. Mejora el prompt para que sea más claro, estructurado y efectivo.`;
+    const instructions = promptOptimizerInstructions;
 
     const userMessage = `Mejora este prompt para generación de documentos legales:
 

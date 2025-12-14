@@ -46,7 +46,14 @@ serve(async (req) => {
 
     // Get configured OpenAI model and prompt
     const selectedModel = await getSystemConfig('drafting_ai_model', 'gpt-4.1-2025-04-14');
-    const systemPrompt = await getSystemConfig('generate_document_prompt', 'Eres un experto abogado colombiano especializado en redacción de documentos legales. Tu tarea es generar documentos completos y profesionales basándose en conversaciones con usuarios.');
+    const systemPrompt = await getSystemConfig('generate_document_prompt', '');
+    
+    if (!systemPrompt) {
+      console.error('❌ generate_document_prompt not configured in system_config');
+      return new Response(JSON.stringify({ error: 'Configuración faltante: generate_document_prompt' }), { 
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
+    }
 
     logResponsesRequest(selectedModel, 'generate-document-from-chat', true);
 

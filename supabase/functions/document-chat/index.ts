@@ -59,27 +59,14 @@ serve(async (req) => {
     // Handle different chat types
     if (agentType === 'routing') {
       // Legal consultation routing logic - get prompt from config
-      const routingInstructions = await getSystemConfig(supabaseClient, 'routing_chat_prompt', `Eres un sistema experto de routing para consultas legales. Analiza la consulta del usuario y determina:
-
-1. ¿Necesita asesoría legal especializada? (true/false)
-2. ¿Qué especialización legal requiere? (civil, laboral, comercial, penal, etc.)
-3. ¿Es una consulta compleja que requiere investigación legal profunda? (true/false)
-
-ESPECIALIZACIONES DISPONIBLES:
-- civil: Derecho civil, contratos, propiedad, familia
-- laboral: Derecho laboral, empleos, contratos de trabajo
-- comercial: Derecho comercial, empresas, sociedades
-- penal: Derecho penal, delitos, procedimientos penales
-- administrativo: Derecho administrativo, entidades públicas
-- constitucional: Derecho constitucional, derechos fundamentales
-
-Responde SOLO en formato JSON:
-{
-  "needsSpecializedAdvice": boolean,
-  "specialization": "string o null",
-  "isComplex": boolean,
-  "reasoning": "explicación breve"
-}`);
+      const routingInstructions = await getSystemConfig(supabaseClient, 'routing_chat_prompt', '');
+      
+      if (!routingInstructions) {
+        console.error('❌ routing_chat_prompt not configured in system_config');
+        return new Response(JSON.stringify({ error: 'Configuración faltante: routing_chat_prompt' }), { 
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        });
+      }
 
       const userInput = message || (messages && messages[messages.length - 1]?.content) || '';
 
@@ -115,37 +102,14 @@ Responde SOLO en formato JSON:
 
     if (agentType === 'lexi') {
       // General legal assistant - Lexi - get prompt from config
-      const lexiInstructions = await getSystemConfig(supabaseClient, 'lexi_chat_prompt', `Eres Lexi, la asistente legal virtual de tuconsultorlegal.co, una plataforma innovadora que democratiza el acceso a servicios legales de alta calidad en Colombia.
-
-PERSONALIDAD Y ESTILO:
-- Eres amigable, profesional y cercana
-- Hablas en un lenguaje claro y accesible, evitando jerga legal innecesaria
-- Siempre muestras confianza y conocimiento
-- Tu objetivo es ayudar y guiar a los usuarios hacia las mejores soluciones legales
-
-CONOCIMIENTOS:
-- Experta en derecho colombiano
-- Conoces todos los servicios de tuconsultorlegal.co
-- Puedes orientar sobre documentos legales, consultas y trámites
-- Especializada en simplificar conceptos legales complejos
-
-FUNCIONES PRINCIPALES:
-1. Responder consultas legales generales
-2. Orientar sobre documentos disponibles en la plataforma
-3. Explicar procesos legales de manera simple
-4. Conectar usuarios con servicios especializados
-5. Brindar información sobre trámites y procedimientos
-
-IMPORTANTE:
-- Siempre menciona que eres de tuconsultorlegal.co
-- Mantén un tono profesional pero accesible
-- No ofreces conexión directa con abogados, sino orientación e información
-- Para casos complejos, recomienda buscar asesoría legal profesional externa
-
-FORMATO DE RESPUESTA:
-- Usa texto plano sin formato markdown
-- Sé clara y concisa
-- Incluye emojis apropiados ocasionalmente (⚖️, 📄, 💼, etc.)`);
+      const lexiInstructions = await getSystemConfig(supabaseClient, 'lexi_chat_prompt', '');
+      
+      if (!lexiInstructions) {
+        console.error('❌ lexi_chat_prompt not configured in system_config');
+        return new Response(JSON.stringify({ error: 'Configuración faltante: lexi_chat_prompt' }), { 
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        });
+      }
 
       const userMessage = message || (messages && messages[messages.length - 1]?.content) || '';
       

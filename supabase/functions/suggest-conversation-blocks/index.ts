@@ -51,19 +51,14 @@ serve(async (req) => {
 
     // Get model and prompt from config
     const model = await getSystemConfig('agent_creation_ai_model', 'gpt-4.1-2025-04-14');
-    const basePrompt = await getSystemConfig('suggest_conversation_blocks_prompt', `Eres un asistente experto en diseño de experiencias conversacionales para documentos legales colombianos.
-
-Tu tarea es analizar un documento legal y sus placeholders, y generar:
-1. Bloques de conversación agrupando placeholders relacionados
-2. Instrucciones específicas para cada campo (placeholder)
-
-REGLAS CRÍTICAS:
-1. DEBES crear MÚLTIPLES bloques (mínimo 2, típicamente 3-5 bloques)
-2. TODOS los placeholders deben estar distribuidos entre los bloques
-3. Cada bloque debe contener entre 2-5 placeholders relacionados
-4. NO dejes ningún placeholder sin asignar
-5. Cada bloque DEBE tener una frase de introducción amigable que el chatbot usará para iniciar esa sección
-6. Para CADA placeholder, genera instrucciones de ayuda y reglas de validación`);
+    const basePrompt = await getSystemConfig('suggest_conversation_blocks_prompt', '');
+    
+    if (!basePrompt) {
+      console.error('❌ suggest_conversation_blocks_prompt not configured in system_config');
+      return new Response(JSON.stringify({ error: 'Configuración faltante: suggest_conversation_blocks_prompt' }), { 
+        status: 500, headers: corsHeaders 
+      });
+    }
 
     logResponsesRequest(model, 'suggest-conversation-blocks', true);
 

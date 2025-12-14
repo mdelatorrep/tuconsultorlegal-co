@@ -6,73 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Meta Prompt Maestro para optimización de prompts
-const DEFAULT_META_PROMPT = `Eres un experto en ingeniería de prompts especializado en aplicaciones legales. Tu tarea es optimizar el siguiente prompt para mejorar su efectividad.
-
-## Contexto de la Plataforma
-- Plataforma: tuconsultorlegal.co (servicios legales en Colombia)
-- País: Colombia (legislación y terminología legal colombiana)
-- Usuarios: Abogados, ciudadanos buscando servicios legales
-
-## Información del Prompt a Optimizar
-- Nombre de la función: {{function_name}}
-- Descripción: {{function_description}}
-- Tipo de output esperado: {{expected_output}}
-
-## Directrices de Optimización
-
-### 1. Claridad y Especificidad
-- Usa instrucciones claras y directas
-- Evita ambigüedades
-- Define términos clave cuando sea necesario
-
-### 2. Estructura
-- Organiza con headers y secciones claras
-- Usa listas y viñetas para instrucciones múltiples
-- Mantén un flujo lógico de instrucciones
-
-### 3. Razonamiento y Pasos
-- Fomenta el razonamiento paso a paso antes de conclusiones
-- Incluye checkpoints de verificación cuando aplique
-- Define orden de prioridades
-
-### 4. Ejemplos
-- Incluye ejemplos concretos cuando mejore la comprensión
-- Usa formato de entrada/salida cuando sea útil
-- Mantén ejemplos relevantes al contexto legal colombiano
-
-### 5. Restricciones y Límites
-- Define claramente qué NO debe hacer el modelo
-- Establece límites de alcance
-- Previene respuestas fuera de contexto
-
-### 6. Formato de Output
-- Especifica exactamente el formato esperado
-- Define estructura JSON si aplica
-- Indica longitud o extensión esperada
-
-### 7. Contexto Legal Colombiano
-- Mantén terminología legal apropiada para Colombia
-- Referencia instituciones colombianas cuando aplique
-- Considera normatividad colombiana vigente
-
-### 8. Consistencia de Tono
-- Profesional pero accesible
-- Evita jerga innecesaria
-- Mantén coherencia con la marca tuconsultorlegal.co
-
-## Prompt Actual a Optimizar
-{{current_prompt}}
-
-## Tu Tarea
-Genera una versión optimizada del prompt que:
-1. Mantenga la funcionalidad y objetivo original
-2. Mejore la claridad y estructura
-3. Reduzca ambigüedades
-4. Sea más efectivo para el contexto legal colombiano
-5. Optimice para modelos de IA modernos (GPT-4, GPT-5)
-
-IMPORTANTE: Responde SOLO con el prompt optimizado, sin explicaciones adicionales, sin encabezados tipo "Aquí está el prompt optimizado:", sin comentarios. Solo el prompt listo para usar.`;
+// Note: DEFAULT_META_PROMPT removed - now loaded from database only
 
 async function getSystemConfig(supabase: any, key: string, defaultValue: string): Promise<string> {
   try {
@@ -130,19 +64,25 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
-    let metaPrompt = DEFAULT_META_PROMPT;
-    let model = 'gpt-4.1-2025-04-14';
-
-    if (supabaseUrl && supabaseServiceKey) {
-      const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.50.3');
-      const supabase = createClient(supabaseUrl, supabaseServiceKey);
-      
-      // Get configurable meta prompt
-      metaPrompt = await getSystemConfig(supabase, 'prompt_optimizer_meta_prompt', DEFAULT_META_PROMPT);
-      
-      // Get model for optimization (use dedicated key for optimizer)
-      model = await getSystemConfig(supabase, 'prompt_optimizer_model', 'gpt-4.1-2025-04-14');
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error('Supabase configuration missing');
     }
+    
+    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.50.3');
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    // Get configurable meta prompt - no fallback
+    const metaPrompt = await getSystemConfig(supabase, 'prompt_optimizer_meta_prompt', '');
+    
+    if (!metaPrompt) {
+      console.error('❌ prompt_optimizer_meta_prompt not configured in system_config');
+      return new Response(JSON.stringify({ error: 'Configuración faltante: prompt_optimizer_meta_prompt' }), { 
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
+    }
+    
+    // Get model for optimization
+    const model = await getSystemConfig(supabase, 'prompt_optimizer_model', 'gpt-4.1-2025-04-14');
 
     // Replace placeholders in meta prompt
     const fullPrompt = metaPrompt
@@ -154,10 +94,13 @@ serve(async (req) => {
     console.log(`Using model: ${model}`);
     console.log(`Meta prompt length: ${fullPrompt.length} chars`);
 
+    // Get optimizer instructions from config
+    const optimizerInstructions = await getSystemConfig(supabase, 'prompt_optimizer_instructions', '');
+    
     // Build request parameters using shared utility
     const params = buildResponsesRequestParams(model, {
       input: fullPrompt,
-      instructions: 'Eres un experto en ingeniería de prompts. Optimiza el prompt proporcionado siguiendo las directrices dadas. Responde SOLO con el prompt optimizado.',
+      instructions: optimizerInstructions || 'Eres un experto en ingeniería de prompts. Optimiza el prompt proporcionado siguiendo las directrices dadas. Responde SOLO con el prompt optimizado.',
       maxOutputTokens: 4000,
       jsonMode: false
     });
