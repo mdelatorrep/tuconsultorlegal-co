@@ -680,29 +680,67 @@ serve(async (req) => {
     console.log(`🔄 Initializing system configurations... (force=${forceUpsert})`);
 
     if (forceUpsert) {
-      // Force UPSERT all configurations
-      console.log('📝 Force upserting all configurations...');
+      // Force mode: ONLY update configs that haven't been manually modified by admin
+      // A config is considered "modified" if updated_at > created_at (meaning admin saved it)
+      console.log('📝 Force mode: updating ONLY unmodified configurations (respecting admin changes)...');
       
-      const { data: upsertedData, error: upsertError } = await supabase
+      // First, get all existing configs with their timestamps
+      const { data: existingConfigs, error: fetchError } = await supabase
         .from('system_config')
-        .upsert(DEFAULT_CONFIGS, { 
-          onConflict: 'config_key',
-          ignoreDuplicates: false 
-        })
-        .select();
-
-      if (upsertError) {
-        console.error('❌ Error upserting configurations:', upsertError);
-        throw upsertError;
+        .select('config_key, created_at, updated_at');
+      
+      if (fetchError) {
+        console.error('❌ Error fetching existing configs:', fetchError);
+        throw fetchError;
       }
 
-      console.log(`✅ Upserted ${upsertedData?.length || 0} configurations`);
+      // Identify configs that were manually modified (updated_at is significantly different from created_at)
+      const modifiedKeys = new Set<string>();
+      existingConfigs?.forEach(config => {
+        const createdAt = new Date(config.created_at).getTime();
+        const updatedAt = new Date(config.updated_at).getTime();
+        // Consider modified if updated more than 1 second after creation
+        if (updatedAt - createdAt > 1000) {
+          modifiedKeys.add(config.config_key);
+        }
+      });
+
+      console.log(`📊 Found ${modifiedKeys.size} manually modified configs that will be preserved`);
+      if (modifiedKeys.size > 0) {
+        console.log(`🔒 Preserving admin modifications: ${Array.from(modifiedKeys).slice(0, 10).join(', ')}${modifiedKeys.size > 10 ? '...' : ''}`);
+      }
+
+      // Filter out configs that were modified by admin
+      const configsToUpsert = DEFAULT_CONFIGS.filter(c => !modifiedKeys.has(c.config_key));
+      
+      console.log(`📝 Will upsert ${configsToUpsert.length} unmodified configurations`);
+
+      let upsertedCount = 0;
+      if (configsToUpsert.length > 0) {
+        const { data: upsertedData, error: upsertError } = await supabase
+          .from('system_config')
+          .upsert(configsToUpsert, { 
+            onConflict: 'config_key',
+            ignoreDuplicates: false 
+          })
+          .select();
+
+        if (upsertError) {
+          console.error('❌ Error upserting configurations:', upsertError);
+          throw upsertError;
+        }
+        upsertedCount = upsertedData?.length || 0;
+      }
+
+      console.log(`✅ Upserted ${upsertedCount} configurations (preserved ${modifiedKeys.size} admin modifications)`);
 
       return new Response(JSON.stringify({
         success: true,
-        mode: 'force_upsert',
-        configsUpserted: upsertedData?.length || 0,
-        message: `Se actualizaron/crearon ${upsertedData?.length || 0} configuraciones`
+        mode: 'force_upsert_safe',
+        configsUpserted: upsertedCount,
+        configsPreserved: modifiedKeys.size,
+        preservedKeys: Array.from(modifiedKeys),
+        message: `Se actualizaron ${upsertedCount} configuraciones. Se preservaron ${modifiedKeys.size} modificaciones del admin.`
       }), {
         headers: securityHeaders
       });
