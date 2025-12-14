@@ -16,43 +16,6 @@
 export const OPENAI_RESPONSES_ENDPOINT = 'https://api.openai.com/v1/responses';
 
 /**
- * Normalize model names to their full valid identifiers
- * This handles shorthand names configured in the database
- */
-export function normalizeModelName(model: string): string {
-  const modelMappings: Record<string, string> = {
-    // GPT-5 family
-    'gpt-5': 'gpt-5-2025-08-07',
-    'gpt-5-mini': 'gpt-5-mini-2025-08-07',
-    'gpt-5-nano': 'gpt-5-nano-2025-08-07',
-    'gpt-5.1': 'gpt-5-2025-08-07', // gpt-5.1 doesn't exist, fallback to gpt-5
-    'gpt-5.2-pro': 'gpt-5-2025-08-07', // gpt-5.2-pro doesn't exist, fallback to gpt-5
-    
-    // GPT-4.1 family
-    'gpt-4.1': 'gpt-4.1-2025-04-14',
-    'gpt-4.1-mini': 'gpt-4.1-mini-2025-04-14',
-    
-    // Legacy models (keep as-is)
-    'gpt-4o': 'gpt-4o',
-    'gpt-4o-mini': 'gpt-4o-mini',
-    
-    // Reasoning models
-    'o3': 'o3-2025-04-16',
-    'o4-mini': 'o4-mini-2025-04-16',
-    'o4-mini-deep-research': 'o4-mini-deep-research',
-  };
-  
-  // Return mapped name or original if already valid
-  const normalized = modelMappings[model] || model;
-  
-  if (normalized !== model) {
-    console.log(`[normalizeModelName] Mapped "${model}" -> "${normalized}"`);
-  }
-  
-  return normalized;
-}
-
-/**
  * Build request parameters for OpenAI Responses API
  */
 export function buildResponsesRequestParams(
@@ -90,11 +53,8 @@ export function buildResponsesRequestParams(
     reasoning
   } = options;
 
-  // Normalize model name to valid identifier
-  const normalizedModel = normalizeModelName(model);
-
   const params: Record<string, unknown> = {
-    model: normalizedModel,
+    model,
     input,
   };
 
