@@ -1,6 +1,10 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3';
-import { buildOpenAIRequestParams, logModelRequest } from "../_shared/openai-model-utils.ts";
+import { 
+  buildResponsesRequestParams, 
+  callResponsesAPI, 
+  logResponsesRequest 
+} from "../_shared/openai-responses-utils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -41,35 +45,23 @@ async function getSystemConfig(supabaseClient: any, configKey: string, defaultVa
 }
 
 serve(async (req) => {
-  console.log('🎯 === PROCESS-AGENT-AI FUNCTION STARTED ===', {
+  console.log('🎯 === PROCESS-AGENT-AI FUNCTION STARTED (Responses API) ===', {
     timestamp: new Date().toISOString(),
-    method: req.method,
-    url: req.url,
-    headers: Object.fromEntries(req.headers.entries())
+    method: req.method
   });
   
   if (req.method === 'OPTIONS') {
-    console.log('✅ Handling CORS preflight request');
     return new Response(null, { headers: corsHeaders });
   }
 
   if (req.method !== 'POST') {
-    console.log('❌ Method not allowed:', req.method);
     return new Response('Method not allowed', { status: 405, headers: securityHeaders });
   }
-
-  console.log('🚀 Processing POST request...');
 
   try {
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    
-    console.log('Environment check:', {
-      hasOpenAIKey: !!openAIApiKey,
-      hasSupabaseUrl: !!supabaseUrl,
-      hasSupabaseKey: !!supabaseServiceKey
-    });
 
     if (!openAIApiKey) {
       throw new Error('OpenAI API key not configured');
@@ -79,47 +71,26 @@ serve(async (req) => {
       throw new Error('Missing Supabase configuration');
     }
 
-    console.log('Initializing Supabase client...');
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
     const requestBody = await req.json();
-    console.log('Request body received:', {
-      docName: requestBody.docName,
-      docDesc: requestBody.docDesc?.substring(0, 100) + '...',
-      docCat: requestBody.docCat,
-      templateLength: requestBody.docTemplate?.length,
-      promptLength: requestBody.initialPrompt?.length,
-      targetAudience: requestBody.targetAudience
-    });
 
     const { docName, docDesc, docCat, docTemplate, initialPrompt, targetAudience } = requestBody;
 
-    console.log('Validating required fields:', {
-      docName: !!docName,
-      docTemplate: !!docTemplate,
-      initialPrompt: initialPrompt?.length || 0
-    });
-
     if (!docName || !docTemplate) {
-      console.log('❌ Missing required fields - docName or docTemplate');
       return new Response(JSON.stringify({ error: 'Missing required fields: docName and docTemplate' }), {
         status: 400,
         headers: securityHeaders
       });
     }
 
-    console.log('Fetching system configuration...');
-
-    // Get configured OpenAI model and prompt for agent creation
+    // Get configured OpenAI model
     const selectedModel = await getSystemConfig(supabase, 'agent_creation_ai_model', 'gpt-4o-mini');
     const customSystemPrompt = await getSystemConfig(supabase, 'agent_creation_system_prompt', null);
 
-    logModelRequest(selectedModel, 'process-agent-ai');
+    logResponsesRequest(selectedModel, 'process-agent-ai', true);
 
-    console.log('Making OpenAI API request for prompt enhancement...');
-
-    // 1. Enhance the initial prompt
-    const enhanceSystemPrompt = customSystemPrompt || `Eres un experto en crear prompts para asistentes legales de IA. Tu trabajo es mejorar prompts básicos y convertirlos en instrucciones claras, profesionales y efectivas para agentes de IA que ayudan a crear documentos legales en Colombia.
+    // 1. Enhance the initial prompt using Responses API
+    const enhanceInstructions = customSystemPrompt || `Eres un experto en crear prompts para asistentes legales de IA. Tu trabajo es mejorar prompts básicos y convertirlos en instrucciones claras, profesionales y efectivas para agentes de IA que ayudan a crear documentos legales en Colombia.
 
 PÚBLICO OBJETIVO: ${targetAudience === 'empresas' ? 'Empresas y clientes corporativos' : 'Personas (clientes individuales)'}
 
@@ -136,11 +107,7 @@ REGLAS IMPORTANTES:
 
 OBJETIVO: Devolver únicamente el prompt mejorado en texto plano, adaptado para ${targetAudience === 'empresas' ? 'empresas' : 'personas naturales'}, sin formato adicional.`;
 
-    const enhanceMessages = [
-      { role: 'system', content: enhanceSystemPrompt },
-      {
-        role: 'user',
-        content: `Mejora este prompt para un agente que ayuda a crear: "${docName}"
+    const enhanceInput = `Mejora este prompt para un agente que ayuda a crear: "${docName}"
 
 Categoría: ${docCat}
 Descripción: ${docDesc}
@@ -150,133 +117,76 @@ Prompt inicial del abogado:
 ${initialPrompt}
 
 Plantilla del documento:
-${docTemplate}`
-      }
-    ];
+${docTemplate}`;
 
-    const enhanceParams = buildOpenAIRequestParams(selectedModel, enhanceMessages, {
-      maxTokens: 2000,
-      temperature: 0.3
+    const enhanceParams = buildResponsesRequestParams(selectedModel, {
+      input: enhanceInput,
+      instructions: enhanceInstructions,
+      maxOutputTokens: 2000,
+      temperature: 0.3,
+      store: false
     });
 
-    const enhancePromptResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(enhanceParams),
-    });
-
-    console.log('OpenAI prompt enhancement response status:', enhancePromptResponse.status);
-
-    if (!enhancePromptResponse.ok) {
-      throw new Error(`OpenAI API error for prompt enhancement: ${enhancePromptResponse.status}`);
+    const enhanceResult = await callResponsesAPI(openAIApiKey, enhanceParams);
+    
+    if (!enhanceResult.success) {
+      throw new Error(`Failed to enhance prompt: ${enhanceResult.error}`);
     }
 
-    const enhancedPromptData = await enhancePromptResponse.json();
-    console.log('Prompt enhancement completed');
-    const enhancedPrompt = enhancedPromptData.choices[0].message.content;
+    const enhancedPrompt = enhanceResult.text || '';
+    console.log('✅ Prompt enhancement completed');
 
-    console.log('Making OpenAI API request for placeholder extraction...');
-
-    // 2. Extract placeholders from template with validation
-    const extractMessages = [
-      {
-        role: 'system',
-        content: `Eres un experto en análisis de documentos legales. Tu trabajo es identificar todos los placeholders (variables) en una plantilla de documento y generar preguntas claras para recopilar esa información del usuario.
+    // 2. Extract placeholders from template using Responses API
+    const extractInstructions = `Eres un experto en análisis de documentos legales. Tu trabajo es identificar todos los placeholders (variables) en una plantilla de documento y generar preguntas claras para recopilar esa información del usuario.
 
 PÚBLICO OBJETIVO: ${targetAudience === 'empresas' ? 'Empresas y clientes corporativos' : 'Personas (clientes individuales)'}
 
 FORMATO DE RESPUESTA:
 Responde ÚNICAMENTE con un array JSON válido de objetos con esta estructura:
 [
-  {"placeholder": "{{variable_name}}", "pregunta": "Pregunta clara para el usuario", "tipo": "texto|fecha|numero|email|telefono", "requerido": true|false},
-  {"placeholder": "{{otra_variable}}", "pregunta": "Otra pregunta clara", "tipo": "texto", "requerido": true}
+  {"placeholder": "{{variable_name}}", "pregunta": "Pregunta clara para el usuario", "tipo": "texto|fecha|numero|email|telefono", "requerido": true|false}
 ]
 
 REGLAS CRÍTICAS:
-- Identifica TODOS los placeholders que usan {{}} o similar ({{NOMBRE}}, {{FECHA}}, etc.)
+- Identifica TODOS los placeholders que usan {{}} o similar
 - Cada pregunta debe ser clara, específica y en español colombiano
-- Las preguntas deben ser profesionales pero amigables
-- ${targetAudience === 'empresas' ? 'Adapta las preguntas para contexto empresarial (razón social, NIT, representante legal, etc.)' : 'Usa lenguaje amigable para personas naturales (nombre completo, cédula, dirección personal, etc.)'}
-- Clasifica el tipo de dato esperado (texto, fecha, numero, email, telefono)
-- Marca como requerido=true solo campos esenciales para el documento
-- VALIDACIÓN: Asegúrate de que cada placeholder en la plantilla tenga su pregunta correspondiente
-- No incluyas texto adicional, solo el array JSON`
-      },
-      {
-        role: 'user',
-        content: `Analiza esta plantilla de documento legal y extrae todos los placeholders con sus preguntas correspondientes:
+- ${targetAudience === 'empresas' ? 'Adapta las preguntas para contexto empresarial' : 'Usa lenguaje amigable para personas naturales'}
+- Clasifica el tipo de dato esperado
+- Marca como requerido=true solo campos esenciales
+- No incluyas texto adicional, solo el array JSON`;
+
+    const extractInput = `Analiza esta plantilla de documento legal y extrae todos los placeholders:
 
 DOCUMENTO: ${docName}
 PÚBLICO OBJETIVO: ${targetAudience === 'empresas' ? 'Empresas' : 'Personas'}
 PLANTILLA:
-${docTemplate}
+${docTemplate}`;
 
-IMPORTANTE: Verifica que identificas TODOS los placeholders presentes en la plantilla. Busca patrones como {{ALGO}}, {ALGO}, [ALGO], etc.`
-      }
-    ];
-
-    const extractParams = buildOpenAIRequestParams(selectedModel, extractMessages, {
-      maxTokens: 1500,
-      temperature: 0.1
+    const extractParams = buildResponsesRequestParams(selectedModel, {
+      input: extractInput,
+      instructions: extractInstructions,
+      maxOutputTokens: 1500,
+      temperature: 0.1,
+      jsonMode: true,
+      store: false
     });
 
-    const extractPlaceholdersResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(extractParams),
-    });
-
-    console.log('OpenAI placeholder extraction response status:', extractPlaceholdersResponse.status);
-
-    if (!extractPlaceholdersResponse.ok) {
-      throw new Error(`OpenAI API error for placeholder extraction: ${extractPlaceholdersResponse.status}`);
-    }
-
-    const placeholdersData = await extractPlaceholdersResponse.json();
-    console.log('Placeholder extraction completed');
+    const extractResult = await callResponsesAPI(openAIApiKey, extractParams);
+    
     let extractedPlaceholders = [];
     
-    try {
-      extractedPlaceholders = JSON.parse(placeholdersData.choices[0].message.content);
-      
-      // Validate that all placeholders in template are captured
-      const templatePlaceholderRegex = /\{\{([^}]+)\}\}/g;
-      const templatePlaceholders = [...docTemplate.matchAll(templatePlaceholderRegex)];
-      const extractedPlaceholderNames = extractedPlaceholders.map(p => p.placeholder);
-      
-      // Add any missing placeholders
-      for (const match of templatePlaceholders) {
-        if (!extractedPlaceholderNames.includes(match[0])) {
-          console.warn(`Missing placeholder detected: ${match[0]}`);
-          extractedPlaceholders.push({
-            placeholder: match[0],
-            pregunta: `¿Cuál es el valor para ${match[1].replace(/_/g, ' ')}?`,
-            tipo: 'texto',
-            requerido: true
-          });
-        }
-      }
-      
-    } catch (error) {
-      console.error('Error parsing placeholders:', error);
-      // Enhanced fallback: extract placeholders using multiple patterns
-      const patterns = [
-        /\{\{([^}]+)\}\}/g,
-        /\{([^}]+)\}/g,
-        /\[([^\]]+)\]/g
-      ];
-      
-      extractedPlaceholders = [];
-      for (const pattern of patterns) {
-        const matches = [...docTemplate.matchAll(pattern)];
-        for (const match of matches) {
-          if (!extractedPlaceholders.some(p => p.placeholder === match[0])) {
+    if (extractResult.success && extractResult.text) {
+      try {
+        extractedPlaceholders = JSON.parse(extractResult.text);
+        
+        // Validate that all placeholders in template are captured
+        const templatePlaceholderRegex = /\{\{([^}]+)\}\}/g;
+        const templatePlaceholders = [...docTemplate.matchAll(templatePlaceholderRegex)];
+        const extractedPlaceholderNames = extractedPlaceholders.map((p: any) => p.placeholder);
+        
+        for (const match of templatePlaceholders) {
+          if (!extractedPlaceholderNames.includes(match[0])) {
+            console.warn(`Missing placeholder detected: ${match[0]}`);
             extractedPlaceholders.push({
               placeholder: match[0],
               pregunta: `¿Cuál es el valor para ${match[1].replace(/_/g, ' ')}?`,
@@ -285,16 +195,28 @@ IMPORTANTE: Verifica que identificas TODOS los placeholders presentes en la plan
             });
           }
         }
+      } catch (error) {
+        console.error('Error parsing placeholders:', error);
+        // Fallback extraction
+        const patterns = [/\{\{([^}]+)\}\}/g, /\{([^}]+)\}/g, /\[([^\]]+)\]/g];
+        
+        for (const pattern of patterns) {
+          const matches = [...docTemplate.matchAll(pattern)];
+          for (const match of matches) {
+            if (!extractedPlaceholders.some((p: any) => p.placeholder === match[0])) {
+              extractedPlaceholders.push({
+                placeholder: match[0],
+                pregunta: `¿Cuál es el valor para ${match[1].replace(/_/g, ' ')}?`,
+                tipo: 'texto',
+                requerido: true
+              });
+            }
+          }
+        }
       }
     }
 
-    console.log('⏭️ Skipping price analysis: pricing will be set by admin on approval');
-
-    // Log successful processing
-    console.log(`AI processing completed for document: ${docName}`);
-    console.log(`- Enhanced prompt length: ${enhancedPrompt.length} chars`);
-    console.log(`- Placeholders extracted: ${extractedPlaceholders.length}`);
-    console.log('- Suggested price: skipped (admin-defined on approval)');
+    console.log('✅ Placeholder extraction completed:', extractedPlaceholders.length, 'placeholders');
 
     return new Response(JSON.stringify({
       success: true,
@@ -307,7 +229,7 @@ IMPORTANTE: Verifica que identificas TODOS los placeholders presentes en la plan
     });
 
   } catch (error) {
-    console.error('AI processing error:', error);
+    console.error('❌ AI processing error:', error);
     return new Response(JSON.stringify({ 
       error: 'Error procesando con IA',
       details: error.message 
