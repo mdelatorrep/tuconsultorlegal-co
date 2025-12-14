@@ -1,6 +1,10 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3';
-import { buildOpenAIRequestParams, logModelRequest } from '../_shared/openai-model-utils.ts';
+import { 
+  buildResponsesRequestParams, 
+  callResponsesAPI, 
+  logResponsesRequest 
+} from '../_shared/openai-responses-utils.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -123,7 +127,7 @@ serve(async (req) => {
     console.log('Config data retrieved:', configData);
 
     // Extract model and system prompt from config
-    let selectedModel = 'gpt-4o-mini'; // Default model
+    let selectedModel = 'gpt-4.1-2025-04-14'; // Default to GPT-4.1
     let systemPrompt = null;
     
     if (configData && configData.length > 0) {
@@ -174,50 +178,29 @@ Descripción actual: ${docDesc}
 
 Mejora el nombre y descripción para que sean más atractivos y comprensibles para ${targetAudience === 'empresas' ? 'clientes corporativos' : 'usuarios finales individuales'}.`;
 
-    // Prepare OpenAI request using centralized utility
-    logModelRequest(selectedModel, 'improve-document-info');
+    // Prepare OpenAI Responses API request
+    logResponsesRequest(selectedModel, 'improve-document-info', true);
     
-    const openAIRequestBody = buildOpenAIRequestParams(
-      selectedModel,
-      [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userMessage }
-      ],
-      { 
-        maxTokens: 1000, // Increased for GPT-5 models
-        temperature: 0.3,
-        responseFormat: { type: "json_object" } // Force JSON output
-      }
-    );
-    
-    console.log('OpenAI request body:', JSON.stringify(openAIRequestBody, null, 2));
-    
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(openAIRequestBody),
+    const requestParams = buildResponsesRequestParams(selectedModel, {
+      input: [{ role: 'user', content: userMessage }],
+      instructions: systemPrompt,
+      maxOutputTokens: 1000,
+      temperature: 0.3,
+      jsonMode: true,
+      store: false
     });
-
-    console.log('OpenAI response status:', response.status);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('OpenAI API error:', response.status, errorText);
-      throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    console.log('OpenAI response received');
     
-    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-      console.error('Invalid OpenAI response structure:', data);
-      throw new Error('Respuesta inválida de OpenAI');
+    console.log('OpenAI request params:', JSON.stringify(requestParams, null, 2));
+
+    const result = await callResponsesAPI(openAIApiKey, requestParams);
+
+    if (!result.success) {
+      console.error('OpenAI API error:', result.error);
+      throw new Error(result.error || 'Error en la API de OpenAI');
     }
 
-    const responseText = data.choices[0].message.content.trim();
+    console.log('OpenAI response received');
+    const responseText = result.text?.trim() || '';
     console.log('Raw OpenAI response:', responseText);
     
     // Parse the JSON response

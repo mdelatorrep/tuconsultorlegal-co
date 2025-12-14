@@ -1,6 +1,10 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3';
-import { buildOpenAIRequestParams, logModelRequest } from "../_shared/openai-model-utils.ts";
+import { 
+  buildResponsesRequestParams, 
+  callResponsesAPI, 
+  logResponsesRequest 
+} from '../_shared/openai-responses-utils.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -10,14 +14,12 @@ const corsHeaders = {
 serve(async (req) => {
   console.log('=== IMPROVE-TEMPLATE-AI FUNCTION STARTED ===');
   
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     console.log('Handling CORS preflight request');
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Get environment variables
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -36,13 +38,11 @@ serve(async (req) => {
       throw new Error('Missing Supabase configuration');
     }
 
-    // Parse request body
     const requestBody = await req.json();
     console.log('Request body received:', requestBody);
     
     const { templateContent, docName, docCategory, docDescription, targetAudience } = requestBody;
 
-    // Validate required fields
     if (!templateContent || templateContent.trim().length === 0) {
       console.log('Validation failed - missing template content');
       return new Response(
@@ -57,17 +57,9 @@ serve(async (req) => {
       );
     }
 
-    // Initialize Supabase client with error handling
     console.log('Initializing Supabase client...');
-    let supabase;
-    try {
-      supabase = createClient(supabaseUrl, supabaseServiceKey);
-    } catch (supabaseError) {
-      console.error('Failed to initialize Supabase client:', supabaseError);
-      throw new Error('Error al conectar con la base de datos');
-    }
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get system configuration for model and prompt with timeout
     console.log('Fetching system configuration...');
     let configData = null;
     try {
@@ -78,20 +70,17 @@ serve(async (req) => {
 
       if (configError) {
         console.error('Error fetching system config:', configError);
-        console.log('Continuing with default configuration...');
         configData = null;
       } else {
         configData = data;
       }
     } catch (configFetchError) {
       console.error('Exception fetching system config:', configFetchError);
-      console.log('Continuing with default configuration...');
       configData = null;
     }
 
-    // Extract model and system prompt from config
     let selectedModel = 'gpt-4.1-2025-04-14';
-    let systemPrompt = null;
+    let systemPrompt: string | null = null;
     
     if (configData && configData.length > 0) {
       const modelConfig = configData.find(c => c.config_key === 'template_optimizer_model');
@@ -107,9 +96,8 @@ serve(async (req) => {
       }
     }
 
-    logModelRequest(selectedModel, 'improve-template-ai');
+    logResponsesRequest(selectedModel, 'improve-template-ai', true);
 
-    // Use default system prompt if none configured
     if (!systemPrompt) {
       console.log('Using default system prompt');
       systemPrompt = `Eres un experto en redacción de documentos legales en Colombia. Tu tarea es mejorar plantillas de documentos legales para hacerlas más completas, precisas y profesionales.
@@ -128,16 +116,13 @@ REGLAS IMPORTANTES:
 9. NO incluyas explicaciones, comentarios, ni texto adicional
 10. NO uses caracteres especiales de markdown como **, _, \`, etc.
 11. NO incluyas encabezados, títulos o secciones explicativas
-12. ${targetAudience === 'empresas' ? 'Usa terminología legal corporativa apropiada y considera aspectos empresariales específicos' : 'Usa lenguaje legal claro pero accesible para personas naturales'}
+12. ${targetAudience === 'empresas' ? 'Usa terminología legal corporativa apropiada' : 'Usa lenguaje legal claro pero accesible para personas naturales'}
 
-OBJETIVO: Devolver únicamente la plantilla del documento mejorada en texto plano, adaptada para ${targetAudience === 'empresas' ? 'empresas' : 'personas naturales'}, sin formato adicional.`;
+OBJETIVO: Devolver únicamente la plantilla del documento mejorada.`;
     } else {
       systemPrompt = `${systemPrompt}
 
-PÚBLICO OBJETIVO ACTUAL: ${targetAudience === 'empresas' ? 'Empresas y clientes corporativos' : 'Personas (clientes individuales)'}
-
-ADAPTACIÓN ESPECÍFICA:
-${targetAudience === 'empresas' ? 'Usa terminología legal corporativa apropiada y considera aspectos empresariales específicos' : 'Usa lenguaje legal claro pero accesible para personas naturales'}`;
+PÚBLICO OBJETIVO: ${targetAudience === 'empresas' ? 'Empresas y clientes corporativos' : 'Personas (clientes individuales)'}`;
     }
 
     console.log('Improving template with AI:', {
@@ -154,47 +139,31 @@ Descripción: ${docDescription}
 
 ${templateContent}
 
-Mejora esta plantilla manteniendo todos los placeholders {{variable}} existentes y adaptándola para ${targetAudience === 'empresas' ? 'clientes corporativos' : 'personas naturales'}.`;
+Mejora esta plantilla manteniendo todos los placeholders {{variable}} existentes.`;
 
-    const messages = [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userMessage }
-    ];
-
-    const requestParams = buildOpenAIRequestParams(selectedModel, messages, {
-      maxTokens: 4000,
-      temperature: 0.3
+    const requestParams = buildResponsesRequestParams(selectedModel, {
+      input: [{ role: 'user', content: userMessage }],
+      instructions: systemPrompt,
+      maxOutputTokens: 4000,
+      temperature: 0.3,
+      store: false
     });
 
-    console.log('Making OpenAI API request with model:', selectedModel);
-    
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestParams),
-    });
+    console.log('Making OpenAI Responses API request with model:', selectedModel);
 
-    console.log('OpenAI response status:', response.status);
+    const result = await callResponsesAPI(openAIApiKey, requestParams);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('OpenAI API error:', response.status, errorText);
-      throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+    if (!result.success) {
+      console.error('OpenAI API error:', result.error);
+      throw new Error(result.error || 'Error en la API de OpenAI');
     }
 
-    const data = await response.json();
-    console.log('OpenAI response received');
-    
-    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-      console.error('Invalid OpenAI response structure:', data);
-      throw new Error('Respuesta inválida de OpenAI');
-    }
+    const improvedTemplate = result.text?.trim();
+    console.log('OpenAI response received, length:', improvedTemplate?.length);
 
-    const improvedTemplate = data.choices[0].message.content.trim();
-    console.log('Raw OpenAI response length:', improvedTemplate.length);
+    if (!improvedTemplate) {
+      throw new Error('No se recibió respuesta de OpenAI');
+    }
 
     console.log('Template improvement successful');
 

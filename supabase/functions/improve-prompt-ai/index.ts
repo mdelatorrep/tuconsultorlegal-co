@@ -1,6 +1,10 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3';
-import { buildOpenAIRequestParams, logModelRequest } from "../_shared/openai-model-utils.ts";
+import { 
+  buildResponsesRequestParams, 
+  callResponsesAPI, 
+  logResponsesRequest 
+} from "../_shared/openai-responses-utils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -52,33 +56,36 @@ serve(async (req) => {
     }
 
     const configuredModel = await getSystemConfig(supabase, 'prompt_optimizer_model', 'gpt-4.1-2025-04-14');
-    logModelRequest(configuredModel, 'improve-prompt-ai');
+    logResponsesRequest(configuredModel, 'improve-prompt-ai', true);
 
-    const systemPrompt = `Eres un experto en optimización de prompts para asistentes de IA especializados en la generación de documentos legales. Mejora el prompt para que sea más claro, estructurado y efectivo.`;
+    const instructions = `Eres un experto en optimización de prompts para asistentes de IA especializados en la generación de documentos legales. Mejora el prompt para que sea más claro, estructurado y efectivo.`;
 
-    const messages = [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: `Mejora este prompt para generación de documentos legales:\n\nPROMPT ACTUAL:\n${current_prompt}\n\nTARGET AUDIENCE: ${target_audience}` }
-    ];
+    const userMessage = `Mejora este prompt para generación de documentos legales:
 
-    const requestParams = buildOpenAIRequestParams(configuredModel, messages, {
-      maxTokens: 1500,
-      temperature: 0.3
+PROMPT ACTUAL:
+${current_prompt}
+
+TARGET AUDIENCE: ${target_audience}`;
+
+    const requestParams = buildResponsesRequestParams(configuredModel, {
+      input: [{ role: 'user', content: userMessage }],
+      instructions,
+      maxOutputTokens: 1500,
+      temperature: 0.3,
+      store: false
     });
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestParams),
-    });
+    const result = await callResponsesAPI(openAIApiKey, requestParams);
 
-    if (!response.ok) throw new Error(`OpenAI API error: ${response.status}`);
+    if (!result.success) {
+      throw new Error(result.error || 'OpenAI API error');
+    }
 
-    const data = await response.json();
-    const improvedPrompt = data.choices[0].message.content.trim();
+    const improvedPrompt = result.text?.trim();
+
+    if (!improvedPrompt) {
+      throw new Error('No response from OpenAI');
+    }
 
     return new Response(JSON.stringify({ 
       improved_prompt: improvedPrompt,

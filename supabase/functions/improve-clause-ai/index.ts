@@ -1,5 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { buildOpenAIRequestParams, logModelRequest } from "../_shared/openai-model-utils.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3';
+import { 
+  buildResponsesRequestParams, 
+  callResponsesAPI, 
+  logResponsesRequest 
+} from "../_shared/openai-responses-utils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -25,7 +30,6 @@ serve(async (req) => {
       throw new Error('Missing Supabase configuration');
     }
 
-    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.50.3');
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get configured OpenAI model
@@ -39,7 +43,7 @@ serve(async (req) => {
       ? 'gpt-4.1-2025-04-14'
       : configData.config_value;
 
-    logModelRequest(selectedModel, 'improve-clause-ai');
+    logResponsesRequest(selectedModel, 'improve-clause-ai', true);
 
     const { clause, document_type, context } = await req.json();
 
@@ -52,9 +56,9 @@ serve(async (req) => {
 
     console.log('Improving clause for document type:', document_type);
 
-    const prompt = `Eres un experto abogado colombiano especializado en redacción de documentos legales. 
+    const instructions = 'Eres un experto abogado colombiano especializado en redacción de documentos legales.';
 
-Documento: ${document_type}
+    const userMessage = `Documento: ${document_type}
 Contexto del documento: ${JSON.stringify(context)}
 Cláusula propuesta por el usuario: "${clause}"
 
@@ -66,37 +70,21 @@ Tu tarea es mejorar y estructurar profesionalmente esta cláusula para que sea:
 
 Mejora la cláusula manteniendo la intención original del usuario pero con redacción jurídica profesional. Responde ÚNICAMENTE con la cláusula mejorada, sin explicaciones adicionales.`;
 
-    const messages = [
-      {
-        role: 'system',
-        content: 'Eres un experto abogado colombiano especializado en redacción de documentos legales.'
-      },
-      {
-        role: 'user',
-        content: prompt
-      }
-    ];
-
-    const requestParams = buildOpenAIRequestParams(selectedModel, messages, {
-      maxTokens: 1000,
-      temperature: 0.3
+    const requestParams = buildResponsesRequestParams(selectedModel, {
+      input: [{ role: 'user', content: userMessage }],
+      instructions,
+      maxOutputTokens: 1000,
+      temperature: 0.3,
+      store: false
     });
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestParams),
-    });
+    const result = await callResponsesAPI(openaiApiKey, requestParams);
 
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`);
+    if (!result.success) {
+      throw new Error(result.error || 'OpenAI API error');
     }
 
-    const data = await response.json();
-    const improvedClause = data.choices[0]?.message?.content?.trim();
+    const improvedClause = result.text?.trim();
 
     if (!improvedClause) {
       throw new Error('No response from OpenAI');
