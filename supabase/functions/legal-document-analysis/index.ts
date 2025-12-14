@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { buildOpenAIRequestParams, logModelRequest } from '../_shared/openai-model-utils.ts';
 
 // Helper function to extract text from PDF base64
 async function extractTextFromPDF(base64Data: string): Promise<string> {
@@ -282,18 +283,13 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    // Prepare OpenAI request
-    const requestBody: any = {
-      model: aiModel,
-      messages: [
-        {
-          role: "system",
-          content: systemPrompt
-        }
-      ],
-      temperature: 0.2,
-      max_tokens: 4000
-    };
+    // Prepare OpenAI request using centralized utility
+    logModelRequest(aiModel, 'legal-document-analysis');
+    const requestBody: any = buildOpenAIRequestParams(
+      aiModel,
+      [{ role: "system", content: systemPrompt }],
+      { maxTokens: 4000, temperature: 0.2 }
+    );
 
     // Build user message based on file type
     if (fileBase64 && fileName?.toLowerCase().endsWith('.pdf')) {
