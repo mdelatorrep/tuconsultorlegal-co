@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import { buildOpenAIRequestParams, logModelRequest } from "../_shared/openai-model-utils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -30,12 +31,13 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    const requestBody = {
-      model: 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'system',
-          content: `Eres un asistente especializado en organización de archivos legales. Analiza nombres de archivos y sugiere estructuras de organización.
+    const model = 'gpt-4o-mini';
+    logModelRequest(model, 'organize-file-ai');
+
+    const messages = [
+      {
+        role: 'system',
+        content: `Eres un asistente especializado en organización de archivos legales. Analiza nombres de archivos y sugiere estructuras de organización.
 
 Basándote solo en el nombre del archivo, proporciona:
 - Tipo de documento probable
@@ -56,15 +58,17 @@ Responde en formato JSON:
   "suggestedCase": "nombre del caso sugerido",
   "analysis": "análisis completo en markdown"
 }`
-        },
-        {
-          role: 'user',
-          content: `Analiza este nombre de archivo legal: "${fileName}"`
-        }
-      ],
-      temperature: 0.3,
-      max_tokens: 1200
-    };
+      },
+      {
+        role: 'user',
+        content: `Analiza este nombre de archivo legal: "${fileName}"`
+      }
+    ];
+
+    const requestParams = buildOpenAIRequestParams(model, messages, {
+      maxTokens: 1200,
+      temperature: 0.3
+    });
 
     // Call OpenAI API
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -73,7 +77,7 @@ Responde en formato JSON:
         'Authorization': `Bearer ${openaiApiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(requestBody),
+      body: JSON.stringify(requestParams),
     });
 
     if (!openaiResponse.ok) {

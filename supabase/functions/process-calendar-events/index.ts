@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import { buildOpenAIRequestParams, logModelRequest } from "../_shared/openai-model-utils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -30,12 +31,13 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    const requestBody = {
-      model: 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'system',
-          content: `Eres un asistente legal especializado en gestión de calendario y eventos legales. Analiza descripciones de eventos y extrae información útil.
+    const model = 'gpt-4o-mini';
+    logModelRequest(model, 'process-calendar-events');
+
+    const messages = [
+      {
+        role: 'system',
+        content: `Eres un asistente legal especializado en gestión de calendario y eventos legales. Analiza descripciones de eventos y extrae información útil.
 
 Extrae y organiza:
 - Eventos identificados con fechas, horarios y tipos
@@ -59,17 +61,19 @@ Responde en formato JSON:
   "actions": ["acción1", "acción2"],
   "analysis": "análisis completo en markdown"
 }`
-        },
-        {
-          role: 'user',
-          content: `Analiza esta descripción de evento legal y extrae información para gestión de calendario:
+      },
+      {
+        role: 'user',
+        content: `Analiza esta descripción de evento legal y extrae información para gestión de calendario:
 
 ${eventDescription}`
-        }
-      ],
-      temperature: 0.3,
-      max_tokens: 1200
-    };
+      }
+    ];
+
+    const requestParams = buildOpenAIRequestParams(model, messages, {
+      maxTokens: 1200,
+      temperature: 0.3
+    });
 
     // Call OpenAI API
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -78,7 +82,7 @@ ${eventDescription}`
         'Authorization': `Bearer ${openaiApiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(requestBody),
+      body: JSON.stringify(requestParams),
     });
 
     if (!openaiResponse.ok) {

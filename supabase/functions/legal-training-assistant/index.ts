@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { buildOpenAIRequestParams, logModelRequest } from "../_shared/openai-model-utils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -36,14 +37,13 @@ serve(async (req) => {
       });
     }
 
+    logModelRequest(openaiModel, 'legal-training-assistant');
+
     const { message, moduleId, moduleContent, lawyerId, chatHistory, moduleProgress } = await req.json();
 
     console.log(`Processing training assistance request for module: ${moduleId}`);
     console.log(`User message: ${message}`);
     console.log(`Module progress: ${JSON.stringify(moduleProgress)}`);
-
-    // Detectar si el usuario está solicitando evaluación
-    const isRequestingEvaluation = /evalua|examen|prueba|test|evaluar|completar|finalizar|listo|preparado/i.test(message);
 
     // Create specialized training assistant prompt
     const systemPrompt = `Eres un **Asistente Especializado en IA Legal** y formación para abogados. Tu misión es educar, evaluar y certificar a abogados en Inteligencia Artificial aplicada al derecho.
@@ -106,14 +106,8 @@ CRITERIOS DE EVALUACIÓN ESTRICTOS:
 
 Responde al abogado de manera educativa, evaluativa cuando sea apropiado, y siempre enfocado en su aprendizaje profundo.`;
 
-    // Detectar si es una conversación de evaluación en progreso
-    const isInEvaluation = chatHistory.some((msg: any) => 
-      msg.type === 'assistant' && msg.content.includes('EVALUACIÓN') && !msg.content.includes('MÓDULO_COMPLETADO')
-    );
-
     const messages = [
       { role: 'system', content: systemPrompt },
-      // Include recent chat history for context
       ...chatHistory.slice(-8).map((msg: any) => ({
         role: msg.type === 'user' ? 'user' : 'assistant',
         content: msg.content
@@ -122,21 +116,19 @@ Responde al abogado de manera educativa, evaluativa cuando sea apropiado, y siem
     ];
 
     console.log('Calling OpenAI API for training assistance...');
-    console.log(`Is requesting evaluation: ${isRequestingEvaluation}`);
-    console.log(`Is in evaluation: ${isInEvaluation}`);
     
+    const requestParams = buildOpenAIRequestParams(openaiModel, messages, {
+      maxTokens: 1200,
+      temperature: 0.3
+    });
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openaiApiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: openaiModel,
-        messages: messages,
-        max_tokens: 1200,
-        temperature: 0.3, // Lower temperature for more consistent educational responses
-      }),
+      body: JSON.stringify(requestParams),
     });
 
     if (!response.ok) {
@@ -156,7 +148,6 @@ Responde al abogado de manera educativa, evaluativa cuando sea apropiado, y siem
     if (moduleCompleted) {
       console.log(`Module ${moduleId} completed by AI assistant for lawyer ${lawyerId}`);
       
-      // Call the training progress update function
       try {
         await supabase.functions.invoke('update-training-progress', {
           body: {
@@ -185,7 +176,6 @@ Responde al abogado de manera educativa, evaluativa cuando sea apropiado, y siem
         });
     } catch (logError) {
       console.error('Error logging interaction:', logError);
-      // Don't fail the request if logging fails
     }
 
     return new Response(JSON.stringify({ 

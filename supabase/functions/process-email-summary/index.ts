@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import { buildOpenAIRequestParams, logModelRequest } from "../_shared/openai-model-utils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -30,13 +31,13 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    // Use a smaller model for email processing
-    const requestBody = {
-      model: 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'system',
-          content: `Eres un asistente legal especializado en resumir cadenas de emails. Analiza el contenido y extrae información clave para abogados.
+    const model = 'gpt-4o-mini';
+    logModelRequest(model, 'process-email-summary');
+
+    const messages = [
+      {
+        role: 'system',
+        content: `Eres un asistente legal especializado en resumir cadenas de emails. Analiza el contenido y extrae información clave para abogados.
 
 Extrae la siguiente información:
 - Partes involucradas (nombres, empresas)
@@ -52,17 +53,19 @@ Responde en formato JSON con esta estructura:
   "suggestedActions": ["acción 1", "acción 2"],
   "summary": "resumen ejecutivo completo en markdown"
 }`
-        },
-        {
-          role: 'user',
-          content: `Analiza esta cadena de emails y proporciona un resumen ejecutivo:
+      },
+      {
+        role: 'user',
+        content: `Analiza esta cadena de emails y proporciona un resumen ejecutivo:
 
 ${emailContent}`
-        }
-      ],
-      temperature: 0.3,
-      max_tokens: 1500
-    };
+      }
+    ];
+
+    const requestParams = buildOpenAIRequestParams(model, messages, {
+      maxTokens: 1500,
+      temperature: 0.3
+    });
 
     // Call OpenAI API
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -71,7 +74,7 @@ ${emailContent}`
         'Authorization': `Bearer ${openaiApiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(requestBody),
+      body: JSON.stringify(requestParams),
     });
 
     if (!openaiResponse.ok) {

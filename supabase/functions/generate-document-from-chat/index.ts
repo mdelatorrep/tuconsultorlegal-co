@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { buildOpenAIRequestParams, logModelRequest } from "../_shared/openai-model-utils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -35,10 +36,10 @@ serve(async (req) => {
       .maybeSingle();
 
     const selectedModel = (configError || !configData) 
-      ? 'gpt-4.1-2025-04-14'  // Default fallback
+      ? 'gpt-4.1-2025-04-14'
       : configData.config_value;
 
-    console.log('Using OpenAI model:', selectedModel);
+    logModelRequest(selectedModel, 'generate-document-from-chat');
 
     const { conversation, template_content, document_name, user_email, user_name, user_id, sla_hours, collected_data, placeholder_fields, price, legal_agent_id } = await req.json();
 
@@ -50,77 +51,6 @@ serve(async (req) => {
     }
 
     console.log('Generating document from conversation for:', document_name);
-
-    // Function to normalize geographic information
-    const normalizeGeographicInfo = (text: string): string => {
-      const departmentMap: Record<string, string> = {
-        'bogota': 'BOGOTÁ, CUNDINAMARCA',
-        'bogotá': 'BOGOTÁ, CUNDINAMARCA',
-        'medellin': 'MEDELLÍN, ANTIOQUIA',
-        'medellín': 'MEDELLÍN, ANTIOQUIA',
-        'cali': 'CALI, VALLE DEL CAUCA',
-        'barranquilla': 'BARRANQUILLA, ATLÁNTICO',
-        'cartagena': 'CARTAGENA, BOLÍVAR',
-        'cucuta': 'CÚCUTA, NORTE DE SANTANDER',
-        'cúcuta': 'CÚCUTA, NORTE DE SANTANDER',
-        'bucaramanga': 'BUCARAMANGA, SANTANDER',
-        'pereira': 'PEREIRA, RISARALDA',
-        'manizales': 'MANIZALES, CALDAS',
-        'ibague': 'IBAGUÉ, TOLIMA',
-        'ibagué': 'IBAGUÉ, TOLIMA',
-        'santa marta': 'SANTA MARTA, MAGDALENA',
-        'villavicencio': 'VILLAVICENCIO, META',
-        'pasto': 'PASTO, NARIÑO',
-        'monteria': 'MONTERÍA, CÓRDOBA',
-        'montería': 'MONTERÍA, CÓRDOBA',
-        'valledupar': 'VALLEDUPAR, CESAR',
-        'neiva': 'NEIVA, HUILA',
-        'armenia': 'ARMENIA, QUINDÍO',
-        'popayan': 'POPAYÁN, CAUCA',
-        'popayán': 'POPAYÁN, CAUCA',
-        'sincelejo': 'SINCELEJO, SUCRE',
-        'florencia': 'FLORENCIA, CAQUETÁ',
-        'tunja': 'TUNJA, BOYACÁ',
-        'quibdo': 'QUIBDÓ, CHOCÓ',
-        'quibdó': 'QUIBDÓ, CHOCÓ',
-        'riohacha': 'RIOHACHA, LA GUAJIRA',
-        'yopal': 'YOPAL, CASANARE',
-        'mocoa': 'MOCOA, PUTUMAYO',
-        'leticia': 'LETICIA, AMAZONAS',
-        'puerto carreño': 'PUERTO CARREÑO, VICHADA',
-        'inirida': 'INÍRIDA, GUAINÍA',
-        'inírida': 'INÍRIDA, GUAINÍA',
-        'mitu': 'MITÚ, VAUPÉS',
-        'mitú': 'MITÚ, VAUPÉS',
-        'san jose del guaviare': 'SAN JOSÉ DEL GUAVIARE, GUAVIARE',
-        'san josé del guaviare': 'SAN JOSÉ DEL GUAVIARE, GUAVIARE'
-      };
-      
-      const normalized = text.toLowerCase().trim();
-      return departmentMap[normalized] || text.toUpperCase() + ', COLOMBIA';
-    };
-
-    // Function to format dates
-    const formatDate = (dateStr: string): string => {
-      const months = {
-        'enero': 'enero', 'febrero': 'febrero', 'marzo': 'marzo', 'abril': 'abril',
-        'mayo': 'mayo', 'junio': 'junio', 'julio': 'julio', 'agosto': 'agosto',
-        'septiembre': 'septiembre', 'octubre': 'octubre', 'noviembre': 'noviembre', 'diciembre': 'diciembre'
-      };
-      
-      // Handle various date formats
-      const dateRegex = /(\d{1,2})[\/\-\.]\s*(\d{1,2})[\/\-\.]\s*(\d{4})/;
-      const match = dateStr.match(dateRegex);
-      
-      if (match) {
-        const [, day, month, year] = match;
-        const monthNames = Object.keys(months);
-        const monthName = monthNames[parseInt(month) - 1] || 'enero';
-        return `${parseInt(day)} de ${monthName} de ${year}`;
-      }
-      
-      return dateStr;
-    };
 
     // Build additional context from collected data
     let additionalContext = '';
@@ -161,27 +91,29 @@ INSTRUCCIONES CRÍTICAS:
 
 FORMATO DE RESPUESTA: Devuelve únicamente el documento final usando la plantilla exacta con los placeholders completados. SIN agregar título ni encabezado.`;
 
+    const messages = [
+      {
+        role: 'system',
+        content: 'Eres un experto abogado colombiano especializado en redacción de documentos legales. Tu tarea es generar documentos completos y profesionales basándose en conversaciones con usuarios.'
+      },
+      {
+        role: 'user',
+        content: prompt
+      }
+    ];
+
+    const requestParams = buildOpenAIRequestParams(selectedModel, messages, {
+      maxTokens: 2000,
+      temperature: 0.3
+    });
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openaiApiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: selectedModel,
-        messages: [
-          {
-            role: 'system',
-            content: 'Eres un experto abogado colombiano especializado en redacción de documentos legales. Tu tarea es generar documentos completos y profesionales basándose en conversaciones con usuarios.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        max_tokens: 2000,
-        temperature: 0.3,
-      }),
+      body: JSON.stringify(requestParams),
     });
 
     if (!response.ok) {
@@ -196,13 +128,10 @@ FORMATO DE RESPUESTA: Devuelve únicamente el documento final usando la plantill
     }
 
     // Convert plain text content to structured HTML for consistent rendering
-    // Ensures compatibility with preview CSS (.ql-align-*) and PDF generator
     console.log('Converting document content to structured HTML...');
     
-    // Check if content already has HTML structure
     const hasHtmlStructure = /<(p|div|br|strong|em|h[1-6]|ul|ol|li)[^>]*>/i.test(documentContent);
     
-    // Clean HTML entities first (always needed)
     const cleanEntities = (text: string) => text
       .replace(/&nbsp;/gi, ' ')
       .replace(/&amp;/gi, '&')
@@ -212,40 +141,29 @@ FORMATO DE RESPUESTA: Devuelve únicamente el documento final usando la plantill
       .replace(/&#39;/gi, "'");
     
     if (!hasHtmlStructure) {
-      // Convert plain text to HTML paragraphs with ReactQuill-compatible classes
       documentContent = cleanEntities(documentContent)
-        // Convert markdown-style headings to HTML (## Title -> <h2>)
         .replace(/^###\s+(.+)$/gm, '<h3 class="ql-align-left">$1</h3>')
         .replace(/^##\s+(.+)$/gm, '<h2 class="ql-align-left">$1</h2>')
         .replace(/^#\s+(.+)$/gm, '<h1 class="ql-align-left">$1</h1>')
-        // Convert markdown-style bold to HTML
         .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-        // Convert markdown-style italic to HTML  
         .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-        // Convert markdown-style underline to HTML
         .replace(/__([^_]+)__/g, '<u>$1</u>');
       
-      // Split by double line breaks into paragraphs (but preserve headings)
       const parts = documentContent.split(/\n\s*\n/);
       documentContent = parts
         .map(paragraph => paragraph.trim())
         .filter(paragraph => paragraph.length > 0)
         .map(paragraph => {
-          // Don't wrap headings in <p> tags
           if (paragraph.startsWith('<h1') || paragraph.startsWith('<h2') || paragraph.startsWith('<h3') ||
               paragraph.startsWith('<h4') || paragraph.startsWith('<h5') || paragraph.startsWith('<h6')) {
             return paragraph;
           }
-          // Convert single line breaks to <br> within paragraphs
           const withBreaks = paragraph.replace(/\n/g, '<br>');
           return `<p class="ql-align-justify">${withBreaks}</p>`;
         })
         .join('\n');
     } else {
-      // Content already has HTML - clean entities and ensure alignment classes
       documentContent = cleanEntities(documentContent);
-      
-      // Add ql-align-justify to paragraphs that don't have alignment class
       documentContent = documentContent.replace(
         /<p(?![^>]*class="[^"]*ql-align)([^>]*)>/gi, 
         '<p class="ql-align-justify"$1>'
@@ -261,7 +179,6 @@ FORMATO DE RESPUESTA: Devuelve únicamente el documento final usando la plantill
     if (unreplacedPlaceholders && unreplacedPlaceholders.length > 0) {
       console.warn('⚠️ Found unreplaced placeholders:', unreplacedPlaceholders);
       
-      // Try to replace any remaining placeholders with collected_data if available
       if (collected_data) {
         for (const placeholder of unreplacedPlaceholders) {
           const fieldName = placeholder.replace(/[{}]/g, '');
@@ -279,7 +196,6 @@ FORMATO DE RESPUESTA: Devuelve únicamente el documento final usando la plantill
         }
       }
       
-      // Check again after attempted replacement
       const stillUnreplaced = documentContent.match(placeholderRegex);
       if (stillUnreplaced && stillUnreplaced.length > 0) {
         console.error('❌ Still have unreplaced placeholders after retry:', stillUnreplaced);
@@ -287,16 +203,10 @@ FORMATO DE RESPUESTA: Devuelve únicamente el documento final usando la plantill
     }
 
     // Now create the document token with the generated content
-    // Reuse the existing supabase client already created above
-
-    // Generate unique token
     const token = crypto.randomUUID().replace(/-/g, '').substring(0, 12).toUpperCase();
-
-    // Calculate SLA deadline
     const now = new Date();
     const slaDeadline = new Date(now.getTime() + (sla_hours || 4) * 60 * 60 * 1000);
 
-    // Create document token record
     const { data: tokenData, error } = await supabase
       .from('document_tokens')
       .insert({
@@ -313,7 +223,6 @@ FORMATO DE RESPUESTA: Devuelve únicamente el documento final usando la plantill
         status: 'solicitado',
         sla_status: 'on_time',
         form_data: collected_data || {},
-        legal_agent_id: legal_agent_id || null
       })
       .select()
       .single();
@@ -337,13 +246,11 @@ FORMATO DE RESPUESTA: Devuelve únicamente el documento final usando la plantill
 
       if (notifyResponse.error) {
         console.error('Error sending notification:', notifyResponse.error);
-        // Don't fail the request if notification fails, just log it
       } else {
         console.log('Notification sent successfully');
       }
     } catch (notifyError) {
       console.error('Exception sending notification:', notifyError);
-      // Don't fail the request if notification fails
     }
 
     return new Response(

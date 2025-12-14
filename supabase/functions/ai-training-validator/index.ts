@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3'
+import { buildOpenAIRequestParams, logModelRequest } from "../_shared/openai-model-utils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -44,10 +45,10 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     const selectedModel = (configError || !configData) 
-      ? 'gpt-4.1-2025-04-14'  // Default fallback
+      ? 'gpt-4.1-2025-04-14'
       : configData.config_value;
 
-    console.log('Using OpenAI model:', selectedModel);
+    logModelRequest(selectedModel, 'ai-training-validator');
 
     // Parse request body
     const { 
@@ -66,19 +67,7 @@ Deno.serve(async (req) => {
 
     console.log('🤖 Sending to OpenAI for evaluation...')
 
-    // Call OpenAI API
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: selectedModel,
-        messages: [
-          {
-            role: 'system',
-            content: `Eres un experto evaluador en formación legal especializado en IA para abogados. Tu función es evaluar respuestas de abogados en formación sobre conceptos de Inteligencia Artificial aplicada al derecho.
+    const systemMessage = `Eres un experto evaluador en formación legal especializado en IA para abogados. Tu función es evaluar respuestas de abogados en formación sobre conceptos de Inteligencia Artificial aplicada al derecho.
 
 CRITERIOS DE EVALUACIÓN:
 - Precisión técnica (30%): Corrección de conceptos y términos
@@ -114,16 +103,26 @@ Devuelve un JSON con esta estructura exacta:
   "overallFeedback": "string",
   "recommendations": ["string"],
   "nextSteps": "string"
-}`
-          },
-          {
-            role: 'user',
-            content: validationPrompt
-          }
-        ],
-        temperature: 0.3,
-        max_tokens: 2500
-      }),
+}`;
+
+    const messages = [
+      { role: 'system', content: systemMessage },
+      { role: 'user', content: validationPrompt }
+    ];
+
+    const requestParams = buildOpenAIRequestParams(selectedModel, messages, {
+      maxTokens: 2500,
+      temperature: 0.3
+    });
+
+    // Call OpenAI API
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestParams),
     })
 
     if (!response.ok) {
@@ -175,7 +174,6 @@ Devuelve un JSON con esta estructura exacta:
 
     if (dbError) {
       console.error('❌ Database error:', dbError)
-      // Continue execution even if DB insert fails
     }
 
     // Update training progress if validation passed
