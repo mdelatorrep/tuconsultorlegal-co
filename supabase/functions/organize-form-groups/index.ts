@@ -58,7 +58,7 @@ serve(async (req) => {
 Campos disponibles:
 ${placeholder_fields.map((field: any, index: number) => `${index + 1}. ${field.field}: ${field.description}`).join('\n')}
 
-Organiza estos campos en grupos lógicos (2-5 campos por grupo). Responde con JSON:
+Organiza estos campos en grupos lógicos (2-5 campos por grupo). Responde ÚNICAMENTE con JSON válido:
 {
   "groups": [
     {"name": "Información Personal", "description": "Datos básicos", "fields": [0, 1, 2]},

@@ -108,15 +108,16 @@ Responde en formato JSON:
 
 Descripción específica: ${prompt}
 
-El documento debe ser apropiado para Colombia y seguir las mejores prácticas legales.`;
+El documento debe ser apropiado para Colombia y seguir las mejores prácticas legales. Responde ÚNICAMENTE en formato JSON válido.`;
 
     const params = buildResponsesRequestParams(draftingModel, {
       input,
       instructions,
-      maxOutputTokens: 4000,
+      maxOutputTokens: 8000,
       temperature: 0.4,
       jsonMode: true,
-      store: false
+      store: false,
+      reasoning: { effort: 'medium' }
     });
 
     const result = await callResponsesAPI(openaiApiKey, params);

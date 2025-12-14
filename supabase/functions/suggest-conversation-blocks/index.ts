@@ -35,7 +35,7 @@ serve(async (req) => {
     console.log('🤖 Suggesting conversation blocks for:', docName);
 
     // Get model from config
-    let model = 'gpt-4o-mini';
+    let model = 'gpt-4.1-2025-04-14';
     try {
       const { data: modelRow } = await supabase
         .from('system_config')
@@ -59,7 +59,7 @@ REGLAS CRÍTICAS:
 3. Cada bloque debe contener entre 2-5 placeholders relacionados
 4. NO dejes ningún placeholder sin asignar
 
-Responde SOLO con JSON válido.`;
+Responde ÚNICAMENTE con JSON válido.`;
 
     const input = `Documento: ${docName}
 Descripción: ${docDescription || 'N/A'}

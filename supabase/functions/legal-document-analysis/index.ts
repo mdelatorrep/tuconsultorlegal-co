@@ -168,23 +168,24 @@ serve(async (req) => {
 CONTENIDO DEL DOCUMENTO:
 ${truncatedContent}
 
-Proporciona un análisis profundo y profesional en formato JSON con: documentType, documentCategory, detectionConfidence, summary, clauses, risks, recommendations, keyDates, parties, legalReferences, missingElements.`;
+Proporciona un análisis profundo y profesional. Responde ÚNICAMENTE en formato JSON con: documentType, documentCategory, detectionConfidence, summary, clauses, risks, recommendations, keyDates, parties, legalReferences, missingElements.`;
     } else {
       const fileTypeInference = inferDocumentTypeFromFilename(fileName);
       analysisInput = `Documento: "${fileName}" - análisis inferencial basado en nombre.
 Tipo sugerido: ${fileTypeInference.suggestedType}
 Categoría: ${fileTypeInference.category}
 
-Proporciona análisis JSON con detectionConfidence: "baja" indicando que es preliminar.`;
+Proporciona análisis en formato JSON con detectionConfidence: "baja" indicando que es preliminar.`;
     }
 
     const params = buildResponsesRequestParams(aiModel, {
       input: analysisInput,
       instructions: systemPrompt,
-      maxOutputTokens: 4000,
+      maxOutputTokens: 8000,
       temperature: 0.2,
       jsonMode: true,
-      store: false
+      store: false,
+      reasoning: { effort: 'medium' }
     });
 
     const result = await callResponsesAPI(openaiApiKey, params);

@@ -29,6 +29,14 @@ export function isReasoningModel(model: string): boolean {
 }
 
 /**
+ * Detect if a model supports the temperature parameter
+ * GPT-5, o3, o4 models do NOT support temperature
+ */
+export function supportsTemperature(model: string): boolean {
+  return !isReasoningModel(model);
+}
+
+/**
  * Build request parameters for OpenAI Responses API
  */
 export function buildResponsesRequestParams(
@@ -81,8 +89,8 @@ export function buildResponsesRequestParams(
     params.max_output_tokens = maxOutputTokens;
   }
 
-  // Temperature (supported for all models in Responses API)
-  if (temperature !== undefined) {
+  // Temperature (NOT supported for reasoning models: GPT-5, o3, o4)
+  if (temperature !== undefined && supportsTemperature(model)) {
     params.temperature = temperature;
   }
 
