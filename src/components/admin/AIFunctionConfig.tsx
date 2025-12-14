@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -64,6 +64,19 @@ export default function AIFunctionConfig({
   const [optimizedPrompt, setOptimizedPrompt] = useState<string | null>(null);
   const [showComparison, setShowComparison] = useState(false);
   const { toast } = useToast();
+
+  // Sync state when props change (after configs load from database)
+  useEffect(() => {
+    setPrompt(currentPrompt);
+  }, [currentPrompt]);
+
+  useEffect(() => {
+    setModel(currentModel);
+  }, [currentModel]);
+
+  useEffect(() => {
+    setParams(currentParams);
+  }, [currentParams]);
 
   const handleOptimize = async () => {
     setOptimizing(true);
