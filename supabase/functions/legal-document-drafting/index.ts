@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { buildOpenAIRequestParams, getModelGeneration, logModelRequest } from '../_shared/openai-model-utils.ts';
 
 // Helper function to get system configuration
 async function getSystemConfig(supabaseClient: any, configKey: string, defaultValue?: string): Promise<string> {
@@ -118,21 +119,22 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    console.log(`Using drafting model: ${draftingModel}`);
+    logModelRequest(draftingModel, 'legal-document-drafting');
 
-    // Check if it's a reasoning model
-    const isReasoningModel = draftingModel.startsWith('o3') || draftingModel.startsWith('o4');
+    // Check if it's a reasoning model using centralized utility
+    const modelGeneration = getModelGeneration(draftingModel);
+    const isReasoningModel = modelGeneration === 'reasoning';
     
-    console.log(`Model type: ${isReasoningModel ? 'reasoning' : 'standard'}`);
+    console.log(`Model generation: ${modelGeneration}`);
 
     // Prepare the request body based on model type
     let requestBody;
     
     if (isReasoningModel) {
-      // For reasoning models, we need a simpler structure
-      requestBody = {
-        model: draftingModel,
-        messages: [
+      // For reasoning models, we need a simpler structure (no system message, no temperature)
+      requestBody = buildOpenAIRequestParams(
+        draftingModel,
+        [
           {
             role: 'user',
             content: `${draftingPrompt}
@@ -157,13 +159,14 @@ Responde en formato JSON con la siguiente estructura:
   "documentType": "Nombre completo del tipo de documento"
 }`
           }
-        ]
-      };
+        ],
+        { maxTokens: 4000 }
+      );
     } else {
-      // For standard models, use the existing structure
-      requestBody = {
-        model: draftingModel,
-        messages: [
+      // For standard models, use the existing structure with centralized utility
+      requestBody = buildOpenAIRequestParams(
+        draftingModel,
+        [
           {
             role: 'system',
             content: `${draftingPrompt}
@@ -192,9 +195,8 @@ Descripción específica: ${prompt}
 El documento debe ser apropiado para Colombia y seguir las mejores prácticas legales.`
           }
         ],
-        temperature: 0.4,
-        max_tokens: 4000
-      };
+        { maxTokens: 4000, temperature: 0.4 }
+      );
     }
 
     // Call OpenAI API

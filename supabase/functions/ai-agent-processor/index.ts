@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { buildOpenAIRequestParams, logModelRequest } from '../_shared/openai-model-utils.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -64,9 +65,14 @@ function extractPlaceholders(docTemplate: string) {
   return placeholders;
 }
 
-// Helper function to call OpenAI API
+// Helper function to call OpenAI API using centralized utility
 async function callOpenAI(apiKey: string, model: string, messages: any[], temperature = 0.7, maxTokens = 1000) {
-  console.log(`🤖 Calling OpenAI API with model: ${model}`);
+  logModelRequest(model, 'ai-agent-processor');
+  
+  const requestBody = buildOpenAIRequestParams(model, messages, { 
+    maxTokens, 
+    temperature 
+  });
   
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -74,12 +80,7 @@ async function callOpenAI(apiKey: string, model: string, messages: any[], temper
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      model,
-      messages,
-      temperature,
-      max_tokens: maxTokens
-    })
+    body: JSON.stringify(requestBody)
   });
 
   if (!response.ok) {
