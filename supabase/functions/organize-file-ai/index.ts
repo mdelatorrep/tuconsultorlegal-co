@@ -49,7 +49,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Get model and prompt from system config
-    const model = await getSystemConfig(supabase, 'content_optimization_model', 'gpt-4.1-2025-04-14');
+    const model = await getSystemConfig(supabase, 'organize_file_ai_model', 'gpt-4.1-2025-04-14');
     const systemPrompt = await getSystemConfig(supabase, 'organize_file_prompt', '');
     
     if (!systemPrompt) {

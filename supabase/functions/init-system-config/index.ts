@@ -92,10 +92,53 @@ const DEFAULT_CONFIGS = [
     config_value: PROMPT_OPTIMIZER_META_PROMPT,
     description: 'Meta-prompt maestro para optimizar otros prompts del sistema (basado en OpenAI best practices)'
   },
+  // Modelos independientes para cada función de agentes
   {
-    config_key: 'content_optimization_model',
+    config_key: 'improve_clause_ai_model',
     config_value: 'gpt-4.1-2025-04-14',
-    description: 'Modelo de IA para optimización de contenido y utilidades'
+    description: 'Modelo para mejorar cláusulas legales (improve-clause-ai)'
+  },
+  {
+    config_key: 'suggest_blocks_ai_model',
+    config_value: 'gpt-4.1-2025-04-14',
+    description: 'Modelo para sugerir bloques de conversación (suggest-conversation-blocks)'
+  },
+  // Modelos independientes para utilidades
+  {
+    config_key: 'crm_segmentation_ai_model',
+    config_value: 'gpt-4.1-2025-04-14',
+    description: 'Modelo para segmentación CRM (crm-ai-segmentation)'
+  },
+  {
+    config_key: 'organize_file_ai_model',
+    config_value: 'gpt-4.1-2025-04-14',
+    description: 'Modelo para organización de archivos (organize-file-ai)'
+  },
+  {
+    config_key: 'organize_form_ai_model',
+    config_value: 'gpt-4.1-2025-04-14',
+    description: 'Modelo para organización de formularios (organize-form-groups)'
+  },
+  {
+    config_key: 'training_validator_ai_model',
+    config_value: 'gpt-4.1-2025-04-14',
+    description: 'Modelo para validación de entrenamiento (ai-training-validator)'
+  },
+  // Modelos independientes para asistentes virtuales
+  {
+    config_key: 'lexi_ai_model',
+    config_value: 'gpt-4o-mini',
+    description: 'Modelo para Lexi - Asistente Legal principal'
+  },
+  {
+    config_key: 'routing_ai_model',
+    config_value: 'gpt-4o-mini',
+    description: 'Modelo para routing/clasificación de consultas'
+  },
+  {
+    config_key: 'training_assistant_ai_model',
+    config_value: 'gpt-4o-mini',
+    description: 'Modelo para asistente de entrenamiento de abogados'
   },
 
   // ============================================================================

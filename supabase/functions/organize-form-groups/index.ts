@@ -45,7 +45,7 @@ serve(async (req) => {
     };
 
     // Get configured model and prompt
-    const selectedModel = await getSystemConfig('content_optimization_model', 'gpt-4.1-2025-04-14');
+    const selectedModel = await getSystemConfig('organize_form_ai_model', 'gpt-4.1-2025-04-14');
     const systemPrompt = await getSystemConfig('organize_form_prompt', '');
     
     if (!systemPrompt) {

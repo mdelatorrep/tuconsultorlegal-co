@@ -50,7 +50,7 @@ serve(async (req) => {
     };
 
     // Get model and prompt from config
-    const model = await getSystemConfig('agent_creation_ai_model', 'gpt-4.1-2025-04-14');
+    const model = await getSystemConfig('suggest_blocks_ai_model', 'gpt-4.1-2025-04-14');
     const basePrompt = await getSystemConfig('suggest_conversation_blocks_prompt', '');
     
     if (!basePrompt) {

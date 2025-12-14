@@ -71,7 +71,7 @@ export default function SystemConfigManager() {
           name: 'Mejorar Cláusulas',
           description: 'Optimiza cláusulas legales en plantillas de documentos',
           promptKey: 'improve_clause_ai_prompt',
-          modelKey: 'content_optimization_model',
+          modelKey: 'improve_clause_ai_model',
           colorClass: 'border-l-purple-500'
         },
         {
@@ -79,7 +79,7 @@ export default function SystemConfigManager() {
           name: 'Sugerir Bloques de Conversación',
           description: 'Genera bloques de conversación para agentes de documentos',
           promptKey: 'suggest_conversation_blocks_prompt',
-          modelKey: 'content_optimization_model',
+          modelKey: 'suggest_blocks_ai_model',
           colorClass: 'border-l-purple-500'
         },
         {
@@ -178,7 +178,7 @@ export default function SystemConfigManager() {
           name: 'Lexi - Asistente Legal',
           description: 'Asistente virtual principal de tuconsultorlegal.co',
           promptKey: 'lexi_chat_prompt',
-          modelKey: 'document_chat_ai_model',
+          modelKey: 'lexi_ai_model',
           colorClass: 'border-l-indigo-500'
         },
         {
@@ -186,7 +186,7 @@ export default function SystemConfigManager() {
           name: 'Routing de Consultas',
           description: 'Sistema de clasificación y enrutamiento de consultas',
           promptKey: 'routing_chat_prompt',
-          modelKey: 'document_chat_ai_model',
+          modelKey: 'routing_ai_model',
           colorClass: 'border-l-indigo-500'
         },
         {
@@ -194,7 +194,7 @@ export default function SystemConfigManager() {
           name: 'Asistente de Entrenamiento',
           description: 'Formación y certificación de abogados en IA',
           promptKey: 'legal_training_assistant_prompt',
-          modelKey: 'document_chat_ai_model',
+          modelKey: 'training_assistant_ai_model',
           colorClass: 'border-l-indigo-500'
         }
       ]
@@ -226,7 +226,7 @@ export default function SystemConfigManager() {
           name: 'Segmentación CRM',
           description: 'Clasificación inteligente de clientes',
           promptKey: 'crm_segmentation_prompt',
-          modelKey: 'content_optimization_model',
+          modelKey: 'crm_segmentation_ai_model',
           colorClass: 'border-l-orange-500'
         },
         {
@@ -234,7 +234,7 @@ export default function SystemConfigManager() {
           name: 'Organizar Archivos',
           description: 'Organización inteligente de archivos legales',
           promptKey: 'organize_file_prompt',
-          modelKey: 'content_optimization_model',
+          modelKey: 'organize_file_ai_model',
           colorClass: 'border-l-orange-500'
         },
         {
@@ -242,7 +242,7 @@ export default function SystemConfigManager() {
           name: 'Organizar Formularios',
           description: 'Optimización de grupos de formularios',
           promptKey: 'organize_form_prompt',
-          modelKey: 'content_optimization_model',
+          modelKey: 'organize_form_ai_model',
           colorClass: 'border-l-orange-500'
         },
         {
@@ -250,7 +250,7 @@ export default function SystemConfigManager() {
           name: 'Validador de Entrenamiento',
           description: 'Evaluación de respuestas en entrenamiento',
           promptKey: 'ai_training_validator_prompt',
-          modelKey: 'content_optimization_model',
+          modelKey: 'training_validator_ai_model',
           colorClass: 'border-l-orange-500'
         }
       ]

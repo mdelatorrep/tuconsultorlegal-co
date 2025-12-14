@@ -48,7 +48,7 @@ serve(async (req) => {
     };
 
     // Get configured OpenAI model and prompt
-    const selectedModel = await getSystemConfig('content_optimization_model', 'gpt-4.1-2025-04-14');
+    const selectedModel = await getSystemConfig('improve_clause_ai_model', 'gpt-4.1-2025-04-14');
     const systemPrompt = await getSystemConfig('improve_clause_ai_prompt', '');
     
     if (!systemPrompt) {
