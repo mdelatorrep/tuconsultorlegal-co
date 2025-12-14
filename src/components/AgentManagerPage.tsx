@@ -235,16 +235,13 @@ export default function AgentManagerPage({ user, currentView, onViewChange, onLo
       }
 
       const { data, error } = await supabase.functions.invoke('update-agent', {
-        body: JSON.stringify({
+        body: {
           agent_id: agentId,
           user_id: lawyerData.id,
           is_admin: lawyerData.is_admin,
           status: newStatus
-        }),
-        headers: {
-          'Content-Type': 'application/json',
-          ...authHeaders
-        }
+        },
+        headers: authHeaders
       });
 
       if (error || !data?.success) {
@@ -308,12 +305,9 @@ export default function AgentManagerPage({ user, currentView, onViewChange, onLo
           user_id: lawyerData.id,
           is_admin: lawyerData.is_admin,
           status: 'approved',
-          document_name: agent.name // Copiar el nombre del agente al nombre del documento
+          document_name: agent.name
         },
-        headers: {
-          'Content-Type': 'application/json',
-          ...authHeaders
-        }
+        headers: authHeaders
       });
 
       if (error) {
@@ -478,42 +472,43 @@ export default function AgentManagerPage({ user, currentView, onViewChange, onLo
         return;
       }
 
+      const requestBody = {
+        agent_id: editingAgent.id,
+        user_id: lawyerData.id,
+        is_admin: lawyerData.is_admin,
+        name: editingAgent.name,
+        description: editingAgent.description,
+        document_name: editingAgent.document_name,
+        document_description: editingAgent.document_description,
+        category: editingAgent.category,
+        price: editingAgent.price,
+        price_justification: editingAgent.price_justification,
+        target_audience: editingAgent.target_audience,
+        template_content: editingAgent.template_content,
+        ai_prompt: editingAgent.ai_prompt,
+        placeholder_fields: extractedPlaceholders,
+        button_cta: editingAgent.button_cta,
+        frontend_icon: editingAgent.frontend_icon,
+        sla_enabled: editingAgent.sla_enabled,
+        sla_hours: editingAgent.sla_hours,
+        conversation_blocks: convBlocks.map((block, index) => ({
+          block_name: block.block_name,
+          intro_phrase: block.intro_phrase,
+          placeholders: block.placeholders,
+          block_order: index + 1
+        })),
+        field_instructions: fieldInstructions.map(instruction => ({
+          field_name: instruction.field_name,
+          validation_rule: instruction.validation_rule,
+          help_text: instruction.help_text
+        }))
+      };
+
+      console.log('📤 Sending update request with body keys:', Object.keys(requestBody));
+
       const { data, error } = await supabase.functions.invoke('update-agent', {
-        body: {
-          agent_id: editingAgent.id,
-          user_id: lawyerData.id,
-          is_admin: lawyerData.is_admin,
-          name: editingAgent.name,
-          description: editingAgent.description,
-          document_name: editingAgent.document_name,
-          document_description: editingAgent.document_description,
-          category: editingAgent.category,
-          price: editingAgent.price,
-          price_justification: editingAgent.price_justification,
-          target_audience: editingAgent.target_audience,
-          template_content: editingAgent.template_content,
-          ai_prompt: editingAgent.ai_prompt,
-          placeholder_fields: extractedPlaceholders,
-          button_cta: editingAgent.button_cta,
-          frontend_icon: editingAgent.frontend_icon,
-          sla_enabled: editingAgent.sla_enabled,
-          sla_hours: editingAgent.sla_hours,
-          conversation_blocks: convBlocks.map((block, index) => ({
-            block_name: block.block_name,
-            intro_phrase: block.intro_phrase,
-            placeholders: block.placeholders,
-            block_order: index + 1
-          })),
-          field_instructions: fieldInstructions.map(instruction => ({
-            field_name: instruction.field_name,
-            validation_rule: instruction.validation_rule,
-            help_text: instruction.help_text
-          }))
-        },
-        headers: {
-          'Content-Type': 'application/json',
-          ...authHeaders
-        }
+        body: requestBody,
+        headers: authHeaders
       });
 
       if (error || !data?.success) {
