@@ -1,5 +1,9 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { buildOpenAIRequestParams, logModelRequest } from "../_shared/openai-model-utils.ts";
+import { 
+  buildResponsesRequestParams, 
+  callResponsesAPI, 
+  logResponsesRequest 
+} from "../_shared/openai-responses-utils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,7 +11,6 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -18,111 +21,75 @@ serve(async (req) => {
     if (!emailContent) {
       return new Response(
         JSON.stringify({ error: 'Email content is required' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Get OpenAI API key
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiApiKey) {
-      throw new Error('OpenAI API key not configured');
-    }
+    if (!openaiApiKey) throw new Error('OpenAI API key not configured');
 
     const model = 'gpt-4o-mini';
-    logModelRequest(model, 'process-email-summary');
+    logResponsesRequest(model, 'process-email-summary', true);
 
-    const messages = [
-      {
-        role: 'system',
-        content: `Eres un asistente legal especializado en resumir cadenas de emails. Analiza el contenido y extrae información clave para abogados.
+    const instructions = `Eres un asistente legal especializado en resumir cadenas de emails. Analiza el contenido y extrae información clave para abogados.
 
-Extrae la siguiente información:
+Extrae:
 - Partes involucradas (nombres, empresas)
 - Tema principal del asunto legal
 - Puntos clave y fechas importantes
 - Acciones sugeridas para el abogado
 
-Responde en formato JSON con esta estructura:
+Responde en formato JSON:
 {
   "parties": ["lista", "de", "partes"],
   "mainTopic": "tema principal",
   "keyPoints": ["punto 1", "punto 2"],
   "suggestedActions": ["acción 1", "acción 2"],
   "summary": "resumen ejecutivo completo en markdown"
-}`
-      },
-      {
-        role: 'user',
-        content: `Analiza esta cadena de emails y proporciona un resumen ejecutivo:
+}`;
 
-${emailContent}`
-      }
-    ];
+    const input = `Analiza esta cadena de emails y proporciona un resumen ejecutivo:\n\n${emailContent}`;
 
-    const requestParams = buildOpenAIRequestParams(model, messages, {
-      maxTokens: 1500,
-      temperature: 0.3
+    const params = buildResponsesRequestParams(model, {
+      input,
+      instructions,
+      maxOutputTokens: 1500,
+      temperature: 0.3,
+      jsonMode: true,
+      store: false
     });
 
-    // Call OpenAI API
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestParams),
-    });
+    const result = await callResponsesAPI(openaiApiKey, params);
 
-    if (!openaiResponse.ok) {
-      const errorData = await openaiResponse.text();
-      console.error('OpenAI API error:', errorData);
-      throw new Error(`OpenAI API error: ${openaiResponse.status}`);
+    if (!result.success) {
+      throw new Error(`Email summary failed: ${result.error}`);
     }
 
-    const openaiData = await openaiResponse.json();
-    const content = openaiData.choices[0].message.content;
-
-    // Try to parse as JSON, fallback to structured response if parsing fails
     let analysis;
     try {
-      analysis = JSON.parse(content);
+      analysis = JSON.parse(result.text || '{}');
     } catch (e) {
-      // Fallback: create structured response from text
       analysis = {
         parties: ["Partes identificadas en el email"],
         mainTopic: "Asunto legal por revisar",
-        keyPoints: ["Requiere análisis detallado del contenido"],
+        keyPoints: ["Requiere análisis detallado"],
         suggestedActions: ["Revisar email completo", "Contactar a las partes"],
-        summary: content
+        summary: result.text || ''
       };
     }
 
+    console.log('✅ Email summary completed');
+
     return new Response(
-      JSON.stringify({
-        success: true,
-        ...analysis,
-        timestamp: new Date().toISOString()
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      JSON.stringify({ success: true, ...analysis, timestamp: new Date().toISOString() }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Error in process-email-summary function:', error);
+    console.error('❌ Error in process-email-summary:', error);
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error.message || 'Internal server error' 
-      }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      JSON.stringify({ success: false, error: error.message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

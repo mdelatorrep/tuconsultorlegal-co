@@ -1,198 +1,140 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3'
-import { buildOpenAIRequestParams, logModelRequest } from "../_shared/openai-model-utils.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3';
+import { 
+  buildResponsesRequestParams, 
+  callResponsesAPI, 
+  logResponsesRequest 
+} from "../_shared/openai-responses-utils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+};
 
 const securityHeaders = {
   ...corsHeaders,
   'Content-Type': 'application/json',
-}
+};
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders });
   }
 
   if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405, headers: corsHeaders })
+    return new Response('Method not allowed', { status: 405, headers: corsHeaders });
   }
 
   try {
-    console.log('🎓 AI Training Validator function called')
+    console.log('🎓 AI Training Validator function called');
 
-    // Initialize Supabase client
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+    );
 
-    // Get OpenAI API key
-    const openAIApiKey = Deno.env.get('OPENAI_API_KEY')
-    if (!openAIApiKey) {
-      throw new Error('OPENAI_API_KEY is not set')
-    }
+    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openAIApiKey) throw new Error('OPENAI_API_KEY is not set');
 
-    // Get configured OpenAI model
+    // Get configured model
     const { data: configData, error: configError } = await supabase
       .from('system_config')
       .select('config_value')
       .eq('config_key', 'openai_model')
       .maybeSingle();
 
-    const selectedModel = (configError || !configData) 
-      ? 'gpt-4.1-2025-04-14'
-      : configData.config_value;
+    const selectedModel = (configError || !configData) ? 'gpt-4.1-2025-04-14' : configData.config_value;
 
-    logModelRequest(selectedModel, 'ai-training-validator');
+    logResponsesRequest(selectedModel, 'ai-training-validator', true);
 
-    // Parse request body
-    const { 
-      moduleId, 
-      moduleTitle, 
-      questions, 
-      answers, 
-      lawyerId,
-      practicalExercise 
-    } = await req.json()
+    const { moduleId, moduleTitle, questions, answers, lawyerId, practicalExercise } = await req.json();
 
-    console.log(`📚 Validating module: ${moduleTitle} for lawyer: ${lawyerId}`)
+    console.log(`📚 Validating module: ${moduleTitle} for lawyer: ${lawyerId}`);
 
-    // Create AI prompt for validation
-    const validationPrompt = createValidationPrompt(moduleTitle, questions, answers, practicalExercise)
+    const validationPrompt = createValidationPrompt(moduleTitle, questions, answers, practicalExercise);
 
-    console.log('🤖 Sending to OpenAI for evaluation...')
-
-    const systemMessage = `Eres un experto evaluador en formación legal especializado en IA para abogados. Tu función es evaluar respuestas de abogados en formación sobre conceptos de Inteligencia Artificial aplicada al derecho.
+    const instructions = `Eres un experto evaluador en formación legal especializado en IA para abogados.
 
 CRITERIOS DE EVALUACIÓN:
-- Precisión técnica (30%): Corrección de conceptos y términos
+- Precisión técnica (30%): Corrección de conceptos
 - Aplicabilidad práctica (25%): Relevancia para ejercicio legal real  
 - Completitud (20%): Cobertura integral de la pregunta
-- Pensamiento crítico (15%): Análisis profundo y consideraciones éticas
+- Pensamiento crítico (15%): Análisis profundo
 - Claridad comunicativa (10%): Estructura y expresión clara
 
 INSTRUCCIONES:
 1. Evalúa cada respuesta objetivamente
 2. Proporciona puntuación específica (0-100)
 3. Incluye feedback constructivo detallado
-4. Identifica fortalezas y áreas de mejora
-5. Sugiere recursos adicionales si es necesario
-6. Determina si el candidato debe aprobar (≥70 puntos)
+4. Determina si el candidato debe aprobar (≥70 puntos)
 
-FORMATO DE RESPUESTA:
-Devuelve un JSON con esta estructura exacta:
+FORMATO DE RESPUESTA (JSON):
 {
   "passed": boolean,
   "totalScore": number,
   "maxScore": number,
-  "questionResults": [
-    {
-      "questionId": "string",
-      "score": number,
-      "maxScore": number,
-      "feedback": "string",
-      "strengths": ["string"],
-      "improvements": ["string"]
-    }
-  ],
+  "questionResults": [{"questionId": "string", "score": number, "maxScore": number, "feedback": "string", "strengths": [], "improvements": []}],
   "overallFeedback": "string",
-  "recommendations": ["string"],
+  "recommendations": [],
   "nextSteps": "string"
 }`;
 
-    const messages = [
-      { role: 'system', content: systemMessage },
-      { role: 'user', content: validationPrompt }
-    ];
-
-    const requestParams = buildOpenAIRequestParams(selectedModel, messages, {
-      maxTokens: 2500,
-      temperature: 0.3
+    const params = buildResponsesRequestParams(selectedModel, {
+      input: validationPrompt,
+      instructions,
+      maxOutputTokens: 2500,
+      temperature: 0.3,
+      jsonMode: true,
+      store: false
     });
 
-    // Call OpenAI API
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestParams),
-    })
+    const result = await callResponsesAPI(openAIApiKey, params);
 
-    if (!response.ok) {
-      const error = await response.text()
-      console.error('❌ OpenAI API error:', error)
-      throw new Error(`OpenAI API error: ${response.status}`)
+    if (!result.success) {
+      throw new Error(`Validation failed: ${result.error}`);
     }
 
-    const data = await response.json()
-    const aiEvaluation = data.choices[0].message.content
-
-    console.log('✅ AI evaluation completed')
-
-    // Parse AI response
-    let evaluationResult
+    let evaluationResult;
     try {
-      evaluationResult = JSON.parse(aiEvaluation)
+      evaluationResult = JSON.parse(result.text || '{}');
     } catch (parseError) {
-      console.error('❌ Error parsing AI response:', parseError)
-      // Fallback response structure
       evaluationResult = {
         passed: false,
         totalScore: 0,
         maxScore: 100,
         questionResults: [],
-        overallFeedback: "Error en la evaluación automática. Por favor, contacta al administrador.",
-        recommendations: ["Revisar el sistema de evaluación"],
-        nextSteps: "Contactar soporte técnico"
-      }
+        overallFeedback: "Error en la evaluación automática.",
+        recommendations: ["Revisar el sistema"],
+        nextSteps: "Contactar soporte"
+      };
     }
 
-    console.log(`📊 Evaluation result: ${evaluationResult.passed ? 'PASSED' : 'FAILED'} - Score: ${evaluationResult.totalScore}/${evaluationResult.maxScore}`)
+    console.log(`📊 Evaluation result: ${evaluationResult.passed ? 'PASSED' : 'FAILED'} - Score: ${evaluationResult.totalScore}/${evaluationResult.maxScore}`);
 
-    // Store validation result in database
-    const { error: dbError } = await supabase
+    // Store validation result
+    await supabase
       .from('training_validations')
       .insert({
         lawyer_id: lawyerId,
         module_id: moduleId,
         module_title: moduleTitle,
-        questions: questions,
-        answers: answers,
+        questions,
+        answers,
         ai_evaluation: evaluationResult,
         passed: evaluationResult.passed,
         score: evaluationResult.totalScore,
         max_score: evaluationResult.maxScore,
         validated_at: new Date().toISOString()
-      })
+      });
 
-    if (dbError) {
-      console.error('❌ Database error:', dbError)
-    }
-
-    // Update training progress if validation passed
+    // Update progress if passed
     if (evaluationResult.passed) {
-      console.log('🎯 Updating training progress...')
-      
-      const { error: progressError } = await supabase.functions.invoke('update-training-progress', {
-        body: {
-          lawyer_id: lawyerId,
-          module_id: moduleId,
-          validated: true,
-          score: evaluationResult.totalScore
-        }
-      })
-
-      if (progressError) {
-        console.error('❌ Error updating progress:', progressError)
-      }
+      await supabase.functions.invoke('update-training-progress', {
+        body: { lawyer_id: lawyerId, module_id: moduleId, validated: true, score: evaluationResult.totalScore }
+      });
     }
+
+    console.log('✅ Training validation completed');
 
     return new Response(JSON.stringify({
       success: true,
@@ -202,10 +144,10 @@ Devuelve un JSON con esta estructura exacta:
         : `Validación no superada. Puntuación: ${evaluationResult.totalScore}/${evaluationResult.maxScore}`
     }), {
       headers: securityHeaders
-    })
+    });
 
   } catch (error) {
-    console.error('💥 Error in AI training validator:', error)
+    console.error('💥 Error in AI training validator:', error);
     return new Response(JSON.stringify({
       success: false,
       error: 'Error en el sistema de validación',
@@ -213,26 +155,19 @@ Devuelve un JSON con esta estructura exacta:
     }), {
       status: 500,
       headers: securityHeaders
-    })
+    });
   }
-})
+});
 
 function createValidationPrompt(moduleTitle: string, questions: any[], answers: any, practicalExercise?: any): string {
-  let prompt = `MÓDULO DE FORMACIÓN: ${moduleTitle}
+  let prompt = `MÓDULO DE FORMACIÓN: ${moduleTitle}\n\nEVALUACIÓN DE RESPUESTAS:\n\n`;
 
-EVALUACIÓN DE RESPUESTAS:
-
-`
-
-  // Add questions and answers
   questions.forEach((question, index) => {
-    const answer = answers[question.id]
-    
+    const answer = answers[question.id];
     prompt += `PREGUNTA ${index + 1} (${question.points} puntos):
 Tipo: ${question.type}
 Enunciado: ${question.question}
 ${question.options ? `Opciones: ${question.options.join(', ')}` : ''}
-${question.correctAnswer !== undefined ? `Respuesta correcta: Opción ${question.correctAnswer + 1}` : ''}
 ${question.rubric ? `Criterios: ${question.rubric}` : ''}
 
 RESPUESTA DEL CANDIDATO:
@@ -240,38 +175,23 @@ ${question.type === 'multiple_choice' ? `Opción seleccionada: ${answer + 1}` : 
 
 ---
 
-`
-  })
+`;
+  });
 
   if (practicalExercise) {
     prompt += `EJERCICIO PRÁCTICO:
 Título: ${practicalExercise.title}
 Descripción: ${practicalExercise.description}
-Instrucciones: ${practicalExercise.prompt}
 
-Resultados esperados:
-${practicalExercise.expectedOutputs.map((output: string, i: number) => `${i + 1}. ${output}`).join('\n')}
-
-Criterios de evaluación:
-${practicalExercise.evaluationCriteria.map((criteria: string, i: number) => `${i + 1}. ${criteria}`).join('\n')}
-
-RESPUESTA DEL CANDIDATO AL EJERCICIO:
-${answers.practical_exercise || 'Sin respuesta al ejercicio práctico'}
+RESPUESTA DEL CANDIDATO:
+${answers.practical_exercise || 'Sin respuesta'}
 
 ---
 
-`
+`;
   }
 
-  prompt += `INSTRUCCIONES DE EVALUACIÓN:
-1. Evalúa cada respuesta según los criterios establecidos
-2. Para preguntas de opción múltiple, verifica si la respuesta es correcta
-3. Para preguntas abiertas, evalúa según la rúbrica proporcionada
-4. Considera el nivel de conocimiento esperado para un abogado en formación
-5. Proporciona feedback constructivo y específico
-6. El puntaje mínimo para aprobar es 70/100
+  prompt += `Evalúa con rigor profesional. Puntaje mínimo para aprobar: 70/100.`;
 
-Evalúa con rigor profesional pero reconoce que el candidato está en proceso de aprendizaje.`
-
-  return prompt
+  return prompt;
 }

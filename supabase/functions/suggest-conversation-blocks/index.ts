@@ -1,6 +1,10 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3';
-import { buildOpenAIRequestParams, logModelRequest } from "../_shared/openai-model-utils.ts";
+import { 
+  buildResponsesRequestParams, 
+  callResponsesAPI, 
+  logResponsesRequest 
+} from "../_shared/openai-responses-utils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -30,7 +34,7 @@ serve(async (req) => {
 
     console.log('🤖 Suggesting conversation blocks for:', docName);
 
-    // Get system configuration for AI model
+    // Get model from config
     let model = 'gpt-4o-mini';
     try {
       const { data: modelRow } = await supabase
@@ -43,21 +47,21 @@ serve(async (req) => {
       console.warn('Could not read agent_creation_ai_model, using default');
     }
 
-    logModelRequest(model, 'suggest-conversation-blocks');
+    logResponsesRequest(model, 'suggest-conversation-blocks', true);
 
-    const systemPrompt = `Eres un asistente experto en diseño de experiencias conversacionales para documentos legales colombianos.
+    const instructions = `Eres un asistente experto en diseño de experiencias conversacionales para documentos legales colombianos.
 
-Tu tarea es analizar un documento legal y sus placeholders, y sugerir una estructura COMPLETA de bloques de conversación para recopilar TODA la información de manera natural y eficiente.
+Tu tarea es analizar un documento legal y sus placeholders, y sugerir una estructura COMPLETA de bloques de conversación.
 
 REGLAS CRÍTICAS:
 1. DEBES crear MÚLTIPLES bloques (mínimo 2, típicamente 3-5 bloques)
 2. TODOS los placeholders deben estar distribuidos entre los bloques
 3. Cada bloque debe contener entre 2-5 placeholders relacionados
-4. NO dejes ningún placeholder sin asignar a un bloque
+4. NO dejes ningún placeholder sin asignar
 
-Responde SOLO con un objeto JSON válido (sin markdown).`;
+Responde SOLO con JSON válido.`;
 
-    const userPrompt = `Documento: ${docName}
+    const input = `Documento: ${docName}
 Descripción: ${docDescription || 'N/A'}
 Audiencia: ${targetAudience === 'empresas' ? 'Empresas' : 'Personas naturales'}
 
@@ -65,37 +69,24 @@ Placeholders: ${placeholders.map((p: string) => p).join(', ')}
 
 Fragmento de plantilla: ${docTemplate.slice(0, 800)}...`;
 
-    const messages = [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt }
-    ];
-
-    const requestParams = buildOpenAIRequestParams(model, messages, {
-      maxTokens: 2000,
-      temperature: 0.7
+    const params = buildResponsesRequestParams(model, {
+      input,
+      instructions,
+      maxOutputTokens: 2000,
+      temperature: 0.7,
+      jsonMode: true,
+      store: false
     });
 
-    const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestParams),
-    });
+    const result = await callResponsesAPI(openAIApiKey, params);
 
-    if (!openAIResponse.ok) {
-      throw new Error(`OpenAI API error: ${openAIResponse.status}`);
+    if (!result.success) {
+      throw new Error(`Block suggestion failed: ${result.error}`);
     }
-
-    const openAIData = await openAIResponse.json();
-    const aiContent = openAIData.choices[0]?.message?.content;
-
-    if (!aiContent) throw new Error('No content received from OpenAI');
 
     let parsedResponse;
     try {
-      const cleanedContent = aiContent.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+      const cleanedContent = (result.text || '').replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
       parsedResponse = JSON.parse(cleanedContent);
     } catch (parseError) {
       throw new Error('Failed to parse AI response as JSON');
@@ -112,6 +103,8 @@ Fragmento de plantilla: ${docTemplate.slice(0, 800)}...`;
       placeholders: Array.isArray(block.placeholders) ? block.placeholders : []
     }));
 
+    console.log('✅ Conversation blocks suggested successfully');
+
     return new Response(JSON.stringify({
       success: true,
       conversationBlocks,
@@ -125,7 +118,7 @@ Fragmento de plantilla: ${docTemplate.slice(0, 800)}...`;
     });
 
   } catch (error) {
-    console.error('Error in suggest-conversation-blocks:', error);
+    console.error('❌ Error in suggest-conversation-blocks:', error);
     return new Response(JSON.stringify({ error: error.message || 'Internal server error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
