@@ -29,14 +29,24 @@ serve(async (req) => {
     const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.50.3');
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get configured OpenAI model
-    const { data: configData, error: configError } = await supabase
-      .from('system_config')
-      .select('config_value')
-      .eq('config_key', 'openai_model')
-      .maybeSingle();
+    // Helper to get system config
+    const getSystemConfig = async (key: string, defaultValue: string): Promise<string> => {
+      try {
+        const { data, error } = await supabase
+          .from('system_config')
+          .select('config_value')
+          .eq('config_key', key)
+          .maybeSingle();
+        if (error || !data) return defaultValue;
+        return data.config_value;
+      } catch (e) {
+        return defaultValue;
+      }
+    };
 
-    const selectedModel = (configError || !configData) ? 'gpt-4.1-2025-04-14' : configData.config_value;
+    // Get configured OpenAI model and prompt
+    const selectedModel = await getSystemConfig('drafting_ai_model', 'gpt-4.1-2025-04-14');
+    const systemPrompt = await getSystemConfig('generate_document_prompt', 'Eres un experto abogado colombiano especializado en redacción de documentos legales. Tu tarea es generar documentos completos y profesionales basándose en conversaciones con usuarios.');
 
     logResponsesRequest(selectedModel, 'generate-document-from-chat', true);
 
@@ -60,7 +70,7 @@ serve(async (req) => {
       additionalContext += `\n\nPLACEHOLDERS DISPONIBLES:\n${placeholder_fields.map(field => `- {{${field.field || field.name}}}: ${field.description}`).join('\n')}`;
     }
 
-    const instructions = 'Eres un experto abogado colombiano especializado en redacción de documentos legales. Tu tarea es generar documentos completos y profesionales basándose en conversaciones con usuarios.';
+    const instructions = systemPrompt;
 
     const input = `Basándose en la siguiente conversación con el usuario, genera el contenido del documento legal utilizando EXACTAMENTE la plantilla proporcionada y completando todos los placeholders.
 

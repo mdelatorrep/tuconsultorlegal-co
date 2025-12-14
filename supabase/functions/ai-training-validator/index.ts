@@ -36,24 +36,24 @@ Deno.serve(async (req) => {
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) throw new Error('OPENAI_API_KEY is not set');
 
-    // Get configured model
-    const { data: configData, error: configError } = await supabase
-      .from('system_config')
-      .select('config_value')
-      .eq('config_key', 'openai_model')
-      .maybeSingle();
+    // Helper to get system config
+    const getSystemConfig = async (key: string, defaultValue: string): Promise<string> => {
+      try {
+        const { data, error } = await supabase
+          .from('system_config')
+          .select('config_value')
+          .eq('config_key', key)
+          .maybeSingle();
+        if (error || !data) return defaultValue;
+        return data.config_value;
+      } catch (e) {
+        return defaultValue;
+      }
+    };
 
-    const selectedModel = (configError || !configData) ? 'gpt-4.1-2025-04-14' : configData.config_value;
-
-    logResponsesRequest(selectedModel, 'ai-training-validator', true);
-
-    const { moduleId, moduleTitle, questions, answers, lawyerId, practicalExercise } = await req.json();
-
-    console.log(`📚 Validating module: ${moduleTitle} for lawyer: ${lawyerId}`);
-
-    const validationPrompt = createValidationPrompt(moduleTitle, questions, answers, practicalExercise);
-
-    const instructions = `Eres un experto evaluador en formación legal especializado en IA para abogados.
+    // Get configured model and prompt
+    const selectedModel = await getSystemConfig('content_optimization_model', 'gpt-4.1-2025-04-14');
+    const systemPrompt = await getSystemConfig('ai_training_validator_prompt', `Eres un experto evaluador en formación legal especializado en IA para abogados.
 
 CRITERIOS DE EVALUACIÓN:
 - Precisión técnica (30%): Corrección de conceptos
@@ -77,7 +77,17 @@ FORMATO DE RESPUESTA (JSON):
   "overallFeedback": "string",
   "recommendations": [],
   "nextSteps": "string"
-}`;
+}`);
+
+    logResponsesRequest(selectedModel, 'ai-training-validator', true);
+
+    const { moduleId, moduleTitle, questions, answers, lawyerId, practicalExercise } = await req.json();
+
+    console.log(`📚 Validating module: ${moduleTitle} for lawyer: ${lawyerId}`);
+
+    const validationPrompt = createValidationPrompt(moduleTitle, questions, answers, practicalExercise);
+
+    const instructions = systemPrompt;
 
     const params = buildResponsesRequestParams(selectedModel, {
       input: `${validationPrompt}\n\nResponde ÚNICAMENTE en formato JSON válido.`,

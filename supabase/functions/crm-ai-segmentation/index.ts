@@ -53,8 +53,9 @@ serve(async (req) => {
       );
     }
 
-    // Get model from system config
-    const model = await getSystemConfig(supabase, 'crm_segmentation_model', 'gpt-4.1-2025-04-14');
+    // Get model and prompt from system config
+    const model = await getSystemConfig(supabase, 'content_optimization_model', 'gpt-4.1-2025-04-14');
+    const systemPrompt = await getSystemConfig(supabase, 'crm_segmentation_prompt', 'Eres un experto en análisis de datos y segmentación de clientes para un despacho legal. Analiza los datos y crea segmentos útiles. Devuelve JSON con formato: {"segments": [{"name": "...", "description": "...", "criteria": {...}}]}');
     logResponsesRequest(model, 'crm-ai-segmentation', true);
 
     const { data: clients, error: clientsError } = await supabase
@@ -81,7 +82,7 @@ serve(async (req) => {
       created_at: client.created_at
     }));
 
-    const instructions = `Eres un experto en análisis de datos y segmentación de clientes para un despacho legal. Analiza los datos y crea segmentos útiles. Devuelve JSON con formato: {"segments": [{"name": "...", "description": "...", "criteria": {...}}]}`;
+    const instructions = systemPrompt;
 
     const input = `Analiza estos datos de clientes y crea segmentos útiles. Responde ÚNICAMENTE en formato JSON:\n${JSON.stringify(clientsData, null, 2)}`;
 

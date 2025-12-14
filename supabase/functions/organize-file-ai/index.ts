@@ -48,11 +48,9 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get model from system config
-    const model = await getSystemConfig(supabase, 'organize_file_model', 'gpt-4.1-2025-04-14');
-    logResponsesRequest(model, 'organize-file-ai', true);
-
-    const instructions = `Eres un asistente especializado en organización de archivos legales. Analiza nombres de archivos y sugiere estructuras de organización.
+    // Get model and prompt from system config
+    const model = await getSystemConfig(supabase, 'content_optimization_model', 'gpt-4.1-2025-04-14');
+    const systemPrompt = await getSystemConfig(supabase, 'organize_file_prompt', `Eres un asistente especializado en organización de archivos legales. Analiza nombres de archivos y sugiere estructuras de organización.
 
 Basándote solo en el nombre del archivo, proporciona:
 - Tipo de documento probable
@@ -72,7 +70,10 @@ Responde en formato JSON:
   "actions": ["acción1", "acción2"],
   "suggestedCase": "nombre del caso sugerido",
   "analysis": "análisis en markdown"
-}`;
+}`);
+    logResponsesRequest(model, 'organize-file-ai', true);
+
+    const instructions = systemPrompt;
 
     const input = `Analiza este nombre de archivo legal: "${fileName}". Responde ÚNICAMENTE en formato JSON.`;
 

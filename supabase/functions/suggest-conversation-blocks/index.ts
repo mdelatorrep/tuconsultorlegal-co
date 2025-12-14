@@ -34,22 +34,24 @@ serve(async (req) => {
 
     console.log('🤖 Suggesting conversation blocks for:', docName);
 
-    // Get model from config
-    let model = 'gpt-4.1-2025-04-14';
-    try {
-      const { data: modelRow } = await supabase
-        .from('system_config')
-        .select('config_value')
-        .eq('config_key', 'agent_creation_ai_model')
-        .maybeSingle();
-      if (modelRow?.config_value) model = modelRow.config_value;
-    } catch (e) {
-      console.warn('Could not read agent_creation_ai_model, using default');
-    }
+    // Helper to get system config
+    const getSystemConfig = async (key: string, defaultValue: string): Promise<string> => {
+      try {
+        const { data, error } = await supabase
+          .from('system_config')
+          .select('config_value')
+          .eq('config_key', key)
+          .maybeSingle();
+        if (error || !data) return defaultValue;
+        return data.config_value;
+      } catch (e) {
+        return defaultValue;
+      }
+    };
 
-    logResponsesRequest(model, 'suggest-conversation-blocks', true);
-
-    const instructions = `Eres un asistente experto en diseño de experiencias conversacionales para documentos legales colombianos.
+    // Get model and prompt from config
+    const model = await getSystemConfig('agent_creation_ai_model', 'gpt-4.1-2025-04-14');
+    const basePrompt = await getSystemConfig('suggest_conversation_blocks_prompt', `Eres un asistente experto en diseño de experiencias conversacionales para documentos legales colombianos.
 
 Tu tarea es analizar un documento legal y sus placeholders, y generar:
 1. Bloques de conversación agrupando placeholders relacionados
@@ -61,7 +63,11 @@ REGLAS CRÍTICAS:
 3. Cada bloque debe contener entre 2-5 placeholders relacionados
 4. NO dejes ningún placeholder sin asignar
 5. Cada bloque DEBE tener una frase de introducción amigable que el chatbot usará para iniciar esa sección
-6. Para CADA placeholder, genera instrucciones de ayuda y reglas de validación
+6. Para CADA placeholder, genera instrucciones de ayuda y reglas de validación`);
+
+    logResponsesRequest(model, 'suggest-conversation-blocks', true);
+
+    const instructions = `${basePrompt}
 
 FORMATO JSON REQUERIDO:
 {
