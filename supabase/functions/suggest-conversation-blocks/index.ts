@@ -51,13 +51,37 @@ serve(async (req) => {
 
     const instructions = `Eres un asistente experto en diseño de experiencias conversacionales para documentos legales colombianos.
 
-Tu tarea es analizar un documento legal y sus placeholders, y sugerir una estructura COMPLETA de bloques de conversación.
+Tu tarea es analizar un documento legal y sus placeholders, y generar:
+1. Bloques de conversación agrupando placeholders relacionados
+2. Instrucciones específicas para cada campo (placeholder)
 
 REGLAS CRÍTICAS:
 1. DEBES crear MÚLTIPLES bloques (mínimo 2, típicamente 3-5 bloques)
 2. TODOS los placeholders deben estar distribuidos entre los bloques
 3. Cada bloque debe contener entre 2-5 placeholders relacionados
 4. NO dejes ningún placeholder sin asignar
+5. Cada bloque DEBE tener una frase de introducción amigable que el chatbot usará para iniciar esa sección
+6. Para CADA placeholder, genera instrucciones de ayuda y reglas de validación
+
+FORMATO JSON REQUERIDO:
+{
+  "blocks": [
+    {
+      "blockName": "Nombre del bloque",
+      "introPhrase": "Frase amigable que el chatbot usará para introducir esta sección al usuario",
+      "placeholders": ["PLACEHOLDER_1", "PLACEHOLDER_2"],
+      "reasoning": "Por qué estos campos están agrupados"
+    }
+  ],
+  "fieldInstructions": [
+    {
+      "fieldName": "NOMBRE_PLACEHOLDER",
+      "helpText": "Texto de ayuda para el usuario explicando qué información debe proporcionar",
+      "validationRule": "Regla de validación (ej: 'Debe ser un número de cédula válido', 'Formato: DD/MM/AAAA')"
+    }
+  ],
+  "overallStrategy": "Descripción general de la estrategia de conversación"
+}
 
 Responde ÚNICAMENTE con JSON válido.`;
 
@@ -65,11 +89,11 @@ Responde ÚNICAMENTE con JSON válido.`;
 Descripción: ${docDescription || 'N/A'}
 Audiencia: ${targetAudience === 'empresas' ? 'Empresas' : 'Personas naturales'}
 
-Placeholders: ${placeholders.map((p: string) => p).join(', ')}
+Placeholders a procesar: ${placeholders.map((p: string) => p).join(', ')}
 
 Fragmento de plantilla: ${docTemplate.slice(0, 800)}...
 
-Responde ÚNICAMENTE en formato JSON con la estructura de bloques de conversación.`;
+Genera la estructura JSON completa con bloques de conversación (incluyendo introPhrase para cada bloque) e instrucciones de campo (fieldInstructions) para cada placeholder.`;
 
     const params = buildResponsesRequestParams(model, {
       input,
@@ -78,7 +102,7 @@ Responde ÚNICAMENTE en formato JSON con la estructura de bloques de conversaci�
       temperature: 0.7,
       jsonMode: true,
       store: false,
-      reasoning: { effort: 'low' } // Simple task - minimize reasoning tokens
+      reasoning: { effort: 'low' }
     });
 
     const result = await callResponsesAPI(openAIApiKey, params);
@@ -92,6 +116,7 @@ Responde ÚNICAMENTE en formato JSON con la estructura de bloques de conversaci�
       const cleanedContent = (result.text || '').replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
       parsedResponse = JSON.parse(cleanedContent);
     } catch (parseError) {
+      console.error('Failed to parse AI response:', result.text);
       throw new Error('Failed to parse AI response as JSON');
     }
 
@@ -114,17 +139,26 @@ Responde ÚNICAMENTE en formato JSON con la estructura de bloques de conversaci�
       return {
         id: `suggested-block-${index + 1}`,
         name: block.blockName || block.title || `Bloque ${index + 1}`,
-        introduction: block.introPhrase || block.prompt_to_user || (Array.isArray(block.prompts) ? block.prompts[0] : ''),
+        introduction: block.introPhrase || block.intro_phrase || block.prompt_to_user || '',
         placeholders: placeholderNames
       };
     });
 
-    console.log('✅ Conversation blocks suggested successfully:', conversationBlocks.length, 'blocks');
+    // Extract field instructions from AI response
+    const fieldInstructionsArray = parsedResponse.fieldInstructions || parsedResponse.field_instructions || [];
+    const fieldInstructions = fieldInstructionsArray.map((fi: any) => ({
+      fieldName: fi.fieldName || fi.field_name || fi.placeholder || '',
+      helpText: fi.helpText || fi.help_text || fi.description || '',
+      validationRule: fi.validationRule || fi.validation_rule || fi.validation || ''
+    })).filter((fi: any) => fi.fieldName);
+
+    console.log('✅ Conversation blocks suggested successfully:', conversationBlocks.length, 'blocks,', fieldInstructions.length, 'field instructions');
 
     return new Response(JSON.stringify({
       success: true,
       conversationBlocks,
-      strategy: parsedResponse.overallStrategy || parsedResponse.description,
+      fieldInstructions,
+      strategy: parsedResponse.overallStrategy || parsedResponse.description || parsedResponse.strategy,
       reasoning: blocksArray.map((b: any) => ({
         blockName: b.blockName || b.title,
         reasoning: b.reasoning || b.description

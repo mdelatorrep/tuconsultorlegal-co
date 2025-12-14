@@ -1237,14 +1237,21 @@ export default function AgentCreatorPage({ user, currentView, onViewChange, onLo
 
       // Auto-apply suggestions
       if (data.conversationBlocks && data.conversationBlocks.length > 0) {
+        // Also apply field instructions if available
+        const fieldInstructions = data.fieldInstructions || [];
+        
         setFormData(prev => ({
           ...prev,
-          conversation_blocks: data.conversationBlocks
+          conversation_blocks: data.conversationBlocks,
+          field_instructions: fieldInstructions.length > 0 ? fieldInstructions : prev.field_instructions
         }));
 
+        const blocksCount = data.conversationBlocks.length;
+        const instructionsCount = fieldInstructions.length;
+        
         toast({
-          title: "Bloques sugeridos automáticamente",
-          description: `Se crearon ${data.conversationBlocks.length} bloques de conversación. Puedes ajustarlos según necesites.`,
+          title: "Guía de conversación generada",
+          description: `Se crearon ${blocksCount} bloques y ${instructionsCount} instrucciones de campo. Puedes ajustarlos según necesites.`,
         });
       }
 
