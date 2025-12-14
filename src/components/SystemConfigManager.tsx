@@ -38,6 +38,7 @@ interface AIFunction {
   description: string;
   promptKey: string;
   modelKey?: string;
+  reasoningEffortKey?: string;
   additionalParams?: { key: string; name: string; type: 'text' | 'number' }[];
   colorClass: string;
 }
@@ -73,6 +74,7 @@ export default function SystemConfigManager() {
           description: 'Optimiza cláusulas legales en plantillas de documentos',
           promptKey: 'improve_clause_ai_prompt',
           modelKey: 'improve_clause_ai_model',
+          reasoningEffortKey: 'improve_clause_reasoning_effort',
           colorClass: 'border-l-purple-500'
         },
         {
@@ -81,6 +83,7 @@ export default function SystemConfigManager() {
           description: 'Genera bloques de conversación para agentes de documentos',
           promptKey: 'suggest_conversation_blocks_prompt',
           modelKey: 'suggest_blocks_ai_model',
+          reasoningEffortKey: 'suggest_blocks_reasoning_effort',
           colorClass: 'border-l-purple-500'
         },
         {
@@ -89,6 +92,7 @@ export default function SystemConfigManager() {
           description: 'Define el comportamiento y personalidad base de los agentes legales',
           promptKey: 'agent_creation_system_prompt',
           modelKey: 'agent_creation_ai_model',
+          reasoningEffortKey: 'agent_creation_reasoning_effort',
           colorClass: 'border-l-purple-500'
         },
         {
@@ -97,6 +101,7 @@ export default function SystemConfigManager() {
           description: 'Instrucciones estrictas para mejorar prompts (sin explicaciones ni saludos)',
           promptKey: 'agent_prompt_processor_instructions',
           modelKey: 'agent_creation_ai_model',
+          reasoningEffortKey: 'agent_prompt_processor_reasoning_effort',
           colorClass: 'border-l-purple-500'
         }
       ]
@@ -113,6 +118,7 @@ export default function SystemConfigManager() {
           description: 'Recopila información del usuario para generar documentos',
           promptKey: 'document_chat_prompt',
           modelKey: 'document_chat_ai_model',
+          reasoningEffortKey: 'document_chat_reasoning_effort',
           colorClass: 'border-l-blue-500'
         },
         {
@@ -121,6 +127,7 @@ export default function SystemConfigManager() {
           description: 'Genera el documento final desde datos recopilados',
           promptKey: 'generate_document_prompt',
           modelKey: 'openai_assistant_model',
+          reasoningEffortKey: 'generate_document_reasoning_effort',
           additionalParams: [
             { key: 'openai_assistant_temperature', name: 'Temperatura', type: 'number' as const }
           ],
@@ -140,6 +147,7 @@ export default function SystemConfigManager() {
           description: 'Análisis de legislación y jurisprudencia',
           promptKey: 'research_system_prompt',
           modelKey: 'research_ai_model',
+          reasoningEffortKey: 'research_reasoning_effort',
           colorClass: 'border-l-green-500'
         },
         {
@@ -148,6 +156,7 @@ export default function SystemConfigManager() {
           description: 'Evaluación y análisis de documentos legales',
           promptKey: 'analysis_system_prompt',
           modelKey: 'analysis_ai_model',
+          reasoningEffortKey: 'analysis_reasoning_effort',
           colorClass: 'border-l-green-500'
         },
         {
@@ -156,6 +165,7 @@ export default function SystemConfigManager() {
           description: 'Creación de documentos legales profesionales',
           promptKey: 'drafting_system_prompt',
           modelKey: 'drafting_ai_model',
+          reasoningEffortKey: 'drafting_reasoning_effort',
           colorClass: 'border-l-green-500'
         },
         {
@@ -164,6 +174,7 @@ export default function SystemConfigManager() {
           description: 'Desarrollo de estrategias legales comprehensivas',
           promptKey: 'strategy_system_prompt',
           modelKey: 'strategy_ai_model',
+          reasoningEffortKey: 'strategy_reasoning_effort',
           colorClass: 'border-l-green-500'
         }
       ]
@@ -180,6 +191,7 @@ export default function SystemConfigManager() {
           description: 'Asistente virtual principal de tuconsultorlegal.co',
           promptKey: 'lexi_chat_prompt',
           modelKey: 'lexi_ai_model',
+          reasoningEffortKey: 'lexi_reasoning_effort',
           colorClass: 'border-l-indigo-500'
         },
         {
@@ -188,6 +200,7 @@ export default function SystemConfigManager() {
           description: 'Sistema de clasificación y enrutamiento de consultas',
           promptKey: 'routing_chat_prompt',
           modelKey: 'routing_ai_model',
+          reasoningEffortKey: 'routing_reasoning_effort',
           colorClass: 'border-l-indigo-500'
         },
         {
@@ -196,6 +209,7 @@ export default function SystemConfigManager() {
           description: 'Formación y certificación de abogados en IA',
           promptKey: 'legal_training_assistant_prompt',
           modelKey: 'training_assistant_ai_model',
+          reasoningEffortKey: 'training_assistant_reasoning_effort',
           colorClass: 'border-l-indigo-500'
         }
       ]
@@ -212,6 +226,7 @@ export default function SystemConfigManager() {
           description: 'Optimiza nombre y descripción de servicios legales',
           promptKey: 'document_description_optimizer_prompt',
           modelKey: 'document_description_optimizer_model',
+          reasoningEffortKey: 'improve_document_info_reasoning_effort',
           colorClass: 'border-l-orange-500'
         },
         {
@@ -220,6 +235,7 @@ export default function SystemConfigManager() {
           description: 'Mejora plantillas de documentos legales',
           promptKey: 'template_optimizer_prompt',
           modelKey: 'template_optimizer_model',
+          reasoningEffortKey: 'improve_template_reasoning_effort',
           colorClass: 'border-l-orange-500'
         },
         {
@@ -228,6 +244,7 @@ export default function SystemConfigManager() {
           description: 'Clasificación inteligente de clientes',
           promptKey: 'crm_segmentation_prompt',
           modelKey: 'crm_segmentation_ai_model',
+          reasoningEffortKey: 'crm_segmentation_reasoning_effort',
           colorClass: 'border-l-orange-500'
         },
         {
@@ -236,6 +253,7 @@ export default function SystemConfigManager() {
           description: 'Organización inteligente de archivos legales',
           promptKey: 'organize_file_prompt',
           modelKey: 'organize_file_ai_model',
+          reasoningEffortKey: 'organize_file_reasoning_effort',
           colorClass: 'border-l-orange-500'
         },
         {
@@ -244,6 +262,7 @@ export default function SystemConfigManager() {
           description: 'Optimización de grupos de formularios',
           promptKey: 'organize_form_prompt',
           modelKey: 'organize_form_ai_model',
+          reasoningEffortKey: 'organize_form_reasoning_effort',
           colorClass: 'border-l-orange-500'
         },
         {
@@ -252,19 +271,14 @@ export default function SystemConfigManager() {
           description: 'Evaluación de respuestas en entrenamiento',
           promptKey: 'ai_training_validator_prompt',
           modelKey: 'training_validator_ai_model',
+          reasoningEffortKey: 'training_validator_reasoning_effort',
           colorClass: 'border-l-orange-500'
         }
       ]
     }
   ];
 
-  // Reasoning effort configuration
-  const reasoningEffortParams = [
-    { key: 'reasoning_effort_default', name: 'Esfuerzo por Defecto (generación de texto)', type: 'text' as const, defaultValue: 'low', description: 'Para funciones de generación de texto simple' },
-    { key: 'reasoning_effort_analysis', name: 'Esfuerzo para Análisis', type: 'text' as const, defaultValue: 'medium', description: 'Para funciones de análisis de documentos' },
-    { key: 'reasoning_effort_strategy', name: 'Esfuerzo para Estrategia', type: 'text' as const, defaultValue: 'high', description: 'Para funciones de estrategia legal' },
-    { key: 'reasoning_effort_research', name: 'Esfuerzo para Investigación', type: 'text' as const, defaultValue: 'high', description: 'Para funciones de investigación legal profunda' }
-  ];
+  // Global parameters configuration (removed reasoning effort - now per function)
 
   // Global parameters configuration
   const globalParams = [
@@ -538,12 +552,6 @@ export default function SystemConfigManager() {
               getConfigValue={getConfigValue}
               onSave={saveConfig}
             />
-          ) : selectedCategory === 'reasoning-effort' ? (
-            <ReasoningEffortSection
-              params={reasoningEffortParams}
-              getConfigValue={getConfigValue}
-              onSave={saveConfig}
-            />
           ) : selectedCategory === 'meta-prompt' ? (
             <MetaPromptSection
               currentPrompt={getConfigValue('prompt_optimizer_meta_prompt', '')}
@@ -587,9 +595,11 @@ export default function SystemConfigManager() {
                     description={func.description}
                     promptKey={func.promptKey}
                     modelKey={func.modelKey}
+                    reasoningEffortKey={func.reasoningEffortKey}
                     additionalParams={func.additionalParams}
                     currentPrompt={getConfigValue(func.promptKey, '')}
                     currentModel={func.modelKey ? getConfigValue(func.modelKey, '') : ''}
+                    currentReasoningEffort={func.reasoningEffortKey ? getConfigValue(func.reasoningEffortKey, 'low') : 'low'}
                     currentParams={getParamsForFunction(func.additionalParams)}
                     openaiModels={openaiModels}
                     loadingModels={loadingModels}
@@ -693,113 +703,6 @@ function GlobalParamsSection({
     </div>
   );
 }
-
-// Reasoning Effort Section Component
-function ReasoningEffortSection({
-  params,
-  getConfigValue,
-  onSave
-}: {
-  params: { key: string; name: string; type: 'text' | 'number'; defaultValue: string; description?: string }[];
-  getConfigValue: (key: string, defaultValue: string) => string;
-  onSave: (key: string, value: string, description?: string) => Promise<void>;
-}) {
-  const [values, setValues] = useState<Record<string, string>>({});
-  const [saving, setSaving] = useState<string | null>(null);
-  const { toast } = useToast();
-
-  useEffect(() => {
-    const initial: Record<string, string> = {};
-    params.forEach(p => {
-      initial[p.key] = getConfigValue(p.key, p.defaultValue);
-    });
-    setValues(initial);
-  }, [params, getConfigValue]);
-
-  const handleSave = async (key: string, name: string) => {
-    setSaving(key);
-    try {
-      await onSave(key, values[key], name);
-      toast({
-        title: "Guardado",
-        description: `${name} guardado correctamente`
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      });
-    } finally {
-      setSaving(null);
-    }
-  };
-
-  const effortOptions = ['low', 'medium', 'high'];
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold flex items-center gap-3">
-          <Brain className="w-6 h-6 text-cyan-500" />
-          Configuración de Reasoning Effort
-        </h2>
-        <p className="text-muted-foreground">
-          Controla cuánto esfuerzo de razonamiento interno dedican los modelos de IA (GPT-5, o3, o4) a cada tipo de tarea.
-        </p>
-      </div>
-
-      <div className="bg-cyan-50 dark:bg-cyan-950/30 border border-cyan-200 dark:border-cyan-800 rounded-lg p-4">
-        <h4 className="font-medium text-cyan-800 dark:text-cyan-200 mb-2">¿Qué es Reasoning Effort?</h4>
-        <div className="text-sm text-cyan-700 dark:text-cyan-300 space-y-2">
-          <p><strong>Low:</strong> Mínimo razonamiento interno. Ideal para generación de texto simple donde la velocidad importa más que la profundidad.</p>
-          <p><strong>Medium:</strong> Balance entre velocidad y calidad. Bueno para análisis que requieren algo de reflexión.</p>
-          <p><strong>High:</strong> Máximo razonamiento interno. Para tareas complejas que requieren pensamiento profundo (estrategia, investigación).</p>
-        </div>
-      </div>
-
-      <Card>
-        <CardContent className="pt-6 space-y-6">
-          {params.map((param) => (
-            <div key={param.key} className="space-y-2">
-              <Label>{param.name}</Label>
-              <div className="flex gap-2">
-                <select
-                  value={values[param.key] || param.defaultValue}
-                  onChange={(e) => setValues({ ...values, [param.key]: e.target.value })}
-                  className="flex-1 h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
-                >
-                  {effortOptions.map(opt => (
-                    <option key={opt} value={opt}>
-                      {opt === 'low' ? '🟢 Low (Rápido)' : opt === 'medium' ? '🟡 Medium (Balanceado)' : '🔴 High (Profundo)'}
-                    </option>
-                  ))}
-                </select>
-                <Button
-                  onClick={() => handleSave(param.key, param.name)}
-                  disabled={saving === param.key}
-                >
-                  {saving === param.key ? (
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Save className="w-4 h-4" />
-                  )}
-                </Button>
-              </div>
-              {param.description && (
-                <p className="text-xs text-muted-foreground">{param.description}</p>
-              )}
-              <p className="text-xs text-muted-foreground">
-                Clave: <code className="bg-muted px-1 rounded">{param.key}</code>
-              </p>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
 // Meta Prompt Section Component
 function MetaPromptSection({
   currentPrompt,
