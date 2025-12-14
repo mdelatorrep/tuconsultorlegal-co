@@ -2099,10 +2099,10 @@ export default function AgentCreatorPage({ user, currentView, onViewChange, onLo
                       <Sparkles className="h-5 w-5 text-emerald-600 mt-0.5 flex-shrink-0" />
                       <div className="flex-1">
                         <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300 mb-2">
-                          ✨ Bloques sugeridos automáticamente
+                          ✨ Guía de conversación generada automáticamente
                         </p>
                         <p className="text-xs text-emerald-600 dark:text-emerald-400 mb-3">
-                          {suggestedBlocks.strategy}
+                          Se crearon {formData.conversation_blocks.length} bloques con {formData.field_instructions.length} instrucciones de campo para una experiencia fluida del usuario.
                         </p>
                         <p className="text-xs text-emerald-700 dark:text-emerald-300 font-medium">
                           Puedes ajustar, agregar o eliminar estos bloques según lo necesites.
