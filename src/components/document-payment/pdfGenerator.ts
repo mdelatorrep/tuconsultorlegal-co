@@ -240,7 +240,8 @@ const groupTokensByParagraph = (tokens: ContentToken[]): Paragraph[] => {
   for (const token of tokens) {
     if (token.text === "\n") {
       if (currentParagraph.length > 0) {
-        const textAlign = currentParagraph.find((t) => t.textAlign)?.textAlign || "left";
+        // Default: justify si no hay alineación explícita (el abogado puede sobrescribir)
+        const textAlign = currentParagraph.find((t) => t.textAlign)?.textAlign || "justify";
         const isHeading = currentParagraph.find((t) => t.isHeading)?.isHeading;
         const isList = currentParagraph.some((t) => t.isList);
         const isOrderedList = currentParagraph.some((t) => t.isOrderedList);
@@ -255,7 +256,8 @@ const groupTokensByParagraph = (tokens: ContentToken[]): Paragraph[] => {
 
     // Si cambia el paragraphId, empezar nuevo párrafo
     if (lastParagraphId !== undefined && token.paragraphId !== lastParagraphId && currentParagraph.length > 0) {
-      const textAlign = currentParagraph.find((t) => t.textAlign)?.textAlign || "left";
+      // Default: justify si no hay alineación explícita
+      const textAlign = currentParagraph.find((t) => t.textAlign)?.textAlign || "justify";
       const isHeading = currentParagraph.find((t) => t.isHeading)?.isHeading;
       const isList = currentParagraph.some((t) => t.isList);
       const isOrderedList = currentParagraph.some((t) => t.isOrderedList);
@@ -269,7 +271,8 @@ const groupTokensByParagraph = (tokens: ContentToken[]): Paragraph[] => {
 
   // Añadir último párrafo
   if (currentParagraph.length > 0) {
-    const textAlign = currentParagraph.find((t) => t.textAlign)?.textAlign || "left";
+    // Default: justify si no hay alineación explícita
+    const textAlign = currentParagraph.find((t) => t.textAlign)?.textAlign || "justify";
     const isHeading = currentParagraph.find((t) => t.isHeading)?.isHeading;
     const isList = currentParagraph.some((t) => t.isList);
     const isOrderedList = currentParagraph.some((t) => t.isOrderedList);
