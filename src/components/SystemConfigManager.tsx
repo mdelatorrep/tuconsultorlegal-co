@@ -556,6 +556,7 @@ export default function SystemConfigManager() {
             <MetaPromptSection
               currentPrompt={getConfigValue('prompt_optimizer_meta_prompt', '')}
               currentModel={getConfigValue('prompt_optimizer_model', 'gpt-4.1-2025-04-14')}
+              currentReasoningEffort={getConfigValue('reasoning_effort_prompt_optimizer', 'medium')}
               openaiModels={openaiModels}
               loadingModels={loadingModels}
               onLoadModels={loadOpenAIModels}
@@ -707,6 +708,7 @@ function GlobalParamsSection({
 function MetaPromptSection({
   currentPrompt,
   currentModel,
+  currentReasoningEffort,
   openaiModels,
   loadingModels,
   onLoadModels,
@@ -714,6 +716,7 @@ function MetaPromptSection({
 }: {
   currentPrompt: string;
   currentModel: string;
+  currentReasoningEffort: string;
   openaiModels: string[];
   loadingModels: boolean;
   onLoadModels: () => void;
@@ -721,8 +724,10 @@ function MetaPromptSection({
 }) {
   const [prompt, setPrompt] = useState(currentPrompt);
   const [model, setModel] = useState(currentModel);
+  const [reasoningEffort, setReasoningEffort] = useState(currentReasoningEffort);
   const [saving, setSaving] = useState(false);
   const [savingModel, setSavingModel] = useState(false);
+  const [savingEffort, setSavingEffort] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -732,6 +737,10 @@ function MetaPromptSection({
   useEffect(() => {
     setModel(currentModel);
   }, [currentModel]);
+
+  useEffect(() => {
+    setReasoningEffort(currentReasoningEffort);
+  }, [currentReasoningEffort]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -770,6 +779,31 @@ function MetaPromptSection({
       setSavingModel(false);
     }
   };
+
+  const handleSaveReasoningEffort = async () => {
+    setSavingEffort(true);
+    try {
+      await onSave('reasoning_effort_prompt_optimizer', reasoningEffort, 'Nivel de reasoning para optimización de prompts');
+      toast({
+        title: "Guardado",
+        description: "Reasoning effort guardado correctamente"
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setSavingEffort(false);
+    }
+  };
+
+  const REASONING_EFFORT_OPTIONS = [
+    { value: 'low', label: 'Bajo', description: 'Máximo tokens para output, mínimo razonamiento' },
+    { value: 'medium', label: 'Medio', description: 'Balance entre razonamiento y output' },
+    { value: 'high', label: 'Alto', description: 'Máximo razonamiento, análisis profundo' }
+  ];
 
   return (
     <div className="space-y-6">
@@ -863,6 +897,49 @@ function MetaPromptSection({
               <Save className="w-4 h-4 mr-2" />
             )}
             Guardar Modelo
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Reasoning Effort Card */}
+      <Card className="border-l-4 border-l-cyan-500">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Brain className="w-4 h-4 text-cyan-500" />
+            Reasoning Effort
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-xs text-muted-foreground">
+            Controla cuántos tokens usa el modelo para razonamiento interno vs output final
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            {REASONING_EFFORT_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => setReasoningEffort(option.value)}
+                className={`p-3 rounded-lg border text-left transition-all ${
+                  reasoningEffort === option.value
+                    ? 'border-cyan-500 bg-cyan-50 dark:bg-cyan-950'
+                    : 'border-border hover:border-cyan-300'
+                }`}
+              >
+                <div className="font-medium text-sm">{option.label}</div>
+                <div className="text-xs text-muted-foreground mt-1">{option.description}</div>
+              </button>
+            ))}
+          </div>
+          <Button 
+            onClick={handleSaveReasoningEffort}
+            disabled={savingEffort}
+            className="w-full"
+          >
+            {savingEffort ? (
+              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4 mr-2" />
+            )}
+            Guardar Reasoning Effort
           </Button>
         </CardContent>
       </Card>
