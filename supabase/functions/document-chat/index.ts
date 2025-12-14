@@ -1,6 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { buildOpenAIRequestParams, logModelRequest } from "../_shared/openai-model-utils.ts";
+import { 
+  buildResponsesRequestParams, 
+  callResponsesAPI, 
+  logResponsesRequest 
+} from "../_shared/openai-responses-utils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -38,7 +42,6 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    // Initialize Supabase client for config lookup
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
@@ -48,16 +51,15 @@ serve(async (req) => {
     
     const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get configured model from system_config
-    const configuredModel = await getSystemConfig(supabaseClient, 'document_chat_ai_model', 'gpt-4o-mini');
-    logModelRequest(configuredModel, 'document-chat');
+    const configuredModel = await getSystemConfig(supabaseClient, 'document_chat_ai_model', 'gpt-4.1-2025-04-14');
+    logResponsesRequest(configuredModel, 'document-chat', true);
 
     const { message, messages, agent_prompt, document_name, sessionId, agentType, context } = await req.json();
 
     // Handle different chat types
     if (agentType === 'routing') {
       // Legal consultation routing logic
-      const routingPrompt = `Eres un sistema experto de routing para consultas legales. Analiza la consulta del usuario y determina:
+      const routingInstructions = `Eres un sistema experto de routing para consultas legales. Analiza la consulta del usuario y determina:
 
 1. ¿Necesita asesoría legal especializada? (true/false)
 2. ¿Qué especialización legal requiere? (civil, laboral, comercial, penal, etc.)
@@ -71,13 +73,6 @@ ESPECIALIZACIONES DISPONIBLES:
 - administrativo: Derecho administrativo, entidades públicas
 - constitucional: Derecho constitucional, derechos fundamentales
 
-CRITERIOS PARA ROUTING ESPECIALIZADO:
-- Consultas sobre legislación específica
-- Casos que requieren análisis jurisprudencial
-- Situaciones contractuales complejas
-- Procedimientos legales específicos
-- Cálculos legales (laborales, civiles, etc.)
-
 Responde SOLO en formato JSON:
 {
   "needsSpecializedAdvice": boolean,
@@ -86,42 +81,40 @@ Responde SOLO en formato JSON:
   "reasoning": "explicación breve"
 }`;
 
-      const routingMessages = [
-        { role: 'system', content: routingPrompt },
-        { role: 'user', content: message || (messages && messages[messages.length - 1]?.content) || '' }
-      ];
+      const userInput = message || (messages && messages[messages.length - 1]?.content) || '';
 
-      const routingParams = buildOpenAIRequestParams(configuredModel, routingMessages, {
-        maxTokens: 200,
+      const routingParams = buildResponsesRequestParams(configuredModel, {
+        input: [{ role: 'user', content: userInput }],
+        instructions: routingInstructions,
+        maxOutputTokens: 200,
         temperature: 0.1,
-        responseFormat: { type: "json_object" }
+        jsonMode: true,
+        store: false
       });
 
-      const routingResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openaiApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(routingParams),
-      });
+      const routingResult = await callResponsesAPI(openaiApiKey, routingParams);
 
-      if (!routingResponse.ok) {
-        throw new Error(`OpenAI API error: ${routingResponse.status}`);
+      if (!routingResult.success) {
+        throw new Error(routingResult.error || 'OpenAI API error');
       }
 
-      const routingData = await routingResponse.json();
-      const routingResult = JSON.parse(routingData.choices[0]?.message?.content || '{}');
-
-      return new Response(
-        JSON.stringify(routingResult),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      try {
+        const routingResponse = JSON.parse(routingResult.text || '{}');
+        return new Response(
+          JSON.stringify(routingResponse),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } catch {
+        return new Response(
+          JSON.stringify({ needsSpecializedAdvice: false, specialization: null, isComplex: false, reasoning: 'Unable to parse routing' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     if (agentType === 'lexi') {
       // General legal assistant - Lexi
-      const lexiSystemPrompt = `Eres Lexi, la asistente legal virtual de tuconsultorlegal.co, una plataforma innovadora que democratiza el acceso a servicios legales de alta calidad en Colombia.
+      const lexiInstructions = `Eres Lexi, la asistente legal virtual de tuconsultorlegal.co, una plataforma innovadora que democratiza el acceso a servicios legales de alta calidad en Colombia.
 
 PERSONALIDAD Y ESTILO:
 - Eres amigable, profesional y cercana
@@ -142,58 +135,37 @@ FUNCIONES PRINCIPALES:
 4. Conectar usuarios con servicios especializados
 5. Brindar información sobre trámites y procedimientos
 
-SERVICIOS DE TUCONSULTORLEGAL.CO:
-- Documentos legales para personas y empresas
-- Generación automatizada de documentos
-- Información y orientación legal básica
-- Trámites y gestiones legales
-- Consultas de información legal general
-
 IMPORTANTE:
 - Siempre menciona que eres de tuconsultorlegal.co
 - Mantén un tono profesional pero accesible
-- Te especializas en orientación sobre documentos legales y información general
 - No ofreces conexión directa con abogados, sino orientación e información
 - Para casos complejos, recomienda buscar asesoría legal profesional externa
 
 FORMATO DE RESPUESTA:
 - Usa texto plano sin formato markdown
 - Sé clara y concisa
-- Estructura la información de manera fácil de leer
 - Incluye emojis apropiados ocasionalmente (⚖️, 📄, 💼, etc.)`;
 
       const userMessage = message || (messages && messages[messages.length - 1]?.content) || '';
-      const lexiMessages = [
-        { role: 'system', content: lexiSystemPrompt },
-        { role: 'user', content: userMessage }
-      ];
       
-      const lexiParams = buildOpenAIRequestParams(configuredModel, lexiMessages, {
-        maxTokens: 800,
+      const lexiParams = buildResponsesRequestParams(configuredModel, {
+        input: [{ role: 'user', content: userMessage }],
+        instructions: lexiInstructions,
+        maxOutputTokens: 800,
         temperature: 0.7,
-        stream: false
+        store: false
       });
 
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openaiApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(lexiParams),
-      });
+      const lexiResult = await callResponsesAPI(openaiApiKey, lexiParams);
 
-      if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status}`);
+      if (!lexiResult.success) {
+        throw new Error(lexiResult.error || 'OpenAI API error');
       }
-
-      const data = await response.json();
-      const assistantMessage = data.choices[0]?.message?.content?.trim();
 
       return new Response(
         JSON.stringify({ 
-          response: assistantMessage,
-          usage: data.usage
+          response: lexiResult.text?.trim(),
+          usage: lexiResult.data?.usage
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -209,7 +181,7 @@ FORMATO DE RESPUESTA:
 
     console.log('Processing chat for document:', document_name);
 
-    const systemPrompt = `${agent_prompt}
+    const systemInstructions = `${agent_prompt}
 
 INSTRUCCIONES CRÍTICAS PARA RECOPILACIÓN DE INFORMACIÓN:
 - Eres un asistente legal especializado en ${document_name}
@@ -229,36 +201,29 @@ IMPORTANTE - FORMATO DE RESPUESTA:
 - NO uses asteriscos (*) para enfatizar texto
 - NO uses guiones bajos (_) para cursiva
 - NO uses caracteres especiales para formatear (**, __, ##, etc.)
-- Escribe en texto plano sin formato markdown
-- Usa solo puntos, comas y signos de puntuación normales
-- Para enfatizar, usa palabras como "importante", "crucial", "especialmente"`;
+- Escribe en texto plano sin formato markdown`;
 
-    const chatMessages = [
-      { role: 'system', content: systemPrompt },
-      ...messages
-    ];
+    // Convert messages to Responses API format (user and assistant only, no system in input)
+    const inputMessages = messages.map((msg: { role: string; content: string }) => ({
+      role: msg.role === 'system' ? 'developer' : msg.role as 'user' | 'assistant' | 'developer',
+      content: msg.content
+    }));
 
-    const chatParams = buildOpenAIRequestParams(configuredModel, chatMessages, {
-      maxTokens: 1000,
+    const chatParams = buildResponsesRequestParams(configuredModel, {
+      input: inputMessages,
+      instructions: systemInstructions,
+      maxOutputTokens: 1000,
       temperature: 0.7,
-      stream: false
+      store: false
     });
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(chatParams),
-    });
+    const chatResult = await callResponsesAPI(openaiApiKey, chatParams);
 
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`);
+    if (!chatResult.success) {
+      throw new Error(chatResult.error || 'OpenAI API error');
     }
 
-    const data = await response.json();
-    const assistantMessage = data.choices[0]?.message?.content?.trim();
+    const assistantMessage = chatResult.text?.trim();
 
     if (!assistantMessage) {
       throw new Error('No response from OpenAI');
@@ -269,7 +234,7 @@ IMPORTANTE - FORMATO DE RESPUESTA:
     return new Response(
       JSON.stringify({ 
         message: assistantMessage,
-        usage: data.usage
+        usage: chatResult.data?.usage
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
