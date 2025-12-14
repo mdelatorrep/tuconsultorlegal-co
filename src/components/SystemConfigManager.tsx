@@ -197,6 +197,22 @@ export default function SystemConfigManager() {
       icon: <Wrench className="w-5 h-5" />,
       functions: [
         {
+          id: 'improve_document_info',
+          name: 'Mejorar Info de Documento',
+          description: 'Optimiza nombre y descripción de servicios legales',
+          promptKey: 'document_description_optimizer_prompt',
+          modelKey: 'document_description_optimizer_model',
+          colorClass: 'border-l-orange-500'
+        },
+        {
+          id: 'improve_template',
+          name: 'Mejorar Plantilla',
+          description: 'Mejora plantillas de documentos legales',
+          promptKey: 'template_optimizer_prompt',
+          modelKey: 'template_optimizer_model',
+          colorClass: 'border-l-orange-500'
+        },
+        {
           id: 'crm_segmentation',
           name: 'Segmentación CRM',
           description: 'Clasificación inteligente de clientes',
