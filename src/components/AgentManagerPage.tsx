@@ -1574,11 +1574,11 @@ export default function AgentManagerPage({ user, currentView, onViewChange, onLo
             
             {selectedAgent && (
               <Tabs defaultValue="summary" className="flex-1 overflow-hidden flex flex-col">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className={`grid w-full ${lawyerData?.is_admin ? 'grid-cols-4' : 'grid-cols-3'}`}>
                   <TabsTrigger value="summary">📊 Resumen</TabsTrigger>
                   <TabsTrigger value="template">📄 Plantilla</TabsTrigger>
                   <TabsTrigger value="conversation">💬 Conversación</TabsTrigger>
-                  <TabsTrigger value="openai">🤖 OpenAI</TabsTrigger>
+                  {lawyerData?.is_admin && <TabsTrigger value="openai">🤖 OpenAI</TabsTrigger>}
                 </TabsList>
 
                 <div className="flex-1 overflow-y-auto mt-4">
@@ -1788,7 +1788,8 @@ export default function AgentManagerPage({ user, currentView, onViewChange, onLo
                     </div>
                   </TabsContent>
 
-                  {/* TAB 4: OPENAI */}
+                  {/* TAB 4: OPENAI - Solo visible para admins */}
+                  {lawyerData?.is_admin && (
                   <TabsContent value="openai" className="space-y-6 mt-0">
                     {/* OpenAI Agent Debug Component */}
                     <OpenAIAgentDebug legalAgentId={selectedAgent.id} />
@@ -1853,6 +1854,7 @@ export default function AgentManagerPage({ user, currentView, onViewChange, onLo
                       </div>
                     </div>
                   </TabsContent>
+                  )}
                 </div>
               </Tabs>
             )}
