@@ -1,5 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { buildOpenAIRequestParams, logModelRequest } from "../_shared/openai-model-utils.ts";
+import { 
+  buildResponsesRequestParams, 
+  callResponsesAPI, 
+  logResponsesRequest 
+} from "../_shared/openai-responses-utils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,11 +17,8 @@ serve(async (req) => {
 
   try {
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiApiKey) {
-      throw new Error('OpenAI API key not configured');
-    }
+    if (!openaiApiKey) throw new Error('OpenAI API key not configured');
 
-    // Initialize Supabase client to get system configuration
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     
@@ -28,18 +29,16 @@ serve(async (req) => {
     const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.50.3');
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get configured OpenAI model
+    // Get configured model
     const { data: configData, error: configError } = await supabase
       .from('system_config')
       .select('config_value')
       .eq('config_key', 'openai_model')
       .maybeSingle();
 
-    const selectedModel = (configError || !configData) 
-      ? 'gpt-4.1-2025-04-14'
-      : configData.config_value;
+    const selectedModel = (configError || !configData) ? 'gpt-4.1-2025-04-14' : configData.config_value;
 
-    logModelRequest(selectedModel, 'organize-form-groups');
+    logResponsesRequest(selectedModel, 'organize-form-groups', true);
 
     const { placeholder_fields, ai_prompt } = await req.json();
 
@@ -52,91 +51,53 @@ serve(async (req) => {
 
     console.log('Organizing questions for', placeholder_fields.length, 'fields');
 
-    const prompt = `Eres un experto en UX y experiencia de usuario para formularios legales.
+    const instructions = 'Eres un experto en UX que organiza formularios para mejorar la experiencia del usuario. Responde únicamente con JSON válido.';
 
-Contexto del documento: "${ai_prompt || 'Documento legal'}"
+    const input = `Contexto del documento: "${ai_prompt || 'Documento legal'}"
 
 Campos disponibles:
-${placeholder_fields.map((field, index) => `${index + 1}. ${field.field}: ${field.description}`).join('\n')}
+${placeholder_fields.map((field: any, index: number) => `${index + 1}. ${field.field}: ${field.description}`).join('\n')}
 
-Tu tarea es organizar estos campos en grupos lógicos para mejorar la experiencia del usuario. Cada grupo debe:
-1. Tener un nombre descriptivo y claro
-2. Contener campos relacionados entre sí
-3. Seguir un orden lógico (información básica primero, detalles específicos después)
-4. No tener más de 5 campos por grupo para evitar fatiga del usuario
-
-Responde ÚNICAMENTE con un JSON válido en este formato:
+Organiza estos campos en grupos lógicos (2-5 campos por grupo). Responde con JSON:
 {
   "groups": [
-    {
-      "name": "Información Personal",
-      "description": "Datos básicos del solicitante",
-      "fields": [0, 1, 2]
-    },
-    {
-      "name": "Detalles del Documento", 
-      "description": "Información específica del documento",
-      "fields": [3, 4, 5]
-    }
+    {"name": "Información Personal", "description": "Datos básicos", "fields": [0, 1, 2]},
+    {"name": "Detalles del Documento", "description": "Información específica", "fields": [3, 4, 5]}
   ]
 }
 
-Los números en "fields" deben corresponder al índice (0-based) de los campos en el array original.`;
+Los números en "fields" son índices (0-based) del array original.`;
 
-    const messages = [
-      {
-        role: 'system',
-        content: 'Eres un experto en UX que organiza formularios para mejorar la experiencia del usuario. Responde únicamente con JSON válido.'
-      },
-      {
-        role: 'user',
-        content: prompt
-      }
-    ];
-
-    const requestParams = buildOpenAIRequestParams(selectedModel, messages, {
-      maxTokens: 1000,
-      temperature: 0.3
+    const params = buildResponsesRequestParams(selectedModel, {
+      input,
+      instructions,
+      maxOutputTokens: 1000,
+      temperature: 0.3,
+      jsonMode: true,
+      store: false
     });
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestParams),
-    });
+    const result = await callResponsesAPI(openaiApiKey, params);
 
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const content = data.choices[0]?.message?.content?.trim();
-
-    if (!content) {
-      throw new Error('No response from OpenAI');
+    if (!result.success) {
+      throw new Error(`Form grouping failed: ${result.error}`);
     }
 
     let groupedFields;
     try {
-      groupedFields = JSON.parse(content);
+      groupedFields = JSON.parse(result.text || '{}');
     } catch (parseError) {
-      console.error('Failed to parse OpenAI response:', content);
-      // Fallback: create a single group with all fields
+      console.error('Failed to parse response:', result.text);
       groupedFields = {
-        groups: [
-          {
-            name: "Información del Documento",
-            description: "Completa todos los campos requeridos",
-            fields: placeholder_fields.map((_, index) => index)
-          }
-        ]
+        groups: [{
+          name: "Información del Documento",
+          description: "Completa todos los campos requeridos",
+          fields: placeholder_fields.map((_: any, index: number) => index)
+        }]
       };
     }
 
-    console.log('Successfully organized fields into groups');
+    console.log('✅ Form groups organized successfully');
 
     return new Response(
       JSON.stringify(groupedFields),
@@ -144,7 +105,7 @@ Los números en "fields" deben corresponder al índice (0-based) de los campos e
     );
 
   } catch (error) {
-    console.error('Error in organize-form-groups function:', error);
+    console.error('❌ Error in organize-form-groups:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

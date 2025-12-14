@@ -1,79 +1,54 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { buildOpenAIRequestParams, getModelGeneration, logModelRequest } from '../_shared/openai-model-utils.ts';
-
-// Helper function to get system configuration
-async function getSystemConfig(supabaseClient: any, configKey: string, defaultValue?: string): Promise<string> {
-  try {
-    console.log(`Fetching config for key: ${configKey}`);
-    
-    const { data, error } = await supabaseClient
-      .from('system_config')
-      .select('config_value')
-      .eq('config_key', configKey)
-      .maybeSingle();
-
-    console.log(`Config result for ${configKey}:`, { data, error });
-
-    if (error) {
-      console.error(`Error fetching config ${configKey}:`, error);
-      return defaultValue || '';
-    }
-
-    if (!data) {
-      console.log(`No config found for ${configKey}, using default: ${defaultValue}`);
-      return defaultValue || '';
-    }
-
-    console.log(`Using config ${configKey}: ${data.config_value}`);
-    return data.config_value;
-  } catch (error) {
-    console.error(`Exception fetching config ${configKey}:`, error);
-    return defaultValue || '';
-  }
-}
+import { 
+  buildResponsesRequestParams, 
+  callResponsesAPI, 
+  logResponsesRequest 
+} from "../_shared/openai-responses-utils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Helper function to save results to legal_tools_results table
+// Helper function to get system configuration
+async function getSystemConfig(supabaseClient: any, configKey: string, defaultValue?: string): Promise<string> {
+  try {
+    const { data, error } = await supabaseClient
+      .from('system_config')
+      .select('config_value')
+      .eq('config_key', configKey)
+      .maybeSingle();
+
+    if (error || !data) return defaultValue || '';
+    return data.config_value;
+  } catch (error) {
+    return defaultValue || '';
+  }
+}
+
+// Helper function to save results
 async function saveToolResult(supabase: any, lawyerId: string, toolType: string, inputData: any, outputData: any, metadata: any = {}) {
   try {
-    console.log(`Saving ${toolType} result for lawyer: ${lawyerId}`);
-    
-    const { error } = await supabase
-      .from('legal_tools_results')
-      .insert({
-        lawyer_id: lawyerId,
-        tool_type: toolType,
-        input_data: inputData,
-        output_data: outputData,
-        metadata: {
-          ...metadata,
-          timestamp: new Date().toISOString()
-        }
-      });
-
-    if (error) {
-      console.error('Error saving tool result:', error);
-    } else {
-      console.log(`✅ Successfully saved ${toolType} result`);
-    }
+    await supabase.from('legal_tools_results').insert({
+      lawyer_id: lawyerId,
+      tool_type: toolType,
+      input_data: inputData,
+      output_data: outputData,
+      metadata: { ...metadata, timestamp: new Date().toISOString() }
+    });
   } catch (error) {
-    console.error('Exception saving tool result:', error);
+    console.error('Error saving tool result:', error);
   }
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Get authentication header and verify user
+    // Get authentication
     const authHeader = req.headers.get('authorization');
     let lawyerId = null;
     
@@ -82,7 +57,6 @@ serve(async (req) => {
         Deno.env.get('SUPABASE_URL')!,
         Deno.env.get('SUPABASE_ANON_KEY')!
       );
-      
       const token = authHeader.replace('Bearer ', '');
       const { data: userData } = await supabaseClient.auth.getUser(token);
       lawyerId = userData.user?.id;
@@ -93,54 +67,27 @@ serve(async (req) => {
     if (!prompt || !documentType) {
       return new Response(
         JSON.stringify({ error: 'Prompt and document type are required' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get drafting AI model and prompt from system config
     const draftingModel = await getSystemConfig(supabase, 'drafting_ai_model', 'gpt-4.1-2025-04-14');
     const draftingPrompt = await getSystemConfig(
       supabase, 
       'drafting_ai_prompt', 
-      'Eres un asistente especializado en redacción de documentos legales. Genera borradores profesionales y estructurados siguiendo la legislación colombiana.'
+      'Eres un asistente especializado en redacción de documentos legales. Genera borradores profesionales siguiendo la legislación colombiana.'
     );
 
-    // Get OpenAI API key
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiApiKey) {
-      throw new Error('OpenAI API key not configured');
-    }
+    if (!openaiApiKey) throw new Error('OpenAI API key not configured');
 
-    logModelRequest(draftingModel, 'legal-document-drafting');
+    logResponsesRequest(draftingModel, 'legal-document-drafting', true);
 
-    // Check if it's a reasoning model using centralized utility
-    const modelGeneration = getModelGeneration(draftingModel);
-    const isReasoningModel = modelGeneration === 'reasoning';
-    
-    console.log(`Model generation: ${modelGeneration}`);
-
-    // Prepare the request body based on model type
-    let requestBody;
-    
-    if (isReasoningModel) {
-      // For reasoning models, we need a simpler structure (no system message, no temperature)
-      requestBody = buildOpenAIRequestParams(
-        draftingModel,
-        [
-          {
-            role: 'user',
-            content: `${draftingPrompt}
-
-Genera un borrador de: ${documentType}
-Descripción específica: ${prompt}
+    const instructions = `${draftingPrompt}
 
 Instrucciones específicas:
 - Genera un borrador profesional del documento solicitado
@@ -150,82 +97,40 @@ Instrucciones específicas:
 - Marca con [ESPECIFICAR] los campos que requieren personalización
 - Incluye cláusulas de protección estándar
 
-El documento debe ser apropiado para Colombia y seguir las mejores prácticas legales.
-
-Responde en formato JSON con la siguiente estructura:
+Responde en formato JSON:
 {
   "content": "Contenido completo del borrador en formato markdown",
   "sections": ["Lista", "de", "secciones", "incluidas"],
   "documentType": "Nombre completo del tipo de documento"
-}`
-          }
-        ],
-        { maxTokens: 4000 }
-      );
-    } else {
-      // For standard models, use the existing structure with centralized utility
-      requestBody = buildOpenAIRequestParams(
-        draftingModel,
-        [
-          {
-            role: 'system',
-            content: `${draftingPrompt}
+}`;
 
-Instrucciones específicas:
-- Genera un borrador profesional del documento solicitado
-- Sigue la estructura típica del tipo de documento
-- Incluye todas las cláusulas esenciales
-- Usa terminología jurídica apropiada para Colombia
-- Marca con [ESPECIFICAR] los campos que requieren personalización
-- Incluye cláusulas de protección estándar
-
-Responde en formato JSON con la siguiente estructura:
-{
-  "content": "Contenido completo del borrador en formato markdown",
-  "sections": ["Lista", "de", "secciones", "incluidas"],
-  "documentType": "Nombre completo del tipo de documento"
-}`
-          },
-          {
-            role: 'user',
-            content: `Genera un borrador de: ${documentType}
+    const input = `Genera un borrador de: ${documentType}
 
 Descripción específica: ${prompt}
 
-El documento debe ser apropiado para Colombia y seguir las mejores prácticas legales.`
-          }
-        ],
-        { maxTokens: 4000, temperature: 0.4 }
-      );
-    }
+El documento debe ser apropiado para Colombia y seguir las mejores prácticas legales.`;
 
-    // Call OpenAI API
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
+    const params = buildResponsesRequestParams(draftingModel, {
+      input,
+      instructions,
+      maxOutputTokens: 4000,
+      temperature: 0.4,
+      jsonMode: true,
+      store: false
     });
 
-    if (!openaiResponse.ok) {
-      const errorData = await openaiResponse.text();
-      console.error('OpenAI API error:', errorData);
-      throw new Error(`OpenAI API error: ${openaiResponse.status}`);
+    const result = await callResponsesAPI(openaiApiKey, params);
+
+    if (!result.success) {
+      throw new Error(`Drafting failed: ${result.error}`);
     }
 
-    const openaiData = await openaiResponse.json();
-    const content = openaiData.choices[0].message.content;
-
-    // Try to parse as JSON, fallback to structured response if parsing fails
     let draftResult;
     try {
-      draftResult = JSON.parse(content);
+      draftResult = JSON.parse(result.text || '{}');
     } catch (e) {
-      // Fallback: use content as is
       draftResult = {
-        content: content,
+        content: result.text || '',
         sections: ["Contenido Generado"],
         documentType: documentType
       };
@@ -238,36 +143,21 @@ El documento debe ser apropiado para Colombia y seguir las mejores prácticas le
       timestamp: new Date().toISOString()
     };
 
-    // Save result to database if user is authenticated
     if (lawyerId) {
-      await saveToolResult(
-        supabase,
-        lawyerId,
-        'drafting',
-        { prompt, documentType },
-        draftResult,
-        { timestamp: new Date().toISOString() }
-      );
+      await saveToolResult(supabase, lawyerId, 'drafting', { prompt, documentType }, draftResult, {});
     }
 
-    return new Response(
-      JSON.stringify(resultData),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
+    console.log('✅ Document drafting completed');
+
+    return new Response(JSON.stringify(resultData), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
 
   } catch (error) {
-    console.error('Error in legal-document-drafting function:', error);
+    console.error('❌ Error in legal-document-drafting:', error);
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error.message || 'Internal server error' 
-      }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      JSON.stringify({ success: false, error: error.message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

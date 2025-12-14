@@ -1,5 +1,9 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { buildOpenAIRequestParams, logModelRequest } from "../_shared/openai-model-utils.ts";
+import { 
+  buildResponsesRequestParams, 
+  callResponsesAPI, 
+  logResponsesRequest 
+} from "../_shared/openai-responses-utils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,7 +11,6 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -18,26 +21,17 @@ serve(async (req) => {
     if (!eventDescription) {
       return new Response(
         JSON.stringify({ error: 'Event description is required' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Get OpenAI API key
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiApiKey) {
-      throw new Error('OpenAI API key not configured');
-    }
+    if (!openaiApiKey) throw new Error('OpenAI API key not configured');
 
     const model = 'gpt-4o-mini';
-    logModelRequest(model, 'process-calendar-events');
+    logResponsesRequest(model, 'process-calendar-events', true);
 
-    const messages = [
-      {
-        role: 'system',
-        content: `Eres un asistente legal especializado en gestión de calendario y eventos legales. Analiza descripciones de eventos y extrae información útil.
+    const instructions = `Eres un asistente legal especializado en gestión de calendario y eventos legales. Analiza descripciones de eventos y extrae información útil.
 
 Extrae y organiza:
 - Eventos identificados con fechas, horarios y tipos
@@ -47,114 +41,58 @@ Extrae y organiza:
 
 Responde en formato JSON:
 {
-  "events": [
-    {
-      "title": "nombre del evento",
-      "date": "fecha estimada",
-      "type": "tipo de evento legal",
-      "description": "descripción detallada",
-      "priority": "alta/media/baja"
-    }
-  ],
+  "events": [{"title": "nombre", "date": "fecha", "type": "tipo", "description": "descripción", "priority": "alta/media/baja"}],
   "reminders": ["recordatorio1", "recordatorio2"],
   "timeline": ["cronograma1", "cronograma2"],
   "actions": ["acción1", "acción2"],
   "analysis": "análisis completo en markdown"
-}`
-      },
-      {
-        role: 'user',
-        content: `Analiza esta descripción de evento legal y extrae información para gestión de calendario:
+}`;
 
-${eventDescription}`
-      }
-    ];
+    const input = `Analiza esta descripción de evento legal:\n\n${eventDescription}`;
 
-    const requestParams = buildOpenAIRequestParams(model, messages, {
-      maxTokens: 1200,
-      temperature: 0.3
+    const params = buildResponsesRequestParams(model, {
+      input,
+      instructions,
+      maxOutputTokens: 1200,
+      temperature: 0.3,
+      jsonMode: true,
+      store: false
     });
 
-    // Call OpenAI API
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestParams),
-    });
+    const result = await callResponsesAPI(openaiApiKey, params);
 
-    if (!openaiResponse.ok) {
-      const errorData = await openaiResponse.text();
-      console.error('OpenAI API error:', errorData);
-      throw new Error(`OpenAI API error: ${openaiResponse.status}`);
+    if (!result.success) {
+      throw new Error(`Calendar processing failed: ${result.error}`);
     }
 
-    const openaiData = await openaiResponse.json();
-    const content = openaiData.choices[0].message.content;
-
-    // Try to parse as JSON, fallback to structured response if parsing fails
     let analysis;
     try {
-      analysis = JSON.parse(content);
+      analysis = JSON.parse(result.text || '{}');
     } catch (e) {
-      // Fallback: create basic analysis
       const today = new Date();
       const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
       
       analysis = {
-        events: [
-          {
-            title: "Evento Legal Identificado",
-            date: nextWeek.toLocaleDateString('es-ES'),
-            type: "Actividad Legal",
-            description: eventDescription,
-            priority: "media"
-          }
-        ],
-        reminders: [
-          "Revisar documentación 3 días antes",
-          "Confirmar participantes 1 día antes",
-          "Preparar materiales el día anterior"
-        ],
-        timeline: [
-          "1 semana antes: Planificación inicial",
-          "3 días antes: Revisión de documentos",
-          "1 día antes: Confirmaciones finales"
-        ],
-        actions: [
-          "Programar en calendario",
-          "Preparar documentación",
-          "Coordinar participantes",
-          "Configurar recordatorios"
-        ],
-        analysis: content
+        events: [{ title: "Evento Legal", date: nextWeek.toLocaleDateString('es-ES'), type: "Actividad Legal", description: eventDescription, priority: "media" }],
+        reminders: ["Revisar 3 días antes", "Confirmar 1 día antes"],
+        timeline: ["1 semana antes: Planificación", "3 días antes: Revisión"],
+        actions: ["Programar en calendario", "Preparar documentación"],
+        analysis: result.text || ''
       };
     }
 
+    console.log('✅ Calendar events processed');
+
     return new Response(
-      JSON.stringify({
-        success: true,
-        ...analysis,
-        timestamp: new Date().toISOString()
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      JSON.stringify({ success: true, ...analysis, timestamp: new Date().toISOString() }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Error in process-calendar-events function:', error);
+    console.error('❌ Error in process-calendar-events:', error);
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error.message || 'Internal server error' 
-      }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      JSON.stringify({ success: false, error: error.message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

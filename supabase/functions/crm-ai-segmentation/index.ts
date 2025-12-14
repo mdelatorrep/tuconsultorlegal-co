@@ -1,6 +1,10 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-import { buildOpenAIRequestParams, logModelRequest } from "../_shared/openai-model-utils.ts";
+import { 
+  buildResponsesRequestParams, 
+  callResponsesAPI, 
+  logResponsesRequest 
+} from "../_shared/openai-responses-utils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -59,42 +63,31 @@ serve(async (req) => {
     }));
 
     const model = 'gpt-4o-mini';
-    logModelRequest(model, 'crm-ai-segmentation');
+    logResponsesRequest(model, 'crm-ai-segmentation', true);
 
-    const messages = [
-      {
-        role: 'system',
-        content: `Eres un experto en análisis de datos y segmentación de clientes para un despacho legal. Analiza los datos y crea segmentos útiles. Devuelve SOLO JSON válido con formato: {"segments": [{"name": "...", "description": "...", "criteria": {...}}]}`
-      },
-      {
-        role: 'user',
-        content: `Analiza estos datos de clientes y crea segmentos útiles:\n${JSON.stringify(clientsData, null, 2)}`
-      }
-    ];
+    const instructions = `Eres un experto en análisis de datos y segmentación de clientes para un despacho legal. Analiza los datos y crea segmentos útiles. Devuelve JSON con formato: {"segments": [{"name": "...", "description": "...", "criteria": {...}}]}`;
 
-    const requestParams = buildOpenAIRequestParams(model, messages, {
-      maxTokens: 2000,
-      temperature: 0.3
+    const input = `Analiza estos datos de clientes y crea segmentos útiles:\n${JSON.stringify(clientsData, null, 2)}`;
+
+    const params = buildResponsesRequestParams(model, {
+      input,
+      instructions,
+      maxOutputTokens: 2000,
+      temperature: 0.3,
+      jsonMode: true,
+      store: false
     });
 
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestParams),
-    });
+    const result = await callResponsesAPI(openaiApiKey, params);
 
-    if (!openaiResponse.ok) {
+    if (!result.success) {
       return new Response(
         JSON.stringify({ error: 'Failed to generate AI segmentation' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const aiResponse = await openaiResponse.json();
-    const segments = JSON.parse(aiResponse.choices[0].message.content);
+    const segments = JSON.parse(result.text || '{"segments": []}');
 
     let segmentsCreated = 0;
     for (const segment of segments.segments || []) {
@@ -111,13 +104,15 @@ serve(async (req) => {
       if (!insertError) segmentsCreated++;
     }
 
+    console.log('✅ CRM segmentation completed:', segmentsCreated, 'segments created');
+
     return new Response(
       JSON.stringify({ segments_created: segmentsCreated, segments: segments.segments || [] }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Error in CRM AI segmentation:', error);
+    console.error('❌ Error in CRM AI segmentation:', error);
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

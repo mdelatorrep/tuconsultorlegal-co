@@ -1,5 +1,9 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { buildOpenAIRequestParams, logModelRequest } from "../_shared/openai-model-utils.ts";
+import { 
+  buildResponsesRequestParams, 
+  callResponsesAPI, 
+  logResponsesRequest 
+} from "../_shared/openai-responses-utils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,7 +11,6 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -18,26 +21,17 @@ serve(async (req) => {
     if (!fileName) {
       return new Response(
         JSON.stringify({ error: 'File name is required' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Get OpenAI API key
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiApiKey) {
-      throw new Error('OpenAI API key not configured');
-    }
+    if (!openaiApiKey) throw new Error('OpenAI API key not configured');
 
     const model = 'gpt-4o-mini';
-    logModelRequest(model, 'organize-file-ai');
+    logResponsesRequest(model, 'organize-file-ai', true);
 
-    const messages = [
-      {
-        role: 'system',
-        content: `Eres un asistente especializado en organización de archivos legales. Analiza nombres de archivos y sugiere estructuras de organización.
+    const instructions = `Eres un asistente especializado en organización de archivos legales. Analiza nombres de archivos y sugiere estructuras de organización.
 
 Basándote solo en el nombre del archivo, proporciona:
 - Tipo de documento probable
@@ -49,86 +43,61 @@ Basándote solo en el nombre del archivo, proporciona:
 
 Responde en formato JSON:
 {
-  "documentType": "tipo de documento",
-  "classification": "clasificación detallada",
-  "folderStructure": "estructura de carpetas en formato texto",
+  "documentType": "tipo",
+  "classification": "clasificación",
+  "folderStructure": "estructura de carpetas",
   "metadata": ["metadato1", "metadato2"],
   "tags": ["tag1", "tag2"],
   "actions": ["acción1", "acción2"],
   "suggestedCase": "nombre del caso sugerido",
-  "analysis": "análisis completo en markdown"
-}`
-      },
-      {
-        role: 'user',
-        content: `Analiza este nombre de archivo legal: "${fileName}"`
-      }
-    ];
+  "analysis": "análisis en markdown"
+}`;
 
-    const requestParams = buildOpenAIRequestParams(model, messages, {
-      maxTokens: 1200,
-      temperature: 0.3
+    const input = `Analiza este nombre de archivo legal: "${fileName}"`;
+
+    const params = buildResponsesRequestParams(model, {
+      input,
+      instructions,
+      maxOutputTokens: 1200,
+      temperature: 0.3,
+      jsonMode: true,
+      store: false
     });
 
-    // Call OpenAI API
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestParams),
-    });
+    const result = await callResponsesAPI(openaiApiKey, params);
 
-    if (!openaiResponse.ok) {
-      const errorData = await openaiResponse.text();
-      console.error('OpenAI API error:', errorData);
-      throw new Error(`OpenAI API error: ${openaiResponse.status}`);
+    if (!result.success) {
+      throw new Error(`File organization failed: ${result.error}`);
     }
 
-    const openaiData = await openaiResponse.json();
-    const content = openaiData.choices[0].message.content;
-
-    // Try to parse as JSON, fallback to structured response if parsing fails
     let analysis;
     try {
-      analysis = JSON.parse(content);
+      analysis = JSON.parse(result.text || '{}');
     } catch (e) {
-      // Fallback: create basic analysis
       analysis = {
         documentType: "Documento Legal",
         classification: `Análisis del archivo: ${fileName}`,
         folderStructure: `📁 Documentos/${new Date().getFullYear()}/📄 ${fileName}`,
-        metadata: [`Archivo: ${fileName}`, `Fecha de análisis: ${new Date().toLocaleDateString()}`],
+        metadata: [`Archivo: ${fileName}`, `Fecha: ${new Date().toLocaleDateString()}`],
         tags: ["documento", "legal"],
         actions: ["Revisar contenido", "Clasificar manualmente"],
         suggestedCase: "Nuevo Caso",
-        analysis: content
+        analysis: result.text || ''
       };
     }
 
+    console.log('✅ File organization completed');
+
     return new Response(
-      JSON.stringify({
-        success: true,
-        ...analysis,
-        timestamp: new Date().toISOString()
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      JSON.stringify({ success: true, ...analysis, timestamp: new Date().toISOString() }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Error in organize-file-ai function:', error);
+    console.error('❌ Error in organize-file-ai:', error);
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error.message || 'Internal server error' 
-      }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      JSON.stringify({ success: false, error: error.message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
