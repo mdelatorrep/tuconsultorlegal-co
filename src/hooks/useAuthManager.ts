@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { AuthStorage } from '@/utils/authStorage';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useAuthManager = () => {
   const { toast } = useToast();
@@ -38,15 +39,34 @@ export const useAuthManager = () => {
     };
   }, [toast]);
 
-  const getAuthHeaders = (type: 'admin' | 'lawyer' = 'admin') => {
+  // Versión síncrona para admin (usa sessionStorage)
+  const getAuthHeaders = (type: 'admin' | 'lawyer' = 'admin'): Record<string, string> => {
     if (type === 'admin') {
       const adminAuth = AuthStorage.getAdminAuth();
       return adminAuth ? { 'authorization': adminAuth.token } : {};
     } else {
+      // Para abogados, usar sessionStorage como fallback síncrono
       const lawyerAuth = AuthStorage.getLawyerAuth();
       return lawyerAuth ? { 'authorization': lawyerAuth.token } : {};
     }
   };
+
+  // Versión asíncrona para abogados (usa Supabase Auth)
+  const getAuthHeadersAsync = useCallback(async (type: 'admin' | 'lawyer' = 'admin'): Promise<Record<string, string>> => {
+    if (type === 'admin') {
+      const adminAuth = AuthStorage.getAdminAuth();
+      return adminAuth ? { 'authorization': adminAuth.token } : {};
+    } else {
+      // Para abogados, obtener el token de Supabase Auth
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        return { 'authorization': `Bearer ${session.access_token}` };
+      }
+      // Fallback a sessionStorage si no hay sesión de Supabase
+      const lawyerAuth = AuthStorage.getLawyerAuth();
+      return lawyerAuth ? { 'authorization': lawyerAuth.token } : {};
+    }
+  }, []);
 
   const clearAllSessions = () => {
     AuthStorage.clearAllAuth();
@@ -62,6 +82,7 @@ export const useAuthManager = () => {
 
   return {
     getAuthHeaders,
+    getAuthHeadersAsync,
     clearAllSessions,
     getActiveTokensStatus
   };

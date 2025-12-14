@@ -87,7 +87,7 @@ export default function AgentManagerPage({ user, currentView, onViewChange, onLo
   const [editingAgent, setEditingAgent] = useState<LegalAgent | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { toast } = useToast();
-  const { getAuthHeaders } = useAuthManager();
+  const { getAuthHeadersAsync } = useAuthManager();
 
   // Detalles y Guía de Conversación
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -223,7 +223,7 @@ export default function AgentManagerPage({ user, currentView, onViewChange, onLo
     }
 
     try {
-      const authHeaders = getAuthHeaders('lawyer');
+      const authHeaders = await getAuthHeadersAsync('lawyer');
       
       if (!authHeaders.authorization) {
         toast({
@@ -283,8 +283,8 @@ export default function AgentManagerPage({ user, currentView, onViewChange, onLo
 
     try {
       // Intentar ambos tipos de autenticación
-      const lawyerHeaders = getAuthHeaders('lawyer');
-      const adminHeaders = getAuthHeaders('admin');
+      const lawyerHeaders = await getAuthHeadersAsync('lawyer');
+      const adminHeaders = await getAuthHeadersAsync('admin');
       const authHeaders = lawyerHeaders.authorization ? lawyerHeaders : adminHeaders;
       
       if (!authHeaders.authorization) {
@@ -465,8 +465,8 @@ export default function AgentManagerPage({ user, currentView, onViewChange, onLo
 
     setIsSaving(true);
     try {
-      const lawyerHeaders = getAuthHeaders('lawyer');
-      const adminHeaders = getAuthHeaders('admin');
+      const lawyerHeaders = await getAuthHeadersAsync('lawyer');
+      const adminHeaders = await getAuthHeadersAsync('admin');
       const authHeaders = lawyerHeaders.authorization ? lawyerHeaders : adminHeaders;
       
       if (!authHeaders.authorization) {
@@ -902,8 +902,8 @@ export default function AgentManagerPage({ user, currentView, onViewChange, onLo
 
     try {
       // Intentar ambos tipos de autenticación
-      const lawyerHeaders = getAuthHeaders('lawyer');
-      const adminHeaders = getAuthHeaders('admin');
+      const lawyerHeaders = await getAuthHeadersAsync('lawyer');
+      const adminHeaders = await getAuthHeadersAsync('admin');
       const authHeaders = lawyerHeaders.authorization ? lawyerHeaders : adminHeaders;
       
       if (!authHeaders.authorization) {
