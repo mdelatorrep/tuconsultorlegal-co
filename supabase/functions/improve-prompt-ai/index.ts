@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3';
+import { buildOpenAIRequestParams, logModelRequest } from "../_shared/openai-model-utils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -10,11 +11,8 @@ const securityHeaders = {
   ...corsHeaders,
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
-  'X-XSS-Protection': '1; mode=block',
-  'Referrer-Policy': 'strict-origin-when-cross-origin',
 };
 
-// Function to get system configuration with default fallback
 async function getSystemConfig(supabaseClient: any, configKey: string, defaultValue?: string): Promise<string> {
   try {
     const { data, error } = await supabaseClient
@@ -22,252 +20,77 @@ async function getSystemConfig(supabaseClient: any, configKey: string, defaultVa
       .select('config_value')
       .eq('config_key', configKey)
       .single();
-
-    if (error) {
-      console.warn(`Failed to get system config for ${configKey}:`, error.message);
-      return defaultValue || '';
-    }
-
+    if (error) return defaultValue || '';
     return data?.config_value || defaultValue || '';
   } catch (error) {
-    console.warn(`Error fetching system config for ${configKey}:`, error);
     return defaultValue || '';
   }
 }
 
-// Function to call OpenAI API with retry logic
-async function callOpenAIWithRetry(requestBody: any, maxRetries = 3) {
-  const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-  
-  if (!openAIApiKey) {
-    throw new Error('OPENAI_API_KEY not configured');
-  }
-
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      console.log(`OpenAI API call attempt ${attempt}/${maxRetries}`);
-      
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openAIApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        console.error(`OpenAI API error (attempt ${attempt}):`, error);
-        
-        if (attempt === maxRetries) {
-          throw new Error(error.error?.message || `API request failed with status ${response.status}`);
-        }
-        
-        // Wait before retrying (exponential backoff)
-        await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt - 1)));
-        continue;
-      }
-
-      const data = await response.json();
-      
-      if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-        console.error(`Invalid OpenAI response (attempt ${attempt}):`, data);
-        
-        if (attempt === maxRetries) {
-          throw new Error('Invalid response from OpenAI API');
-        }
-        
-        await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt - 1)));
-        continue;
-      }
-
-      console.log(`OpenAI API call successful on attempt ${attempt}`);
-      return data;
-    } catch (error) {
-      console.error(`OpenAI API call failed (attempt ${attempt}):`, error);
-      
-      if (attempt === maxRetries) {
-        throw error;
-      }
-      
-      await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt - 1)));
-    }
-  }
-}
-
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log('=== IMPROVE-PROMPT-AI Function Started ===');
-    
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
-    if (!supabaseUrl || !supabaseServiceKey) {
-      console.error('Missing Supabase configuration');
-      throw new Error('Supabase configuration missing');
+    if (!supabaseUrl || !supabaseServiceKey || !openAIApiKey) {
+      throw new Error('Missing configuration');
     }
 
-    // Create Supabase client
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    console.log('Supabase client created successfully');
-
-    // Parse request body directly without auth verification for lawyers
-    console.log('Processing request for lawyer...');
-
-    const requestBody = await req.json();
-    const { current_prompt, target_audience } = requestBody;
+    const { current_prompt, target_audience } = await req.json();
 
     if (!current_prompt || !target_audience) {
-      console.error('Missing required parameters:', { current_prompt: !!current_prompt, target_audience: !!target_audience });
-      return new Response(JSON.stringify({ 
-        error: 'Faltan parámetros requeridos: current_prompt, target_audience' 
-      }), {
+      return new Response(JSON.stringify({ error: 'Faltan parámetros requeridos' }), {
         status: 400,
         headers: { ...securityHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log(`Processing prompt improvement request for target audience: ${target_audience}`);
+    const configuredModel = await getSystemConfig(supabase, 'prompt_optimizer_model', 'gpt-4.1-2025-04-14');
+    logModelRequest(configuredModel, 'improve-prompt-ai');
 
-    // Get system configurations
-    console.log('Fetching system configurations...');
-    const [configuredModel, configuredSystemPrompt] = await Promise.all([
-      getSystemConfig(supabase, 'prompt_optimizer_model', 'gpt-4.1-2025-04-14'),
-      getSystemConfig(supabase, 'prompt_optimizer_prompt', `Eres un experto en optimización de prompts para asistentes de IA especializados en la generación de documentos legales. Tu tarea es mejorar y optimizar prompts para chatbots que recopilan información y generan documentos legales.
+    const systemPrompt = `Eres un experto en optimización de prompts para asistentes de IA especializados en la generación de documentos legales. Mejora el prompt para que sea más claro, estructurado y efectivo.`;
 
-CONTEXTO ESPECÍFICO PARA GENERACIÓN DE DOCUMENTOS:
-- El prompt será usado por un asistente de IA que genera documentos legales en Colombia
-- El asistente debe recopilar información de manera estructurada y eficiente
-- Debe mantener un estilo cercano, fácil de entender, profesional y seguro
+    const messages = [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: `Mejora este prompt para generación de documentos legales:\n\nPROMPT ACTUAL:\n${current_prompt}\n\nTARGET AUDIENCE: ${target_audience}` }
+    ];
 
-CRITERIOS DE MEJORA ESPECÍFICOS PARA GENERACIÓN DE DOCUMENTOS:
+    const requestParams = buildOpenAIRequestParams(configuredModel, messages, {
+      maxTokens: 1500,
+      temperature: 0.3
+    });
 
-1. ESTILO DE CONVERSACIÓN:
-   - Tono cercano, profesional y seguro que transmita confianza
-   - Fácil de entender, evitando jerga legal innecesaria
-   - Saludo inicial que transmita confianza sobre la calidad del documento
-   - Énfasis en la seguridad y confidencialidad de la información
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestParams),
+    });
 
-2. ESTRUCTURA DE RECOPILACIÓN DE INFORMACIÓN:
-   - La información se solicita en BLOQUES TEMÁTICOS progresivos
-   - NO pedir toda la información al inicio de la conversación
-   - Organizar por frentes lógicos (ej: datos del vendedor, comprador, inmueble, etc.)
-   - Una pregunta o bloque a la vez para no abrumar al usuario
+    if (!response.ok) throw new Error(`OpenAI API error: ${response.status}`);
 
-3. FORMATEO Y VALIDACIÓN DE DATOS:
-   - Instrucciones para formatear campos en MAYÚSCULAS cuando corresponda
-   - Normalización de direcciones con información complementaria (ciudad, departamento, país)
-   - Valores monetarios en número Y texto
-   - Validación de formatos (cédulas, fechas, montos)
-
-4. PROFESIONALISMO Y CONFIANZA:
-   - Explicar brevemente por qué se necesita cada dato
-   - Confirmar información importante antes de continuar
-   - Transmitir seguridad sobre la calidad y validez legal del documento
-   - Mencionar confidencialidad y protección de datos
-
-5. ADAPTACIÓN A AUDIENCIA:
-   - Lenguaje apropiado según sea personas naturales o empresas
-   - Consideraciones específicas del contexto colombiano
-
-INSTRUCCIONES DE OPTIMIZACIÓN:
-- Mejora el prompt actual manteniendo su propósito de generación de documentos
-- Incluye un saludo que genere confianza sobre la calidad y seguridad
-- Estructura la recopilación de información en bloques lógicos
-- Incluye instrucciones específicas de formateo de datos
-- Asegúrate de que el tono sea cercano pero profesional
-- Incluye validaciones apropiadas para el contexto colombiano
-
-Devuelve SOLO el prompt mejorado, sin explicaciones adicionales.`)
-    ]);
-
-    console.log(`Using model: ${configuredModel}`);
-    console.log('System prompt configured from database');
-
-    // Build dynamic system prompt with target audience
-    const dynamicSystemPrompt = configuredSystemPrompt.replace(/\${target_audience}/g, target_audience);
-
-    const openAIRequestBody = {
-      model: configuredModel,
-      messages: [
-        {
-          role: 'system',
-          content: dynamicSystemPrompt
-        },
-        {
-          role: 'user',
-          content: `Mejora este prompt para generación de documentos legales siguiendo las mejores prácticas:
-
-PROMPT ACTUAL:
-${current_prompt}
-
-TARGET AUDIENCE: ${target_audience}
-
-REQUISITOS ESPECÍFICOS:
-- Estilo cercano, fácil de entender, profesional y seguro
-- Información solicitada en bloques por frentes (no toda al inicio)
-- Saludo que transmita confianza sobre calidad y seguridad del documento
-- Formateo de campos: mayúsculas, direcciones normalizadas, valores monetarios en número y texto
-
-EJEMPLO DE ESTRUCTURA REQUERIDA:
-"Eres un asistente legal especializado en [tipo de documento] en Colombia.
-
-TU OBJETIVO: Ayudar a [audiencia] a crear un [documento] completo y legalmente válido.
-
-SALUDO INICIAL: Transmite confianza sobre la calidad del documento y seguridad de la información.
-
-INFORMACIÓN A RECOPILAR:
-[Lista organizada por bloques temáticos]
-
-ESTILO DE CONVERSACIÓN:
-- Mantén un tono profesional pero cercano
-- Explica brevemente por qué necesitas cada dato
-- Confirma información importante antes de continuar
-- Haz una pregunta a la vez para no abrumar
-
-FORMATEO DE DATOS:
-- Nombres y lugares en MAYÚSCULAS
-- Direcciones normalizadas con ciudad, departamento y país
-- Valores monetarios en número y texto
-- Validación de formatos apropiados
-
-VALIDACIONES:
-[Validaciones específicas del documento]"
-
-Devuelve el prompt mejorado siguiendo esta estructura y consideraciones.`
-        }
-      ],
-      max_tokens: 1500,
-      temperature: 0.3,
-    };
-
-    console.log('Calling OpenAI API for prompt improvement...');
-    const data = await callOpenAIWithRetry(openAIRequestBody);
-
+    const data = await response.json();
     const improvedPrompt = data.choices[0].message.content.trim();
-
-    console.log('Prompt improvement completed successfully');
-    console.log('=== IMPROVE-PROMPT-AI Function Completed ===');
 
     return new Response(JSON.stringify({ 
       improved_prompt: improvedPrompt,
       model_used: configuredModel,
-      target_audience: target_audience
+      target_audience
     }), {
       headers: { ...securityHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
     console.error('Error in improve-prompt-ai function:', error);
-    return new Response(JSON.stringify({ 
-      error: error.message || 'Error interno del servidor' 
-    }), {
+    return new Response(JSON.stringify({ error: error.message || 'Error interno del servidor' }), {
       status: 500,
       headers: { ...securityHeaders, 'Content-Type': 'application/json' },
     });

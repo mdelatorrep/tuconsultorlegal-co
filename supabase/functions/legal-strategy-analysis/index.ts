@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { buildOpenAIRequestParams, logModelRequest, getModelGeneration } from "../_shared/openai-model-utils.ts";
 
 // Helper function to get system configuration
 async function getSystemConfig(supabaseClient: any, configKey: string, defaultValue?: string): Promise<string> {
@@ -112,7 +113,7 @@ serve(async (req) => {
       'Eres un asistente especializado en estrategia legal. Analiza casos y proporciona estrategias integrales incluyendo vías de acción, argumentos, contraargumentos y precedentes.'
     );
 
-    console.log(`Using strategy model from config: ${strategyModel}`);
+    logModelRequest(strategyModel, 'legal-strategy-analysis');
 
     // Get OpenAI API key from environment
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -120,24 +121,54 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    console.log(`Using strategy model: ${strategyModel}`);
-
     // Check if it's a reasoning model
-    const isReasoningModel = strategyModel.startsWith('o3') || strategyModel.startsWith('o4');
+    const modelGeneration = getModelGeneration(strategyModel);
+    const isReasoningModel = modelGeneration === 'reasoning';
     
-    console.log(`Model type: ${isReasoningModel ? 'reasoning' : 'standard'}`);
+    console.log(`Model type: ${modelGeneration} (reasoning: ${isReasoningModel})`);
 
-    // Prepare the request body based on model type
-    let requestBody;
-    
+    const jsonFormat = `
+{
+  "legalActions": [
+    {
+      "action": "Nombre de la acción legal",
+      "viability": "high|medium|low",
+      "description": "Descripción de la acción",
+      "requirements": ["Lista", "de", "requisitos"]
+    }
+  ],
+  "legalArguments": [
+    {
+      "argument": "Argumento legal",
+      "foundation": "Base legal (artículos, leyes, etc.)",
+      "strength": "strong|moderate|weak"
+    }
+  ],
+  "counterarguments": [
+    {
+      "argument": "Posible contraargumento",
+      "response": "Cómo responder",
+      "mitigation": "Estrategia de mitigación"
+    }
+  ],
+  "precedents": [
+    {
+      "case": "Nombre del caso/sentencia",
+      "relevance": "Por qué es relevante",
+      "outcome": "Resultado del caso"
+    }
+  ],
+  "recommendations": ["Lista", "de", "recomendaciones", "estratégicas"]
+}`;
+
+    // Prepare messages based on model type
+    let messages;
     if (isReasoningModel) {
-      // For reasoning models, we need a simpler structure
-      requestBody = {
-        model: strategyModel,
-        messages: [
-          {
-            role: 'user',
-            content: `${strategyPrompt}
+      // For reasoning models, use a simpler structure with single user message
+      messages = [
+        {
+          role: 'user',
+          content: `${strategyPrompt}
 
 Caso a analizar: ${caseDescription}
 
@@ -150,49 +181,15 @@ Instrucciones específicas:
 - Proporciona recomendaciones estratégicas específicas
 
 Responde en formato JSON con la siguiente estructura:
-{
-  "legalActions": [
-    {
-      "action": "Nombre de la acción legal",
-      "viability": "high|medium|low",
-      "description": "Descripción de la acción",
-      "requirements": ["Lista", "de", "requisitos"]
-    }
-  ],
-  "legalArguments": [
-    {
-      "argument": "Argumento legal",
-      "foundation": "Base legal (artículos, leyes, etc.)",
-      "strength": "strong|moderate|weak"
-    }
-  ],
-  "counterarguments": [
-    {
-      "argument": "Posible contraargumento",
-      "response": "Cómo responder",
-      "mitigation": "Estrategia de mitigación"
-    }
-  ],
-  "precedents": [
-    {
-      "case": "Nombre del caso/sentencia",
-      "relevance": "Por qué es relevante",
-      "outcome": "Resultado del caso"
-    }
-  ],
-  "recommendations": ["Lista", "de", "recomendaciones", "estratégicas"]
-}`
-          }
-        ]
-      };
+${jsonFormat}`
+        }
+      ];
     } else {
-      // For standard models, use the existing structure
-      requestBody = {
-        model: strategyModel,
-        messages: [
-          {
-            role: 'system',
-            content: `${strategyPrompt}
+      // For standard models, use system + user messages
+      messages = [
+        {
+          role: 'system',
+          content: `${strategyPrompt}
 
 Instrucciones específicas:
 - Analiza el caso legal proporcionado
@@ -203,52 +200,23 @@ Instrucciones específicas:
 - Proporciona recomendaciones estratégicas específicas
 
 Responde en formato JSON con la siguiente estructura:
-{
-  "legalActions": [
-    {
-      "action": "Nombre de la acción legal",
-      "viability": "high|medium|low",
-      "description": "Descripción de la acción",
-      "requirements": ["Lista", "de", "requisitos"]
-    }
-  ],
-  "legalArguments": [
-    {
-      "argument": "Argumento legal",
-      "foundation": "Base legal (artículos, leyes, etc.)",
-      "strength": "strong|moderate|weak"
-    }
-  ],
-  "counterarguments": [
-    {
-      "argument": "Posible contraargumento",
-      "response": "Cómo responder",
-      "mitigation": "Estrategia de mitigación"
-    }
-  ],
-  "precedents": [
-    {
-      "case": "Nombre del caso/sentencia",
-      "relevance": "Por qué es relevante",
-      "outcome": "Resultado del caso"
-    }
-  ],
-  "recommendations": ["Lista", "de", "recomendaciones", "estratégicas"]
-}`
-          },
-          {
-            role: 'user',
-            content: `Analiza estratégicamente el siguiente caso legal:
+${jsonFormat}`
+        },
+        {
+          role: 'user',
+          content: `Analiza estratégicamente el siguiente caso legal:
 
 ${caseDescription}
 
 Proporciona un análisis estratégico completo para el caso.`
-          }
-        ],
-        temperature: 0.3,
-        max_tokens: 4000
-      };
+        }
+      ];
     }
+
+    const requestParams = buildOpenAIRequestParams(strategyModel, messages, {
+      maxTokens: 4000,
+      temperature: 0.3
+    });
 
     // Call OpenAI API
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -257,7 +225,7 @@ Proporciona un análisis estratégico completo para el caso.`
         'Authorization': `Bearer ${openaiApiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(requestBody),
+      body: JSON.stringify(requestParams),
     });
 
     if (!openaiResponse.ok) {

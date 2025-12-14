@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3';
+import { buildOpenAIRequestParams, logModelRequest } from "../_shared/openai-model-utils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -78,18 +79,18 @@ serve(async (req) => {
       if (configError) {
         console.error('Error fetching system config:', configError);
         console.log('Continuing with default configuration...');
-        configData = null; // Will use defaults
+        configData = null;
       } else {
         configData = data;
       }
     } catch (configFetchError) {
       console.error('Exception fetching system config:', configFetchError);
       console.log('Continuing with default configuration...');
-      configData = null; // Will use defaults
+      configData = null;
     }
 
     // Extract model and system prompt from config
-    let selectedModel = 'gpt-4.1-2025-04-14'; // Default model
+    let selectedModel = 'gpt-4.1-2025-04-14';
     let systemPrompt = null;
     
     if (configData && configData.length > 0) {
@@ -106,7 +107,9 @@ serve(async (req) => {
       }
     }
 
-    // Use default system prompt if none configured, but enhance it with target audience
+    logModelRequest(selectedModel, 'improve-template-ai');
+
+    // Use default system prompt if none configured
     if (!systemPrompt) {
       console.log('Using default system prompt');
       systemPrompt = `Eres un experto en redacción de documentos legales en Colombia. Tu tarea es mejorar plantillas de documentos legales para hacerlas más completas, precisas y profesionales.
@@ -129,7 +132,6 @@ REGLAS IMPORTANTES:
 
 OBJETIVO: Devolver únicamente la plantilla del documento mejorada en texto plano, adaptada para ${targetAudience === 'empresas' ? 'empresas' : 'personas naturales'}, sin formato adicional.`;
     } else {
-      // Enhance the configured prompt with target audience context
       systemPrompt = `${systemPrompt}
 
 PÚBLICO OBJETIVO ACTUAL: ${targetAudience === 'empresas' ? 'Empresas y clientes corporativos' : 'Personas (clientes individuales)'}
@@ -146,7 +148,6 @@ ${targetAudience === 'empresas' ? 'Usa terminología legal corporativa apropiada
       model: selectedModel
     });
 
-    // Prepare user message
     const userMessage = `Documento: ${docName} - Categoría: ${docCategory}
 Público objetivo: ${targetAudience === 'empresas' ? 'Empresas' : 'Personas'}
 Descripción: ${docDescription}
@@ -155,22 +156,15 @@ ${templateContent}
 
 Mejora esta plantilla manteniendo todos los placeholders {{variable}} existentes y adaptándola para ${targetAudience === 'empresas' ? 'clientes corporativos' : 'personas naturales'}.`;
 
-    // Prepare OpenAI request
-    const openAIRequestBody = {
-      model: selectedModel,
-      messages: [
-        {
-          role: 'system',
-          content: systemPrompt
-        },
-        {
-          role: 'user',
-          content: userMessage
-        }
-      ],
-      temperature: 0.3,
-      max_tokens: 4000,
-    };
+    const messages = [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userMessage }
+    ];
+
+    const requestParams = buildOpenAIRequestParams(selectedModel, messages, {
+      maxTokens: 4000,
+      temperature: 0.3
+    });
 
     console.log('Making OpenAI API request with model:', selectedModel);
     
@@ -180,7 +174,7 @@ Mejora esta plantilla manteniendo todos los placeholders {{variable}} existentes
         'Authorization': `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(openAIRequestBody),
+      body: JSON.stringify(requestParams),
     });
 
     console.log('OpenAI response status:', response.status);

@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { buildOpenAIRequestParams, logModelRequest } from "../_shared/openai-model-utils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -35,10 +36,10 @@ serve(async (req) => {
       .maybeSingle();
 
     const selectedModel = (configError || !configData) 
-      ? 'gpt-4.1-2025-04-14'  // Default fallback
+      ? 'gpt-4.1-2025-04-14'
       : configData.config_value;
 
-    console.log('Using OpenAI model:', selectedModel);
+    logModelRequest(selectedModel, 'improve-clause-ai');
 
     const { clause, document_type, context } = await req.json();
 
@@ -65,27 +66,29 @@ Tu tarea es mejorar y estructurar profesionalmente esta cláusula para que sea:
 
 Mejora la cláusula manteniendo la intención original del usuario pero con redacción jurídica profesional. Responde ÚNICAMENTE con la cláusula mejorada, sin explicaciones adicionales.`;
 
+    const messages = [
+      {
+        role: 'system',
+        content: 'Eres un experto abogado colombiano especializado en redacción de documentos legales.'
+      },
+      {
+        role: 'user',
+        content: prompt
+      }
+    ];
+
+    const requestParams = buildOpenAIRequestParams(selectedModel, messages, {
+      maxTokens: 1000,
+      temperature: 0.3
+    });
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openaiApiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: selectedModel,
-        messages: [
-          {
-            role: 'system',
-            content: 'Eres un experto abogado colombiano especializado en redacción de documentos legales.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        max_tokens: 1000,
-        temperature: 0.3,
-      }),
+      body: JSON.stringify(requestParams),
     });
 
     if (!response.ok) {

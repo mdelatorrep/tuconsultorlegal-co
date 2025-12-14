@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { buildOpenAIRequestParams, logModelRequest } from "../_shared/openai-model-utils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -49,7 +50,7 @@ serve(async (req) => {
 
     // Get configured model from system_config
     const configuredModel = await getSystemConfig(supabaseClient, 'document_chat_ai_model', 'gpt-4o-mini');
-    console.log('Using AI model for document chat:', configuredModel);
+    logModelRequest(configuredModel, 'document-chat');
 
     const { message, messages, agent_prompt, document_name, sessionId, agentType, context } = await req.json();
 
@@ -85,28 +86,24 @@ Responde SOLO en formato JSON:
   "reasoning": "explicación breve"
 }`;
 
+      const routingMessages = [
+        { role: 'system', content: routingPrompt },
+        { role: 'user', content: message || (messages && messages[messages.length - 1]?.content) || '' }
+      ];
+
+      const routingParams = buildOpenAIRequestParams(configuredModel, routingMessages, {
+        maxTokens: 200,
+        temperature: 0.1,
+        responseFormat: { type: "json_object" }
+      });
+
       const routingResponse = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${openaiApiKey}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          model: configuredModel,
-          messages: [
-            {
-              role: 'system',
-              content: routingPrompt
-            },
-            {
-              role: 'user',
-              content: message || (messages && messages[messages.length - 1]?.content) || ''
-            }
-          ],
-          max_tokens: 200,
-          temperature: 0.1,
-          response_format: { type: "json_object" }
-        }),
+        body: JSON.stringify(routingParams),
       });
 
       if (!routingResponse.ok) {
@@ -166,29 +163,24 @@ FORMATO DE RESPUESTA:
 - Incluye emojis apropiados ocasionalmente (⚖️, 📄, 💼, etc.)`;
 
       const userMessage = message || (messages && messages[messages.length - 1]?.content) || '';
+      const lexiMessages = [
+        { role: 'system', content: lexiSystemPrompt },
+        { role: 'user', content: userMessage }
+      ];
       
+      const lexiParams = buildOpenAIRequestParams(configuredModel, lexiMessages, {
+        maxTokens: 800,
+        temperature: 0.7,
+        stream: false
+      });
+
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${openaiApiKey}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          model: configuredModel,
-          messages: [
-            {
-              role: 'system',
-              content: lexiSystemPrompt
-            },
-            {
-              role: 'user',
-              content: userMessage
-            }
-          ],
-          max_tokens: 800,
-          temperature: 0.7,
-          stream: false
-        }),
+        body: JSON.stringify(lexiParams),
       });
 
       if (!response.ok) {
@@ -241,25 +233,24 @@ IMPORTANTE - FORMATO DE RESPUESTA:
 - Usa solo puntos, comas y signos de puntuación normales
 - Para enfatizar, usa palabras como "importante", "crucial", "especialmente"`;
 
+    const chatMessages = [
+      { role: 'system', content: systemPrompt },
+      ...messages
+    ];
+
+    const chatParams = buildOpenAIRequestParams(configuredModel, chatMessages, {
+      maxTokens: 1000,
+      temperature: 0.7,
+      stream: false
+    });
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openaiApiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: configuredModel,
-        messages: [
-          {
-            role: 'system',
-            content: systemPrompt
-          },
-          ...messages
-        ],
-        max_tokens: 1000,
-        temperature: 0.7,
-        stream: false
-      }),
+      body: JSON.stringify(chatParams),
     });
 
     if (!response.ok) {

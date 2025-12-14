@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { buildOpenAIRequestParams, logModelRequest } from "../_shared/openai-model-utils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -35,10 +36,10 @@ serve(async (req) => {
       .maybeSingle();
 
     const selectedModel = (configError || !configData) 
-      ? 'gpt-4.1-2025-04-14'  // Default fallback
+      ? 'gpt-4.1-2025-04-14'
       : configData.config_value;
 
-    console.log('Using OpenAI model:', selectedModel);
+    logModelRequest(selectedModel, 'organize-form-groups');
 
     const { placeholder_fields, ai_prompt } = await req.json();
 
@@ -82,27 +83,29 @@ Responde ÚNICAMENTE con un JSON válido en este formato:
 
 Los números en "fields" deben corresponder al índice (0-based) de los campos en el array original.`;
 
+    const messages = [
+      {
+        role: 'system',
+        content: 'Eres un experto en UX que organiza formularios para mejorar la experiencia del usuario. Responde únicamente con JSON válido.'
+      },
+      {
+        role: 'user',
+        content: prompt
+      }
+    ];
+
+    const requestParams = buildOpenAIRequestParams(selectedModel, messages, {
+      maxTokens: 1000,
+      temperature: 0.3
+    });
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openaiApiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: selectedModel,
-        messages: [
-          {
-            role: 'system',
-            content: 'Eres un experto en UX que organiza formularios para mejorar la experiencia del usuario. Responde únicamente con JSON válido.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        max_tokens: 1000,
-        temperature: 0.3,
-      }),
+      body: JSON.stringify(requestParams),
     });
 
     if (!response.ok) {
