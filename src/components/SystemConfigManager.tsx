@@ -19,7 +19,8 @@ import {
   Wrench,
   Sparkles,
   Save,
-  Plus
+  Plus,
+  Brain
 } from "lucide-react";
 import AIFunctionConfig from "./admin/AIFunctionConfig";
 
@@ -256,6 +257,14 @@ export default function SystemConfigManager() {
     }
   ];
 
+  // Reasoning effort configuration
+  const reasoningEffortParams = [
+    { key: 'reasoning_effort_default', name: 'Esfuerzo por Defecto (generación de texto)', type: 'text' as const, defaultValue: 'low', description: 'Para funciones de generación de texto simple' },
+    { key: 'reasoning_effort_analysis', name: 'Esfuerzo para Análisis', type: 'text' as const, defaultValue: 'medium', description: 'Para funciones de análisis de documentos' },
+    { key: 'reasoning_effort_strategy', name: 'Esfuerzo para Estrategia', type: 'text' as const, defaultValue: 'high', description: 'Para funciones de estrategia legal' },
+    { key: 'reasoning_effort_research', name: 'Esfuerzo para Investigación', type: 'text' as const, defaultValue: 'high', description: 'Para funciones de investigación legal profunda' }
+  ];
+
   // Global parameters configuration
   const globalParams = [
     { key: 'openai_api_timeout', name: 'Timeout OpenAI (segundos)', type: 'number' as const, defaultValue: '30' },
@@ -470,6 +479,29 @@ export default function SystemConfigManager() {
                   </div>
                 </button>
                 
+                {/* Reasoning Effort Config */}
+                <button
+                  onClick={() => {
+                    setShowGlobalParams(false);
+                    setSelectedCategory('reasoning-effort');
+                  }}
+                  className={`w-full flex items-start gap-3 p-3 rounded-lg text-left transition-colors ${
+                    selectedCategory === 'reasoning-effort'
+                      ? 'bg-cyan-500/10 text-cyan-600'
+                      : 'hover:bg-muted'
+                  }`}
+                >
+                  <Brain className={`w-5 h-5 mt-0.5 ${
+                    selectedCategory === 'reasoning-effort' ? 'text-cyan-500' : 'text-muted-foreground'
+                  }`} />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm">Reasoning Effort</div>
+                    <div className="text-xs text-muted-foreground">
+                      Niveles de razonamiento IA
+                    </div>
+                  </div>
+                </button>
+                
                 {/* Global Params */}
                 <button
                   onClick={() => setShowGlobalParams(true)}
@@ -501,6 +533,12 @@ export default function SystemConfigManager() {
           {showGlobalParams ? (
             <GlobalParamsSection
               params={globalParams}
+              getConfigValue={getConfigValue}
+              onSave={saveConfig}
+            />
+          ) : selectedCategory === 'reasoning-effort' ? (
+            <ReasoningEffortSection
+              params={reasoningEffortParams}
               getConfigValue={getConfigValue}
               onSave={saveConfig}
             />
@@ -643,6 +681,112 @@ function GlobalParamsSection({
                   )}
                 </Button>
               </div>
+              <p className="text-xs text-muted-foreground">
+                Clave: <code className="bg-muted px-1 rounded">{param.key}</code>
+              </p>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// Reasoning Effort Section Component
+function ReasoningEffortSection({
+  params,
+  getConfigValue,
+  onSave
+}: {
+  params: { key: string; name: string; type: 'text' | 'number'; defaultValue: string; description?: string }[];
+  getConfigValue: (key: string, defaultValue: string) => string;
+  onSave: (key: string, value: string, description?: string) => Promise<void>;
+}) {
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const initial: Record<string, string> = {};
+    params.forEach(p => {
+      initial[p.key] = getConfigValue(p.key, p.defaultValue);
+    });
+    setValues(initial);
+  }, [params, getConfigValue]);
+
+  const handleSave = async (key: string, name: string) => {
+    setSaving(key);
+    try {
+      await onSave(key, values[key], name);
+      toast({
+        title: "Guardado",
+        description: `${name} guardado correctamente`
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const effortOptions = ['low', 'medium', 'high'];
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold flex items-center gap-3">
+          <Brain className="w-6 h-6 text-cyan-500" />
+          Configuración de Reasoning Effort
+        </h2>
+        <p className="text-muted-foreground">
+          Controla cuánto esfuerzo de razonamiento interno dedican los modelos de IA (GPT-5, o3, o4) a cada tipo de tarea.
+        </p>
+      </div>
+
+      <div className="bg-cyan-50 dark:bg-cyan-950/30 border border-cyan-200 dark:border-cyan-800 rounded-lg p-4">
+        <h4 className="font-medium text-cyan-800 dark:text-cyan-200 mb-2">¿Qué es Reasoning Effort?</h4>
+        <div className="text-sm text-cyan-700 dark:text-cyan-300 space-y-2">
+          <p><strong>Low:</strong> Mínimo razonamiento interno. Ideal para generación de texto simple donde la velocidad importa más que la profundidad.</p>
+          <p><strong>Medium:</strong> Balance entre velocidad y calidad. Bueno para análisis que requieren algo de reflexión.</p>
+          <p><strong>High:</strong> Máximo razonamiento interno. Para tareas complejas que requieren pensamiento profundo (estrategia, investigación).</p>
+        </div>
+      </div>
+
+      <Card>
+        <CardContent className="pt-6 space-y-6">
+          {params.map((param) => (
+            <div key={param.key} className="space-y-2">
+              <Label>{param.name}</Label>
+              <div className="flex gap-2">
+                <select
+                  value={values[param.key] || param.defaultValue}
+                  onChange={(e) => setValues({ ...values, [param.key]: e.target.value })}
+                  className="flex-1 h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  {effortOptions.map(opt => (
+                    <option key={opt} value={opt}>
+                      {opt === 'low' ? '🟢 Low (Rápido)' : opt === 'medium' ? '🟡 Medium (Balanceado)' : '🔴 High (Profundo)'}
+                    </option>
+                  ))}
+                </select>
+                <Button
+                  onClick={() => handleSave(param.key, param.name)}
+                  disabled={saving === param.key}
+                >
+                  {saving === param.key ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4" />
+                  )}
+                </Button>
+              </div>
+              {param.description && (
+                <p className="text-xs text-muted-foreground">{param.description}</p>
+              )}
               <p className="text-xs text-muted-foreground">
                 Clave: <code className="bg-muted px-1 rounded">{param.key}</code>
               </p>

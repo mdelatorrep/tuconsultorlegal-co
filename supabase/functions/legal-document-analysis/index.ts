@@ -181,6 +181,9 @@ Categoría: ${fileTypeInference.category}
 Proporciona análisis en formato JSON con detectionConfidence: "baja" indicando que es preliminar.`;
     }
 
+    // Get reasoning effort from system config (analysis = medium by default)
+    const reasoningEffort = await getSystemConfig(supabase, 'reasoning_effort_analysis', 'medium') as 'low' | 'medium' | 'high';
+    
     const params = buildResponsesRequestParams(aiModel, {
       input: analysisInput,
       instructions: systemPrompt,
@@ -188,7 +191,7 @@ Proporciona análisis en formato JSON con detectionConfidence: "baja" indicando 
       temperature: 0.2,
       jsonMode: true,
       store: false,
-      reasoning: { effort: 'medium' }
+      reasoning: { effort: reasoningEffort }
     });
 
     const result = await callResponsesAPI(openaiApiKey, params);

@@ -113,6 +113,9 @@ Descripción específica: ${prompt}
 
 El documento debe ser apropiado para Colombia y seguir las mejores prácticas legales. Responde ÚNICAMENTE en formato JSON válido.`;
 
+    // Get reasoning effort from system config (analysis = medium by default for drafting)
+    const reasoningEffort = await getSystemConfig(supabase, 'reasoning_effort_analysis', 'medium') as 'low' | 'medium' | 'high';
+    
     const params = buildResponsesRequestParams(draftingModel, {
       input,
       instructions,
@@ -120,7 +123,7 @@ El documento debe ser apropiado para Colombia y seguir las mejores prácticas le
       temperature: 0.4,
       jsonMode: true,
       store: false,
-      reasoning: { effort: 'medium' }
+      reasoning: { effort: reasoningEffort }
     });
 
     const result = await callResponsesAPI(openaiApiKey, params);

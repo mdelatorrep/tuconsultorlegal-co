@@ -113,6 +113,9 @@ Instrucciones específicas:
 Responde en formato JSON con esta estructura:
 ${jsonFormat}`;
 
+    // Get reasoning effort from system config (strategy = high by default)
+    const reasoningEffort = await getSystemConfig(supabase, 'reasoning_effort_strategy', 'high') as 'low' | 'medium' | 'high';
+    
     const params = buildResponsesRequestParams(strategyModel, {
       input: `Analiza estratégicamente el siguiente caso legal:\n\n${caseDescription}\n\nResponde ÚNICAMENTE en formato JSON válido.`,
       instructions,
@@ -120,7 +123,7 @@ ${jsonFormat}`;
       temperature: 0.3,
       jsonMode: true,
       store: false,
-      reasoning: { effort: 'medium' }
+      reasoning: { effort: reasoningEffort }
     });
 
     const result = await callResponsesAPI(openaiApiKey, params);
