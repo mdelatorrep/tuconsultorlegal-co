@@ -67,7 +67,9 @@ Audiencia: ${targetAudience === 'empresas' ? 'Empresas' : 'Personas naturales'}
 
 Placeholders: ${placeholders.map((p: string) => p).join(', ')}
 
-Fragmento de plantilla: ${docTemplate.slice(0, 800)}...`;
+Fragmento de plantilla: ${docTemplate.slice(0, 800)}...
+
+Responde ÚNICAMENTE en formato JSON con la estructura de bloques de conversación.`;
 
     const params = buildResponsesRequestParams(model, {
       input,
