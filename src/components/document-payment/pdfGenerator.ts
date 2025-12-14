@@ -128,8 +128,9 @@ const processHtmlContent = (html: string): ContentToken[] => {
   const tokens: ContentToken[] = [];
   let currentParagraphId = 0;
 
-  // Limpieza previa del HTML
-  const cleanHtml = html.replace(/<p[^>]*>\s*<br\s*\/?>\s*<\/p>/gi, "<br>");
+  // Limpieza previa del HTML - preservar espaciados vacíos
+  // Convertir <p><br></p> a un marcador especial que indica párrafo vacío
+  const cleanHtml = html.replace(/<p[^>]*>\s*<br\s*\/?>\s*<\/p>/gi, "<p class=\"empty-paragraph\">&nbsp;</p>");
 
   const parser = new DOMParser();
   const doc = parser.parseFromString(`<div>${cleanHtml}</div>`, "text/html");
@@ -139,9 +140,9 @@ const processHtmlContent = (html: string): ContentToken[] => {
 
   const processNode = (node: Node, parentFormat: Partial<ContentToken> = {}) => {
     if (node.nodeName.toLowerCase() === "br") {
-      if (tokens.length === 0 || tokens[tokens.length - 1].text !== "\n") {
-        tokens.push({ text: "\n", paragraphId: currentParagraphId });
-      }
+      // Siempre agregar salto de línea para preservar espaciado
+      tokens.push({ text: "\n", paragraphId: currentParagraphId });
+      currentParagraphId++;
       return;
     }
 
@@ -423,7 +424,7 @@ const renderParagraphsInPDF = (
   for (let pIdx = 0; pIdx < paragraphs.length; pIdx++) {
     const paragraph = paragraphs[pIdx];
 
-    // Párrafo vacío = espaciado
+    // Párrafo vacío = espaciado (una línea de altura)
     if (paragraph.tokens.length === 0) {
       currentY += 5.4; // Aproximadamente una línea de espacio
       continue;
@@ -434,7 +435,13 @@ const renderParagraphsInPDF = (
 
     // Concatenar todo el texto del párrafo
     const fullText = paragraph.tokens.map((t) => t.text).join("");
-    if (!fullText.trim()) continue;
+    
+    // Si el párrafo solo contiene espacios o &nbsp;, tratarlo como espaciado
+    const trimmedText = fullText.replace(/\u00A0/g, '').trim(); // \u00A0 es &nbsp;
+    if (!trimmedText) {
+      currentY += lineHeight; // Espacio de una línea
+      continue;
+    }
 
     // Calcular ancho disponible
     let bulletPrefix = "";
