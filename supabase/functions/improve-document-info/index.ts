@@ -183,8 +183,14 @@ Mejora el nombre y descripción para que sean más atractivos y comprensibles pa
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userMessage }
       ],
-      { maxTokens: 500, temperature: 0.3 }
+      { 
+        maxTokens: 1000, // Increased for GPT-5 models
+        temperature: 0.3,
+        responseFormat: { type: "json_object" } // Force JSON output
+      }
     );
+    
+    console.log('OpenAI request body:', JSON.stringify(openAIRequestBody, null, 2));
     
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
