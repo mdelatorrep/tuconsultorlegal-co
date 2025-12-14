@@ -2,6 +2,7 @@ import { useMemo, useCallback, useRef } from "react";
 import ReactQuill, { Quill } from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import { cleanWordHtml, isWordHtml } from "@/utils/wordHtmlSanitizer";
+import DocumentPDFPreview from "@/components/DocumentPDFPreview";
 
 interface RichTextTemplateEditorProps {
   value: string;
@@ -10,6 +11,9 @@ interface RichTextTemplateEditorProps {
   minHeight?: string;
   className?: string;
   readOnly?: boolean;
+  showPDFPreview?: boolean;
+  documentName?: string;
+  placeholders?: Array<{ placeholder: string; pregunta?: string }>;
 }
 
 /**
@@ -30,6 +34,9 @@ export default function RichTextTemplateEditor({
   minHeight = "400px",
   className = "",
   readOnly = false,
+  showPDFPreview = true,
+  documentName,
+  placeholders,
 }: RichTextTemplateEditorProps) {
   const quillRef = useRef<ReactQuill>(null);
 
@@ -107,6 +114,19 @@ export default function RichTextTemplateEditor({
       className={`rich-text-template-editor ${className}`}
       onPaste={handlePaste}
     >
+      {/* Barra de herramientas adicional con vista previa PDF */}
+      {showPDFPreview && !readOnly && (
+        <div className="flex justify-end mb-2">
+          <DocumentPDFPreview
+            templateContent={value}
+            documentName={documentName}
+            placeholders={placeholders}
+            buttonVariant="outline"
+            buttonSize="sm"
+          />
+        </div>
+      )}
+      
       <ReactQuill
         ref={quillRef}
         theme="snow"
