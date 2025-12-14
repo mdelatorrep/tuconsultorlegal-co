@@ -276,6 +276,7 @@ export default function SystemConfigManager() {
 
   useEffect(() => {
     loadConfigs();
+    loadOpenAIModels(); // Auto-load models on mount
   }, []);
 
   const loadConfigs = async () => {
