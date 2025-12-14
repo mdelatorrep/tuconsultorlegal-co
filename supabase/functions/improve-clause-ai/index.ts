@@ -32,16 +32,24 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get configured OpenAI model
-    const { data: configData, error: configError } = await supabase
-      .from('system_config')
-      .select('config_value')
-      .eq('config_key', 'openai_model')
-      .maybeSingle();
+    // Helper to get system config
+    const getSystemConfig = async (key: string, defaultValue: string): Promise<string> => {
+      try {
+        const { data, error } = await supabase
+          .from('system_config')
+          .select('config_value')
+          .eq('config_key', key)
+          .maybeSingle();
+        if (error || !data) return defaultValue;
+        return data.config_value;
+      } catch (e) {
+        return defaultValue;
+      }
+    };
 
-    const selectedModel = (configError || !configData) 
-      ? 'gpt-4.1-2025-04-14'
-      : configData.config_value;
+    // Get configured OpenAI model and prompt
+    const selectedModel = await getSystemConfig('content_optimization_model', 'gpt-4.1-2025-04-14');
+    const systemPrompt = await getSystemConfig('improve_clause_ai_prompt', 'Eres un experto abogado colombiano especializado en redacción de documentos legales.');
 
     logResponsesRequest(selectedModel, 'improve-clause-ai', true);
 
@@ -56,7 +64,7 @@ serve(async (req) => {
 
     console.log('Improving clause for document type:', document_type);
 
-    const instructions = 'Eres un experto abogado colombiano especializado en redacción de documentos legales.';
+    const instructions = systemPrompt;
 
     const userMessage = `Documento: ${document_type}
 Contexto del documento: ${JSON.stringify(context)}

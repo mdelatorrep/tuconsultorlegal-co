@@ -19,17 +19,41 @@ serve(async (req) => {
   try {
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
-    const { data: config } = await supabase
-      .from('system_config')
-      .select('openai_api_key, openai_model')
-      .eq('id', 1)
-      .single();
+    // Helper to get system config
+    const getSystemConfig = async (key: string, defaultValue: string): Promise<string> => {
+      try {
+        const { data, error } = await supabase
+          .from('system_config')
+          .select('config_value')
+          .eq('config_key', key)
+          .maybeSingle();
+        if (error || !data) return defaultValue;
+        return data.config_value;
+      } catch (e) {
+        return defaultValue;
+      }
+    };
 
-    const openaiApiKey = config?.openai_api_key || Deno.env.get('OPENAI_API_KEY');
-    const openaiModel = config?.openai_model || 'gpt-4o-mini';
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    const openaiModel = await getSystemConfig('document_chat_ai_model', 'gpt-4.1-2025-04-14');
+    const basePrompt = await getSystemConfig('legal_training_assistant_prompt', `Eres un **Asistente Especializado en IA Legal** y formación para abogados. Tu misión es educar, evaluar y certificar a abogados en Inteligencia Artificial aplicada al derecho.
+
+**SISTEMA DE EVALUACIÓN:**
+SI el usuario solicita evaluación (evaluar, examen, prueba, test, completar, listo):
+1. Haz UNA pregunta a la vez
+2. Evalúa cada respuesta
+3. Calcula puntuación sobre 100
+4. Para aprobar: mínimo 80/100
+5. Si aprueba: indica "MÓDULO_COMPLETADO" al final
+
+**TU PAPEL:**
+1. Responde preguntas con profundidad
+2. Proporciona ejemplos prácticos del contexto colombiano
+3. Evalúa rigurosamente antes de aprobar
+4. Mantén tono profesional pero accesible`);
 
     if (!openaiApiKey) {
       return new Response(JSON.stringify({ error: 'OpenAI API key not configured' }), {
@@ -44,7 +68,7 @@ serve(async (req) => {
 
     console.log(`Processing training assistance for module: ${moduleId}`);
 
-    const instructions = `Eres un **Asistente Especializado en IA Legal** y formación para abogados. Tu misión es educar, evaluar y certificar a abogados en Inteligencia Artificial aplicada al derecho.
+    const instructions = `${basePrompt}
 
 CONTEXTO DEL MÓDULO ACTUAL:
 - Título: ${moduleContent.title}
@@ -65,21 +89,7 @@ EJERCICIO PRÁCTICO:
 PREGUNTAS DE VALIDACIÓN:
 ${moduleContent.validationQuestions.map((q: any, i: number) => 
   `Pregunta ${i + 1}: ${q.question} (${q.points} puntos)`
-).join('\n')}
-
-**SISTEMA DE EVALUACIÓN:**
-SI el usuario solicita evaluación (evaluar, examen, prueba, test, completar, listo):
-1. Haz UNA pregunta a la vez
-2. Evalúa cada respuesta
-3. Calcula puntuación sobre 100
-4. Para aprobar: mínimo 80/100
-5. Si aprueba: indica "MÓDULO_COMPLETADO" al final
-
-**TU PAPEL:**
-1. Responde preguntas con profundidad
-2. Proporciona ejemplos prácticos del contexto colombiano
-3. Evalúa rigurosamente antes de aprobar
-4. Mantén tono profesional pero accesible`;
+).join('\n')}`;
 
     // Build conversation history for input
     const conversationHistory = chatHistory.slice(-8).map((msg: any) => 

@@ -126,7 +126,7 @@ export default function SystemConfigManager() {
         }
       ]
     },
-    {
+  {
       id: 'ai-management',
       name: 'Gestión IA',
       description: 'Configuraciones para creación y optimización de agentes IA',
@@ -207,6 +207,91 @@ export default function SystemConfigManager() {
           defaultValue: 'gpt-4.1-2025-04-14',
           type: 'select',
           options: []
+        }
+      ]
+    },
+    {
+      id: 'ai-prompts',
+      name: 'Prompts IA',
+      description: 'Prompts centralizados para todas las funciones de IA',
+      icon: 'Brain',
+      configs: [
+        {
+          key: 'improve_clause_ai_prompt',
+          name: 'Prompt - Mejorar Cláusulas',
+          description: 'Prompt para mejorar cláusulas legales',
+          defaultValue: 'Eres un experto abogado colombiano especializado en redacción de documentos legales.',
+          type: 'textarea'
+        },
+        {
+          key: 'suggest_conversation_blocks_prompt',
+          name: 'Prompt - Bloques de Conversación',
+          description: 'Prompt para sugerir bloques de conversación en creación de agentes',
+          defaultValue: 'Eres un asistente experto en diseño de experiencias conversacionales para documentos legales colombianos.',
+          type: 'textarea'
+        },
+        {
+          key: 'legal_training_assistant_prompt',
+          name: 'Prompt - Asistente de Entrenamiento',
+          description: 'Prompt para el asistente de entrenamiento legal',
+          defaultValue: 'Eres un Asistente Especializado en IA Legal y formación para abogados.',
+          type: 'textarea'
+        },
+        {
+          key: 'generate_document_prompt',
+          name: 'Prompt - Generar Documentos',
+          description: 'Prompt para generación de documentos desde chat',
+          defaultValue: 'Eres un experto abogado colombiano especializado en redacción de documentos legales.',
+          type: 'textarea'
+        },
+        {
+          key: 'lexi_chat_prompt',
+          name: 'Prompt - Lexi (Asistente Virtual)',
+          description: 'Prompt para Lexi, el asistente legal virtual',
+          defaultValue: 'Eres Lexi, la asistente legal virtual de tuconsultorlegal.co.',
+          type: 'textarea'
+        },
+        {
+          key: 'routing_chat_prompt',
+          name: 'Prompt - Routing de Consultas',
+          description: 'Prompt para sistema de routing de consultas legales',
+          defaultValue: 'Eres un sistema experto de routing para consultas legales.',
+          type: 'textarea'
+        },
+        {
+          key: 'document_chat_prompt',
+          name: 'Prompt - Chat de Documentos',
+          description: 'Prompt para chat de recopilación de datos de documentos',
+          defaultValue: 'Instrucciones críticas para recopilación de información de documentos.',
+          type: 'textarea'
+        },
+        {
+          key: 'crm_segmentation_prompt',
+          name: 'Prompt - Segmentación CRM',
+          description: 'Prompt para segmentación IA de clientes CRM',
+          defaultValue: 'Eres un experto en análisis de datos y segmentación de clientes para un despacho legal.',
+          type: 'textarea'
+        },
+        {
+          key: 'organize_file_prompt',
+          name: 'Prompt - Organizar Archivos',
+          description: 'Prompt para organización inteligente de archivos',
+          defaultValue: 'Eres un asistente especializado en organización de archivos legales.',
+          type: 'textarea'
+        },
+        {
+          key: 'organize_form_prompt',
+          name: 'Prompt - Organizar Formularios',
+          description: 'Prompt para organización de grupos de formularios',
+          defaultValue: 'Eres un experto en UX que organiza formularios para mejorar la experiencia del usuario.',
+          type: 'textarea'
+        },
+        {
+          key: 'ai_training_validator_prompt',
+          name: 'Prompt - Validador de Entrenamiento',
+          description: 'Prompt para validador de entrenamiento IA',
+          defaultValue: 'Eres un experto evaluador en formación legal especializado en IA para abogados.',
+          type: 'textarea'
         }
       ]
     },

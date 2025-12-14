@@ -58,8 +58,8 @@ serve(async (req) => {
 
     // Handle different chat types
     if (agentType === 'routing') {
-      // Legal consultation routing logic
-      const routingInstructions = `Eres un sistema experto de routing para consultas legales. Analiza la consulta del usuario y determina:
+      // Legal consultation routing logic - get prompt from config
+      const routingInstructions = await getSystemConfig(supabaseClient, 'routing_chat_prompt', `Eres un sistema experto de routing para consultas legales. Analiza la consulta del usuario y determina:
 
 1. ¿Necesita asesoría legal especializada? (true/false)
 2. ¿Qué especialización legal requiere? (civil, laboral, comercial, penal, etc.)
@@ -79,7 +79,7 @@ Responde SOLO en formato JSON:
   "specialization": "string o null",
   "isComplex": boolean,
   "reasoning": "explicación breve"
-}`;
+}`);
 
       const userInput = message || (messages && messages[messages.length - 1]?.content) || '';
 
@@ -114,8 +114,8 @@ Responde SOLO en formato JSON:
     }
 
     if (agentType === 'lexi') {
-      // General legal assistant - Lexi
-      const lexiInstructions = `Eres Lexi, la asistente legal virtual de tuconsultorlegal.co, una plataforma innovadora que democratiza el acceso a servicios legales de alta calidad en Colombia.
+      // General legal assistant - Lexi - get prompt from config
+      const lexiInstructions = await getSystemConfig(supabaseClient, 'lexi_chat_prompt', `Eres Lexi, la asistente legal virtual de tuconsultorlegal.co, una plataforma innovadora que democratiza el acceso a servicios legales de alta calidad en Colombia.
 
 PERSONALIDAD Y ESTILO:
 - Eres amigable, profesional y cercana
@@ -145,7 +145,7 @@ IMPORTANTE:
 FORMATO DE RESPUESTA:
 - Usa texto plano sin formato markdown
 - Sé clara y concisa
-- Incluye emojis apropiados ocasionalmente (⚖️, 📄, 💼, etc.)`;
+- Incluye emojis apropiados ocasionalmente (⚖️, 📄, 💼, etc.)`);
 
       const userMessage = message || (messages && messages[messages.length - 1]?.content) || '';
       
@@ -183,10 +183,8 @@ FORMATO DE RESPUESTA:
 
     console.log('Processing chat for document:', document_name);
 
-    const systemInstructions = `${agent_prompt}
-
-INSTRUCCIONES CRÍTICAS PARA RECOPILACIÓN DE INFORMACIÓN:
-- Eres un asistente legal especializado en ${document_name}
+    // Get document chat prompt from config
+    const documentChatPrompt = await getSystemConfig(supabaseClient, 'document_chat_prompt', `INSTRUCCIONES CRÍTICAS PARA RECOPILACIÓN DE INFORMACIÓN:
 - Debes recopilar TODA la información necesaria ANTES de permitir generar el documento
 - Haz UNA pregunta específica y clara a la vez para cada campo requerido
 - Normaliza automáticamente la información mientras la recopilas:
@@ -203,7 +201,12 @@ IMPORTANTE - FORMATO DE RESPUESTA:
 - NO uses asteriscos (*) para enfatizar texto
 - NO uses guiones bajos (_) para cursiva
 - NO uses caracteres especiales para formatear (**, __, ##, etc.)
-- Escribe en texto plano sin formato markdown`;
+- Escribe en texto plano sin formato markdown`);
+
+    const systemInstructions = `${agent_prompt}
+
+- Eres un asistente legal especializado en ${document_name}
+${documentChatPrompt}`;
 
     // Convert messages to Responses API format (user and assistant only, no system in input)
     const inputMessages = messages.map((msg: { role: string; content: string }) => ({
