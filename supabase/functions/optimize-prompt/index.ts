@@ -83,6 +83,9 @@ serve(async (req) => {
     
     // Get model for optimization
     const model = await getSystemConfig(supabase, 'prompt_optimizer_model', 'gpt-4.1-2025-04-14');
+    
+    // Get reasoning effort for optimization
+    const reasoningEffort = await getSystemConfig(supabase, 'reasoning_effort_prompt_optimizer', 'medium');
 
     // Replace placeholders in meta prompt
     const fullPrompt = metaPrompt
@@ -92,19 +95,19 @@ serve(async (req) => {
       .replace('{{current_prompt}}', prompt);
 
     console.log(`Using model: ${model}`);
+    console.log(`Reasoning effort: ${reasoningEffort}`);
     console.log(`Meta prompt length: ${fullPrompt.length} chars`);
 
     // Get optimizer instructions from config
     const optimizerInstructions = await getSystemConfig(supabase, 'prompt_optimizer_instructions', '');
     
     // Build request parameters using shared utility
-    // Use high token limit and low reasoning effort for text generation tasks
     const params = buildResponsesRequestParams(model, {
       input: fullPrompt,
       instructions: optimizerInstructions || 'Eres un experto en ingeniería de prompts. Optimiza el prompt proporcionado siguiendo las directrices dadas. Responde SOLO con el prompt optimizado.',
       maxOutputTokens: 16000,
       jsonMode: false,
-      reasoningEffort: 'low'
+      reasoningEffort: reasoningEffort as 'low' | 'medium' | 'high'
     });
 
     // Call OpenAI Responses API
