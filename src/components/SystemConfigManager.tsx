@@ -310,17 +310,21 @@ export default function SystemConfigManager() {
     await loadConfigs();
   };
 
-  const initializeDefaultConfigs = async () => {
+  const initializeDefaultConfigs = async (force: boolean = false) => {
     try {
       setLoading(true);
-      const { data, error } = await supabase.functions.invoke('init-system-config');
+      const { data, error } = await supabase.functions.invoke('init-system-config', {
+        body: { force }
+      });
       
       if (error) throw error;
 
       if (data?.success) {
         toast({
-          title: "Configuraciones inicializadas",
-          description: `Se agregaron ${data.inserted_count} nuevas configuraciones.`
+          title: force ? "Sincronización forzada completada" : "Configuraciones inicializadas",
+          description: force 
+            ? `Se actualizaron/crearon ${data.configsUpserted} configuraciones.`
+            : `Se agregaron ${data.insertedCount} nuevas configuraciones.`
         });
         await loadConfigs();
       }
@@ -377,7 +381,7 @@ export default function SystemConfigManager() {
               <Button 
                 variant="ghost" 
                 size="sm"
-                onClick={initializeDefaultConfigs}
+                onClick={() => initializeDefaultConfigs(false)}
                 disabled={loading}
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
