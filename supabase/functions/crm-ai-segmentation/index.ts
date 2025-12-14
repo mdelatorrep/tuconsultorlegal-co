@@ -72,10 +72,11 @@ serve(async (req) => {
     const params = buildResponsesRequestParams(model, {
       input,
       instructions,
-      maxOutputTokens: 2000,
+      maxOutputTokens: 4000,
       temperature: 0.3,
       jsonMode: true,
-      store: false
+      store: false,
+      reasoning: { effort: 'low' } // Simple task - minimize reasoning tokens
     });
 
     const result = await callResponsesAPI(openaiApiKey, params);

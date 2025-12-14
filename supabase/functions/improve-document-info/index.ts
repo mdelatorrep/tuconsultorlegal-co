@@ -184,9 +184,10 @@ Mejora el nombre y descripción para que sean más atractivos y comprensibles pa
     const requestParams = buildResponsesRequestParams(selectedModel, {
       input: [{ role: 'user', content: userMessage }],
       instructions: systemPrompt,
-      maxOutputTokens: 1000,
+      maxOutputTokens: 4000,
       jsonMode: true,
-      store: false
+      store: false,
+      reasoning: { effort: 'low' } // Simple task - minimize reasoning tokens
     });
     
     console.log('OpenAI request params:', JSON.stringify(requestParams, null, 2));

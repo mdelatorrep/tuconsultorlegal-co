@@ -70,9 +70,10 @@ TARGET AUDIENCE: ${target_audience}`;
     const requestParams = buildResponsesRequestParams(configuredModel, {
       input: [{ role: 'user', content: userMessage }],
       instructions,
-      maxOutputTokens: 1500,
+      maxOutputTokens: 3000,
       temperature: 0.3,
-      store: false
+      store: false,
+      reasoning: { effort: 'low' } // Simple task - minimize reasoning tokens
     });
 
     const result = await callResponsesAPI(openAIApiKey, requestParams);

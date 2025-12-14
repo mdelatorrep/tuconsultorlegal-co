@@ -71,10 +71,11 @@ Los números en "fields" son índices (0-based) del array original.`;
     const params = buildResponsesRequestParams(selectedModel, {
       input,
       instructions,
-      maxOutputTokens: 1000,
+      maxOutputTokens: 2000,
       temperature: 0.3,
       jsonMode: true,
-      store: false
+      store: false,
+      reasoning: { effort: 'low' } // Simple task - minimize reasoning tokens
     });
 
     const result = await callResponsesAPI(openaiApiKey, params);

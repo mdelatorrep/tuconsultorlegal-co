@@ -144,9 +144,10 @@ Mejora esta plantilla manteniendo todos los placeholders {{variable}} existentes
     const requestParams = buildResponsesRequestParams(selectedModel, {
       input: [{ role: 'user', content: userMessage }],
       instructions: systemPrompt,
-      maxOutputTokens: 4000,
+      maxOutputTokens: 8000,
       temperature: 0.3,
-      store: false
+      store: false,
+      reasoning: { effort: 'low' } // Simple task - minimize reasoning tokens
     });
 
     console.log('Making OpenAI Responses API request with model:', selectedModel);

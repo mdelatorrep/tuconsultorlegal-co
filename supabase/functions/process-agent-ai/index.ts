@@ -122,9 +122,10 @@ ${docTemplate}`;
     const enhanceParams = buildResponsesRequestParams(selectedModel, {
       input: enhanceInput,
       instructions: enhanceInstructions,
-      maxOutputTokens: 2000,
+      maxOutputTokens: 4000,
       temperature: 0.3,
-      store: false
+      store: false,
+      reasoning: { effort: 'low' } // Simple task - minimize reasoning tokens
     });
 
     const enhanceResult = await callResponsesAPI(openAIApiKey, enhanceParams);
@@ -165,10 +166,11 @@ ${docTemplate}`;
     const extractParams = buildResponsesRequestParams(selectedModel, {
       input: extractInput,
       instructions: extractInstructions,
-      maxOutputTokens: 1500,
+      maxOutputTokens: 3000,
       temperature: 0.1,
       jsonMode: true,
-      store: false
+      store: false,
+      reasoning: { effort: 'low' } // Simple task - minimize reasoning tokens
     });
 
     const extractResult = await callResponsesAPI(openAIApiKey, extractParams);

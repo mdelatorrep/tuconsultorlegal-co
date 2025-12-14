@@ -73,9 +73,10 @@ Mejora la cláusula manteniendo la intención original del usuario pero con reda
     const requestParams = buildResponsesRequestParams(selectedModel, {
       input: [{ role: 'user', content: userMessage }],
       instructions,
-      maxOutputTokens: 1000,
+      maxOutputTokens: 2000,
       temperature: 0.3,
-      store: false
+      store: false,
+      reasoning: { effort: 'low' } // Simple task - minimize reasoning tokens
     });
 
     const result = await callResponsesAPI(openaiApiKey, requestParams);

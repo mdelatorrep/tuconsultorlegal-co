@@ -16,6 +16,19 @@
 export const OPENAI_RESPONSES_ENDPOINT = 'https://api.openai.com/v1/responses';
 
 /**
+ * Detect if a model is a reasoning model (GPT-5, o3, o4)
+ * Reasoning models use internal reasoning tokens and need effort configuration
+ */
+export function isReasoningModel(model: string): boolean {
+  const lowerModel = model.toLowerCase();
+  return (
+    lowerModel.includes('gpt-5') ||
+    lowerModel.includes('o3') ||
+    lowerModel.includes('o4')
+  );
+}
+
+/**
  * Build request parameters for OpenAI Responses API
  */
 export function buildResponsesRequestParams(
