@@ -170,13 +170,13 @@ FORMATO DE RESPUESTA REQUERIDO:
 OBJETIVO: Mejorar el nombre y descripción para que sean más atractivos y comprensibles para ${targetAudience === 'empresas' ? 'empresas' : 'personas naturales'}.`;
     }
 
-    // Prepare user message
+    // Prepare user message - must include "json" for jsonMode to work with Responses API
     const userMessage = `Categoría: ${docCategory || 'No especificada'}
 Público objetivo: ${targetAudience === 'empresas' ? 'Empresas' : 'Personas'}
 Nombre actual: ${docName}
 Descripción actual: ${docDesc}
 
-Mejora el nombre y descripción para que sean más atractivos y comprensibles para ${targetAudience === 'empresas' ? 'clientes corporativos' : 'usuarios finales individuales'}.`;
+Mejora el nombre y descripción para que sean más atractivos y comprensibles para ${targetAudience === 'empresas' ? 'clientes corporativos' : 'usuarios finales individuales'}. Responde ÚNICAMENTE en formato JSON.`;
 
     // Prepare OpenAI Responses API request
     logResponsesRequest(selectedModel, 'improve-document-info', true);
