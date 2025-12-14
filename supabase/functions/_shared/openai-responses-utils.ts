@@ -140,7 +140,7 @@ export function extractOutputText(response: {
   }>;
   output_text?: string;
 }): string | null {
-  // Use output_text shortcut if available
+  // Use output_text shortcut if available (most common)
   if (response.output_text) {
     return response.output_text;
   }
@@ -150,7 +150,8 @@ export function extractOutputText(response: {
     for (const item of response.output) {
       if (item.type === 'message' && item.content) {
         for (const content of item.content) {
-          if (content.type === 'output_text' && content.text) {
+          // Check for both 'text' and 'output_text' types
+          if ((content.type === 'text' || content.type === 'output_text') && content.text) {
             return content.text;
           }
         }
@@ -158,6 +159,8 @@ export function extractOutputText(response: {
     }
   }
 
+  // Log if we couldn't extract text for debugging
+  console.warn('extractOutputText: Could not extract text from response', JSON.stringify(response, null, 2));
   return null;
 }
 
@@ -195,7 +198,14 @@ export async function callResponsesAPI(
     }
 
     const data = await response.json();
+    
+    // Log the full response structure for debugging
+    console.log('OpenAI Responses API full response:', JSON.stringify(data, null, 2));
+    
     const text = extractOutputText(data);
+    
+    // Log extraction result
+    console.log('Extracted text:', text ? `${text.substring(0, 100)}...` : 'null');
 
     return {
       success: true,
