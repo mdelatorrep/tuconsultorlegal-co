@@ -16,6 +16,30 @@
 export const OPENAI_RESPONSES_ENDPOINT = 'https://api.openai.com/v1/responses';
 
 /**
+ * Function type categories for reasoning effort configuration
+ */
+export type ReasoningFunctionType = 'text_generation' | 'analysis' | 'strategy' | 'research';
+
+/**
+ * Default effort levels for each function type
+ * These can be overridden via system_config
+ */
+export const DEFAULT_REASONING_EFFORTS: Record<ReasoningFunctionType, 'low' | 'medium' | 'high'> = {
+  text_generation: 'low',
+  analysis: 'medium',
+  strategy: 'high',
+  research: 'high'
+};
+
+/**
+ * Get the appropriate reasoning effort for a function type
+ * This returns the default mapping - override with system_config values when available
+ */
+export function getReasoningEffortForType(type: ReasoningFunctionType): 'low' | 'medium' | 'high' {
+  return DEFAULT_REASONING_EFFORTS[type] || 'low';
+}
+
+/**
  * Detect if a model is a reasoning model (GPT-5, o3, o4)
  * Reasoning models use internal reasoning tokens and need effort configuration
  */

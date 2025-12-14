@@ -55,7 +55,8 @@ async function processResearch(
   queueItem: any,
   openaiApiKey: string,
   researchModel: string,
-  systemPrompt: string
+  systemPrompt: string,
+  reasoningEffort: 'low' | 'medium' | 'high' = 'high'
 ): Promise<{ success: boolean; error?: string; taskId?: string }> {
   
   const maxRetries = 3;
@@ -75,7 +76,7 @@ async function processResearch(
           model: researchModel,
           max_output_tokens: 50000,
           reasoning: {
-            effort: "medium",
+            effort: reasoningEffort,
             summary: "detailed"
           },
           background: true,
@@ -173,6 +174,7 @@ serve(async (req) => {
       'Eres un especialista en investigación jurídica colombiana. Analiza la consulta y proporciona respuestas detalladas basadas en legislación, jurisprudencia y normativa vigente con fuentes actualizadas.'
     );
     const minSpacing = parseInt(await getSystemConfig(supabase, 'research_queue_min_spacing_seconds', '180'));
+    const reasoningEffort = await getSystemConfig(supabase, 'reasoning_effort_research', 'high') as 'low' | 'medium' | 'high';
     
     let processedCount = 0;
     let rateLimitedCount = 0;
@@ -212,7 +214,8 @@ serve(async (req) => {
         queueItem,
         openaiApiKey,
         researchModel,
-        systemPrompt
+        systemPrompt,
+        reasoningEffort
       );
       
       if (result.success && result.taskId) {

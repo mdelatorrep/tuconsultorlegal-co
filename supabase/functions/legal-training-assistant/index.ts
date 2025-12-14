@@ -91,12 +91,16 @@ ${moduleContent.validationQuestions.map((q: any, i: number) =>
 
     const input = `${conversationHistory}\n\nUsuario: ${message}`;
 
+    // Get reasoning effort from system config (text_generation = low by default)
+    const reasoningEffort = await getSystemConfig('reasoning_effort_default', 'low') as 'low' | 'medium' | 'high';
+    
     const params = buildResponsesRequestParams(openaiModel, {
       input,
       instructions,
       maxOutputTokens: 1200,
       temperature: 0.3,
-      store: false
+      store: false,
+      reasoning: { effort: reasoningEffort }
     });
 
     const result = await callResponsesAPI(openaiApiKey, params);
