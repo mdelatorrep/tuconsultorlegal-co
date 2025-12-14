@@ -98,11 +98,13 @@ serve(async (req) => {
     const optimizerInstructions = await getSystemConfig(supabase, 'prompt_optimizer_instructions', '');
     
     // Build request parameters using shared utility
+    // Use high token limit and low reasoning effort for text generation tasks
     const params = buildResponsesRequestParams(model, {
       input: fullPrompt,
       instructions: optimizerInstructions || 'Eres un experto en ingeniería de prompts. Optimiza el prompt proporcionado siguiendo las directrices dadas. Responde SOLO con el prompt optimizado.',
-      maxOutputTokens: 4000,
-      jsonMode: false
+      maxOutputTokens: 16000,
+      jsonMode: false,
+      reasoningEffort: 'low'
     });
 
     // Call OpenAI Responses API
