@@ -102,22 +102,32 @@ Responde ÚNICAMENTE en formato JSON con la estructura de bloques de conversaci�
       throw new Error('Invalid response structure from AI - no blocks array found');
     }
 
-    const conversationBlocks = blocksArray.map((block: any, index: number) => ({
-      id: `suggested-block-${index + 1}`,
-      name: block.blockName || block.title || `Bloque ${index + 1}`,
-      introduction: block.introPhrase || block.prompt_to_user || '',
-      placeholders: Array.isArray(block.placeholders) ? block.placeholders : []
-    }));
+    const conversationBlocks = blocksArray.map((block: any, index: number) => {
+      // Extract placeholder names - handle both string arrays and object arrays with 'name' property
+      let placeholderNames: string[] = [];
+      if (Array.isArray(block.placeholders)) {
+        placeholderNames = block.placeholders.map((p: any) => 
+          typeof p === 'string' ? p : (p.name || p.placeholder || '')
+        ).filter((name: string) => name);
+      }
+      
+      return {
+        id: `suggested-block-${index + 1}`,
+        name: block.blockName || block.title || `Bloque ${index + 1}`,
+        introduction: block.introPhrase || block.prompt_to_user || (Array.isArray(block.prompts) ? block.prompts[0] : ''),
+        placeholders: placeholderNames
+      };
+    });
 
-    console.log('✅ Conversation blocks suggested successfully');
+    console.log('✅ Conversation blocks suggested successfully:', conversationBlocks.length, 'blocks');
 
     return new Response(JSON.stringify({
       success: true,
       conversationBlocks,
-      strategy: parsedResponse.overallStrategy,
-      reasoning: parsedResponse.suggestedBlocks.map((b: any) => ({
-        blockName: b.blockName,
-        reasoning: b.reasoning
+      strategy: parsedResponse.overallStrategy || parsedResponse.description,
+      reasoning: blocksArray.map((b: any) => ({
+        blockName: b.blockName || b.title,
+        reasoning: b.reasoning || b.description
       }))
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
