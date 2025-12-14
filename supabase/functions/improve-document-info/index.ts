@@ -185,7 +185,6 @@ Mejora el nombre y descripción para que sean más atractivos y comprensibles pa
       input: [{ role: 'user', content: userMessage }],
       instructions: systemPrompt,
       maxOutputTokens: 1000,
-      temperature: 0.3,
       jsonMode: true,
       store: false
     });
