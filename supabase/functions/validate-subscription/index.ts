@@ -27,14 +27,30 @@ serve(async (req) => {
     // Get the authenticated user
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      throw new Error("No authorization header provided");
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: "No authorization header provided",
+        requiresReauth: true
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
     }
 
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
     
     if (userError || !userData.user) {
-      throw new Error("User not authenticated");
+      console.log("Session expired or invalid:", userError?.message);
+      // Return 401 for auth errors, not 500
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: "Session expired",
+        requiresReauth: true
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
     }
 
     const user = userData.user;
