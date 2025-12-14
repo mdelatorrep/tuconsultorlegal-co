@@ -46,7 +46,14 @@ serve(async (req) => {
 
     // Get configured model and prompt
     const selectedModel = await getSystemConfig('content_optimization_model', 'gpt-4.1-2025-04-14');
-    const systemPrompt = await getSystemConfig('organize_form_prompt', 'Eres un experto en UX que organiza formularios para mejorar la experiencia del usuario. Responde únicamente con JSON válido.');
+    const systemPrompt = await getSystemConfig('organize_form_prompt', '');
+    
+    if (!systemPrompt) {
+      console.error('❌ organize_form_prompt not configured in system_config');
+      return new Response(JSON.stringify({ error: 'Configuración faltante: organize_form_prompt' }), { 
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
+    }
 
     logResponsesRequest(selectedModel, 'organize-form-groups', true);
 

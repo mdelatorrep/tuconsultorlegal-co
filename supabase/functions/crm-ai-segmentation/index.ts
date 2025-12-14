@@ -55,7 +55,14 @@ serve(async (req) => {
 
     // Get model and prompt from system config
     const model = await getSystemConfig(supabase, 'content_optimization_model', 'gpt-4.1-2025-04-14');
-    const systemPrompt = await getSystemConfig(supabase, 'crm_segmentation_prompt', 'Eres un experto en análisis de datos y segmentación de clientes para un despacho legal. Analiza los datos y crea segmentos útiles. Devuelve JSON con formato: {"segments": [{"name": "...", "description": "...", "criteria": {...}}]}');
+    const systemPrompt = await getSystemConfig(supabase, 'crm_segmentation_prompt', '');
+    
+    if (!systemPrompt) {
+      console.error('❌ crm_segmentation_prompt not configured in system_config');
+      return new Response(JSON.stringify({ error: 'Configuración faltante: crm_segmentation_prompt' }), { 
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
+    }
     logResponsesRequest(model, 'crm-ai-segmentation', true);
 
     const { data: clients, error: clientsError } = await supabase

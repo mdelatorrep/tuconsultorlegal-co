@@ -50,27 +50,14 @@ serve(async (req) => {
 
     // Get model and prompt from system config
     const model = await getSystemConfig(supabase, 'content_optimization_model', 'gpt-4.1-2025-04-14');
-    const systemPrompt = await getSystemConfig(supabase, 'organize_file_prompt', `Eres un asistente especializado en organización de archivos legales. Analiza nombres de archivos y sugiere estructuras de organización.
-
-Basándote solo en el nombre del archivo, proporciona:
-- Tipo de documento probable
-- Clasificación del documento
-- Estructura de carpetas sugerida
-- Metadatos extraíbles del nombre
-- Tags para organización
-- Acciones recomendadas
-
-Responde en formato JSON:
-{
-  "documentType": "tipo",
-  "classification": "clasificación",
-  "folderStructure": "estructura de carpetas",
-  "metadata": ["metadato1", "metadato2"],
-  "tags": ["tag1", "tag2"],
-  "actions": ["acción1", "acción2"],
-  "suggestedCase": "nombre del caso sugerido",
-  "analysis": "análisis en markdown"
-}`);
+    const systemPrompt = await getSystemConfig(supabase, 'organize_file_prompt', '');
+    
+    if (!systemPrompt) {
+      console.error('❌ organize_file_prompt not configured in system_config');
+      return new Response(JSON.stringify({ error: 'Configuración faltante: organize_file_prompt' }), { 
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
+    }
     logResponsesRequest(model, 'organize-file-ai', true);
 
     const instructions = systemPrompt;

@@ -39,21 +39,14 @@ serve(async (req) => {
 
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     const openaiModel = await getSystemConfig('document_chat_ai_model', 'gpt-4.1-2025-04-14');
-    const basePrompt = await getSystemConfig('legal_training_assistant_prompt', `Eres un **Asistente Especializado en IA Legal** y formación para abogados. Tu misión es educar, evaluar y certificar a abogados en Inteligencia Artificial aplicada al derecho.
-
-**SISTEMA DE EVALUACIÓN:**
-SI el usuario solicita evaluación (evaluar, examen, prueba, test, completar, listo):
-1. Haz UNA pregunta a la vez
-2. Evalúa cada respuesta
-3. Calcula puntuación sobre 100
-4. Para aprobar: mínimo 80/100
-5. Si aprueba: indica "MÓDULO_COMPLETADO" al final
-
-**TU PAPEL:**
-1. Responde preguntas con profundidad
-2. Proporciona ejemplos prácticos del contexto colombiano
-3. Evalúa rigurosamente antes de aprobar
-4. Mantén tono profesional pero accesible`);
+    const basePrompt = await getSystemConfig('legal_training_assistant_prompt', '');
+    
+    if (!basePrompt) {
+      console.error('❌ legal_training_assistant_prompt not configured in system_config');
+      return new Response(JSON.stringify({ error: 'Configuración faltante: legal_training_assistant_prompt' }), { 
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
+    }
 
     if (!openaiApiKey) {
       return new Response(JSON.stringify({ error: 'OpenAI API key not configured' }), {

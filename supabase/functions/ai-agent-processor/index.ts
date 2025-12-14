@@ -144,9 +144,14 @@ serve(async (req) => {
 
     // Get system configuration
     const model = await getSystemConfig(supabase, 'agent_creation_ai_model', 'gpt-4.1-2025-04-14');
-    const baseDNA = await getSystemConfig(supabase, 'agent_creation_system_prompt', 
-      `## ROL Y OBJETIVO
-Eres "Lexi-Guía", un asistente de IA experto en la creación de documentos legales en Colombia.`);
+    const baseDNA = await getSystemConfig(supabase, 'agent_creation_system_prompt', '');
+    
+    if (!baseDNA) {
+      console.error('❌ agent_creation_system_prompt not configured in system_config');
+      return new Response(JSON.stringify({ error: 'Configuración faltante: agent_creation_system_prompt' }), { 
+        status: 500, headers: securityHeaders 
+      });
+    }
 
     logResponsesRequest(model, 'ai-agent-processor', true);
 

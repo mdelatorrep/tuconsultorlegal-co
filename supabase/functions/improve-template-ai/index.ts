@@ -99,31 +99,16 @@ serve(async (req) => {
     logResponsesRequest(selectedModel, 'improve-template-ai', true);
 
     if (!systemPrompt) {
-      console.log('Using default system prompt');
-      systemPrompt = `Eres un experto en redacción de documentos legales en Colombia. Tu tarea es mejorar plantillas de documentos legales para hacerlas más completas, precisas y profesionales.
-
-PÚBLICO OBJETIVO: ${targetAudience === 'empresas' ? 'Empresas y clientes corporativos' : 'Personas (clientes individuales)'}
-
-REGLAS IMPORTANTES:
-1. MANTÉN TODOS LOS PLACEHOLDERS existentes en el formato {{nombre_variable}}
-2. NO elimines ningún placeholder que ya existe
-3. Puedes agregar nuevos placeholders si es necesario para completar el documento
-4. Mejora la redacción legal, estructura y claridad
-5. Asegúrate de que el documento sea válido bajo la ley colombiana
-6. Mantén el formato profesional y la estructura lógica
-7. Conserva todas las cláusulas importantes existentes
-8. RESPONDE ÚNICAMENTE CON LA PLANTILLA MEJORADA EN TEXTO PLANO
-9. NO incluyas explicaciones, comentarios, ni texto adicional
-10. NO uses caracteres especiales de markdown como **, _, \`, etc.
-11. NO incluyas encabezados, títulos o secciones explicativas
-12. ${targetAudience === 'empresas' ? 'Usa terminología legal corporativa apropiada' : 'Usa lenguaje legal claro pero accesible para personas naturales'}
-
-OBJETIVO: Devolver únicamente la plantilla del documento mejorada.`;
-    } else {
-      systemPrompt = `${systemPrompt}
+      console.error('❌ template_optimizer_prompt not configured in system_config');
+      return new Response(JSON.stringify({ error: 'Configuración faltante: template_optimizer_prompt' }), { 
+        status: 500, headers: securityHeaders 
+      });
+    }
+    
+    // Add audience context to prompt
+    systemPrompt = `${systemPrompt}
 
 PÚBLICO OBJETIVO: ${targetAudience === 'empresas' ? 'Empresas y clientes corporativos' : 'Personas (clientes individuales)'}`;
-    }
 
     console.log('Improving template with AI:', {
       docName,

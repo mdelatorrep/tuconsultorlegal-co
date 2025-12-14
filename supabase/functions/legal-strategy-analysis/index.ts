@@ -78,11 +78,14 @@ serve(async (req) => {
 
     // Get configuration
     const strategyModel = await getSystemConfig(supabase, 'strategy_ai_model', 'gpt-4o-mini');
-    const strategyPrompt = await getSystemConfig(
-      supabase, 
-      'strategy_ai_prompt', 
-      'Eres un asistente especializado en estrategia legal. Analiza casos y proporciona estrategias integrales.'
-    );
+    const strategyPrompt = await getSystemConfig(supabase, 'strategy_ai_prompt', '');
+    
+    if (!strategyPrompt) {
+      console.error('❌ strategy_ai_prompt not configured in system_config');
+      return new Response(JSON.stringify({ error: 'Configuración faltante: strategy_ai_prompt' }), { 
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
+    }
 
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openaiApiKey) throw new Error('OpenAI API key not configured');

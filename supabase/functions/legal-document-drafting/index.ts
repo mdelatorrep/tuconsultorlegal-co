@@ -76,11 +76,14 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const draftingModel = await getSystemConfig(supabase, 'drafting_ai_model', 'gpt-4.1-2025-04-14');
-    const draftingPrompt = await getSystemConfig(
-      supabase, 
-      'drafting_ai_prompt', 
-      'Eres un asistente especializado en redacción de documentos legales. Genera borradores profesionales siguiendo la legislación colombiana.'
-    );
+    const draftingPrompt = await getSystemConfig(supabase, 'drafting_ai_prompt', '');
+    
+    if (!draftingPrompt) {
+      console.error('❌ drafting_ai_prompt not configured in system_config');
+      return new Response(JSON.stringify({ error: 'Configuración faltante: drafting_ai_prompt' }), { 
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
+    }
 
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openaiApiKey) throw new Error('OpenAI API key not configured');
