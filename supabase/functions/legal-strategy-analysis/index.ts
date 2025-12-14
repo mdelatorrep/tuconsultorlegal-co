@@ -1,79 +1,54 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { buildOpenAIRequestParams, logModelRequest, getModelGeneration } from "../_shared/openai-model-utils.ts";
-
-// Helper function to get system configuration
-async function getSystemConfig(supabaseClient: any, configKey: string, defaultValue?: string): Promise<string> {
-  try {
-    console.log(`Fetching config for key: ${configKey}`);
-    
-    const { data, error } = await supabaseClient
-      .from('system_config')
-      .select('config_value')
-      .eq('config_key', configKey)
-      .maybeSingle();
-
-    console.log(`Config result for ${configKey}:`, { data, error });
-
-    if (error) {
-      console.error(`Error fetching config ${configKey}:`, error);
-      return defaultValue || '';
-    }
-
-    if (!data) {
-      console.log(`No config found for ${configKey}, using default: ${defaultValue}`);
-      return defaultValue || '';
-    }
-
-    console.log(`Using config ${configKey}: ${data.config_value}`);
-    return data.config_value;
-  } catch (error) {
-    console.error(`Exception fetching config ${configKey}:`, error);
-    return defaultValue || '';
-  }
-}
+import { 
+  buildResponsesRequestParams, 
+  callResponsesAPI, 
+  logResponsesRequest 
+} from "../_shared/openai-responses-utils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Helper function to save results to legal_tools_results table
+// Helper function to get system configuration
+async function getSystemConfig(supabaseClient: any, configKey: string, defaultValue?: string): Promise<string> {
+  try {
+    const { data, error } = await supabaseClient
+      .from('system_config')
+      .select('config_value')
+      .eq('config_key', configKey)
+      .maybeSingle();
+
+    if (error || !data) return defaultValue || '';
+    return data.config_value;
+  } catch (error) {
+    return defaultValue || '';
+  }
+}
+
+// Helper function to save results
 async function saveToolResult(supabase: any, lawyerId: string, toolType: string, inputData: any, outputData: any, metadata: any = {}) {
   try {
-    console.log(`Saving ${toolType} result for lawyer: ${lawyerId}`);
-    
-    const { error } = await supabase
-      .from('legal_tools_results')
-      .insert({
-        lawyer_id: lawyerId,
-        tool_type: toolType,
-        input_data: inputData,
-        output_data: outputData,
-        metadata: {
-          ...metadata,
-          timestamp: new Date().toISOString()
-        }
-      });
-
-    if (error) {
-      console.error('Error saving tool result:', error);
-    } else {
-      console.log(`✅ Successfully saved ${toolType} result`);
-    }
+    await supabase.from('legal_tools_results').insert({
+      lawyer_id: lawyerId,
+      tool_type: toolType,
+      input_data: inputData,
+      output_data: outputData,
+      metadata: { ...metadata, timestamp: new Date().toISOString() }
+    });
   } catch (error) {
-    console.error('Exception saving tool result:', error);
+    console.error('Error saving tool result:', error);
   }
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Get authentication header and verify user
+    // Get authentication
     const authHeader = req.headers.get('authorization');
     let lawyerId = null;
     
@@ -82,7 +57,6 @@ serve(async (req) => {
         Deno.env.get('SUPABASE_URL')!,
         Deno.env.get('SUPABASE_ANON_KEY')!
       );
-      
       const token = authHeader.replace('Bearer ', '');
       const { data: userData } = await supabaseClient.auth.getUser(token);
       lawyerId = userData.user?.id;
@@ -93,10 +67,7 @@ serve(async (req) => {
     if (!caseDescription) {
       return new Response(
         JSON.stringify({ error: 'Case description is required' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -105,175 +76,66 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get strategy AI model and prompt from system config
+    // Get configuration
     const strategyModel = await getSystemConfig(supabase, 'strategy_ai_model', 'gpt-4o-mini');
     const strategyPrompt = await getSystemConfig(
       supabase, 
       'strategy_ai_prompt', 
-      'Eres un asistente especializado en estrategia legal. Analiza casos y proporciona estrategias integrales incluyendo vías de acción, argumentos, contraargumentos y precedentes.'
+      'Eres un asistente especializado en estrategia legal. Analiza casos y proporciona estrategias integrales.'
     );
 
-    logModelRequest(strategyModel, 'legal-strategy-analysis');
-
-    // Get OpenAI API key from environment
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiApiKey) {
-      throw new Error('OpenAI API key not configured');
-    }
+    if (!openaiApiKey) throw new Error('OpenAI API key not configured');
 
-    // Check if it's a reasoning model
-    const modelGeneration = getModelGeneration(strategyModel);
-    const isReasoningModel = modelGeneration === 'reasoning';
-    
-    console.log(`Model type: ${modelGeneration} (reasoning: ${isReasoningModel})`);
+    logResponsesRequest(strategyModel, 'legal-strategy-analysis', true);
 
-    const jsonFormat = `
-{
-  "legalActions": [
-    {
-      "action": "Nombre de la acción legal",
-      "viability": "high|medium|low",
-      "description": "Descripción de la acción",
-      "requirements": ["Lista", "de", "requisitos"]
-    }
-  ],
-  "legalArguments": [
-    {
-      "argument": "Argumento legal",
-      "foundation": "Base legal (artículos, leyes, etc.)",
-      "strength": "strong|moderate|weak"
-    }
-  ],
-  "counterarguments": [
-    {
-      "argument": "Posible contraargumento",
-      "response": "Cómo responder",
-      "mitigation": "Estrategia de mitigación"
-    }
-  ],
-  "precedents": [
-    {
-      "case": "Nombre del caso/sentencia",
-      "relevance": "Por qué es relevante",
-      "outcome": "Resultado del caso"
-    }
-  ],
-  "recommendations": ["Lista", "de", "recomendaciones", "estratégicas"]
+    const jsonFormat = `{
+  "legalActions": [{"action": "Nombre", "viability": "high|medium|low", "description": "...", "requirements": [...]}],
+  "legalArguments": [{"argument": "...", "foundation": "...", "strength": "strong|moderate|weak"}],
+  "counterarguments": [{"argument": "...", "response": "...", "mitigation": "..."}],
+  "precedents": [{"case": "...", "relevance": "...", "outcome": "..."}],
+  "recommendations": [...]
 }`;
 
-    // Prepare messages based on model type
-    let messages;
-    if (isReasoningModel) {
-      // For reasoning models, use a simpler structure with single user message
-      messages = [
-        {
-          role: 'user',
-          content: `${strategyPrompt}
-
-Caso a analizar: ${caseDescription}
+    const instructions = `${strategyPrompt}
 
 Instrucciones específicas:
 - Analiza el caso legal proporcionado
-- Identifica las mejores vías de acción legal disponibles
+- Identifica las mejores vías de acción legal
 - Proporciona argumentos jurídicos sólidos con fundamentos legales
 - Anticipa posibles contraargumentos y cómo responder
-- Incluye precedentes judiciales relevantes cuando sea posible
-- Proporciona recomendaciones estratégicas específicas
+- Incluye precedentes judiciales relevantes
+- Proporciona recomendaciones estratégicas
 
-Responde en formato JSON con la siguiente estructura:
-${jsonFormat}`
-        }
-      ];
-    } else {
-      // For standard models, use system + user messages
-      messages = [
-        {
-          role: 'system',
-          content: `${strategyPrompt}
+Responde en formato JSON con esta estructura:
+${jsonFormat}`;
 
-Instrucciones específicas:
-- Analiza el caso legal proporcionado
-- Identifica las mejores vías de acción legal disponibles
-- Proporciona argumentos jurídicos sólidos con fundamentos legales
-- Anticipa posibles contraargumentos y cómo responder
-- Incluye precedentes judiciales relevantes cuando sea posible
-- Proporciona recomendaciones estratégicas específicas
-
-Responde en formato JSON con la siguiente estructura:
-${jsonFormat}`
-        },
-        {
-          role: 'user',
-          content: `Analiza estratégicamente el siguiente caso legal:
-
-${caseDescription}
-
-Proporciona un análisis estratégico completo para el caso.`
-        }
-      ];
-    }
-
-    const requestParams = buildOpenAIRequestParams(strategyModel, messages, {
-      maxTokens: 4000,
-      temperature: 0.3
+    const params = buildResponsesRequestParams(strategyModel, {
+      input: `Analiza estratégicamente el siguiente caso legal:\n\n${caseDescription}`,
+      instructions,
+      maxOutputTokens: 4000,
+      temperature: 0.3,
+      jsonMode: true,
+      store: false
     });
 
-    // Call OpenAI API
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestParams),
-    });
+    const result = await callResponsesAPI(openaiApiKey, params);
 
-    if (!openaiResponse.ok) {
-      const errorData = await openaiResponse.text();
-      console.error('OpenAI API error:', errorData);
-      throw new Error(`OpenAI API error: ${openaiResponse.status}`);
+    if (!result.success) {
+      throw new Error(`Strategy analysis failed: ${result.error}`);
     }
 
-    const openaiData = await openaiResponse.json();
-    const content = openaiData.choices[0].message.content;
-
-    // Try to parse as JSON, fallback to structured response if parsing fails
+    // Parse response
     let strategyResult;
     try {
-      strategyResult = JSON.parse(content);
+      strategyResult = JSON.parse(result.text || '{}');
     } catch (e) {
-      // Fallback: create basic structure
       strategyResult = {
-        legalActions: [
-          {
-            action: "Análisis Manual Requerido",
-            viability: "medium",
-            description: "El caso requiere análisis detallado",
-            requirements: ["Consulta con especialista"]
-          }
-        ],
-        legalArguments: [
-          {
-            argument: "Requiere análisis especializado",
-            foundation: "Análisis detallado del caso",
-            strength: "moderate"
-          }
-        ],
-        counterarguments: [
-          {
-            argument: "Análisis pendiente",
-            response: "Requiere revisión detallada",
-            mitigation: "Consultar especialista"
-          }
-        ],
-        precedents: [
-          {
-            case: "Análisis pendiente",
-            relevance: "Requiere investigación específica",
-            outcome: "Por determinar"
-          }
-        ],
-        recommendations: ["Consultar con especialista legal", "Realizar análisis detallado del caso"]
+        legalActions: [{ action: "Análisis Manual Requerido", viability: "medium", description: "El caso requiere análisis detallado", requirements: ["Consulta con especialista"] }],
+        legalArguments: [{ argument: "Requiere análisis especializado", foundation: "Análisis del caso", strength: "moderate" }],
+        counterarguments: [{ argument: "Análisis pendiente", response: "Revisión detallada", mitigation: "Consultar especialista" }],
+        precedents: [{ case: "Análisis pendiente", relevance: "Investigación específica", outcome: "Por determinar" }],
+        recommendations: ["Consultar con especialista legal"]
       };
     }
 
@@ -284,36 +146,22 @@ Proporciona un análisis estratégico completo para el caso.`
       timestamp: new Date().toISOString()
     };
 
-    // Save result to database if user is authenticated
+    // Save result if authenticated
     if (lawyerId) {
-      await saveToolResult(
-        supabase,
-        lawyerId,
-        'strategy',
-        { caseDescription },
-        strategyResult,
-        { timestamp: new Date().toISOString() }
-      );
+      await saveToolResult(supabase, lawyerId, 'strategy', { caseDescription }, strategyResult, {});
     }
 
-    return new Response(
-      JSON.stringify(resultData),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
+    console.log('✅ Strategy analysis completed');
+
+    return new Response(JSON.stringify(resultData), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
 
   } catch (error) {
-    console.error('Error in legal-strategy-analysis function:', error);
+    console.error('❌ Error in strategy analysis:', error);
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error.message || 'Internal server error' 
-      }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      JSON.stringify({ success: false, error: error.message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
