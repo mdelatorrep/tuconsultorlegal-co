@@ -11,6 +11,21 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper function to get system configuration
+async function getSystemConfig(supabaseClient: any, configKey: string, defaultValue: string): Promise<string> {
+  try {
+    const { data, error } = await supabaseClient
+      .from('system_config')
+      .select('config_value')
+      .eq('config_key', configKey)
+      .maybeSingle();
+    if (error || !data) return defaultValue;
+    return data.config_value;
+  } catch (e) {
+    return defaultValue;
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -38,6 +53,10 @@ serve(async (req) => {
       );
     }
 
+    // Get model from system config
+    const model = await getSystemConfig(supabase, 'crm_segmentation_model', 'gpt-4.1-2025-04-14');
+    logResponsesRequest(model, 'crm-ai-segmentation', true);
+
     const { data: clients, error: clientsError } = await supabase
       .from('crm_clients')
       .select(`*, cases:crm_cases(count), communications:crm_communications(count)`)
@@ -62,12 +81,9 @@ serve(async (req) => {
       created_at: client.created_at
     }));
 
-    const model = 'gpt-4o-mini';
-    logResponsesRequest(model, 'crm-ai-segmentation', true);
-
     const instructions = `Eres un experto en análisis de datos y segmentación de clientes para un despacho legal. Analiza los datos y crea segmentos útiles. Devuelve JSON con formato: {"segments": [{"name": "...", "description": "...", "criteria": {...}}]}`;
 
-    const input = `Analiza estos datos de clientes y crea segmentos útiles:\n${JSON.stringify(clientsData, null, 2)}`;
+    const input = `Analiza estos datos de clientes y crea segmentos útiles. Responde ÚNICAMENTE en formato JSON:\n${JSON.stringify(clientsData, null, 2)}`;
 
     const params = buildResponsesRequestParams(model, {
       input,
@@ -76,7 +92,7 @@ serve(async (req) => {
       temperature: 0.3,
       jsonMode: true,
       store: false,
-      reasoning: { effort: 'low' } // Simple task - minimize reasoning tokens
+      reasoning: { effort: 'low' }
     });
 
     const result = await callResponsesAPI(openaiApiKey, params);

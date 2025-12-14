@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3';
 import { 
   buildResponsesRequestParams, 
   callResponsesAPI, 
@@ -9,6 +10,21 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Helper function to get system configuration
+async function getSystemConfig(supabaseClient: any, configKey: string, defaultValue: string): Promise<string> {
+  try {
+    const { data, error } = await supabaseClient
+      .from('system_config')
+      .select('config_value')
+      .eq('config_key', configKey)
+      .maybeSingle();
+    if (error || !data) return defaultValue;
+    return data.config_value;
+  } catch (e) {
+    return defaultValue;
+  }
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -28,7 +44,12 @@ serve(async (req) => {
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openaiApiKey) throw new Error('OpenAI API key not configured');
 
-    const model = 'gpt-4o-mini';
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Get model from system config
+    const model = await getSystemConfig(supabase, 'organize_file_model', 'gpt-4.1-2025-04-14');
     logResponsesRequest(model, 'organize-file-ai', true);
 
     const instructions = `Eres un asistente especializado en organización de archivos legales. Analiza nombres de archivos y sugiere estructuras de organización.
@@ -53,7 +74,7 @@ Responde en formato JSON:
   "analysis": "análisis en markdown"
 }`;
 
-    const input = `Analiza este nombre de archivo legal: "${fileName}"`;
+    const input = `Analiza este nombre de archivo legal: "${fileName}". Responde ÚNICAMENTE en formato JSON.`;
 
     const params = buildResponsesRequestParams(model, {
       input,
@@ -62,7 +83,7 @@ Responde en formato JSON:
       temperature: 0.3,
       jsonMode: true,
       store: false,
-      reasoning: { effort: 'low' } // Simple task - minimize reasoning tokens
+      reasoning: { effort: 'low' }
     });
 
     const result = await callResponsesAPI(openaiApiKey, params);

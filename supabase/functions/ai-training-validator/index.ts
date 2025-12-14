@@ -80,12 +80,13 @@ FORMATO DE RESPUESTA (JSON):
 }`;
 
     const params = buildResponsesRequestParams(selectedModel, {
-      input: validationPrompt,
+      input: `${validationPrompt}\n\nResponde ÚNICAMENTE en formato JSON válido.`,
       instructions,
-      maxOutputTokens: 2500,
+      maxOutputTokens: 4000,
       temperature: 0.3,
       jsonMode: true,
-      store: false
+      store: false,
+      reasoning: { effort: 'medium' }
     });
 
     const result = await callResponsesAPI(openAIApiKey, params);

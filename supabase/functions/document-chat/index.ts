@@ -84,12 +84,13 @@ Responde SOLO en formato JSON:
       const userInput = message || (messages && messages[messages.length - 1]?.content) || '';
 
       const routingParams = buildResponsesRequestParams(configuredModel, {
-        input: [{ role: 'user', content: userInput }],
+        input: [{ role: 'user', content: `${userInput}\n\nResponde en formato JSON.` }],
         instructions: routingInstructions,
-        maxOutputTokens: 200,
+        maxOutputTokens: 500,
         temperature: 0.1,
         jsonMode: true,
-        store: false
+        store: false,
+        reasoning: { effort: 'low' }
       });
 
       const routingResult = await callResponsesAPI(openaiApiKey, routingParams);
@@ -151,9 +152,10 @@ FORMATO DE RESPUESTA:
       const lexiParams = buildResponsesRequestParams(configuredModel, {
         input: [{ role: 'user', content: userMessage }],
         instructions: lexiInstructions,
-        maxOutputTokens: 800,
+        maxOutputTokens: 1500,
         temperature: 0.7,
-        store: false
+        store: false,
+        reasoning: { effort: 'low' }
       });
 
       const lexiResult = await callResponsesAPI(openaiApiKey, lexiParams);
@@ -212,9 +214,10 @@ IMPORTANTE - FORMATO DE RESPUESTA:
     const chatParams = buildResponsesRequestParams(configuredModel, {
       input: inputMessages,
       instructions: systemInstructions,
-      maxOutputTokens: 1000,
+      maxOutputTokens: 2000,
       temperature: 0.7,
-      store: false
+      store: false,
+      reasoning: { effort: 'low' }
     });
 
     const chatResult = await callResponsesAPI(openaiApiKey, chatParams);

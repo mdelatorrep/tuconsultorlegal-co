@@ -111,12 +111,13 @@ Responde en formato JSON con esta estructura:
 ${jsonFormat}`;
 
     const params = buildResponsesRequestParams(strategyModel, {
-      input: `Analiza estratégicamente el siguiente caso legal:\n\n${caseDescription}`,
+      input: `Analiza estratégicamente el siguiente caso legal:\n\n${caseDescription}\n\nResponde ÚNICAMENTE en formato JSON válido.`,
       instructions,
-      maxOutputTokens: 4000,
+      maxOutputTokens: 8000,
       temperature: 0.3,
       jsonMode: true,
-      store: false
+      store: false,
+      reasoning: { effort: 'medium' }
     });
 
     const result = await callResponsesAPI(openaiApiKey, params);
