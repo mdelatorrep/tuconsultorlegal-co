@@ -95,14 +95,17 @@ Responde ÃšNICAMENTE en formato JSON con la estructura de bloques de conversaciÃ
       throw new Error('Failed to parse AI response as JSON');
     }
 
-    if (!parsedResponse.suggestedBlocks || !Array.isArray(parsedResponse.suggestedBlocks)) {
-      throw new Error('Invalid response structure from AI');
+    // Accept both 'suggestedBlocks' and 'blocks' structures from AI
+    const blocksArray = parsedResponse.suggestedBlocks || parsedResponse.blocks;
+    if (!blocksArray || !Array.isArray(blocksArray)) {
+      console.error('Parsed response:', JSON.stringify(parsedResponse));
+      throw new Error('Invalid response structure from AI - no blocks array found');
     }
 
-    const conversationBlocks = parsedResponse.suggestedBlocks.map((block: any, index: number) => ({
+    const conversationBlocks = blocksArray.map((block: any, index: number) => ({
       id: `suggested-block-${index + 1}`,
-      name: block.blockName || `Bloque ${index + 1}`,
-      introduction: block.introPhrase || '',
+      name: block.blockName || block.title || `Bloque ${index + 1}`,
+      introduction: block.introPhrase || block.prompt_to_user || '',
       placeholders: Array.isArray(block.placeholders) ? block.placeholders : []
     }));
 
