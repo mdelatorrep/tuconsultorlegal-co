@@ -98,3 +98,6 @@ verify_jwt = false
 
 [functions.dlocal-webhook]
 verify_jwt = false
+
+[functions.optimize-prompt]
+verify_jwt = false

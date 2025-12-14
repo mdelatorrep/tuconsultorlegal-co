@@ -5,330 +5,243 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Edit3, Trash2, Settings, Save, X, RefreshCw } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
+import { 
+  Settings, 
+  RefreshCw, 
+  Bot, 
+  FileText, 
+  Scale, 
+  MessageSquare, 
+  Wrench,
+  Sparkles,
+  Save,
+  Plus
+} from "lucide-react";
+import AIFunctionConfig from "./admin/AIFunctionConfig";
 
 interface SystemConfig {
   id: string;
   config_key: string;
   config_value: string;
   description?: string;
-  created_at: string;
-  updated_at: string;
 }
 
-interface ConfigCategory {
+interface AIFunction {
   id: string;
   name: string;
   description: string;
-  icon: string;
-  configs: ConfigTemplate[];
+  promptKey: string;
+  modelKey?: string;
+  additionalParams?: { key: string; name: string; type: 'text' | 'number' }[];
+  colorClass: string;
 }
 
-interface ConfigTemplate {
-  key: string;
+interface FunctionCategory {
+  id: string;
   name: string;
   description: string;
-  defaultValue: string;
-  type: 'text' | 'textarea' | 'select' | 'number';
-  options?: string[];
-  placeholder?: string;
+  icon: React.ReactNode;
+  functions: AIFunction[];
 }
 
 export default function SystemConfigManager() {
   const [configs, setConfigs] = useState<SystemConfig[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showEditor, setShowEditor] = useState(false);
-  const [editingConfig, setEditingConfig] = useState<SystemConfig | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string>('legal-tools');
   const [openaiModels, setOpenaiModels] = useState<string[]>([]);
   const [loadingModels, setLoadingModels] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>('agent-functions');
+  const [showGlobalParams, setShowGlobalParams] = useState(false);
   const { toast } = useToast();
 
-  const [configForm, setConfigForm] = useState({
-    config_key: "",
-    config_value: "",
-    description: ""
-  });
-
-  // Definir categorías de configuración
-  const configCategories: ConfigCategory[] = [
+  // Define function categories
+  const functionCategories: FunctionCategory[] = [
+    {
+      id: 'agent-functions',
+      name: 'Funciones de Agentes',
+      description: 'Creación y gestión de agentes IA para documentos legales',
+      icon: <Bot className="w-5 h-5" />,
+      functions: [
+        {
+          id: 'improve_clause',
+          name: 'Mejorar Cláusulas',
+          description: 'Optimiza cláusulas legales en plantillas de documentos',
+          promptKey: 'improve_clause_ai_prompt',
+          modelKey: 'content_optimization_model',
+          colorClass: 'border-l-purple-500'
+        },
+        {
+          id: 'suggest_blocks',
+          name: 'Sugerir Bloques de Conversación',
+          description: 'Genera bloques de conversación para agentes de documentos',
+          promptKey: 'suggest_conversation_blocks_prompt',
+          modelKey: 'content_optimization_model',
+          colorClass: 'border-l-purple-500'
+        },
+        {
+          id: 'agent_creation',
+          name: 'Creación de Agentes',
+          description: 'Genera y optimiza configuraciones de agentes legales',
+          promptKey: 'agent_creation_system_prompt',
+          modelKey: 'agent_creation_ai_model',
+          colorClass: 'border-l-purple-500'
+        }
+      ]
+    },
+    {
+      id: 'document-functions',
+      name: 'Funciones de Documentos',
+      description: 'Generación y procesamiento de documentos legales',
+      icon: <FileText className="w-5 h-5" />,
+      functions: [
+        {
+          id: 'document_chat',
+          name: 'Chat de Documentos',
+          description: 'Recopila información del usuario para generar documentos',
+          promptKey: 'document_chat_prompt',
+          modelKey: 'document_chat_ai_model',
+          colorClass: 'border-l-blue-500'
+        },
+        {
+          id: 'generate_document',
+          name: 'Generar Documento',
+          description: 'Genera el documento final desde datos recopilados',
+          promptKey: 'generate_document_prompt',
+          modelKey: 'openai_assistant_model',
+          additionalParams: [
+            { key: 'openai_assistant_temperature', name: 'Temperatura', type: 'number' as const }
+          ],
+          colorClass: 'border-l-blue-500'
+        }
+      ]
+    },
     {
       id: 'legal-tools',
       name: 'Herramientas Legales',
-      description: 'Configuraciones para módulos de investigación, análisis, redacción y estrategia',
-      icon: 'Scale',
-      configs: [
+      description: 'Módulos de investigación, análisis, redacción y estrategia',
+      icon: <Scale className="w-5 h-5" />,
+      functions: [
         {
-          key: 'research_ai_model',
-          name: 'Modelo IA para Investigación',
-          description: 'Modelo de IA utilizado para el módulo de investigación legal',
-          defaultValue: 'gpt-4.1-2025-04-14',
-          type: 'select',
-          options: [] // Se cargarán dinámicamente desde OpenAI
+          id: 'research',
+          name: 'Investigación Legal',
+          description: 'Análisis de legislación y jurisprudencia',
+          promptKey: 'research_system_prompt',
+          modelKey: 'research_ai_model',
+          colorClass: 'border-l-green-500'
         },
         {
-          key: 'research_system_prompt',
-          name: 'Prompt del Sistema - Investigación',
-          description: 'Prompt base para el sistema de investigación legal',
-          defaultValue: 'Eres un asistente especializado en investigación jurídica. Proporciona análisis detallados y citas precisas de legislación relevante.',
-          type: 'textarea'
+          id: 'analysis',
+          name: 'Análisis de Documentos',
+          description: 'Evaluación y análisis de documentos legales',
+          promptKey: 'analysis_system_prompt',
+          modelKey: 'analysis_ai_model',
+          colorClass: 'border-l-green-500'
         },
         {
-          key: 'analysis_ai_model',
-          name: 'Modelo IA para Análisis',
-          description: 'Modelo de IA utilizado para el módulo de análisis legal',
-          defaultValue: 'gpt-4.1-2025-04-14',
-          type: 'select',
-          options: []
+          id: 'drafting',
+          name: 'Redacción Legal',
+          description: 'Creación de documentos legales profesionales',
+          promptKey: 'drafting_system_prompt',
+          modelKey: 'drafting_ai_model',
+          colorClass: 'border-l-green-500'
         },
         {
-          key: 'analysis_system_prompt',
-          name: 'Prompt del Sistema - Análisis',
-          description: 'Prompt base para el sistema de análisis legal',
-          defaultValue: 'Eres un experto en análisis jurídico. Evalúa documentos legales con precisión y proporciona recomendaciones estratégicas.',
-          type: 'textarea'
-        },
-        {
-          key: 'drafting_ai_model',
-          name: 'Modelo IA para Redacción',
-          description: 'Modelo de IA utilizado para el módulo de redacción legal',
-          defaultValue: 'gpt-4.1-2025-04-14',
-          type: 'select',
-          options: []
-        },
-        {
-          key: 'drafting_system_prompt',
-          name: 'Prompt del Sistema - Redacción',
-          description: 'Prompt base para el sistema de redacción legal',
-          defaultValue: 'Eres un redactor jurídico experto. Crea documentos legales precisos, claros y conformes a la legislación vigente.',
-          type: 'textarea'
-        },
-        {
-          key: 'strategy_ai_model',
-          name: 'Modelo IA para Estrategia',
-          description: 'Modelo de IA utilizado para el módulo de estrategia legal',
-          defaultValue: 'o3-2025-04-16',
-          type: 'select',
-          options: []
-        },
-        {
-          key: 'strategy_system_prompt',
-          name: 'Prompt del Sistema - Estrategia',
-          description: 'Prompt base para el sistema de estrategia legal',
-          defaultValue: 'Eres un estratega jurídico senior. Desarrolla estrategias legales comprehensivas considerando todos los aspectos del caso.',
-          type: 'textarea'
-        }
-      ]
-    },
-  {
-      id: 'ai-management',
-      name: 'Gestión IA',
-      description: 'Configuraciones para creación y optimización de agentes IA',
-      icon: 'Brain',
-      configs: [
-        {
-          key: 'document_chat_ai_model',
-          name: 'Modelo IA para Chat de Documentos',
-          description: 'Modelo utilizado para el agente conversacional que interactúa con usuarios para crear documentos',
-          defaultValue: 'gpt-4o-mini',
-          type: 'select',
-          options: []
-        },
-        {
-          key: 'openai_assistant_model',
-          name: 'Modelo para OpenAI Assistants',
-          description: 'Modelo utilizado para los Assistants de OpenAI que generan documentos legales',
-          defaultValue: 'gpt-4.1-2025-04-14',
-          type: 'select',
-          options: []
-        },
-        {
-          key: 'openai_assistant_temperature',
-          name: 'Temperatura de Assistants',
-          description: 'Temperatura para la generación de respuestas (0 = más preciso, 1 = más creativo)',
-          defaultValue: '0',
-          type: 'text'
-        },
-        {
-          key: 'agent_creation_ai_model',
-          name: 'Modelo IA para Creación de Agentes',
-          description: 'Modelo utilizado para generar y optimizar agentes legales',
-          defaultValue: 'gpt-4.1-2025-04-14',
-          type: 'select',
-          options: []
-        },
-        {
-          key: 'agent_creation_system_prompt',
-          name: 'Prompt para Creación de Agentes',
-          description: 'Prompt utilizado para generar nuevos agentes legales',
-          defaultValue: 'Eres un experto en creación de agentes legales especializados. Genera prompts, plantillas y configuraciones optimizadas.',
-          type: 'textarea'
-        },
-        {
-          key: 'document_description_optimizer_model',
-          name: 'Modelo IA para Optimizar Descripciones',
-          description: 'Modelo utilizado para optimizar descripciones de documentos',
-          defaultValue: 'gpt-4.1-2025-04-14',
-          type: 'select',
-          options: []
-        },
-        {
-          key: 'document_description_optimizer_prompt',
-          name: 'Prompt para Optimizar Descripciones',
-          description: 'Prompt para mejorar descripciones de documentos legales',
-          defaultValue: 'Optimiza la descripción del documento legal para que sea clara, precisa y atractiva para el usuario final.',
-          type: 'textarea'
-        },
-        {
-          key: 'template_optimizer_model',
-          name: 'Modelo IA para Optimizar Plantillas',
-          description: 'Modelo utilizado para optimizar plantillas de documentos',
-          defaultValue: 'gpt-4.1-2025-04-14',
-          type: 'select',
-          options: []
-        },
-        {
-          key: 'template_optimizer_prompt',
-          name: 'Prompt para Optimizar Plantillas',
-          description: 'Prompt para mejorar plantillas de documentos legales',
-          defaultValue: 'Optimiza la plantilla del documento legal para que sea completa, precisa y fácil de completar.',
-          type: 'textarea'
-        },
-        {
-          key: 'content_optimization_model',
-          name: 'Modelo IA para Optimización General',
-          description: 'Modelo para optimización general de contenidos',
-          defaultValue: 'gpt-4.1-2025-04-14',
-          type: 'select',
-          options: []
+          id: 'strategy',
+          name: 'Estrategia Legal',
+          description: 'Desarrollo de estrategias legales comprehensivas',
+          promptKey: 'strategy_system_prompt',
+          modelKey: 'strategy_ai_model',
+          colorClass: 'border-l-green-500'
         }
       ]
     },
     {
-      id: 'ai-prompts',
-      name: 'Prompts IA',
-      description: 'Prompts centralizados para todas las funciones de IA',
-      icon: 'Brain',
-      configs: [
+      id: 'assistant-functions',
+      name: 'Asistentes Virtuales',
+      description: 'Configuración de asistentes conversacionales',
+      icon: <MessageSquare className="w-5 h-5" />,
+      functions: [
         {
-          key: 'improve_clause_ai_prompt',
-          name: 'Prompt - Mejorar Cláusulas',
-          description: 'Prompt para mejorar cláusulas legales',
-          defaultValue: 'Eres un experto abogado colombiano especializado en redacción de documentos legales.',
-          type: 'textarea'
+          id: 'lexi',
+          name: 'Lexi - Asistente Legal',
+          description: 'Asistente virtual principal de tuconsultorlegal.co',
+          promptKey: 'lexi_chat_prompt',
+          modelKey: 'document_chat_ai_model',
+          colorClass: 'border-l-indigo-500'
         },
         {
-          key: 'suggest_conversation_blocks_prompt',
-          name: 'Prompt - Bloques de Conversación',
-          description: 'Prompt para sugerir bloques de conversación en creación de agentes',
-          defaultValue: 'Eres un asistente experto en diseño de experiencias conversacionales para documentos legales colombianos.',
-          type: 'textarea'
+          id: 'routing',
+          name: 'Routing de Consultas',
+          description: 'Sistema de clasificación y enrutamiento de consultas',
+          promptKey: 'routing_chat_prompt',
+          modelKey: 'document_chat_ai_model',
+          colorClass: 'border-l-indigo-500'
         },
         {
-          key: 'legal_training_assistant_prompt',
-          name: 'Prompt - Asistente de Entrenamiento',
-          description: 'Prompt para el asistente de entrenamiento legal',
-          defaultValue: 'Eres un Asistente Especializado en IA Legal y formación para abogados.',
-          type: 'textarea'
-        },
-        {
-          key: 'generate_document_prompt',
-          name: 'Prompt - Generar Documentos',
-          description: 'Prompt para generación de documentos desde chat',
-          defaultValue: 'Eres un experto abogado colombiano especializado en redacción de documentos legales.',
-          type: 'textarea'
-        },
-        {
-          key: 'lexi_chat_prompt',
-          name: 'Prompt - Lexi (Asistente Virtual)',
-          description: 'Prompt para Lexi, el asistente legal virtual',
-          defaultValue: 'Eres Lexi, la asistente legal virtual de tuconsultorlegal.co.',
-          type: 'textarea'
-        },
-        {
-          key: 'routing_chat_prompt',
-          name: 'Prompt - Routing de Consultas',
-          description: 'Prompt para sistema de routing de consultas legales',
-          defaultValue: 'Eres un sistema experto de routing para consultas legales.',
-          type: 'textarea'
-        },
-        {
-          key: 'document_chat_prompt',
-          name: 'Prompt - Chat de Documentos',
-          description: 'Prompt para chat de recopilación de datos de documentos',
-          defaultValue: 'Instrucciones críticas para recopilación de información de documentos.',
-          type: 'textarea'
-        },
-        {
-          key: 'crm_segmentation_prompt',
-          name: 'Prompt - Segmentación CRM',
-          description: 'Prompt para segmentación IA de clientes CRM',
-          defaultValue: 'Eres un experto en análisis de datos y segmentación de clientes para un despacho legal.',
-          type: 'textarea'
-        },
-        {
-          key: 'organize_file_prompt',
-          name: 'Prompt - Organizar Archivos',
-          description: 'Prompt para organización inteligente de archivos',
-          defaultValue: 'Eres un asistente especializado en organización de archivos legales.',
-          type: 'textarea'
-        },
-        {
-          key: 'organize_form_prompt',
-          name: 'Prompt - Organizar Formularios',
-          description: 'Prompt para organización de grupos de formularios',
-          defaultValue: 'Eres un experto en UX que organiza formularios para mejorar la experiencia del usuario.',
-          type: 'textarea'
-        },
-        {
-          key: 'ai_training_validator_prompt',
-          name: 'Prompt - Validador de Entrenamiento',
-          description: 'Prompt para validador de entrenamiento IA',
-          defaultValue: 'Eres un experto evaluador en formación legal especializado en IA para abogados.',
-          type: 'textarea'
+          id: 'training',
+          name: 'Asistente de Entrenamiento',
+          description: 'Formación y certificación de abogados en IA',
+          promptKey: 'legal_training_assistant_prompt',
+          modelKey: 'document_chat_ai_model',
+          colorClass: 'border-l-indigo-500'
         }
       ]
     },
     {
-      id: 'system-general',
-      name: 'Configuración General',
-      description: 'Configuraciones generales del sistema y APIs',
-      icon: 'Settings',
-      configs: [
+      id: 'utility-functions',
+      name: 'Utilidades',
+      description: 'Funciones de soporte y optimización',
+      icon: <Wrench className="w-5 h-5" />,
+      functions: [
         {
-          key: 'openai_api_timeout',
-          name: 'Timeout API OpenAI (segundos)',
-          description: 'Tiempo límite para requests a la API de OpenAI',
-          defaultValue: '30',
-          type: 'number'
+          id: 'crm_segmentation',
+          name: 'Segmentación CRM',
+          description: 'Clasificación inteligente de clientes',
+          promptKey: 'crm_segmentation_prompt',
+          modelKey: 'content_optimization_model',
+          colorClass: 'border-l-orange-500'
         },
         {
-          key: 'max_retries_ai_requests',
-          name: 'Máximo de Reintentos IA',
-          description: 'Número máximo de reintentos para requests fallidos a IA',
-          defaultValue: '3',
-          type: 'number'
+          id: 'organize_file',
+          name: 'Organizar Archivos',
+          description: 'Organización inteligente de archivos legales',
+          promptKey: 'organize_file_prompt',
+          modelKey: 'content_optimization_model',
+          colorClass: 'border-l-orange-500'
         },
         {
-          key: 'default_sla_hours',
-          name: 'SLA por Defecto (horas)',
-          description: 'Tiempo de SLA por defecto para documentos legales',
-          defaultValue: '4',
-          type: 'number'
+          id: 'organize_form',
+          name: 'Organizar Formularios',
+          description: 'Optimización de grupos de formularios',
+          promptKey: 'organize_form_prompt',
+          modelKey: 'content_optimization_model',
+          colorClass: 'border-l-orange-500'
+        },
+        {
+          id: 'training_validator',
+          name: 'Validador de Entrenamiento',
+          description: 'Evaluación de respuestas en entrenamiento',
+          promptKey: 'ai_training_validator_prompt',
+          modelKey: 'content_optimization_model',
+          colorClass: 'border-l-orange-500'
         }
       ]
     }
   ];
 
+  // Global parameters configuration
+  const globalParams = [
+    { key: 'openai_api_timeout', name: 'Timeout OpenAI (segundos)', type: 'number' as const, defaultValue: '30' },
+    { key: 'max_retry_attempts', name: 'Máximo de Reintentos', type: 'number' as const, defaultValue: '3' },
+    { key: 'document_sla_hours', name: 'SLA de Documentos (horas)', type: 'number' as const, defaultValue: '4' },
+    { key: 'api_rate_limit_requests', name: 'Límite de Peticiones/min', type: 'number' as const, defaultValue: '100' }
+  ];
+
   useEffect(() => {
     loadConfigs();
-    // No cargar modelos automáticamente - solo por demanda del admin
   }, []);
 
   const loadConfigs = async () => {
@@ -345,7 +258,7 @@ export default function SystemConfigManager() {
       console.error('Error loading configs:', error);
       toast({
         title: "Error",
-        description: "No se pudieron cargar las configuraciones del sistema",
+        description: "No se pudieron cargar las configuraciones",
         variant: "destructive"
       });
     } finally {
@@ -356,17 +269,12 @@ export default function SystemConfigManager() {
   const loadOpenAIModels = async () => {
     try {
       setLoadingModels(true);
-      console.log('Attempting to load OpenAI models...');
-      
       const { data, error } = await supabase.functions.invoke('get-openai-models');
       
-      console.log('Response from get-openai-models:', { data, error });
-      
       if (error) {
-        console.error('Supabase function error:', error);
         toast({
-          title: "Error de configuración",
-          description: "La API key de OpenAI no está configurada en el servidor. Contacta al administrador del sistema.",
+          title: "Error",
+          description: "No se pudieron cargar los modelos de OpenAI",
           variant: "destructive"
         });
         return;
@@ -375,240 +283,31 @@ export default function SystemConfigManager() {
       if (data?.success && data?.models) {
         const modelIds = data.models.map((model: any) => model.id);
         setOpenaiModels(modelIds);
-        console.log(`Loaded ${modelIds.length} models:`, modelIds);
         toast({
           title: "Éxito",
-          description: `Se cargaron ${modelIds.length} modelos de OpenAI`
-        });
-      } else {
-        console.error('Invalid response from get-openai-models:', data);
-        const errorMessage = data?.error || "Error desconocido al cargar modelos";
-        toast({
-          title: "Error",
-          description: errorMessage,
-          variant: "destructive"
+          description: `Se cargaron ${modelIds.length} modelos`
         });
       }
     } catch (error: any) {
-      console.error('Unexpected error loading OpenAI models:', error);
-      toast({
-        title: "Error de conexión",
-        description: "Error al conectar con el servidor. Verifica tu conexión e intenta nuevamente.",
-        variant: "destructive"
-      });
+      console.error('Error loading models:', error);
     } finally {
       setLoadingModels(false);
     }
   };
 
-  const openEditor = (config?: SystemConfig) => {
-    if (config) {
-      setEditingConfig(config);
-      setConfigForm({
-        config_key: config.config_key,
-        config_value: config.config_value,
-        description: config.description || ""
-      });
-    } else {
-      setEditingConfig(null);
-      setConfigForm({
-        config_key: "",
-        config_value: "",
-        description: ""
-      });
-    }
-    setShowEditor(true);
-  };
-
-  const saveConfig = async () => {
-    // Validación mejorada
-    const trimmedKey = configForm.config_key.trim();
-    const trimmedValue = configForm.config_value.trim();
-    
-    if (!trimmedKey) {
-      toast({
-        title: "Error de Validación",
-        description: "La clave de configuración no puede estar vacía",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!trimmedValue) {
-      toast({
-        title: "Error de Validación",
-        description: "El valor de configuración no puede estar vacío",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Validación de longitud máxima
-    if (trimmedKey.length > 100) {
-      toast({
-        title: "Error de Validación",
-        description: "La clave no puede exceder 100 caracteres",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (trimmedValue.length > 5000) {
-      toast({
-        title: "Error de Validación",
-        description: "El valor no puede exceder 5000 caracteres",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setSaving(true);
-    try {
-      console.log('Guardando configuración:', {
-        configKey: trimmedKey,
-        configValue: trimmedValue.substring(0, 50) + '...',
-        description: configForm.description?.substring(0, 50)
-      });
-
-      const { data, error } = await supabase.functions.invoke('update-system-config', {
-        body: {
-          configKey: trimmedKey,
-          configValue: trimmedValue,
-          description: configForm.description?.trim() || null
-        }
-      });
-
-      console.log('Respuesta de edge function:', { data, error });
-
-      if (error) {
-        console.error('Error from edge function:', error);
-        throw error;
+  const saveConfig = async (key: string, value: string, description?: string) => {
+    const { data, error } = await supabase.functions.invoke('update-system-config', {
+      body: {
+        configKey: key,
+        configValue: value,
+        description: description || null
       }
-
-      if (!data?.success) {
-        const errorMsg = data?.error || 'Error desconocido al guardar la configuración';
-        console.error('Edge function returned error:', errorMsg);
-        throw new Error(errorMsg);
-      }
-
-      toast({
-        title: "Éxito",
-        description: editingConfig ? "Configuración actualizada exitosamente" : "Configuración creada exitosamente"
-      });
-
-      setShowEditor(false);
-      setEditingConfig(null);
-      setConfigForm({
-        config_key: "",
-        config_value: "",
-        description: ""
-      });
-      await loadConfigs();
-    } catch (error: any) {
-      console.error('Error saving config:', error);
-      const errorMessage = error.message || error.toString() || "Error desconocido al guardar la configuración";
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive"
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const deleteConfig = async (configKey: string) => {
-    if (!confirm(`¿Estás seguro de que deseas eliminar la configuración "${configKey}"?`)) {
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('system_config')
-        .delete()
-        .eq('config_key', configKey);
-
-      if (error) throw error;
-
-      toast({
-        title: "Éxito",
-        description: "Configuración eliminada exitosamente"
-      });
-
-      await loadConfigs();
-    } catch (error: any) {
-      console.error('Error deleting config:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Error al eliminar la configuración",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const getConfigTypeBadge = (key: string) => {
-    if (key.includes('model') || key.includes('ai_')) {
-      return <Badge variant="outline" className="bg-purple-50 text-purple-800">IA Model</Badge>;
-    }
-    if (key.includes('prompt') || key.includes('system_')) {
-      return <Badge variant="outline" className="bg-blue-50 text-blue-800">Prompt</Badge>;
-    }
-    if (key.includes('research') || key.includes('analysis')) {
-      return <Badge variant="outline" className="bg-green-50 text-green-800">Legal Tool</Badge>;
-    }
-    if (key.includes('timeout') || key.includes('retry') || key.includes('sla')) {
-      return <Badge variant="outline" className="bg-orange-50 text-orange-800">System</Badge>;
-    }
-    return <Badge variant="secondary">Config</Badge>;
-  };
-
-  const getCurrentCategoryConfigs = () => {
-    const category = configCategories.find(cat => cat.id === selectedCategory);
-    if (!category) return [];
-    
-    return category.configs.map(template => {
-      const existingConfig = configs.find(config => config.config_key === template.key);
-      return {
-        template,
-        config: existingConfig,
-        value: existingConfig?.config_value || template.defaultValue
-      };
     });
-  };
 
-  const openEditorWithTemplate = async (template: ConfigTemplate) => {
-    const existingConfig = configs.find(config => config.config_key === template.key);
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Error al guardar');
     
-    console.log('Opening editor for template:', template.key, 'existing:', !!existingConfig);
-    
-    // Si es un campo de modelo y no se han cargado los modelos, cargarlos primero
-    if ((template.key.includes('model') || template.key.endsWith('_model')) && openaiModels.length === 0) {
-      console.log('Model field detected, loading OpenAI models...');
-      toast({
-        title: "Cargando modelos",
-        description: "Cargando lista de modelos de OpenAI disponibles..."
-      });
-      await loadOpenAIModels();
-    }
-    
-    if (existingConfig) {
-      setEditingConfig(existingConfig);
-      setConfigForm({
-        config_key: existingConfig.config_key,
-        config_value: existingConfig.config_value,
-        description: existingConfig.description || template.description
-      });
-      console.log('Loaded existing config:', existingConfig.config_key, '=', existingConfig.config_value);
-    } else {
-      setEditingConfig(null);
-      setConfigForm({
-        config_key: template.key,
-        config_value: template.defaultValue,
-        description: template.description
-      });
-      console.log('Created new config form:', template.key, '=', template.defaultValue);
-    }
-    setShowEditor(true);
+    await loadConfigs();
   };
 
   const initializeDefaultConfigs = async () => {
@@ -616,37 +315,42 @@ export default function SystemConfigManager() {
       setLoading(true);
       const { data, error } = await supabase.functions.invoke('init-system-config');
       
-      if (error) {
-        console.error('Error initializing configs:', error);
-        toast({
-          title: "Error",
-          description: "No se pudieron inicializar las configuraciones predeterminadas",
-          variant: "destructive"
-        });
-        return;
-      }
+      if (error) throw error;
 
       if (data?.success) {
         toast({
           title: "Configuraciones inicializadas",
-          description: `${data.message}. Se agregaron ${data.inserted_count} nuevas configuraciones.`,
-          variant: "default"
+          description: `Se agregaron ${data.inserted_count} nuevas configuraciones.`
         });
-        
-        // Recargar las configuraciones
         await loadConfigs();
       }
     } catch (error: any) {
       console.error('Error initializing configs:', error);
       toast({
         title: "Error",
-        description: "Error interno al inicializar configuraciones",
+        description: "Error al inicializar configuraciones",
         variant: "destructive"
       });
     } finally {
       setLoading(false);
     }
   };
+
+  const getConfigValue = (key: string, defaultValue: string = ''): string => {
+    const config = configs.find(c => c.config_key === key);
+    return config?.config_value || defaultValue;
+  };
+
+  const getParamsForFunction = (additionalParams?: { key: string; name: string; type: 'text' | 'number' }[]): Record<string, string> => {
+    if (!additionalParams) return {};
+    const result: Record<string, string> = {};
+    additionalParams.forEach(param => {
+      result[param.key] = getConfigValue(param.key, '');
+    });
+    return result;
+  };
+
+  const currentCategory = functionCategories.find(cat => cat.id === selectedCategory);
 
   if (loading) {
     return (
@@ -660,269 +364,349 @@ export default function SystemConfigManager() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold flex items-center gap-2">
-            <Settings className="w-8 h-8" />
-            Configuración del Sistema
-          </h2>
-          <p className="text-muted-foreground">
-            Gestiona configuraciones de IA y herramientas legales
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            onClick={initializeDefaultConfigs}
-            disabled={loading}
-          >
-            <Settings className="w-4 h-4 mr-2" />
-            Inicializar Configuraciones
-          </Button>
-          <Dialog open={showEditor} onOpenChange={setShowEditor}>
-            <DialogTrigger asChild>
-              <Button onClick={() => openEditor()}>
-                <Plus className="w-4 h-4 mr-2" />
-                Nueva Configuración
+    <div className="flex h-[calc(100vh-200px)] gap-6">
+      {/* Sidebar Navigation */}
+      <div className="w-72 flex-shrink-0">
+        <Card className="h-full">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Settings className="w-5 h-5" />
+                Configuración IA
+              </CardTitle>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={initializeDefaultConfigs}
+                disabled={loading}
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-lg">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingConfig ? 'Editar Configuración' : 'Nueva Configuración'}
-                </DialogTitle>
-              </DialogHeader>
-              
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="config_key">Clave de Configuración</Label>
-                  <Input
-                    id="config_key"
-                    value={configForm.config_key}
-                    onChange={(e) => setConfigForm({ ...configForm, config_key: e.target.value })}
-                    placeholder="ej: smtp_host, api_endpoint, feature_enabled"
-                    disabled={!!editingConfig}
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="config_value">
-                    Valor
-                    {(configForm.config_key.includes('model') || configForm.config_key.endsWith('_model')) && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={loadOpenAIModels}
-                        disabled={loadingModels}
-                        className="ml-2 h-6 text-xs"
-                      >
-                        {loadingModels ? (
-                          <div className="animate-spin rounded-full h-3 w-3 border-b border-current"></div>
-                        ) : (
-                          <RefreshCw className="w-3 h-3" />
-                        )}
-                        {loadingModels ? 'Cargando...' : 'Actualizar modelos'}
-                      </Button>
-                    )}
-                  </Label>
-                  
-                  {(configForm.config_key.includes('model') || configForm.config_key.endsWith('_model')) ? (
-                    <div className="space-y-2">
-                      <Select
-                        value={configForm.config_value}
-                        onValueChange={(value) => {
-                          if (value !== "no-models-loaded") {
-                            setConfigForm({ ...configForm, config_value: value });
-                          }
-                        }}
-                        disabled={loadingModels}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecciona un modelo de OpenAI" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {openaiModels.length > 0 ? (
-                            openaiModels.map((model) => (
-                              <SelectItem key={model} value={model}>
-                                {model}
-                              </SelectItem>
-                            ))
-                          ) : (
-                            <SelectItem value="no-models-loaded" disabled>
-                              {loadingModels ? 'Cargando modelos...' : 'No hay modelos disponibles'}
-                            </SelectItem>
-                          )}
-                        </SelectContent>
-                      </Select>
-                      {openaiModels.length === 0 && !loadingModels && (
-                        <p className="text-sm text-orange-600">
-                          ⚠️ Los modelos se cargan automáticamente al abrir este editor
-                        </p>
-                      )}
-                    </div>
-                  ) : configForm.config_key.includes('prompt') || configForm.config_key.includes('system') ? (
-                    <Textarea
-                      id="config_value"
-                      value={configForm.config_value}
-                      onChange={(e) => setConfigForm({ ...configForm, config_value: e.target.value })}
-                      placeholder="Valor de la configuración"
-                      rows={6}
-                    />
-                  ) : (
-                    <Input
-                      id="config_value"
-                      value={configForm.config_value}
-                      onChange={(e) => setConfigForm({ ...configForm, config_value: e.target.value })}
-                      placeholder="Valor de la configuración"
-                      type={configForm.config_key.includes('timeout') || configForm.config_key.includes('sla') || configForm.config_key.includes('retry') ? 'number' : 'text'}
-                    />
-                  )}
-                </div>
-                
-                <div>
-                  <Label htmlFor="description">Descripción (opcional)</Label>
-                  <Textarea
-                    id="description"
-                    value={configForm.description}
-                    onChange={(e) => setConfigForm({ ...configForm, description: e.target.value })}
-                    placeholder="Descripción de para qué sirve esta configuración"
-                    rows={2}
-                  />
-                </div>
-                
-                <div className="flex gap-2">
-                  <Button onClick={saveConfig} disabled={saving} className="flex-1">
-                    {saving ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Guardando...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="w-4 h-4 mr-2" />
-                        Guardar
-                      </>
-                    )}
-                  </Button>
-                  <Button variant="outline" onClick={() => setShowEditor(false)}>
-                    <X className="w-4 h-4 mr-2" />
-                    Cancelar
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
-
-      {/* Categories Navigation */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        {configCategories.map((category) => (
-          <Card
-            key={category.id}
-            className={`cursor-pointer transition-all hover:shadow-md ${
-              selectedCategory === category.id 
-                ? 'ring-2 ring-primary bg-primary/5' 
-                : 'hover:bg-muted/50'
-            }`}
-            onClick={() => setSelectedCategory(category.id)}
-          >
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                  {category.icon === 'Scale' && <span className="text-primary">⚖️</span>}
-                  {category.icon === 'Brain' && <span className="text-primary">🧠</span>}
-                  {category.icon === 'Settings' && <Settings className="w-4 h-4 text-primary" />}
-                </div>
-                <h3 className="font-semibold">{category.name}</h3>
-              </div>
-              <p className="text-sm text-muted-foreground">{category.description}</p>
-              <div className="mt-3 flex items-center justify-between">
-                <Badge variant="secondary" className="text-xs">
-                  {category.configs.length} configuraciones
-                </Badge>
-                {selectedCategory === category.id && (
-                  <Badge variant="default" className="text-xs">Activa</Badge>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Current Category Configs */}
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            {configCategories.find(cat => cat.id === selectedCategory)?.name || 'Configuraciones'}
-            ({getCurrentCategoryConfigs().length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {getCurrentCategoryConfigs().length === 0 ? (
-            <div className="text-center py-8">
-              <Settings className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No hay configuraciones en esta categoría</h3>
-              <p className="text-muted-foreground mb-4">
-                Las configuraciones aparecerán aquí una vez que las crees
-              </p>
             </div>
-          ) : (
-            <div className="space-y-4">
-              {getCurrentCategoryConfigs().map(({ template, config, value }) => (
-                <div key={template.key} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-semibold">{template.name}</h4>
-                        {getConfigTypeBadge(template.key)}
-                        {config && <Badge variant="outline" className="text-xs">Configurado</Badge>}
+          </CardHeader>
+          <Separator />
+          <CardContent className="p-0">
+            <ScrollArea className="h-[calc(100%-80px)]">
+              <div className="p-2 space-y-1">
+                {functionCategories.map((category) => (
+                  <button
+                    key={category.id}
+                    onClick={() => {
+                      setSelectedCategory(category.id);
+                      setShowGlobalParams(false);
+                    }}
+                    className={`w-full flex items-start gap-3 p-3 rounded-lg text-left transition-colors ${
+                      selectedCategory === category.id && !showGlobalParams
+                        ? 'bg-primary/10 text-primary'
+                        : 'hover:bg-muted'
+                    }`}
+                  >
+                    <div className={`mt-0.5 ${
+                      selectedCategory === category.id && !showGlobalParams
+                        ? 'text-primary'
+                        : 'text-muted-foreground'
+                    }`}>
+                      {category.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm">{category.name}</div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        {category.functions.length} funciones
                       </div>
-                      <p className="text-sm text-muted-foreground mb-2">{template.description}</p>
-                      <code className="text-xs bg-muted px-2 py-1 rounded">
-                        {template.key}
-                      </code>
                     </div>
-                    <div className="flex gap-2 ml-4">
-                      <Button
-                        size="sm"
-                        variant={config ? "outline" : "default"}
-                        onClick={() => openEditorWithTemplate(template)}
-                      >
-                        <Edit3 className="w-3 h-3 mr-1" />
-                        {config ? 'Editar' : 'Configurar'}
-                      </Button>
-                      {config && (
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => deleteConfig(template.key)}
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="bg-muted/30 rounded p-3">
-                    <div className="text-xs text-muted-foreground mb-1">Valor actual:</div>
-                    <div className="text-sm font-mono">
-                      {template.type === 'textarea' ? (
-                        <div className="max-h-20 overflow-y-auto">
-                          {value.length > 100 ? `${value.substring(0, 100)}...` : value}
-                        </div>
-                      ) : (
-                        <span>{value}</span>
-                      )}
+                  </button>
+                ))}
+                
+                <Separator className="my-2" />
+                
+                {/* Prompt Optimizer */}
+                <button
+                  onClick={() => {
+                    setShowGlobalParams(false);
+                    setSelectedCategory('meta-prompt');
+                  }}
+                  className={`w-full flex items-start gap-3 p-3 rounded-lg text-left transition-colors ${
+                    selectedCategory === 'meta-prompt'
+                      ? 'bg-amber-500/10 text-amber-600'
+                      : 'hover:bg-muted'
+                  }`}
+                >
+                  <Sparkles className={`w-5 h-5 mt-0.5 ${
+                    selectedCategory === 'meta-prompt' ? 'text-amber-500' : 'text-muted-foreground'
+                  }`} />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm">Meta Prompt</div>
+                    <div className="text-xs text-muted-foreground">
+                      Optimizador de prompts
                     </div>
                   </div>
+                </button>
+                
+                {/* Global Params */}
+                <button
+                  onClick={() => setShowGlobalParams(true)}
+                  className={`w-full flex items-start gap-3 p-3 rounded-lg text-left transition-colors ${
+                    showGlobalParams
+                      ? 'bg-primary/10 text-primary'
+                      : 'hover:bg-muted'
+                  }`}
+                >
+                  <Settings className={`w-5 h-5 mt-0.5 ${
+                    showGlobalParams ? 'text-primary' : 'text-muted-foreground'
+                  }`} />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm">Parámetros Globales</div>
+                    <div className="text-xs text-muted-foreground">
+                      Timeouts, límites, SLA
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 overflow-hidden">
+        <ScrollArea className="h-full pr-4">
+          {showGlobalParams ? (
+            <GlobalParamsSection
+              params={globalParams}
+              getConfigValue={getConfigValue}
+              onSave={saveConfig}
+            />
+          ) : selectedCategory === 'meta-prompt' ? (
+            <MetaPromptSection
+              currentPrompt={getConfigValue('prompt_optimizer_meta_prompt', '')}
+              onSave={saveConfig}
+            />
+          ) : currentCategory && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold flex items-center gap-3">
+                    {currentCategory.icon}
+                    {currentCategory.name}
+                  </h2>
+                  <p className="text-muted-foreground">{currentCategory.description}</p>
                 </div>
-              ))}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={loadOpenAIModels}
+                  disabled={loadingModels}
+                >
+                  {loadingModels ? (
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                  )}
+                  Cargar Modelos
+                </Button>
+              </div>
+
+              <div className="space-y-4">
+                {currentCategory.functions.map((func) => (
+                  <AIFunctionConfig
+                    key={func.id}
+                    functionId={func.id}
+                    name={func.name}
+                    description={func.description}
+                    promptKey={func.promptKey}
+                    modelKey={func.modelKey}
+                    additionalParams={func.additionalParams}
+                    currentPrompt={getConfigValue(func.promptKey, '')}
+                    currentModel={func.modelKey ? getConfigValue(func.modelKey, '') : ''}
+                    currentParams={getParamsForFunction(func.additionalParams)}
+                    openaiModels={openaiModels}
+                    loadingModels={loadingModels}
+                    onLoadModels={loadOpenAIModels}
+                    onSave={saveConfig}
+                    colorClass={func.colorClass}
+                  />
+                ))}
+              </div>
             </div>
           )}
+        </ScrollArea>
+      </div>
+    </div>
+  );
+}
+
+// Global Params Section Component
+function GlobalParamsSection({
+  params,
+  getConfigValue,
+  onSave
+}: {
+  params: { key: string; name: string; type: 'text' | 'number'; defaultValue: string }[];
+  getConfigValue: (key: string, defaultValue: string) => string;
+  onSave: (key: string, value: string, description?: string) => Promise<void>;
+}) {
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const initial: Record<string, string> = {};
+    params.forEach(p => {
+      initial[p.key] = getConfigValue(p.key, p.defaultValue);
+    });
+    setValues(initial);
+  }, [params, getConfigValue]);
+
+  const handleSave = async (key: string, name: string) => {
+    setSaving(key);
+    try {
+      await onSave(key, values[key], name);
+      toast({
+        title: "Guardado",
+        description: `${name} guardado correctamente`
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold flex items-center gap-3">
+          <Settings className="w-6 h-6" />
+          Parámetros Globales
+        </h2>
+        <p className="text-muted-foreground">
+          Configuraciones generales del sistema: timeouts, límites y SLA
+        </p>
+      </div>
+
+      <Card>
+        <CardContent className="pt-6 space-y-6">
+          {params.map((param) => (
+            <div key={param.key} className="space-y-2">
+              <Label>{param.name}</Label>
+              <div className="flex gap-2">
+                <Input
+                  type={param.type}
+                  value={values[param.key] || ''}
+                  onChange={(e) => setValues({ ...values, [param.key]: e.target.value })}
+                  className="flex-1"
+                />
+                <Button
+                  onClick={() => handleSave(param.key, param.name)}
+                  disabled={saving === param.key}
+                >
+                  {saving === param.key ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4" />
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Clave: <code className="bg-muted px-1 rounded">{param.key}</code>
+              </p>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// Meta Prompt Section Component
+function MetaPromptSection({
+  currentPrompt,
+  onSave
+}: {
+  currentPrompt: string;
+  onSave: (key: string, value: string, description?: string) => Promise<void>;
+}) {
+  const [prompt, setPrompt] = useState(currentPrompt);
+  const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    setPrompt(currentPrompt);
+  }, [currentPrompt]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await onSave('prompt_optimizer_meta_prompt', prompt, 'Meta prompt maestro para optimización de prompts');
+      toast({
+        title: "Guardado",
+        description: "Meta prompt guardado correctamente"
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold flex items-center gap-3">
+          <Sparkles className="w-6 h-6 text-amber-500" />
+          Meta Prompt - Optimizador
+        </h2>
+        <p className="text-muted-foreground">
+          Este prompt maestro se usa para optimizar todos los demás prompts del sistema
+        </p>
+      </div>
+
+      <Card className="border-l-4 border-l-amber-500">
+        <CardContent className="pt-6 space-y-4">
+          <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+            <h4 className="font-medium text-amber-800 dark:text-amber-200 mb-2 flex items-center gap-2">
+              <Sparkles className="w-4 h-4" />
+              Variables Disponibles
+            </h4>
+            <div className="text-sm text-amber-700 dark:text-amber-300 space-y-1">
+              <p><code className="bg-amber-100 dark:bg-amber-900 px-1 rounded">{"{{function_name}}"}</code> - Nombre de la función</p>
+              <p><code className="bg-amber-100 dark:bg-amber-900 px-1 rounded">{"{{function_description}}"}</code> - Descripción de la función</p>
+              <p><code className="bg-amber-100 dark:bg-amber-900 px-1 rounded">{"{{expected_output}}"}</code> - Tipo de output esperado</p>
+              <p><code className="bg-amber-100 dark:bg-amber-900 px-1 rounded">{"{{current_prompt}}"}</code> - Prompt actual a optimizar</p>
+            </div>
+          </div>
+
+          <div>
+            <Label className="mb-2 block">Meta Prompt</Label>
+            <Textarea
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              rows={20}
+              className="font-mono text-sm"
+              placeholder="Ingresa el meta prompt para optimización..."
+            />
+          </div>
+
+          <Button 
+            onClick={handleSave}
+            disabled={saving}
+            className="w-full"
+          >
+            {saving ? (
+              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4 mr-2" />
+            )}
+            Guardar Meta Prompt
+          </Button>
         </CardContent>
       </Card>
     </div>
