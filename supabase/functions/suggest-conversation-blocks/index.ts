@@ -72,10 +72,11 @@ Fragmento de plantilla: ${docTemplate.slice(0, 800)}...`;
     const params = buildResponsesRequestParams(model, {
       input,
       instructions,
-      maxOutputTokens: 2000,
+      maxOutputTokens: 4000,
       temperature: 0.7,
       jsonMode: true,
-      store: false
+      store: false,
+      reasoning: { effort: 'low' } // Simple task - minimize reasoning tokens
     });
 
     const result = await callResponsesAPI(openAIApiKey, params);
