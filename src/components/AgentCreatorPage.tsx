@@ -375,7 +375,7 @@ export default function AgentCreatorPage({ user, currentView, onViewChange, onLo
         docName: draft.doc_name || "",
         docDesc: draft.doc_desc || "",
         docCat: draft.doc_cat || "",
-        targetAudience: ['personas', 'empresas'].includes(draft.target_audience) ? draft.target_audience : "personas",
+        targetAudience: ['personas', 'empresas', 'ambos'].includes(draft.target_audience) ? draft.target_audience : "personas",
         docTemplate: draft.doc_template || "",
         conversation_blocks: mappedBlocks,
         field_instructions: mappedInstructions,
@@ -1873,7 +1873,7 @@ export default function AgentCreatorPage({ user, currentView, onViewChange, onLo
                      
                      {/* Target Audience Selection */}
                      <div>
-                       <Label htmlFor="targetAudience">Dirigido a</Label>
+                       <Label htmlFor="targetAudience">Audiencia Objetivo</Label>
                        <Select value={formData.targetAudience} onValueChange={(value) => handleInputChange('targetAudience', value)}>
                          <SelectTrigger className="mt-1">
                            <SelectValue placeholder="Selecciona el público objetivo" />
@@ -1881,6 +1881,7 @@ export default function AgentCreatorPage({ user, currentView, onViewChange, onLo
                          <SelectContent>
                            <SelectItem value="personas">👤 Personas (Clientes individuales)</SelectItem>
                            <SelectItem value="empresas">🏢 Empresas (Clientes corporativos)</SelectItem>
+                           <SelectItem value="ambos">🌐 Ambos (Personas y Empresas)</SelectItem>
                          </SelectContent>
                        </Select>
                        <p className="text-xs text-muted-foreground mt-1">
