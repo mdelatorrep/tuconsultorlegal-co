@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Settings, 
   RefreshCw, 
@@ -899,37 +900,66 @@ function MetaPromptSection({
           <CardTitle className="text-base">Modelo de Optimización</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex gap-2">
-            <select
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <Label className="text-xs text-muted-foreground">
+                Clave: <code className="bg-muted px-1 rounded">prompt_optimizer_model</code>
+              </Label>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onLoadModels}
+                disabled={loadingModels}
+                className="h-7 text-xs"
+              >
+                {loadingModels ? (
+                  <RefreshCw className="w-3 h-3 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-3 h-3" />
+                )}
+                <span className="ml-1">Actualizar lista</span>
+              </Button>
+            </div>
+            <Select
               value={model}
-              onChange={(e) => setModel(e.target.value)}
-              className="flex-1 h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+              onValueChange={setModel}
+              disabled={loadingModels}
             >
-              <option value="">Seleccionar modelo...</option>
-              <option value="gpt-4.1-2025-04-14">gpt-4.1-2025-04-14 (default)</option>
-              <option value="gpt-5-2025-08-07">gpt-5-2025-08-07</option>
-              <option value="gpt-5-mini-2025-08-07">gpt-5-mini-2025-08-07</option>
-              <option value="gpt-5-nano-2025-08-07">gpt-5-nano-2025-08-07</option>
-              <option value="o3-2025-04-16">o3-2025-04-16</option>
-              <option value="o4-mini-2025-04-16">o4-mini-2025-04-16</option>
-              {openaiModels.filter(m => !['gpt-4.1-2025-04-14', 'gpt-5-2025-08-07', 'gpt-5-mini-2025-08-07', 'gpt-5-nano-2025-08-07', 'o3-2025-04-16', 'o4-mini-2025-04-16'].includes(m)).map((m) => (
-                <option key={m} value={m}>{m}</option>
-              ))}
-            </select>
-            <Button
-              onClick={handleSaveModel}
-              disabled={savingModel}
-            >
-              {savingModel ? (
-                <RefreshCw className="w-4 h-4 animate-spin" />
-              ) : (
-                <Save className="w-4 h-4" />
-              )}
-            </Button>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecciona un modelo" />
+              </SelectTrigger>
+              <SelectContent>
+                {openaiModels.length > 0 ? (
+                  openaiModels.map((m) => (
+                    <SelectItem key={m} value={m}>
+                      {m}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="no-models" disabled>
+                    {loadingModels ? 'Cargando...' : 'No hay modelos disponibles'}
+                  </SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+            {openaiModels.length === 0 && !loadingModels && (
+              <p className="text-xs text-orange-600 mt-2">
+                ⚠️ Haz clic en "Actualizar lista" para cargar los modelos disponibles
+              </p>
+            )}
           </div>
-          <p className="text-xs text-muted-foreground">
-            Clave: <code className="bg-muted px-1 rounded">prompt_optimizer_model</code>
-          </p>
+          <Button 
+            onClick={handleSaveModel}
+            disabled={savingModel || !model}
+            className="w-full"
+          >
+            {savingModel ? (
+              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4 mr-2" />
+            )}
+            Guardar Modelo
+          </Button>
         </CardContent>
       </Card>
 
