@@ -140,8 +140,8 @@ serve(async (req) => {
       // Get configurable meta prompt
       metaPrompt = await getSystemConfig(supabase, 'prompt_optimizer_meta_prompt', DEFAULT_META_PROMPT);
       
-      // Get model for optimization
-      model = await getSystemConfig(supabase, 'content_optimization_model', 'gpt-4.1-2025-04-14');
+      // Get model for optimization (use dedicated key for optimizer)
+      model = await getSystemConfig(supabase, 'prompt_optimizer_model', 'gpt-4.1-2025-04-14');
     }
 
     // Replace placeholders in meta prompt

@@ -483,6 +483,10 @@ export default function SystemConfigManager() {
           ) : selectedCategory === 'meta-prompt' ? (
             <MetaPromptSection
               currentPrompt={getConfigValue('prompt_optimizer_meta_prompt', '')}
+              currentModel={getConfigValue('prompt_optimizer_model', 'gpt-4.1-2025-04-14')}
+              openaiModels={openaiModels}
+              loadingModels={loadingModels}
+              onLoadModels={loadOpenAIModels}
               onSave={saveConfig}
             />
           ) : currentCategory && (
@@ -629,18 +633,32 @@ function GlobalParamsSection({
 // Meta Prompt Section Component
 function MetaPromptSection({
   currentPrompt,
+  currentModel,
+  openaiModels,
+  loadingModels,
+  onLoadModels,
   onSave
 }: {
   currentPrompt: string;
+  currentModel: string;
+  openaiModels: string[];
+  loadingModels: boolean;
+  onLoadModels: () => void;
   onSave: (key: string, value: string, description?: string) => Promise<void>;
 }) {
   const [prompt, setPrompt] = useState(currentPrompt);
+  const [model, setModel] = useState(currentModel);
   const [saving, setSaving] = useState(false);
+  const [savingModel, setSavingModel] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     setPrompt(currentPrompt);
   }, [currentPrompt]);
+
+  useEffect(() => {
+    setModel(currentModel);
+  }, [currentModel]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -661,18 +679,93 @@ function MetaPromptSection({
     }
   };
 
+  const handleSaveModel = async () => {
+    setSavingModel(true);
+    try {
+      await onSave('prompt_optimizer_model', model, 'Modelo para optimización de prompts');
+      toast({
+        title: "Guardado",
+        description: "Modelo guardado correctamente"
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setSavingModel(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold flex items-center gap-3">
-          <Sparkles className="w-6 h-6 text-amber-500" />
-          Meta Prompt - Optimizador
-        </h2>
-        <p className="text-muted-foreground">
-          Este prompt maestro se usa para optimizar todos los demás prompts del sistema
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold flex items-center gap-3">
+            <Sparkles className="w-6 h-6 text-amber-500" />
+            Meta Prompt - Optimizador
+          </h2>
+          <p className="text-muted-foreground">
+            Este prompt maestro se usa para optimizar todos los demás prompts del sistema
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onLoadModels}
+          disabled={loadingModels}
+        >
+          {loadingModels ? (
+            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <RefreshCw className="w-4 h-4 mr-2" />
+          )}
+          Cargar Modelos
+        </Button>
       </div>
 
+      {/* Model Configuration Card */}
+      <Card className="border-l-4 border-l-amber-500">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Modelo de Optimización</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-2">
+            <select
+              value={model}
+              onChange={(e) => setModel(e.target.value)}
+              className="flex-1 h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              <option value="">Seleccionar modelo...</option>
+              <option value="gpt-4.1-2025-04-14">gpt-4.1-2025-04-14 (default)</option>
+              <option value="gpt-5-2025-08-07">gpt-5-2025-08-07</option>
+              <option value="gpt-5-mini-2025-08-07">gpt-5-mini-2025-08-07</option>
+              <option value="gpt-5-nano-2025-08-07">gpt-5-nano-2025-08-07</option>
+              <option value="o3-2025-04-16">o3-2025-04-16</option>
+              <option value="o4-mini-2025-04-16">o4-mini-2025-04-16</option>
+              {openaiModels.filter(m => !['gpt-4.1-2025-04-14', 'gpt-5-2025-08-07', 'gpt-5-mini-2025-08-07', 'gpt-5-nano-2025-08-07', 'o3-2025-04-16', 'o4-mini-2025-04-16'].includes(m)).map((m) => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+            <Button
+              onClick={handleSaveModel}
+              disabled={savingModel}
+            >
+              {savingModel ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Clave: <code className="bg-muted px-1 rounded">prompt_optimizer_model</code>
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Prompt Card */}
       <Card className="border-l-4 border-l-amber-500">
         <CardContent className="pt-6 space-y-4">
           <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
