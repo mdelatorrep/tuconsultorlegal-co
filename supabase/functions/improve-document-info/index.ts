@@ -173,8 +173,9 @@ Descripción actual: ${docDesc}
 
 Mejora el nombre y descripción para que sean más atractivos y comprensibles para ${targetAudience === 'empresas' ? 'clientes corporativos' : 'usuarios finales individuales'}.`;
 
-    // Prepare OpenAI request
-    const openAIRequestBody = {
+    // Prepare OpenAI request - use max_completion_tokens for newer models
+    const isNewerModel = selectedModel.includes('gpt-4.1') || selectedModel.includes('o1') || selectedModel.includes('o3') || selectedModel.includes('o4');
+    const openAIRequestBody: Record<string, unknown> = {
       model: selectedModel,
       messages: [
         {
@@ -187,8 +188,14 @@ Mejora el nombre y descripción para que sean más atractivos y comprensibles pa
         }
       ],
       temperature: 0.3,
-      max_tokens: 500,
     };
+    
+    // Use appropriate token parameter based on model
+    if (isNewerModel) {
+      openAIRequestBody.max_completion_tokens = 500;
+    } else {
+      openAIRequestBody.max_tokens = 500;
+    }
 
     console.log('Making OpenAI API request with model:', selectedModel);
     
