@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import OpenAIAgentDebug from "./OpenAIAgentDebug";
+import DocumentPDFPreview from "./DocumentPDFPreview";
 import { sanitizeHtml } from "@/utils/htmlSanitizer";
 import RichTextTemplateEditor from "@/components/RichTextTemplateEditor";
 import { Button } from "@/components/ui/button";
@@ -29,7 +30,11 @@ import {
   AlertTriangle,
   Info,
   RefreshCw,
-  Sparkles
+  Sparkles,
+  Clock,
+  Users,
+  MessageSquare,
+  CheckCircle
 } from "lucide-react";
 import {
   Dialog,
@@ -1090,8 +1095,14 @@ export default function AgentManagerPage({ user, currentView, onViewChange, onLo
                               {agent.description}
                             </CardDescription>
                           </div>
-                          <div className="flex-shrink-0">
+                          <div className="flex-shrink-0 flex flex-col gap-1">
                             {getStatusBadge(agent.status)}
+                            {agent.target_audience && (
+                              <Badge variant="outline" className="text-xs">
+                                {agent.target_audience === 'personas' ? '👤 Personas' : 
+                                 agent.target_audience === 'empresas' ? '🏢 Empresas' : '🌐 Ambos'}
+                              </Badge>
+                            )}
                           </div>
                         </div>
                       </CardHeader>
@@ -1110,11 +1121,13 @@ export default function AgentManagerPage({ user, currentView, onViewChange, onLo
                             <span className="font-medium">{agent.price === 0 ? 'GRATIS' : `$${agent.price.toLocaleString()} COP`}</span>
                           </div>
                           
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Calendar className="h-4 w-4 flex-shrink-0" />
-                            <span className="text-muted-foreground">Creado:</span>
-                            <span>{new Date(agent.created_at).toLocaleDateString()}</span>
-                          </div>
+                          {agent.sla_enabled && (
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Clock className="h-4 w-4 flex-shrink-0 text-blue-500" />
+                              <span className="text-muted-foreground">ANS:</span>
+                              <span className="font-medium text-blue-600">{agent.sla_hours}h</span>
+                            </div>
+                          )}
                           
                           <div className="flex items-center gap-2 flex-wrap">
                             <User className="h-4 w-4 flex-shrink-0" />
@@ -1148,6 +1161,18 @@ export default function AgentManagerPage({ user, currentView, onViewChange, onLo
                             Editar
                           </Button>
 
+                          {/* Approve Button (visible for admins on pending_review agents) */}
+                          {lawyerData.is_admin && (
+                            <Button 
+                              size="sm"
+                              onClick={() => handleApproveAgent(agent.id)}
+                              className="bg-green-600 hover:bg-green-700 text-white"
+                            >
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              Aprobar
+                            </Button>
+                          )}
+
                           {/* Regenerate Prompt (only for admins) */}
                           {lawyerData.is_admin && (
                             <Button 
@@ -1171,7 +1196,7 @@ export default function AgentManagerPage({ user, currentView, onViewChange, onLo
                                       title: "✅ Prompt regenerado",
                                       description: `El prompt de "${agent.name}" ha sido actualizado exitosamente.`,
                                     });
-                                    fetchAgents(); // Recargar la lista
+                                    fetchAgents();
                                   } else {
                                     throw new Error(data?.errors?.[0]?.error || 'No se pudo regenerar el prompt');
                                   }
@@ -1240,8 +1265,14 @@ export default function AgentManagerPage({ user, currentView, onViewChange, onLo
                               {agent.description}
                             </CardDescription>
                           </div>
-                          <div className="flex-shrink-0">
+                          <div className="flex-shrink-0 flex flex-col gap-1">
                             {getStatusBadge(agent.status)}
+                            {agent.target_audience && (
+                              <Badge variant="outline" className="text-xs">
+                                {agent.target_audience === 'personas' ? '👤 Personas' : 
+                                 agent.target_audience === 'empresas' ? '🏢 Empresas' : '🌐 Ambos'}
+                              </Badge>
+                            )}
                           </div>
                         </div>
                       </CardHeader>
@@ -1260,11 +1291,13 @@ export default function AgentManagerPage({ user, currentView, onViewChange, onLo
                             <span className="font-medium">{agent.price === 0 ? 'GRATIS' : `$${agent.price.toLocaleString()} COP`}</span>
                           </div>
                           
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Calendar className="h-4 w-4 flex-shrink-0" />
-                            <span className="text-muted-foreground">Creado:</span>
-                            <span>{new Date(agent.created_at).toLocaleDateString()}</span>
-                          </div>
+                          {agent.sla_enabled && (
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Clock className="h-4 w-4 flex-shrink-0 text-blue-500" />
+                              <span className="text-muted-foreground">ANS:</span>
+                              <span className="font-medium text-blue-600">{agent.sla_hours}h</span>
+                            </div>
+                          )}
                           
                           <div className="flex items-center gap-2 flex-wrap">
                             <User className="h-4 w-4 flex-shrink-0" />
@@ -1513,174 +1546,315 @@ export default function AgentManagerPage({ user, currentView, onViewChange, onLo
           </div>
         )}
 
-        {/* Dialog for viewing agent details */}
+        {/* Dialog for viewing agent details with Tabs */}
         <Dialog open={isDetailsOpen} onOpenChange={(open) => {
           setIsDetailsOpen(open);
           if (!open) setSelectedAgent(null);
         }}>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
             <DialogHeader>
-              <DialogTitle>{selectedAgent?.name}</DialogTitle>
-              <DialogDescription>
-                Detalles completos del agente legal
-              </DialogDescription>
+              <div className="flex items-start justify-between">
+                <div>
+                  <DialogTitle className="text-xl">{selectedAgent?.name}</DialogTitle>
+                  <DialogDescription className="mt-1">
+                    Detalles completos del agente legal
+                  </DialogDescription>
+                </div>
+                <div className="flex flex-col gap-1 items-end">
+                  {selectedAgent && getStatusBadge(selectedAgent.status)}
+                  {selectedAgent?.target_audience && (
+                    <Badge variant="outline" className="text-xs">
+                      {selectedAgent.target_audience === 'personas' ? '👤 Personas' : 
+                       selectedAgent.target_audience === 'empresas' ? '🏢 Empresas' : '🌐 Ambos'}
+                    </Badge>
+                  )}
+                </div>
+              </div>
             </DialogHeader>
             
             {selectedAgent && (
-              <div className="space-y-6">
-                {/* OpenAI Agent Debug Component */}
-                <OpenAIAgentDebug legalAgentId={selectedAgent.id} />
-                
-                <div>
-                  <h4 className="font-semibold mb-2">Descripción</h4>
-                  <p className="text-sm text-muted-foreground">{selectedAgent.description}</p>
-                </div>
-                
-                <div>
-                  <h4 className="font-semibold mb-2">Plantilla del Documento</h4>
-                  <div 
-                    className="p-4 bg-muted rounded-md text-sm max-h-80 overflow-y-auto"
-                    style={{
-                      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-                      lineHeight: '1.6',
-                      color: 'hsl(var(--foreground))'
-                    }}
-                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(selectedAgent.template_content) }}
-                  />
-                </div>
-                
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-semibold">Prompt de IA</h4>
-                    {lawyerData.is_admin && convBlocks.length > 0 && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={async () => {
-                          if (!selectedAgent) return;
-                          try {
-                            toast({
-                              title: "Regenerando prompt...",
-                              description: "Esto puede tomar unos segundos",
-                            });
-                            
-                            const { data, error } = await supabase.functions.invoke('regenerate-agent-prompts', {
-                              body: { agent_id: selectedAgent.id }
-                            });
-                            
-                            if (error) throw error;
-                            
-                            if (data?.success && data?.updated > 0) {
-                              toast({
-                                title: "✅ Prompt regenerado",
-                                description: `El prompt de IA ha sido actualizado con ${convBlocks.length} bloques y ${fieldInstructions.length} validaciones.`,
-                              });
-                              
-                              // Recargar el agente para mostrar el nuevo prompt
-                              const { data: updatedAgent, error: fetchError } = await supabase
-                                .from('legal_agents')
-                                .select('*')
-                                .eq('id', selectedAgent.id)
-                                .single();
-                              
-                              if (!fetchError && updatedAgent) {
-                                setSelectedAgent(updatedAgent as LegalAgent);
-                                // También actualizar en la lista
-                                setAgents(agents.map(a => a.id === updatedAgent.id ? updatedAgent as LegalAgent : a));
-                              }
-                            } else {
-                              throw new Error(data?.errors?.[0]?.error || 'No se pudo regenerar el prompt');
-                            }
-                          } catch (error: any) {
-                            console.error('Error regenerating prompt:', error);
-                            toast({
-                              title: "Error",
-                              description: error.message || "No se pudo regenerar el prompt",
-                              variant: "destructive"
-                            });
-                          }
-                        }}
-                      >
-                        <RefreshCw className="h-3 w-3 mr-1" />
-                        Regenerar Prompt
-                      </Button>
-                    )}
-                  </div>
-                  <div className="p-4 bg-muted rounded-md text-xs font-mono max-h-40 overflow-y-auto">
-                    {selectedAgent.ai_prompt}
-                  </div>
-                </div>
-                
-                {/* Guía de Conversación */}
-                <div>
-                  <h4 className="font-semibold mb-2">Guía de Conversación</h4>
-                  {convLoading ? (
-                    <p className="text-sm text-muted-foreground">Cargando guía...</p>
-                  ) : convBlocks.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No hay bloques de conversación configurados.</p>
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="text-sm text-muted-foreground">
-                        Bloques: {convBlocks.length} • Placeholders: {convBlocks.reduce((acc, b) => acc + (Array.isArray(b.placeholders) ? b.placeholders.length : 0), 0)}
-                      </div>
-                      <div className="space-y-2 max-h-60 overflow-y-auto">
-                        {convBlocks.map((b) => (
-                          <div key={b.id} className="p-3 bg-muted rounded">
-                            <div className="flex items-center justify-between">
-                              <div className="font-medium">{b.block_order}. {b.block_name}</div>
-                              <Badge variant="outline" className="text-xs">{Array.isArray(b.placeholders) ? b.placeholders.length : 0} campos</Badge>
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-1">{b.intro_phrase}</p>
-                            {Array.isArray(b.placeholders) && b.placeholders.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-2">
-                                {b.placeholders.map((ph: string, idx: number) => (
-                                  <Badge key={idx} variant="secondary" className="text-xs">{ph}</Badge>
-                                ))}
-                              </div>
-                            )}
+              <Tabs defaultValue="summary" className="flex-1 overflow-hidden flex flex-col">
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="summary">📊 Resumen</TabsTrigger>
+                  <TabsTrigger value="template">📄 Plantilla</TabsTrigger>
+                  <TabsTrigger value="conversation">💬 Conversación</TabsTrigger>
+                  <TabsTrigger value="openai">🤖 OpenAI</TabsTrigger>
+                </TabsList>
+
+                <div className="flex-1 overflow-y-auto mt-4">
+                  {/* TAB 1: RESUMEN */}
+                  <TabsContent value="summary" className="space-y-6 mt-0">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Información General */}
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm flex items-center gap-2">
+                            <FileText className="h-4 w-4" />
+                            Información General
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Categoría:</span>
+                            <span className="font-medium">{selectedAgent.category}</span>
                           </div>
-                        ))}
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Precio:</span>
+                            <span className="font-medium">{selectedAgent.price === 0 ? 'GRATIS' : `$${selectedAgent.price.toLocaleString()} COP`}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Audiencia:</span>
+                            <span className="font-medium">
+                              {selectedAgent.target_audience === 'personas' ? 'Personas' : 
+                               selectedAgent.target_audience === 'empresas' ? 'Empresas' : 'Ambos'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Creado:</span>
+                            <span>{new Date(selectedAgent.created_at).toLocaleDateString()}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Actualizado:</span>
+                            <span>{new Date(selectedAgent.updated_at).toLocaleDateString()}</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Configuración ANS */}
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm flex items-center gap-2">
+                            <Clock className="h-4 w-4" />
+                            Configuración ANS
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">ANS Habilitado:</span>
+                            <Badge variant={selectedAgent.sla_enabled ? "default" : "secondary"}>
+                              {selectedAgent.sla_enabled ? 'Sí' : 'No'}
+                            </Badge>
+                          </div>
+                          {selectedAgent.sla_enabled && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Tiempo Límite:</span>
+                              <span className="font-medium text-blue-600">{selectedAgent.sla_hours} horas</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Variables:</span>
+                            <span className="font-medium">{selectedAgent.placeholder_fields.length} campos</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Bloques Conv.:</span>
+                            <span className="font-medium">{convBlocks.length} bloques</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    {/* Descripción */}
+                    <div>
+                      <h4 className="font-semibold mb-2 flex items-center gap-2">
+                        <Info className="h-4 w-4" />
+                        Descripción
+                      </h4>
+                      <p className="text-sm text-muted-foreground bg-muted p-4 rounded-lg">
+                        {selectedAgent.description}
+                      </p>
+                    </div>
+
+                    {/* Variables */}
+                    <div>
+                      <h4 className="font-semibold mb-2 flex items-center gap-2">
+                        <User className="h-4 w-4" />
+                        Variables ({selectedAgent.placeholder_fields.length})
+                      </h4>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+                        {selectedAgent.placeholder_fields.map((field: any, index: number) => {
+                          const fieldName = typeof field === 'string' 
+                            ? field 
+                            : (field.placeholder || field.name || field.field_name || `Campo ${index + 1}`);
+                          return (
+                            <Badge key={index} variant="outline" className="justify-start text-xs py-1.5">
+                              {fieldName}
+                            </Badge>
+                          );
+                        })}
                       </div>
                     </div>
-                  )}
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <h4 className="font-semibold mb-2">Información General</h4>
-                    <div className="space-y-2 text-sm">
-                      <div><strong>Categoría:</strong> {selectedAgent.category}</div>
-                      <div><strong>Precio:</strong> {selectedAgent.price === 0 ? 'GRATIS' : `$${selectedAgent.price.toLocaleString()} COP`}</div>
-                      <div><strong>Estado:</strong> {getStatusText(selectedAgent.status)}</div>
-                      <div><strong>Creado:</strong> {new Date(selectedAgent.created_at).toLocaleDateString()}</div>
+                  </TabsContent>
+
+                  {/* TAB 2: PLANTILLA */}
+                  <TabsContent value="template" className="space-y-4 mt-0">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-semibold">Plantilla del Documento</h4>
+                      <DocumentPDFPreview
+                        templateContent={selectedAgent.template_content}
+                        documentName={selectedAgent.name}
+                        placeholders={selectedAgent.placeholder_fields}
+                        buttonVariant="outline"
+                        buttonSize="sm"
+                      />
                     </div>
-                  </div>
-                  
-                  <div>
-                    <h4 className="font-semibold mb-2">Variables ({selectedAgent.placeholder_fields.length})</h4>
-                    <div className="space-y-1 text-sm max-h-40 overflow-y-auto">
-                       {selectedAgent.placeholder_fields.map((field: any, index: number) => {
-                         // Manejar diferentes formatos de datos
-                         const fieldName = typeof field === 'string' 
-                           ? field 
-                           : (field.placeholder || field.name || field.field_name || `Campo ${index + 1}`);
-                         const fieldDescription = typeof field === 'object' 
-                           ? (field.pregunta || field.description || field.help_text || 'Sin descripción')
-                           : 'Sin descripción';
-                         
-                         return (
-                           <div key={index} className="p-2 bg-muted rounded">
-                             <div className="flex items-center gap-2 mb-1">
-                               <Badge variant="outline" className="text-xs">{fieldName}</Badge>
-                             </div>
-                             <p className="text-xs text-muted-foreground">{fieldDescription}</p>
-                           </div>
-                         );
-                       })}
+                    <div 
+                      className="p-4 bg-muted rounded-lg text-sm max-h-[50vh] overflow-y-auto"
+                      style={{
+                        fontFamily: '"Times New Roman", Times, serif',
+                        lineHeight: '1.7',
+                        color: 'hsl(var(--foreground))'
+                      }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(selectedAgent.template_content) }}
+                    />
+                  </TabsContent>
+
+                  {/* TAB 3: CONVERSACIÓN */}
+                  <TabsContent value="conversation" className="space-y-6 mt-0">
+                    {/* Guía de Conversación */}
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="font-semibold flex items-center gap-2">
+                          <MessageSquare className="h-4 w-4" />
+                          Guía de Conversación
+                        </h4>
+                        <Badge variant="outline">{convBlocks.length} bloques</Badge>
+                      </div>
+                      {convLoading ? (
+                        <div className="flex items-center justify-center py-8">
+                          <RefreshCw className="h-5 w-5 animate-spin mr-2" />
+                          <span className="text-muted-foreground">Cargando guía...</span>
+                        </div>
+                      ) : convBlocks.length === 0 ? (
+                        <div className="text-center py-8 bg-muted rounded-lg">
+                          <MessageSquare className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                          <p className="text-sm text-muted-foreground">No hay bloques de conversación configurados.</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3 max-h-[40vh] overflow-y-auto">
+                          {convBlocks.map((b) => (
+                            <Card key={b.id} className="bg-muted/50">
+                              <CardContent className="p-4">
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="font-medium text-sm">{b.block_order}. {b.block_name}</div>
+                                  <Badge variant="secondary" className="text-xs">
+                                    {Array.isArray(b.placeholders) ? b.placeholders.length : 0} campos
+                                  </Badge>
+                                </div>
+                                <p className="text-xs text-muted-foreground mb-2 italic">"{b.intro_phrase}"</p>
+                                {Array.isArray(b.placeholders) && b.placeholders.length > 0 && (
+                                  <div className="flex flex-wrap gap-1">
+                                    {b.placeholders.map((ph: string, idx: number) => (
+                                      <Badge key={idx} variant="outline" className="text-xs">{ph}</Badge>
+                                    ))}
+                                  </div>
+                                )}
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  </div>
+
+                    {/* Instrucciones de Campos */}
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="font-semibold flex items-center gap-2">
+                          <Info className="h-4 w-4" />
+                          Instrucciones de Campos
+                        </h4>
+                        <Badge variant="outline">{fieldInstructions.length} instrucciones</Badge>
+                      </div>
+                      {fieldInstructions.length === 0 ? (
+                        <div className="text-center py-4 bg-muted rounded-lg">
+                          <p className="text-sm text-muted-foreground">No hay instrucciones específicas configuradas.</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2 max-h-40 overflow-y-auto">
+                          {fieldInstructions.map((instruction, idx) => (
+                            <div key={idx} className="p-3 bg-muted rounded-lg text-sm">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Badge variant="outline" className="text-xs">{instruction.field_name}</Badge>
+                              </div>
+                              {instruction.help_text && (
+                                <p className="text-xs text-muted-foreground">{instruction.help_text}</p>
+                              )}
+                              {instruction.validation_rule && (
+                                <p className="text-xs text-blue-600 mt-1">Validación: {instruction.validation_rule}</p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </TabsContent>
+
+                  {/* TAB 4: OPENAI */}
+                  <TabsContent value="openai" className="space-y-6 mt-0">
+                    {/* OpenAI Agent Debug Component */}
+                    <OpenAIAgentDebug legalAgentId={selectedAgent.id} />
+                    
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="font-semibold">Prompt de IA</h4>
+                        {lawyerData.is_admin && convBlocks.length > 0 && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={async () => {
+                              if (!selectedAgent) return;
+                              try {
+                                toast({
+                                  title: "Regenerando prompt...",
+                                  description: "Esto puede tomar unos segundos",
+                                });
+                                
+                                const { data, error } = await supabase.functions.invoke('regenerate-agent-prompts', {
+                                  body: { agent_id: selectedAgent.id }
+                                });
+                                
+                                if (error) throw error;
+                                
+                                if (data?.success && data?.updated > 0) {
+                                  toast({
+                                    title: "✅ Prompt regenerado",
+                                    description: `El prompt de IA ha sido actualizado con ${convBlocks.length} bloques y ${fieldInstructions.length} validaciones.`,
+                                  });
+                                  
+                                  const { data: updatedAgent, error: fetchError } = await supabase
+                                    .from('legal_agents')
+                                    .select('*')
+                                    .eq('id', selectedAgent.id)
+                                    .single();
+                                  
+                                  if (!fetchError && updatedAgent) {
+                                    setSelectedAgent(updatedAgent as LegalAgent);
+                                    setAgents(agents.map(a => a.id === updatedAgent.id ? updatedAgent as LegalAgent : a));
+                                  }
+                                } else {
+                                  throw new Error(data?.errors?.[0]?.error || 'No se pudo regenerar el prompt');
+                                }
+                              } catch (error: any) {
+                                console.error('Error regenerating prompt:', error);
+                                toast({
+                                  title: "Error",
+                                  description: error.message || "No se pudo regenerar el prompt",
+                                  variant: "destructive"
+                                });
+                              }
+                            }}
+                          >
+                            <RefreshCw className="h-3 w-3 mr-1" />
+                            Regenerar Prompt
+                          </Button>
+                        )}
+                      </div>
+                      <div className="p-4 bg-muted rounded-lg text-xs font-mono max-h-60 overflow-y-auto whitespace-pre-wrap">
+                        {selectedAgent.ai_prompt}
+                      </div>
+                    </div>
+                  </TabsContent>
                 </div>
-              </div>
+              </Tabs>
             )}
           </DialogContent>
         </Dialog>
@@ -1860,19 +2034,28 @@ export default function AgentManagerPage({ user, currentView, onViewChange, onLo
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <Label htmlFor="template_content">Contenido de la Plantilla *</Label>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={handleReprocessTemplate}
-                          disabled={isReprocessingTemplate}
-                        >
-                          {isReprocessingTemplate ? (
-                            <RefreshCw className="h-3 w-3 animate-spin mr-1" />
-                          ) : (
-                            <RefreshCw className="h-3 w-3 mr-1" />
-                          )}
-                          Re-analizar Plantilla
-                        </Button>
+                        <div className="flex gap-2">
+                          <DocumentPDFPreview
+                            templateContent={editingAgent.template_content}
+                            documentName={editingAgent.name}
+                            placeholders={extractPlaceholdersFromTemplate(editingAgent.template_content)}
+                            buttonVariant="outline"
+                            buttonSize="sm"
+                          />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={handleReprocessTemplate}
+                            disabled={isReprocessingTemplate}
+                          >
+                            {isReprocessingTemplate ? (
+                              <RefreshCw className="h-3 w-3 animate-spin mr-1" />
+                            ) : (
+                              <RefreshCw className="h-3 w-3 mr-1" />
+                            )}
+                            Re-analizar
+                          </Button>
+                        </div>
                       </div>
                       <RichTextTemplateEditor
                         value={editingAgent.template_content}
