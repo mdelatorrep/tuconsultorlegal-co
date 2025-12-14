@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
     };
 
     // Get configured model and prompt
-    const selectedModel = await getSystemConfig('content_optimization_model', 'gpt-4.1-2025-04-14');
+    const selectedModel = await getSystemConfig('training_validator_ai_model', 'gpt-4.1-2025-04-14');
     const systemPrompt = await getSystemConfig('ai_training_validator_prompt', '');
     
     if (!systemPrompt) {

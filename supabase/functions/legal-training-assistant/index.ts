@@ -38,7 +38,7 @@ serve(async (req) => {
     };
 
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-    const openaiModel = await getSystemConfig('document_chat_ai_model', 'gpt-4.1-2025-04-14');
+    const openaiModel = await getSystemConfig('training_assistant_ai_model', 'gpt-4o-mini');
     const basePrompt = await getSystemConfig('legal_training_assistant_prompt', '');
     
     if (!basePrompt) {
