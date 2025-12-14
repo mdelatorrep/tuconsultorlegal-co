@@ -155,10 +155,11 @@ INSTRUCCIONES CRÍTICAS:
 6. DIRECCIONES: normalizar formato con mayúsculas para la ciudad
 7. Si algún placeholder no puede completarse, mantenerlo vacío: {{PLACEHOLDER}}
 8. Mantén EXACTAMENTE el formato, estructura y contenido legal de la plantilla
-9. NO agregues ni quites texto de la plantilla original
-10. Resultado: plantilla original con placeholders reemplazados por información normalizada
+9. 🚫 PROHIBIDO: NO AGREGUES títulos, encabezados H1 ni el nombre del documento al inicio. El documento debe comenzar EXACTAMENTE como comienza la plantilla original.
+10. NO agregues ni quites texto de la plantilla original
+11. Resultado: plantilla original con placeholders reemplazados por información normalizada
 
-FORMATO DE RESPUESTA: Devuelve únicamente el documento final usando la plantilla exacta con los placeholders completados.`;
+FORMATO DE RESPUESTA: Devuelve únicamente el documento final usando la plantilla exacta con los placeholders completados. SIN agregar título ni encabezado.`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
