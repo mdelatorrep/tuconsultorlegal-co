@@ -48,30 +48,30 @@ export const AdminHeader = ({
   const totalNotifications = unreadMessagesCount + pendingAgentsCount;
 
   return (
-    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 bg-card p-4 rounded-lg border shadow-sm">
-      <div className="flex items-center gap-3">
-        <SidebarTrigger className="lg:hidden" />
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">
+    <div className="flex items-center justify-between gap-2 mb-4 md:mb-6 bg-card p-3 md:p-4 rounded-lg border shadow-sm sticky top-0 z-40 backdrop-blur-sm bg-card/95">
+      <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
+        <SidebarTrigger className="shrink-0" />
+        <div className="min-w-0">
+          <h1 className="text-lg md:text-2xl lg:text-3xl font-bold truncate">
             {currentSection?.label || 'Dashboard'}
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-xs md:text-sm text-muted-foreground mt-0.5 hidden sm:block truncate">
             {viewDescriptions[currentView] || 'Gestiona el portal administrativo'}
           </p>
         </div>
       </div>
       
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 md:gap-2 shrink-0">
         {/* Refresh Button */}
         {onRefresh && (
           <Button 
             variant="outline" 
             size="sm"
             onClick={onRefresh}
-            className="flex items-center gap-2"
+            className="h-9 w-9 p-0 md:h-9 md:w-auto md:px-3"
           >
             <RefreshCw className="w-4 h-4" />
-            <span className="hidden sm:inline">Actualizar</span>
+            <span className="hidden md:inline ml-2">Actualizar</span>
           </Button>
         )}
 
@@ -140,10 +140,10 @@ export const AdminHeader = ({
             <Button 
               variant="outline" 
               size="sm" 
-              className="flex items-center gap-2 text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:hover:bg-orange-950/20"
+              className="h-9 w-9 p-0 md:h-9 md:w-auto md:px-3 text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:hover:bg-orange-950/20"
             >
               <Trash2 className="w-4 h-4" />
-              <span className="hidden sm:inline">Limpiar Memoria</span>
+              <span className="hidden md:inline ml-2">Limpiar Memoria</span>
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
@@ -183,10 +183,10 @@ export const AdminHeader = ({
             <Button 
               variant="outline" 
               size="sm" 
-              className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
+              className="h-9 w-9 p-0 md:h-9 md:w-auto md:px-3 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
             >
               <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">Salir</span>
+              <span className="hidden md:inline ml-2">Salir</span>
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>

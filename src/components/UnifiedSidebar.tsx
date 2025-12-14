@@ -11,10 +11,18 @@ interface UnifiedSidebarProps {
 }
 
 export default function UnifiedSidebar({ user, currentView, onViewChange, onLogout }: UnifiedSidebarProps) {
-  const { state, open } = useSidebar();
+  const { state, setOpenMobile } = useSidebar();
   const isMobile = useIsMobile();
   // En móvil (offcanvas), nunca colapsar. En desktop, usar el estado del sidebar
   const collapsed = !isMobile && state === 'collapsed';
+  
+  const handleViewChange = (view: string) => {
+    onViewChange(view);
+    // Close sidebar on mobile after selection
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
   
   // Sidebar menu configuration
   const menuItems = [
@@ -151,16 +159,16 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
                   <SidebarMenuItem key={item.view}>
                     <SidebarMenuButton 
                       isActive={currentView === item.view}
-                      onClick={() => onViewChange(item.view)}
-                      className={`w-full justify-start ${(item as any).isPremium ? 'opacity-75' : ''}`}
+                      onClick={() => handleViewChange(item.view)}
+                      className={`w-full justify-start min-h-[44px] ${(item as any).isPremium ? 'opacity-75' : ''}`}
                       tooltip={collapsed ? item.title : undefined}
                     >
-                      <item.icon className="w-4 h-4" />
+                      <item.icon className="w-4 h-4 shrink-0" />
                       {!collapsed && (
                         <>
-                          <span className="flex-1">{item.title}</span>
+                          <span className="flex-1 truncate">{item.title}</span>
                           {(item as any).isPremium && (
-                            <div className="flex items-center gap-1 ml-auto">
+                            <div className="flex items-center gap-1 ml-auto shrink-0">
                               <Crown className="h-3 w-3 text-amber-500" />
                               <Lock className="h-3 w-3 text-muted-foreground" />
                             </div>
@@ -180,10 +188,10 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
           <Button
             onClick={onLogout}
             variant="outline"
-            className="w-full flex items-center gap-2 justify-start"
+            className="w-full flex items-center gap-2 justify-start min-h-[44px]"
             title={collapsed ? 'Cerrar Sesión' : undefined}
           >
-            <LogOut className="h-4 w-4" />
+            <LogOut className="h-4 w-4 shrink-0" />
             {!collapsed && <span>Cerrar Sesión</span>}
           </Button>
         </div>

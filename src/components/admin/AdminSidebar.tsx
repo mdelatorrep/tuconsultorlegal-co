@@ -1,9 +1,10 @@
 import { 
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, 
   SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, 
-  SidebarTrigger, useSidebar 
+  useSidebar 
 } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { 
   Activity, Users, Bot, BarChart3, BookOpen, MessageCircle, 
   Settings, Mail, Tag, CreditCard, Database, FileText, 
@@ -27,7 +28,8 @@ export const AdminSidebar = ({
   pendingBlogsCount,
   userEmail
 }: AdminSidebarProps) => {
-  const { state } = useSidebar();
+  const { state, setOpenMobile } = useSidebar();
+  const isMobile = useIsMobile();
   const collapsed = state === 'collapsed';
 
   const sidebarSections = [
@@ -91,10 +93,19 @@ export const AdminSidebar = ({
     }
   ];
 
+  const handleItemClick = (itemId: string) => {
+    setCurrentView(itemId);
+    // Close sidebar on mobile after selection
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
+
   return (
-    <Sidebar className={collapsed ? "w-14" : "w-64"} collapsible="icon">
-      <SidebarTrigger className="m-2 self-end" />
-      
+    <Sidebar 
+      className={collapsed ? "w-14" : "w-64"} 
+      collapsible={isMobile ? "offcanvas" : "icon"}
+    >
       <SidebarContent>
         {/* Header */}
         {!collapsed && (
@@ -128,16 +139,16 @@ export const AdminSidebar = ({
                   <SidebarMenuItem key={item.id}>
                     <SidebarMenuButton 
                       isActive={currentView === item.id}
-                      onClick={() => setCurrentView(item.id)}
-                      className="w-full justify-start"
+                      onClick={() => handleItemClick(item.id)}
+                      className="w-full justify-start min-h-[44px]"
                       tooltip={collapsed ? item.label : undefined}
                     >
-                      <item.icon className="w-4 h-4" />
+                      <item.icon className="w-4 h-4 shrink-0" />
                       {!collapsed && (
                         <>
-                          <span className="flex-1">{item.label}</span>
+                          <span className="flex-1 truncate">{item.label}</span>
                           {item.count > 0 && (
-                            <Badge variant="destructive" className="ml-auto text-xs h-5">
+                            <Badge variant="destructive" className="ml-auto text-xs h-5 shrink-0">
                               {item.count}
                             </Badge>
                           )}

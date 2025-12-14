@@ -97,28 +97,28 @@ export const AdminDashboard = ({
   };
 
   return (
-    <div className="space-y-6">
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="space-y-4 md:space-y-6">
+      {/* Stats Grid - 2x2 on mobile, 4 on desktop */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
             <Card key={index} className="overflow-hidden">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-muted-foreground">
+              <CardContent className="p-3 md:p-6">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs md:text-sm font-medium text-muted-foreground truncate">
                       {stat.title}
                     </p>
-                    <h3 className="text-3xl font-bold mt-2">
+                    <h3 className="text-xl md:text-3xl font-bold mt-1 md:mt-2">
                       {stat.value}
                     </h3>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-[10px] md:text-xs text-muted-foreground mt-0.5 md:mt-1 truncate">
                       {stat.trend}
                     </p>
                   </div>
-                  <div className={`p-3 rounded-lg ${stat.bgColor}`}>
-                    <Icon className={`w-6 h-6 ${stat.color}`} />
+                  <div className={`p-2 md:p-3 rounded-lg ${stat.bgColor} shrink-0`}>
+                    <Icon className={`w-4 h-4 md:w-6 md:h-6 ${stat.color}`} />
                   </div>
                 </div>
               </CardContent>
@@ -127,37 +127,40 @@ export const AdminDashboard = ({
         })}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         {/* Recent Activity */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="w-5 h-5" />
+          <CardHeader className="p-4 md:p-6 pb-2 md:pb-4">
+            <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+              <Activity className="w-4 h-4 md:w-5 md:h-5" />
               Actividad Reciente
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
+          <CardContent className="p-4 md:p-6 pt-0 md:pt-0">
+            <div className="space-y-2 md:space-y-4">
               {agents.slice(0, 5).map((agent) => (
-                <div key={agent.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-primary/10">
-                      <Bot className="w-4 h-4 text-primary" />
+                <div key={agent.id} className="flex items-center justify-between p-2 md:p-3 rounded-lg bg-muted/50 gap-2">
+                  <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
+                    <div className="p-1.5 md:p-2 rounded-lg bg-primary/10 shrink-0">
+                      <Bot className="w-3 h-3 md:w-4 md:h-4 text-primary" />
                     </div>
-                    <div>
-                      <p className="text-sm font-medium">{agent.name}</p>
-                      <p className="text-xs text-muted-foreground">{agent.category}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs md:text-sm font-medium truncate">{agent.name}</p>
+                      <p className="text-[10px] md:text-xs text-muted-foreground truncate">{agent.category}</p>
                     </div>
                   </div>
-                  <Badge variant={agent.status === 'active' ? 'default' : agent.status === 'pending_review' ? 'outline' : 'secondary'}>
+                  <Badge 
+                    variant={agent.status === 'active' ? 'default' : agent.status === 'pending_review' ? 'outline' : 'secondary'}
+                    className="text-[10px] md:text-xs shrink-0"
+                  >
                     {agent.status}
                   </Badge>
                 </div>
               ))}
               {agents.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Bot className="w-12 h-12 mx-auto mb-2 opacity-20" />
-                  <p className="text-sm">No hay agentes registrados</p>
+                <div className="text-center py-6 md:py-8 text-muted-foreground">
+                  <Bot className="w-10 h-10 md:w-12 md:h-12 mx-auto mb-2 opacity-20" />
+                  <p className="text-xs md:text-sm">No hay agentes registrados</p>
                 </div>
               )}
             </div>
@@ -166,42 +169,42 @@ export const AdminDashboard = ({
 
         {/* Alerts & Pending Items */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="w-5 h-5" />
+          <CardHeader className="p-4 md:p-6 pb-2 md:pb-4">
+            <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+              <AlertCircle className="w-4 h-4 md:w-5 md:h-5" />
               Tareas Pendientes
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
+          <CardContent className="p-4 md:p-6 pt-0 md:pt-0">
+            <div className="space-y-2 md:space-y-4">
               {recentActivity.map((item, index) => {
                 const Icon = item.icon;
                 const isClickable = item.count > 0 && onNavigate;
                 return (
                   <div 
                     key={index} 
-                    className={`flex items-center justify-between p-3 rounded-lg bg-muted/50 ${
-                      isClickable ? 'cursor-pointer hover:bg-muted transition-colors' : ''
+                    className={`flex items-center justify-between p-2 md:p-3 rounded-lg bg-muted/50 gap-2 min-h-[44px] ${
+                      isClickable ? 'cursor-pointer hover:bg-muted active:bg-muted/80 transition-colors' : ''
                     }`}
                     onClick={() => isClickable && handleTaskClick(item.targetView)}
                   >
-                    <div className="flex items-center gap-3">
-                      <Icon className={`w-5 h-5 ${item.color}`} />
-                      <div>
-                        <p className="text-sm font-medium">{item.title}</p>
-                        <p className="text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
+                      <Icon className={`w-4 h-4 md:w-5 md:h-5 ${item.color} shrink-0`} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs md:text-sm font-medium truncate">{item.title}</p>
+                        <p className="text-[10px] md:text-xs text-muted-foreground">
                           {item.count > 0 ? `${item.count} pendientes` : "Todo al día"}
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
                       {item.count > 0 ? (
                         <>
-                          <Badge variant="destructive">{item.count}</Badge>
-                          {onNavigate && <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+                          <Badge variant="destructive" className="text-[10px] md:text-xs">{item.count}</Badge>
+                          {onNavigate && <ChevronRight className="w-3 h-3 md:w-4 md:h-4 text-muted-foreground" />}
                         </>
                       ) : (
-                        <CheckCircle className="w-5 h-5 text-green-500" />
+                        <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-green-500" />
                       )}
                     </div>
                   </div>
@@ -213,16 +216,16 @@ export const AdminDashboard = ({
 
         {/* System Status */}
         <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5" />
+          <CardHeader className="p-4 md:p-6 pb-2 md:pb-4">
+            <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+              <TrendingUp className="w-4 h-4 md:w-5 md:h-5" />
               Estado del Sistema
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <CardContent className="p-4 md:p-6 pt-0 md:pt-0">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
               <div className="space-y-2">
-                <div className="flex justify-between items-center text-sm">
+                <div className="flex justify-between items-center text-xs md:text-sm">
                   <span className="text-muted-foreground">Agentes Aprobados</span>
                   <span className="font-medium">
                     {agents.filter(a => a.status === 'approved' || a.status === 'active').length}/{agents.length}
@@ -230,12 +233,12 @@ export const AdminDashboard = ({
                 </div>
                 <Progress 
                   value={(agents.filter(a => a.status === 'approved' || a.status === 'active').length / Math.max(agents.length, 1)) * 100} 
-                  className="h-2"
+                  className="h-1.5 md:h-2"
                 />
               </div>
 
               <div className="space-y-2">
-                <div className="flex justify-between items-center text-sm">
+                <div className="flex justify-between items-center text-xs md:text-sm">
                   <span className="text-muted-foreground">Blogs Publicados</span>
                   <span className="font-medium">
                     {blogPosts.filter(b => b.status === 'published').length}/{blogPosts.length}
@@ -243,16 +246,16 @@ export const AdminDashboard = ({
                 </div>
                 <Progress 
                   value={(blogPosts.filter(b => b.status === 'published').length / Math.max(blogPosts.length, 1)) * 100} 
-                  className="h-2"
+                  className="h-1.5 md:h-2"
                 />
               </div>
 
               <div className="space-y-2">
-                <div className="flex justify-between items-center text-sm">
+                <div className="flex justify-between items-center text-xs md:text-sm">
                   <span className="text-muted-foreground">Mensajes Atendidos</span>
                   <span className="font-medium">-</span>
                 </div>
-                <Progress value={75} className="h-2" />
+                <Progress value={75} className="h-1.5 md:h-2" />
               </div>
             </div>
           </CardContent>
