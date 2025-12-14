@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { buildResponsesRequestParams, callResponsesAPI, extractOutputText } from "../_shared/openai-responses-utils.ts";
+import { buildResponsesRequestParams, callResponsesAPI } from "../_shared/openai-responses-utils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -110,8 +110,12 @@ serve(async (req) => {
     // Call OpenAI Responses API
     const aiResponse = await callResponsesAPI(openaiApiKey, params);
 
-    // Extract optimized prompt from response
-    const optimizedPrompt = extractOutputText(aiResponse);
+    if (!aiResponse.success) {
+      throw new Error(aiResponse.error || 'Error calling OpenAI API');
+    }
+
+    // Get optimized prompt directly from the response (callResponsesAPI already extracts text)
+    const optimizedPrompt = aiResponse.text;
 
     if (!optimizedPrompt) {
       throw new Error('No se pudo generar el prompt optimizado');
