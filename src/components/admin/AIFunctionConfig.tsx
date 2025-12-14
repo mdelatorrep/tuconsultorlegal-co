@@ -19,7 +19,8 @@ import {
   X,
   FileText,
   Brain,
-  Settings
+  Settings,
+  Zap
 } from "lucide-react";
 
 interface AIFunctionConfigProps {
@@ -28,9 +29,11 @@ interface AIFunctionConfigProps {
   description: string;
   promptKey: string;
   modelKey?: string;
+  reasoningEffortKey?: string;
   additionalParams?: { key: string; name: string; type: 'text' | 'number' }[];
   currentPrompt: string;
   currentModel: string;
+  currentReasoningEffort?: string;
   currentParams: Record<string, string>;
   openaiModels: string[];
   loadingModels: boolean;
@@ -39,15 +42,23 @@ interface AIFunctionConfigProps {
   colorClass?: string;
 }
 
+const REASONING_EFFORT_OPTIONS = [
+  { value: 'low', label: 'Bajo', description: 'Respuestas rápidas, ideal para tareas simples' },
+  { value: 'medium', label: 'Medio', description: 'Balance entre velocidad y profundidad' },
+  { value: 'high', label: 'Alto', description: 'Análisis profundo, más tokens de razonamiento' }
+];
+
 export default function AIFunctionConfig({
   functionId,
   name,
   description,
   promptKey,
   modelKey,
+  reasoningEffortKey,
   additionalParams = [],
   currentPrompt,
   currentModel,
+  currentReasoningEffort = 'low',
   currentParams,
   openaiModels,
   loadingModels,
@@ -58,6 +69,7 @@ export default function AIFunctionConfig({
   const [isOpen, setIsOpen] = useState(false);
   const [prompt, setPrompt] = useState(currentPrompt);
   const [model, setModel] = useState(currentModel);
+  const [reasoningEffort, setReasoningEffort] = useState(currentReasoningEffort);
   const [params, setParams] = useState<Record<string, string>>(currentParams);
   const [saving, setSaving] = useState(false);
   const [optimizing, setOptimizing] = useState(false);
@@ -73,6 +85,10 @@ export default function AIFunctionConfig({
   useEffect(() => {
     setModel(currentModel);
   }, [currentModel]);
+
+  useEffect(() => {
+    setReasoningEffort(currentReasoningEffort);
+  }, [currentReasoningEffort]);
 
   useEffect(() => {
     setParams(currentParams);
@@ -170,6 +186,26 @@ export default function AIFunctionConfig({
     }
   };
 
+  const handleSaveReasoningEffort = async () => {
+    if (!reasoningEffortKey) return;
+    setSaving(true);
+    try {
+      await onSave(reasoningEffortKey, reasoningEffort, `Esfuerzo de razonamiento para ${name}`);
+      toast({
+        title: "Guardado",
+        description: "Esfuerzo de razonamiento guardado correctamente"
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Error al guardar",
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleSaveParam = async (key: string, paramName: string) => {
     setSaving(true);
     try {
@@ -218,7 +254,11 @@ export default function AIFunctionConfig({
         <CollapsibleContent>
           <CardContent className="pt-0">
             <Tabs defaultValue="prompt" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 mb-4">
+              <TabsList className={`grid w-full mb-4 ${
+                modelKey && reasoningEffortKey && additionalParams.length > 0 ? 'grid-cols-4' :
+                (modelKey && reasoningEffortKey) || (modelKey && additionalParams.length > 0) || (reasoningEffortKey && additionalParams.length > 0) ? 'grid-cols-3' :
+                modelKey || reasoningEffortKey || additionalParams.length > 0 ? 'grid-cols-2' : 'grid-cols-1'
+              }`}>
                 <TabsTrigger value="prompt" className="flex items-center gap-2">
                   <FileText className="w-4 h-4" />
                   Prompt
@@ -227,6 +267,12 @@ export default function AIFunctionConfig({
                   <TabsTrigger value="model" className="flex items-center gap-2">
                     <Brain className="w-4 h-4" />
                     Modelo
+                  </TabsTrigger>
+                )}
+                {reasoningEffortKey && (
+                  <TabsTrigger value="effort" className="flex items-center gap-2">
+                    <Zap className="w-4 h-4" />
+                    Esfuerzo
                   </TabsTrigger>
                 )}
                 {additionalParams.length > 0 && (
@@ -388,7 +434,62 @@ export default function AIFunctionConfig({
                 </TabsContent>
               )}
 
-              {/* Params Tab */}
+              {/* Reasoning Effort Tab */}
+              {reasoningEffortKey && (
+                <TabsContent value="effort" className="space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <Label className="text-xs text-muted-foreground">
+                        Clave: <code className="bg-muted px-1 rounded">{reasoningEffortKey}</code>
+                      </Label>
+                    </div>
+                    <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
+                      <p className="text-sm text-blue-700 dark:text-blue-300">
+                        <Zap className="w-4 h-4 inline mr-1" />
+                        El esfuerzo de razonamiento controla cuántos tokens se usan para "pensar" antes de responder. 
+                        Modelos GPT-5, o3 y o4 usan esto para mejorar la calidad de respuestas complejas.
+                      </p>
+                    </div>
+                    <div className="space-y-3">
+                      {REASONING_EFFORT_OPTIONS.map((option) => (
+                        <div
+                          key={option.value}
+                          onClick={() => setReasoningEffort(option.value)}
+                          className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                            reasoningEffort === option.value
+                              ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                              : 'border-border hover:border-primary/50'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`w-3 h-3 rounded-full ${
+                              option.value === 'low' ? 'bg-green-500' :
+                              option.value === 'medium' ? 'bg-yellow-500' : 'bg-red-500'
+                            }`} />
+                            <div>
+                              <span className="font-medium">{option.label}</span>
+                              <p className="text-xs text-muted-foreground">{option.description}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <Button 
+                    onClick={handleSaveReasoningEffort}
+                    disabled={saving}
+                    className="w-full"
+                  >
+                    {saving ? (
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4 mr-2" />
+                    )}
+                    Guardar Esfuerzo
+                  </Button>
+                </TabsContent>
+              )}
+
               {additionalParams.length > 0 && (
                 <TabsContent value="params" className="space-y-4">
                   {additionalParams.map((param) => (
