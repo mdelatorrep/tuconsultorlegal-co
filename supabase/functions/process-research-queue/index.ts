@@ -61,7 +61,7 @@ async function processResearch(
   openaiApiKey: string,
   researchModel: string,
   systemPrompt: string,
-  reasoningEffort: 'low' | 'medium' | 'high' = 'high',
+  reasoningEffort: 'low' | 'medium' | 'high' = 'medium',
   webSearchTool: WebSearchToolWithDomains | null = null
 ): Promise<{ success: boolean; error?: string; taskId?: string }> {
   
@@ -191,7 +191,16 @@ serve(async (req) => {
       'Eres un especialista en investigación jurídica colombiana. Analiza la consulta y proporciona respuestas detalladas basadas en legislación, jurisprudencia y normativa vigente con fuentes actualizadas.'
     );
     const minSpacing = parseInt(await getSystemConfig(supabase, 'research_queue_min_spacing_seconds', '180'));
-    const reasoningEffort = await getSystemConfig(supabase, 'reasoning_effort_research', 'high') as 'low' | 'medium' | 'high';
+    let reasoningEffort = await getSystemConfig(supabase, 'reasoning_effort_research', 'medium') as 'low' | 'medium' | 'high';
+    
+    // Deep research models ONLY support 'medium' reasoning effort
+    const isDeepResearchModel = researchModel.includes('deep-research');
+    if (isDeepResearchModel && reasoningEffort !== 'medium') {
+      console.log(`⚠️ Forcing reasoning effort to 'medium' for deep research model ${researchModel} (was: ${reasoningEffort})`);
+      reasoningEffort = 'medium';
+    }
+    
+    console.log(`🔧 Research config: model=${researchModel}, reasoningEffort=${reasoningEffort}`);
     
     // Load web search configuration for research
     const webSearchTool = await loadWebSearchConfigAndBuildTool(supabase, 'research');
