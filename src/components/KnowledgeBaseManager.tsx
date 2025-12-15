@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "./ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
-import { Globe, Plus, Edit, Trash2, CheckCircle, XCircle, AlertCircle, Star, Tag, Calendar, Activity, RefreshCw, Loader2 } from "lucide-react";
+import { Globe, Plus, Edit, Trash2, CheckCircle, XCircle, AlertCircle, Calendar, RefreshCw, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -45,8 +45,6 @@ export default function KnowledgeBaseManager() {
     url: '',
     description: '',
     category: 'general',
-    tags: '',
-    priority: 3,
     is_active: true
   });
 
@@ -113,8 +111,6 @@ export default function KnowledgeBaseManager() {
         url: url.url,
         description: url.description || '',
         category: url.category,
-        tags: url.tags.join(', '),
-        priority: url.priority,
         is_active: url.is_active
       });
     } else {
@@ -123,8 +119,6 @@ export default function KnowledgeBaseManager() {
         url: '',
         description: '',
         category: 'general',
-        tags: '',
-        priority: 3,
         is_active: true
       });
     }
@@ -143,17 +137,11 @@ export default function KnowledgeBaseManager() {
 
     try {
       setIsSaving(true);
-      const tagsArray = formData.tags
-        .split(',')
-        .map(tag => tag.trim())
-        .filter(tag => tag.length > 0);
 
       const urlData = {
         url: formData.url.trim(),
         description: formData.description.trim() || null,
         category: formData.category,
-        tags: tagsArray,
-        priority: formData.priority,
         is_active: formData.is_active
       };
 
@@ -343,11 +331,6 @@ export default function KnowledgeBaseManager() {
     }
   };
 
-  const getPriorityStars = (priority: number) => {
-    return Array.from({ length: 5 }, (_, i) => (
-      <Star key={i} className={`w-3 h-3 ${i < priority ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} />
-    ));
-  };
 
   if (isLoading) {
     return (
@@ -396,7 +379,6 @@ export default function KnowledgeBaseManager() {
                   <TableHead>URL</TableHead>
                   <TableHead>Descripción</TableHead>
                   <TableHead>Categoría</TableHead>
-                  <TableHead>Prioridad</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Verificación</TableHead>
                   <TableHead>Actualizada</TableHead>
@@ -425,27 +407,9 @@ export default function KnowledgeBaseManager() {
                             {url.description}
                           </p>
                         )}
-                        {url.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {url.tags.slice(0, 3).map((tag, index) => (
-                              <Badge key={index} variant="outline" className="text-xs">
-                                <Tag className="w-2 h-2 mr-1" />
-                                {tag}
-                              </Badge>
-                            ))}
-                            {url.tags.length > 3 && (
-                              <Badge variant="outline" className="text-xs">+{url.tags.length - 3}</Badge>
-                            )}
-                          </div>
-                        )}
                       </div>
                     </TableCell>
                     <TableCell>{getCategoryBadge(url.category)}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        {getPriorityStars(url.priority)}
-                      </div>
-                    </TableCell>
                     <TableCell>
                       <Switch
                         checked={url.is_active}
@@ -549,49 +513,22 @@ export default function KnowledgeBaseManager() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="category">Categoría</Label>
-                <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((cat) => (
-                      <SelectItem key={cat.value} value={cat.value}>
-                        {cat.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="priority">Prioridad (1-5)</Label>
-                <Select value={formData.priority.toString()} onValueChange={(value) => setFormData({ ...formData, priority: parseInt(value) })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[1, 2, 3, 4, 5].map((priority) => (
-                      <SelectItem key={priority} value={priority.toString()}>
-                        {priority} {priority === 5 ? '(Máxima)' : priority === 1 ? '(Mínima)' : ''}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
             <div>
-              <Label htmlFor="tags">Etiquetas (separadas por comas)</Label>
-              <Input
-                id="tags"
-                placeholder="legislacion, corte, suprema"
-                value={formData.tags}
-                onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-              />
+              <Label htmlFor="category">Categoría</Label>
+              <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.value} value={cat.value}>
+                      {cat.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+
 
             <div className="flex items-center space-x-2">
               <Switch
@@ -609,7 +546,7 @@ export default function KnowledgeBaseManager() {
               <Button onClick={saveUrl} disabled={isSaving}>
                 {isSaving ? (
                   <>
-                    <Activity className="w-4 h-4 mr-2 animate-spin" />
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     Guardando...
                   </>
                 ) : (
