@@ -132,16 +132,24 @@ Deno.serve(async (req) => {
     }
 
     // Find document token by order reference
-    // Order reference format is: DOC-{document_id}-{timestamp}
-    const documentId = orderReference.split('-')[1]
+    // Order reference format is: DOC-{uuid}-{timestamp}
+    // UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (36 chars with dashes)
+    // So we need to extract characters 4 to 40 (after "DOC-" and before the final "-timestamp")
+    const parts = orderReference.split('-')
     
-    if (!documentId) {
+    // UUID is parts 1-5 (indices 1,2,3,4,5), timestamp is the last part
+    // Reconstruct UUID: parts[1]-parts[2]-parts[3]-parts[4]-parts[5]
+    if (parts.length < 7) {
       console.error('Could not extract document ID from order reference:', orderReference)
       return new Response('Invalid order reference format', { 
         status: 400, 
         headers: corsHeaders 
       })
     }
+    
+    const documentId = `${parts[1]}-${parts[2]}-${parts[3]}-${parts[4]}-${parts[5]}`
+    
+    console.log('Extracted document ID:', documentId, 'from order reference:', orderReference)
 
     // Update document status based on payment result
     let newStatus: string
