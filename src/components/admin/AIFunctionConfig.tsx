@@ -10,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   ChevronDown, 
   Save, 
@@ -20,8 +22,14 @@ import {
   FileText,
   Brain,
   Settings,
-  Zap
+  Zap,
+  Globe,
+  Search
 } from "lucide-react";
+
+interface KnowledgeBaseCategory {
+  category: string;
+}
 
 interface AIFunctionConfigProps {
   functionId: string;
@@ -30,10 +38,14 @@ interface AIFunctionConfigProps {
   promptKey: string;
   modelKey?: string;
   reasoningEffortKey?: string;
+  webSearchKey?: string;
+  webSearchCategoriesKey?: string;
   additionalParams?: { key: string; name: string; type: 'text' | 'number' }[];
   currentPrompt: string;
   currentModel: string;
   currentReasoningEffort?: string;
+  currentWebSearchEnabled?: boolean;
+  currentWebSearchCategories?: string[];
   currentParams: Record<string, string>;
   openaiModels: string[];
   loadingModels: boolean;
@@ -48,6 +60,12 @@ const REASONING_EFFORT_OPTIONS = [
   { value: 'high', label: 'Alto', description: 'Análisis profundo, más tokens de razonamiento' }
 ];
 
+const WEB_SEARCH_CONTEXT_OPTIONS = [
+  { value: 'low', label: 'Bajo', description: 'Contexto mínimo, más rápido' },
+  { value: 'medium', label: 'Medio', description: 'Balance entre contexto y velocidad' },
+  { value: 'high', label: 'Alto', description: 'Máximo contexto, más lento' }
+];
+
 export default function AIFunctionConfig({
   functionId,
   name,
@@ -55,10 +73,14 @@ export default function AIFunctionConfig({
   promptKey,
   modelKey,
   reasoningEffortKey,
+  webSearchKey,
+  webSearchCategoriesKey,
   additionalParams = [],
   currentPrompt,
   currentModel,
   currentReasoningEffort = 'low',
+  currentWebSearchEnabled = false,
+  currentWebSearchCategories = [],
   currentParams,
   openaiModels,
   loadingModels,
@@ -70,6 +92,9 @@ export default function AIFunctionConfig({
   const [prompt, setPrompt] = useState(currentPrompt);
   const [model, setModel] = useState(currentModel);
   const [reasoningEffort, setReasoningEffort] = useState(currentReasoningEffort);
+  const [webSearchEnabled, setWebSearchEnabled] = useState(currentWebSearchEnabled);
+  const [webSearchCategories, setWebSearchCategories] = useState<string[]>(currentWebSearchCategories);
+  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   const [params, setParams] = useState<Record<string, string>>(currentParams);
   const [saving, setSaving] = useState(false);
   const [optimizing, setOptimizing] = useState(false);
@@ -91,8 +116,35 @@ export default function AIFunctionConfig({
   }, [currentReasoningEffort]);
 
   useEffect(() => {
+    setWebSearchEnabled(currentWebSearchEnabled);
+  }, [currentWebSearchEnabled]);
+
+  useEffect(() => {
+    setWebSearchCategories(currentWebSearchCategories);
+  }, [currentWebSearchCategories]);
+
+  useEffect(() => {
     setParams(currentParams);
   }, [currentParams]);
+
+  // Load available knowledge base categories when web search is supported
+  useEffect(() => {
+    const loadCategories = async () => {
+      if (!webSearchKey) return;
+      
+      const { data, error } = await supabase
+        .from('knowledge_base_urls')
+        .select('category')
+        .eq('is_active', true);
+      
+      if (!error && data) {
+        const uniqueCategories = [...new Set(data.map((d: KnowledgeBaseCategory) => d.category).filter(Boolean))] as string[];
+        setAvailableCategories(uniqueCategories);
+      }
+    };
+    
+    loadCategories();
+  }, [webSearchKey]);
 
   const handleOptimize = async () => {
     setOptimizing(true);
@@ -225,6 +277,41 @@ export default function AIFunctionConfig({
     }
   };
 
+  const handleSaveWebSearch = async () => {
+    if (!webSearchKey) return;
+    setSaving(true);
+    try {
+      // Save enabled state
+      await onSave(webSearchKey, JSON.stringify(webSearchEnabled), `Web Search habilitado para ${name}`);
+      
+      // Save categories if key is provided
+      if (webSearchCategoriesKey) {
+        await onSave(webSearchCategoriesKey, JSON.stringify(webSearchCategories), `Categorías de Web Search para ${name}`);
+      }
+      
+      toast({
+        title: "Guardado",
+        description: "Configuración de Web Search guardada correctamente"
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Error al guardar",
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleCategory = (category: string) => {
+    setWebSearchCategories(prev => 
+      prev.includes(category) 
+        ? prev.filter(c => c !== category)
+        : [...prev, category]
+    );
+  };
+
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <Card className={`border-l-4 ${colorClass} transition-all hover:shadow-md`}>
@@ -252,6 +339,15 @@ export default function AIFunctionConfig({
                       {currentReasoningEffort === 'high' ? 'Alto' : currentReasoningEffort === 'medium' ? 'Medio' : 'Bajo'}
                     </Badge>
                   )}
+                  {webSearchKey && currentWebSearchEnabled && (
+                    <Badge 
+                      variant="outline" 
+                      className="text-xs border-cyan-500 text-cyan-600"
+                    >
+                      <Globe className="w-3 h-3 mr-1" />
+                      Web
+                    </Badge>
+                  )}
                 </div>
                 <p className="text-sm text-muted-foreground">{description}</p>
               </div>
@@ -267,11 +363,9 @@ export default function AIFunctionConfig({
         <CollapsibleContent>
           <CardContent className="pt-0">
             <Tabs defaultValue="prompt" className="w-full">
-              <TabsList className={`grid w-full mb-4 ${
-                modelKey && reasoningEffortKey && additionalParams.length > 0 ? 'grid-cols-4' :
-                (modelKey && reasoningEffortKey) || (modelKey && additionalParams.length > 0) || (reasoningEffortKey && additionalParams.length > 0) ? 'grid-cols-3' :
-                modelKey || reasoningEffortKey || additionalParams.length > 0 ? 'grid-cols-2' : 'grid-cols-1'
-              }`}>
+              <TabsList className={`grid w-full mb-4 grid-cols-${
+                1 + (modelKey ? 1 : 0) + (reasoningEffortKey ? 1 : 0) + (webSearchKey ? 1 : 0) + (additionalParams.length > 0 ? 1 : 0)
+              }`} style={{ gridTemplateColumns: `repeat(${1 + (modelKey ? 1 : 0) + (reasoningEffortKey ? 1 : 0) + (webSearchKey ? 1 : 0) + (additionalParams.length > 0 ? 1 : 0)}, 1fr)` }}>
                 <TabsTrigger value="prompt" className="flex items-center gap-2">
                   <FileText className="w-4 h-4" />
                   Prompt
@@ -286,6 +380,12 @@ export default function AIFunctionConfig({
                   <TabsTrigger value="effort" className="flex items-center gap-2">
                     <Zap className="w-4 h-4" />
                     Esfuerzo
+                  </TabsTrigger>
+                )}
+                {webSearchKey && (
+                  <TabsTrigger value="websearch" className="flex items-center gap-2">
+                    <Globe className="w-4 h-4" />
+                    Web Search
                   </TabsTrigger>
                 )}
                 {additionalParams.length > 0 && (
@@ -499,6 +599,81 @@ export default function AIFunctionConfig({
                       <Save className="w-4 h-4 mr-2" />
                     )}
                     Guardar Esfuerzo
+                  </Button>
+                </TabsContent>
+              )}
+
+              {/* Web Search Tab */}
+              {webSearchKey && (
+                <TabsContent value="websearch" className="space-y-4">
+                  <div>
+                    <div className="bg-cyan-50 dark:bg-cyan-950/30 border border-cyan-200 dark:border-cyan-800 rounded-lg p-3 mb-4">
+                      <p className="text-sm text-cyan-700 dark:text-cyan-300">
+                        <Globe className="w-4 h-4 inline mr-1" />
+                        Web Search permite a la IA buscar información actualizada en fuentes web curadas. 
+                        Compatible con GPT-5 y GPT-5-mini. No compatible con GPT-5-nano.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 border rounded-lg mb-4">
+                      <div>
+                        <Label className="text-sm font-medium">Habilitar Web Search</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Permite búsquedas web en tiempo real usando knowledge_base_urls
+                        </p>
+                      </div>
+                      <Switch
+                        checked={webSearchEnabled}
+                        onCheckedChange={setWebSearchEnabled}
+                      />
+                    </div>
+
+                    {webSearchEnabled && availableCategories.length > 0 && (
+                      <div className="space-y-3">
+                        <Label className="text-sm">
+                          Categorías de búsqueda
+                          <span className="text-xs text-muted-foreground ml-2">
+                            (Dominios de knowledge_base_urls)
+                          </span>
+                        </Label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {availableCategories.map((category) => (
+                            <div
+                              key={category}
+                              onClick={() => toggleCategory(category)}
+                              className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-all ${
+                                webSearchCategories.includes(category)
+                                  ? 'border-cyan-500 bg-cyan-50 dark:bg-cyan-950/30'
+                                  : 'border-border hover:border-cyan-300'
+                              }`}
+                            >
+                              <Checkbox 
+                                checked={webSearchCategories.includes(category)}
+                                onCheckedChange={() => toggleCategory(category)}
+                              />
+                              <span className="text-sm capitalize">{category}</span>
+                            </div>
+                          ))}
+                        </div>
+                        {webSearchCategories.length === 0 && (
+                          <p className="text-xs text-orange-600">
+                            ⚠️ Sin categorías seleccionadas se buscarán todas las URLs disponibles
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <Button 
+                    onClick={handleSaveWebSearch}
+                    disabled={saving}
+                    className="w-full"
+                  >
+                    {saving ? (
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4 mr-2" />
+                    )}
+                    Guardar Web Search
                   </Button>
                 </TabsContent>
               )}

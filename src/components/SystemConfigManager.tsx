@@ -39,6 +39,8 @@ interface AIFunction {
   promptKey: string;
   modelKey?: string;
   reasoningEffortKey?: string;
+  webSearchKey?: string;
+  webSearchCategoriesKey?: string;
   additionalParams?: { key: string; name: string; type: 'text' | 'number' }[];
   colorClass: string;
 }
@@ -148,6 +150,8 @@ export default function SystemConfigManager() {
           promptKey: 'research_system_prompt',
           modelKey: 'research_ai_model',
           reasoningEffortKey: 'research_reasoning_effort',
+          webSearchKey: 'web_search_enabled_research',
+          webSearchCategoriesKey: 'web_search_categories_research',
           colorClass: 'border-l-green-500'
         },
         {
@@ -157,6 +161,8 @@ export default function SystemConfigManager() {
           promptKey: 'analysis_system_prompt',
           modelKey: 'analysis_ai_model',
           reasoningEffortKey: 'analysis_reasoning_effort',
+          webSearchKey: 'web_search_enabled_analysis',
+          webSearchCategoriesKey: 'web_search_categories_analysis',
           colorClass: 'border-l-green-500'
         },
         {
@@ -166,6 +172,8 @@ export default function SystemConfigManager() {
           promptKey: 'drafting_system_prompt',
           modelKey: 'drafting_ai_model',
           reasoningEffortKey: 'drafting_reasoning_effort',
+          webSearchKey: 'web_search_enabled_drafting',
+          webSearchCategoriesKey: 'web_search_categories_drafting',
           colorClass: 'border-l-green-500'
         },
         {
@@ -175,6 +183,8 @@ export default function SystemConfigManager() {
           promptKey: 'strategy_system_prompt',
           modelKey: 'strategy_ai_model',
           reasoningEffortKey: 'strategy_reasoning_effort',
+          webSearchKey: 'web_search_enabled_strategy',
+          webSearchCategoriesKey: 'web_search_categories_strategy',
           colorClass: 'border-l-green-500'
         }
       ]
@@ -597,10 +607,21 @@ export default function SystemConfigManager() {
                     promptKey={func.promptKey}
                     modelKey={func.modelKey}
                     reasoningEffortKey={func.reasoningEffortKey}
+                    webSearchKey={func.webSearchKey}
+                    webSearchCategoriesKey={func.webSearchCategoriesKey}
                     additionalParams={func.additionalParams}
                     currentPrompt={getConfigValue(func.promptKey, '')}
                     currentModel={func.modelKey ? getConfigValue(func.modelKey, '') : ''}
                     currentReasoningEffort={func.reasoningEffortKey ? getConfigValue(func.reasoningEffortKey, 'low') : 'low'}
+                    currentWebSearchEnabled={func.webSearchKey ? getConfigValue(func.webSearchKey, 'false') === 'true' : false}
+                    currentWebSearchCategories={func.webSearchCategoriesKey ? (() => {
+                      try {
+                        const val = getConfigValue(func.webSearchCategoriesKey, '[]');
+                        return JSON.parse(val);
+                      } catch {
+                        return [];
+                      }
+                    })() : []}
                     currentParams={getParamsForFunction(func.additionalParams)}
                     openaiModels={openaiModels}
                     loadingModels={loadingModels}
