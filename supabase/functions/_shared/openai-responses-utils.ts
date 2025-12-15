@@ -451,3 +451,85 @@ export async function migratedChatToResponses(
 
   return callResponsesAPI(apiKey, params);
 }
+
+// ============= Web Search Configuration Helper =============
+
+/**
+ * Load web search configuration from system_config and build tool with domains from knowledge_base_urls
+ * 
+ * @param supabase - Supabase client with service role
+ * @param functionKey - Function identifier (e.g., 'analysis', 'strategy', 'drafting', 'research')
+ * @returns WebSearchToolWithDomains if enabled, null otherwise
+ */
+export async function loadWebSearchConfigAndBuildTool(
+  supabase: any,
+  functionKey: string
+): Promise<WebSearchToolWithDomains | null> {
+  try {
+    // Read enabled flag from system_config
+    const { data: enabledConfig } = await supabase
+      .from('system_config')
+      .select('config_value')
+      .eq('config_key', `web_search_enabled_${functionKey}`)
+      .maybeSingle();
+    
+    const enabled = enabledConfig?.config_value === 'true';
+    
+    if (!enabled) {
+      console.log(`[WebSearch] Disabled for function: ${functionKey}`);
+      return null;
+    }
+    
+    // Read categories from system_config
+    const { data: categoriesConfig } = await supabase
+      .from('system_config')
+      .select('config_value')
+      .eq('config_key', `web_search_categories_${functionKey}`)
+      .maybeSingle();
+    
+    let categories: string[] = [];
+    try {
+      categories = categoriesConfig?.config_value ? JSON.parse(categoriesConfig.config_value) : [];
+    } catch (e) {
+      console.warn(`[WebSearch] Failed to parse categories for ${functionKey}:`, e);
+    }
+    
+    // Load verified URLs from knowledge_base_urls filtered by categories
+    let urlsQuery = supabase
+      .from('knowledge_base_urls')
+      .select('url')
+      .eq('verification_status', 'verified')
+      .eq('is_active', true);
+    
+    if (categories.length > 0) {
+      urlsQuery = urlsQuery.in('category', categories);
+    }
+    
+    const { data: urls, error: urlsError } = await urlsQuery;
+    
+    if (urlsError) {
+      console.error(`[WebSearch] Error loading URLs for ${functionKey}:`, urlsError);
+    }
+    
+    const domains = (urls || []).map((u: { url: string }) => u.url);
+    
+    console.log(`[WebSearch] Enabled for function: ${functionKey}`);
+    console.log(`  - Categories: ${categories.length > 0 ? categories.join(', ') : 'all'}`);
+    console.log(`  - Verified domains: ${domains.length}`);
+    
+    // Build web search tool with Colombian geolocation
+    return buildWebSearchTool({
+      allowedDomains: domains.length > 0 ? domains : undefined,
+      userLocation: { 
+        type: 'approximate', 
+        country: 'CO', 
+        city: 'Bogotá' 
+      },
+      searchContextSize: 'medium'
+    });
+    
+  } catch (error) {
+    console.error(`[WebSearch] Error loading config for ${functionKey}:`, error);
+    return null;
+  }
+}
