@@ -3,7 +3,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { 
   buildResponsesRequestParams, 
   callResponsesAPI, 
-  logResponsesRequest 
+  logResponsesRequest,
+  loadWebSearchConfigAndBuildTool,
+  supportsWebSearch
 } from "../_shared/openai-responses-utils.ts";
 
 const corsHeaders = {
@@ -184,6 +186,11 @@ Proporciona análisis en formato JSON con detectionConfidence: "baja" indicando 
     // Get reasoning effort from system config (analysis = medium by default)
     const reasoningEffort = await getSystemConfig(supabase, 'reasoning_effort_analysis', 'medium') as 'low' | 'medium' | 'high';
     
+    // Load web search configuration if enabled
+    const webSearchTool = supportsWebSearch(aiModel) 
+      ? await loadWebSearchConfigAndBuildTool(supabase, 'analysis')
+      : null;
+    
     const params = buildResponsesRequestParams(aiModel, {
       input: analysisInput,
       instructions: systemPrompt,
@@ -191,7 +198,8 @@ Proporciona análisis en formato JSON con detectionConfidence: "baja" indicando 
       temperature: 0.2,
       jsonMode: true,
       store: false,
-      reasoning: { effort: reasoningEffort }
+      reasoning: { effort: reasoningEffort },
+      webSearch: webSearchTool || undefined
     });
 
     const result = await callResponsesAPI(openaiApiKey, params);

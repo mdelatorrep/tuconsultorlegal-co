@@ -3,7 +3,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { 
   buildResponsesRequestParams, 
   callResponsesAPI, 
-  logResponsesRequest 
+  logResponsesRequest,
+  loadWebSearchConfigAndBuildTool,
+  supportsWebSearch
 } from "../_shared/openai-responses-utils.ts";
 
 const corsHeaders = {
@@ -116,6 +118,11 @@ ${jsonFormat}`;
     // Get reasoning effort from system config (strategy = high by default)
     const reasoningEffort = await getSystemConfig(supabase, 'reasoning_effort_strategy', 'high') as 'low' | 'medium' | 'high';
     
+    // Load web search configuration if enabled
+    const webSearchTool = supportsWebSearch(strategyModel)
+      ? await loadWebSearchConfigAndBuildTool(supabase, 'strategy')
+      : null;
+    
     const params = buildResponsesRequestParams(strategyModel, {
       input: `Analiza estratégicamente el siguiente caso legal:\n\n${caseDescription}\n\nResponde ÚNICAMENTE en formato JSON válido.`,
       instructions,
@@ -123,7 +130,8 @@ ${jsonFormat}`;
       temperature: 0.3,
       jsonMode: true,
       store: false,
-      reasoning: { effort: reasoningEffort }
+      reasoning: { effort: reasoningEffort },
+      webSearch: webSearchTool || undefined
     });
 
     const result = await callResponsesAPI(openaiApiKey, params);

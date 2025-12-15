@@ -3,7 +3,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { 
   buildResponsesRequestParams, 
   callResponsesAPI, 
-  logResponsesRequest 
+  logResponsesRequest,
+  loadWebSearchConfigAndBuildTool,
+  supportsWebSearch
 } from "../_shared/openai-responses-utils.ts";
 
 const corsHeaders = {
@@ -113,8 +115,13 @@ Descripción específica: ${prompt}
 
 El documento debe ser apropiado para Colombia y seguir las mejores prácticas legales. Responde ÚNICAMENTE en formato JSON válido.`;
 
-    // Get reasoning effort from system config (analysis = medium by default for drafting)
-    const reasoningEffort = await getSystemConfig(supabase, 'reasoning_effort_analysis', 'medium') as 'low' | 'medium' | 'high';
+    // Get reasoning effort from system config (drafting = medium by default)
+    const reasoningEffort = await getSystemConfig(supabase, 'reasoning_effort_drafting', 'medium') as 'low' | 'medium' | 'high';
+    
+    // Load web search configuration if enabled
+    const webSearchTool = supportsWebSearch(draftingModel)
+      ? await loadWebSearchConfigAndBuildTool(supabase, 'drafting')
+      : null;
     
     const params = buildResponsesRequestParams(draftingModel, {
       input,
@@ -123,7 +130,8 @@ El documento debe ser apropiado para Colombia y seguir las mejores prácticas le
       temperature: 0.4,
       jsonMode: true,
       store: false,
-      reasoning: { effort: reasoningEffort }
+      reasoning: { effort: reasoningEffort },
+      webSearch: webSearchTool || undefined
     });
 
     const result = await callResponsesAPI(openaiApiKey, params);

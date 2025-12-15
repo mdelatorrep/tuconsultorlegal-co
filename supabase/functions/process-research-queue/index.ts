@@ -1,5 +1,10 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3';
+import { 
+  loadWebSearchConfigAndBuildTool,
+  supportsWebSearch,
+  WebSearchToolWithDomains
+} from "../_shared/openai-responses-utils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -56,7 +61,8 @@ async function processResearch(
   openaiApiKey: string,
   researchModel: string,
   systemPrompt: string,
-  reasoningEffort: 'low' | 'medium' | 'high' = 'high'
+  reasoningEffort: 'low' | 'medium' | 'high' = 'high',
+  webSearchTool: WebSearchToolWithDomains | null = null
 ): Promise<{ success: boolean; error?: string; taskId?: string }> {
   
   const maxRetries = 3;
@@ -65,6 +71,17 @@ async function processResearch(
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       console.log(`Processing research ${queueItem.queue_id}, attempt ${attempt + 1}/${maxRetries}`);
+      
+      // Build tools array - use configured web search if available, fallback to web_search_preview
+      const tools: any[] = [];
+      if (webSearchTool && supportsWebSearch(researchModel)) {
+        tools.push(webSearchTool);
+        console.log(`[Research] Using configured web_search with ${webSearchTool.web_search.allowed_domains?.length || 0} domains`);
+      } else {
+        // Fallback to web_search_preview for deep research models
+        tools.push({ type: 'web_search_preview' });
+        console.log(`[Research] Using web_search_preview (model: ${researchModel})`);
+      }
       
       const response = await fetch('https://api.openai.com/v1/responses', {
         method: 'POST',
@@ -90,7 +107,7 @@ async function processResearch(
               content: [{ type: 'input_text', text: `Consulta jurídica para investigación: ${queueItem.query}` }]
             }
           ],
-          tools: [{ type: 'web_search_preview' }]
+          tools
         }),
       });
 
@@ -176,6 +193,9 @@ serve(async (req) => {
     const minSpacing = parseInt(await getSystemConfig(supabase, 'research_queue_min_spacing_seconds', '180'));
     const reasoningEffort = await getSystemConfig(supabase, 'reasoning_effort_research', 'high') as 'low' | 'medium' | 'high';
     
+    // Load web search configuration for research
+    const webSearchTool = await loadWebSearchConfigAndBuildTool(supabase, 'research');
+    
     let processedCount = 0;
     let rateLimitedCount = 0;
     
@@ -215,7 +235,8 @@ serve(async (req) => {
         openaiApiKey,
         researchModel,
         systemPrompt,
-        reasoningEffort
+        reasoningEffort,
+        webSearchTool
       );
       
       if (result.success && result.taskId) {
