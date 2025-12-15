@@ -104,3 +104,9 @@ verify_jwt = false
 
 [functions.init-system-config]
 verify_jwt = false
+
+[functions.process-openai-agent-jobs]
+verify_jwt = false
+
+[functions.create-openai-agent]
+verify_jwt = false
