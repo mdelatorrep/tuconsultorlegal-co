@@ -28,6 +28,7 @@ import { AdminHeader } from "./admin/AdminHeader";
 import { DocumentsManager } from "./admin/DocumentsManager";
 import { UsersManager } from "./admin/UsersManager";
 import { SystemMonitoring } from "./admin/SystemMonitoring";
+import { SystemLogsViewer } from "./admin/SystemLogsViewer";
 import { RevenueAnalytics } from "./admin/RevenueAnalytics";
 import { 
   Copy, Users, Bot, BarChart3, Clock, CheckCircle, Lock, Unlock, Trash2, Check, X, Plus, RefreshCw, 
@@ -1560,6 +1561,9 @@ function AdminPage() {
       
       case 'monitoring':
         return <SystemMonitoring />;
+      
+      case 'logs':
+        return <SystemLogsViewer />;
       
       case 'revenue':
         return <RevenueAnalytics />;

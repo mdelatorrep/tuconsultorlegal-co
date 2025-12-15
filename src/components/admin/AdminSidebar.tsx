@@ -8,7 +8,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { 
   Activity, Users, Bot, BarChart3, BookOpen, MessageCircle, 
   Settings, Mail, Tag, CreditCard, Database, FileText, 
-  FileCheck, Zap, Shield, DollarSign, UserCheck, Server
+  FileCheck, Zap, Shield, DollarSign, UserCheck, Server, ScrollText
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -88,6 +88,7 @@ export const AdminSidebar = ({
       items: [
         { id: 'stats', label: 'Estadísticas', icon: BarChart3, count: 0 },
         { id: 'monitoring', label: 'Monitoreo', icon: Server, count: 0 },
+        { id: 'logs', label: 'Logs Sistema', icon: ScrollText, count: 0 },
         { id: 'config', label: 'Config Sistema', icon: Settings, count: 0 },
       ]
     }
