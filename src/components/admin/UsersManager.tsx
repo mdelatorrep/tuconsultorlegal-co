@@ -65,27 +65,37 @@ export const UsersManager = () => {
 
       if (usersError) throw usersError;
 
-      // Load document counts per user
+      // Load document counts per user (by user_id OR user_email)
       const { data: docsData, error: docsError } = await supabase
         .from('document_tokens')
-        .select('user_id')
-        .not('user_id', 'is', null);
+        .select('user_id, user_email');
 
       if (docsError) throw docsError;
 
-      // Count documents per user
-      const docCounts: Record<string, number> = {};
+      // Count documents per user (by id and by email)
+      const docCountsById: Record<string, number> = {};
+      const docCountsByEmail: Record<string, number> = {};
+      
       docsData?.forEach(doc => {
         if (doc.user_id) {
-          docCounts[doc.user_id] = (docCounts[doc.user_id] || 0) + 1;
+          docCountsById[doc.user_id] = (docCountsById[doc.user_id] || 0) + 1;
+        }
+        if (doc.user_email) {
+          const email = doc.user_email.toLowerCase();
+          docCountsByEmail[email] = (docCountsByEmail[email] || 0) + 1;
         }
       });
 
-      // Merge counts with users
-      const usersWithCounts = (usersData || []).map(user => ({
-        ...user,
-        documents_count: docCounts[user.id] || 0
-      }));
+      // Merge counts with users - check both id and email
+      const usersWithCounts = (usersData || []).map(user => {
+        const countById = docCountsById[user.id] || 0;
+        const countByEmail = docCountsByEmail[user.email.toLowerCase()] || 0;
+        // Use the higher count to avoid missing documents
+        return {
+          ...user,
+          documents_count: Math.max(countById, countByEmail)
+        };
+      });
 
       setUsers(usersWithCounts);
 
@@ -111,13 +121,14 @@ export const UsersManager = () => {
     }
   };
 
-  const loadUserDocuments = async (userId: string) => {
+  const loadUserDocuments = async (userId: string, userEmail: string) => {
     setLoadingDocuments(true);
     try {
+      // Search by user_id OR user_email to catch all documents
       const { data, error } = await supabase
         .from('document_tokens')
         .select('id, token, document_type, status, price, created_at')
-        .eq('user_id', userId)
+        .or(`user_id.eq.${userId},user_email.ilike.${userEmail}`)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -137,7 +148,7 @@ export const UsersManager = () => {
   const handleViewUser = async (user: UserProfile) => {
     setSelectedUser(user);
     setShowDetails(true);
-    await loadUserDocuments(user.id);
+    await loadUserDocuments(user.id, user.email);
   };
 
   const getStatusBadge = (status: string) => {
