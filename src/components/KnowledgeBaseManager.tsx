@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "./ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
-import { Globe, Plus, Edit, Trash2, CheckCircle, XCircle, AlertCircle, Star, Tag, Calendar, Activity } from "lucide-react";
+import { Globe, Plus, Edit, Trash2, CheckCircle, XCircle, AlertCircle, Star, Tag, Calendar, Activity, RefreshCw, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -38,6 +38,8 @@ export default function KnowledgeBaseManager() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingUrl, setEditingUrl] = useState<KnowledgeBaseUrl | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verifyingUrlId, setVerifyingUrlId] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     url: '',
@@ -258,7 +260,13 @@ export default function KnowledgeBaseManager() {
     return <Badge className={config.color}>{config.label}</Badge>;
   };
 
-  const getVerificationBadge = (status: string) => {
+  const getVerificationBadge = (status: string, urlId: string) => {
+    const isCurrentlyVerifying = verifyingUrlId === urlId;
+    
+    if (isCurrentlyVerifying) {
+      return <Badge variant="secondary"><Loader2 className="w-3 h-3 mr-1 animate-spin" />Verificando...</Badge>;
+    }
+    
     switch (status) {
       case 'verified':
         return <Badge variant="default" className="bg-green-100 text-green-800"><CheckCircle className="w-3 h-3 mr-1" />Verificada</Badge>;
@@ -266,6 +274,72 @@ export default function KnowledgeBaseManager() {
         return <Badge variant="destructive"><XCircle className="w-3 h-3 mr-1" />Falló</Badge>;
       default:
         return <Badge variant="secondary"><AlertCircle className="w-3 h-3 mr-1" />Pendiente</Badge>;
+    }
+  };
+
+  const verifyUrl = async (urlId: string) => {
+    try {
+      setVerifyingUrlId(urlId);
+      const { data, error } = await supabase.functions.invoke('verify-knowledge-url', {
+        body: { urlId }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast({
+          title: data.accessible ? "URL verificada" : "URL inaccesible",
+          description: data.accessible 
+            ? `La URL responde correctamente (${data.statusCode})` 
+            : `No se pudo acceder a la URL: ${data.error || 'Error desconocido'}`,
+          variant: data.accessible ? "default" : "destructive"
+        });
+      } else {
+        throw new Error(data?.error || 'Error al verificar');
+      }
+
+      await loadUrls();
+    } catch (error: any) {
+      console.error('Error verifying URL:', error);
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo verificar la URL",
+        variant: "destructive"
+      });
+    } finally {
+      setVerifyingUrlId(null);
+    }
+  };
+
+  const verifyAllUrls = async () => {
+    try {
+      setIsVerifying(true);
+      const { data, error } = await supabase.functions.invoke('verify-knowledge-url', {
+        body: { verifyAll: true }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        const verified = data.results?.filter((r: any) => r.accessible).length || 0;
+        const failed = data.results?.filter((r: any) => !r.accessible).length || 0;
+        
+        toast({
+          title: "Verificación completada",
+          description: `${verified} URLs accesibles, ${failed} inaccesibles`,
+        });
+      }
+
+      await loadUrls();
+    } catch (error: any) {
+      console.error('Error verifying all URLs:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Error al verificar URLs",
+        variant: "destructive"
+      });
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -293,10 +367,25 @@ export default function KnowledgeBaseManager() {
               <Globe className="h-5 w-5 text-primary" />
               <CardTitle>Base de Conocimiento - URLs Permitidas</CardTitle>
             </div>
-            <Button onClick={() => openDialog()} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Nueva URL
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                onClick={verifyAllUrls} 
+                variant="outline" 
+                className="gap-2"
+                disabled={isVerifying}
+              >
+                {isVerifying ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                Verificar Todas
+              </Button>
+              <Button onClick={() => openDialog()} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Nueva URL
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -363,7 +452,20 @@ export default function KnowledgeBaseManager() {
                         onCheckedChange={() => toggleUrlStatus(url.id, url.is_active)}
                       />
                     </TableCell>
-                    <TableCell>{getVerificationBadge(url.verification_status)}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {getVerificationBadge(url.verification_status, url.id)}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => verifyUrl(url.id)}
+                          disabled={verifyingUrlId === url.id}
+                          title="Verificar URL"
+                        >
+                          <RefreshCw className={`h-3 w-3 ${verifyingUrlId === url.id ? 'animate-spin' : ''}`} />
+                        </Button>
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1 text-sm text-muted-foreground">
                         <Calendar className="w-3 h-3" />
