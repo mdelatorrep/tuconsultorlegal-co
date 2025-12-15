@@ -11,9 +11,129 @@
  * - Uses `max_output_tokens` for all models
  * - Temperature supported for all models in this API
  * - JSON mode: text.format.type = "json_object"
+ * - Web Search Tool: Use `web_search` for grounded responses with citations
  */
 
 export const OPENAI_RESPONSES_ENDPOINT = 'https://api.openai.com/v1/responses';
+
+// ============= Web Search Types =============
+
+/**
+ * User location for web search geolocation
+ */
+export interface WebSearchUserLocation {
+  type: 'approximate';
+  country?: string;  // ISO 3166-1 alpha-2 (e.g., 'CO')
+  city?: string;
+  region?: string;
+}
+
+/**
+ * Web Search tool configuration
+ * Compatible with: gpt-5, gpt-5-mini (NOT gpt-5-nano, NOT with reasoning effort 'minimal')
+ */
+export interface WebSearchTool {
+  type: 'web_search';
+  web_search: {
+    user_location?: WebSearchUserLocation;
+    search_context_size?: 'low' | 'medium' | 'high';  // Token budget for search
+  };
+}
+
+/**
+ * Web Search tool with domain filtering (using allowed_domains)
+ * Max 100 domains allowed
+ */
+export interface WebSearchToolWithDomains extends WebSearchTool {
+  web_search: WebSearchTool['web_search'] & {
+    allowed_domains?: string[];  // e.g., ['corteconstitucional.gov.co', 'secretariasenado.gov.co']
+  };
+}
+
+/**
+ * Citation from web search results
+ */
+export interface WebSearchCitation {
+  url: string;
+  title?: string;
+  start_index: number;
+  end_index: number;
+}
+
+/**
+ * Check if a model supports web search
+ * GPT-5 and GPT-5-mini support it. GPT-5-nano does NOT.
+ */
+export function supportsWebSearch(model: string): boolean {
+  const lowerModel = model.toLowerCase();
+  // gpt-5-nano explicitly does NOT support web_search
+  if (lowerModel.includes('gpt-5-nano') || lowerModel.includes('nano')) {
+    return false;
+  }
+  // gpt-5 and gpt-5-mini support it
+  return lowerModel.includes('gpt-5') || lowerModel.includes('gpt-5-mini');
+}
+
+/**
+ * Build a web search tool configuration
+ */
+export function buildWebSearchTool(options?: {
+  allowedDomains?: string[];
+  userLocation?: WebSearchUserLocation;
+  searchContextSize?: 'low' | 'medium' | 'high';
+}): WebSearchToolWithDomains {
+  const tool: WebSearchToolWithDomains = {
+    type: 'web_search',
+    web_search: {}
+  };
+
+  if (options?.allowedDomains && options.allowedDomains.length > 0) {
+    // Clean domains: remove http/https, limit to 100
+    tool.web_search.allowed_domains = options.allowedDomains
+      .map(d => d.replace(/^https?:\/\//, '').replace(/\/$/, ''))
+      .slice(0, 100);
+  }
+
+  if (options?.userLocation) {
+    tool.web_search.user_location = options.userLocation;
+  }
+
+  if (options?.searchContextSize) {
+    tool.web_search.search_context_size = options.searchContextSize;
+  }
+
+  return tool;
+}
+
+/**
+ * Extract web search citations from response
+ */
+export function extractWebSearchCitations(response: Record<string, unknown>): WebSearchCitation[] {
+  const citations: WebSearchCitation[] = [];
+  
+  if (response.output && Array.isArray(response.output)) {
+    for (const item of response.output as Array<Record<string, unknown>>) {
+      if (item.type === 'message' && item.content && Array.isArray(item.content)) {
+        for (const content of item.content as Array<Record<string, unknown>>) {
+          if (content.type === 'output_text' && content.annotations && Array.isArray(content.annotations)) {
+            for (const annotation of content.annotations as Array<Record<string, unknown>>) {
+              if (annotation.type === 'url_citation') {
+                citations.push({
+                  url: annotation.url as string,
+                  title: annotation.title as string | undefined,
+                  start_index: annotation.start_index as number,
+                  end_index: annotation.end_index as number
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  return citations;
+}
 
 /**
  * Function type categories for reasoning effort configuration
@@ -83,6 +203,7 @@ export function buildResponsesRequestParams(
     }>;
     toolChoice?: string | { type: 'function'; function: { name: string } };
     reasoning?: { effort?: 'low' | 'medium' | 'high'; summary?: 'brief' | 'detailed' };
+    webSearch?: WebSearchToolWithDomains;
   }
 ): Record<string, unknown> {
   const {
@@ -95,7 +216,8 @@ export function buildResponsesRequestParams(
     store,
     tools,
     toolChoice,
-    reasoning
+    reasoning,
+    webSearch
   } = options;
 
   const params: Record<string, unknown> = {
@@ -133,10 +255,25 @@ export function buildResponsesRequestParams(
     params.store = store;
   }
 
-  // Tools (function calling)
-  if (tools && tools.length > 0) {
-    params.tools = tools;
+  // Combine function tools with web_search if both present
+  const allTools: Array<Record<string, unknown>> = [];
+  
+  // Add web search tool if enabled and model supports it
+  if (webSearch && supportsWebSearch(model)) {
+    // Web search doesn't work with reasoning effort 'minimal', but 'low/medium/high' are fine
+    allTools.push(webSearch);
+    console.log(`[WebSearch] Enabled for model ${model} with domains:`, webSearch.web_search.allowed_domains || 'all');
   }
+  
+  // Add function tools
+  if (tools && tools.length > 0) {
+    allTools.push(...tools);
+  }
+  
+  if (allTools.length > 0) {
+    params.tools = allTools;
+  }
+  
   if (toolChoice) {
     params.tool_choice = toolChoice;
   }
