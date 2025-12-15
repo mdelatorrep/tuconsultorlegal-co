@@ -310,7 +310,9 @@ export default function AgentManagerPage({ user, currentView, onViewChange, onLo
           user_id: lawyerData.id,
           is_admin: lawyerData.is_admin,
           status: 'approved',
-          document_name: agent.name
+          document_name: agent.name,
+          // Incluir el precio del agente (puede venir del lawyer_suggested_price o del price existente)
+          price: agent.price || 0
         },
         headers: authHeaders
       });
