@@ -338,8 +338,8 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
         return;
       }
 
-      // FALLBACK: Usar document-chat
-      console.log("📝 Using fallback document-chat");
+      // FALLBACK: Usar document-chat con prompt conversacional (no el ai_prompt técnico)
+      console.log("📝 Using fallback document-chat with conversational prompt");
 
       const userContextInfo =
         isAuthenticated && userInfo.name && userInfo.email
@@ -353,33 +353,45 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
 - El usuario NO está registrado
 - Deberás solicitar nombre y correo al FINAL, cuando tengas toda la información del documento`;
 
-      const enhancedPrompt = `${agentData.ai_prompt}
+      // Construir lista de campos requeridos de forma conversacional (sin exponer estructura técnica)
+      const requiredFieldsList = agentData.placeholder_fields 
+        ? agentData.placeholder_fields.map((field: any) => {
+            const fieldName = field.field || field.name || '';
+            const description = field.description || field.label || fieldName;
+            return `- ${description}`;
+          }).join("\n")
+        : "";
 
-REGLAS ESTRICTAS PARA RECOPILACIÓN DE INFORMACIÓN:
-1. Debes recopilar TODA la información necesaria para completar los siguientes placeholders de la plantilla:
-${agentData.placeholder_fields ? agentData.placeholder_fields.map((field: any) => `   - {{${field.field || field.name}}}: ${field.description || field.label}`).join("\n") : ""}
+      // USAR el ai_prompt del agente SOLO si es conversacional, de lo contrario usar prompt genérico
+      // Detectar si el ai_prompt es técnico (contiene palabras clave que no deberían mostrarse al usuario)
+      const technicalKeywords = ['payload', 'json', 'placeholder', 'template', 'generate_document', 'prompt operativo', 'extraiga placeholders'];
+      const isAgentPromptTechnical = technicalKeywords.some(keyword => 
+        agentData.ai_prompt?.toLowerCase().includes(keyword.toLowerCase())
+      );
 
-2. Haz UNA pregunta específica a la vez para recopilar cada campo
-3. Normaliza automáticamente:
-   - Nombres y apellidos en MAYÚSCULAS
-   - Ciudades con departamento (ej: BOGOTÁ, CUNDINAMARCA)
-   - Cédulas con puntos separadores (ej: 1.234.567.890)
-   - Fechas en formato DD de MMMM de YYYY
+      const conversationalPrompt = isAgentPromptTechnical
+        ? `Eres Lexi, un asistente legal amigable de tuconsultorlegal.co. Ayudarás al usuario a crear su ${agentData.document_name}.
 
-4. SOLO después de tener TODA la información requerida, responde EXACTAMENTE: "He recopilado toda la información necesaria para crear el documento. ¿Deseas proceder con la generación del documento?"
+Información que necesitas recopilar (haz UNA pregunta a la vez):
+${requiredFieldsList}
 
-5. NO permitas generar el documento hasta que TODOS los campos estén completos.
+Normaliza automáticamente:
+- Nombres en MAYÚSCULAS
+- Ciudades con departamento (ej: BOGOTÁ, CUNDINAMARCA)
+- Cédulas con puntos (ej: 1.234.567.890)
+- Fechas en formato: 15 de enero de 2025
 
-6. IMPORTANTE: Usa las frases exactas "información necesaria" y "proceder con la generación" cuando toda la información esté completa.
+Cuando tengas TODA la información, presenta un resumen y pregunta: "He recopilado toda la información necesaria. ¿Deseas proceder con la generación del documento?"
 
-7. RESPONDE EN ESPAÑOL CLARO SIN FORMATO MARKDOWN. No uses caracteres como #, *, **, etc.
-
+Sé amable, claro y profesional. No uses formato markdown.
+${userContextInfo}`
+        : `${agentData.ai_prompt}
 ${userContextInfo}`;
 
       const { data, error } = await supabase.functions.invoke("document-chat", {
         body: {
           messages: [{ role: userMessage.role, content: userMessage.content }],
-          agent_prompt: enhancedPrompt,
+          agent_prompt: conversationalPrompt,
           document_name: agentData.document_name,
         },
       });
@@ -468,12 +480,45 @@ ${userContextInfo}`;
       });
 
       if (!openaiAgentId) {
-        console.log("⚠️ No OpenAI assistant available, using fallback chat");
+        console.log("⚠️ No OpenAI assistant available, using fallback chat with conversational prompt");
+        
+        // Detectar si el ai_prompt es técnico
+        const technicalKeywords = ['payload', 'json', 'placeholder', 'template', 'generate_document', 'prompt operativo', 'extraiga placeholders'];
+        const isAgentPromptTechnical = technicalKeywords.some(keyword => 
+          agent.ai_prompt?.toLowerCase().includes(keyword.toLowerCase())
+        );
+
+        // Construir lista de campos requeridos
+        const requiredFieldsList = agent.placeholder_fields 
+          ? agent.placeholder_fields.map((field: any) => {
+              const fieldName = field.field || field.name || '';
+              const description = field.description || field.label || fieldName;
+              return `- ${description}`;
+            }).join("\n")
+          : "";
+
+        const conversationalPrompt = isAgentPromptTechnical
+          ? `Eres Lexi, un asistente legal amigable de tuconsultorlegal.co. Ayudarás al usuario a crear su ${agent.document_name}.
+
+Información que necesitas recopilar (haz UNA pregunta a la vez):
+${requiredFieldsList}
+
+Normaliza automáticamente:
+- Nombres en MAYÚSCULAS
+- Ciudades con departamento (ej: BOGOTÁ, CUNDINAMARCA)
+- Cédulas con puntos (ej: 1.234.567.890)
+- Fechas en formato: 15 de enero de 2025
+
+Cuando tengas TODA la información, presenta un resumen y pregunta: "He recopilado toda la información necesaria. ¿Deseas proceder con la generación del documento?"
+
+Sé amable, claro y profesional. No uses formato markdown.`
+          : agent.ai_prompt;
+
         // Fallback to original chat system if no OpenAI agent exists
         const { data, error } = await supabase.functions.invoke("document-chat", {
           body: {
             messages: updatedMessages.map((msg) => ({ role: msg.role, content: msg.content })),
-            agent_prompt: agent.ai_prompt,
+            agent_prompt: conversationalPrompt,
             document_name: agent.document_name,
           },
         });
