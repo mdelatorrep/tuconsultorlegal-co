@@ -77,6 +77,8 @@ export default function SystemConfigManager() {
           promptKey: 'improve_clause_ai_prompt',
           modelKey: 'improve_clause_ai_model',
           reasoningEffortKey: 'improve_clause_reasoning_effort',
+          webSearchKey: 'web_search_enabled_improve_clause',
+          webSearchCategoriesKey: 'web_search_categories_improve_clause',
           colorClass: 'border-l-purple-500'
         },
         {
@@ -86,6 +88,8 @@ export default function SystemConfigManager() {
           promptKey: 'suggest_conversation_blocks_prompt',
           modelKey: 'suggest_blocks_ai_model',
           reasoningEffortKey: 'suggest_blocks_reasoning_effort',
+          webSearchKey: 'web_search_enabled_suggest_blocks',
+          webSearchCategoriesKey: 'web_search_categories_suggest_blocks',
           colorClass: 'border-l-purple-500'
         },
         {
@@ -121,6 +125,8 @@ export default function SystemConfigManager() {
           promptKey: 'document_chat_prompt',
           modelKey: 'document_chat_ai_model',
           reasoningEffortKey: 'document_chat_reasoning_effort',
+          webSearchKey: 'web_search_enabled_document_chat',
+          webSearchCategoriesKey: 'web_search_categories_document_chat',
           colorClass: 'border-l-blue-500'
         },
         {
@@ -202,6 +208,8 @@ export default function SystemConfigManager() {
           promptKey: 'lexi_chat_prompt',
           modelKey: 'lexi_ai_model',
           reasoningEffortKey: 'lexi_reasoning_effort',
+          webSearchKey: 'web_search_enabled_lexi',
+          webSearchCategoriesKey: 'web_search_categories_lexi',
           colorClass: 'border-l-indigo-500'
         },
         {
@@ -220,6 +228,8 @@ export default function SystemConfigManager() {
           promptKey: 'legal_training_assistant_prompt',
           modelKey: 'training_assistant_ai_model',
           reasoningEffortKey: 'training_assistant_reasoning_effort',
+          webSearchKey: 'web_search_enabled_training',
+          webSearchCategoriesKey: 'web_search_categories_training',
           colorClass: 'border-l-indigo-500'
         }
       ]
@@ -237,6 +247,8 @@ export default function SystemConfigManager() {
           promptKey: 'document_description_optimizer_prompt',
           modelKey: 'document_description_optimizer_model',
           reasoningEffortKey: 'improve_document_info_reasoning_effort',
+          webSearchKey: 'web_search_enabled_improve_document_info',
+          webSearchCategoriesKey: 'web_search_categories_improve_document_info',
           colorClass: 'border-l-orange-500'
         },
         {
@@ -246,6 +258,8 @@ export default function SystemConfigManager() {
           promptKey: 'template_optimizer_prompt',
           modelKey: 'template_optimizer_model',
           reasoningEffortKey: 'improve_template_reasoning_effort',
+          webSearchKey: 'web_search_enabled_improve_template',
+          webSearchCategoriesKey: 'web_search_categories_improve_template',
           colorClass: 'border-l-orange-500'
         },
         {
