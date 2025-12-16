@@ -29,29 +29,18 @@ export interface WebSearchUserLocation {
 }
 
 /**
- * Web Search tool configuration (web_search_preview format for Responses API)
- * Compatible with: gpt-5, gpt-5-mini (NOT gpt-5-nano, NOT with reasoning effort 'minimal')
+ * Web Search tool configuration (simple format for Responses API)
+ * Compatible with: gpt-5, gpt-5-mini (NOT gpt-5-nano)
+ * Note: OpenAI Responses API only accepts { type: "web_search_preview" } without nested config
  */
 export interface WebSearchTool {
   type: 'web_search_preview';
-  web_search_preview: {
-    user_location?: WebSearchUserLocation;
-    search_context_size?: 'low' | 'medium' | 'high';  // Token budget for search
-  };
 }
 
 /**
- * Web Search tool with domain filtering (using allowed_domains)
- * Max 100 domains allowed
+ * Web Search tool with domain filtering - Note: Currently OpenAI only supports simple format
  */
-export interface WebSearchToolWithDomains {
-  type: 'web_search_preview';
-  web_search_preview: {
-    user_location?: WebSearchUserLocation;
-    search_context_size?: 'low' | 'medium' | 'high';
-    allowed_domains?: string[];  // e.g., ['corteconstitucional.gov.co', 'secretariasenado.gov.co']
-  };
-}
+export type WebSearchToolWithDomains = WebSearchTool;
 
 /**
  * Citation from web search results
@@ -78,34 +67,17 @@ export function supportsWebSearch(model: string): boolean {
 }
 
 /**
- * Build a web search tool configuration using web_search_preview format
+ * Build a web search tool configuration
+ * Note: OpenAI Responses API only accepts the simple { type: "web_search_preview" } format
+ * Domain filtering and other options are specified in the instructions/prompt instead
  */
-export function buildWebSearchTool(options?: {
+export function buildWebSearchTool(_options?: {
   allowedDomains?: string[];
   userLocation?: WebSearchUserLocation;
   searchContextSize?: 'low' | 'medium' | 'high';
-}): WebSearchToolWithDomains {
-  const tool: WebSearchToolWithDomains = {
-    type: 'web_search_preview',
-    web_search_preview: {}
-  };
-
-  if (options?.allowedDomains && options.allowedDomains.length > 0) {
-    // Clean domains: remove http/https, limit to 100
-    tool.web_search_preview.allowed_domains = options.allowedDomains
-      .map(d => d.replace(/^https?:\/\//, '').replace(/\/$/, ''))
-      .slice(0, 100);
-  }
-
-  if (options?.userLocation) {
-    tool.web_search_preview.user_location = options.userLocation;
-  }
-
-  if (options?.searchContextSize) {
-    tool.web_search_preview.search_context_size = options.searchContextSize;
-  }
-
-  return tool;
+}): WebSearchTool {
+  // OpenAI Responses API only accepts the simple format
+  return { type: 'web_search_preview' };
 }
 
 /**
@@ -265,7 +237,7 @@ export function buildResponsesRequestParams(
   if (webSearch && supportsWebSearch(model)) {
     // Web search doesn't work with reasoning effort 'minimal', but 'low/medium/high' are fine
     allTools.push(webSearch);
-    console.log(`[WebSearch] Enabled for model ${model} with domains:`, webSearch.web_search_preview?.allowed_domains || 'all');
+    console.log(`[WebSearch] Enabled for model ${model}`);
   }
   
   // Add function tools
