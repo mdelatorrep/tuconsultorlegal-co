@@ -29,12 +29,12 @@ export interface WebSearchUserLocation {
 }
 
 /**
- * Web Search tool configuration
+ * Web Search tool configuration (web_search_preview format for Responses API)
  * Compatible with: gpt-5, gpt-5-mini (NOT gpt-5-nano, NOT with reasoning effort 'minimal')
  */
 export interface WebSearchTool {
-  type: 'web_search';
-  web_search: {
+  type: 'web_search_preview';
+  web_search_preview: {
     user_location?: WebSearchUserLocation;
     search_context_size?: 'low' | 'medium' | 'high';  // Token budget for search
   };
@@ -44,8 +44,11 @@ export interface WebSearchTool {
  * Web Search tool with domain filtering (using allowed_domains)
  * Max 100 domains allowed
  */
-export interface WebSearchToolWithDomains extends WebSearchTool {
-  web_search: WebSearchTool['web_search'] & {
+export interface WebSearchToolWithDomains {
+  type: 'web_search_preview';
+  web_search_preview: {
+    user_location?: WebSearchUserLocation;
+    search_context_size?: 'low' | 'medium' | 'high';
     allowed_domains?: string[];  // e.g., ['corteconstitucional.gov.co', 'secretariasenado.gov.co']
   };
 }
@@ -66,7 +69,7 @@ export interface WebSearchCitation {
  */
 export function supportsWebSearch(model: string): boolean {
   const lowerModel = model.toLowerCase();
-  // gpt-5-nano explicitly does NOT support web_search
+  // gpt-5-nano explicitly does NOT support web_search_preview
   if (lowerModel.includes('gpt-5-nano') || lowerModel.includes('nano')) {
     return false;
   }
@@ -75,7 +78,7 @@ export function supportsWebSearch(model: string): boolean {
 }
 
 /**
- * Build a web search tool configuration
+ * Build a web search tool configuration using web_search_preview format
  */
 export function buildWebSearchTool(options?: {
   allowedDomains?: string[];
@@ -83,23 +86,23 @@ export function buildWebSearchTool(options?: {
   searchContextSize?: 'low' | 'medium' | 'high';
 }): WebSearchToolWithDomains {
   const tool: WebSearchToolWithDomains = {
-    type: 'web_search',
-    web_search: {}
+    type: 'web_search_preview',
+    web_search_preview: {}
   };
 
   if (options?.allowedDomains && options.allowedDomains.length > 0) {
     // Clean domains: remove http/https, limit to 100
-    tool.web_search.allowed_domains = options.allowedDomains
+    tool.web_search_preview.allowed_domains = options.allowedDomains
       .map(d => d.replace(/^https?:\/\//, '').replace(/\/$/, ''))
       .slice(0, 100);
   }
 
   if (options?.userLocation) {
-    tool.web_search.user_location = options.userLocation;
+    tool.web_search_preview.user_location = options.userLocation;
   }
 
   if (options?.searchContextSize) {
-    tool.web_search.search_context_size = options.searchContextSize;
+    tool.web_search_preview.search_context_size = options.searchContextSize;
   }
 
   return tool;
@@ -262,7 +265,7 @@ export function buildResponsesRequestParams(
   if (webSearch && supportsWebSearch(model)) {
     // Web search doesn't work with reasoning effort 'minimal', but 'low/medium/high' are fine
     allTools.push(webSearch);
-    console.log(`[WebSearch] Enabled for model ${model} with domains:`, webSearch.web_search.allowed_domains || 'all');
+    console.log(`[WebSearch] Enabled for model ${model} with domains:`, webSearch.web_search_preview?.allowed_domains || 'all');
   }
   
   // Add function tools
