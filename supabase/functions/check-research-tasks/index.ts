@@ -6,24 +6,44 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Extract final content from OpenAI response
+// Extract final content from OpenAI response (handles deep research output_text format)
 function extractFinalContent(responseData: any): string {
   if (!responseData || !responseData.output || !Array.isArray(responseData.output)) {
+    console.log('[extractFinalContent] No valid output array found');
     return 'No se pudo obtener respuesta del asistente de investigación';
   }
   
+  // Iterate through output items in reverse (latest first)
   for (let i = responseData.output.length - 1; i >= 0; i--) {
     const item = responseData.output[i];
-    if (!item.content) continue;
+    
+    // Skip non-message items (like web_search_call, reasoning, etc.)
+    if (item.type !== 'message') continue;
+    if (!item.content || !Array.isArray(item.content)) continue;
     
     for (const content of item.content) {
-      if (content.type === 'message' && content.text) return content.text;
-      if ((content.type === 'text' || content.type === 'input_text') && (content.text || content.value)) {
+      // Deep research models return type: "output_text"
+      if (content.type === 'output_text' && content.text) {
+        console.log(`[extractFinalContent] Found output_text content (${content.text.length} chars)`);
+        return content.text;
+      }
+      // Standard responses return type: "text"
+      if (content.type === 'text' && content.text) {
+        console.log(`[extractFinalContent] Found text content (${content.text.length} chars)`);
+        return content.text;
+      }
+      // Legacy format with value
+      if (content.type === 'input_text' && (content.text || content.value)) {
         return content.text || content.value;
+      }
+      // Message type with text directly
+      if (content.type === 'message' && content.text) {
+        return content.text;
       }
     }
   }
   
+  console.log('[extractFinalContent] No text content found in output items');
   return 'No se pudo obtener respuesta del asistente de investigación';
 }
 
