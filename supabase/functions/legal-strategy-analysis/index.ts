@@ -80,11 +80,11 @@ serve(async (req) => {
 
     // Get configuration
     const strategyModel = await getSystemConfig(supabase, 'strategy_ai_model', 'gpt-4o-mini');
-    const strategyPrompt = await getSystemConfig(supabase, 'strategy_ai_prompt', '');
+    const strategyPrompt = await getSystemConfig(supabase, 'strategy_system_prompt', '');
     
     if (!strategyPrompt) {
-      console.error('❌ strategy_ai_prompt not configured in system_config');
-      return new Response(JSON.stringify({ error: 'Configuración faltante: strategy_ai_prompt' }), { 
+      console.error('❌ strategy_system_prompt not configured in system_config');
+      return new Response(JSON.stringify({ error: 'Configuración faltante: strategy_system_prompt' }), { 
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       });
     }
@@ -118,11 +118,7 @@ ${jsonFormat}`;
     // Get reasoning effort from system config (strategy = high by default)
     const reasoningEffort = await getSystemConfig(supabase, 'reasoning_effort_strategy', 'high') as 'low' | 'medium' | 'high';
     
-    // Load web search configuration if enabled
-    const webSearchTool = supportsWebSearch(strategyModel)
-      ? await loadWebSearchConfigAndBuildTool(supabase, 'strategy')
-      : null;
-    
+    // NOTE: Web search disabled when using jsonMode to avoid OpenAI API conflict
     const params = buildResponsesRequestParams(strategyModel, {
       input: `Analiza estratégicamente el siguiente caso legal:\n\n${caseDescription}\n\nResponde ÚNICAMENTE en formato JSON válido.`,
       instructions,
@@ -130,8 +126,7 @@ ${jsonFormat}`;
       temperature: 0.3,
       jsonMode: true,
       store: false,
-      reasoning: { effort: reasoningEffort },
-      webSearch: webSearchTool || undefined
+      reasoning: { effort: reasoningEffort }
     });
 
     const result = await callResponsesAPI(openaiApiKey, params);
