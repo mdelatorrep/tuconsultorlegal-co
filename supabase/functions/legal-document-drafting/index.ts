@@ -78,11 +78,11 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const draftingModel = await getSystemConfig(supabase, 'drafting_ai_model', 'gpt-4.1-2025-04-14');
-    const draftingPrompt = await getSystemConfig(supabase, 'drafting_ai_prompt', '');
+    const draftingPrompt = await getSystemConfig(supabase, 'drafting_system_prompt', '');
     
     if (!draftingPrompt) {
-      console.error('❌ drafting_ai_prompt not configured in system_config');
-      return new Response(JSON.stringify({ error: 'Configuración faltante: drafting_ai_prompt' }), { 
+      console.error('❌ drafting_system_prompt not configured in system_config');
+      return new Response(JSON.stringify({ error: 'Configuración faltante: drafting_system_prompt' }), { 
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       });
     }
@@ -118,11 +118,7 @@ El documento debe ser apropiado para Colombia y seguir las mejores prácticas le
     // Get reasoning effort from system config (drafting = medium by default)
     const reasoningEffort = await getSystemConfig(supabase, 'reasoning_effort_drafting', 'medium') as 'low' | 'medium' | 'high';
     
-    // Load web search configuration if enabled
-    const webSearchTool = supportsWebSearch(draftingModel)
-      ? await loadWebSearchConfigAndBuildTool(supabase, 'drafting')
-      : null;
-    
+    // NOTE: Web search disabled when using jsonMode to avoid OpenAI API conflict
     const params = buildResponsesRequestParams(draftingModel, {
       input,
       instructions,
@@ -130,8 +126,7 @@ El documento debe ser apropiado para Colombia y seguir las mejores prácticas le
       temperature: 0.4,
       jsonMode: true,
       store: false,
-      reasoning: { effort: reasoningEffort },
-      webSearch: webSearchTool || undefined
+      reasoning: { effort: reasoningEffort }
     });
 
     const result = await callResponsesAPI(openaiApiKey, params);

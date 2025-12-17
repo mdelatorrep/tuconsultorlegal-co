@@ -186,11 +186,7 @@ Proporciona análisis en formato JSON con detectionConfidence: "baja" indicando 
     // Get reasoning effort from system config (analysis = medium by default)
     const reasoningEffort = await getSystemConfig(supabase, 'reasoning_effort_analysis', 'medium') as 'low' | 'medium' | 'high';
     
-    // Load web search configuration if enabled
-    const webSearchTool = supportsWebSearch(aiModel) 
-      ? await loadWebSearchConfigAndBuildTool(supabase, 'analysis')
-      : null;
-    
+    // NOTE: Web search disabled when using jsonMode to avoid OpenAI API conflict
     const params = buildResponsesRequestParams(aiModel, {
       input: analysisInput,
       instructions: systemPrompt,
@@ -198,8 +194,7 @@ Proporciona análisis en formato JSON con detectionConfidence: "baja" indicando 
       temperature: 0.2,
       jsonMode: true,
       store: false,
-      reasoning: { effort: reasoningEffort },
-      webSearch: webSearchTool || undefined
+      reasoning: { effort: reasoningEffort }
     });
 
     const result = await callResponsesAPI(openaiApiKey, params);
