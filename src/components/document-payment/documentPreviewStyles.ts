@@ -25,7 +25,7 @@ export const getPreviewStyles = () => `
   body {
     font-family: "Times New Roman", Times, serif;
     font-size: 12pt;
-    line-height: 1.7;
+    line-height: 1.4;
     color: ${PREVIEW_COLORS.text};
     background: ${PREVIEW_COLORS.background};
     margin: 0;
@@ -35,7 +35,7 @@ export const getPreviewStyles = () => `
   .preview-content {
     font-family: "Times New Roman", Times, serif;
     font-size: 12pt;
-    line-height: 1.7;
+    line-height: 1.4;
     color: ${PREVIEW_COLORS.text};
     text-align: justify;
     white-space: pre-wrap;
@@ -64,16 +64,16 @@ export const getPreviewStyles = () => `
   }
 
   .preview-content p {
-    margin-bottom: 1em;
+    margin-bottom: 0.6em;
     white-space: pre-wrap;
     word-wrap: break-word;
-    line-height: 1.7;
+    line-height: 1.4;
   }
 
   .preview-content br {
     display: block;
     content: "";
-    margin: 0.5em 0;
+    margin: 0.3em 0;
   }
 
   /* Bold and italic - preserve color from inline styles */
@@ -133,8 +133,8 @@ export const getPreviewStyles = () => `
   }
 
   .preview-content li {
-    margin-bottom: 0.5em;
-    line-height: 1.7;
+    margin-bottom: 0.3em;
+    line-height: 1.4;
   }
 
   /* Blockquotes */
