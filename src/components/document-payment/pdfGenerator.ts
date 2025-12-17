@@ -427,14 +427,14 @@ const renderParagraphsInPDF = (
   for (let pIdx = 0; pIdx < paragraphs.length; pIdx++) {
     const paragraph = paragraphs[pIdx];
 
-    // Párrafo vacío = espaciado (una línea de altura)
+    // Párrafo vacío = espaciado (una línea de altura reducida)
     if (paragraph.tokens.length === 0) {
-      currentY += 5.4; // Aproximadamente una línea de espacio
+      currentY += 4; // Espacio entre párrafos más compacto
       continue;
     }
 
     const fontSize = paragraph.isHeading ? [16, 14, 13, 12, 11, 10][paragraph.isHeading - 1] || 12 : 12;
-    const lineHeight = fontSize * 0.45;
+    const lineHeight = fontSize * 0.38; // Reducido de 0.45 para espaciado más compacto
 
     // Concatenar todo el texto del párrafo
     const fullText = paragraph.tokens.map((t) => t.text).join("");
