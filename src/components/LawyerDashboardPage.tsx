@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Bot, Plus, Settings, LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Lock, Crown, Users, SpellCheck, AlertCircle, Clock, FileImage, Send, Mail } from "lucide-react";
+import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Bot, Plus, Settings, LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Lock, Crown, Users, SpellCheck, AlertCircle, Clock, FileImage, Send, Mail, Database } from "lucide-react";
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -23,6 +23,7 @@ import AnalyzeModule from "./lawyer-modules/AnalyzeModule";
 import DraftModule from "./lawyer-modules/DraftModule";
 import StrategizeModule from "./lawyer-modules/StrategizeModule";
 import CRMModule from "./lawyer-modules/CRMModule";
+import SuinJuriscolModule from "./lawyer-modules/SuinJuriscolModule";
 import PremiumFeatureCard from "./PremiumFeatureCard";
 import LawyerOnboardingCoachmarks from "./LawyerOnboardingCoachmarks";
 import { useLawyerOnboarding } from "@/hooks/useLawyerOnboarding";
@@ -80,7 +81,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const [editedContent, setEditedContent] = useState("");
   const [lawyerComments, setLawyerComments] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager' | 'research' | 'analyze' | 'draft' | 'strategize' | 'subscription' | 'crm' | 'public-profile'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager' | 'research' | 'analyze' | 'draft' | 'strategize' | 'subscription' | 'crm' | 'public-profile' | 'suin-juriscol'>('dashboard');
   const [isCheckingSpelling, setIsCheckingSpelling] = useState(false);
   const [showSendConfirmation, setShowSendConfirmation] = useState(false);
   const [newLeadsCount, setNewLeadsCount] = useState(0);
@@ -860,6 +861,20 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
           );
         }
         return <ResearchModule user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as any)} onLogout={logout} />;
+      
+      case 'suin-juriscol':
+        if (!user?.canUseAiTools) {
+          return (
+            <PremiumFeatureCard
+              title="SUIN-Juriscol"
+              description="Consulta el Sistema Único de Información Normativa de Colombia"
+              icon={Database}
+              featureName="la herramienta SUIN-Juriscol"
+              onRedirectToSubscription={() => setCurrentView('subscription')}
+            />
+          );
+        }
+        return <SuinJuriscolModule user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as any)} onLogout={logout} />;
       
       case 'analyze':
         if (!user?.canUseAiTools) {

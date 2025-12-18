@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Bot, Settings, Users, Crown, Lock, User } from "lucide-react";
+import { LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Bot, Settings, Users, Crown, Lock, User, Database } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -43,6 +43,11 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
           title: "Investigación",
           icon: Search,
           view: "research" as const
+        },
+        {
+          title: "SUIN-Juriscol",
+          icon: Database,
+          view: "suin-juriscol" as const
         },
         {
           title: "Análisis",
