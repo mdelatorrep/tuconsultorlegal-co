@@ -419,9 +419,40 @@ export default function UnifiedDocumentPage({ onOpenChat }: UnifiedDocumentPageP
           // Update local state to reflect the change
           setDocumentData({ ...documentData, status: 'descargado' });
           
+          // 🔔 Send email notification to user when document is downloaded
+          if (documentData.user_email) {
+            try {
+              await supabase.functions.invoke('send-email', {
+                body: {
+                  to: documentData.user_email,
+                  subject: `Tu documento está listo: ${documentData.document_type}`,
+                  template_key: 'document_download_user',
+                  recipient_type: 'user',
+                  variables: {
+                    user_name: documentData.user_name || 'Usuario',
+                    document_type: documentData.document_type,
+                    tracking_code: documentData.token,
+                    download_date: new Date().toLocaleDateString('es-CO', { 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    }),
+                    tracking_url: `https://tuconsultorlegal.co/#documento?code=${documentData.token}`
+                  }
+                }
+              });
+              console.log('Download confirmation email sent to user');
+            } catch (emailError) {
+              console.error('Error sending download confirmation email:', emailError);
+              // Don't block the flow if email fails
+            }
+          }
+          
           toast({
             title: "Documento descargado",
-            description: "El documento ha sido descargado y marcado como completado.",
+            description: "El documento ha sido descargado. Recibirás una confirmación por email.",
           });
         }
       }
@@ -717,15 +748,22 @@ export default function UnifiedDocumentPage({ onOpenChat }: UnifiedDocumentPageP
                   </div>
                 </div>
 
-                {/* Preview Button */}
-                <Button
-                  onClick={handlePreviewDocument}
-                  variant="outline"
-                  className="w-full"
-                >
-                  <Eye className="h-4 w-4 mr-2" />
-                  Ver Vista Previa Completa
-                </Button>
+                {/* Preview Button - Highlighted */}
+                <div className="space-y-2">
+                  <Button
+                    onClick={handlePreviewDocument}
+                    variant="default"
+                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-md transition-all hover:shadow-lg"
+                    size="lg"
+                  >
+                    <Eye className="h-5 w-5 mr-2" />
+                    Ver Vista Previa Completa
+                  </Button>
+                  <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
+                    <CheckCircle className="h-3 w-3 text-success" />
+                    Recomendado: revisa tu documento antes de pagar
+                  </p>
+                </div>
               </CardContent>
             </Card>
 
@@ -954,24 +992,41 @@ export default function UnifiedDocumentPage({ onOpenChat }: UnifiedDocumentPageP
                 {(paymentCompleted || documentData.status === 'pagado' || documentData.status === 'descargado') && (
                   <>
                     <div className="text-center space-y-4">
-                      <div className="w-16 h-16 mx-auto bg-success/10 rounded-full flex items-center justify-center">
-                        <CheckCircle className="h-8 w-8 text-success" />
+                      <div className="w-20 h-20 mx-auto bg-success/10 rounded-full flex items-center justify-center animate-pulse">
+                        <CheckCircle className="h-10 w-10 text-success" />
                       </div>
-                      <h3 className="text-xl font-semibold text-success">¡Documento Listo!</h3>
+                      <h3 className="text-2xl font-bold text-success">¡Documento Listo!</h3>
                       <p className="text-muted-foreground">
                         Tu documento está disponible para descarga sin marca de agua
                       </p>
                     </div>
 
+                    {/* Clear download instructions */}
+                    <div className="bg-success/5 border border-success/20 rounded-lg p-4 space-y-3">
+                      <h4 className="font-semibold text-success flex items-center gap-2">
+                        <Download className="h-4 w-4" />
+                        Cómo descargar tu documento:
+                      </h4>
+                      <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
+                        <li>Haz clic en el botón verde <strong>"Descargar Documento PDF"</strong> abajo</li>
+                        <li>El archivo PDF se guardará automáticamente en tu carpeta de Descargas</li>
+                        <li>Recibirás una confirmación por email con los detalles</li>
+                      </ol>
+                    </div>
+
                     <Button
                       onClick={handleDownloadDocument}
-                      className="w-full"
+                      className="w-full animate-pulse hover:animate-none shadow-lg hover:shadow-xl transition-all"
                       size="lg"
                       variant="success"
                     >
-                      <Download className="h-4 w-4 mr-2" />
+                      <Download className="h-5 w-5 mr-2" />
                       Descargar Documento PDF
                     </Button>
+
+                    <p className="text-xs text-center text-muted-foreground">
+                      Si no encuentras el email de confirmación, revisa tu carpeta de spam
+                    </p>
                   </>
                 )}
 
