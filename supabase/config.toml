@@ -110,3 +110,6 @@ verify_jwt = false
 
 [functions.create-openai-agent]
 verify_jwt = false
+
+[functions.suin-juriscol-search]
+verify_jwt = false
