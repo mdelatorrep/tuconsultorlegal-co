@@ -59,8 +59,8 @@ serve(async (req) => {
       lawyerId = userData.user?.id || null;
     }
 
-    const { query, category, year } = await req.json();
-    console.log('Received search request:', { query, category, year });
+    const { query, category, year, conversationContext, isFollowUp, originalQuery } = await req.json();
+    console.log('Received search request:', { query, category, year, isFollowUp });
 
     if (!query) {
       return new Response(
@@ -100,17 +100,20 @@ Formato de respuesta:
 - Incluye citas específicas de artículos relevantes cuando sea posible
 `);
 
-    // Build the search query with filters
-    let searchQuery = `site:suin-juriscol.gov.co ${query}`;
-    if (category && category !== 'all') {
-      searchQuery += ` ${category}`;
-    }
-    if (year) {
-      searchQuery += ` ${year}`;
-    }
+    // Build the user message based on whether this is a follow-up
+    let userMessage: string;
+    
+    if (isFollowUp && conversationContext) {
+      userMessage = `Contexto de la conversación anterior:
+${conversationContext}
 
-    // Add Colombian legal context to the prompt
-    const userMessage = `Consulta normativa colombiana:
+Nueva pregunta del usuario: ${query}
+
+Basándote en el contexto de la conversación anterior sobre "${originalQuery || 'normativa colombiana'}", responde a esta nueva pregunta.
+Si necesitas buscar información adicional, hazlo usando web search enfocándote en SUIN-Juriscol y fuentes oficiales colombianas.
+Mantén tus respuestas concisas pero informativas.`;
+    } else {
+      userMessage = `Consulta normativa colombiana:
 
 Búsqueda: ${query}
 ${category && category !== 'all' ? `Categoría: ${category}` : ''}
@@ -123,6 +126,7 @@ Proporciona:
 1. Un resumen ejecutivo de los hallazgos
 2. Lista de normas/documentos encontrados con sus URLs
 3. Citas específicas de artículos relevantes`;
+    }
 
     console.log('Calling AI with web search for SUIN-Juriscol...');
 
