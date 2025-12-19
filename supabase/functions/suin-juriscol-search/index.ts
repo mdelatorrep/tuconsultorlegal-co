@@ -127,12 +127,11 @@ Proporciona:
     console.log('Calling AI with web search for SUIN-Juriscol...');
 
     // Build request params with web search tool
-    const requestParams = buildResponsesRequestParams({
-      model,
-      instructions: systemPrompt,
+    const requestParams = buildResponsesRequestParams(model, {
       input: userMessage,
+      instructions: systemPrompt,
       maxOutputTokens: 4000,
-      webSearchTool: { type: 'web_search_preview' }
+      webSearch: { type: 'web_search_preview' }
     });
 
     console.log('Request params:', JSON.stringify(requestParams, null, 2));
