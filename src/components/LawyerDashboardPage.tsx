@@ -24,6 +24,7 @@ import DraftModule from "./lawyer-modules/DraftModule";
 import StrategizeModule from "./lawyer-modules/StrategizeModule";
 import CRMModule from "./lawyer-modules/CRMModule";
 import SuinJuriscolModule from "./lawyer-modules/SuinJuriscolModule";
+import ProcessQueryModule from "./lawyer-modules/ProcessQueryModule";
 import PremiumFeatureCard from "./PremiumFeatureCard";
 import LawyerOnboardingCoachmarks from "./LawyerOnboardingCoachmarks";
 import { useLawyerOnboarding } from "@/hooks/useLawyerOnboarding";
@@ -81,7 +82,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const [editedContent, setEditedContent] = useState("");
   const [lawyerComments, setLawyerComments] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager' | 'research' | 'analyze' | 'draft' | 'strategize' | 'subscription' | 'crm' | 'public-profile' | 'suin-juriscol'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager' | 'research' | 'analyze' | 'draft' | 'strategize' | 'subscription' | 'crm' | 'public-profile' | 'suin-juriscol' | 'process-query'>('dashboard');
   const [isCheckingSpelling, setIsCheckingSpelling] = useState(false);
   const [showSendConfirmation, setShowSendConfirmation] = useState(false);
   const [newLeadsCount, setNewLeadsCount] = useState(0);
@@ -875,6 +876,9 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
           );
         }
         return <SuinJuriscolModule user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as any)} onLogout={logout} />;
+      
+      case 'process-query':
+        return <ProcessQueryModule user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as any)} onLogout={logout} />;
       
       case 'analyze':
         if (!user?.canUseAiTools) {
