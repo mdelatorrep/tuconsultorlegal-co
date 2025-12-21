@@ -1,5 +1,8 @@
 project_id = "tkaezookvtpulfpaffes"
 
+[functions.judicial-process-lookup]
+verify_jwt = true
+
 [functions.check-research-tasks]
 verify_jwt = false
 
