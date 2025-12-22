@@ -468,6 +468,134 @@ export type Database = {
           },
         ]
       }
+      credit_packages: {
+        Row: {
+          bonus_credits: number
+          created_at: string
+          credits: number
+          description: string | null
+          discount_percentage: number | null
+          display_order: number
+          id: string
+          is_active: boolean
+          is_featured: boolean
+          name: string
+          price_cop: number
+          updated_at: string
+        }
+        Insert: {
+          bonus_credits?: number
+          created_at?: string
+          credits: number
+          description?: string | null
+          discount_percentage?: number | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          is_featured?: boolean
+          name: string
+          price_cop: number
+          updated_at?: string
+        }
+        Update: {
+          bonus_credits?: number
+          created_at?: string
+          credits?: number
+          description?: string | null
+          discount_percentage?: number | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          is_featured?: boolean
+          name?: string
+          price_cop?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      credit_tool_costs: {
+        Row: {
+          created_at: string
+          credit_cost: number
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean
+          tool_name: string
+          tool_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          credit_cost?: number
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          tool_name: string
+          tool_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          credit_cost?: number
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          tool_name?: string
+          tool_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      credit_transactions: {
+        Row: {
+          amount: number
+          balance_after: number
+          created_at: string
+          description: string | null
+          id: string
+          lawyer_id: string
+          metadata: Json | null
+          reference_id: string | null
+          reference_type: string | null
+          transaction_type: string
+        }
+        Insert: {
+          amount: number
+          balance_after: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          lawyer_id: string
+          metadata?: Json | null
+          reference_id?: string | null
+          reference_type?: string | null
+          transaction_type: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          lawyer_id?: string
+          metadata?: Json | null
+          reference_id?: string | null
+          reference_type?: string | null
+          transaction_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_transactions_lawyer_id_fkey"
+            columns: ["lawyer_id"]
+            isOneToOne: false
+            referencedRelation: "lawyer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_automation_rules: {
         Row: {
           actions: Json
@@ -1305,6 +1433,108 @@ export type Database = {
           },
         ]
       }
+      gamification_progress: {
+        Row: {
+          claimed_at: string | null
+          completed_at: string | null
+          completion_count: number
+          id: string
+          lawyer_id: string
+          progress_data: Json | null
+          started_at: string
+          status: string
+          task_id: string
+        }
+        Insert: {
+          claimed_at?: string | null
+          completed_at?: string | null
+          completion_count?: number
+          id?: string
+          lawyer_id: string
+          progress_data?: Json | null
+          started_at?: string
+          status?: string
+          task_id: string
+        }
+        Update: {
+          claimed_at?: string | null
+          completed_at?: string | null
+          completion_count?: number
+          id?: string
+          lawyer_id?: string
+          progress_data?: Json | null
+          started_at?: string
+          status?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gamification_progress_lawyer_id_fkey"
+            columns: ["lawyer_id"]
+            isOneToOne: false
+            referencedRelation: "lawyer_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gamification_progress_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "gamification_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gamification_tasks: {
+        Row: {
+          badge_name: string | null
+          completion_criteria: Json | null
+          created_at: string
+          credit_reward: number
+          description: string | null
+          display_order: number
+          icon: string | null
+          id: string
+          is_active: boolean
+          max_completions: number | null
+          name: string
+          task_key: string
+          task_type: string
+          updated_at: string
+        }
+        Insert: {
+          badge_name?: string | null
+          completion_criteria?: Json | null
+          created_at?: string
+          credit_reward?: number
+          description?: string | null
+          display_order?: number
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          max_completions?: number | null
+          name: string
+          task_key: string
+          task_type: string
+          updated_at?: string
+        }
+        Update: {
+          badge_name?: string | null
+          completion_criteria?: Json | null
+          created_at?: string
+          credit_reward?: number
+          description?: string | null
+          display_order?: number
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          max_completions?: number | null
+          name?: string
+          task_key?: string
+          task_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       knowledge_base_urls: {
         Row: {
           category: string | null
@@ -1391,6 +1621,47 @@ export type Database = {
           verification_url?: string | null
         }
         Relationships: []
+      }
+      lawyer_credits: {
+        Row: {
+          created_at: string
+          current_balance: number
+          id: string
+          last_purchase_at: string | null
+          lawyer_id: string
+          total_earned: number
+          total_spent: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_balance?: number
+          id?: string
+          last_purchase_at?: string | null
+          lawyer_id: string
+          total_earned?: number
+          total_spent?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_balance?: number
+          id?: string
+          last_purchase_at?: string | null
+          lawyer_id?: string
+          total_earned?: number
+          total_spent?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lawyer_credits_lawyer_id_fkey"
+            columns: ["lawyer_id"]
+            isOneToOne: true
+            referencedRelation: "lawyer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lawyer_documents: {
         Row: {
@@ -1555,6 +1826,60 @@ export type Database = {
             foreignKeyName: "lawyer_public_profiles_lawyer_id_fkey"
             columns: ["lawyer_id"]
             isOneToOne: true
+            referencedRelation: "lawyer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lawyer_referrals: {
+        Row: {
+          created_at: string
+          credited_at: string | null
+          credits_awarded_referred: number
+          credits_awarded_referrer: number
+          id: string
+          referral_code: string
+          referred_email: string | null
+          referred_id: string | null
+          referrer_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          credited_at?: string | null
+          credits_awarded_referred?: number
+          credits_awarded_referrer?: number
+          id?: string
+          referral_code: string
+          referred_email?: string | null
+          referred_id?: string | null
+          referrer_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          credited_at?: string | null
+          credits_awarded_referred?: number
+          credits_awarded_referrer?: number
+          id?: string
+          referral_code?: string
+          referred_email?: string | null
+          referred_id?: string | null
+          referrer_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lawyer_referrals_referred_id_fkey"
+            columns: ["referred_id"]
+            isOneToOne: false
+            referencedRelation: "lawyer_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lawyer_referrals_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
             referencedRelation: "lawyer_profiles"
             referencedColumns: ["id"]
           },
