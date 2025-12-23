@@ -40,7 +40,7 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
   const [stats, setStats] = useState<CRMStats>({ clients: 0, cases: 0, tasks: 0, communications: 0 });
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const { toast } = useToast();
-  const { consumeCredits } = useCredits(user?.id);
+  const { consumeCredits, hasEnoughCredits, getToolCost } = useCredits(user?.id);
 
   useEffect(() => {
     fetchStats();
@@ -67,7 +67,17 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
   };
 
   const handleAISegmentation = async () => {
-    // Consume credits first
+    // Check credits first
+    if (!hasEnoughCredits('crm_ai')) {
+      toast({
+        title: "Créditos insuficientes",
+        description: `Necesitas ${getToolCost('crm_ai')} créditos para la segmentación IA.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Consume credits
     const creditResult = await consumeCredits('crm_ai');
     if (!creditResult.success) {
       return; // Toast already shown by consumeCredits
@@ -246,23 +256,26 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
                         </div>
                       </div>
                       
-                      <Button
-                        onClick={handleAISegmentation}
-                        disabled={isLoadingAI}
-                        className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-500 shadow-lg hover:shadow-xl transition-all duration-300"
-                      >
-                        {isLoadingAI ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Procesando IA...
-                          </>
-                        ) : (
-                          <>
-                            <Brain className="h-4 w-4 mr-2" />
-                            Segmentación IA
-                          </>
-                        )}
-                      </Button>
+                      <div className="flex items-center gap-3">
+                        <ToolCostIndicator toolType="crm_ai" lawyerId={user?.id} />
+                        <Button
+                          onClick={handleAISegmentation}
+                          disabled={isLoadingAI || !hasEnoughCredits('crm_ai')}
+                          className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-500 shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
+                        >
+                          {isLoadingAI ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Procesando IA...
+                            </>
+                          ) : (
+                            <>
+                              <Brain className="h-4 w-4 mr-2" />
+                              Segmentación IA
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   </CardHeader>
                   
