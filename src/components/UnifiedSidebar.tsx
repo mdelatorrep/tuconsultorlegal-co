@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Bot, Settings, Users, Crown, Lock, User, Database, Gavel, Coins } from "lucide-react";
+import { LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Bot, Settings, Users, Lock, User, Database, Gavel, Coins, Crown } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CreditBalanceIndicator } from "@/components/credits/CreditBalanceIndicator";
@@ -134,11 +134,6 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
           title: "Perfil Público",
           icon: User,
           view: "public-profile" as const
-        },
-        {
-          title: "Suscripción",
-          icon: Crown,
-          view: "subscription" as const
         }
       ]
     }
