@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { PenTool, Target, TrendingUp, Clock, FileText, Copy, Download } from "lucide-react";
+import { PenTool, Target, TrendingUp, Clock, FileText, Copy, Download, Sparkles, Lightbulb, MessageSquare, Wand2 } from "lucide-react";
 
 export default function DemoDraftingMockup() {
   return (
@@ -16,16 +16,16 @@ export default function DemoDraftingMockup() {
               </div>
               <div>
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-blue-500 to-blue-400 bg-clip-text text-transparent">
-                  Estudio de Redacción Legal
+                  Redacción + Copilot Legal
                 </h1>
                 <p className="text-lg text-muted-foreground mt-2">
-                  Generación inteligente de contratos y documentos legales personalizados
+                  Generación inteligente de documentos con asistencia en tiempo real
                 </p>
               </div>
             </div>
             
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-8">
               <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
                 <div className="flex items-center gap-3">
                   <Target className="h-8 w-8 text-blue-600" />
@@ -53,9 +53,81 @@ export default function DemoDraftingMockup() {
                   </div>
                 </div>
               </div>
+              <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                <div className="flex items-center gap-3">
+                  <Sparkles className="h-8 w-8 text-amber-600" />
+                  <div>
+                    <p className="text-2xl font-bold text-amber-600">15K+</p>
+                    <p className="text-sm text-muted-foreground">Sugerencias Copilot</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
+
+        {/* Copilot Assistant Section */}
+        <Card className="border-2 border-amber-200 bg-gradient-to-br from-amber-50/50 to-white">
+          <CardHeader>
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl shadow-lg">
+                <Wand2 className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-2xl flex items-center gap-2">
+                  Copilot Legal
+                  <Badge className="bg-amber-100 text-amber-800">IA Activa</Badge>
+                </CardTitle>
+                <CardDescription className="text-base mt-2">
+                  Asistencia inteligente mientras redactas - sugerencias en tiempo real
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className="p-4 bg-white rounded-xl border border-amber-200 hover:shadow-md transition-shadow">
+                <div className="flex items-center gap-3 mb-3">
+                  <Lightbulb className="h-5 w-5 text-amber-600" />
+                  <h4 className="font-semibold">Sugerencia de Cláusula</h4>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  "Considera agregar una cláusula de confidencialidad reforzada según el art. 74 del Código de Comercio"
+                </p>
+                <Button variant="outline" size="sm" className="mt-3 w-full">
+                  <Sparkles className="h-3 w-3 mr-2" />
+                  Aplicar sugerencia
+                </Button>
+              </div>
+              <div className="p-4 bg-white rounded-xl border border-amber-200 hover:shadow-md transition-shadow">
+                <div className="flex items-center gap-3 mb-3">
+                  <MessageSquare className="h-5 w-5 text-amber-600" />
+                  <h4 className="font-semibold">Mejora de Redacción</h4>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  "El párrafo 3 puede ser más claro. Sugerencia: dividir en dos oraciones para mayor precisión"
+                </p>
+                <Button variant="outline" size="sm" className="mt-3 w-full">
+                  <Sparkles className="h-3 w-3 mr-2" />
+                  Ver mejora
+                </Button>
+              </div>
+              <div className="p-4 bg-white rounded-xl border border-amber-200 hover:shadow-md transition-shadow">
+                <div className="flex items-center gap-3 mb-3">
+                  <FileText className="h-5 w-5 text-amber-600" />
+                  <h4 className="font-semibold">Referencia Legal</h4>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  "Sentencia C-123/2023 establece precedentes relevantes para esta cláusula"
+                </p>
+                <Button variant="outline" size="sm" className="mt-3 w-full">
+                  <Sparkles className="h-3 w-3 mr-2" />
+                  Insertar referencia
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Draft Interface */}
         <Card className="border-0 shadow-2xl">
@@ -89,7 +161,7 @@ export default function DemoDraftingMockup() {
             
             <Button className="w-full h-12" size="lg">
               <PenTool className="h-4 w-4 mr-2" />
-              Generar Borrador
+              Generar Borrador con Copilot
             </Button>
           </CardContent>
         </Card>
@@ -153,6 +225,10 @@ export default function DemoDraftingMockup() {
               <Button variant="outline" size="sm">
                 <Download className="h-4 w-4 mr-2" />
                 Descargar
+              </Button>
+              <Button size="sm" className="bg-gradient-to-r from-amber-500 to-amber-600">
+                <Wand2 className="h-4 w-4 mr-2" />
+                Mejorar con Copilot
               </Button>
             </div>
           </CardContent>

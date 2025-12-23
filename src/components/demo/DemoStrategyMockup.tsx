@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Target, TrendingUp, Calendar, CheckCircle, AlertCircle, Clock } from "lucide-react";
+import { Target, TrendingUp, Calendar, CheckCircle, AlertCircle, Clock, Brain, BarChart3, Scale, Percent } from "lucide-react";
 
 export default function DemoStrategyMockup() {
   return (
@@ -15,16 +15,16 @@ export default function DemoStrategyMockup() {
               </div>
               <div>
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-purple-500 to-purple-400 bg-clip-text text-transparent">
-                  Análisis Estratégico de Casos
+                  Estrategia + Predicción de Casos
                 </h1>
                 <p className="text-lg text-muted-foreground mt-2">
-                  Planificación predictiva y estrategia legal basada en inteligencia artificial
+                  Planificación predictiva y análisis de probabilidad de éxito con IA
                 </p>
               </div>
             </div>
             
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-8">
               <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
                 <div className="flex items-center gap-3">
                   <Target className="h-8 w-8 text-purple-600" />
@@ -45,9 +45,18 @@ export default function DemoStrategyMockup() {
               </div>
               <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
                 <div className="flex items-center gap-3">
-                  <Clock className="h-8 w-8 text-blue-600" />
+                  <Brain className="h-8 w-8 text-blue-600" />
                   <div>
-                    <p className="text-2xl font-bold text-blue-600">12 días</p>
+                    <p className="text-2xl font-bold text-blue-600">1,500+</p>
+                    <p className="text-sm text-muted-foreground">Predicciones realizadas</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                <div className="flex items-center gap-3">
+                  <Clock className="h-8 w-8 text-orange-600" />
+                  <div>
+                    <p className="text-2xl font-bold text-orange-600">12 días</p>
                     <p className="text-sm text-muted-foreground">Tiempo promedio</p>
                   </div>
                 </div>
@@ -55,6 +64,66 @@ export default function DemoStrategyMockup() {
             </div>
           </div>
         </div>
+
+        {/* AI Predictor Section */}
+        <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50/50 to-white">
+          <CardHeader>
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
+                <Brain className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-2xl flex items-center gap-2">
+                  Predictor de Resultados
+                  <Badge className="bg-blue-100 text-blue-800">IA Avanzada</Badge>
+                </CardTitle>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-3 gap-6">
+              <div className="p-4 bg-white rounded-xl border border-emerald-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <Percent className="h-5 w-5 text-emerald-600" />
+                  <h4 className="font-semibold">Probabilidad de Éxito</h4>
+                </div>
+                <div className="text-4xl font-bold text-emerald-600 mb-2">85%</div>
+                <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div className="bg-emerald-500 h-3 rounded-full" style={{ width: '85%' }}></div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">Basado en 342 casos similares</p>
+              </div>
+              <div className="p-4 bg-white rounded-xl border border-blue-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <Scale className="h-5 w-5 text-blue-600" />
+                  <h4 className="font-semibold">Sentencias Analizadas</h4>
+                </div>
+                <div className="text-4xl font-bold text-blue-600 mb-2">48</div>
+                <p className="text-sm text-muted-foreground">Casos con hechos similares de los últimos 5 años</p>
+              </div>
+              <div className="p-4 bg-white rounded-xl border border-purple-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <BarChart3 className="h-5 w-5 text-purple-600" />
+                  <h4 className="font-semibold">Factores de Riesgo</h4>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Jurisprudencia favorable</span>
+                    <Badge className="bg-emerald-100 text-emerald-700">Alto</Badge>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Carga probatoria</span>
+                    <Badge className="bg-amber-100 text-amber-700">Medio</Badge>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Complejidad procesal</span>
+                    <Badge className="bg-red-100 text-red-700">Alto</Badge>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Case Overview */}
         <div className="grid md:grid-cols-2 gap-6">
@@ -198,6 +267,15 @@ export default function DemoStrategyMockup() {
                   <h4 className="font-semibold">Considerar mediación previa</h4>
                   <p className="text-sm text-muted-foreground mt-1">
                     El análisis sugiere 65% de probabilidad de acuerdo favorable en mediación
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <Brain className="h-5 w-5 text-blue-600 mt-0.5" />
+                <div>
+                  <h4 className="font-semibold">Predicción IA: Fortalecer prueba documental</h4>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    El análisis predictivo sugiere que casos similares con prueba documental sólida tienen 23% más probabilidad de éxito
                   </p>
                 </div>
               </div>
