@@ -495,11 +495,11 @@ export default function ProcessQueryModule({
                 </div>
               </TabsContent>
 
-              <div className="mt-6">
+              <div className="mt-6 flex items-center gap-3">
                 <Button
                   onClick={handleSearch}
                   disabled={isSearching}
-                  className="w-full"
+                  className="flex-1"
                   size="lg"
                 >
                   {isSearching ? (
@@ -514,6 +514,7 @@ export default function ProcessQueryModule({
                     </>
                   )}
                 </Button>
+                <ToolCostIndicator toolType="process_query" lawyerId={user?.id} />
               </div>
             </Tabs>
           </CardContent>
