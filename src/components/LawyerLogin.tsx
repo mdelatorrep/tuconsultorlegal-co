@@ -38,9 +38,26 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
   const { createSubscription } = useSubscription();
   const { logRegistrationTerms } = useTermsAudit();
 
-  // Detectar confirmación de email al cargar el componente
+  // Detectar confirmación de email y código de referido al cargar el componente
   useEffect(() => {
     const hash = window.location.hash;
+    const url = new URL(window.location.href);
+    
+    // Check for referral code in URL (format: #abogados?ref=CODE)
+    const hashParts = hash.split('?');
+    if (hashParts.length > 1) {
+      const params = new URLSearchParams(hashParts[1]);
+      const refCode = params.get('ref');
+      if (refCode) {
+        localStorage.setItem('referral_code', refCode);
+        console.log('Referral code saved:', refCode);
+        toast({
+          title: "¡Código de referido detectado!",
+          description: `Código ${refCode} aplicado. Completa tu registro para recibir tus créditos de bienvenida.`,
+          duration: 6000,
+        });
+      }
+    }
     
     // Verificar si la URL contiene parámetros de confirmación de email
     if (hash.includes('access_token=') && hash.includes('type=signup')) {
@@ -168,19 +185,35 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
           console.log('=== EMAIL CONFIRMATION REQUIRED ===');
           toast({
             title: "¡Registro exitoso!",
-            description: "Revisa tu email para confirmar tu cuenta antes de continuar con la selección del plan.",
+            description: "Revisa tu email para confirmar tu cuenta.",
             duration: 6000
           });
           // Switch to login view
           setViewMode('login');
         } else {
-          // Auto-confirmed, proceed to plan selection
-          console.log('=== REGISTRATION SUCCESS - MOVING TO PLAN SELECTION ===');
+          // Auto-confirmed, process referral if exists and go to dashboard
+          console.log('=== REGISTRATION SUCCESS ===');
+          const savedRefCode = localStorage.getItem('referral_code');
+          if (savedRefCode && user) {
+            try {
+              await supabase.functions.invoke('referral-process', {
+                body: { 
+                  action: 'apply',
+                  referralCode: savedRefCode,
+                  newLawyerId: user.id 
+                }
+              });
+              localStorage.removeItem('referral_code');
+              console.log('Referral code applied successfully');
+            } catch (refError) {
+              console.error('Error applying referral code:', refError);
+            }
+          }
           toast({
             title: "¡Registro exitoso!",
-            description: "Ahora selecciona tu plan de suscripción.",
+            description: "Tu cuenta ha sido creada. ¡Bienvenido!",
           });
-          setViewMode('select-plan');
+          onLoginSuccess();
         }
       } else {
         console.log('=== REGISTRATION FAILED - SHOWING ERROR MESSAGE ===');

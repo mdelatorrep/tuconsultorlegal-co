@@ -22,7 +22,6 @@ interface CreditsDashboardProps {
 
 export function CreditsDashboard({ lawyerId }: CreditsDashboardProps) {
   const [activeTab, setActiveTab] = useState('overview');
-  const [purchasing, setPurchasing] = useState(false);
   const { toast } = useToast();
   
   const { 
@@ -44,18 +43,12 @@ export function CreditsDashboard({ lawyerId }: CreditsDashboardProps) {
     processReferral
   } = useGamification(lawyerId);
 
-  const handlePurchasePackage = async (packageId: string) => {
-    setPurchasing(true);
-    
-    try {
-      // For now, show a message - integrate with payment gateway later
-      toast({
-        title: 'Próximamente',
-        description: 'La compra de créditos estará disponible pronto. Por ahora, completa misiones para ganar créditos gratis.',
-      });
-    } finally {
-      setPurchasing(false);
-    }
+  const handlePurchaseComplete = () => {
+    refreshBalance();
+    toast({
+      title: '¡Compra procesada!',
+      description: 'Tus créditos serán acreditados una vez se confirme el pago.',
+    });
   };
 
   const getTransactionIcon = (type: string) => {
@@ -263,8 +256,8 @@ export function CreditsDashboard({ lawyerId }: CreditsDashboardProps) {
             <CardContent>
               <CreditPackageSelector 
                 packages={packages}
-                onSelect={handlePurchasePackage}
-                loading={purchasing}
+                lawyerId={lawyerId}
+                onPurchaseComplete={handlePurchaseComplete}
               />
             </CardContent>
           </Card>

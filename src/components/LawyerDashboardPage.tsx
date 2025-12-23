@@ -33,6 +33,9 @@ import { PasswordResetDialog } from "./PasswordResetDialog";
 import LawyerPublicProfileEditor from "./LawyerPublicProfileEditor";
 import UnifiedSidebar from "./UnifiedSidebar";
 import { CreditsDashboard } from "./credits/CreditsDashboard";
+import { NextBestAction } from "./credits/NextBestAction";
+import { DailyProgress } from "./credits/DailyProgress";
+import { useCredits } from "@/hooks/useCredits";
 
 interface DocumentToken {
   id: string;
