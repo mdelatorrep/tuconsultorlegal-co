@@ -572,24 +572,27 @@ export default function SuinJuriscolModule({ user, currentView, onViewChange, on
                     </div>
                   </div>
 
-                  <Button 
-                    onClick={handleSearch}
-                    disabled={isSearching || !query.trim()}
-                    className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white shadow-lg"
-                    size="lg"
-                  >
-                    {isSearching ? (
-                      <>
-                        <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                        Consultando SUIN-Juriscol...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="h-5 w-5 mr-2" />
-                        Buscar con IA
-                      </>
-                    )}
-                  </Button>
+                  <div className="flex items-center gap-3">
+                    <Button 
+                      onClick={handleSearch}
+                      disabled={isSearching || !query.trim()}
+                      className="flex-1 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white shadow-lg"
+                      size="lg"
+                    >
+                      {isSearching ? (
+                        <>
+                          <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                          Consultando SUIN-Juriscol...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-5 w-5 mr-2" />
+                          Buscar con IA
+                        </>
+                      )}
+                    </Button>
+                    <ToolCostIndicator toolType="suin_juriscol" lawyerId={user?.id} />
+                  </div>
                 </CardContent>
               </Card>
 
