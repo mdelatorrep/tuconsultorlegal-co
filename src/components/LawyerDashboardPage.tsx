@@ -1039,25 +1039,60 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
               <LawyerStatsSection user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as any)} onLogout={logout} />
             ) : (
               <div className="max-w-7xl mx-auto space-y-4 md:space-y-6 lg:space-y-8">
-                {/* Welcome Section */}
-                <div className="mb-4 md:mb-6 lg:mb-8" data-tour="dashboard-welcome">
-                <div className="flex flex-col space-y-3 md:space-y-4 lg:space-y-0 lg:flex-row lg:items-center lg:justify-between">
-                  <div className="flex-1 min-w-0">
-                    <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground truncate">
-                      Bienvenido, {user?.name}
-                    </h1>
-                    <p className="text-muted-foreground mt-1 text-sm md:text-base">
-                      Tu suite completa de herramientas legales con IA
-                    </p>
+                {/* Header with Welcome + Daily Progress */}
+                <div className="grid gap-4 lg:grid-cols-3">
+                  {/* Welcome Section */}
+                  <div className="lg:col-span-2" data-tour="dashboard-welcome">
+                    <Card className="h-full bg-gradient-to-br from-primary/5 to-transparent border-primary/20">
+                      <CardContent className="p-4 md:p-6">
+                        <div className="flex flex-col space-y-3 lg:flex-row lg:items-center lg:justify-between">
+                          <div className="flex-1 min-w-0">
+                            <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground truncate">
+                              Bienvenido, {user?.name}
+                            </h1>
+                            <p className="text-muted-foreground mt-1 text-sm md:text-base">
+                              Tu suite completa de herramientas legales con IA
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <Badge variant="outline" className="flex items-center gap-2 text-xs md:text-sm w-fit">
+                              <Scale className="h-3 w-3 md:h-4 md:w-4" />
+                              Portal Legal
+                            </Badge>
+                            <Button 
+                              variant="default" 
+                              size="sm"
+                              onClick={() => setCurrentView('credits')}
+                              className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                            >
+                              Mis Créditos
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
                   </div>
-                    <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-3 lg:items-center">
-                      <Badge variant="outline" className="flex items-center gap-2 text-xs md:text-sm w-fit">
-                        <Scale className="h-3 w-3 md:h-4 md:w-4" />
-                        Portal Legal
-                      </Badge>
-                    </div>
+                  
+                  {/* Daily Progress */}
+                  <div className="lg:col-span-1">
+                    <DailyProgress lawyerId={user.id} onViewCredits={() => setCurrentView('credits')} />
                   </div>
                 </div>
+
+                {/* Next Best Action - Priority Actions */}
+                <NextBestAction
+                  overdueDocuments={documents.filter(doc => doc.sla_status === 'overdue').map(d => ({ id: d.id, token: d.token, document_type: d.document_type, status: d.status, sla_status: d.sla_status, sla_deadline: d.sla_deadline, user_name: d.user_name || undefined, created_at: d.created_at }))}
+                  atRiskDocuments={documents.filter(doc => doc.sla_status === 'at_risk').map(d => ({ id: d.id, token: d.token, document_type: d.document_type, status: d.status, sla_status: d.sla_status, sla_deadline: d.sla_deadline, user_name: d.user_name || undefined, created_at: d.created_at }))}
+                  pendingDocuments={documents.filter(doc => doc.status === 'pagado' && doc.sla_status !== 'overdue' && doc.sla_status !== 'at_risk').map(d => ({ id: d.id, token: d.token, document_type: d.document_type, status: d.status, sla_status: d.sla_status, sla_deadline: d.sla_deadline, user_name: d.user_name || undefined, created_at: d.created_at }))}
+                  newLeadsCount={newLeadsCount}
+                  incompleteMissions={0}
+                  onViewDocument={(doc) => {
+                    const fullDoc = documents.find(d => d.id === doc.id);
+                    if (fullDoc) handleDocumentClick(fullDoc);
+                  }}
+                  onViewCRM={() => setCurrentView('crm')}
+                  onViewMissions={() => setCurrentView('credits')}
+                />
 
               {/* 🔴 URGENT DOCUMENTS - Documents at risk or overdue */}
               {documents.filter(doc => doc.sla_status === 'overdue' || doc.sla_status === 'at_risk').length > 0 && (
