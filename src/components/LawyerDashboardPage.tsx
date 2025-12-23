@@ -7,7 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Save, CheckCircle, Bot, Settings, Brain, BookOpen, Search, Eye, PenTool, Target, Crown, Users, SpellCheck, AlertCircle, Clock, FileImage, Send, Database, Radar, Wand2, Mic, TrendingUp, UserCircle, Calendar } from "lucide-react";
+import { FileText, Save, CheckCircle, Bot, Settings, Brain, BookOpen, Search, Eye, PenTool, Target, Crown, Users, SpellCheck, AlertCircle, Clock, FileImage, Send, Database, Radar, Wand2, Mic, TrendingUp, UserCircle, Calendar, Mail } from "lucide-react";
+
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -96,7 +97,7 @@ const quillFormats = [
   'list', 'bullet', 'align', 'color', 'background'
 ];
 
-type ViewType = 'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager' | 'research' | 'analyze' | 'draft' | 'strategize' | 'crm' | 'public-profile' | 'suin-juriscol' | 'process-query' | 'credits' | 'gamification' | 'process-monitor' | 'legal-calendar' | 'legal-copilot' | 'voice-assistant' | 'case-predictor' | 'client-portal' | 'lawyer-verification';
+type ViewType = 'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager' | 'research' | 'analyze' | 'draft' | 'strategize' | 'crm' | 'public-profile' | 'suin-juriscol' | 'process-query' | 'credits' | 'gamification' | 'process-monitor' | 'legal-calendar' | 'legal-copilot' | 'voice-assistant' | 'case-predictor' | 'client-portal' | 'lawyer-verification' | 'request-agent-access' | 'request-blog-access';
 
 export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageProps) {
   const [documents, setDocuments] = useState<DocumentToken[]>([]);
@@ -513,53 +514,25 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
       case 'public-profile':
         return <LawyerPublicProfileEditor lawyerId={user.id} lawyerName={user.name} />;
       case 'research':
-        return user?.canUseAiTools ? (
-          <ResearchModule user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as ViewType)} onLogout={logout} />
-        ) : (
-          <PremiumFeatureCard title="Investigación Legal" description="Realiza investigaciones avanzadas con IA" icon={Search} featureName="las herramientas de investigación" onRedirectToSubscription={() => setCurrentView('credits')} />
-        );
+        return <ResearchModule user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as ViewType)} onLogout={logout} />;
       case 'suin-juriscol':
-        return user?.canUseAiTools ? (
-          <SuinJuriscolModule user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as ViewType)} onLogout={logout} />
-        ) : (
-          <PremiumFeatureCard title="SUIN-Juriscol" description="Consulta el Sistema Único de Información Normativa" icon={Database} featureName="la herramienta SUIN-Juriscol" onRedirectToSubscription={() => setCurrentView('credits')} />
-        );
+        return <SuinJuriscolModule user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as ViewType)} onLogout={logout} />;
       case 'process-query':
         return <ProcessQueryModule user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as ViewType)} onLogout={logout} />;
       case 'analyze':
-        return user?.canUseAiTools ? (
-          <AnalyzeModule user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as ViewType)} onLogout={logout} />
-        ) : (
-          <PremiumFeatureCard title="Análisis Legal" description="Analiza documentos con IA" icon={Eye} featureName="las herramientas de análisis" onRedirectToSubscription={() => setCurrentView('credits')} />
-        );
+        return <AnalyzeModule user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as ViewType)} onLogout={logout} />;
       case 'draft':
-        return user?.canUseAiTools ? (
-          <DraftModule user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as ViewType)} onLogout={logout} />
-        ) : (
-          <PremiumFeatureCard title="Redacción Legal" description="Redacta documentos con IA" icon={PenTool} featureName="las herramientas de redacción" onRedirectToSubscription={() => setCurrentView('credits')} />
-        );
+        return <DraftModule user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as ViewType)} onLogout={logout} />;
       case 'strategize':
-        return user?.canUseAiTools ? (
-          <StrategizeModule user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as ViewType)} onLogout={logout} />
-        ) : (
-          <PremiumFeatureCard title="Estrategia Legal" description="Desarrolla estrategias con IA" icon={Target} featureName="las herramientas de estrategia" onRedirectToSubscription={() => setCurrentView('credits')} />
-        );
+        return <StrategizeModule user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as ViewType)} onLogout={logout} />;
       case 'stats':
         return <LawyerStatsSection user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as ViewType)} onLogout={logout} />;
       case 'crm':
-        return user?.canUseAiTools ? (
-          <CRMModule user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as ViewType)} onLogout={logout} />
-        ) : (
-          <PremiumFeatureCard title="Gestión de Clientes" description="Sistema integral para gestionar clientes" icon={Users} featureName="el sistema de gestión de clientes" onRedirectToSubscription={() => setCurrentView('credits')} />
-        );
+        return <CRMModule user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as ViewType)} onLogout={logout} />;
       case 'process-monitor':
-        return user?.canUseAiTools ? (
-          <ProcessMonitorModule lawyerId={user.id} />
-        ) : (
-          <PremiumFeatureCard title="Monitor de Procesos" description="Monitorea automáticamente tus procesos" icon={Radar} featureName="el monitor de procesos" onRedirectToSubscription={() => setCurrentView('credits')} />
-        );
+        return <ProcessMonitorModule lawyerId={user.id} />;
       case 'legal-calendar':
-        return user?.canUseAiTools ? (
+        return (
           <div className="space-y-6 p-6">
             <SmartLegalCalendar lawyerId={user.id} />
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -567,42 +540,70 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
               <AutoDocketing lawyerId={user.id} />
             </div>
           </div>
-        ) : (
-          <PremiumFeatureCard title="Calendario Legal" description="Calendario inteligente con términos legales" icon={Calendar} featureName="el calendario legal" onRedirectToSubscription={() => setCurrentView('credits')} />
         );
       case 'legal-copilot':
-        return user?.canUseAiTools ? (
-          <LegalCopilot lawyerId={user.id} />
-        ) : (
-          <PremiumFeatureCard title="Copilot Legal" description="Asistente de IA para documentos" icon={Wand2} featureName="el copilot legal" onRedirectToSubscription={() => setCurrentView('credits')} />
-        );
+        return <LegalCopilot lawyerId={user.id} />;
       case 'voice-assistant':
-        return user?.canUseAiTools ? (
-          <VoiceAssistant lawyerId={user.id} />
-        ) : (
-          <PremiumFeatureCard title="Asistente de Voz" description="Dicta documentos con voz" icon={Mic} featureName="el asistente de voz" onRedirectToSubscription={() => setCurrentView('credits')} />
-        );
+        return <VoiceAssistant lawyerId={user.id} />;
       case 'case-predictor':
-        return user?.canUseAiTools ? (
-          <CasePredictorModule lawyerId={user.id} />
-        ) : (
-          <PremiumFeatureCard title="Predictor de Casos" description="Analiza probabilidades de éxito" icon={TrendingUp} featureName="el predictor de casos" onRedirectToSubscription={() => setCurrentView('credits')} />
-        );
+        return <CasePredictorModule lawyerId={user.id} />;
       case 'client-portal':
-        return user?.canUseAiTools ? (
-          <ClientPortalPage lawyerId={user.id} />
-        ) : (
-          <PremiumFeatureCard title="Portal de Clientes" description="Portal para tus clientes" icon={UserCircle} featureName="el portal de clientes" onRedirectToSubscription={() => setCurrentView('credits')} />
-        );
+        return <ClientPortalPage lawyerId={user.id} />;
       case 'lawyer-verification':
         return <LawyerVerificationModule lawyerId={user.id} />;
+      case 'request-agent-access':
+        return (
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <Card className="max-w-md w-full">
+              <CardHeader className="text-center">
+                <Bot className="h-16 w-16 mx-auto mb-4 text-primary" />
+                <CardTitle>Gestión de Agentes IA</CardTitle>
+                <CardDescription>
+                  Para crear y gestionar agentes de IA personalizados, necesitas solicitar acceso al administrador.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="text-center">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Una vez aprobado, podrás crear agentes de documentos, gestionar sus configuraciones y ver métricas de uso.
+                </p>
+                <Button onClick={() => toast({ title: "Solicitud enviada", description: "Te contactaremos pronto." })}>
+                  <Mail className="h-4 w-4 mr-2" />
+                  Solicitar Acceso
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        );
+      case 'request-blog-access':
+        return (
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <Card className="max-w-md w-full">
+              <CardHeader className="text-center">
+                <BookOpen className="h-16 w-16 mx-auto mb-4 text-primary" />
+                <CardTitle>Gestión de Blog</CardTitle>
+                <CardDescription>
+                  Para publicar artículos en el blog, necesitas solicitar acceso al administrador.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="text-center">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Una vez aprobado, podrás crear, editar y publicar artículos legales para compartir tu conocimiento.
+                </p>
+                <Button onClick={() => toast({ title: "Solicitud enviada", description: "Te contactaremos pronto." })}>
+                  <Mail className="h-4 w-4 mr-2" />
+                  Solicitar Acceso
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        );
       default:
         return null;
     }
   };
 
   // Views that use full layout with sidebar
-  const viewsWithSidebar = ['dashboard', 'public-profile', 'stats', 'credits', 'gamification'];
+  const viewsWithSidebar = ['dashboard', 'public-profile', 'stats', 'credits', 'gamification', 'request-agent-access', 'request-blog-access'];
   
   // Views that modules render their own sidebar (need to be wrapped)
   const moduleViews = ['agent-creator', 'agent-manager', 'training', 'blog-manager', 'research', 'analyze', 'draft', 'strategize', 'crm', 'suin-juriscol', 'process-query', 'process-monitor', 'legal-calendar', 'legal-copilot', 'voice-assistant', 'case-predictor', 'client-portal', 'lawyer-verification'];
