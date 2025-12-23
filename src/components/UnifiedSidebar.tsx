@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Bot, Settings, Users, User, Database, Gavel, Coins, Trophy, Radar, Calendar, Wand2, Mic, TrendingUp, UserCircle, ChevronDown, FileSearch, FileText, Briefcase, GraduationCap, ShieldCheck } from "lucide-react";
+import { LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Bot, Settings, Users, User, Database, Gavel, Coins, Trophy, Radar, Calendar, Wand2, Mic, TrendingUp, UserCircle, ChevronDown, FileSearch, FileText, Briefcase, GraduationCap, ShieldCheck, Mail } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -135,11 +135,15 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
         title: "Gestión IA",
         icon: Bot,
         collapsible: true,
-        items: [
-          { title: "Crear Agente", icon: Bot, view: "agent-creator" },
-          { title: "Gestionar Agentes", icon: Settings, view: "agent-manager" },
-          { title: "Métricas", icon: BarChart3, view: "stats" }
-        ]
+        items: user?.canCreateAgents 
+          ? [
+              { title: "Crear Agente", icon: Bot, view: "agent-creator" },
+              { title: "Gestionar Agentes", icon: Settings, view: "agent-manager" },
+              { title: "Métricas", icon: BarChart3, view: "stats" }
+            ]
+          : [
+              { title: "Solicitar Acceso", icon: Mail, view: "request-agent-access" }
+            ]
       }
     },
     {
@@ -152,16 +156,20 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
         ]
       }
     },
-    ...(user?.canCreateBlogs ? [{
+    {
       key: "contenido",
       section: {
         title: "Contenido",
         icon: BookOpen,
-        items: [
-          { title: "Gestión Blog", icon: BookOpen, view: "blog-manager" }
-        ]
+        items: user?.canCreateBlogs
+          ? [
+              { title: "Gestión Blog", icon: BookOpen, view: "blog-manager" }
+            ]
+          : [
+              { title: "Solicitar Acceso", icon: Mail, view: "request-blog-access" }
+            ]
       }
-    }] : []),
+    },
     {
       key: "cuenta",
       section: {
