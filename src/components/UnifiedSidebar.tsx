@@ -1,10 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Bot, Settings, Users, Lock, User, Database, Gavel, Coins, Crown, Trophy } from "lucide-react";
+import { LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Bot, Settings, Users, Lock, User, Database, Gavel, Coins, Crown, Trophy, Radar, Calendar, Wand2, Mic, TrendingUp, UserCircle } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CreditBalanceIndicator } from "@/components/credits/CreditBalanceIndicator";
 import { useCredits } from "@/hooks/useCredits";
-
 interface UnifiedSidebarProps {
   user: any;
   currentView: string;
@@ -60,6 +59,18 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
           view: "process-query" as const
         },
         {
+          title: "Monitor Procesos",
+          icon: Radar,
+          view: "process-monitor" as const,
+          isPremium: !user?.canUseAiTools
+        },
+        {
+          title: "Calendario Legal",
+          icon: Calendar,
+          view: "legal-calendar" as const,
+          isPremium: !user?.canUseAiTools
+        },
+        {
           title: "Análisis",
           icon: Eye,
           view: "analyze" as const
@@ -70,14 +81,38 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
           view: "draft" as const
         },
         {
+          title: "Copilot Legal",
+          icon: Wand2,
+          view: "legal-copilot" as const,
+          isPremium: !user?.canUseAiTools
+        },
+        {
+          title: "Asistente de Voz",
+          icon: Mic,
+          view: "voice-assistant" as const,
+          isPremium: !user?.canUseAiTools
+        },
+        {
           title: "Estrategia",
           icon: Target,
           view: "strategize" as const
         },
         {
+          title: "Predictor de Casos",
+          icon: TrendingUp,
+          view: "case-predictor" as const,
+          isPremium: !user?.canUseAiTools
+        },
+        {
           title: "Gestión de Clientes",
           icon: Users,
           view: "crm" as const,
+          isPremium: !user?.canUseAiTools
+        },
+        {
+          title: "Portal Clientes",
+          icon: UserCircle,
+          view: "client-portal" as const,
           isPremium: !user?.canUseAiTools
         }
       ]

@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Bot, Plus, Settings, LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Lock, Crown, Users, SpellCheck, AlertCircle, Clock, FileImage, Send, Mail, Database } from "lucide-react";
+import { FileText, User, Calendar, DollarSign, Save, CheckCircle, Bot, Plus, Settings, LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Lock, Crown, Users, SpellCheck, AlertCircle, Clock, FileImage, Send, Mail, Database, Radar, Wand2, Mic, TrendingUp, UserCircle } from "lucide-react";
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -25,6 +25,12 @@ import StrategizeModule from "./lawyer-modules/StrategizeModule";
 import CRMModule from "./lawyer-modules/CRMModule";
 import SuinJuriscolModule from "./lawyer-modules/SuinJuriscolModule";
 import ProcessQueryModule from "./lawyer-modules/ProcessQueryModule";
+import { ProcessMonitorModule } from "./lawyer-modules/ProcessMonitorModule";
+import { CasePredictorModule } from "./lawyer-modules/CasePredictorModule";
+import { SmartLegalCalendar, DeadlineCalculator, AutoDocketing } from "./calendar";
+import { LegalCopilot } from "./copilot";
+import { VoiceAssistant } from "./voice";
+import { ClientPortalPage } from "./client-portal";
 import PremiumFeatureCard from "./PremiumFeatureCard";
 import LawyerOnboardingCoachmarks from "./LawyerOnboardingCoachmarks";
 import { useLawyerOnboarding } from "@/hooks/useLawyerOnboarding";
@@ -86,7 +92,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const [editedContent, setEditedContent] = useState("");
   const [lawyerComments, setLawyerComments] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager' | 'research' | 'analyze' | 'draft' | 'strategize' | 'crm' | 'public-profile' | 'suin-juriscol' | 'process-query' | 'credits' | 'gamification'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager' | 'research' | 'analyze' | 'draft' | 'strategize' | 'crm' | 'public-profile' | 'suin-juriscol' | 'process-query' | 'credits' | 'gamification' | 'process-monitor' | 'legal-calendar' | 'legal-copilot' | 'voice-assistant' | 'case-predictor' | 'client-portal'>('dashboard');
   const [isCheckingSpelling, setIsCheckingSpelling] = useState(false);
   const [showSendConfirmation, setShowSendConfirmation] = useState(false);
   const [newLeadsCount, setNewLeadsCount] = useState(0);
@@ -945,6 +951,98 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
           );
         }
         return <CRMModule user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as any)} onLogout={logout} />;
+      
+      case 'process-monitor':
+        if (!user?.canUseAiTools) {
+          return (
+            <PremiumFeatureCard
+              title="Monitor de Procesos"
+              description="Monitorea automáticamente tus procesos judiciales con alertas en tiempo real"
+              icon={Radar}
+              featureName="el monitor de procesos"
+              onRedirectToSubscription={() => setCurrentView('credits')}
+            />
+          );
+        }
+        return <ProcessMonitorModule lawyerId={user.id} />;
+      
+      case 'legal-calendar':
+        if (!user?.canUseAiTools) {
+          return (
+            <PremiumFeatureCard
+              title="Calendario Legal"
+              description="Calendario inteligente con cálculo automático de términos legales"
+              icon={Calendar}
+              featureName="el calendario legal"
+              onRedirectToSubscription={() => setCurrentView('credits')}
+            />
+          );
+        }
+        return (
+          <div className="space-y-6 p-6">
+            <SmartLegalCalendar lawyerId={user.id} />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <DeadlineCalculator lawyerId={user.id} />
+              <AutoDocketing lawyerId={user.id} />
+            </div>
+          </div>
+        );
+      
+      case 'legal-copilot':
+        if (!user?.canUseAiTools) {
+          return (
+            <PremiumFeatureCard
+              title="Copilot Legal"
+              description="Asistente de IA que te ayuda mientras redactas documentos legales"
+              icon={Wand2}
+              featureName="el copilot legal"
+              onRedirectToSubscription={() => setCurrentView('credits')}
+            />
+          );
+        }
+        return <LegalCopilot lawyerId={user.id} />;
+      
+      case 'voice-assistant':
+        if (!user?.canUseAiTools) {
+          return (
+            <PremiumFeatureCard
+              title="Asistente de Voz"
+              description="Dicta documentos y transcribe notas con reconocimiento de voz avanzado"
+              icon={Mic}
+              featureName="el asistente de voz"
+              onRedirectToSubscription={() => setCurrentView('credits')}
+            />
+          );
+        }
+        return <VoiceAssistant lawyerId={user.id} />;
+      
+      case 'case-predictor':
+        if (!user?.canUseAiTools) {
+          return (
+            <PremiumFeatureCard
+              title="Predictor de Casos"
+              description="Analiza probabilidades de éxito y estrategias con IA predictiva"
+              icon={TrendingUp}
+              featureName="el predictor de casos"
+              onRedirectToSubscription={() => setCurrentView('credits')}
+            />
+          );
+        }
+        return <CasePredictorModule lawyerId={user.id} />;
+      
+      case 'client-portal':
+        if (!user?.canUseAiTools) {
+          return (
+            <PremiumFeatureCard
+              title="Portal de Clientes"
+              description="Portal para que tus clientes vean el estado de sus casos y agenden citas"
+              icon={UserCircle}
+              featureName="el portal de clientes"
+              onRedirectToSubscription={() => setCurrentView('credits')}
+            />
+          );
+        }
+        return <ClientPortalPage lawyerId={user.id} />;
       
       default:
         return null;
