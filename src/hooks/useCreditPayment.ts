@@ -113,9 +113,17 @@ export const useCreditPayment = () => {
       
       console.log('Creating credit payment config with:', { orderId, amount: priceCop, packageId, packageName, credits, lawyerId });
       
-      // Get secure payment configuration from backend (same pattern as documents)
-      const { data: paymentConfig, error: configError } = await supabase.functions.invoke('create-credit-payment-config', {
-        body: { orderId, amount: priceCop, packageId, packageName, credits, lawyerId }
+      // Get secure payment configuration from unified backend function
+      const { data: paymentConfig, error: configError } = await supabase.functions.invoke('create-payment-config', {
+        body: { 
+          orderId, 
+          amount: priceCop, 
+          type: 'credits',
+          packageId, 
+          packageName, 
+          credits, 
+          lawyerId 
+        }
       });
       
       console.log('Payment config response:', { data: paymentConfig, error: configError });

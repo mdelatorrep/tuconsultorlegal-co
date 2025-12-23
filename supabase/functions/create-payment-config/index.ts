@@ -19,13 +19,36 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { orderId, amount, documentType, token } = await req.json()
+    const body = await req.json()
+    const { orderId, amount, type = 'document' } = body
     
-    console.log('Received payment config request:', { orderId, amount, documentType, token });
+    // Type-specific fields
+    const { documentType, token } = body // for documents
+    const { packageId, packageName, credits, lawyerId } = body // for credits
     
-    if (!orderId || !amount || !documentType || !token) {
-      console.error('Missing required parameters:', { orderId: !!orderId, amount: !!amount, documentType: !!documentType, token: !!token });
-      return new Response(JSON.stringify({ error: 'Missing required parameters' }), { 
+    console.log('Received payment config request:', { orderId, amount, type });
+    
+    // Validate common required parameters
+    if (!orderId || !amount) {
+      console.error('Missing required parameters:', { orderId: !!orderId, amount: !!amount });
+      return new Response(JSON.stringify({ error: 'Missing required parameters: orderId, amount' }), { 
+        status: 400, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    // Validate type-specific parameters
+    if (type === 'document' && (!documentType || !token)) {
+      console.error('Missing document parameters:', { documentType: !!documentType, token: !!token });
+      return new Response(JSON.stringify({ error: 'Missing required parameters for document payment' }), { 
+        status: 400, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+    
+    if (type === 'credits' && (!packageId || !lawyerId)) {
+      console.error('Missing credit parameters:', { packageId: !!packageId, lawyerId: !!lawyerId });
+      return new Response(JSON.stringify({ error: 'Missing required parameters for credit payment' }), { 
         status: 400, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
@@ -44,7 +67,6 @@ Deno.serve(async (req) => {
 
     if (!boldApiKey || !boldSecretKey || !boldMerchantId) {
       console.error('Missing Bold credentials in environment variables')
-      console.error('Required env vars: BOLD_API_KEY, BOLD_SECRET_KEY, BOLD_MERCHANT_ID')
       return new Response(JSON.stringify({ error: 'Payment system not configured - missing credentials' }), { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -57,6 +79,19 @@ Deno.serve(async (req) => {
     const integritySignature = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(signatureString))
       .then(buffer => Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join(''));
 
+    // Build description and redirect URL based on type
+    let description: string;
+    let redirectionUrl: string;
+    const origin = req.headers.get('origin') || 'https://tuconsultorlegal.co';
+    
+    if (type === 'credits') {
+      description = `Compra de ${credits || 0} créditos - ${packageName || 'Paquete de créditos'}`;
+      redirectionUrl = `${origin}/#abogados?credits=success&order=${orderId}`;
+    } else {
+      description = `Pago documento: ${documentType}`;
+      redirectionUrl = `${origin}/?code=${token}&payment=success`;
+    }
+
     // Create secure payment configuration
     const paymentConfig = {
       orderId: orderId,
@@ -65,12 +100,12 @@ Deno.serve(async (req) => {
       apiKey: boldApiKey,
       integritySignature: integritySignature,
       merchantId: boldMerchantId,
-      description: `Pago documento: ${documentType}`,
-      redirectionUrl: `${req.headers.get('origin') || 'https://tkaezookvtpulfpaffes.supabase.co'}/?code=${token}&payment=success`,
+      description,
+      redirectionUrl,
       renderMode: 'embedded',
     };
 
-    console.log('Payment configuration created for order:', orderId);
+    console.log('Payment configuration created for order:', orderId, 'type:', type);
 
     return new Response(JSON.stringify(paymentConfig), { 
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
