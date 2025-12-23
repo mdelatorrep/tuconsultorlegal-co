@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Bot, Settings, Users, Lock, User, Database, Gavel, Coins, Crown, Trophy, Radar, Calendar, Wand2, Mic, TrendingUp, UserCircle, ChevronDown, FileSearch, FileText, Briefcase, GraduationCap, ShieldCheck } from "lucide-react";
+import { LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Bot, Settings, Users, User, Database, Gavel, Coins, Trophy, Radar, Calendar, Wand2, Mic, TrendingUp, UserCircle, ChevronDown, FileSearch, FileText, Briefcase, GraduationCap, ShieldCheck } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -19,7 +19,6 @@ interface MenuItem {
   title: string;
   icon: any;
   view: string;
-  isPremium?: boolean;
 }
 
 interface MenuSection {
@@ -86,7 +85,7 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
           { title: "Investigación Legal", icon: Search, view: "research" },
           { title: "SUIN-Juriscol", icon: Database, view: "suin-juriscol" },
           { title: "Consulta Procesos", icon: Gavel, view: "process-query" },
-          { title: "Monitor Procesos", icon: Radar, view: "process-monitor", isPremium: !user?.canUseAiTools },
+          { title: "Monitor Procesos", icon: Radar, view: "process-monitor" },
         ]
       }
     },
@@ -99,8 +98,8 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
         items: [
           { title: "Análisis", icon: Eye, view: "analyze" },
           { title: "Redacción", icon: PenTool, view: "draft" },
-          { title: "Copilot Legal", icon: Wand2, view: "legal-copilot", isPremium: !user?.canUseAiTools },
-          { title: "Asistente de Voz", icon: Mic, view: "voice-assistant", isPremium: !user?.canUseAiTools },
+          { title: "Copilot Legal", icon: Wand2, view: "legal-copilot" },
+          { title: "Asistente de Voz", icon: Mic, view: "voice-assistant" },
         ]
       }
     },
@@ -111,26 +110,26 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
         icon: Briefcase,
         collapsible: true,
         items: [
-          { title: "Gestión CRM", icon: Users, view: "crm", isPremium: !user?.canUseAiTools },
-          { title: "Portal Clientes", icon: UserCircle, view: "client-portal", isPremium: !user?.canUseAiTools },
-          { title: "Calendario Legal", icon: Calendar, view: "legal-calendar", isPremium: !user?.canUseAiTools },
+          { title: "Gestión CRM", icon: Users, view: "crm" },
+          { title: "Portal Clientes", icon: UserCircle, view: "client-portal" },
+          { title: "Calendario Legal", icon: Calendar, view: "legal-calendar" },
         ]
       }
     },
     {
-      key: "premium",
+      key: "herramientas-ia",
       section: {
         title: "Herramientas IA",
-        icon: Crown,
+        icon: Brain,
         collapsible: true,
         items: [
           { title: "Estrategia Legal", icon: Target, view: "strategize" },
-          { title: "Predictor de Casos", icon: TrendingUp, view: "case-predictor", isPremium: !user?.canUseAiTools },
+          { title: "Predictor de Casos", icon: TrendingUp, view: "case-predictor" },
           { title: "Verificación", icon: ShieldCheck, view: "lawyer-verification" },
         ]
       }
     },
-    ...(user?.canCreateAgents ? [{
+    {
       key: "gestion-ia",
       section: {
         title: "Gestión IA",
@@ -142,7 +141,7 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
           { title: "Métricas", icon: BarChart3, view: "stats" }
         ]
       }
-    }] : []),
+    },
     {
       key: "desarrollo",
       section: {
@@ -181,24 +180,11 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
       <SidebarMenuButton 
         isActive={currentView === item.view}
         onClick={() => handleViewChange(item.view)}
-        className={cn(
-          "w-full justify-start min-h-[40px]",
-          item.isPremium && "opacity-75"
-        )}
+        className="w-full justify-start min-h-[40px]"
         tooltip={collapsed ? item.title : undefined}
       >
         <item.icon className="w-4 h-4 shrink-0" />
-        {!collapsed && (
-          <>
-            <span className="flex-1 truncate">{item.title}</span>
-            {item.isPremium && (
-              <div className="flex items-center gap-1 ml-auto shrink-0">
-                <Crown className="h-3 w-3 text-amber-500" />
-                <Lock className="h-3 w-3 text-muted-foreground" />
-              </div>
-            )}
-          </>
-        )}
+        {!collapsed && <span className="flex-1 truncate">{item.title}</span>}
       </SidebarMenuButton>
     </SidebarMenuItem>
   );
