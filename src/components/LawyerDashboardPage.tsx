@@ -28,8 +28,6 @@ import ProcessQueryModule from "./lawyer-modules/ProcessQueryModule";
 import PremiumFeatureCard from "./PremiumFeatureCard";
 import LawyerOnboardingCoachmarks from "./LawyerOnboardingCoachmarks";
 import { useLawyerOnboarding } from "@/hooks/useLawyerOnboarding";
-import { SubscriptionManager } from "./SubscriptionManager";
-import { SubscriptionStatusIndicator } from "./SubscriptionStatusIndicator";
 import { LawyerChangeEmailDialog } from "./LawyerChangeEmailDialog";
 import { PasswordResetDialog } from "./PasswordResetDialog";
 import LawyerPublicProfileEditor from "./LawyerPublicProfileEditor";
@@ -83,7 +81,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const [editedContent, setEditedContent] = useState("");
   const [lawyerComments, setLawyerComments] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager' | 'research' | 'analyze' | 'draft' | 'strategize' | 'subscription' | 'crm' | 'public-profile' | 'suin-juriscol' | 'process-query' | 'credits'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager' | 'research' | 'analyze' | 'draft' | 'strategize' | 'crm' | 'public-profile' | 'suin-juriscol' | 'process-query' | 'credits'>('dashboard');
   const [isCheckingSpelling, setIsCheckingSpelling] = useState(false);
   const [showSendConfirmation, setShowSendConfirmation] = useState(false);
   const [newLeadsCount, setNewLeadsCount] = useState(0);
@@ -858,7 +856,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
               description="Realiza investigaciones avanzadas con IA especializada en derecho"
               icon={Search}
               featureName="las herramientas de investigación"
-              onRedirectToSubscription={() => setCurrentView('subscription')}
+              onRedirectToSubscription={() => setCurrentView('credits')}
             />
           );
         }
@@ -872,7 +870,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
               description="Consulta el Sistema Único de Información Normativa de Colombia"
               icon={Database}
               featureName="la herramienta SUIN-Juriscol"
-              onRedirectToSubscription={() => setCurrentView('subscription')}
+              onRedirectToSubscription={() => setCurrentView('credits')}
             />
           );
         }
@@ -889,7 +887,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
               description="Analiza documentos y casos con inteligencia artificial avanzada"
               icon={Eye}
               featureName="las herramientas de análisis"
-              onRedirectToSubscription={() => setCurrentView('subscription')}
+              onRedirectToSubscription={() => setCurrentView('credits')}
             />
           );
         }
@@ -903,7 +901,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
               description="Redacta documentos legales con asistencia de inteligencia artificial"
               icon={PenTool}
               featureName="las herramientas de redacción"
-              onRedirectToSubscription={() => setCurrentView('subscription')}
+              onRedirectToSubscription={() => setCurrentView('credits')}
             />
           );
         }
@@ -917,7 +915,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
               description="Desarrolla estrategias legales con análisis predictivo de IA"
               icon={Target}
               featureName="las herramientas de estrategia"
-              onRedirectToSubscription={() => setCurrentView('subscription')}
+              onRedirectToSubscription={() => setCurrentView('credits')}
             />
           );
         }
@@ -927,8 +925,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
       case 'stats':
         return <LawyerStatsSection user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as any)} onLogout={logout} />;
       
-      case 'subscription':
-        return <SubscriptionManager />;
+      
       
       case 'crm':
         if (!user?.canUseAiTools) {
@@ -938,7 +935,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
               description="Sistema integral para gestionar clientes, casos y comunicaciones de manera profesional"
               icon={Users}
               featureName="el sistema de gestión de clientes"
-              onRedirectToSubscription={() => setCurrentView('subscription')}
+              onRedirectToSubscription={() => setCurrentView('credits')}
             />
           );
         }
@@ -950,7 +947,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   };
 
   // If not dashboard view and not public-profile, show module content directly (modules have their own sidebar)
-  if (currentView !== 'dashboard' && currentView !== 'public-profile' && currentView !== 'stats' && currentView !== 'subscription' && currentView !== 'credits') {
+  if (currentView !== 'dashboard' && currentView !== 'public-profile' && currentView !== 'stats' && currentView !== 'credits') {
     return (
       <>
         {/* Confirmation Dialog for Sending to Client */}
@@ -1021,7 +1018,9 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                 <h1 className="font-semibold truncate text-sm md:text-base lg:text-lg">Dashboard Legal</h1>
               </div>
               <div className="flex-shrink-0">
-                <SubscriptionStatusIndicator compact={true} />
+                <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs">
+                  Portal Abogados
+                </Badge>
               </div>
             </div>
           </header>
@@ -1035,8 +1034,6 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
               <LawyerPublicProfileEditor lawyerId={user.id} lawyerName={user.name} />
             ) : currentView === 'stats' ? (
               <LawyerStatsSection user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as any)} onLogout={logout} />
-            ) : currentView === 'subscription' ? (
-              <SubscriptionManager />
             ) : (
               <div className="max-w-7xl mx-auto space-y-4 md:space-y-6 lg:space-y-8">
                 {/* Welcome Section */}
@@ -1051,10 +1048,10 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                     </p>
                   </div>
                   <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-3 lg:items-center">
-                    <SubscriptionStatusIndicator />
                     <Badge variant="outline" className="flex items-center gap-2 text-xs md:text-sm w-fit">
                       <Scale className="h-3 w-3 md:h-4 md:w-4" />
                       Portal Legal
+                    </Badge>
                     </Badge>
                   </div>
                 </div>
@@ -1652,7 +1649,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                           size="lg" 
                           variant="secondary" 
                           className="bg-white text-orange-600 hover:bg-white/90"
-                          onClick={() => setCurrentView('subscription')}
+                          onClick={() => setCurrentView('credits')}
                         >
                           Actualizar ahora
                         </Button>
