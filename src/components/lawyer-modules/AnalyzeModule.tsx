@@ -4,13 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from '@/integrations/supabase/client';
-import { AlertTriangle, FileText, Upload, CheckCircle, XCircle, AlertCircle, FileSignature, MessageSquare, CheckSquare, BarChart, Copy, Check, Download, Loader2, Eye, Sparkles, Shield, Target, History, Trash2, ChevronDown } from 'lucide-react';
+import { AlertTriangle, FileText, Upload, CheckCircle, XCircle, AlertCircle, FileSignature, MessageSquare, CheckSquare, BarChart, Copy, Check, Download, Loader2, Eye, Sparkles, Shield, Target, History, Trash2, ChevronDown, Coins } from 'lucide-react';
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import UnifiedSidebar from "../UnifiedSidebar";
+import { useCredits } from "@/hooks/useCredits";
+import { ToolCostIndicator } from "@/components/credits/ToolCostIndicator";
 
 interface AnalyzeModuleProps {
   user: any;
@@ -62,6 +64,7 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
   const [analysisHistory, setAnalysisHistory] = useState<AnalysisResult[]>([]);
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const { consumeCredits, hasEnoughCredits, getToolCost } = useCredits(user?.id);
 
   useEffect(() => {
     loadAnalysisHistory();
@@ -145,6 +148,17 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
 
     if (!acceptedTypes.includes(file.type) && !file.type.includes('document')) {
       toast.error("Tipo de archivo no soportado. Por favor sube un archivo PDF, DOC, DOCX o TXT.");
+      return;
+    }
+
+    // Check and consume credits before proceeding
+    if (!hasEnoughCredits('analysis')) {
+      toast.error(`Necesitas ${getToolCost('analysis')} créditos para analizar documentos.`);
+      return;
+    }
+
+    const creditResult = await consumeCredits('analysis', { fileName: file.name });
+    if (!creditResult.success) {
       return;
     }
 
@@ -536,12 +550,14 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
                         accept=".pdf,.doc,.docx,.txt,.rtf"
                         onChange={handleFileUpload}
                       />
-                      <Button
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={analysisStatus === 'analyzing'}
-                        size="lg"
-                        className="w-full"
-                      >
+                      <div className="space-y-2">
+                        <ToolCostIndicator toolType="analysis" lawyerId={user?.id} className="justify-center" />
+                        <Button
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={analysisStatus === 'analyzing' || !hasEnoughCredits('analysis')}
+                          size="lg"
+                          className="w-full"
+                        >
                         {analysisStatus === 'analyzing' ? (
                           <>
                             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -553,7 +569,8 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
                             Seleccionar Documento
                           </>
                         )}
-                      </Button>
+                        </Button>
+                      </div>
                     </CardContent>
                   </Card>
 

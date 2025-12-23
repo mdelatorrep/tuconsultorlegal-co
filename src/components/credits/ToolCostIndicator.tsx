@@ -2,21 +2,28 @@ import { Coins, AlertCircle, CheckCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { useCredits } from '@/hooks/useCredits';
 
 interface ToolCostIndicatorProps {
-  toolName: string;
-  cost: number;
-  currentBalance: number;
+  toolType: string;
+  lawyerId?: string | null;
   className?: string;
 }
 
 export function ToolCostIndicator({ 
-  toolName, 
-  cost, 
-  currentBalance,
+  toolType,
+  lawyerId,
   className 
 }: ToolCostIndicatorProps) {
+  const { balance, toolCosts } = useCredits(lawyerId || null);
+  
+  const tool = toolCosts.find(t => t.tool_type === toolType);
+  const cost = tool?.credit_cost || 0;
+  const toolName = tool?.tool_name || toolType;
+  const currentBalance = balance?.current_balance || 0;
   const hasEnough = currentBalance >= cost;
+
+  if (!tool) return null;
 
   return (
     <TooltipProvider>

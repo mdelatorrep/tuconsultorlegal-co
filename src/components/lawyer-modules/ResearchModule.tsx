@@ -5,10 +5,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Search, BookOpen, FileText, Loader2, Sparkles, Target, TrendingUp, Clock, CheckCircle2, AlertCircle, Hourglass, ChevronDown, ChevronRight, Calendar, Archive, Filter } from "lucide-react";
+import { Search, BookOpen, FileText, Loader2, Sparkles, Target, TrendingUp, Clock, CheckCircle2, AlertCircle, Hourglass, ChevronDown, ChevronRight, Calendar, Archive, Filter, Coins } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { useCredits } from "@/hooks/useCredits";
+import { ToolCostIndicator } from "@/components/credits/ToolCostIndicator";
 import UnifiedSidebar from "../UnifiedSidebar";
 
 interface ResearchResult {
@@ -48,6 +50,7 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
   const [sortBy, setSortBy] = useState<'date' | 'query'>('date');
   const [filterBy, setFilterBy] = useState<'all' | 'recent' | 'archived'>('all');
   const { toast } = useToast();
+  const { consumeCredits, hasEnoughCredits, getToolCost } = useCredits(user?.id);
 
   // Toggle expand/collapse for individual results
   const toggleResult = (index: number) => {
@@ -245,6 +248,21 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
         description: "Por favor ingresa una pregunta de investigación.",
         variant: "destructive",
       });
+      return;
+    }
+
+    // Check and consume credits before proceeding
+    if (!hasEnoughCredits('research')) {
+      toast({
+        title: "Créditos insuficientes",
+        description: `Necesitas ${getToolCost('research')} créditos para usar esta herramienta.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const creditResult = await consumeCredits('research', { query });
+    if (!creditResult.success) {
       return;
     }
 
@@ -501,28 +519,31 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
                       </div>
                     )}
                     
-                    <Button
-                      onClick={handleSearch}
-                      disabled={isSearching}
-                      className="w-full h-14 rounded-xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-xl hover:shadow-2xl transition-all duration-300 text-lg font-semibold relative z-20 cursor-pointer"
-                      style={{
-                        pointerEvents: 'auto',
-                        position: 'relative',
-                        zIndex: 20
-                      }}
-                    >
-                      {isSearching ? (
-                        <>
-                          <Loader2 className="h-5 w-5 mr-3 animate-spin" />
-                          <span className="animate-pulse">Iniciando investigación profunda...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="h-5 w-5 mr-3" />
-                          Iniciar Investigación Deep Research
-                        </>
-                      )}
-                    </Button>
+                    <div className="space-y-2">
+                      <ToolCostIndicator toolType="research" lawyerId={user?.id} className="justify-center" />
+                      <Button
+                        onClick={handleSearch}
+                        disabled={isSearching || !hasEnoughCredits('research')}
+                        className="w-full h-14 rounded-xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-xl hover:shadow-2xl transition-all duration-300 text-lg font-semibold relative z-20 cursor-pointer"
+                        style={{
+                          pointerEvents: 'auto',
+                          position: 'relative',
+                          zIndex: 20
+                        }}
+                      >
+                        {isSearching ? (
+                          <>
+                            <Loader2 className="h-5 w-5 mr-3 animate-spin" />
+                            <span className="animate-pulse">Iniciando investigación profunda...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="h-5 w-5 mr-3" />
+                            Iniciar Investigación Deep Research
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
 

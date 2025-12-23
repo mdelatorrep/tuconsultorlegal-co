@@ -14,6 +14,8 @@ import { ProcessCard } from "./process/ProcessCard";
 import { ProcessDetails } from "./process/ProcessDetails";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import UnifiedSidebar from "../UnifiedSidebar";
+import { useCredits } from "@/hooks/useCredits";
+import { ToolCostIndicator } from "@/components/credits/ToolCostIndicator";
 import {
   Search,
   Scale,
@@ -27,7 +29,8 @@ import {
   AlertCircle,
   ExternalLink,
   RefreshCw,
-  Gavel
+  Gavel,
+  Coins
 } from "lucide-react";
 
 interface ProcessQueryModuleProps {
@@ -112,6 +115,7 @@ export default function ProcessQueryModule({
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const { consumeCredits, hasEnoughCredits, getToolCost } = useCredits(user?.id);
 
   useEffect(() => {
     loadQueryHistory();
@@ -182,6 +186,17 @@ export default function ProcessQueryModule({
         return;
       }
       queryValue = name;
+    }
+
+    // Check and consume credits before proceeding
+    if (!hasEnoughCredits('process_query')) {
+      toast.error(`Necesitas ${getToolCost('process_query')} créditos para consultar procesos.`);
+      return;
+    }
+
+    const creditResult = await consumeCredits('process_query', { queryType, queryValue });
+    if (!creditResult.success) {
+      return;
     }
 
     setIsSearching(true);
