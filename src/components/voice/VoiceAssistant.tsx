@@ -19,11 +19,12 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 interface VoiceAssistantProps {
+  lawyerId?: string;
   onTranscriptReady?: (text: string) => void;
   placeholder?: string;
 }
 
-export function VoiceAssistant({ onTranscriptReady, placeholder }: VoiceAssistantProps) {
+export function VoiceAssistant({ lawyerId, onTranscriptReady, placeholder }: VoiceAssistantProps) {
   const [notes, setNotes] = useState<string[]>([]);
   const [editedTranscript, setEditedTranscript] = useState('');
 

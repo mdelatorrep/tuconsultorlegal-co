@@ -19,7 +19,8 @@ import { DocumentUpload } from './DocumentUpload';
 import { AppointmentScheduler } from './AppointmentScheduler';
 
 interface ClientPortalPageProps {
-  accessToken: string;
+  accessToken?: string;
+  lawyerId?: string;
 }
 
 interface PortalAccess {
@@ -43,18 +44,70 @@ interface Lawyer {
   email: string;
 }
 
-export function ClientPortalPage({ accessToken }: ClientPortalPageProps) {
+export function ClientPortalPage({ accessToken, lawyerId }: ClientPortalPageProps) {
   const [loading, setLoading] = useState(true);
   const [portalAccess, setPortalAccess] = useState<PortalAccess | null>(null);
   const [client, setClient] = useState<Client | null>(null);
   const [lawyer, setLawyer] = useState<Lawyer | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+
+  // Lawyer mode: show all clients for this lawyer
+  const isLawyerMode = !!lawyerId && !accessToken;
 
   useEffect(() => {
-    validateAccess();
-  }, [accessToken]);
+    if (isLawyerMode) {
+      loadLawyerClients();
+    } else if (accessToken) {
+      validateAccess();
+    }
+  }, [accessToken, lawyerId]);
+
+  const loadLawyerClients = async () => {
+    if (!lawyerId) return;
+    try {
+      setLoading(true);
+      
+      // Get lawyer info
+      const { data: lawyerData } = await supabase
+        .from('lawyer_profiles')
+        .select('id, full_name, email')
+        .eq('id', lawyerId)
+        .single();
+
+      if (lawyerData) {
+        setLawyer(lawyerData);
+      }
+
+      // Get all clients for this lawyer
+      const { data: clientsData, error: clientsError } = await supabase
+        .from('crm_clients')
+        .select('*')
+        .eq('lawyer_id', lawyerId)
+        .order('name');
+
+      if (clientsError) {
+        console.error('Error loading clients:', clientsError);
+        setError('Error al cargar clientes');
+        return;
+      }
+
+      setClients(clientsData || []);
+      if (clientsData && clientsData.length > 0) {
+        setSelectedClientId(clientsData[0].id);
+        setClient(clientsData[0]);
+      }
+    } catch (err) {
+      console.error('Error:', err);
+      setError('Error al cargar datos');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const validateAccess = async () => {
+    if (!accessToken) return;
     try {
       setLoading(true);
       
@@ -115,18 +168,28 @@ export function ClientPortalPage({ accessToken }: ClientPortalPageProps) {
     }
   };
 
+  const handleClientChange = (clientId: string) => {
+    setSelectedClientId(clientId);
+    const selectedClient = clients.find(c => c.id === clientId);
+    if (selectedClient) {
+      setClient(selectedClient);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
-          <p className="text-muted-foreground">Verificando acceso...</p>
+          <p className="text-muted-foreground">
+            {isLawyerMode ? 'Cargando portal de clientes...' : 'Verificando acceso...'}
+          </p>
         </div>
       </div>
     );
   }
 
-  if (error || !portalAccess || !client) {
+  if (!isLawyerMode && (error || !portalAccess || !client)) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
@@ -145,6 +208,24 @@ export function ClientPortalPage({ accessToken }: ClientPortalPageProps) {
     );
   }
 
+  if (isLawyerMode && clients.length === 0) {
+    return (
+      <div className="p-6">
+        <Card className="max-w-md mx-auto">
+          <CardContent className="pt-6 text-center">
+            <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h2 className="text-xl font-bold mb-2">Sin Clientes</h2>
+            <p className="text-muted-foreground">
+              Aún no tienes clientes registrados. Agrega clientes desde el módulo CRM.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const effectiveLawyerId = isLawyerMode ? lawyerId! : (portalAccess?.lawyer_id || '');
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -156,16 +237,32 @@ export function ClientPortalPage({ accessToken }: ClientPortalPageProps) {
                 <User className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h1 className="font-bold">{client.name}</h1>
-                <p className="text-sm text-muted-foreground">{client.email}</p>
+                {isLawyerMode && clients.length > 1 ? (
+                  <select 
+                    value={selectedClientId || ''}
+                    onChange={(e) => handleClientChange(e.target.value)}
+                    className="font-bold bg-transparent border-none focus:outline-none cursor-pointer"
+                  >
+                    {clients.map(c => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <h1 className="font-bold">{client?.name}</h1>
+                )}
+                <p className="text-sm text-muted-foreground">{client?.email}</p>
               </div>
             </div>
             
-            {lawyer && (
+            {lawyer && !isLawyerMode && (
               <div className="text-right">
                 <p className="text-sm text-muted-foreground">Tu abogado</p>
                 <p className="font-medium">{lawyer.full_name}</p>
               </div>
+            )}
+            
+            {isLawyerMode && (
+              <Badge variant="secondary">Vista de Administrador</Badge>
             )}
           </div>
         </div>
@@ -177,7 +274,7 @@ export function ClientPortalPage({ accessToken }: ClientPortalPageProps) {
           <TabsList className="grid w-full grid-cols-4 max-w-2xl">
             <TabsTrigger value="cases" className="flex items-center gap-2">
               <Briefcase className="h-4 w-4" />
-              <span className="hidden sm:inline">Mis Casos</span>
+              <span className="hidden sm:inline">Casos</span>
             </TabsTrigger>
             <TabsTrigger value="documents" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
@@ -194,25 +291,31 @@ export function ClientPortalPage({ accessToken }: ClientPortalPageProps) {
           </TabsList>
 
           <TabsContent value="cases">
-            <CaseStatus 
-              clientId={client.id} 
-              lawyerId={portalAccess.lawyer_id} 
-            />
+            {client && (
+              <CaseStatus 
+                clientId={client.id} 
+                lawyerId={effectiveLawyerId} 
+              />
+            )}
           </TabsContent>
 
           <TabsContent value="documents">
-            <DocumentUpload 
-              clientId={client.id} 
-              lawyerId={portalAccess.lawyer_id} 
-            />
+            {client && (
+              <DocumentUpload 
+                clientId={client.id} 
+                lawyerId={effectiveLawyerId} 
+              />
+            )}
           </TabsContent>
 
           <TabsContent value="appointments">
-            <AppointmentScheduler 
-              clientId={client.id} 
-              lawyerId={portalAccess.lawyer_id}
-              lawyerName={lawyer?.full_name || ''}
-            />
+            {client && (
+              <AppointmentScheduler 
+                clientId={client.id} 
+                lawyerId={effectiveLawyerId}
+                lawyerName={lawyer?.full_name || ''}
+              />
+            )}
           </TabsContent>
 
           <TabsContent value="messages">
