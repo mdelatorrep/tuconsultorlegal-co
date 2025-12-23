@@ -8,10 +8,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Search, BookOpen, FileText, Loader2, Sparkles, Target, TrendingUp, Clock, CheckCircle2, AlertCircle, Hourglass, ChevronDown, ChevronRight, Calendar, Archive, Filter, Coins } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { useCredits } from "@/hooks/useCredits";
 import { ToolCostIndicator } from "@/components/credits/ToolCostIndicator";
-import UnifiedSidebar from "../UnifiedSidebar";
 
 interface ResearchResult {
   query: string;
@@ -373,41 +371,19 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
   };
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-gradient-to-br from-background via-background to-primary/5">
-        <UnifiedSidebar 
-          user={user}
-          currentView={currentView}
-          onViewChange={onViewChange}
-          onLogout={onLogout}
-        />
+    <div className="flex flex-col h-full gap-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Investigación Legal</h2>
+          <p className="text-muted-foreground">Búsqueda avanzada de jurisprudencia y doctrina</p>
+        </div>
+        <div className="flex gap-2 items-center">
+          <ToolCostIndicator toolType="research" lawyerId={user?.id} />
+        </div>
+      </div>
 
-        {/* Main Content */}
-        <main className="flex-1 min-w-0">
-          {/* Enhanced Header - Mobile First */}
-          <header className="h-14 lg:h-16 border-b bg-gradient-to-r from-background/95 to-primary/10 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 relative overflow-hidden sticky top-0 z-40">
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-50"></div>
-            <div className="relative flex h-14 lg:h-16 items-center px-3 lg:px-6">
-              <SidebarTrigger className="mr-2 lg:mr-4 hover:bg-primary/10 rounded-lg p-2 transition-all duration-200 flex-shrink-0" />
-              <div className="flex items-center gap-2 lg:gap-3 min-w-0">
-                <div className="p-1.5 lg:p-2 bg-gradient-to-br from-primary to-primary/80 rounded-lg lg:rounded-xl shadow-lg flex-shrink-0">
-                  <Search className="h-4 w-4 lg:h-6 lg:w-6 text-primary-foreground" />
-                </div>
-                <div className="min-w-0">
-                  <h1 className="text-base lg:text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent truncate">
-                    Investigación Legal
-                  </h1>
-                  <p className="text-xs lg:text-sm text-muted-foreground hidden sm:block truncate">
-                    Búsqueda avanzada de jurisprudencia y doctrina
-                  </p>
-                </div>
-              </div>
-            </div>
-          </header>
-
-          <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 lg:py-8">
-            <div className="max-w-7xl mx-auto">
-              <div className="space-y-4 lg:space-y-8">
+      <div className="space-y-4 lg:space-y-6">
                 {/* Hero Section */}
                 <div className="relative overflow-hidden rounded-2xl lg:rounded-3xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20 p-4 lg:p-8">
                   <div className="relative z-10">
@@ -875,9 +851,9 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
                 )}
               </div>
             </div>
-          </div>
-        </main>
+          )}
+        </div>
       </div>
-    </SidebarProvider>
+    </div>
   );
 }
