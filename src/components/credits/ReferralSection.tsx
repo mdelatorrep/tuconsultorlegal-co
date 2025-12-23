@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Copy, Check, Users, Gift, Share2 } from 'lucide-react';
+import { Copy, Check, Users, Gift, Share2, MessageCircle, Mail, Link2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,6 +29,10 @@ export function ReferralSection({
     ? `${window.location.origin}/#abogados?ref=${referralInfo.referral_code}`
     : '';
 
+  const shareMessage = referralInfo?.referral_code 
+    ? `¡Únete a tuconsultorlegal.co! Usa mi código de referido ${referralInfo.referral_code} y obtén 15 créditos gratis. Regístrate aquí: ${referralLink}`
+    : '';
+
   const handleCopy = async () => {
     if (!referralInfo?.referral_code) return;
     
@@ -40,6 +44,17 @@ export function ReferralSection({
     } catch {
       toast({ title: 'Error', description: 'No se pudo copiar el enlace', variant: 'destructive' });
     }
+  };
+
+  const handleShareWhatsApp = () => {
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareMessage)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
+  const handleShareEmail = () => {
+    const subject = encodeURIComponent('Te invito a tuconsultorlegal.co');
+    const body = encodeURIComponent(shareMessage);
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
   };
 
   const handleApplyCode = async () => {
@@ -61,47 +76,85 @@ export function ReferralSection({
   return (
     <div className="space-y-6">
       {/* Your Referral Code */}
-      <Card>
+      <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Share2 className="h-5 w-5 text-primary" />
             Tu Código de Referido
           </CardTitle>
           <CardDescription>
-            Comparte tu código y gana 20 créditos por cada colega que se registre
+            Comparte tu código y gana <span className="font-bold text-primary">20 créditos</span> por cada colega que se registre. 
+            Tu colega recibirá <span className="font-bold text-green-600">15 créditos</span> de bienvenida.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {referralInfo?.referral_code ? (
             <>
+              {/* Code Display */}
               <div className="flex gap-2">
                 <Input 
                   value={referralInfo.referral_code} 
                   readOnly 
-                  className="font-mono text-lg font-bold text-center"
+                  className="font-mono text-lg font-bold text-center bg-background"
                 />
                 <Button 
                   variant="outline" 
                   size="icon"
                   onClick={handleCopy}
+                  className="shrink-0"
                 >
-                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
                 </Button>
               </div>
               
+              {/* Link Display */}
               <div className="flex gap-2">
                 <Input 
                   value={referralLink} 
                   readOnly 
-                  className="text-xs text-muted-foreground"
+                  className="text-xs text-muted-foreground bg-muted/50"
                 />
+              </div>
+
+              {/* Share Buttons */}
+              <div className="flex flex-wrap gap-2 pt-2">
+                <Button 
+                  variant="default"
+                  size="sm"
+                  onClick={handleShareWhatsApp}
+                  className="bg-green-600 hover:bg-green-700 flex-1 min-w-[120px]"
+                >
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  WhatsApp
+                </Button>
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={handleShareEmail}
+                  className="flex-1 min-w-[120px]"
+                >
+                  <Mail className="h-4 w-4 mr-2" />
+                  Email
+                </Button>
                 <Button 
                   variant="secondary"
+                  size="sm"
                   onClick={handleCopy}
-                  className="shrink-0"
+                  className="flex-1 min-w-[120px]"
                 >
-                  Copiar enlace
+                  <Link2 className="h-4 w-4 mr-2" />
+                  {copied ? '¡Copiado!' : 'Copiar enlace'}
                 </Button>
+              </div>
+
+              {/* How it works */}
+              <div className="mt-4 p-4 rounded-lg bg-muted/50 border">
+                <h4 className="font-semibold text-sm mb-2">¿Cómo funciona?</h4>
+                <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                  <li>Comparte tu enlace con un colega abogado</li>
+                  <li>Tu colega se registra usando tu enlace</li>
+                  <li>Al completar el registro, ambos reciben créditos automáticamente</li>
+                </ol>
               </div>
             </>
           ) : (

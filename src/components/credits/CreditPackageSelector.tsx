@@ -1,15 +1,17 @@
 import { useState } from 'react';
-import { Check, Star, Zap, Building } from 'lucide-react';
+import { Check, Star, Zap, Building, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { CreditPackage } from '@/hooks/useCredits';
+import { useCreditPayment } from '@/hooks/useCreditPayment';
+import { useToast } from '@/hooks/use-toast';
 
 interface CreditPackageSelectorProps {
   packages: CreditPackage[];
-  onSelect: (packageId: string) => void;
-  loading?: boolean;
+  lawyerId: string;
+  onPurchaseComplete?: () => void;
 }
 
 const packageIcons: Record<string, React.ReactNode> = {
@@ -19,8 +21,11 @@ const packageIcons: Record<string, React.ReactNode> = {
   'Firma Legal': <Building className="h-6 w-6" />
 };
 
-export function CreditPackageSelector({ packages, onSelect, loading }: CreditPackageSelectorProps) {
+export function CreditPackageSelector({ packages, lawyerId, onPurchaseComplete }: CreditPackageSelectorProps) {
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
+  const [processingPackage, setProcessingPackage] = useState<string | null>(null);
+  const { initiateCreditPurchase, loading } = useCreditPayment();
+  const { toast } = useToast();
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-CO', {
@@ -31,9 +36,42 @@ export function CreditPackageSelector({ packages, onSelect, loading }: CreditPac
     }).format(price);
   };
 
-  const handleSelect = (pkg: CreditPackage) => {
+  const handlePurchase = async (pkg: CreditPackage) => {
     setSelectedPackage(pkg.id);
-    onSelect(pkg.id);
+    setProcessingPackage(pkg.id);
+    
+    try {
+      const result = await initiateCreditPurchase({
+        packageId: pkg.id,
+        packageName: pkg.name,
+        credits: pkg.credits + pkg.bonus_credits,
+        priceCop: pkg.price_cop,
+        lawyerId
+      });
+
+      if (result.success) {
+        toast({
+          title: '¡Compra iniciada!',
+          description: 'Serás redirigido a la pasarela de pago.',
+        });
+        onPurchaseComplete?.();
+      } else {
+        toast({
+          title: 'Error',
+          description: result.error || 'No se pudo procesar la compra',
+          variant: 'destructive'
+        });
+      }
+    } catch (error) {
+      console.error('Error purchasing credits:', error);
+      toast({
+        title: 'Error',
+        description: 'Ocurrió un error al procesar la compra',
+        variant: 'destructive'
+      });
+    } finally {
+      setProcessingPackage(null);
+    }
   };
 
   return (
@@ -46,7 +84,7 @@ export function CreditPackageSelector({ packages, onSelect, loading }: CreditPac
             pkg.is_featured && "border-primary ring-2 ring-primary/20",
             selectedPackage === pkg.id && "border-primary bg-primary/5"
           )}
-          onClick={() => handleSelect(pkg)}
+          onClick={() => setSelectedPackage(pkg.id)}
         >
           {pkg.is_featured && (
             <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 bg-primary">
@@ -91,9 +129,20 @@ export function CreditPackageSelector({ packages, onSelect, loading }: CreditPac
             <Button 
               className="w-full" 
               variant={pkg.is_featured ? "default" : "outline"}
-              disabled={loading}
+              disabled={loading || processingPackage !== null}
+              onClick={(e) => {
+                e.stopPropagation();
+                handlePurchase(pkg);
+              }}
             >
-              {loading && selectedPackage === pkg.id ? 'Procesando...' : 'Seleccionar'}
+              {processingPackage === pkg.id ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Procesando...
+                </>
+              ) : (
+                'Comprar'
+              )}
             </Button>
           </CardContent>
         </Card>

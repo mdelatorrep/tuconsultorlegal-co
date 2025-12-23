@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, Briefcase, MessageSquare, FileText, Settings, BarChart3, User, Calendar, Phone, Clock, Brain, TrendingUp, Sparkles, Loader2, UserPlus } from "lucide-react";
+import { useCredits } from "@/hooks/useCredits";
+import { ToolCostIndicator } from "@/components/credits/ToolCostIndicator";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -38,6 +40,7 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
   const [stats, setStats] = useState<CRMStats>({ clients: 0, cases: 0, tasks: 0, communications: 0 });
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const { toast } = useToast();
+  const { consumeCredits } = useCredits(user?.id);
 
   useEffect(() => {
     fetchStats();
@@ -64,6 +67,12 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
   };
 
   const handleAISegmentation = async () => {
+    // Consume credits first
+    const creditResult = await consumeCredits('crm_ai');
+    if (!creditResult.success) {
+      return; // Toast already shown by consumeCredits
+    }
+
     setIsLoadingAI(true);
     try {
       const { data, error } = await supabase.functions.invoke('crm-ai-segmentation', {
