@@ -34,7 +34,6 @@ interface CalendarEvent {
   all_day: boolean;
   location: string | null;
   is_completed: boolean;
-  reminder_sent: boolean;
 }
 
 interface Holiday {
