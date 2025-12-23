@@ -12,6 +12,13 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  if (req.method !== 'POST') {
+    return new Response('Method not allowed', { 
+      status: 405, 
+      headers: corsHeaders 
+    });
+  }
+
   try {
     const { orderId, amount, packageId, packageName, credits, lawyerId } = await req.json();
 
@@ -19,88 +26,61 @@ serve(async (req) => {
 
     // Validate required fields
     if (!orderId || !amount || !packageId || !lawyerId) {
-      throw new Error('Missing required fields: orderId, amount, packageId, lawyerId');
+      console.error('Missing required parameters:', { orderId: !!orderId, amount: !!amount, packageId: !!packageId, lawyerId: !!lawyerId });
+      return new Response(JSON.stringify({ error: 'Missing required parameters' }), { 
+        status: 400, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
-    // Get Bold credentials from environment
+    // Get Bold credentials from environment (same as document payments)
     const boldApiKey = Deno.env.get('BOLD_API_KEY');
     const boldSecretKey = Deno.env.get('BOLD_SECRET_KEY');
+    const boldMerchantId = Deno.env.get('BOLD_MERCHANT_ID');
 
-    if (!boldApiKey || !boldSecretKey) {
-      throw new Error('Bold credentials not configured');
-    }
+    console.log('Bold credentials check:', {
+      hasApiKey: !!boldApiKey,
+      hasSecretKey: !!boldSecretKey,
+      hasMerchantId: !!boldMerchantId
+    });
 
-    // Get lawyer info for the payment
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    const { data: lawyer, error: lawyerError } = await supabase
-      .from('lawyer_profiles')
-      .select('email, full_name')
-      .eq('id', lawyerId)
-      .single();
-
-    if (lawyerError || !lawyer) {
-      console.error('Error fetching lawyer:', lawyerError);
-      throw new Error('Lawyer not found');
-    }
-
-    // Store the pending credit purchase for webhook processing
-    const { error: insertError } = await supabase
-      .from('credit_purchase_orders')
-      .insert({
-        order_id: orderId,
-        lawyer_id: lawyerId,
-        package_id: packageId,
-        amount: amount,
-        credits: credits,
-        status: 'pending'
+    if (!boldApiKey || !boldSecretKey || !boldMerchantId) {
+      console.error('Missing Bold credentials in environment variables');
+      return new Response(JSON.stringify({ error: 'Payment system not configured - missing credentials' }), { 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
-
-    if (insertError) {
-      console.error('Error storing credit purchase order:', insertError);
-      // Continue anyway, webhook will handle if table doesn't exist
     }
 
-    // Calculate integrity signature (same as document payments)
-    const encoder = new TextEncoder();
-    const data = encoder.encode(`${orderId}${amount}COP${boldSecretKey}`);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const integritySignature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    // Generate integrity signature (same format as document payments)
+    // Format: {orderId}{amount}{currency}{secretKey}
+    const signatureString = `${orderId}${amount}COP${boldSecretKey}`;
+    const integritySignature = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(signatureString))
+      .then(buffer => Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join(''));
 
-    // Bold checkout configuration
-    const checkoutConfig = {
+    // Create payment configuration (matching document payment format exactly)
+    const paymentConfig = {
       orderId: orderId,
       currency: 'COP',
-      amount: amount,
+      amount: amount.toString(), // Must be string like document payments
       apiKey: boldApiKey,
       integritySignature: integritySignature,
-      description: `Compra de ${credits} créditos - ${packageName}`,
-      tax: 0,
+      merchantId: boldMerchantId,
+      description: `Compra de ${credits} créditos - ${packageName || 'Paquete de créditos'}`,
       redirectionUrl: `${req.headers.get('origin') || 'https://tuconsultorlegal.co'}/#abogados?credits=success&order=${orderId}`,
-      expirationDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
-      customer: {
-        email: lawyer.email,
-        fullName: lawyer.full_name
-      }
+      renderMode: 'embedded', // Same as document payments
     };
 
     console.log('Credit payment config created successfully for order:', orderId);
 
-    return new Response(
-      JSON.stringify(checkoutConfig),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 
-      }
-    );
+    return new Response(JSON.stringify(paymentConfig), { 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
 
   } catch (error) {
     console.error('Error creating credit payment config:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error.message || 'Internal server error' }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500 
