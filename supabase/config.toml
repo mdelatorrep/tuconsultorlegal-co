@@ -1,8 +1,5 @@
 project_id = "tkaezookvtpulfpaffes"
 
-[functions.create-credit-payment-config]
-verify_jwt = false
-
 [functions.bold-credits-webhook]
 verify_jwt = false
 
