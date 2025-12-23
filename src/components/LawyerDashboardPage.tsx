@@ -36,6 +36,8 @@ import { CreditsDashboard } from "./credits/CreditsDashboard";
 import { NextBestAction } from "./credits/NextBestAction";
 import { DailyProgress } from "./credits/DailyProgress";
 import { useCredits } from "@/hooks/useCredits";
+import { GamificationDashboard } from "./gamification/GamificationDashboard";
+import { QuickActionsBar } from "./QuickActionsBar";
 
 interface DocumentToken {
   id: string;
@@ -84,7 +86,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const [editedContent, setEditedContent] = useState("");
   const [lawyerComments, setLawyerComments] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager' | 'research' | 'analyze' | 'draft' | 'strategize' | 'crm' | 'public-profile' | 'suin-juriscol' | 'process-query' | 'credits'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager' | 'research' | 'analyze' | 'draft' | 'strategize' | 'crm' | 'public-profile' | 'suin-juriscol' | 'process-query' | 'credits' | 'gamification'>('dashboard');
   const [isCheckingSpelling, setIsCheckingSpelling] = useState(false);
   const [showSendConfirmation, setShowSendConfirmation] = useState(false);
   const [newLeadsCount, setNewLeadsCount] = useState(0);
@@ -950,7 +952,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   };
 
   // If not dashboard view and not public-profile, show module content directly (modules have their own sidebar)
-  if (currentView !== 'dashboard' && currentView !== 'public-profile' && currentView !== 'stats' && currentView !== 'credits') {
+  if (currentView !== 'dashboard' && currentView !== 'public-profile' && currentView !== 'stats' && currentView !== 'credits' && currentView !== 'gamification') {
     return (
       <>
         {/* Confirmation Dialog for Sending to Client */}
@@ -1033,6 +1035,8 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
             {/* Render specific view content or dashboard */}
             {currentView === 'credits' ? (
               <CreditsDashboard lawyerId={user.id} />
+            ) : currentView === 'gamification' ? (
+              <GamificationDashboard lawyerId={user.id} />
             ) : currentView === 'public-profile' ? (
               <LawyerPublicProfileEditor lawyerId={user.id} lawyerName={user.name} />
             ) : currentView === 'stats' ? (
@@ -1715,6 +1719,14 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
       <LawyerChangeEmailDialog 
         open={showChangeEmailDialog}
         onOpenChange={setShowChangeEmailDialog}
+      />
+      
+      {/* Quick Actions Bar - Cmd+K */}
+      <QuickActionsBar 
+        onNavigate={(view) => setCurrentView(view as typeof currentView)}
+        onLogout={logout}
+        onOpenChat={onOpenChat}
+        isEnabled={isAuthenticated}
       />
     </SidebarProvider>
     </>

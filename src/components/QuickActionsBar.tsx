@@ -141,7 +141,7 @@ export function QuickActionsBar({
                   className="flex items-center gap-3 py-3"
                 >
                   <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-muted">
-                    {action.icon}
+                    {(() => { const Icon = iconComponents[action.iconName]; return Icon ? <Icon className="h-4 w-4" /> : null; })()}
                   </div>
                   <div className="flex-1">
                     <p className="font-medium">{action.name}</p>
@@ -181,7 +181,7 @@ export function QuickActionsBar({
                   className="flex items-center gap-3 py-2"
                 >
                   <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-muted">
-                    {action.icon}
+                    {(() => { const Icon = iconComponents[action.iconName]; return Icon ? <Icon className="h-4 w-4" /> : null; })()}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">{action.name}</p>
