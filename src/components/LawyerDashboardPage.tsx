@@ -1047,15 +1047,14 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                       Tu suite completa de herramientas legales con IA
                     </p>
                   </div>
-                  <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-3 lg:items-center">
-                    <Badge variant="outline" className="flex items-center gap-2 text-xs md:text-sm w-fit">
-                      <Scale className="h-3 w-3 md:h-4 md:w-4" />
-                      Portal Legal
-                    </Badge>
-                    </Badge>
+                    <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-3 lg:items-center">
+                      <Badge variant="outline" className="flex items-center gap-2 text-xs md:text-sm w-fit">
+                        <Scale className="h-3 w-3 md:h-4 md:w-4" />
+                        Portal Legal
+                      </Badge>
+                    </div>
                   </div>
                 </div>
-              </div>
 
               {/* 🔴 URGENT DOCUMENTS - Documents at risk or overdue */}
               {documents.filter(doc => doc.sla_status === 'overdue' || doc.sla_status === 'at_risk').length > 0 && (
