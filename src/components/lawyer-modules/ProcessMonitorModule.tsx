@@ -25,6 +25,8 @@ import { es } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useCredits } from '@/hooks/useCredits';
+import { ToolCostIndicator } from '@/components/credits/ToolCostIndicator';
 
 interface MonitoredProcess {
   id: string;
@@ -62,6 +64,8 @@ export function ProcessMonitorModule({ lawyerId }: ProcessMonitorModuleProps) {
   const [syncing, setSyncing] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  const { consumeCredits, hasEnoughCredits, getToolCost } = useCredits(lawyerId);
   
   // Form state for new process
   const [newProcess, setNewProcess] = useState({
@@ -158,8 +162,21 @@ export function ProcessMonitorModule({ lawyerId }: ProcessMonitorModuleProps) {
   };
 
   const syncProcess = async (processId: string) => {
+    // Check credits
+    if (!hasEnoughCredits('process_monitor')) {
+      toast.error(`Créditos insuficientes. Necesitas ${getToolCost('process_monitor')} créditos para sincronizar.`);
+      return;
+    }
+
     try {
       setSyncing(true);
+      
+      // Consume credits
+      const creditResult = await consumeCredits('process_monitor', { action: 'sync', processId });
+      if (!creditResult.success) {
+        return;
+      }
+      
       const { data, error } = await supabase.functions.invoke('rama-judicial-monitor', {
         body: { 
           action: 'sync',
@@ -181,8 +198,24 @@ export function ProcessMonitorModule({ lawyerId }: ProcessMonitorModuleProps) {
   };
 
   const syncAllProcesses = async () => {
+    // Check credits - charge per process
+    const processCount = processes.length;
+    const totalCost = getToolCost('process_monitor') * processCount;
+    
+    if (!hasEnoughCredits('process_monitor')) {
+      toast.error(`Créditos insuficientes. Necesitas ${totalCost} créditos para sincronizar ${processCount} procesos.`);
+      return;
+    }
+
     try {
       setSyncing(true);
+      
+      // Consume credits for all processes
+      const creditResult = await consumeCredits('process_monitor', { action: 'sync-all', processCount });
+      if (!creditResult.success) {
+        return;
+      }
+      
       const { data, error } = await supabase.functions.invoke('rama-judicial-monitor', {
         body: { 
           action: 'sync-all',
@@ -217,6 +250,8 @@ export function ProcessMonitorModule({ lawyerId }: ProcessMonitorModuleProps) {
     }
   };
 
+  const canSync = hasEnoughCredits('process_monitor');
+
   return (
     <div className="flex flex-col h-full gap-4">
       {/* Header */}
@@ -225,11 +260,12 @@ export function ProcessMonitorModule({ lawyerId }: ProcessMonitorModuleProps) {
           <h2 className="text-2xl font-bold">Monitor de Procesos</h2>
           <p className="text-muted-foreground">Seguimiento automático de actuaciones en Rama Judicial</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <ToolCostIndicator toolType="process_monitor" lawyerId={lawyerId} />
           <Button 
             variant="outline" 
             onClick={syncAllProcesses}
-            disabled={syncing || processes.length === 0}
+            disabled={syncing || processes.length === 0 || !canSync}
           >
             {syncing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
             Sincronizar Todo
@@ -389,7 +425,7 @@ export function ProcessMonitorModule({ lawyerId }: ProcessMonitorModuleProps) {
                       variant="outline" 
                       size="sm"
                       onClick={() => syncProcess(selectedProcess.id)}
-                      disabled={syncing}
+                      disabled={syncing || !canSync}
                     >
                       {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                     </Button>
@@ -448,16 +484,16 @@ export function ProcessMonitorModule({ lawyerId }: ProcessMonitorModuleProps) {
                                   <div className="flex items-center gap-2">
                                     <p className="font-medium">{act.actuacion}</p>
                                     {act.is_new && (
-                                      <Badge variant="default" className="text-xs">Nueva</Badge>
+                                      <Badge className="text-xs">Nueva</Badge>
                                     )}
                                   </div>
                                   {act.anotacion && (
-                                    <p className="text-sm bg-muted p-2 rounded mt-2">{act.anotacion}</p>
+                                    <p className="text-sm text-muted-foreground mt-1">{act.anotacion}</p>
                                   )}
+                                  <p className="text-xs text-muted-foreground mt-2">
+                                    {format(new Date(act.fecha_actuacion), "d 'de' MMMM yyyy", { locale: es })}
+                                  </p>
                                 </div>
-                                <p className="text-xs text-muted-foreground whitespace-nowrap">
-                                  {format(new Date(act.fecha_actuacion), 'dd MMM yyyy', { locale: es })}
-                                </p>
                               </div>
                             </div>
                           ))}
@@ -466,27 +502,9 @@ export function ProcessMonitorModule({ lawyerId }: ProcessMonitorModuleProps) {
                     )}
                   </TabsContent>
                   <TabsContent value="alertas" className="mt-4">
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <Bell className="h-5 w-5 text-primary" />
-                          <div>
-                            <p className="font-medium">Nuevas actuaciones</p>
-                            <p className="text-sm text-muted-foreground">Notificar cuando haya nuevas actuaciones</p>
-                          </div>
-                        </div>
-                        <Badge>Activo</Badge>
-                      </div>
-                      <div className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <AlertCircle className="h-5 w-5 text-yellow-500" />
-                          <div>
-                            <p className="font-medium">Vencimiento de términos</p>
-                            <p className="text-sm text-muted-foreground">Alertar 3 días antes de vencimientos</p>
-                          </div>
-                        </div>
-                        <Badge variant="outline">Configurar</Badge>
-                      </div>
+                    <div className="text-center p-8 text-muted-foreground">
+                      <Bell className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                      <p>Configuración de alertas próximamente</p>
                     </div>
                   </TabsContent>
                 </Tabs>
@@ -496,7 +514,7 @@ export function ProcessMonitorModule({ lawyerId }: ProcessMonitorModuleProps) {
             <div className="flex items-center justify-center h-full text-muted-foreground">
               <div className="text-center">
                 <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>Selecciona un proceso para ver detalles</p>
+                <p>Selecciona un proceso para ver sus detalles</p>
               </div>
             </div>
           )}

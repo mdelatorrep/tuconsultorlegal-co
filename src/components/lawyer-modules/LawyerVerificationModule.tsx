@@ -23,6 +23,10 @@ import {
   History,
   RefreshCw,
 } from "lucide-react";
+import { useCredits } from '@/hooks/useCredits';
+import { ToolCostIndicator } from '@/components/credits/ToolCostIndicator';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 interface LawyerVerificationModuleProps {
   lawyerId: string;
@@ -67,6 +71,8 @@ export default function LawyerVerificationModule({ lawyerId, lawyerEmail }: Lawy
     barNumber: string | null;
     verificationDate: string | null;
   } | null>(null);
+
+  const { consumeCredits, hasEnoughCredits, getToolCost } = useCredits(lawyerId);
 
   useEffect(() => {
     loadCurrentStatus();
@@ -118,10 +124,23 @@ export default function LawyerVerificationModule({ lawyerId, lawyerEmail }: Lawy
       return;
     }
 
+    // Check credits
+    if (!hasEnoughCredits('lawyer_verification')) {
+      toast.error(`Créditos insuficientes. Necesitas ${getToolCost('lawyer_verification')} créditos para verificar.`);
+      return;
+    }
+
     setIsVerifying(true);
     setVerificationResult(null);
 
     try {
+      // Consume credits
+      const creditResult = await consumeCredits('lawyer_verification', { action: 'verify' });
+      if (!creditResult.success) {
+        setIsVerifying(false);
+        return;
+      }
+      
       const response = await supabase.functions.invoke('verifik-lawyer-verification', {
         body: {
           documentType,
@@ -158,10 +177,23 @@ export default function LawyerVerificationModule({ lawyerId, lawyerEmail }: Lawy
       return;
     }
 
+    // Check credits
+    if (!hasEnoughCredits('lawyer_verification')) {
+      toast.error(`Créditos insuficientes. Necesitas ${getToolCost('lawyer_verification')} créditos.`);
+      return;
+    }
+
     setIsVerifying(true);
     setCertificateResult(null);
 
     try {
+      // Consume credits
+      const creditResult = await consumeCredits('lawyer_verification', { action: 'certificate' });
+      if (!creditResult.success) {
+        setIsVerifying(false);
+        return;
+      }
+      
       const response = await supabase.functions.invoke('verifik-certificate-validity', {
         body: {
           documentType,
@@ -216,10 +248,12 @@ export default function LawyerVerificationModule({ lawyerId, lawyerEmail }: Lawy
     }
   };
 
+  const canVerify = hasEnoughCredits('lawyer_verification');
+
   return (
     <div className="space-y-6 p-4 lg:p-6">
       {/* Header with Current Status */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <ShieldCheck className="h-6 w-6 text-primary" />
@@ -230,33 +264,37 @@ export default function LawyerVerificationModule({ lawyerId, lawyerEmail }: Lawy
           </p>
         </div>
 
-        {currentVerificationStatus && (
-          <Card className={`${currentVerificationStatus.isVerified ? 'border-green-500/50 bg-green-500/5' : 'border-muted'}`}>
-            <CardContent className="py-3 px-4 flex items-center gap-3">
-              {currentVerificationStatus.isVerified ? (
-                <>
-                  <CheckCircle2 className="h-8 w-8 text-green-500" />
-                  <div>
-                    <p className="font-medium text-green-600">Abogado Verificado</p>
-                    <p className="text-xs text-muted-foreground">
-                      TP: {currentVerificationStatus.barNumber}
-                    </p>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <AlertTriangle className="h-8 w-8 text-orange-500" />
-                  <div>
-                    <p className="font-medium text-orange-600">Sin Verificar</p>
-                    <p className="text-xs text-muted-foreground">
-                      Verifica tu tarjeta profesional
-                    </p>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        )}
+        <div className="flex items-center gap-3">
+          <ToolCostIndicator toolType="lawyer_verification" lawyerId={lawyerId} />
+          
+          {currentVerificationStatus && (
+            <Card className={`${currentVerificationStatus.isVerified ? 'border-green-500/50 bg-green-500/5' : 'border-muted'}`}>
+              <CardContent className="py-3 px-4 flex items-center gap-3">
+                {currentVerificationStatus.isVerified ? (
+                  <>
+                    <CheckCircle2 className="h-8 w-8 text-green-500" />
+                    <div>
+                      <p className="font-medium text-green-600">Abogado Verificado</p>
+                      <p className="text-xs text-muted-foreground">
+                        TP: {currentVerificationStatus.barNumber}
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle className="h-8 w-8 text-orange-500" />
+                    <div>
+                      <p className="font-medium text-orange-600">Sin Verificar</p>
+                      <p className="text-xs text-muted-foreground">
+                        Verifica tu tarjeta profesional
+                      </p>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -316,7 +354,7 @@ export default function LawyerVerificationModule({ lawyerId, lawyerEmail }: Lawy
 
               <Button
                 onClick={handleVerifyLawyer}
-                disabled={isVerifying || !documentNumber.trim()}
+                disabled={isVerifying || !documentNumber.trim() || !canVerify}
                 className="w-full"
               >
                 {isVerifying ? (
@@ -331,6 +369,12 @@ export default function LawyerVerificationModule({ lawyerId, lawyerEmail }: Lawy
                   </>
                 )}
               </Button>
+              
+              {!canVerify && (
+                <p className="text-sm text-destructive text-center">
+                  Créditos insuficientes para verificar
+                </p>
+              )}
 
               {verificationResult && (
                 <Card className={`mt-4 ${
@@ -365,12 +409,6 @@ export default function LawyerVerificationModule({ lawyerId, lawyerEmail }: Lawy
                               <div className="flex justify-between">
                                 <span className="text-muted-foreground">Estado:</span>
                                 <span className="font-medium">{verificationResult.lawyer.professionalStatus}</span>
-                              </div>
-                            )}
-                            {verificationResult.lawyer.specialization && (
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">Especialización:</span>
-                                <span className="font-medium">{verificationResult.lawyer.specialization}</span>
                               </div>
                             )}
                           </div>
@@ -440,7 +478,7 @@ export default function LawyerVerificationModule({ lawyerId, lawyerEmail }: Lawy
 
               <Button
                 onClick={handleCheckCertificate}
-                disabled={isVerifying || !documentNumber.trim()}
+                disabled={isVerifying || !documentNumber.trim() || !canVerify}
                 className="w-full"
               >
                 {isVerifying ? (
@@ -455,6 +493,12 @@ export default function LawyerVerificationModule({ lawyerId, lawyerEmail }: Lawy
                   </>
                 )}
               </Button>
+              
+              {!canVerify && (
+                <p className="text-sm text-destructive text-center">
+                  Créditos insuficientes para consultar
+                </p>
+              )}
 
               {certificateResult && (
                 <Card className={`mt-4 ${
@@ -470,31 +514,6 @@ export default function LawyerVerificationModule({ lawyerId, lawyerEmail }: Lawy
                           <p className="font-medium">{certificateResult.message}</p>
                           {getStatusBadge(certificateResult.status)}
                         </div>
-                        
-                        {certificateResult.certificate && (
-                          <div className="mt-3 space-y-2 text-sm">
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Nombre:</span>
-                              <span className="font-medium">{certificateResult.certificate.fullName}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Estado:</span>
-                              <span className="font-medium">{certificateResult.certificate.estado}</span>
-                            </div>
-                            {certificateResult.certificate.numeroTarjeta && (
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">Número de Tarjeta:</span>
-                                <span className="font-medium">{certificateResult.certificate.numeroTarjeta}</span>
-                              </div>
-                            )}
-                            {certificateResult.certificate.fechaExpedicion && (
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">Fecha de Expedición:</span>
-                                <span className="font-medium">{certificateResult.certificate.fechaExpedicion}</span>
-                              </div>
-                            )}
-                          </div>
-                        )}
                       </div>
                     </div>
                   </CardContent>
@@ -507,61 +526,48 @@ export default function LawyerVerificationModule({ lawyerId, lawyerEmail }: Lawy
         {/* History Tab */}
         <TabsContent value="history" className="space-y-4 mt-4">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <History className="h-5 w-5" />
-                  Historial de Verificaciones
-                </CardTitle>
-                <CardDescription>
-                  Tus consultas anteriores a la Rama Judicial
-                </CardDescription>
-              </div>
-              <Button variant="outline" size="sm" onClick={loadHistory} disabled={isLoadingHistory}>
-                <RefreshCw className={`h-4 w-4 mr-2 ${isLoadingHistory ? 'animate-spin' : ''}`} />
-                Actualizar
-              </Button>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <History className="h-5 w-5" />
+                Historial de Verificaciones
+              </CardTitle>
+              <CardDescription>
+                Consultas realizadas anteriormente
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              {history.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No hay verificaciones registradas</p>
+              {isLoadingHistory ? (
+                <div className="flex items-center justify-center p-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : history.length === 0 ? (
+                <div className="text-center p-8 text-muted-foreground">
+                  <History className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>No hay verificaciones anteriores</p>
                 </div>
               ) : (
                 <ScrollArea className="h-[400px]">
                   <div className="space-y-3">
                     {history.map((item) => (
-                      <Card key={item.id} className="border-muted">
-                        <CardContent className="py-3 px-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              {getStatusIcon(item.status)}
-                              <div>
-                                <p className="font-medium text-sm">
-                                  {item.verification_type === 'professional_status' 
-                                    ? 'Verificación de Abogado' 
-                                    : 'Certificado de Vigencia'}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  {item.professional_name || 'Sin nombre'}
-                                  {item.bar_number && ` • TP: ${item.bar_number}`}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              {getStatusBadge(item.status)}
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {new Date(item.created_at).toLocaleDateString('es-CO', {
-                                  day: '2-digit',
-                                  month: 'short',
-                                  year: 'numeric',
-                                })}
-                              </p>
-                            </div>
+                      <div key={item.id} className="p-3 border rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            {getStatusIcon(item.status)}
+                            <span className="font-medium">
+                              {item.verification_type === 'lawyer' ? 'Verificación' : 'Certificado'}
+                            </span>
                           </div>
-                        </CardContent>
-                      </Card>
+                          {getStatusBadge(item.status)}
+                        </div>
+                        {item.professional_name && (
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {item.professional_name}
+                          </p>
+                        )}
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {format(new Date(item.created_at), "d 'de' MMMM yyyy, HH:mm", { locale: es })}
+                        </p>
+                      </div>
                     ))}
                   </div>
                 </ScrollArea>

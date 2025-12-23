@@ -12,6 +12,8 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { useCredits } from '@/hooks/useCredits';
+import { ToolCostIndicator } from '@/components/credits/ToolCostIndicator';
 
 interface DeadlineCalculatorProps {
   lawyerId: string;
@@ -40,6 +42,8 @@ export function DeadlineCalculator({ lawyerId, onEventCreated }: DeadlineCalcula
   const [calculatedDate, setCalculatedDate] = useState<Date | null>(null);
   const [loading, setLoading] = useState(false);
   const [calculating, setCalculating] = useState(false);
+  
+  const { consumeCredits, hasEnoughCredits, getToolCost } = useCredits(lawyerId);
 
   const selectedTerm = TERM_TYPES.find(t => t.value === termType);
   const daysToAdd = termType === 'custom' ? customDays : (selectedTerm?.days || 0);
@@ -50,8 +54,21 @@ export function DeadlineCalculator({ lawyerId, onEventCreated }: DeadlineCalcula
       return;
     }
 
+    // Check credits
+    if (!hasEnoughCredits('calendar_deadline')) {
+      toast.error(`Créditos insuficientes. Necesitas ${getToolCost('calendar_deadline')} créditos para calcular términos.`);
+      return;
+    }
+
     try {
       setCalculating(true);
+      
+      // Consume credits
+      const creditResult = await consumeCredits('calendar_deadline', { termType, days: daysToAdd });
+      if (!creditResult.success) {
+        return;
+      }
+      
       const { data, error } = await supabase.functions.invoke('calculate-legal-deadlines', {
         body: {
           startDate: format(startDate, 'yyyy-MM-dd'),
@@ -104,8 +121,15 @@ export function DeadlineCalculator({ lawyerId, onEventCreated }: DeadlineCalcula
     }
   };
 
+  const canCalculate = hasEnoughCredits('calendar_deadline');
+
   return (
     <div className="space-y-6 py-4">
+      {/* Credit Indicator */}
+      <div className="flex justify-end">
+        <ToolCostIndicator toolType="calendar_deadline" lawyerId={lawyerId} />
+      </div>
+      
       {/* Start Date */}
       <div className="space-y-2">
         <Label>Fecha de Inicio (Notificación / Acto)</Label>
@@ -181,7 +205,7 @@ export function DeadlineCalculator({ lawyerId, onEventCreated }: DeadlineCalcula
       <Button 
         className="w-full" 
         onClick={calculateDeadline}
-        disabled={!startDate || daysToAdd <= 0 || calculating}
+        disabled={!startDate || daysToAdd <= 0 || calculating || !canCalculate}
       >
         {calculating ? (
           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -190,6 +214,12 @@ export function DeadlineCalculator({ lawyerId, onEventCreated }: DeadlineCalcula
         )}
         Calcular Término
       </Button>
+      
+      {!canCalculate && (
+        <p className="text-sm text-destructive text-center">
+          Créditos insuficientes para calcular términos
+        </p>
+      )}
 
       {/* Result */}
       {calculatedDate && (

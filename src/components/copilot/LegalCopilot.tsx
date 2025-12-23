@@ -16,6 +16,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { SuggestionPopover } from './SuggestionPopover';
 import { RiskIndicator } from './RiskIndicator';
+import { useCredits } from '@/hooks/useCredits';
+import { ToolCostIndicator } from '@/components/credits/ToolCostIndicator';
 
 interface Suggestion {
   id: string;
@@ -55,6 +57,8 @@ export function LegalCopilot({
   const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const { consumeCredits, hasEnoughCredits, getToolCost } = useCredits(lawyerId);
 
   useEffect(() => {
     setContent(initialContent);
@@ -62,9 +66,22 @@ export function LegalCopilot({
 
   const analyzeContent = useCallback(async (text: string) => {
     if (text.length < 50) return;
+    
+    // Check credits before analyzing
+    if (!hasEnoughCredits('legal_copilot')) {
+      toast.error(`Créditos insuficientes. Necesitas ${getToolCost('legal_copilot')} créditos.`);
+      return;
+    }
 
     try {
       setLoading(true);
+      
+      // Consume credits
+      const creditResult = await consumeCredits('legal_copilot', { action: 'analyze' });
+      if (!creditResult.success) {
+        return;
+      }
+      
       const { data, error } = await supabase.functions.invoke('legal-copilot', {
         body: {
           action: 'analyze',
@@ -83,20 +100,17 @@ export function LegalCopilot({
     } finally {
       setLoading(false);
     }
-  }, [documentType, lawyerId]);
+  }, [documentType, lawyerId, consumeCredits, hasEnoughCredits, getToolCost]);
 
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newContent = e.target.value;
     setContent(newContent);
     onContentChange?.(newContent);
 
-    // Debounced analysis
+    // Clear previous debounce - analysis now requires manual trigger to save credits
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
     }
-    debounceRef.current = setTimeout(() => {
-      analyzeContent(newContent);
-    }, 1500);
   };
 
   const handleTextSelect = () => {
@@ -125,8 +139,21 @@ export function LegalCopilot({
   const improveSelection = async () => {
     if (!selectedText) return;
 
+    // Check credits
+    if (!hasEnoughCredits('legal_copilot')) {
+      toast.error(`Créditos insuficientes. Necesitas ${getToolCost('legal_copilot')} créditos.`);
+      return;
+    }
+
     try {
       setLoading(true);
+      
+      // Consume credits
+      const creditResult = await consumeCredits('legal_copilot', { action: 'improve' });
+      if (!creditResult.success) {
+        return;
+      }
+      
       const { data, error } = await supabase.functions.invoke('legal-copilot', {
         body: {
           action: 'improve',
@@ -172,8 +199,21 @@ export function LegalCopilot({
   };
 
   const insertClause = async (clauseType: string) => {
+    // Check credits
+    if (!hasEnoughCredits('legal_copilot')) {
+      toast.error(`Créditos insuficientes. Necesitas ${getToolCost('legal_copilot')} créditos.`);
+      return;
+    }
+
     try {
       setLoading(true);
+      
+      // Consume credits
+      const creditResult = await consumeCredits('legal_copilot', { action: 'generate_clause', clauseType });
+      if (!creditResult.success) {
+        return;
+      }
+      
       const { data, error } = await supabase.functions.invoke('legal-copilot', {
         body: {
           action: 'generate_clause',
@@ -210,6 +250,8 @@ export function LegalCopilot({
     { id: 'terminacion', label: 'Terminación' }
   ];
 
+  const canUseCredits = hasEnoughCredits('legal_copilot');
+
   return (
     <div className="flex flex-col h-full gap-4">
       {/* Toolbar */}
@@ -218,6 +260,7 @@ export function LegalCopilot({
           <Sparkles className="h-5 w-5 text-primary" />
           <span className="font-medium">Legal Copilot</span>
           {loading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+          <ToolCostIndicator toolType="legal_copilot" lawyerId={lawyerId} />
         </div>
         
         <div className="flex items-center gap-2">
@@ -229,7 +272,7 @@ export function LegalCopilot({
                 variant="outline"
                 size="sm"
                 onClick={() => insertClause(clause.id)}
-                disabled={loading}
+                disabled={loading || !canUseCredits}
               >
                 <Wand2 className="h-3 w-3 mr-1" />
                 {clause.label}
@@ -241,7 +284,7 @@ export function LegalCopilot({
             variant="default"
             size="sm"
             onClick={() => analyzeContent(content)}
-            disabled={loading || content.length < 50}
+            disabled={loading || content.length < 50 || !canUseCredits}
           >
             {loading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -266,11 +309,13 @@ export function LegalCopilot({
             onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
             placeholder="Escribe o pega tu documento legal aquí...
 
-El Copilot analizará automáticamente tu texto para:
+El Copilot analizará tu texto para:
 • Detectar riesgos legales
 • Sugerir mejoras de redacción
 • Autocompletar cláusulas comunes
-• Identificar contradicciones"
+• Identificar contradicciones
+
+Haz clic en 'Analizar' para iniciar (consume créditos)"
             className="h-full min-h-[400px] font-mono text-sm resize-none"
           />
           
@@ -354,6 +399,14 @@ El Copilot analizará automáticamente tu texto para:
               </div>
             </div>
           </Card>
+          
+          {!canUseCredits && (
+            <Card className="p-4 border-destructive/50 bg-destructive/5">
+              <p className="text-sm text-destructive">
+                Créditos insuficientes para usar el Copilot Legal
+              </p>
+            </Card>
+          )}
         </div>
       </div>
     </div>
