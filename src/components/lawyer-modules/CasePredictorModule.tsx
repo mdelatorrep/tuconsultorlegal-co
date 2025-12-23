@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +24,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useCredits } from '@/hooks/useCredits';
+import { ToolCostIndicator } from '@/components/credits/ToolCostIndicator';
 
 interface PredictionResult {
   successProbability: number;
@@ -48,6 +49,8 @@ export function CasePredictorModule({ lawyerId }: CasePredictorModuleProps) {
   const [prediction, setPrediction] = useState<PredictionResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
+  
+  const { consumeCredits, hasEnoughCredits, getToolCost } = useCredits(lawyerId);
 
   const caseTypes = [
     { value: 'civil_contractual', label: 'Civil - Contractual' },
@@ -86,8 +89,21 @@ export function CasePredictorModule({ lawyerId }: CasePredictorModuleProps) {
       return;
     }
 
+    // Check credits before proceeding
+    if (!hasEnoughCredits('case_predictor')) {
+      toast.error(`Créditos insuficientes. Necesitas ${getToolCost('case_predictor')} créditos para usar el Predictor de Casos.`);
+      return;
+    }
+
     try {
       setLoading(true);
+      
+      // Consume credits first
+      const creditResult = await consumeCredits('case_predictor', { caseType, jurisdiction });
+      if (!creditResult.success) {
+        return;
+      }
+      
       const { data, error } = await supabase.functions.invoke('case-outcome-predictor', {
         body: {
           caseType,
@@ -157,14 +173,17 @@ export function CasePredictorModule({ lawyerId }: CasePredictorModuleProps) {
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold flex items-center gap-2">
-          <Scale className="h-6 w-6" />
-          Predictor de Resultados de Casos
-        </h2>
-        <p className="text-muted-foreground">
-          Análisis predictivo basado en IA para estimar resultados judiciales
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold flex items-center gap-2">
+            <Scale className="h-6 w-6" />
+            Predictor de Resultados de Casos
+          </h2>
+          <p className="text-muted-foreground">
+            Análisis predictivo basado en IA para estimar resultados judiciales
+          </p>
+        </div>
+        <ToolCostIndicator toolType="case_predictor" lawyerId={lawyerId} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -241,7 +260,7 @@ export function CasePredictorModule({ lawyerId }: CasePredictorModuleProps) {
               className="w-full" 
               size="lg"
               onClick={runPrediction}
-              disabled={loading || !caseType || !caseDescription.trim()}
+              disabled={loading || !caseType || !caseDescription.trim() || !hasEnoughCredits('case_predictor')}
             >
               {loading ? (
                 <>
@@ -255,6 +274,12 @@ export function CasePredictorModule({ lawyerId }: CasePredictorModuleProps) {
                 </>
               )}
             </Button>
+            
+            {!hasEnoughCredits('case_predictor') && (
+              <p className="text-sm text-destructive text-center">
+                Créditos insuficientes para usar esta herramienta
+              </p>
+            )}
           </CardContent>
         </Card>
 

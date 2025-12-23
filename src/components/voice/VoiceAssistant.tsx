@@ -17,6 +17,8 @@ import {
 import { useVoiceRecognition } from '@/hooks/useVoiceRecognition';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useCredits } from '@/hooks/useCredits';
+import { ToolCostIndicator } from '@/components/credits/ToolCostIndicator';
 
 interface VoiceAssistantProps {
   lawyerId?: string;
@@ -27,6 +29,8 @@ interface VoiceAssistantProps {
 export function VoiceAssistant({ lawyerId, onTranscriptReady, placeholder }: VoiceAssistantProps) {
   const [notes, setNotes] = useState<string[]>([]);
   const [editedTranscript, setEditedTranscript] = useState('');
+  
+  const { consumeCredits, hasEnoughCredits, getToolCost } = useCredits(lawyerId || null);
 
   const {
     isRecording,
@@ -44,7 +48,17 @@ export function VoiceAssistant({ lawyerId, onTranscriptReady, placeholder }: Voi
   const handleToggleRecording = async () => {
     if (isRecording) {
       await stopRecording();
+      
+      // Consume credits when stopping (after transcription)
+      if (lawyerId && hasEnoughCredits('voice_transcription')) {
+        await consumeCredits('voice_transcription', { action: 'transcription' });
+      }
     } else {
+      // Check credits before starting
+      if (lawyerId && !hasEnoughCredits('voice_transcription')) {
+        toast.error(`Créditos insuficientes. Necesitas ${getToolCost('voice_transcription')} créditos para transcribir.`);
+        return;
+      }
       await startRecording();
     }
   };
@@ -77,6 +91,8 @@ export function VoiceAssistant({ lawyerId, onTranscriptReady, placeholder }: Voi
     setNotes(notes.filter((_, i) => i !== index));
   };
 
+  const canUseCredits = !lawyerId || hasEnoughCredits('voice_transcription');
+
   return (
     <div className="flex flex-col gap-4">
       {/* Recording Card */}
@@ -87,17 +103,20 @@ export function VoiceAssistant({ lawyerId, onTranscriptReady, placeholder }: Voi
               <Volume2 className="h-5 w-5" />
               Asistente de Voz
             </span>
-            {isRecording && (
-              <Badge variant="destructive" className="animate-pulse">
-                Grabando...
-              </Badge>
-            )}
-            {isProcessing && (
-              <Badge variant="secondary">
-                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                Procesando...
-              </Badge>
-            )}
+            <div className="flex items-center gap-2">
+              {lawyerId && <ToolCostIndicator toolType="voice_transcription" lawyerId={lawyerId} />}
+              {isRecording && (
+                <Badge variant="destructive" className="animate-pulse">
+                  Grabando...
+                </Badge>
+              )}
+              {isProcessing && (
+                <Badge variant="secondary">
+                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                  Procesando...
+                </Badge>
+              )}
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -122,7 +141,7 @@ export function VoiceAssistant({ lawyerId, onTranscriptReady, placeholder }: Voi
                   isRecording && "animate-pulse"
                 )}
                 onClick={handleToggleRecording}
-                disabled={isProcessing}
+                disabled={isProcessing || !canUseCredits}
               >
                 {isProcessing ? (
                   <Loader2 className="h-8 w-8 animate-spin" />
@@ -134,11 +153,13 @@ export function VoiceAssistant({ lawyerId, onTranscriptReady, placeholder }: Voi
               </Button>
             </div>
             <p className="text-sm text-muted-foreground text-center">
-              {isRecording 
-                ? 'Hablando... Haz clic para detener'
-                : isProcessing 
-                  ? 'Transcribiendo tu voz...'
-                  : 'Haz clic para empezar a dictar'
+              {!canUseCredits 
+                ? 'Créditos insuficientes para transcribir'
+                : isRecording 
+                  ? 'Hablando... Haz clic para detener'
+                  : isProcessing 
+                    ? 'Transcribiendo tu voz...'
+                    : 'Haz clic para empezar a dictar'
               }
             </p>
           </div>
