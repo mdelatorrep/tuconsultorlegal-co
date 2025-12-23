@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Scale, Brain, Search, Eye, PenTool, Target, Users, Bot, BarChart3, Shield, Zap, Sparkles, ChevronRight, Play, ArrowRight, CheckCircle, Star, Rocket, User, ChevronLeft } from 'lucide-react';
+import { Scale, Brain, Search, Eye, PenTool, Target, Users, Bot, BarChart3, Shield, Zap, Sparkles, ChevronRight, Play, ArrowRight, CheckCircle, Star, Rocket, User, ChevronLeft, Database, Gavel, Calendar, Mic, Trophy } from 'lucide-react';
 import LawyerLogin from './LawyerLogin';
 import DemoResearchMockup from './demo/DemoResearchMockup';
 import DemoAnalysisMockup from './demo/DemoAnalysisMockup';
@@ -10,10 +10,16 @@ import DemoDraftingMockup from './demo/DemoDraftingMockup';
 import DemoStrategyMockup from './demo/DemoStrategyMockup';
 import DemoCRMMockup from './demo/DemoCRMMockup';
 import DemoAgentsMockup from './demo/DemoAgentsMockup';
+import DemoSuinJuriscolMockup from './demo/DemoSuinJuriscolMockup';
+import DemoProcessMonitorMockup from './demo/DemoProcessMonitorMockup';
+import DemoCalendarMockup from './demo/DemoCalendarMockup';
+import DemoVoiceAssistantMockup from './demo/DemoVoiceAssistantMockup';
 import useEmblaCarousel from 'embla-carousel-react';
+
 interface LawyerLandingPageProps {
   onOpenChat: (message: string) => void;
 }
+
 export default function LawyerLandingPage({
   onOpenChat
 }: LawyerLandingPageProps) {
@@ -77,53 +83,82 @@ export default function LawyerLandingPage({
   }, [activeFeature]);
 
   const scrollToPrev = () => {
-    setActiveFeature(prev => (prev - 1 + 6) % 6);
+    setActiveFeature(prev => (prev - 1 + features.length) % features.length);
   };
 
   const scrollToNext = () => {
-    setActiveFeature(prev => (prev + 1) % 6);
+    setActiveFeature(prev => (prev + 1) % features.length);
   };
+
   const features = [{
     title: "Investigación Legal IA",
     description: "Análisis avanzado de jurisprudencia y normativa con inteligencia artificial",
     icon: Search,
     color: "from-blue-500 to-blue-600",
-    demo: "Buscar precedentes sobre contratos de arrendamiento en Colombia",
+    demo: "Buscar precedentes sobre contratos de arrendamiento",
     component: DemoResearchMockup
   }, {
+    title: "SUIN-Juriscol",
+    description: "Búsqueda avanzada en el Sistema Único de Información Normativa colombiano",
+    icon: Database,
+    color: "from-teal-500 to-teal-600",
+    demo: "Consultar leyes, decretos y resoluciones vigentes",
+    component: DemoSuinJuriscolMockup
+  }, {
+    title: "Procesos Judiciales",
+    description: "Consulta y monitoreo de procesos con alertas automáticas",
+    icon: Gavel,
+    color: "from-amber-500 to-amber-600",
+    demo: "Monitorear actuaciones y recibir notificaciones",
+    component: DemoProcessMonitorMockup
+  }, {
     title: "Análisis Documental",
-    description: "Revisión automática de documentos legales con detección de riesgos",
+    description: "Revisión automática de documentos con detección de riesgos",
     icon: Eye,
-    color: "from-purple-500 to-purple-600",
-    demo: "Analizar contrato de compraventa para identificar cláusulas problemáticas",
+    color: "from-orange-500 to-orange-600",
+    demo: "Analizar contratos para identificar cláusulas problemáticas",
     component: DemoAnalysisMockup
   }, {
-    title: "Redacción Inteligente",
-    description: "Generación de documentos legales con plantillas personalizadas",
+    title: "Redacción + Copilot",
+    description: "Generación de documentos con asistencia IA en tiempo real",
     icon: PenTool,
     color: "from-green-500 to-green-600",
-    demo: "Redactar demanda civil por incumplimiento contractual",
+    demo: "Redactar demandas con sugerencias inteligentes",
     component: DemoDraftingMockup
   }, {
-    title: "Estrategia Legal",
+    title: "Estrategia + Predicción",
     description: "Análisis predictivo y planificación estratégica de casos",
     icon: Target,
-    color: "from-orange-500 to-orange-600",
-    demo: "Desarrollar estrategia para litigio comercial complejo",
+    color: "from-purple-500 to-purple-600",
+    demo: "Predecir probabilidad de éxito del caso",
     component: DemoStrategyMockup
   }, {
-    title: "Gestión de Clientes",
-    description: "CRM especializado para despachos con seguimiento de casos",
+    title: "CRM + Portal Clientes",
+    description: "Gestión de clientes con portal de acceso seguro",
     icon: Users,
     color: "from-indigo-500 to-indigo-600",
-    demo: "Gestionar cartera de 150+ clientes con automatización",
+    demo: "Gestionar clientes y compartir documentos",
     component: DemoCRMMockup
   }, {
-    title: "Agentes IA Personalizados",
-    description: "Crea asistentes especializados para áreas específicas del derecho",
+    title: "Calendario Legal",
+    description: "Gestión de términos y audiencias con cálculo automático",
+    icon: Calendar,
+    color: "from-cyan-500 to-cyan-600",
+    demo: "Calcular vencimientos con días hábiles",
+    component: DemoCalendarMockup
+  }, {
+    title: "Asistente de Voz",
+    description: "Dicta documentos y transcribe audiencias con IA",
+    icon: Mic,
+    color: "from-violet-500 to-violet-600",
+    demo: "Transcribir audiencias automáticamente",
+    component: DemoVoiceAssistantMockup
+  }, {
+    title: "Agentes + Gamificación",
+    description: "Crea asistentes IA y gana recompensas por usar la plataforma",
     icon: Bot,
     color: "from-pink-500 to-pink-600",
-    demo: "Agente especializado en derecho laboral colombiano",
+    demo: "Crear agentes especializados y ganar XP",
     component: DemoAgentsMockup
   }];
   const stats = [{

@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Bot, Sparkles, Zap, Target, TrendingUp, Settings, Plus, Scale, Briefcase, FileText } from "lucide-react";
+import { Bot, Sparkles, Zap, Target, TrendingUp, Settings, Plus, Scale, Briefcase, FileText, Trophy, Star, Award, Flame, Medal, Gift } from "lucide-react";
 
 export default function DemoAgentsMockup() {
   return (
@@ -16,16 +16,16 @@ export default function DemoAgentsMockup() {
               </div>
               <div>
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-pink-600 via-pink-500 to-pink-400 bg-clip-text text-transparent">
-                  Agentes IA Especializados
+                  Agentes IA + Gamificación
                 </h1>
                 <p className="text-lg text-muted-foreground mt-2">
-                  Crea asistentes personalizados para áreas específicas de tu práctica legal
+                  Asistentes personalizados con sistema de logros y recompensas
                 </p>
               </div>
             </div>
             
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-8">
               <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
                 <div className="flex items-center gap-3">
                   <Bot className="h-8 w-8 text-pink-600" />
@@ -46,6 +46,15 @@ export default function DemoAgentsMockup() {
               </div>
               <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
                 <div className="flex items-center gap-3">
+                  <Trophy className="h-8 w-8 text-amber-600" />
+                  <div>
+                    <p className="text-2xl font-bold text-amber-600">15</p>
+                    <p className="text-sm text-muted-foreground">Logros desbloqueados</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                <div className="flex items-center gap-3">
                   <Zap className="h-8 w-8 text-orange-600" />
                   <div>
                     <p className="text-2xl font-bold text-orange-600">8.2K</p>
@@ -56,6 +65,84 @@ export default function DemoAgentsMockup() {
             </div>
           </div>
         </div>
+
+        {/* Gamification Section */}
+        <Card className="border-2 border-amber-200 bg-gradient-to-br from-amber-50/50 to-white">
+          <CardHeader>
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl shadow-lg">
+                <Trophy className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-2xl flex items-center gap-2">
+                  Sistema de Gamificación
+                  <Badge className="bg-amber-100 text-amber-800">
+                    <Flame className="h-3 w-3 mr-1" />
+                    Racha de 7 días
+                  </Badge>
+                </CardTitle>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-4 gap-4 mb-6">
+              <div className="p-4 bg-white rounded-xl border border-amber-200 text-center">
+                <div className="p-3 bg-amber-100 rounded-full w-fit mx-auto mb-2">
+                  <Star className="h-6 w-6 text-amber-600" />
+                </div>
+                <div className="text-2xl font-bold text-amber-600">2,450</div>
+                <p className="text-sm text-muted-foreground">Puntos XP</p>
+              </div>
+              <div className="p-4 bg-white rounded-xl border border-amber-200 text-center">
+                <div className="p-3 bg-emerald-100 rounded-full w-fit mx-auto mb-2">
+                  <Award className="h-6 w-6 text-emerald-600" />
+                </div>
+                <div className="text-2xl font-bold text-emerald-600">Nivel 8</div>
+                <p className="text-sm text-muted-foreground">Abogado Experto</p>
+              </div>
+              <div className="p-4 bg-white rounded-xl border border-amber-200 text-center">
+                <div className="p-3 bg-blue-100 rounded-full w-fit mx-auto mb-2">
+                  <Medal className="h-6 w-6 text-blue-600" />
+                </div>
+                <div className="text-2xl font-bold text-blue-600">15</div>
+                <p className="text-sm text-muted-foreground">Logros</p>
+              </div>
+              <div className="p-4 bg-white rounded-xl border border-amber-200 text-center">
+                <div className="p-3 bg-purple-100 rounded-full w-fit mx-auto mb-2">
+                  <Gift className="h-6 w-6 text-purple-600" />
+                </div>
+                <div className="text-2xl font-bold text-purple-600">500</div>
+                <p className="text-sm text-muted-foreground">Créditos ganados</p>
+              </div>
+            </div>
+            
+            {/* Achievement Badges */}
+            <div className="p-4 bg-gradient-to-r from-amber-50 to-white rounded-xl border border-amber-200">
+              <h4 className="font-semibold mb-3 flex items-center gap-2">
+                <Trophy className="h-4 w-4 text-amber-600" />
+                Logros Recientes
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                <Badge className="bg-emerald-100 text-emerald-800 py-1.5 px-3">
+                  <Award className="h-3 w-3 mr-1" />
+                  Primer Documento
+                </Badge>
+                <Badge className="bg-blue-100 text-blue-800 py-1.5 px-3">
+                  <Flame className="h-3 w-3 mr-1" />
+                  Racha de 7 días
+                </Badge>
+                <Badge className="bg-purple-100 text-purple-800 py-1.5 px-3">
+                  <Bot className="h-3 w-3 mr-1" />
+                  Primer Agente Creado
+                </Badge>
+                <Badge className="bg-amber-100 text-amber-800 py-1.5 px-3">
+                  <Star className="h-3 w-3 mr-1" />
+                  100 Consultas
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Agent Gallery */}
         <div className="space-y-4">
@@ -194,8 +281,12 @@ export default function DemoAgentsMockup() {
               <div>
                 <h3 className="text-xl font-bold mb-2">Crea tu Propio Agente Especializado</h3>
                 <p className="text-muted-foreground max-w-md mx-auto">
-                  Diseña un asistente IA personalizado para cualquier área de tu práctica legal
+                  Diseña un asistente IA personalizado y gana XP por cada consulta exitosa
                 </p>
+              </div>
+              <div className="flex justify-center gap-2">
+                <Badge className="bg-amber-100 text-amber-800">+50 XP por crear</Badge>
+                <Badge className="bg-emerald-100 text-emerald-800">+5 XP por consulta</Badge>
               </div>
               <Button size="lg" className="bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-500">
                 <Sparkles className="h-5 w-5 mr-2" />

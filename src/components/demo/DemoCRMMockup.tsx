@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, Briefcase, MessageSquare, Calendar, Phone, Mail, Building, User, Plus } from "lucide-react";
+import { Users, Briefcase, MessageSquare, Calendar, Phone, Mail, Building, User, Plus, Globe, FileText, Clock, Lock, Eye } from "lucide-react";
 
 export default function DemoCRMMockup() {
   return (
@@ -16,10 +16,10 @@ export default function DemoCRMMockup() {
               </div>
               <div>
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-blue-500 to-blue-400 bg-clip-text text-transparent">
-                  Centro de Gestión de Clientes
+                  CRM + Portal de Clientes
                 </h1>
                 <p className="text-lg text-muted-foreground mt-2">
-                  Organiza, comunica y administra la relación con tus clientes de manera profesional
+                  Gestión integral de clientes con portal de acceso seguro para consultas
                 </p>
               </div>
             </div>
@@ -46,10 +46,10 @@ export default function DemoCRMMockup() {
               </div>
               <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
                 <div className="flex items-center gap-3">
-                  <MessageSquare className="h-8 w-8 text-purple-600" />
+                  <Globe className="h-8 w-8 text-purple-600" />
                   <div>
-                    <p className="text-2xl font-bold text-purple-600">1,234</p>
-                    <p className="text-sm text-muted-foreground">Comunicaciones</p>
+                    <p className="text-2xl font-bold text-purple-600">89</p>
+                    <p className="text-sm text-muted-foreground">Clientes con portal</p>
                   </div>
                 </div>
               </div>
@@ -65,6 +65,73 @@ export default function DemoCRMMockup() {
             </div>
           </div>
         </div>
+
+        {/* Client Portal Section */}
+        <Card className="border-2 border-purple-200 bg-gradient-to-br from-purple-50/50 to-white">
+          <CardHeader>
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg">
+                <Globe className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-2xl flex items-center gap-2">
+                  Portal de Clientes
+                  <Badge className="bg-purple-100 text-purple-800">Nuevo</Badge>
+                </CardTitle>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className="p-4 bg-white rounded-xl border border-purple-200 hover:shadow-md transition-shadow">
+                <div className="flex items-center gap-3 mb-3">
+                  <Eye className="h-5 w-5 text-purple-600" />
+                  <h4 className="font-semibold">Estado de Casos</h4>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Los clientes pueden ver el progreso de sus casos en tiempo real
+                </p>
+                <Badge variant="outline" className="mt-3">89 clientes activos</Badge>
+              </div>
+              <div className="p-4 bg-white rounded-xl border border-purple-200 hover:shadow-md transition-shadow">
+                <div className="flex items-center gap-3 mb-3">
+                  <FileText className="h-5 w-5 text-purple-600" />
+                  <h4 className="font-semibold">Documentos Compartidos</h4>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Comparte documentos de forma segura con tus clientes
+                </p>
+                <Badge variant="outline" className="mt-3">234 docs compartidos</Badge>
+              </div>
+              <div className="p-4 bg-white rounded-xl border border-purple-200 hover:shadow-md transition-shadow">
+                <div className="flex items-center gap-3 mb-3">
+                  <Calendar className="h-5 w-5 text-purple-600" />
+                  <h4 className="font-semibold">Agendar Citas</h4>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Los clientes pueden solicitar citas directamente desde el portal
+                </p>
+                <Badge variant="outline" className="mt-3">12 citas esta semana</Badge>
+              </div>
+            </div>
+            
+            <div className="mt-4 p-4 bg-purple-50 rounded-xl border border-purple-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Lock className="h-5 w-5 text-purple-600" />
+                  <div>
+                    <h4 className="font-semibold">Acceso Seguro</h4>
+                    <p className="text-sm text-muted-foreground">Cada cliente recibe un enlace único de acceso</p>
+                  </div>
+                </div>
+                <Button className="bg-gradient-to-r from-purple-500 to-purple-600">
+                  <Globe className="h-4 w-4 mr-2" />
+                  Configurar Portal
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Client List */}
         <Card>
@@ -104,7 +171,10 @@ export default function DemoCRMMockup() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge>2 Casos Activos</Badge>
-                  <Badge variant="outline">Premium</Badge>
+                  <Badge variant="outline" className="bg-purple-50 text-purple-700">
+                    <Globe className="h-3 w-3 mr-1" />
+                    Portal Activo
+                  </Badge>
                 </div>
               </div>
 
@@ -130,7 +200,10 @@ export default function DemoCRMMockup() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge>5 Casos Activos</Badge>
-                  <Badge variant="outline">Corporativo</Badge>
+                  <Badge variant="outline" className="bg-purple-50 text-purple-700">
+                    <Globe className="h-3 w-3 mr-1" />
+                    Portal Activo
+                  </Badge>
                 </div>
               </div>
 
@@ -156,7 +229,7 @@ export default function DemoCRMMockup() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge>1 Caso Activo</Badge>
-                  <Badge variant="outline">Particular</Badge>
+                  <Badge variant="outline">Sin Portal</Badge>
                 </div>
               </div>
             </div>
@@ -208,12 +281,15 @@ export default function DemoCRMMockup() {
                   </div>
                   <p className="text-xs text-muted-foreground">Caso: Demanda Laboral</p>
                 </div>
-                <div className="p-3 bg-muted/30 rounded-lg">
+                <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-semibold text-sm">Revisión Contrato</h4>
+                    <h4 className="font-semibold text-sm flex items-center gap-2">
+                      <Globe className="h-3 w-3 text-purple-600" />
+                      Cita vía Portal
+                    </h4>
                     <span className="text-xs text-muted-foreground">Mañana, 10:00 AM</span>
                   </div>
-                  <p className="text-xs text-muted-foreground">Cliente: Tech Solutions</p>
+                  <p className="text-xs text-muted-foreground">Cliente: Tech Solutions - Revisión Contrato</p>
                 </div>
               </div>
             </CardContent>
