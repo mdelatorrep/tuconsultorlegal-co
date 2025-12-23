@@ -8,8 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PenTool, FileText, Copy, Loader2, Sparkles, Target, TrendingUp, Clock, FolderOpen, Coins } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import UnifiedSidebar from "../UnifiedSidebar";
+import DocumentEditor from "./draft/DocumentEditor";
 import DocumentEditor from "./draft/DocumentEditor";
 import MyDocuments from "./draft/MyDocuments";
 import { useCredits } from "@/hooks/useCredits";
@@ -150,38 +149,19 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout 
   };
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-gradient-to-br from-background via-background to-blue-500/5">
-        <UnifiedSidebar 
-          user={user}
-          currentView={currentView}
-          onViewChange={onViewChange}
-          onLogout={onLogout}
-        />
+    <div className="flex flex-col h-full gap-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Redacción Legal</h2>
+          <p className="text-muted-foreground">Generación de documentos con IA</p>
+        </div>
+        <div className="flex gap-2 items-center">
+          <ToolCostIndicator toolType="draft" lawyerId={user?.id} />
+        </div>
+      </div>
 
-        <main className="flex-1">
-          <header className="h-14 lg:h-16 border-b bg-gradient-to-r from-background/95 to-blue-500/10 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 relative overflow-hidden sticky top-0 z-40">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent opacity-50"></div>
-            <div className="relative flex h-14 lg:h-16 items-center px-3 lg:px-6">
-              <SidebarTrigger className="mr-2 lg:mr-4 hover:bg-blue-500/10 rounded-lg p-2 transition-all duration-200 flex-shrink-0" />
-              <div className="flex items-center gap-2 lg:gap-3 min-w-0">
-                <div className="p-1.5 lg:p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg lg:rounded-xl shadow-lg flex-shrink-0">
-                  <PenTool className="h-4 w-4 lg:h-6 lg:w-6 text-white" />
-                </div>
-                <div className="min-w-0">
-                  <h1 className="text-base lg:text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent truncate">
-                    Redacción Legal
-                  </h1>
-                  <p className="text-xs lg:text-sm text-muted-foreground hidden sm:block truncate">
-                    Generación de documentos con IA
-                  </p>
-                </div>
-              </div>
-            </div>
-          </header>
-
-          <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 lg:py-8">
-            <div className="max-w-7xl mx-auto">
+      <div className="space-y-4 lg:space-y-6">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
                 <TabsList className="grid w-full max-w-md grid-cols-2">
                   <TabsTrigger value="generate" className="flex items-center gap-2">
@@ -472,7 +452,7 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout 
               </Tabs>
             </div>
           </div>
-        </main>
+        </div>
       </div>
 
       {currentDraft && (
@@ -489,6 +469,6 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout 
           onSaved={() => setActiveTab("documents")}
         />
       )}
-    </SidebarProvider>
+    </div>
   );
 }
