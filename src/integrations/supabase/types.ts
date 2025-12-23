@@ -375,6 +375,277 @@ export type Database = {
           },
         ]
       }
+      case_predictions: {
+        Row: {
+          ai_analysis: string | null
+          case_description: string
+          case_id: string | null
+          case_type: string
+          court_type: string | null
+          created_at: string | null
+          id: string
+          jurisdiction: string | null
+          lawyer_id: string
+          prediction_result: Json | null
+          recommended_arguments: Json | null
+          risk_factors: Json | null
+        }
+        Insert: {
+          ai_analysis?: string | null
+          case_description: string
+          case_id?: string | null
+          case_type: string
+          court_type?: string | null
+          created_at?: string | null
+          id?: string
+          jurisdiction?: string | null
+          lawyer_id: string
+          prediction_result?: Json | null
+          recommended_arguments?: Json | null
+          risk_factors?: Json | null
+        }
+        Update: {
+          ai_analysis?: string | null
+          case_description?: string
+          case_id?: string | null
+          case_type?: string
+          court_type?: string | null
+          created_at?: string | null
+          id?: string
+          jurisdiction?: string | null
+          lawyer_id?: string
+          prediction_result?: Json | null
+          recommended_arguments?: Json | null
+          risk_factors?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_predictions_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "crm_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_predictions_lawyer_id_fkey"
+            columns: ["lawyer_id"]
+            isOneToOne: false
+            referencedRelation: "lawyer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_appointments: {
+        Row: {
+          case_id: string | null
+          client_id: string
+          client_notes: string | null
+          created_at: string | null
+          description: string | null
+          duration_minutes: number | null
+          id: string
+          lawyer_id: string
+          lawyer_notes: string | null
+          location: string | null
+          meeting_url: string | null
+          reminder_sent: boolean | null
+          scheduled_at: string
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          case_id?: string | null
+          client_id: string
+          client_notes?: string | null
+          created_at?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          lawyer_id: string
+          lawyer_notes?: string | null
+          location?: string | null
+          meeting_url?: string | null
+          reminder_sent?: boolean | null
+          scheduled_at: string
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          case_id?: string | null
+          client_id?: string
+          client_notes?: string | null
+          created_at?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          lawyer_id?: string
+          lawyer_notes?: string | null
+          location?: string | null
+          meeting_url?: string | null
+          reminder_sent?: boolean | null
+          scheduled_at?: string
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_appointments_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "crm_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_appointments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "crm_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_appointments_lawyer_id_fkey"
+            columns: ["lawyer_id"]
+            isOneToOne: false
+            referencedRelation: "lawyer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_portal_access: {
+        Row: {
+          access_token: string
+          client_id: string
+          created_at: string | null
+          email: string
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          last_access_at: string | null
+          lawyer_id: string
+        }
+        Insert: {
+          access_token: string
+          client_id: string
+          created_at?: string | null
+          email: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_access_at?: string | null
+          lawyer_id: string
+        }
+        Update: {
+          access_token?: string
+          client_id?: string
+          created_at?: string | null
+          email?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_access_at?: string | null
+          lawyer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_access_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "crm_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_portal_access_lawyer_id_fkey"
+            columns: ["lawyer_id"]
+            isOneToOne: false
+            referencedRelation: "lawyer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_shared_documents: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          document_name: string
+          document_type: string | null
+          document_url: string | null
+          file_size: number | null
+          id: string
+          is_from_client: boolean | null
+          lawyer_id: string
+          notes: string | null
+          viewed_at: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          document_name: string
+          document_type?: string | null
+          document_url?: string | null
+          file_size?: number | null
+          id?: string
+          is_from_client?: boolean | null
+          lawyer_id: string
+          notes?: string | null
+          viewed_at?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          document_name?: string
+          document_type?: string | null
+          document_url?: string | null
+          file_size?: number | null
+          id?: string
+          is_from_client?: boolean | null
+          lawyer_id?: string
+          notes?: string | null
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_shared_documents_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "crm_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_shared_documents_lawyer_id_fkey"
+            columns: ["lawyer_id"]
+            isOneToOne: false
+            referencedRelation: "lawyer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      colombian_holidays: {
+        Row: {
+          fecha: string
+          id: string
+          nombre: string
+          tipo: string | null
+          year: number | null
+        }
+        Insert: {
+          fecha: string
+          id?: string
+          nombre: string
+          tipo?: string | null
+          year?: number | null
+        }
+        Update: {
+          fecha?: string
+          id?: string
+          nombre?: string
+          tipo?: string | null
+          year?: number | null
+        }
+        Relationships: []
+      }
       contact_messages: {
         Row: {
           admin_notes: string | null
@@ -2121,6 +2392,110 @@ export type Database = {
         }
         Relationships: []
       }
+      legal_calendar_events: {
+        Row: {
+          alert_before_minutes: number[] | null
+          all_day: boolean | null
+          case_id: string | null
+          client_id: string | null
+          color: string | null
+          completed_at: string | null
+          created_at: string | null
+          description: string | null
+          end_date: string | null
+          event_type: string
+          external_calendar_id: string | null
+          id: string
+          is_auto_generated: boolean | null
+          is_completed: boolean | null
+          lawyer_id: string
+          location: string | null
+          monitored_process_id: string | null
+          recurrence_rule: string | null
+          source_document_id: string | null
+          start_date: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          alert_before_minutes?: number[] | null
+          all_day?: boolean | null
+          case_id?: string | null
+          client_id?: string | null
+          color?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          event_type: string
+          external_calendar_id?: string | null
+          id?: string
+          is_auto_generated?: boolean | null
+          is_completed?: boolean | null
+          lawyer_id: string
+          location?: string | null
+          monitored_process_id?: string | null
+          recurrence_rule?: string | null
+          source_document_id?: string | null
+          start_date: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          alert_before_minutes?: number[] | null
+          all_day?: boolean | null
+          case_id?: string | null
+          client_id?: string | null
+          color?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          event_type?: string
+          external_calendar_id?: string | null
+          id?: string
+          is_auto_generated?: boolean | null
+          is_completed?: boolean | null
+          lawyer_id?: string
+          location?: string | null
+          monitored_process_id?: string | null
+          recurrence_rule?: string | null
+          source_document_id?: string | null
+          start_date?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_calendar_events_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "crm_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_calendar_events_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "crm_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_calendar_events_lawyer_id_fkey"
+            columns: ["lawyer_id"]
+            isOneToOne: false
+            referencedRelation: "lawyer_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_calendar_events_monitored_process_id_fkey"
+            columns: ["monitored_process_id"]
+            isOneToOne: false
+            referencedRelation: "monitored_processes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       legal_consultations: {
         Row: {
           advisor_agent_id: string | null
@@ -2233,6 +2608,62 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      monitored_processes: {
+        Row: {
+          created_at: string | null
+          demandado: string | null
+          demandante: string | null
+          despacho: string | null
+          estado: string | null
+          id: string
+          lawyer_id: string
+          notificaciones_activas: boolean | null
+          radicado: string
+          tipo_proceso: string | null
+          ultima_actuacion_descripcion: string | null
+          ultima_actuacion_fecha: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          demandado?: string | null
+          demandante?: string | null
+          despacho?: string | null
+          estado?: string | null
+          id?: string
+          lawyer_id: string
+          notificaciones_activas?: boolean | null
+          radicado: string
+          tipo_proceso?: string | null
+          ultima_actuacion_descripcion?: string | null
+          ultima_actuacion_fecha?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          demandado?: string | null
+          demandante?: string | null
+          despacho?: string | null
+          estado?: string | null
+          id?: string
+          lawyer_id?: string
+          notificaciones_activas?: boolean | null
+          radicado?: string
+          tipo_proceso?: string | null
+          ultima_actuacion_descripcion?: string | null
+          ultima_actuacion_fecha?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monitored_processes_lawyer_id_fkey"
+            columns: ["lawyer_id"]
+            isOneToOne: false
+            referencedRelation: "lawyer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       openai_agent_jobs: {
         Row: {
@@ -2374,6 +2805,53 @@ export type Database = {
           user_ip?: string | null
         }
         Relationships: []
+      }
+      process_actuations: {
+        Row: {
+          actuacion: string | null
+          anotacion: string
+          created_at: string | null
+          fecha_actuacion: string
+          fecha_fin: string | null
+          fecha_inicio: string | null
+          id: string
+          is_new: boolean | null
+          monitored_process_id: string
+          notified_at: string | null
+        }
+        Insert: {
+          actuacion?: string | null
+          anotacion: string
+          created_at?: string | null
+          fecha_actuacion: string
+          fecha_fin?: string | null
+          fecha_inicio?: string | null
+          id?: string
+          is_new?: boolean | null
+          monitored_process_id: string
+          notified_at?: string | null
+        }
+        Update: {
+          actuacion?: string | null
+          anotacion?: string
+          created_at?: string | null
+          fecha_actuacion?: string
+          fecha_fin?: string | null
+          fecha_inicio?: string | null
+          id?: string
+          is_new?: boolean | null
+          monitored_process_id?: string
+          notified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "process_actuations_monitored_process_id_fkey"
+            columns: ["monitored_process_id"]
+            isOneToOne: false
+            referencedRelation: "monitored_processes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -2968,6 +3446,10 @@ export type Database = {
       }
     }
     Functions: {
+      add_business_days: {
+        Args: { num_days: number; start_date: string }
+        Returns: string
+      }
       add_to_research_queue: {
         Args: { p_lawyer_id: string; p_priority?: number; p_query: string }
         Returns: string

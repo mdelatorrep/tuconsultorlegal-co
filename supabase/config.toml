@@ -137,3 +137,18 @@ verify_jwt = false
 
 [functions.process-query-search]
 verify_jwt = false
+
+[functions.rama-judicial-monitor]
+verify_jwt = false
+
+[functions.calculate-legal-deadlines]
+verify_jwt = false
+
+[functions.legal-copilot]
+verify_jwt = false
+
+[functions.voice-transcription]
+verify_jwt = false
+
+[functions.case-outcome-predictor]
+verify_jwt = false
