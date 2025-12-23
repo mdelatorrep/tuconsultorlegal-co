@@ -34,6 +34,7 @@ import { LawyerChangeEmailDialog } from "./LawyerChangeEmailDialog";
 import { PasswordResetDialog } from "./PasswordResetDialog";
 import LawyerPublicProfileEditor from "./LawyerPublicProfileEditor";
 import UnifiedSidebar from "./UnifiedSidebar";
+import { CreditsDashboard } from "./credits/CreditsDashboard";
 
 interface DocumentToken {
   id: string;
@@ -82,7 +83,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const [editedContent, setEditedContent] = useState("");
   const [lawyerComments, setLawyerComments] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager' | 'research' | 'analyze' | 'draft' | 'strategize' | 'subscription' | 'crm' | 'public-profile' | 'suin-juriscol' | 'process-query'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager' | 'research' | 'analyze' | 'draft' | 'strategize' | 'subscription' | 'crm' | 'public-profile' | 'suin-juriscol' | 'process-query' | 'credits'>('dashboard');
   const [isCheckingSpelling, setIsCheckingSpelling] = useState(false);
   const [showSendConfirmation, setShowSendConfirmation] = useState(false);
   const [newLeadsCount, setNewLeadsCount] = useState(0);
@@ -949,7 +950,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   };
 
   // If not dashboard view and not public-profile, show module content directly (modules have their own sidebar)
-  if (currentView !== 'dashboard' && currentView !== 'public-profile' && currentView !== 'stats' && currentView !== 'subscription') {
+  if (currentView !== 'dashboard' && currentView !== 'public-profile' && currentView !== 'stats' && currentView !== 'subscription' && currentView !== 'credits') {
     return (
       <>
         {/* Confirmation Dialog for Sending to Client */}
@@ -1028,7 +1029,9 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
           {/* Dashboard Content */}
           <div className="container mx-auto px-3 md:px-4 lg:px-6 py-3 md:py-4 lg:py-6">
             {/* Render specific view content or dashboard */}
-            {currentView === 'public-profile' ? (
+            {currentView === 'credits' ? (
+              <CreditsDashboard lawyerId={user.id} />
+            ) : currentView === 'public-profile' ? (
               <LawyerPublicProfileEditor lawyerId={user.id} lawyerName={user.name} />
             ) : currentView === 'stats' ? (
               <LawyerStatsSection user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as any)} onLogout={logout} />

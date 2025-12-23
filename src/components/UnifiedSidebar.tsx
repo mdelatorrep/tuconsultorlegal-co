@@ -1,7 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Bot, Settings, Users, Crown, Lock, User, Database, Gavel } from "lucide-react";
+import { LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Bot, Settings, Users, Crown, Lock, User, Database, Gavel, Coins } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { CreditBalanceIndicator } from "@/components/credits/CreditBalanceIndicator";
+import { useCredits } from "@/hooks/useCredits";
 
 interface UnifiedSidebarProps {
   user: any;
@@ -15,6 +17,9 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
   const isMobile = useIsMobile();
   // En móvil (offcanvas), nunca colapsar. En desktop, usar el estado del sidebar
   const collapsed = !isMobile && state === 'collapsed';
+  
+  // Get credit balance
+  const { balance, loading: creditsLoading } = useCredits(user?.id || null);
   
   const handleViewChange = (view: string) => {
     onViewChange(view);
@@ -121,6 +126,11 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
       title: "Cuenta",
       items: [
         {
+          title: "Mis Créditos",
+          icon: Coins,
+          view: "credits" as const
+        },
+        {
           title: "Perfil Público",
           icon: User,
           view: "public-profile" as const
@@ -144,7 +154,7 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
       <SidebarContent>
         {/* Header del Sidebar */}
         {!collapsed && (
-          <div className="p-4 border-b space-y-1">
+          <div className="p-4 border-b space-y-2">
             <div className="flex items-center gap-2 mb-2">
               <Scale className="w-5 h-5 text-primary" />
               <h2 className="font-bold text-sm">Portal Abogados</h2>
@@ -152,6 +162,15 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
             <p className="text-xs text-muted-foreground truncate">
               {user?.name}
             </p>
+            {/* Credit Balance */}
+            <div className="flex items-center gap-2 pt-1">
+              <CreditBalanceIndicator 
+                balance={balance?.current_balance} 
+                loading={creditsLoading}
+                size="sm"
+              />
+              <span className="text-xs text-muted-foreground">créditos</span>
+            </div>
           </div>
         )}
 

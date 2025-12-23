@@ -30,6 +30,7 @@ import { UsersManager } from "./admin/UsersManager";
 import { SystemMonitoring } from "./admin/SystemMonitoring";
 import { SystemLogsViewer } from "./admin/SystemLogsViewer";
 import { RevenueAnalytics } from "./admin/RevenueAnalytics";
+import { CreditsAdminManager } from "./admin/CreditsAdminManager";
 import { 
   Copy, Users, Bot, BarChart3, Clock, CheckCircle, Lock, Unlock, Trash2, Check, X, Plus, RefreshCw, 
   Loader2, MessageCircle, BookOpen, Settings, Zap, Mail, Phone, Bell, LogOut, UserCheck, 
@@ -1567,6 +1568,9 @@ function AdminPage() {
       
       case 'revenue':
         return <RevenueAnalytics />;
+      
+      case 'credits':
+        return <CreditsAdminManager />;
         
       default:
         return (
