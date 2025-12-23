@@ -46,6 +46,8 @@ import { NextBestAction } from "./credits/NextBestAction";
 import { DailyProgress } from "./credits/DailyProgress";
 import { GamificationDashboard } from "./gamification/GamificationDashboard";
 import { QuickActionsBar } from "./QuickActionsBar";
+import { useCredits } from "@/hooks/useCredits";
+import { ToolCostIndicator } from "@/components/credits/ToolCostIndicator";
 
 // Dashboard components
 import { 
@@ -131,6 +133,9 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
     markOnboardingCompleted, 
     skipOnboarding 
   } = useLawyerOnboarding(user?.id);
+
+  // Credits hook for spell check
+  const { consumeCredits, hasEnoughCredits } = useCredits(user?.id || null);
 
   // Helper functions
   const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
@@ -446,9 +451,30 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
       return;
     }
 
+    // Check credits before proceeding
+    if (!hasEnoughCredits('spell_check')) {
+      toast({ 
+        title: "Créditos insuficientes", 
+        description: "No tienes suficientes créditos para usar el corrector ortográfico", 
+        variant: "destructive" 
+      });
+      return;
+    }
+
     try {
       setIsCheckingSpelling(true);
       setSpellCheckResults(null);
+
+      // Consume credits before API call
+      const creditResult = await consumeCredits('spell_check', { contentLength: editedContent.length });
+      if (!creditResult.success) {
+        toast({ 
+          title: "Error de créditos", 
+          description: creditResult.error || "No se pudieron consumir los créditos", 
+          variant: "destructive" 
+        });
+        return;
+      }
 
       const { data, error } = await supabase.functions.invoke('spell-check-document', {
         body: { content: editedContent }
@@ -814,12 +840,13 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                             <h4 className="text-sm font-medium flex items-center gap-2">
                               <SpellCheck className="h-4 w-4" />
                               Revisor Ortográfico
+                              <ToolCostIndicator toolType="spell_check" lawyerId={user?.id} />
                             </h4>
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={handleSpellCheck}
-                              disabled={isCheckingSpelling || !editedContent.trim()}
+                              disabled={isCheckingSpelling || !editedContent.trim() || !hasEnoughCredits('spell_check')}
                             >
                               {isCheckingSpelling ? 'Revisando...' : 'Revisar Ortografía'}
                             </Button>
