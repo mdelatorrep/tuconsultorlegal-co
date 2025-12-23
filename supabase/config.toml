@@ -21,6 +21,15 @@ verify_jwt = false
 [functions.judicial-process-lookup]
 verify_jwt = true
 
+[functions.verifik-lawyer-verification]
+verify_jwt = true
+
+[functions.verifik-certificate-validity]
+verify_jwt = true
+
+[functions.verifik-process-details]
+verify_jwt = true
+
 [functions.check-research-tasks]
 verify_jwt = false
 

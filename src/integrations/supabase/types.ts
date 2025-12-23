@@ -2007,6 +2007,7 @@ export type Database = {
       lawyer_profiles: {
         Row: {
           active: boolean
+          bar_number: string | null
           can_create_agents: boolean | null
           can_create_blogs: boolean | null
           can_use_ai_tools: boolean
@@ -2015,12 +2016,16 @@ export type Database = {
           full_name: string
           id: string
           is_active: boolean | null
+          is_verified: boolean | null
           last_login_at: string | null
           phone_number: string | null
+          professional_status: string | null
           updated_at: string | null
+          verification_date: string | null
         }
         Insert: {
           active?: boolean
+          bar_number?: string | null
           can_create_agents?: boolean | null
           can_create_blogs?: boolean | null
           can_use_ai_tools?: boolean
@@ -2029,12 +2034,16 @@ export type Database = {
           full_name: string
           id: string
           is_active?: boolean | null
+          is_verified?: boolean | null
           last_login_at?: string | null
           phone_number?: string | null
+          professional_status?: string | null
           updated_at?: string | null
+          verification_date?: string | null
         }
         Update: {
           active?: boolean
+          bar_number?: string | null
           can_create_agents?: boolean | null
           can_create_blogs?: boolean | null
           can_use_ai_tools?: boolean
@@ -2043,9 +2052,12 @@ export type Database = {
           full_name?: string
           id?: string
           is_active?: boolean | null
+          is_verified?: boolean | null
           last_login_at?: string | null
           phone_number?: string | null
+          professional_status?: string | null
           updated_at?: string | null
+          verification_date?: string | null
         }
         Relationships: []
       }
@@ -2265,6 +2277,74 @@ export type Database = {
           validation_history?: Json | null
         }
         Relationships: []
+      }
+      lawyer_verifications: {
+        Row: {
+          api_cost: number | null
+          bar_number: string | null
+          certificate_expiry_date: string | null
+          created_at: string
+          document_number: string | null
+          document_type: string | null
+          expires_at: string | null
+          id: string
+          lawyer_id: string | null
+          professional_name: string | null
+          professional_status: string | null
+          specialization: string | null
+          status: string
+          updated_at: string
+          verification_type: string
+          verified_at: string | null
+          verifik_response: Json | null
+        }
+        Insert: {
+          api_cost?: number | null
+          bar_number?: string | null
+          certificate_expiry_date?: string | null
+          created_at?: string
+          document_number?: string | null
+          document_type?: string | null
+          expires_at?: string | null
+          id?: string
+          lawyer_id?: string | null
+          professional_name?: string | null
+          professional_status?: string | null
+          specialization?: string | null
+          status?: string
+          updated_at?: string
+          verification_type: string
+          verified_at?: string | null
+          verifik_response?: Json | null
+        }
+        Update: {
+          api_cost?: number | null
+          bar_number?: string | null
+          certificate_expiry_date?: string | null
+          created_at?: string
+          document_number?: string | null
+          document_type?: string | null
+          expires_at?: string | null
+          id?: string
+          lawyer_id?: string | null
+          professional_name?: string | null
+          professional_status?: string | null
+          specialization?: string | null
+          status?: string
+          updated_at?: string
+          verification_type?: string
+          verified_at?: string | null
+          verifik_response?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lawyer_verifications_lawyer_id_fkey"
+            columns: ["lawyer_id"]
+            isOneToOne: false
+            referencedRelation: "lawyer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       legal_advisor_agents: {
         Row: {
@@ -3364,6 +3444,57 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      verifik_api_usage: {
+        Row: {
+          admin_id: string | null
+          api_cost: number | null
+          created_at: string
+          endpoint: string
+          id: string
+          lawyer_id: string | null
+          request_params: Json | null
+          response_data: Json | null
+          response_status: number | null
+        }
+        Insert: {
+          admin_id?: string | null
+          api_cost?: number | null
+          created_at?: string
+          endpoint: string
+          id?: string
+          lawyer_id?: string | null
+          request_params?: Json | null
+          response_data?: Json | null
+          response_status?: number | null
+        }
+        Update: {
+          admin_id?: string | null
+          api_cost?: number | null
+          created_at?: string
+          endpoint?: string
+          id?: string
+          lawyer_id?: string | null
+          request_params?: Json | null
+          response_data?: Json | null
+          response_status?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "verifik_api_usage_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "admin_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "verifik_api_usage_lawyer_id_fkey"
+            columns: ["lawyer_id"]
+            isOneToOne: false
+            referencedRelation: "lawyer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       workflow_executions: {
         Row: {
