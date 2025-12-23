@@ -162,13 +162,13 @@ export default function LawyerLandingPage({
     component: DemoAgentsMockup
   }];
   const stats = [{
-    value: "500+",
-    label: "Abogados Activos",
-    icon: Users
+    value: "14",
+    label: "Herramientas IA",
+    icon: Brain
   }, {
-    value: "10K+",
-    label: "Documentos Procesados",
-    icon: PenTool
+    value: "1M+",
+    label: "Normas Indexadas",
+    icon: Database
   }, {
     value: "95%",
     label: "Precisión IA",
@@ -178,6 +178,23 @@ export default function LawyerLandingPage({
     label: "Disponibilidad",
     icon: Shield
   }];
+
+  const allTools = [
+    { name: "Investigación Legal", icon: Search, category: "Investigación" },
+    { name: "SUIN-Juriscol", icon: Database, category: "Investigación" },
+    { name: "Consulta Procesos", icon: Gavel, category: "Investigación" },
+    { name: "Monitor de Procesos", icon: Eye, category: "Investigación" },
+    { name: "Análisis Documental", icon: Eye, category: "Análisis" },
+    { name: "Predictor de Casos", icon: BarChart3, category: "Análisis" },
+    { name: "Redacción IA", icon: PenTool, category: "Redacción" },
+    { name: "Copilot Legal", icon: Sparkles, category: "Redacción" },
+    { name: "Estrategia Legal", icon: Target, category: "Estrategia" },
+    { name: "Calendario Legal", icon: Calendar, category: "Gestión" },
+    { name: "CRM Clientes", icon: Users, category: "Gestión" },
+    { name: "Portal Clientes", icon: Shield, category: "Gestión" },
+    { name: "Asistente de Voz", icon: Mic, category: "Asistencia" },
+    { name: "Agentes IA", icon: Bot, category: "Asistencia" },
+  ];
   const testimonials = [{
     name: "Dr. María González",
     role: "Socia, González & Asociados",
@@ -472,6 +489,48 @@ export default function LawyerLandingPage({
                 Probar Ahora
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* All Tools Section */}
+      <section className="py-12 sm:py-16 lg:py-20 bg-muted/30">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="text-center mb-10 sm:mb-12">
+            <Badge className="mb-4 sm:mb-6 text-xs sm:text-sm">
+              <Zap className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
+              Suite Completa
+            </Badge>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 sm:mb-6 px-4">
+              Todo lo que Incluye el <span className="text-primary">Portal</span>
+            </h2>
+            <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto px-4">
+              14 herramientas de inteligencia artificial diseñadas exclusivamente para abogados
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 sm:gap-4">
+            {allTools.map((tool, index) => (
+              <Card 
+                key={index} 
+                className="border-0 shadow-sm hover:shadow-card transition-all duration-300 hover:scale-105 cursor-pointer group"
+              >
+                <CardContent className="p-4 text-center">
+                  <div className="p-3 bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl mx-auto w-fit mb-3 group-hover:from-primary/20 group-hover:to-primary/10 transition-colors">
+                    <tool.icon className="w-6 h-6 text-primary" />
+                  </div>
+                  <h4 className="text-xs sm:text-sm font-medium leading-tight">{tool.name}</h4>
+                  <p className="text-[10px] text-muted-foreground mt-1">{tool.category}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <div className="text-center mt-8 sm:mt-10">
+            <div className="inline-flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-full text-sm text-primary font-medium">
+              <Trophy className="w-4 h-4" />
+              <span>+ Sistema de Gamificación con logros y recompensas</span>
             </div>
           </div>
         </div>
