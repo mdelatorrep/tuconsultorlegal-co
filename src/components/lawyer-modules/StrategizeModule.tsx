@@ -5,11 +5,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Brain, Target, AlertTriangle, CheckCircle, Scale, Loader2, Sparkles, TrendingUp, Clock, Lightbulb, Shield, History, ChevronRight } from "lucide-react";
+import { Brain, Target, AlertTriangle, CheckCircle, Scale, Loader2, Sparkles, TrendingUp, Clock, Lightbulb, Shield, History, ChevronRight, Coins } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import UnifiedSidebar from "../UnifiedSidebar";
+import { useCredits } from "@/hooks/useCredits";
+import { ToolCostIndicator } from "@/components/credits/ToolCostIndicator";
 
 interface StrategizeModuleProps {
   user: any;
@@ -51,6 +53,7 @@ export default function StrategizeModule({ user, currentView, onViewChange, onLo
   const [analyses, setAnalyses] = useState<StrategicAnalysis[]>([]);
   const [activeTab, setActiveTab] = useState("strategize");
   const { toast } = useToast();
+  const { consumeCredits, hasEnoughCredits, getToolCost } = useCredits(user?.id);
 
   // Load strategy history on mount
   useEffect(() => {
@@ -92,6 +95,21 @@ export default function StrategizeModule({ user, currentView, onViewChange, onLo
         description: "Por favor describe los hechos del caso para analizar.",
         variant: "destructive",
       });
+      return;
+    }
+
+    // Check and consume credits before proceeding
+    if (!hasEnoughCredits('strategy')) {
+      toast({
+        title: "Créditos insuficientes",
+        description: `Necesitas ${getToolCost('strategy')} créditos para el análisis estratégico.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const creditResult = await consumeCredits('strategy', { caseDescription: caseDescription.substring(0, 100) });
+    if (!creditResult.success) {
       return;
     }
 
@@ -294,23 +312,26 @@ export default function StrategizeModule({ user, currentView, onViewChange, onLo
                       </p>
                     </div>
                     
-                    <Button
-                      onClick={handleStrategicAnalysis}
-                      disabled={isAnalyzing}
-                      className="w-full h-14 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-500 shadow-xl hover:shadow-2xl transition-all duration-300 text-lg font-semibold"
-                    >
-                      {isAnalyzing ? (
-                        <>
-                          <Loader2 className="h-5 w-5 mr-3 animate-spin" />
-                          <span className="animate-pulse">Desarrollando estrategia...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="h-5 w-5 mr-3" />
-                          Generar Estrategia Integral
-                        </>
-                      )}
-                    </Button>
+                    <div className="space-y-2">
+                      <ToolCostIndicator toolType="strategy" lawyerId={user?.id} className="justify-center" />
+                      <Button
+                        onClick={handleStrategicAnalysis}
+                        disabled={isAnalyzing || !hasEnoughCredits('strategy')}
+                        className="w-full h-14 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-500 shadow-xl hover:shadow-2xl transition-all duration-300 text-lg font-semibold"
+                      >
+                        {isAnalyzing ? (
+                          <>
+                            <Loader2 className="h-5 w-5 mr-3 animate-spin" />
+                            <span className="animate-pulse">Desarrollando estrategia...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="h-5 w-5 mr-3" />
+                            Generar Estrategia Integral
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
 

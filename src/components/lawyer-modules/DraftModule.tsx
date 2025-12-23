@@ -5,13 +5,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PenTool, FileText, Copy, Loader2, Sparkles, Target, TrendingUp, Clock, FolderOpen } from "lucide-react";
+import { PenTool, FileText, Copy, Loader2, Sparkles, Target, TrendingUp, Clock, FolderOpen, Coins } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import UnifiedSidebar from "../UnifiedSidebar";
 import DocumentEditor from "./draft/DocumentEditor";
 import MyDocuments from "./draft/MyDocuments";
+import { useCredits } from "@/hooks/useCredits";
+import { ToolCostIndicator } from "@/components/credits/ToolCostIndicator";
 
 interface DraftModuleProps {
   user: any;
@@ -47,6 +49,7 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout 
   const [currentDraft, setCurrentDraft] = useState<DraftResult | null>(null);
   const [activeTab, setActiveTab] = useState("generate");
   const { toast } = useToast();
+  const { consumeCredits, hasEnoughCredits, getToolCost } = useCredits(user?.id);
 
   const handleGenerateDraft = async () => {
     if (!prompt.trim() || !documentType) {
@@ -55,6 +58,21 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout 
         description: "Por favor completa el tipo de documento y la descripción.",
         variant: "destructive",
       });
+      return;
+    }
+
+    // Check and consume credits before proceeding
+    if (!hasEnoughCredits('draft')) {
+      toast({
+        title: "Créditos insuficientes",
+        description: `Necesitas ${getToolCost('draft')} créditos para generar documentos.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const creditResult = await consumeCredits('draft', { documentType });
+    if (!creditResult.success) {
       return;
     }
 
@@ -266,23 +284,26 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout 
                         />
                       </div>
                       
-                      <Button
-                        onClick={handleGenerateDraft}
-                        disabled={isDrafting}
-                        className="w-full"
-                      >
-                        {isDrafting ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Generando borrador...
-                          </>
-                        ) : (
-                          <>
-                            <PenTool className="h-4 w-4 mr-2" />
-                            Generar Borrador
-                          </>
-                        )}
-                      </Button>
+                      <div className="space-y-2">
+                        <ToolCostIndicator toolType="draft" lawyerId={user?.id} className="justify-center" />
+                        <Button
+                          onClick={handleGenerateDraft}
+                          disabled={isDrafting || !hasEnoughCredits('draft')}
+                          className="w-full"
+                        >
+                          {isDrafting ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Generando borrador...
+                            </>
+                          ) : (
+                            <>
+                              <PenTool className="h-4 w-4 mr-2" />
+                              Generar Borrador
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     </CardContent>
                   </Card>
 

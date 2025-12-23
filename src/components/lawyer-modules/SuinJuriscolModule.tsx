@@ -10,12 +10,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   BookOpen, Search, Loader2, Sparkles, FileText, Scale, 
   ExternalLink, ChevronDown, ChevronRight, Calendar, Clock,
-  Database, Globe, AlertCircle, CheckCircle2, History, MessageCircle, Send
+  Database, Globe, AlertCircle, CheckCircle2, History, MessageCircle, Send, Coins
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import UnifiedSidebar from "../UnifiedSidebar";
+import { useCredits } from "@/hooks/useCredits";
+import { ToolCostIndicator } from "@/components/credits/ToolCostIndicator";
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -216,6 +218,7 @@ export default function SuinJuriscolModule({ user, currentView, onViewChange, on
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const { consumeCredits, hasEnoughCredits, getToolCost } = useCredits(user?.id);
 
   // Load search history on mount
   useEffect(() => {
@@ -274,6 +277,21 @@ export default function SuinJuriscolModule({ user, currentView, onViewChange, on
         description: "Por favor ingresa una consulta para buscar en SUIN-Juriscol.",
         variant: "destructive",
       });
+      return;
+    }
+
+    // Check and consume credits before proceeding
+    if (!hasEnoughCredits('suin_juriscol')) {
+      toast({
+        title: "Créditos insuficientes",
+        description: `Necesitas ${getToolCost('suin_juriscol')} créditos para consultar SUIN-Juriscol.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const creditResult = await consumeCredits('suin_juriscol', { query, category });
+    if (!creditResult.success) {
       return;
     }
 
