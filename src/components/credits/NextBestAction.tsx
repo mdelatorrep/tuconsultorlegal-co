@@ -119,10 +119,9 @@ export function NextBestAction({
       {/* Primary Action - Most Urgent */}
       <Card 
         className={cn(
-          "cursor-pointer transition-all hover:shadow-lg border-2",
+          "transition-all hover:shadow-lg border-2",
           primaryAction.bgClass
         )}
-        onClick={primaryAction.action}
       >
         <CardContent className="p-4">
           <div className="flex items-center gap-4">
@@ -141,7 +140,17 @@ export function NextBestAction({
               <h3 className="font-semibold text-lg">{primaryAction.title}</h3>
               <p className="text-sm text-muted-foreground">{primaryAction.description}</p>
             </div>
-            <ChevronRight className="h-6 w-6 text-muted-foreground shrink-0" />
+            <Button 
+              onClick={primaryAction.action}
+              variant={primaryAction.priority === 1 ? "destructive" : "default"}
+              size="sm"
+              className="shrink-0"
+            >
+              {primaryAction.priority === 1 ? 'Revisar ahora' : 
+               primaryAction.type === 'leads' ? 'Ver leads' :
+               primaryAction.type === 'missions' ? 'Ver misiones' : 'Ver'}
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -149,14 +158,13 @@ export function NextBestAction({
       {/* Secondary Actions */}
       {secondaryActions.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          {secondaryActions.map((action, index) => (
+          {secondaryActions.map((action) => (
             <Card 
               key={action.type}
               className={cn(
-                "cursor-pointer transition-all hover:shadow-md",
+                "transition-all hover:shadow-md",
                 action.bgClass
               )}
-              onClick={action.action}
             >
               <CardContent className="p-3">
                 <div className="flex items-center gap-3">
@@ -165,6 +173,14 @@ export function NextBestAction({
                     <p className="font-medium text-sm truncate">{action.title}</p>
                     <p className="text-xs text-muted-foreground truncate">{action.description}</p>
                   </div>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={action.action}
+                    className="shrink-0 h-8 w-8"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
                 </div>
               </CardContent>
             </Card>

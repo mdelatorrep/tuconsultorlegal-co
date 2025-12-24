@@ -72,7 +72,7 @@ export function GamificationPanel({
         className={cn(
           "flex items-center gap-4 p-4 rounded-lg border transition-all",
           isClaimed && "bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800",
-          isCompleted && !isClaimed && "bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800",
+          isCompleted && !isClaimed && "bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800 ring-2 ring-amber-400/50",
           !isCompleted && !isClaimed && "hover:bg-muted/50"
         )}
       >
@@ -100,8 +100,8 @@ export function GamificationPanel({
         </div>
         
         <div className="flex items-center gap-3 shrink-0">
-          <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
-            +{task.credit_reward}
+          <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 font-semibold">
+            +{task.credit_reward} créditos
           </Badge>
           
           {isClaimed ? (
@@ -114,18 +114,21 @@ export function GamificationPanel({
               size="sm" 
               onClick={() => handleClaim(task.task_key)}
               disabled={claimingTask === task.task_key}
-              className="animate-pulse"
+              className="bg-amber-500 hover:bg-amber-600 text-white animate-pulse shadow-lg"
             >
-              {claimingTask === task.task_key ? 'Reclamando...' : 'Reclamar'}
-              <Gift className="h-4 w-4 ml-1" />
+              <Gift className="h-4 w-4 mr-1" />
+              {claimingTask === task.task_key ? 'Reclamando...' : 'Reclamar premio'}
             </Button>
           ) : isInProgress ? (
-            <Badge variant="outline">
+            <Badge variant="outline" className="text-primary border-primary">
               <Clock className="h-3 w-3 mr-1" />
               En progreso
             </Badge>
           ) : (
-            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            <Button variant="outline" size="sm" className="text-xs">
+              Comenzar
+              <ChevronRight className="h-3 w-3 ml-1" />
+            </Button>
           )}
         </div>
       </div>
