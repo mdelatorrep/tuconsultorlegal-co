@@ -550,14 +550,12 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
                         accept=".pdf,.doc,.docx,.txt,.rtf"
                         onChange={handleFileUpload}
                       />
-                      <div className="space-y-2">
-                        <ToolCostIndicator toolType="analysis" lawyerId={user?.id} className="justify-center" />
-                        <Button
-                          onClick={() => fileInputRef.current?.click()}
-                          disabled={analysisStatus === 'analyzing' || !hasEnoughCredits('analysis')}
-                          size="lg"
-                          className="w-full"
-                        >
+                      <Button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={analysisStatus === 'analyzing' || !hasEnoughCredits('analysis')}
+                        size="lg"
+                        className="w-full h-12"
+                      >
                         {analysisStatus === 'analyzing' ? (
                           <>
                             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -566,11 +564,14 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
                         ) : (
                           <>
                             <Upload className="mr-2 h-5 w-5" />
-                            Seleccionar Documento
+                            <span>Seleccionar Documento</span>
+                            <span className="ml-3 flex items-center gap-1 bg-white/20 px-2 py-0.5 rounded-lg text-sm">
+                              <Coins className="h-4 w-4" />
+                              {getToolCost('analysis')}
+                            </span>
                           </>
                         )}
-                        </Button>
-                      </div>
+                      </Button>
                     </CardContent>
                   </Card>
 

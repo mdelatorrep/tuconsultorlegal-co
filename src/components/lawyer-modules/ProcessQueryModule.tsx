@@ -495,27 +495,28 @@ export default function ProcessQueryModule({
                 </div>
               </TabsContent>
 
-              <div className="mt-6 flex items-center gap-3">
-                <Button
-                  onClick={handleSearch}
-                  disabled={isSearching}
-                  className="flex-1"
-                  size="lg"
-                >
-                  {isSearching ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Consultando Rama Judicial...
-                    </>
-                  ) : (
-                    <>
-                      <Search className="h-4 w-4 mr-2" />
-                      Consultar Procesos
-                    </>
-                  )}
-                </Button>
-                <ToolCostIndicator toolType="process_query" lawyerId={user?.id} />
-              </div>
+              <Button
+                onClick={handleSearch}
+                disabled={isSearching || !hasEnoughCredits('process_query')}
+                className="w-full h-12"
+                size="lg"
+              >
+                {isSearching ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Consultando Rama Judicial...
+                  </>
+                ) : (
+                  <>
+                    <Search className="h-4 w-4 mr-2" />
+                    <span>Consultar Procesos</span>
+                    <span className="ml-3 flex items-center gap-1 bg-primary-foreground/20 px-2 py-0.5 rounded-lg text-sm">
+                      <Coins className="h-4 w-4" />
+                      {getToolCost('process_query')}
+                    </span>
+                  </>
+                )}
+              </Button>
             </Tabs>
           </CardContent>
         </Card>

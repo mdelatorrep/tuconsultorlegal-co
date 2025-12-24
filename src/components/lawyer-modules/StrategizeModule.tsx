@@ -312,26 +312,27 @@ export default function StrategizeModule({ user, currentView, onViewChange, onLo
                       </p>
                     </div>
                     
-                    <div className="space-y-2">
-                      <ToolCostIndicator toolType="strategy" lawyerId={user?.id} className="justify-center" />
-                      <Button
-                        onClick={handleStrategicAnalysis}
-                        disabled={isAnalyzing || !hasEnoughCredits('strategy')}
-                        className="w-full h-14 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-500 shadow-xl hover:shadow-2xl transition-all duration-300 text-lg font-semibold"
-                      >
-                        {isAnalyzing ? (
-                          <>
-                            <Loader2 className="h-5 w-5 mr-3 animate-spin" />
-                            <span className="animate-pulse">Desarrollando estrategia...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles className="h-5 w-5 mr-3" />
-                            Generar Estrategia Integral
-                          </>
-                        )}
-                      </Button>
-                    </div>
+                    <Button
+                      onClick={handleStrategicAnalysis}
+                      disabled={isAnalyzing || !hasEnoughCredits('strategy')}
+                      className="w-full h-14 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-500 shadow-xl hover:shadow-2xl transition-all duration-300 text-lg font-semibold"
+                    >
+                      {isAnalyzing ? (
+                        <>
+                          <Loader2 className="h-5 w-5 mr-3 animate-spin" />
+                          <span className="animate-pulse">Desarrollando estrategia...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-5 w-5 mr-3" />
+                          <span>Generar Estrategia</span>
+                          <span className="ml-3 flex items-center gap-1 bg-white/20 px-2 py-0.5 rounded-lg text-sm">
+                            <Coins className="h-4 w-4" />
+                            {getToolCost('strategy')}
+                          </span>
+                        </>
+                      )}
+                    </Button>
                   </CardContent>
                 </Card>
 

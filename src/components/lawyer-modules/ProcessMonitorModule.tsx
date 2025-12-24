@@ -16,7 +16,8 @@ import {
   Loader2,
   AlertCircle,
   CheckCircle2,
-  Clock
+  Clock,
+  Coins
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -261,14 +262,26 @@ export function ProcessMonitorModule({ lawyerId }: ProcessMonitorModuleProps) {
           <p className="text-muted-foreground">Seguimiento automático de actuaciones en Rama Judicial</p>
         </div>
         <div className="flex gap-2 items-center">
-          <ToolCostIndicator toolType="process_monitor" lawyerId={lawyerId} />
           <Button 
             variant="outline" 
             onClick={syncAllProcesses}
             disabled={syncing || processes.length === 0 || !canSync}
           >
-            {syncing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-            Sincronizar Todo
+            {syncing ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Sincronizando...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                <span>Sincronizar Todo</span>
+                <span className="ml-2 flex items-center gap-1 bg-muted px-2 py-0.5 rounded text-xs">
+                  <Coins className="h-3 w-3" />
+                  {getToolCost('process_monitor')}
+                </span>
+              </>
+            )}
           </Button>
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
             <DialogTrigger asChild>

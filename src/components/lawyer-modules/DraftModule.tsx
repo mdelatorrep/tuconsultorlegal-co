@@ -284,26 +284,27 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout 
                         />
                       </div>
                       
-                      <div className="space-y-2">
-                        <ToolCostIndicator toolType="draft" lawyerId={user?.id} className="justify-center" />
-                        <Button
-                          onClick={handleGenerateDraft}
-                          disabled={isDrafting || !hasEnoughCredits('draft')}
-                          className="w-full"
-                        >
-                          {isDrafting ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Generando borrador...
-                            </>
-                          ) : (
-                            <>
-                              <PenTool className="h-4 w-4 mr-2" />
-                              Generar Borrador
-                            </>
-                          )}
-                        </Button>
-                      </div>
+                      <Button
+                        onClick={handleGenerateDraft}
+                        disabled={isDrafting || !hasEnoughCredits('draft')}
+                        className="w-full h-12"
+                      >
+                        {isDrafting ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Generando borrador...
+                          </>
+                        ) : (
+                          <>
+                            <PenTool className="h-4 w-4 mr-2" />
+                            <span>Generar Borrador</span>
+                            <span className="ml-3 flex items-center gap-1 bg-white/20 px-2 py-0.5 rounded-lg text-sm">
+                              <Coins className="h-4 w-4" />
+                              {getToolCost('draft')}
+                            </span>
+                          </>
+                        )}
+                      </Button>
                     </CardContent>
                   </Card>
 
