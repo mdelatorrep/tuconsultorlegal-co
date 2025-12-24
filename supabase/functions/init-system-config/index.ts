@@ -1127,6 +1127,35 @@ Responde de forma estructurada y concisa.`,
     config_key: 'voice_max_text_chars',
     config_value: '4096',
     description: 'Máximo de caracteres para texto a voz'
+  },
+
+  // ============================================================================
+  // 🤖 SPECIALIZED AGENTS (OpenAI Agent Builder)
+  // ============================================================================
+  {
+    config_key: 'specialized_agents_enabled',
+    config_value: 'true',
+    description: 'Habilitar agentes especializados para abogados'
+  },
+  {
+    config_key: 'specialized_agents_default_model',
+    config_value: 'google/gemini-2.5-flash',
+    description: 'Modelo por defecto para agentes especializados (Lovable AI)'
+  },
+  {
+    config_key: 'specialized_agents_max_messages',
+    config_value: '50',
+    description: 'Máximo de mensajes por sesión de agente especializado'
+  },
+  {
+    config_key: 'specialized_agents_default_credits',
+    config_value: '1',
+    description: 'Créditos por defecto por sesión de agente especializado'
+  },
+  {
+    config_key: 'specialized_agents_openai_integration',
+    config_value: 'true',
+    description: 'Usar OpenAI Assistants API cuando esté configurado'
   }
 ];
 
