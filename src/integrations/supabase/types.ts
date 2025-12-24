@@ -2223,6 +2223,8 @@ export type Database = {
       }
       lawyer_training_progress: {
         Row: {
+          ai_questions_count: number | null
+          best_score: number | null
           certificate_id: string | null
           completed_at: string | null
           completion_percentage: number
@@ -2231,16 +2233,21 @@ export type Database = {
           current_module_id: string | null
           id: string
           is_certified: boolean
+          last_training_date: string | null
           last_validation_score: number | null
           lawyer_id: string
           modules_completed: Json
           started_at: string
           total_modules: number
+          total_xp_earned: number | null
+          training_streak: number | null
           updated_at: string
           validation_attempts: number | null
           validation_history: Json | null
         }
         Insert: {
+          ai_questions_count?: number | null
+          best_score?: number | null
           certificate_id?: string | null
           completed_at?: string | null
           completion_percentage?: number
@@ -2249,16 +2256,21 @@ export type Database = {
           current_module_id?: string | null
           id?: string
           is_certified?: boolean
+          last_training_date?: string | null
           last_validation_score?: number | null
           lawyer_id: string
           modules_completed?: Json
           started_at?: string
           total_modules?: number
+          total_xp_earned?: number | null
+          training_streak?: number | null
           updated_at?: string
           validation_attempts?: number | null
           validation_history?: Json | null
         }
         Update: {
+          ai_questions_count?: number | null
+          best_score?: number | null
           certificate_id?: string | null
           completed_at?: string | null
           completion_percentage?: number
@@ -2267,11 +2279,14 @@ export type Database = {
           current_module_id?: string | null
           id?: string
           is_certified?: boolean
+          last_training_date?: string | null
           last_validation_score?: number | null
           lawyer_id?: string
           modules_completed?: Json
           started_at?: string
           total_modules?: number
+          total_xp_earned?: number | null
+          training_streak?: number | null
           updated_at?: string
           validation_attempts?: number | null
           validation_history?: Json | null
