@@ -6,11 +6,13 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Calendar, Clock, User, FileText, Phone, Mail, CheckCircle } from 'lucide-react';
+import { Plus, Calendar, Clock, User, FileText, Phone, Mail, CheckCircle, Brain } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import CaseAIToolsTab from './CaseAIToolsTab';
 
 interface Activity {
   id: string;
@@ -38,6 +40,7 @@ const CaseTraceabilityModal: React.FC<CaseTraceabilityModalProps> = ({
   const [activities, setActivities] = useState<Activity[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isAddingActivity, setIsAddingActivity] = useState(false);
+  const [activeTab, setActiveTab] = useState('activities');
   const [newActivity, setNewActivity] = useState({
     activity_type: 'meeting',
     title: '',
@@ -170,17 +173,30 @@ const CaseTraceabilityModal: React.FC<CaseTraceabilityModalProps> = ({
             </div>
           </div>
 
-          {/* Add Activity Button */}
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">Actividades ({activities.length})</h3>
-            <Button 
-              onClick={() => setIsAddingActivity(true)}
-              size="sm"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Agregar Actividad
-            </Button>
-          </div>
+          {/* Tabs for Activities and AI Tools */}
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="activities" className="flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                Actividades ({activities.length})
+              </TabsTrigger>
+              <TabsTrigger value="ai_tools" className="flex items-center gap-2">
+                <Brain className="h-4 w-4" />
+                Herramientas IA
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="activities" className="space-y-4">
+              {/* Add Activity Button */}
+              <div className="flex justify-end">
+                <Button 
+                  onClick={() => setIsAddingActivity(true)}
+                  size="sm"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Agregar Actividad
+                </Button>
+              </div>
 
           {/* Add Activity Form */}
           {isAddingActivity && (
@@ -289,6 +305,16 @@ const CaseTraceabilityModal: React.FC<CaseTraceabilityModalProps> = ({
               ))
             )}
           </div>
+            </TabsContent>
+
+            <TabsContent value="ai_tools">
+              <CaseAIToolsTab
+                caseId={caseData?.id}
+                caseTitle={caseData?.title}
+                lawyerId={lawyerData?.id}
+              />
+            </TabsContent>
+          </Tabs>
         </div>
 
         <div className="flex justify-end gap-2">
