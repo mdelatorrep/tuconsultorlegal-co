@@ -1,7 +1,10 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Crown, Search, Eye, PenTool, Target, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Search, Eye, PenTool, Target, Users, Database, Gavel, Radar, Calendar, Wand2, Mic, TrendingUp, ShieldCheck, Coins } from "lucide-react";
 import { LucideIcon } from "lucide-react";
+import { useCredits } from "@/hooks/useCredits";
+import { useLawyerAuth } from "@/hooks/useLawyerAuth";
 
 interface Tool {
   title: string;
@@ -17,24 +20,53 @@ interface QuickToolsGridProps {
 
 const tools: Tool[] = [
   { title: "Investigación", icon: Search, view: "research", gradient: "from-blue-500 to-cyan-500" },
+  { title: "SUIN-Juriscol", icon: Database, view: "suin-juriscol", gradient: "from-indigo-500 to-purple-500" },
+  { title: "Consulta Procesos", icon: Gavel, view: "process-query", gradient: "from-slate-500 to-zinc-600" },
+  { title: "Monitor Procesos", icon: Radar, view: "process-monitor", gradient: "from-teal-500 to-emerald-500" },
   { title: "Análisis", icon: Eye, view: "analyze", gradient: "from-purple-500 to-pink-500" },
   { title: "Redacción", icon: PenTool, view: "draft", gradient: "from-green-500 to-emerald-500" },
   { title: "Estrategia", icon: Target, view: "strategize", gradient: "from-orange-500 to-red-500" },
+  { title: "Predictor", icon: TrendingUp, view: "case-predictor", gradient: "from-rose-500 to-pink-500" },
   { title: "CRM", icon: Users, view: "crm", gradient: "from-blue-500 to-indigo-500" },
+  { title: "Calendario", icon: Calendar, view: "legal-calendar", gradient: "from-amber-500 to-orange-500" },
+  { title: "Copilot", icon: Wand2, view: "legal-copilot", gradient: "from-violet-500 to-purple-500" },
+  { title: "Voz", icon: Mic, view: "voice-assistant", gradient: "from-cyan-500 to-blue-500" },
+  { title: "Verificación", icon: ShieldCheck, view: "lawyer-verification", gradient: "from-emerald-500 to-green-500" },
 ];
 
 export function QuickToolsGrid({ onViewChange, newLeadsCount = 0 }: QuickToolsGridProps) {
+  const { user } = useLawyerAuth();
+  const { balance } = useCredits(user?.id || null);
+  
+  const hasCredits = (balance?.current_balance || 0) > 0;
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <Crown className="h-5 w-5 text-amber-500" />
+      <div className="flex items-center justify-between">
         <h2 className="text-lg md:text-xl font-semibold">Herramientas Rápidas</h2>
-        <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs">
-          PREMIUM ACTIVO
-        </Badge>
       </div>
       
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      {/* CTA sutil para comprar créditos cuando no hay */}
+      {!hasCredits && (
+        <Card className="border-dashed border-amber-500/50 bg-amber-500/5">
+          <CardContent className="p-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Coins className="h-4 w-4 text-amber-500" />
+              <span>Obtén créditos para usar todas las herramientas IA</span>
+            </div>
+            <Button 
+              size="sm" 
+              variant="outline"
+              className="border-amber-500/50 text-amber-600 hover:bg-amber-500/10 shrink-0"
+              onClick={() => onViewChange("credits")}
+            >
+              Obtener créditos
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+      
+      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-2 md:gap-3">
         {tools.map((tool) => (
           <Card
             key={tool.view}
@@ -44,18 +76,18 @@ export function QuickToolsGrid({ onViewChange, newLeadsCount = 0 }: QuickToolsGr
             {/* CRM notification badge */}
             {tool.view === "crm" && newLeadsCount > 0 && (
               <div className="absolute -top-2 -right-2 z-10">
-                <Badge className="bg-destructive text-destructive-foreground px-2 py-1 text-xs font-bold animate-pulse shadow-lg">
+                <Badge className="bg-destructive text-destructive-foreground px-1.5 py-0.5 text-xs font-bold animate-pulse shadow-lg">
                   {newLeadsCount}
                 </Badge>
               </div>
             )}
-            <CardContent className="p-4 text-center">
+            <CardContent className="p-3 text-center">
               <div
-                className={`w-12 h-12 rounded-lg bg-gradient-to-r ${tool.gradient} flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-300`}
+                className={`w-10 h-10 md:w-12 md:h-12 rounded-lg bg-gradient-to-r ${tool.gradient} flex items-center justify-center mx-auto mb-1.5 group-hover:scale-110 transition-transform duration-300`}
               >
-                <tool.icon className="h-6 w-6 text-white" />
+                <tool.icon className="h-5 w-5 md:h-6 md:w-6 text-white" />
               </div>
-              <h3 className="font-semibold text-sm">{tool.title}</h3>
+              <h3 className="font-medium text-xs md:text-sm truncate">{tool.title}</h3>
             </CardContent>
           </Card>
         ))}

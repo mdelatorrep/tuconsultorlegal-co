@@ -893,13 +893,11 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                     </Card>
                   )}
 
-                  {/* Quick Tools */}
-                  {user?.canUseAiTools && (
-                    <QuickToolsGrid 
-                      onViewChange={(view) => setCurrentView(view as ViewType)} 
-                      newLeadsCount={newLeadsCount} 
-                    />
-                  )}
+                  {/* Quick Tools - siempre visible */}
+                  <QuickToolsGrid 
+                    onViewChange={(view) => setCurrentView(view as ViewType)} 
+                    newLeadsCount={newLeadsCount} 
+                  />
 
                   {/* Professional Development */}
                   <Card 
@@ -919,9 +917,9 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                     </CardContent>
                   </Card>
 
-                  {/* Administration Section */}
+                  {/* Administration Section - open by default */}
                   {(user?.canCreateAgents || user?.canCreateBlogs) && (
-                    <details className="group">
+                    <details className="group" open>
                       <summary className="flex items-center gap-2 cursor-pointer list-none hover:text-primary">
                         <Settings className="h-5 w-5 text-muted-foreground" />
                         <h2 className="text-lg font-semibold">Administración</h2>
@@ -955,33 +953,6 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                         )}
                       </div>
                     </details>
-                  )}
-
-                  {/* Upgrade CTA */}
-                  {!user?.canUseAiTools && (
-                    <Card className="border-0 bg-gradient-to-r from-amber-500 to-orange-500 text-white">
-                      <CardContent className="p-8">
-                        <div className="flex items-center justify-between flex-wrap gap-4">
-                          <div className="flex items-center gap-4">
-                            <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center">
-                              <Crown className="h-8 w-8 text-white" />
-                            </div>
-                            <div>
-                              <h3 className="text-2xl font-bold">Desbloquea tu potencial</h3>
-                              <p className="text-white/90">Accede a herramientas IA avanzadas</p>
-                            </div>
-                          </div>
-                          <Button 
-                            size="lg" 
-                            variant="secondary" 
-                            className="bg-white text-orange-600 hover:bg-white/90"
-                            onClick={() => setCurrentView('credits')}
-                          >
-                            Actualizar ahora
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
                   )}
                 </div>
               )}
