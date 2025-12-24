@@ -2727,6 +2727,8 @@ export type Database = {
       }
       monitored_processes: {
         Row: {
+          case_id: string | null
+          client_id: string | null
           created_at: string | null
           demandado: string | null
           demandante: string | null
@@ -2742,6 +2744,8 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          case_id?: string | null
+          client_id?: string | null
           created_at?: string | null
           demandado?: string | null
           demandante?: string | null
@@ -2757,6 +2761,8 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          case_id?: string | null
+          client_id?: string | null
           created_at?: string | null
           demandado?: string | null
           demandante?: string | null
@@ -2772,6 +2778,20 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "monitored_processes_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "crm_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monitored_processes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "crm_clients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "monitored_processes_lawyer_id_fkey"
             columns: ["lawyer_id"]
