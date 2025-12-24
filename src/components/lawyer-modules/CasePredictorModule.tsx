@@ -18,7 +18,8 @@ import {
   Loader2,
   History,
   Target,
-  Shield
+  Shield,
+  Coins
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -257,7 +258,7 @@ export function CasePredictorModule({ lawyerId }: CasePredictorModuleProps) {
             </div>
 
             <Button 
-              className="w-full" 
+              className="w-full h-12" 
               size="lg"
               onClick={runPrediction}
               disabled={loading || !caseType || !caseDescription.trim() || !hasEnoughCredits('case_predictor')}
@@ -270,7 +271,11 @@ export function CasePredictorModule({ lawyerId }: CasePredictorModuleProps) {
               ) : (
                 <>
                   <Sparkles className="h-5 w-5 mr-2" />
-                  Generar Predicción
+                  <span>Generar Predicción</span>
+                  <span className="ml-3 flex items-center gap-1 bg-primary-foreground/20 px-2 py-0.5 rounded-lg text-sm">
+                    <Coins className="h-4 w-4" />
+                    {getToolCost('case_predictor')}
+                  </span>
                 </>
               )}
             </Button>
