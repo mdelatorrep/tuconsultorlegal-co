@@ -2004,6 +2004,59 @@ export type Database = {
           },
         ]
       }
+      lawyer_notifications: {
+        Row: {
+          action_url: string | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          is_read: boolean
+          lawyer_id: string
+          message: string
+          notification_type: string
+          priority: string
+          read_at: string | null
+          title: string
+        }
+        Insert: {
+          action_url?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          is_read?: boolean
+          lawyer_id: string
+          message: string
+          notification_type: string
+          priority?: string
+          read_at?: string | null
+          title: string
+        }
+        Update: {
+          action_url?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          is_read?: boolean
+          lawyer_id?: string
+          message?: string
+          notification_type?: string
+          priority?: string
+          read_at?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lawyer_notifications_lawyer_id_fkey"
+            columns: ["lawyer_id"]
+            isOneToOne: false
+            referencedRelation: "lawyer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lawyer_profiles: {
         Row: {
           active: boolean
@@ -2794,6 +2847,44 @@ export type Database = {
           },
           {
             foreignKeyName: "monitored_processes_lawyer_id_fkey"
+            columns: ["lawyer_id"]
+            isOneToOne: false
+            referencedRelation: "lawyer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_preferences: {
+        Row: {
+          created_at: string
+          email_enabled: boolean
+          id: string
+          in_app_enabled: boolean
+          lawyer_id: string
+          notification_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email_enabled?: boolean
+          id?: string
+          in_app_enabled?: boolean
+          lawyer_id: string
+          notification_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email_enabled?: boolean
+          id?: string
+          in_app_enabled?: boolean
+          lawyer_id?: string
+          notification_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_lawyer_id_fkey"
             columns: ["lawyer_id"]
             isOneToOne: false
             referencedRelation: "lawyer_profiles"
@@ -3796,6 +3887,19 @@ export type Database = {
           admin_full_name: string
           auth_user_id: string
           is_super_admin?: boolean
+        }
+        Returns: string
+      }
+      create_lawyer_notification: {
+        Args: {
+          p_action_url?: string
+          p_entity_id?: string
+          p_entity_type?: string
+          p_lawyer_id: string
+          p_message: string
+          p_notification_type: string
+          p_priority?: string
+          p_title: string
         }
         Returns: string
       }
