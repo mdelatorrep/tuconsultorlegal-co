@@ -9,7 +9,7 @@ import {
   Activity, Users, Bot, BarChart3, BookOpen, MessageCircle, 
   Settings, Mail, Tag, CreditCard, Database, FileText, 
   FileCheck, Zap, Shield, DollarSign, UserCheck, Server, ScrollText,
-  TrendingUp, Brain, Heart, Target, Scale, ShieldCheck
+  TrendingUp, Brain, Heart, Target, Scale, ShieldCheck, Sparkles
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -62,7 +62,8 @@ export const AdminSidebar = ({
       label: "IA & Automatización",
       items: [
         { id: 'ai-tools', label: 'Uso Herramientas IA', icon: Brain, count: 0 },
-        { id: 'agents', label: 'Agentes Legales', icon: Bot, count: pendingAgentsCount },
+        { id: 'agents', label: 'Agentes Documentos', icon: Bot, count: pendingAgentsCount },
+        { id: 'specialized-agents', label: 'Agentes Especializados', icon: Sparkles, count: 0 },
         { id: 'processes', label: 'Procesos Monitoreados', icon: Scale, count: 0 },
         { id: 'openai', label: 'OpenAI Config', icon: Zap, count: 0 },
         { id: 'knowledge', label: 'Base Conocimiento', icon: Database, count: 0 },

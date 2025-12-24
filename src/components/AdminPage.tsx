@@ -38,7 +38,8 @@ import { ProcessMonitorAdmin } from "./admin/ProcessMonitorAdmin";
 import { LeadsAnalytics } from "./admin/LeadsAnalytics";
 import { StrategicDecisions } from "./admin/StrategicDecisions";
 import LawyerVerificationAdmin from "./admin/LawyerVerificationAdmin";
-import { 
+import { AdminSpecializedAgents } from "./admin/AdminSpecializedAgents";
+import {
   Copy, Users, Bot, BarChart3, Clock, CheckCircle, Lock, Unlock, Trash2, Check, X, Plus, RefreshCw, 
   Loader2, MessageCircle, BookOpen, Settings, Zap, Mail, Phone, Bell, LogOut, UserCheck, 
   FileText, AlertCircle, Globe, Eye, EyeOff, Archive, Reply, User2, Timer, CreditCard, 
@@ -1479,6 +1480,9 @@ function AdminPage() {
         
       case 'config':
         return <SystemConfigManager />;
+        
+      case 'specialized-agents':
+        return <AdminSpecializedAgents />;
         
       case 'email-config':
         return <EmailConfigManager />;

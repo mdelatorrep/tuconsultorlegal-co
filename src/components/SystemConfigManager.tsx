@@ -339,7 +339,8 @@ export default function SystemConfigManager() {
     { id: 'gamification-config', name: 'Gamificación', icon: <Trophy className="w-4 h-4" />, keys: ['gamification_enabled', 'gamification_points_config', 'gamification_streak_bonus_multiplier', 'gamification_daily_goal_credits', 'gamification_levels'] },
     { id: 'credits-config', name: 'Créditos', icon: <CreditCard className="w-4 h-4" />, keys: ['credits_daily_free_limit', 'credits_referral_bonus', 'credits_warning_threshold', 'credits_welcome_bonus', 'credits_auto_recharge_enabled', 'credits_auto_recharge_amount'] },
     { id: 'verification-config', name: 'Verificación', icon: <Shield className="w-4 h-4" />, keys: ['verification_verifik_enabled', 'verification_manual_approval_required', 'verification_expiration_days'] },
-    { id: 'voice-config', name: 'Asistente de Voz', icon: <Mic className="w-4 h-4" />, keys: ['voice_assistant_enabled', 'voice_transcription_model', 'voice_transcription_language', 'voice_transcription_prompt', 'voice_tts_model', 'voice_tts_voice', 'voice_max_audio_size_mb', 'voice_max_text_chars'] }
+    { id: 'voice-config', name: 'Asistente de Voz', icon: <Mic className="w-4 h-4" />, keys: ['voice_assistant_enabled', 'voice_transcription_model', 'voice_transcription_language', 'voice_transcription_prompt', 'voice_tts_model', 'voice_tts_voice', 'voice_max_audio_size_mb', 'voice_max_text_chars'] },
+    { id: 'specialized-agents-config', name: 'Agentes Especializados', icon: <Sparkles className="w-4 h-4" />, keys: ['specialized_agents_enabled', 'specialized_agents_default_model', 'specialized_agents_max_messages', 'specialized_agents_default_credits', 'specialized_agents_openai_integration'] }
   ];
 
   // Global parameters configuration

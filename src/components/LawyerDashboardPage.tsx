@@ -48,6 +48,8 @@ import { GamificationDashboard } from "./gamification/GamificationDashboard";
 import { QuickActionsBar } from "./QuickActionsBar";
 import { useCredits } from "@/hooks/useCredits";
 import { ToolCostIndicator } from "@/components/credits/ToolCostIndicator";
+import { SpecializedAgentsGrid } from "./lawyer-modules/SpecializedAgentsGrid";
+import { SpecializedAgentChat } from "./lawyer-modules/SpecializedAgentChat";
 
 // Dashboard components
 import { 
@@ -99,7 +101,7 @@ const quillFormats = [
   'list', 'bullet', 'align', 'color', 'background'
 ];
 
-type ViewType = 'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager' | 'research' | 'analyze' | 'draft' | 'strategize' | 'crm' | 'public-profile' | 'suin-juriscol' | 'process-query' | 'credits' | 'gamification' | 'process-monitor' | 'legal-calendar' | 'legal-copilot' | 'voice-assistant' | 'case-predictor' | 'client-portal' | 'lawyer-verification' | 'request-agent-access' | 'request-blog-access';
+type ViewType = 'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager' | 'research' | 'analyze' | 'draft' | 'strategize' | 'crm' | 'public-profile' | 'suin-juriscol' | 'process-query' | 'credits' | 'gamification' | 'process-monitor' | 'legal-calendar' | 'legal-copilot' | 'voice-assistant' | 'case-predictor' | 'client-portal' | 'lawyer-verification' | 'request-agent-access' | 'request-blog-access' | 'specialized-agents';
 
 export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageProps) {
   const [documents, setDocuments] = useState<DocumentToken[]>([]);
@@ -108,6 +110,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const [lawyerComments, setLawyerComments] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [currentView, setCurrentView] = useState<ViewType>('dashboard');
+  const [selectedSpecializedAgent, setSelectedSpecializedAgent] = useState<any>(null);
   const [isCheckingSpelling, setIsCheckingSpelling] = useState(false);
   const [showSendConfirmation, setShowSendConfirmation] = useState(false);
   const [newLeadsCount, setNewLeadsCount] = useState(0);
@@ -623,6 +626,22 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
             </Card>
           </div>
         );
+      case 'specialized-agents':
+        if (selectedSpecializedAgent) {
+          return (
+            <SpecializedAgentChat
+              agent={selectedSpecializedAgent}
+              lawyerId={user.id}
+              onBack={() => setSelectedSpecializedAgent(null)}
+            />
+          );
+        }
+        return (
+          <SpecializedAgentsGrid
+            lawyerId={user.id}
+            onSelectAgent={(agent) => setSelectedSpecializedAgent(agent)}
+          />
+        );
       default:
         return null;
     }
@@ -632,7 +651,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const viewsWithSidebar = ['dashboard', 'public-profile', 'stats', 'credits', 'gamification', 'request-agent-access', 'request-blog-access'];
   
   // Views that modules render their own sidebar (need to be wrapped)
-  const moduleViews = ['agent-creator', 'agent-manager', 'training', 'blog-manager', 'research', 'analyze', 'draft', 'strategize', 'crm', 'suin-juriscol', 'process-query', 'process-monitor', 'legal-calendar', 'legal-copilot', 'voice-assistant', 'case-predictor', 'client-portal', 'lawyer-verification'];
+  const moduleViews = ['agent-creator', 'agent-manager', 'training', 'blog-manager', 'research', 'analyze', 'draft', 'strategize', 'crm', 'suin-juriscol', 'process-query', 'process-monitor', 'legal-calendar', 'legal-copilot', 'voice-assistant', 'case-predictor', 'client-portal', 'lawyer-verification', 'specialized-agents'];
 
   // If it's a module view, wrap it with our SidebarProvider
   if (moduleViews.includes(currentView)) {
