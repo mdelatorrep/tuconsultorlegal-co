@@ -5,13 +5,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Search, BookOpen, FileText, Loader2, Sparkles, Target, TrendingUp, Clock, CheckCircle2, AlertCircle, Hourglass, ChevronDown, ChevronRight, Calendar, Archive, Filter, Coins } from "lucide-react";
+import { Search, BookOpen, FileText, Loader2, Sparkles, Target, TrendingUp, Clock, CheckCircle2, AlertCircle, Hourglass, ChevronDown, ChevronRight, Calendar, Archive, Filter, Coins, Briefcase } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { useCredits } from "@/hooks/useCredits";
 import { ToolCostIndicator } from "@/components/credits/ToolCostIndicator";
 import UnifiedSidebar from "../UnifiedSidebar";
+import { CaseSelectorDropdown } from "./CaseSelectorDropdown";
+import { useCaseActivityLogger } from "@/hooks/useCaseActivityLogger";
 
 interface ResearchResult {
   query: string;
@@ -49,8 +51,11 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
   const [expandedResults, setExpandedResults] = useState<Set<number>>(new Set());
   const [sortBy, setSortBy] = useState<'date' | 'query'>('date');
   const [filterBy, setFilterBy] = useState<'all' | 'recent' | 'archived'>('all');
+  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
+  const [selectedCaseData, setSelectedCaseData] = useState<any>(null);
   const { toast } = useToast();
   const { consumeCredits, hasEnoughCredits, getToolCost } = useCredits(user?.id);
+  const { logAIToolUsage } = useCaseActivityLogger();
 
   // Toggle expand/collapse for individual results
   const toggleResult = (index: number) => {

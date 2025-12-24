@@ -5,13 +5,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Brain, Target, AlertTriangle, CheckCircle, Scale, Loader2, Sparkles, TrendingUp, Clock, Lightbulb, Shield, History, ChevronRight, Coins } from "lucide-react";
+import { Brain, Target, AlertTriangle, CheckCircle, Scale, Loader2, Sparkles, TrendingUp, Clock, Lightbulb, Shield, History, ChevronRight, Coins, Briefcase } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import UnifiedSidebar from "../UnifiedSidebar";
 import { useCredits } from "@/hooks/useCredits";
 import { ToolCostIndicator } from "@/components/credits/ToolCostIndicator";
+import { CaseSelectorDropdown } from "./CaseSelectorDropdown";
+import { useCaseActivityLogger } from "@/hooks/useCaseActivityLogger";
 
 interface StrategizeModuleProps {
   user: any;
@@ -52,8 +54,11 @@ export default function StrategizeModule({ user, currentView, onViewChange, onLo
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analyses, setAnalyses] = useState<StrategicAnalysis[]>([]);
   const [activeTab, setActiveTab] = useState("strategize");
+  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
+  const [selectedCaseData, setSelectedCaseData] = useState<any>(null);
   const { toast } = useToast();
   const { consumeCredits, hasEnoughCredits, getToolCost } = useCredits(user?.id);
+  const { logAIToolUsage } = useCaseActivityLogger();
 
   // Load strategy history on mount
   useEffect(() => {

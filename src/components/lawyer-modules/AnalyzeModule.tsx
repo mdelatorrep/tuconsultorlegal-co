@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from '@/integrations/supabase/client';
-import { AlertTriangle, FileText, Upload, CheckCircle, XCircle, AlertCircle, FileSignature, MessageSquare, CheckSquare, BarChart, Copy, Check, Download, Loader2, Eye, Sparkles, Shield, Target, History, Trash2, ChevronDown, Coins } from 'lucide-react';
+import { AlertTriangle, FileText, Upload, CheckCircle, XCircle, AlertCircle, FileSignature, MessageSquare, CheckSquare, BarChart, Copy, Check, Download, Loader2, Eye, Sparkles, Shield, Target, History, Trash2, ChevronDown, Coins, Briefcase } from 'lucide-react';
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -13,6 +13,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import UnifiedSidebar from "../UnifiedSidebar";
 import { useCredits } from "@/hooks/useCredits";
 import { ToolCostIndicator } from "@/components/credits/ToolCostIndicator";
+import { CaseSelectorDropdown } from "./CaseSelectorDropdown";
+import { useCaseActivityLogger } from "@/hooks/useCaseActivityLogger";
 
 interface AnalyzeModuleProps {
   user: any;
@@ -63,8 +65,11 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [analysisHistory, setAnalysisHistory] = useState<AnalysisResult[]>([]);
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
+  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
+  const [selectedCaseData, setSelectedCaseData] = useState<any>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { consumeCredits, hasEnoughCredits, getToolCost } = useCredits(user?.id);
+  const { logAIToolUsage } = useCaseActivityLogger();
 
   useEffect(() => {
     loadAnalysisHistory();
@@ -542,7 +547,26 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
                         Soporta PDF, Word, y documentos de texto
                       </CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="space-y-4">
+                      {/* Case Selector */}
+                      <CaseSelectorDropdown
+                        lawyerId={user?.id}
+                        selectedCaseId={selectedCaseId}
+                        onCaseSelect={(caseId, caseData) => {
+                          setSelectedCaseId(caseId);
+                          setSelectedCaseData(caseData);
+                        }}
+                        disabled={analysisStatus === 'analyzing'}
+                      />
+
+                      {selectedCaseData && (
+                        <div className="flex items-center gap-2 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                          <Briefcase className="h-4 w-4 text-primary" />
+                          <span className="text-sm font-medium">Vinculado a:</span>
+                          <Badge variant="secondary">{selectedCaseData.title}</Badge>
+                        </div>
+                      )}
+
                       <input
                         ref={fileInputRef}
                         type="file"

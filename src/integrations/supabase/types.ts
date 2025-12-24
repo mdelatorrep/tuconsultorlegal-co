@@ -2673,6 +2673,8 @@ export type Database = {
       }
       legal_tools_results: {
         Row: {
+          case_id: string | null
+          client_id: string | null
           created_at: string
           id: string
           input_data: Json
@@ -2683,6 +2685,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          case_id?: string | null
+          client_id?: string | null
           created_at?: string
           id?: string
           input_data?: Json
@@ -2693,6 +2697,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          case_id?: string | null
+          client_id?: string | null
           created_at?: string
           id?: string
           input_data?: Json
@@ -2702,7 +2708,22 @@ export type Database = {
           tool_type?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "legal_tools_results_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "crm_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_tools_results_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "crm_clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       monitored_processes: {
         Row: {
