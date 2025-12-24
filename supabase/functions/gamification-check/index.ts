@@ -6,6 +6,38 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper to get system config
+async function getSystemConfig(supabase: any, configKey: string, defaultValue: string): Promise<string> {
+  try {
+    const { data } = await supabase
+      .from('system_config')
+      .select('config_value')
+      .eq('config_key', configKey)
+      .single();
+    return data?.config_value || defaultValue;
+  } catch {
+    return defaultValue;
+  }
+}
+
+// Get multiple configs at once
+async function getMultipleConfigs(supabase: any, keys: string[]): Promise<Record<string, string>> {
+  try {
+    const { data } = await supabase
+      .from('system_config')
+      .select('config_key, config_value')
+      .in('config_key', keys);
+    
+    const result: Record<string, string> = {};
+    data?.forEach((item: any) => {
+      result[item.config_key] = item.config_value;
+    });
+    return result;
+  } catch {
+    return {};
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -20,8 +52,38 @@ serve(async (req) => {
 
     console.log(`[GAMIFICATION] Processing action: ${action} for lawyer ${lawyerId}`);
 
+    // Get gamification configs
+    const configs = await getMultipleConfigs(supabase, [
+      'gamification_enabled',
+      'gamification_points_config',
+      'gamification_streak_bonus_multiplier',
+      'gamification_daily_goal_credits',
+      'gamification_levels'
+    ]);
+
+    const gamificationEnabled = configs['gamification_enabled'] !== 'false';
+    
+    if (!gamificationEnabled) {
+      return new Response(
+        JSON.stringify({ error: 'Gamification is disabled', disabled: true }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const streakMultiplier = parseFloat(configs['gamification_streak_bonus_multiplier'] || '1.5');
+    const dailyGoal = parseInt(configs['gamification_daily_goal_credits'] || '50');
+    
+    let pointsConfig = {};
+    let levels: any[] = [];
+    
+    try {
+      pointsConfig = JSON.parse(configs['gamification_points_config'] || '{}');
+      levels = JSON.parse(configs['gamification_levels'] || '[]');
+    } catch (e) {
+      console.error('[GAMIFICATION] Error parsing config JSON:', e);
+    }
+
     if (action === 'get_progress') {
-      // Get all tasks and progress for a lawyer
       if (!lawyerId) {
         return new Response(
           JSON.stringify({ error: 'lawyerId is required' }),
@@ -52,6 +114,23 @@ serve(async (req) => {
         console.error('[GAMIFICATION] Error fetching progress:', progressError);
       }
 
+      // Get lawyer credits for level calculation
+      const { data: credits } = await supabase
+        .from('lawyer_credits')
+        .select('total_earned')
+        .eq('lawyer_id', lawyerId)
+        .single();
+
+      const totalEarned = credits?.total_earned || 0;
+
+      // Calculate current level
+      let currentLevel = levels[0] || { level: 1, name: 'Novato', badge: '🌱' };
+      for (const level of levels) {
+        if (totalEarned >= level.minCredits) {
+          currentLevel = level;
+        }
+      }
+
       // Merge tasks with progress
       const tasksWithProgress = tasks?.map(task => {
         const taskProgress = progress?.find(p => p.task_id === task.id);
@@ -78,16 +157,20 @@ serve(async (req) => {
           stats: {
             completedTasks,
             totalTasks,
-            completionPercentage: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+            completionPercentage: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0,
+            dailyGoal,
+            streakMultiplier
           },
-          badges: earnedBadges
+          badges: earnedBadges,
+          level: currentLevel,
+          levels,
+          pointsConfig
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     if (action === 'complete_task') {
-      // Mark a task as completed
       if (!lawyerId || !taskKey) {
         return new Response(
           JSON.stringify({ error: 'lawyerId and taskKey are required' }),
@@ -129,6 +212,13 @@ serve(async (req) => {
       const completionCount = (existingProgress?.completion_count || 0) + 1;
       const now = new Date().toISOString();
 
+      // Calculate credits with possible dynamic points from config
+      let creditReward = task.credit_reward;
+      const dynamicPoints = (pointsConfig as any)[taskKey];
+      if (dynamicPoints && typeof dynamicPoints === 'number') {
+        creditReward = dynamicPoints;
+      }
+
       // Upsert progress
       const { error: upsertError } = await supabase
         .from('gamification_progress')
@@ -156,8 +246,8 @@ serve(async (req) => {
         .eq('lawyer_id', lawyerId)
         .single();
 
-      const newBalance = (credits?.current_balance || 0) + task.credit_reward;
-      const newTotalEarned = (credits?.total_earned || 0) + task.credit_reward;
+      const newBalance = (credits?.current_balance || 0) + creditReward;
+      const newTotalEarned = (credits?.total_earned || 0) + creditReward;
 
       await supabase.from('lawyer_credits').upsert({
         lawyer_id: lawyerId,
@@ -169,19 +259,19 @@ serve(async (req) => {
       await supabase.from('credit_transactions').insert({
         lawyer_id: lawyerId,
         transaction_type: 'gamification',
-        amount: task.credit_reward,
+        amount: creditReward,
         balance_after: newBalance,
         reference_type: 'task',
         reference_id: task.id,
         description: `Tarea completada: ${task.name}`
       });
 
-      console.log(`[GAMIFICATION] Task ${taskKey} completed. Awarded ${task.credit_reward} credits`);
+      console.log(`[GAMIFICATION] Task ${taskKey} completed. Awarded ${creditReward} credits`);
 
       return new Response(
         JSON.stringify({ 
           success: true,
-          creditsAwarded: task.credit_reward,
+          creditsAwarded: creditReward,
           newBalance,
           taskName: task.name,
           badge: task.badge_name
@@ -191,7 +281,6 @@ serve(async (req) => {
     }
 
     if (action === 'claim_badge') {
-      // Claim a badge after task completion
       if (!lawyerId || !taskKey) {
         return new Response(
           JSON.stringify({ error: 'lawyerId and taskKey are required' }),

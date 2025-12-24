@@ -686,6 +686,352 @@ ESTILO:
     config_key: 'research_queue_min_spacing_seconds',
     config_value: '180',
     description: 'Segundos mínimos entre investigaciones (3 minutos)'
+  },
+
+  // ============================================================================
+  // 🎯 CASE PREDICTOR (Predictor de Casos)
+  // ============================================================================
+  {
+    config_key: 'case_predictor_ai_model',
+    config_value: 'google/gemini-2.5-pro',
+    description: 'Modelo para predicción de resultados de casos (case-outcome-predictor)'
+  },
+  {
+    config_key: 'case_predictor_system_prompt',
+    config_value: `Eres un experto analista legal colombiano con amplia experiencia en litigios. Tu tarea es analizar casos y proporcionar predicciones basadas en:
+- Jurisprudencia colombiana relevante
+- Tendencias de los tribunales
+- Fortalezas y debilidades del caso
+- Probabilidades realistas de éxito
+
+IMPORTANTE: Sé objetivo y realista. No exageres las probabilidades de éxito. Fundamenta tus predicciones en precedentes reales.`,
+    description: 'Prompt del sistema para predicción de casos'
+  },
+  {
+    config_key: 'case_predictor_web_search_enabled',
+    config_value: 'false',
+    description: 'Habilitar búsqueda web en predicción de casos'
+  },
+
+  // ============================================================================
+  // ✍️ LEGAL COPILOT (Copiloto Legal)
+  // ============================================================================
+  {
+    config_key: 'copilot_ai_model',
+    config_value: 'google/gemini-2.5-flash',
+    description: 'Modelo para el copiloto legal (legal-copilot)'
+  },
+  {
+    config_key: 'copilot_suggest_prompt',
+    config_value: `Eres un asistente legal experto en derecho colombiano. Tu tarea es proporcionar sugerencias breves y relevantes para mejorar documentos legales.
+
+Reglas:
+- Responde en español
+- Sé muy conciso (máximo 2-3 oraciones)
+- Enfócate en precisión legal y claridad
+- Si detectas errores o inconsistencias, señálalos
+- Sugiere mejoras de redacción cuando sea apropiado`,
+    description: 'Prompt para sugerencias del copiloto legal'
+  },
+  {
+    config_key: 'copilot_autocomplete_prompt',
+    config_value: `Eres un asistente legal colombiano. Completa la siguiente cláusula o texto legal de manera profesional y precisa.
+
+Reglas:
+- Continúa el texto de forma natural
+- Usa lenguaje jurídico apropiado
+- Mantén consistencia con el estilo del documento
+- Limita tu respuesta a 1-2 párrafos`,
+    description: 'Prompt para autocompletado del copiloto'
+  },
+  {
+    config_key: 'copilot_risk_detection_prompt',
+    config_value: `Eres un experto en revisión de documentos legales colombianos. Analiza el texto en busca de:
+1. Riesgos legales potenciales
+2. Cláusulas ambiguas o problemáticas
+3. Inconsistencias internas
+4. Posibles conflictos con la legislación colombiana
+5. Términos que podrían ser desfavorables
+
+Responde identificando nivel de riesgo general, lista de riesgos específicos y recomendaciones.`,
+    description: 'Prompt para detección de riesgos del copiloto'
+  },
+  {
+    config_key: 'copilot_improve_prompt',
+    config_value: `Eres un editor legal experto. Mejora el siguiente texto legal manteniendo su significado pero optimizando:
+- Claridad y precisión
+- Estructura de las oraciones
+- Uso correcto de términos jurídicos
+- Gramática y ortografía
+
+Devuelve el texto mejorado directamente, sin explicaciones.`,
+    description: 'Prompt para mejora de texto del copiloto'
+  },
+  {
+    config_key: 'copilot_max_tokens_suggest',
+    config_value: '200',
+    description: 'Tokens máximos para sugerencias del copiloto'
+  },
+  {
+    config_key: 'copilot_max_tokens_autocomplete',
+    config_value: '300',
+    description: 'Tokens máximos para autocompletado del copiloto'
+  },
+
+  // ============================================================================
+  // 📧 EMAIL SUMMARY (Resumen de Emails)
+  // ============================================================================
+  {
+    config_key: 'email_summary_ai_model',
+    config_value: 'gpt-4o-mini',
+    description: 'Modelo para resumen de emails legales'
+  },
+  {
+    config_key: 'email_summary_prompt',
+    config_value: `Eres un experto en análisis de correspondencia legal. Resume el contenido del email identificando:
+- Partes involucradas
+- Temas legales principales
+- Puntos importantes a considerar
+- Acciones sugeridas para el abogado
+- Nivel de urgencia
+
+Responde de forma estructurada y concisa.`,
+    description: 'Prompt para resumen de emails'
+  },
+
+  // ============================================================================
+  // 📊 CRM CONFIGURATION (Configuración CRM)
+  // ============================================================================
+  {
+    config_key: 'crm_max_leads_per_lawyer',
+    config_value: '100',
+    description: 'Máximo de leads por abogado'
+  },
+  {
+    config_key: 'crm_auto_followup_days',
+    config_value: '3',
+    description: 'Días para seguimiento automático de leads'
+  },
+  {
+    config_key: 'crm_reminder_hours',
+    config_value: '24',
+    description: 'Horas antes para recordatorios de citas'
+  },
+  {
+    config_key: 'crm_lead_expiration_days',
+    config_value: '30',
+    description: 'Días para expiración de leads sin respuesta'
+  },
+  {
+    config_key: 'crm_auto_convert_lead_to_client',
+    config_value: 'false',
+    description: 'Convertir leads a clientes automáticamente'
+  },
+  {
+    config_key: 'crm_email_notifications_enabled',
+    config_value: 'true',
+    description: 'Habilitar notificaciones por email en CRM'
+  },
+
+  // ============================================================================
+  // 📅 CALENDAR CONFIGURATION (Configuración de Calendario)
+  // ============================================================================
+  {
+    config_key: 'calendar_reminder_hours_before',
+    config_value: '[24, 2]',
+    description: 'Horas antes para enviar recordatorios (JSON array)'
+  },
+  {
+    config_key: 'calendar_auto_docket_enabled',
+    config_value: 'true',
+    description: 'Habilitar auto-agendamiento de eventos desde procesos'
+  },
+  {
+    config_key: 'calendar_working_hours_start',
+    config_value: '08:00',
+    description: 'Hora de inicio de jornada laboral'
+  },
+  {
+    config_key: 'calendar_working_hours_end',
+    config_value: '18:00',
+    description: 'Hora de fin de jornada laboral'
+  },
+  {
+    config_key: 'calendar_default_event_duration_minutes',
+    config_value: '60',
+    description: 'Duración por defecto de eventos en minutos'
+  },
+  {
+    config_key: 'calendar_holidays_enabled',
+    config_value: 'true',
+    description: 'Considerar días festivos colombianos'
+  },
+
+  // ============================================================================
+  // 🌐 CLIENT PORTAL CONFIGURATION (Portal del Cliente)
+  // ============================================================================
+  {
+    config_key: 'client_portal_document_upload_enabled',
+    config_value: 'true',
+    description: 'Permitir carga de documentos por clientes'
+  },
+  {
+    config_key: 'client_portal_appointment_scheduling_enabled',
+    config_value: 'true',
+    description: 'Permitir agendamiento de citas por clientes'
+  },
+  {
+    config_key: 'client_portal_case_visibility',
+    config_value: 'status_only',
+    description: 'Visibilidad de casos: status_only, full, hidden'
+  },
+  {
+    config_key: 'client_portal_message_enabled',
+    config_value: 'true',
+    description: 'Permitir mensajes desde portal de cliente'
+  },
+  {
+    config_key: 'client_portal_ai_summary_enabled',
+    config_value: 'false',
+    description: 'Mostrar resúmenes IA al cliente'
+  },
+  {
+    config_key: 'client_portal_max_file_size_mb',
+    config_value: '10',
+    description: 'Tamaño máximo de archivos en MB'
+  },
+
+  // ============================================================================
+  // ⚖️ JUDICIAL PROCESS CONFIGURATION (Procesos Judiciales)
+  // ============================================================================
+  {
+    config_key: 'process_monitor_sync_frequency_hours',
+    config_value: '12',
+    description: 'Frecuencia de sincronización de procesos (horas)'
+  },
+  {
+    config_key: 'process_alert_new_actuacion_enabled',
+    config_value: 'true',
+    description: 'Alertar sobre nuevas actuaciones'
+  },
+  {
+    config_key: 'process_alert_email_enabled',
+    config_value: 'true',
+    description: 'Enviar alertas de procesos por email'
+  },
+  {
+    config_key: 'process_auto_create_calendar_event',
+    config_value: 'true',
+    description: 'Crear eventos de calendario automáticamente'
+  },
+  {
+    config_key: 'process_rama_judicial_cache_hours',
+    config_value: '1',
+    description: 'Horas de caché para consultas a Rama Judicial'
+  },
+  {
+    config_key: 'process_auto_link_to_case',
+    config_value: 'true',
+    description: 'Vincular procesos automáticamente a casos CRM'
+  },
+
+  // ============================================================================
+  // 🎮 GAMIFICATION CONFIGURATION (Gamificación)
+  // ============================================================================
+  {
+    config_key: 'gamification_enabled',
+    config_value: 'true',
+    description: 'Habilitar sistema de gamificación'
+  },
+  {
+    config_key: 'gamification_points_config',
+    config_value: JSON.stringify({
+      document_analysis: 10,
+      research: 15,
+      strategy: 20,
+      draft: 25,
+      case_prediction: 15,
+      client_added: 5,
+      case_won: 100,
+      first_login: 5,
+      profile_complete: 20,
+      training_module: 30
+    }),
+    description: 'Configuración de puntos por acción (JSON)'
+  },
+  {
+    config_key: 'gamification_streak_bonus_multiplier',
+    config_value: '1.5',
+    description: 'Multiplicador de bonus por racha diaria'
+  },
+  {
+    config_key: 'gamification_daily_goal_credits',
+    config_value: '50',
+    description: 'Meta diaria de créditos para gamificación'
+  },
+  {
+    config_key: 'gamification_levels',
+    config_value: JSON.stringify([
+      { level: 1, name: 'Novato', minCredits: 0, badge: '🌱' },
+      { level: 2, name: 'Aprendiz', minCredits: 100, badge: '📚' },
+      { level: 3, name: 'Practicante', minCredits: 500, badge: '⚖️' },
+      { level: 4, name: 'Experto', minCredits: 1500, badge: '🎯' },
+      { level: 5, name: 'Maestro', minCredits: 5000, badge: '👑' }
+    ]),
+    description: 'Niveles de gamificación (JSON)'
+  },
+
+  // ============================================================================
+  // 💰 CREDITS CONFIGURATION (Sistema de Créditos)
+  // ============================================================================
+  {
+    config_key: 'credits_daily_free_limit',
+    config_value: '5',
+    description: 'Créditos gratuitos diarios'
+  },
+  {
+    config_key: 'credits_referral_bonus',
+    config_value: '50',
+    description: 'Bonus de créditos por referido'
+  },
+  {
+    config_key: 'credits_warning_threshold',
+    config_value: '10',
+    description: 'Umbral para advertencia de créditos bajos'
+  },
+  {
+    config_key: 'credits_welcome_bonus',
+    config_value: '10',
+    description: 'Créditos de bienvenida para nuevos abogados'
+  },
+  {
+    config_key: 'credits_auto_recharge_enabled',
+    config_value: 'false',
+    description: 'Habilitar recarga automática de créditos'
+  },
+  {
+    config_key: 'credits_auto_recharge_amount',
+    config_value: '100',
+    description: 'Cantidad de recarga automática'
+  },
+
+  // ============================================================================
+  // 🔐 VERIFICATION CONFIGURATION (Verificación de Abogados)
+  // ============================================================================
+  {
+    config_key: 'verification_verifik_enabled',
+    config_value: 'true',
+    description: 'Habilitar verificación con Verifik'
+  },
+  {
+    config_key: 'verification_manual_approval_required',
+    config_value: 'true',
+    description: 'Requerir aprobación manual después de verificación'
+  },
+  {
+    config_key: 'verification_expiration_days',
+    config_value: '365',
+    description: 'Días de validez de la verificación'
   }
 ];
 
