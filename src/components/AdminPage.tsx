@@ -31,6 +31,13 @@ import { SystemMonitoring } from "./admin/SystemMonitoring";
 import { SystemLogsViewer } from "./admin/SystemLogsViewer";
 import { RevenueAnalytics } from "./admin/RevenueAnalytics";
 import { CreditsAdminManager } from "./admin/CreditsAdminManager";
+import { BusinessMetricsDashboard } from "./admin/BusinessMetricsDashboard";
+import { AIToolsAnalytics } from "./admin/AIToolsAnalytics";
+import { RetentionDashboard } from "./admin/RetentionDashboard";
+import { ProcessMonitorAdmin } from "./admin/ProcessMonitorAdmin";
+import { LeadsAnalytics } from "./admin/LeadsAnalytics";
+import { StrategicDecisions } from "./admin/StrategicDecisions";
+import LawyerVerificationAdmin from "./admin/LawyerVerificationAdmin";
 import { 
   Copy, Users, Bot, BarChart3, Clock, CheckCircle, Lock, Unlock, Trash2, Check, X, Plus, RefreshCw, 
   Loader2, MessageCircle, BookOpen, Settings, Zap, Mail, Phone, Bell, LogOut, UserCheck, 
@@ -983,17 +990,28 @@ function AdminPage() {
   const renderCurrentView = () => {
     switch (currentView) {
       case 'dashboard':
-        return (
-          <AdminDashboard
-            lawyers={lawyers}
-            agents={agents}
-            unreadMessagesCount={unreadMessagesCount}
-            pendingAgentsCount={pendingAgentsCount}
-            pendingBlogsCount={pendingBlogsCount}
-            blogPosts={blogPosts}
-            onNavigate={setCurrentView}
-          />
-        );
+        return <BusinessMetricsDashboard />;
+      
+      case 'revenue':
+        return <RevenueAnalytics />;
+      
+      case 'retention':
+        return <RetentionDashboard />;
+      
+      case 'strategic':
+        return <StrategicDecisions />;
+      
+      case 'verifications':
+        return <LawyerVerificationAdmin adminId={user?.id || ''} />;
+      
+      case 'leads':
+        return <LeadsAnalytics />;
+      
+      case 'ai-tools':
+        return <AIToolsAnalytics />;
+      
+      case 'processes':
+        return <ProcessMonitorAdmin />;
       
       case 'lawyers':
         return (
