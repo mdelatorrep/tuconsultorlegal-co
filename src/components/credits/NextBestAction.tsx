@@ -103,9 +103,13 @@ export function NextBestAction({
             <Target className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
           </div>
           <h3 className="font-semibold text-lg mb-1">¡Todo al día!</h3>
-          <p className="text-sm text-muted-foreground">
-            No tienes tareas urgentes pendientes. Explora las herramientas IA.
+          <p className="text-sm text-muted-foreground mb-4">
+            No tienes tareas urgentes pendientes.
           </p>
+          <Button onClick={onViewMissions} variant="outline" size="sm">
+            <Target className="h-4 w-4 mr-2" />
+            Ver misiones disponibles
+          </Button>
         </CardContent>
       </Card>
     );
