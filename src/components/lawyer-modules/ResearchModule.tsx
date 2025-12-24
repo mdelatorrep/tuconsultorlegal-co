@@ -426,7 +426,7 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
                     </div>
                     
                     {/* Stats Cards */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4 mt-6 lg:mt-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mt-6 lg:mt-8">
                       <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
                         <div className="flex items-center gap-3">
                           <Target className="h-8 w-8 text-primary" />
@@ -451,6 +451,15 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
                           <div>
                             <p className="text-2xl font-bold text-blue-600">5-30</p>
                             <p className="text-sm text-muted-foreground">Minutos promedio</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                        <div className="flex items-center gap-3">
+                          <CheckCircle2 className="h-8 w-8 text-emerald-600" />
+                          <div>
+                            <p className="text-2xl font-bold text-emerald-600">95%</p>
+                            <p className="text-sm text-muted-foreground">Precisión IA</p>
                           </div>
                         </div>
                       </div>
