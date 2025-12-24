@@ -9,36 +9,29 @@ const corsHeaders = {
 
 const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
-// Helper to get system config
-async function getSystemConfig(supabase: any, configKey: string, defaultValue: string): Promise<string> {
-  try {
-    const { data } = await supabase
-      .from('system_config')
-      .select('config_value')
-      .eq('config_key', configKey)
-      .single();
-    return data?.config_value || defaultValue;
-  } catch {
-    return defaultValue;
+// Get multiple configs at once - throws if any required config is missing
+async function getRequiredConfigs(supabase: any, keys: string[]): Promise<Record<string, string>> {
+  const { data, error } = await supabase
+    .from('system_config')
+    .select('config_key, config_value')
+    .in('config_key', keys);
+  
+  if (error) {
+    throw new Error(`Failed to fetch configurations: ${error.message}`);
   }
-}
-
-// Get multiple configs at once for efficiency
-async function getMultipleConfigs(supabase: any, keys: string[]): Promise<Record<string, string>> {
-  try {
-    const { data } = await supabase
-      .from('system_config')
-      .select('config_key, config_value')
-      .in('config_key', keys);
-    
-    const result: Record<string, string> = {};
-    data?.forEach((item: any) => {
-      result[item.config_key] = item.config_value;
-    });
-    return result;
-  } catch {
-    return {};
+  
+  const result: Record<string, string> = {};
+  data?.forEach((item: any) => {
+    result[item.config_key] = item.config_value;
+  });
+  
+  // Validate all required configs are present
+  const missingConfigs = keys.filter(key => !result[key]);
+  if (missingConfigs.length > 0) {
+    throw new Error(`Missing required configurations: ${missingConfigs.join(', ')}. Please configure them in the admin panel.`);
   }
+  
+  return result;
 }
 
 serve(async (req) => {
@@ -58,8 +51,8 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    // Get all relevant configs at once
-    const configs = await getMultipleConfigs(supabase, [
+    // Get all relevant configs at once - NO FALLBACKS
+    const configs = await getRequiredConfigs(supabase, [
       'copilot_ai_model',
       'copilot_suggest_prompt',
       'copilot_autocomplete_prompt',
@@ -69,23 +62,14 @@ serve(async (req) => {
       'copilot_max_tokens_autocomplete'
     ]);
 
-    const model = configs['copilot_ai_model'] || 'google/gemini-2.5-flash';
-    const maxTokensSuggest = parseInt(configs['copilot_max_tokens_suggest'] || '200');
-    const maxTokensAutocomplete = parseInt(configs['copilot_max_tokens_autocomplete'] || '300');
+    const model = configs['copilot_ai_model'];
+    const maxTokensSuggest = parseInt(configs['copilot_max_tokens_suggest']);
+    const maxTokensAutocomplete = parseInt(configs['copilot_max_tokens_autocomplete']);
 
     console.log(`[LegalCopilot] Using model: ${model}`);
 
     if (action === 'suggest') {
-      const defaultPrompt = `Eres un asistente legal experto en derecho colombiano. Tu tarea es proporcionar sugerencias breves y relevantes para mejorar documentos legales.
-
-Reglas:
-- Responde en español
-- Sé muy conciso (máximo 2-3 oraciones)
-- Enfócate en precisión legal y claridad
-- Si detectas errores o inconsistencias, señálalos
-- Sugiere mejoras de redacción cuando sea apropiado`;
-
-      const systemPrompt = `${configs['copilot_suggest_prompt'] || defaultPrompt}
+      const systemPrompt = `${configs['copilot_suggest_prompt']}
 
 Tipo de documento: ${documentType || 'legal genérico'}
 Contexto adicional: ${context || 'ninguno'}`;
@@ -121,15 +105,7 @@ Contexto adicional: ${context || 'ninguno'}`;
     }
 
     if (action === 'autocomplete') {
-      const defaultPrompt = `Eres un asistente legal colombiano. Completa la siguiente cláusula o texto legal de manera profesional y precisa.
-
-Reglas:
-- Continúa el texto de forma natural
-- Usa lenguaje jurídico apropiado
-- Mantén consistencia con el estilo del documento
-- Limita tu respuesta a 1-2 párrafos`;
-
-      const systemPrompt = `${configs['copilot_autocomplete_prompt'] || defaultPrompt}
+      const systemPrompt = `${configs['copilot_autocomplete_prompt']}
 
 Tipo de documento: ${documentType || 'contrato'}`;
 
@@ -162,16 +138,7 @@ Tipo de documento: ${documentType || 'contrato'}`;
     }
 
     if (action === 'detect_risks') {
-      const defaultPrompt = `Eres un experto en revisión de documentos legales colombianos. Analiza el texto en busca de:
-1. Riesgos legales potenciales
-2. Cláusulas ambiguas o problemáticas
-3. Inconsistencias internas
-4. Posibles conflictos con la legislación colombiana
-5. Términos que podrían ser desfavorables
-
-Responde en formato JSON estructurado.`;
-
-      const systemPrompt = configs['copilot_risk_detection_prompt'] || defaultPrompt;
+      const systemPrompt = configs['copilot_risk_detection_prompt'];
 
       const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
         method: 'POST',
@@ -240,15 +207,7 @@ Responde en formato JSON estructurado.`;
     }
 
     if (action === 'improve') {
-      const defaultPrompt = `Eres un editor legal experto. Mejora el siguiente texto legal manteniendo su significado pero optimizando:
-- Claridad y precisión
-- Estructura de las oraciones
-- Uso correcto de términos jurídicos
-- Gramática y ortografía
-
-Devuelve el texto mejorado directamente, sin explicaciones.`;
-
-      const systemPrompt = configs['copilot_improve_prompt'] || defaultPrompt;
+      const systemPrompt = configs['copilot_improve_prompt'];
 
       const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
         method: 'POST',

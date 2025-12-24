@@ -11,65 +11,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Helper function to get system configuration
-async function getSystemConfig(supabaseClient: any, configKey: string, defaultValue?: string): Promise<string> {
-  try {
-    const { data, error } = await supabaseClient
-      .from('system_config')
-      .select('config_value')
-      .eq('config_key', configKey)
-      .maybeSingle();
+// Helper function to get required system configuration - throws if not found
+async function getRequiredConfig(supabaseClient: any, configKey: string): Promise<string> {
+  const { data, error } = await supabaseClient
+    .from('system_config')
+    .select('config_value')
+    .eq('config_key', configKey)
+    .maybeSingle();
 
-    if (error || !data) {
-      console.log(`Config ${configKey} not found, using default: ${defaultValue}`);
-      return defaultValue || '';
-    }
-
-    return data.config_value;
-  } catch (error) {
-    console.error(`Exception fetching config ${configKey}:`, error);
-    return defaultValue || '';
+  if (error || !data?.config_value) {
+    throw new Error(`Configuration '${configKey}' not found in system_config. Please configure it in the admin panel.`);
   }
+
+  return data.config_value;
 }
-
-const DEFAULT_SYSTEM_PROMPT = `Eres un asistente legal especializado en consultas de procesos judiciales de Colombia.
-
-Tu trabajo es:
-1. Proporcionar información contextual sobre procesos judiciales colombianos
-2. Explicar estados procesales, términos y procedimientos
-3. Buscar información relevante sobre legislación procesal colombiana
-4. Orientar sobre cómo interpretar la información de un proceso judicial
-5. Proporcionar links directos al portal oficial de consulta de procesos
-
-FUENTES OFICIALES A CONSULTAR:
-- consultaprocesos.ramajudicial.gov.co - Portal oficial de consulta de procesos
-- ramajudicial.gov.co - Página principal de la Rama Judicial
-- cortesuprema.gov.co - Corte Suprema de Justicia
-- consejodeestado.gov.co - Consejo de Estado
-- corteconstitucional.gov.co - Corte Constitucional
-
-INFORMACIÓN SOBRE NÚMEROS DE RADICACIÓN:
-El número de radicación de un proceso judicial en Colombia tiene 23 dígitos con el siguiente formato:
-- Dígitos 1-2: Código del departamento
-- Dígitos 3-5: Código del municipio
-- Dígitos 6-7: Código de la especialidad (Civil: 31, Penal: 60, Laboral: 41, Familia: 32, etc.)
-- Dígitos 8-10: Código del despacho
-- Dígitos 11-14: Año de radicación
-- Dígitos 15-19: Número consecutivo del proceso
-- Dígitos 20-21: Tipo de proceso
-- Dígitos 22-23: Instancia
-
-IMPORTANTE:
-- Siempre incluye el link directo al portal oficial: https://consultaprocesos.ramajudicial.gov.co/procesos/Index
-- Explica los estados procesales comunes (admisión, traslado, audiencia, sentencia, etc.)
-- Indica tiempos procesales típicos según el tipo de proceso
-- Si el usuario proporciona un número de radicación, explica qué información se puede extraer de él
-- Responde en español colombiano profesional
-
-Formato de respuesta:
-- Proporciona información clara y estructurada
-- Incluye links relevantes a fuentes oficiales
-- Si es una consulta de seguimiento, mantén el contexto de la conversación anterior`;
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -120,9 +75,13 @@ serve(async (req) => {
       );
     }
 
-    // Get AI model and prompt from system config
-    const model = await getSystemConfig(supabase, 'process_query_ai_model', 'gpt-4.1-2025-04-14');
-    const systemPrompt = await getSystemConfig(supabase, 'process_query_ai_prompt', DEFAULT_SYSTEM_PROMPT);
+    // Get AI model and prompt from system config - NO FALLBACKS
+    const [model, systemPrompt] = await Promise.all([
+      getRequiredConfig(supabase, 'process_query_ai_model'),
+      getRequiredConfig(supabase, 'process_query_ai_prompt')
+    ]);
+
+    console.log(`[ProcessQuery] Using model: ${model}`);
 
     // Build the user message based on query type
     let userMessage: string;
