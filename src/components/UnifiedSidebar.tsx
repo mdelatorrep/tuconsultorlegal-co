@@ -36,12 +36,13 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
   
   const { balance, loading: creditsLoading } = useCredits(user?.id || null);
   
-  // State for collapsible sections
+  // State for collapsible sections - all open by default
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     "investigacion": true,
-    "documentos": false,
-    "clientes": false,
-    "premium": false,
+    "documentos": true,
+    "clientes": true,
+    "herramientas-ia": true,
+    "gestion-ia": true,
   });
   
   const handleViewChange = (view: string) => {
