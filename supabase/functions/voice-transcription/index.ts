@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,20 +9,87 @@ const corsHeaders = {
 
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 
+// Fetch required configurations from system_config
+async function getVoiceConfig(supabaseClient: any): Promise<{
+  enabled: boolean;
+  transcriptionModel: string;
+  transcriptionLanguage: string;
+  transcriptionPrompt: string;
+  ttsModel: string;
+  ttsVoice: string;
+  maxAudioSizeMb: number;
+  maxTextChars: number;
+}> {
+  const requiredKeys = [
+    'voice_assistant_enabled',
+    'voice_transcription_model',
+    'voice_transcription_language',
+    'voice_transcription_prompt',
+    'voice_tts_model',
+    'voice_tts_voice',
+    'voice_max_audio_size_mb',
+    'voice_max_text_chars'
+  ];
+
+  const { data: configs, error } = await supabaseClient
+    .from('system_config')
+    .select('config_key, config_value')
+    .in('config_key', requiredKeys);
+
+  if (error) {
+    console.error('[VoiceTranscription] Error fetching config:', error);
+    throw new Error(`Error al obtener configuración: ${error.message}`);
+  }
+
+  const configMap = new Map(configs?.map((c: any) => [c.config_key, c.config_value]) || []);
+  
+  // Validate all required keys exist
+  const missingKeys = requiredKeys.filter(key => !configMap.has(key));
+  if (missingKeys.length > 0) {
+    throw new Error(`Configuración faltante para asistente de voz: ${missingKeys.join(', ')}. Por favor sincronice la configuración en el panel de administración.`);
+  }
+
+  return {
+    enabled: configMap.get('voice_assistant_enabled') === 'true',
+    transcriptionModel: configMap.get('voice_transcription_model') as string,
+    transcriptionLanguage: configMap.get('voice_transcription_language') as string,
+    transcriptionPrompt: configMap.get('voice_transcription_prompt') as string,
+    ttsModel: configMap.get('voice_tts_model') as string,
+    ttsVoice: configMap.get('voice_tts_voice') as string,
+    maxAudioSizeMb: parseInt(configMap.get('voice_max_audio_size_mb') as string),
+    maxTextChars: parseInt(configMap.get('voice_max_text_chars') as string),
+  };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+    // Get configuration from database
+    const config = await getVoiceConfig(supabaseClient);
+
+    if (!config.enabled) {
+      return new Response(JSON.stringify({ 
+        error: 'El asistente de voz está deshabilitado. Habilítelo en la configuración del sistema.' 
+      }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     const contentType = req.headers.get('content-type') || '';
     
     if (contentType.includes('multipart/form-data')) {
       // Handle audio file upload for transcription
       const formData = await req.formData();
       const audioFile = formData.get('audio') as File;
-      const language = formData.get('language') as string || 'es';
-      const prompt = formData.get('prompt') as string || 'Transcripción de audio legal en español.';
 
       if (!audioFile) {
         return new Response(JSON.stringify({ error: 'Audio file is required' }), {
@@ -30,14 +98,25 @@ serve(async (req) => {
         });
       }
 
-      console.log(`[VoiceTranscription] Processing audio: ${audioFile.name}, size: ${audioFile.size}`);
+      // Check file size
+      const maxSizeBytes = config.maxAudioSizeMb * 1024 * 1024;
+      if (audioFile.size > maxSizeBytes) {
+        return new Response(JSON.stringify({ 
+          error: `El archivo de audio excede el tamaño máximo de ${config.maxAudioSizeMb}MB` 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      console.log(`[VoiceTranscription] Processing audio: ${audioFile.name}, size: ${audioFile.size}, model: ${config.transcriptionModel}`);
 
       // Prepare form data for OpenAI Whisper API
       const whisperFormData = new FormData();
       whisperFormData.append('file', audioFile);
-      whisperFormData.append('model', 'whisper-1');
-      whisperFormData.append('language', language);
-      whisperFormData.append('prompt', prompt);
+      whisperFormData.append('model', config.transcriptionModel);
+      whisperFormData.append('language', config.transcriptionLanguage);
+      whisperFormData.append('prompt', config.transcriptionPrompt);
       whisperFormData.append('response_format', 'verbose_json');
 
       const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
@@ -72,9 +151,21 @@ serve(async (req) => {
     }
 
     // Handle JSON requests for other actions
-    const { action, text, targetLanguage } = await req.json();
+    const { action, text } = await req.json();
 
     if (action === 'text_to_speech') {
+      if (!text) {
+        return new Response(JSON.stringify({ error: 'Text is required' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // Limit text to configured max chars
+      const truncatedText = text.slice(0, config.maxTextChars);
+      
+      console.log(`[VoiceTranscription] TTS request: ${truncatedText.length} chars, model: ${config.ttsModel}, voice: ${config.ttsVoice}`);
+
       // Generate speech from text (for reading documents aloud)
       const response = await fetch('https://api.openai.com/v1/audio/speech', {
         method: 'POST',
@@ -83,14 +174,16 @@ serve(async (req) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'tts-1',
-          input: text.slice(0, 4096), // Limit to 4096 chars
-          voice: 'onyx', // Professional voice
+          model: config.ttsModel,
+          input: truncatedText,
+          voice: config.ttsVoice,
           response_format: 'mp3',
         }),
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[VoiceTranscription] TTS API error:', errorText);
         throw new Error(`TTS API error: ${response.status}`);
       }
 
