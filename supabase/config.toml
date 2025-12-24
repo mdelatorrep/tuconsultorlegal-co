@@ -164,3 +164,6 @@ verify_jwt = false
 
 [functions.specialized-agent-chat]
 verify_jwt = true
+
+[functions.create-notification]
+verify_jwt = false

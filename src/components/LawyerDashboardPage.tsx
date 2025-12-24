@@ -50,6 +50,7 @@ import { useCredits } from "@/hooks/useCredits";
 import { ToolCostIndicator } from "@/components/credits/ToolCostIndicator";
 import { SpecializedAgentsGrid } from "./lawyer-modules/SpecializedAgentsGrid";
 import { SpecializedAgentChat } from "./lawyer-modules/SpecializedAgentChat";
+import { NotificationCenter } from "./notifications/NotificationCenter";
 
 // Dashboard components
 import { 
@@ -689,9 +690,19 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                       ← Dashboard
                     </Button>
                   </div>
-                  <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs">
-                    Portal Abogados
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <NotificationCenter 
+                      lawyerId={user.id} 
+                      onNavigate={(url) => {
+                        if (url.includes('crm')) setCurrentView('crm');
+                        else if (url.includes('credits')) setCurrentView('credits');
+                        else if (url.includes('process')) setCurrentView('process-monitor');
+                      }}
+                    />
+                    <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs">
+                      Portal Abogados
+                    </Badge>
+                  </div>
                 </div>
               </header>
               <div className="p-4">
@@ -738,9 +749,19 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                   <SidebarTrigger />
                   <h1 className="font-semibold truncate text-sm md:text-base lg:text-lg">Dashboard Legal</h1>
                 </div>
-                <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs">
-                  Portal Abogados
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <NotificationCenter 
+                    lawyerId={user.id} 
+                    onNavigate={(url) => {
+                      if (url.includes('crm')) setCurrentView('crm');
+                      else if (url.includes('credits')) setCurrentView('credits');
+                      else if (url.includes('process')) setCurrentView('process-monitor');
+                    }}
+                  />
+                  <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs">
+                    Portal Abogados
+                  </Badge>
+                </div>
               </div>
             </header>
 
