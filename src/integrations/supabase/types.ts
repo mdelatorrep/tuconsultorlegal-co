@@ -3138,6 +3138,146 @@ export type Database = {
         }
         Relationships: []
       }
+      specialized_agent_sessions: {
+        Row: {
+          agent_id: string | null
+          conversation_summary: string | null
+          created_at: string | null
+          credits_consumed: number | null
+          ended_at: string | null
+          feedback: string | null
+          id: string
+          lawyer_id: string
+          messages_count: number | null
+          metadata: Json | null
+          rating: number | null
+          started_at: string | null
+          thread_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          agent_id?: string | null
+          conversation_summary?: string | null
+          created_at?: string | null
+          credits_consumed?: number | null
+          ended_at?: string | null
+          feedback?: string | null
+          id?: string
+          lawyer_id: string
+          messages_count?: number | null
+          metadata?: Json | null
+          rating?: number | null
+          started_at?: string | null
+          thread_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          agent_id?: string | null
+          conversation_summary?: string | null
+          created_at?: string | null
+          credits_consumed?: number | null
+          ended_at?: string | null
+          feedback?: string | null
+          id?: string
+          lawyer_id?: string
+          messages_count?: number | null
+          metadata?: Json | null
+          rating?: number | null
+          started_at?: string | null
+          thread_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "specialized_agent_sessions_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "specialized_agents_catalog"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      specialized_agents_catalog: {
+        Row: {
+          agent_instructions: string | null
+          agent_tools: Json | null
+          avg_rating: number | null
+          category: string
+          color_class: string | null
+          created_at: string | null
+          created_by: string | null
+          credits_per_session: number | null
+          description: string | null
+          display_order: number | null
+          icon: string | null
+          id: string
+          is_featured: boolean | null
+          is_premium: boolean | null
+          max_messages_per_session: number | null
+          name: string
+          openai_assistant_id: string | null
+          openai_workflow_id: string | null
+          requires_subscription: string | null
+          short_description: string | null
+          status: string
+          target_audience: string
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          agent_instructions?: string | null
+          agent_tools?: Json | null
+          avg_rating?: number | null
+          category?: string
+          color_class?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          credits_per_session?: number | null
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_featured?: boolean | null
+          is_premium?: boolean | null
+          max_messages_per_session?: number | null
+          name: string
+          openai_assistant_id?: string | null
+          openai_workflow_id?: string | null
+          requires_subscription?: string | null
+          short_description?: string | null
+          status?: string
+          target_audience?: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          agent_instructions?: string | null
+          agent_tools?: Json | null
+          avg_rating?: number | null
+          category?: string
+          color_class?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          credits_per_session?: number | null
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_featured?: boolean | null
+          is_premium?: boolean | null
+          max_messages_per_session?: number | null
+          name?: string
+          openai_assistant_id?: string | null
+          openai_workflow_id?: string | null
+          requires_subscription?: string | null
+          short_description?: string | null
+          status?: string
+          target_audience?: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
       subscription_plans: {
         Row: {
           created_at: string
