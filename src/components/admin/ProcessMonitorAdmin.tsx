@@ -49,7 +49,7 @@ export const ProcessMonitorAdmin = () => {
           tipo_proceso,
           despacho,
           estado,
-          ultima_actualizacion,
+          ultima_actuacion_fecha,
           created_at,
           lawyer_profiles (
             full_name
@@ -60,16 +60,16 @@ export const ProcessMonitorAdmin = () => {
 
       if (error) throw error;
 
-      const processData: MonitoredProcess[] = (monitored || []).map(p => ({
+      const processData: MonitoredProcess[] = (monitored || []).map((p: any) => ({
         id: p.id,
         lawyer_id: p.lawyer_id,
         radicado: p.radicado,
         tipo_proceso: p.tipo_proceso,
         despacho: p.despacho,
         estado: p.estado,
-        ultima_actualizacion: p.ultima_actualizacion,
+        ultima_actualizacion: p.ultima_actuacion_fecha,
         created_at: p.created_at,
-        lawyer_name: (p.lawyer_profiles as any)?.full_name || 'Desconocido'
+        lawyer_name: p.lawyer_profiles?.full_name || 'Desconocido'
       }));
 
       setProcesses(processData);

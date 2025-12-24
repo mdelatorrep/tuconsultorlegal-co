@@ -68,7 +68,7 @@ export const BusinessMetricsDashboard = () => {
       // Fetch lawyers
       const { data: lawyers } = await supabase
         .from('lawyer_profiles')
-        .select('id, is_active, is_verified, created_at, last_activity_at');
+        .select('id, is_active, is_verified, created_at');
 
       // Fetch users
       const { data: users } = await supabase

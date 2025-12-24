@@ -8,7 +8,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { 
   Activity, Users, Bot, BarChart3, BookOpen, MessageCircle, 
   Settings, Mail, Tag, CreditCard, Database, FileText, 
-  FileCheck, Zap, Shield, DollarSign, UserCheck, Server, ScrollText
+  FileCheck, Zap, Shield, DollarSign, UserCheck, Server, ScrollText,
+  TrendingUp, Brain, Heart, Target, Scale, ShieldCheck
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -34,16 +35,21 @@ export const AdminSidebar = ({
 
   const sidebarSections = [
     {
-      label: "General",
+      label: "Inteligencia de Negocio",
       items: [
-        { id: 'dashboard', label: 'Dashboard', icon: Activity, count: 0 },
+        { id: 'dashboard', label: 'Dashboard Ejecutivo', icon: TrendingUp, count: 0 },
+        { id: 'revenue', label: 'Revenue & Finanzas', icon: DollarSign, count: 0 },
+        { id: 'retention', label: 'Retención & Engagement', icon: Heart, count: 0 },
+        { id: 'strategic', label: 'Decisiones Estratégicas', icon: Target, count: 0 },
       ]
     },
     {
       label: "Usuarios & Roles",
       items: [
         { id: 'lawyers', label: 'Abogados', icon: Users, count: 0 },
+        { id: 'verifications', label: 'Verificaciones', icon: ShieldCheck, count: 0 },
         { id: 'users', label: 'Usuarios Finales', icon: UserCheck, count: 0 },
+        { id: 'leads', label: 'Leads Generados', icon: Target, count: 0 },
       ]
     },
     {
@@ -55,7 +61,9 @@ export const AdminSidebar = ({
     {
       label: "IA & Automatización",
       items: [
+        { id: 'ai-tools', label: 'Uso Herramientas IA', icon: Brain, count: 0 },
         { id: 'agents', label: 'Agentes Legales', icon: Bot, count: pendingAgentsCount },
+        { id: 'processes', label: 'Procesos Monitoreados', icon: Scale, count: 0 },
         { id: 'openai', label: 'OpenAI Config', icon: Zap, count: 0 },
         { id: 'knowledge', label: 'Base Conocimiento', icon: Database, count: 0 },
       ]
@@ -81,7 +89,6 @@ export const AdminSidebar = ({
       items: [
         { id: 'credits', label: 'Gestión Créditos', icon: CreditCard, count: 0 },
         { id: 'subscriptions', label: 'Suscripciones', icon: CreditCard, count: 0 },
-        { id: 'revenue', label: 'Ingresos & Pagos', icon: DollarSign, count: 0 },
       ]
     },
     {

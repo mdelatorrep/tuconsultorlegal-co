@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   Lightbulb, TrendingUp, TrendingDown, AlertTriangle, CheckCircle,
-  Target, Zap, Users, DollarSign, Brain, FileText, RefreshCw,
+  Target, Zap, Users, DollarSign, Brain, RefreshCw,
   ArrowRight, ThumbsUp, ThumbsDown
 } from "lucide-react";
 import { subDays } from "date-fns";
@@ -43,14 +43,8 @@ export const StrategicDecisions = () => {
       const now = new Date();
       const thirtyDaysAgo = subDays(now, 30);
 
-      // Fetch various data points
-      const [
-        { data: lawyers }: { data: { id: string; is_active: boolean; created_at: string }[] | null },
-        { data: documents },
-        { data: creditTxs },
-        { data: leads },
-        { data: agents }
-      ] = await Promise.all([
+      // Fetch various data points in parallel
+      const [lawyersResult, documentsResult, creditTxsResult, leadsResult, agentsResult] = await Promise.all([
         supabase.from('lawyer_profiles').select('id, is_active, created_at'),
         supabase.from('document_tokens').select('id, status, price, created_at'),
         supabase.from('credit_transactions').select('*').gte('created_at', thirtyDaysAgo.toISOString()),
@@ -58,11 +52,17 @@ export const StrategicDecisions = () => {
         supabase.from('legal_agents').select('id, status, created_at')
       ]);
 
+      const lawyers = lawyersResult.data || [];
+      const documents = documentsResult.data || [];
+      const creditTxs = creditTxsResult.data || [];
+      const leads = leadsResult.data || [];
+      const agents = agentsResult.data || [];
+
       const generatedInsights: Insight[] = [];
 
       // Analyze lawyer activity
-      const activeLawyers = lawyers?.filter(l => l.is_active).length || 0;
-      const totalLawyers = lawyers?.length || 0;
+      const activeLawyers = lawyers.filter(l => l.is_active).length;
+      const totalLawyers = lawyers.length;
       const activeRate = totalLawyers > 0 ? (activeLawyers / totalLawyers) * 100 : 0;
 
       if (activeRate < 50) {
@@ -87,8 +87,8 @@ export const StrategicDecisions = () => {
       }
 
       // Analyze document conversion
-      const paidDocs = documents?.filter(d => d.status === 'pagado' || d.status === 'descargado').length || 0;
-      const totalDocs = documents?.length || 0;
+      const paidDocs = documents.filter(d => d.status === 'pagado' || d.status === 'descargado').length;
+      const totalDocs = documents.length;
       const conversionRate = totalDocs > 0 ? (paidDocs / totalDocs) * 100 : 0;
 
       if (conversionRate < 20) {
@@ -113,8 +113,8 @@ export const StrategicDecisions = () => {
       }
 
       // Analyze credits usage
-      const creditPurchases = creditTxs?.filter(t => t.transaction_type === 'purchase').length || 0;
-      const creditConsumptions = creditTxs?.filter(t => t.transaction_type === 'consumption').length || 0;
+      const creditPurchases = creditTxs.filter(t => t.transaction_type === 'purchase').length;
+      const creditConsumptions = creditTxs.filter(t => t.transaction_type === 'consumption').length;
 
       if (creditConsumptions === 0 && creditPurchases === 0) {
         generatedInsights.push({
@@ -137,8 +137,8 @@ export const StrategicDecisions = () => {
       }
 
       // Analyze leads
-      const pendingLeads = leads?.filter(l => l.status === 'new' || l.status === 'pending').length || 0;
-      const totalLeads = leads?.length || 0;
+      const pendingLeads = leads.filter(l => l.status === 'new' || l.status === 'pending').length;
+      const totalLeads = leads.length;
 
       if (pendingLeads > 10) {
         generatedInsights.push({
@@ -153,8 +153,8 @@ export const StrategicDecisions = () => {
       }
 
       // Analyze agents
-      const pendingAgents = agents?.filter(a => a.status === 'pending_review').length || 0;
-      const activeAgents = agents?.filter(a => a.status === 'active').length || 0;
+      const pendingAgents = agents.filter(a => a.status === 'pending_review').length;
+      const activeAgents = agents.filter(a => a.status === 'active').length;
 
       if (pendingAgents > 0) {
         generatedInsights.push({
