@@ -9,6 +9,20 @@ const corsHeaders = {
 
 const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
+// Helper to get system config
+async function getSystemConfig(supabase: any, configKey: string, defaultValue: string): Promise<string> {
+  try {
+    const { data } = await supabase
+      .from('system_config')
+      .select('config_value')
+      .eq('config_key', configKey)
+      .single();
+    return data?.config_value || defaultValue;
+  } catch {
+    return defaultValue;
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -36,17 +50,29 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    const systemPrompt = `Eres un experto analista legal colombiano con amplia experiencia en litigios. Tu tarea es analizar casos y proporcionar predicciones basadas en:
+    // Get configurations from system_config
+    const [model, systemPromptConfig] = await Promise.all([
+      getSystemConfig(supabase, 'case_predictor_ai_model', 'google/gemini-2.5-pro'),
+      getSystemConfig(supabase, 'case_predictor_system_prompt', '')
+    ]);
+
+    console.log(`[CasePredictor] Using model: ${model}`);
+
+    const defaultSystemPrompt = `Eres un experto analista legal colombiano con amplia experiencia en litigios. Tu tarea es analizar casos y proporcionar predicciones basadas en:
 - Jurisprudencia colombiana relevante
 - Tendencias de los tribunales
 - Fortalezas y debilidades del caso
 - Probabilidades realistas de éxito
 
+IMPORTANTE: Sé objetivo y realista. No exageres las probabilidades de éxito.`;
+
+    const basePrompt = systemPromptConfig || defaultSystemPrompt;
+    
+    const systemPrompt = `${basePrompt}
+
 Jurisdicción: Colombia
 Tipo de tribunal: ${courtType || 'No especificado'}
-Jurisdicción específica: ${jurisdiction || 'No especificada'}
-
-IMPORTANTE: Sé objetivo y realista. No exageres las probabilidades de éxito.`;
+Jurisdicción específica: ${jurisdiction || 'No especificada'}`;
 
     const userPrompt = `Analiza el siguiente caso y proporciona una predicción detallada:
 
@@ -68,7 +94,7 @@ Proporciona tu análisis en formato estructurado.`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-pro',
+        model,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }

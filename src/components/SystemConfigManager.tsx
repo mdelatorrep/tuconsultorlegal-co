@@ -299,6 +299,69 @@ export default function SystemConfigManager() {
           colorClass: 'border-l-orange-500'
         }
       ]
+    },
+    {
+      id: 'case-predictor',
+      name: 'Predictor de Casos',
+      description: 'Predicción de resultados de casos legales',
+      icon: <Scale className="w-5 h-5" />,
+      functions: [
+        {
+          id: 'case_predictor',
+          name: 'Predictor de Casos',
+          description: 'Analiza casos y predice resultados probables',
+          promptKey: 'case_predictor_system_prompt',
+          modelKey: 'case_predictor_ai_model',
+          webSearchKey: 'case_predictor_web_search_enabled',
+          colorClass: 'border-l-rose-500'
+        }
+      ]
+    },
+    {
+      id: 'legal-copilot',
+      name: 'Copiloto Legal',
+      description: 'Asistente en tiempo real para redacción legal',
+      icon: <Sparkles className="w-5 h-5" />,
+      functions: [
+        {
+          id: 'copilot_suggest',
+          name: 'Sugerencias',
+          description: 'Sugerencias en tiempo real mientras escribe',
+          promptKey: 'copilot_suggest_prompt',
+          modelKey: 'copilot_ai_model',
+          additionalParams: [
+            { key: 'copilot_max_tokens_suggest', name: 'Max Tokens', type: 'number' as const }
+          ],
+          colorClass: 'border-l-cyan-500'
+        },
+        {
+          id: 'copilot_autocomplete',
+          name: 'Autocompletado',
+          description: 'Completa cláusulas y textos legales',
+          promptKey: 'copilot_autocomplete_prompt',
+          modelKey: 'copilot_ai_model',
+          additionalParams: [
+            { key: 'copilot_max_tokens_autocomplete', name: 'Max Tokens', type: 'number' as const }
+          ],
+          colorClass: 'border-l-cyan-500'
+        },
+        {
+          id: 'copilot_risks',
+          name: 'Detección de Riesgos',
+          description: 'Identifica riesgos legales en documentos',
+          promptKey: 'copilot_risk_detection_prompt',
+          modelKey: 'copilot_ai_model',
+          colorClass: 'border-l-cyan-500'
+        },
+        {
+          id: 'copilot_improve',
+          name: 'Mejorar Texto',
+          description: 'Mejora claridad y precisión del texto',
+          promptKey: 'copilot_improve_prompt',
+          modelKey: 'copilot_ai_model',
+          colorClass: 'border-l-cyan-500'
+        }
+      ]
     }
   ];
 
