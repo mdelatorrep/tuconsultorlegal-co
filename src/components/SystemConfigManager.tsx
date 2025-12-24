@@ -10,6 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { 
   Settings, 
   RefreshCw, 
@@ -20,8 +21,16 @@ import {
   Wrench,
   Sparkles,
   Save,
-  Plus,
-  Brain
+  Brain,
+  ChevronRight,
+  ChevronDown,
+  Users,
+  Calendar,
+  Shield,
+  CreditCard,
+  Trophy,
+  Gavel,
+  Search
 } from "lucide-react";
 import AIFunctionConfig from "./admin/AIFunctionConfig";
 
@@ -53,6 +62,13 @@ interface FunctionCategory {
   functions: AIFunction[];
 }
 
+interface CategoryGroup {
+  id: string;
+  name: string;
+  icon: React.ReactNode;
+  categories: FunctionCategory[];
+}
+
 export default function SystemConfigManager() {
   const [configs, setConfigs] = useState<SystemConfig[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,20 +76,21 @@ export default function SystemConfigManager() {
   const [loadingModels, setLoadingModels] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('agent-functions');
   const [showGlobalParams, setShowGlobalParams] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState<string[]>(['ai-functions', 'operational']);
   const { toast } = useToast();
 
-  // Define function categories
-  const functionCategories: FunctionCategory[] = [
+  // Define function categories organized into groups
+  const aiCategories: FunctionCategory[] = [
     {
       id: 'agent-functions',
-      name: 'Funciones de Agentes',
-      description: 'Creación y gestión de agentes IA para documentos legales',
-      icon: <Bot className="w-5 h-5" />,
+      name: 'Agentes',
+      description: 'Creación de agentes IA',
+      icon: <Bot className="w-4 h-4" />,
       functions: [
         {
           id: 'improve_clause',
           name: 'Mejorar Cláusulas',
-          description: 'Optimiza cláusulas legales en plantillas de documentos',
+          description: 'Optimiza cláusulas legales en plantillas',
           promptKey: 'improve_clause_ai_prompt',
           modelKey: 'improve_clause_ai_model',
           reasoningEffortKey: 'improve_clause_reasoning_effort',
@@ -83,59 +100,43 @@ export default function SystemConfigManager() {
         },
         {
           id: 'suggest_blocks',
-          name: 'Sugerir Bloques de Conversación',
-          description: 'Genera bloques de conversación para agentes de documentos',
+          name: 'Bloques de Conversación',
+          description: 'Genera bloques para agentes',
           promptKey: 'suggest_conversation_blocks_prompt',
           modelKey: 'suggest_blocks_ai_model',
           reasoningEffortKey: 'suggest_blocks_reasoning_effort',
-          webSearchKey: 'web_search_enabled_suggest_blocks',
-          webSearchCategoriesKey: 'web_search_categories_suggest_blocks',
           colorClass: 'border-l-purple-500'
         },
         {
           id: 'agent_creation',
           name: 'ADN de Agentes',
-          description: 'Define el comportamiento y personalidad base de los agentes legales',
+          description: 'Comportamiento base de agentes',
           promptKey: 'agent_creation_system_prompt',
           modelKey: 'agent_creation_ai_model',
-          reasoningEffortKey: 'agent_creation_reasoning_effort',
-          colorClass: 'border-l-purple-500'
-        },
-        {
-          id: 'agent_prompt_processor',
-          name: 'Procesador de Prompts',
-          description: 'Instrucciones estrictas para mejorar prompts (sin explicaciones ni saludos)',
-          promptKey: 'agent_prompt_processor_instructions',
-          modelKey: 'agent_creation_ai_model',
-          reasoningEffortKey: 'agent_prompt_processor_reasoning_effort',
           colorClass: 'border-l-purple-500'
         }
       ]
     },
     {
       id: 'document-functions',
-      name: 'Funciones de Documentos',
-      description: 'Generación y procesamiento de documentos legales',
-      icon: <FileText className="w-5 h-5" />,
+      name: 'Documentos',
+      description: 'Generación de documentos',
+      icon: <FileText className="w-4 h-4" />,
       functions: [
         {
           id: 'document_chat',
           name: 'Chat de Documentos',
-          description: 'Recopila información del usuario para generar documentos',
+          description: 'Recopila información del usuario',
           promptKey: 'document_chat_prompt',
           modelKey: 'document_chat_ai_model',
-          reasoningEffortKey: 'document_chat_reasoning_effort',
-          webSearchKey: 'web_search_enabled_document_chat',
-          webSearchCategoriesKey: 'web_search_categories_document_chat',
           colorClass: 'border-l-blue-500'
         },
         {
           id: 'generate_document',
           name: 'Generar Documento',
-          description: 'Genera el documento final desde datos recopilados',
+          description: 'Genera el documento final',
           promptKey: 'generate_document_prompt',
           modelKey: 'openai_assistant_model',
-          reasoningEffortKey: 'generate_document_reasoning_effort',
           additionalParams: [
             { key: 'openai_assistant_temperature', name: 'Temperatura', type: 'number' as const }
           ],
@@ -146,173 +147,56 @@ export default function SystemConfigManager() {
     {
       id: 'legal-tools',
       name: 'Herramientas Legales',
-      description: 'Módulos de investigación, análisis, redacción y estrategia',
-      icon: <Scale className="w-5 h-5" />,
+      description: 'Investigación, análisis, redacción',
+      icon: <Scale className="w-4 h-4" />,
       functions: [
         {
           id: 'research',
-          name: 'Investigación Legal',
-          description: 'Análisis de legislación y jurisprudencia',
+          name: 'Investigación',
+          description: 'Análisis de legislación',
           promptKey: 'research_system_prompt',
           modelKey: 'research_ai_model',
-          reasoningEffortKey: 'research_reasoning_effort',
           webSearchKey: 'web_search_enabled_research',
-          webSearchCategoriesKey: 'web_search_categories_research',
           colorClass: 'border-l-green-500'
         },
         {
           id: 'analysis',
-          name: 'Análisis de Documentos',
-          description: 'Evaluación y análisis de documentos legales',
+          name: 'Análisis',
+          description: 'Evaluación de documentos',
           promptKey: 'analysis_system_prompt',
           modelKey: 'analysis_ai_model',
-          reasoningEffortKey: 'analysis_reasoning_effort',
-          webSearchKey: 'web_search_enabled_analysis',
-          webSearchCategoriesKey: 'web_search_categories_analysis',
           colorClass: 'border-l-green-500'
         },
         {
           id: 'drafting',
-          name: 'Redacción Legal',
-          description: 'Creación de documentos legales profesionales',
+          name: 'Redacción',
+          description: 'Creación de documentos',
           promptKey: 'drafting_system_prompt',
           modelKey: 'drafting_ai_model',
-          reasoningEffortKey: 'drafting_reasoning_effort',
-          webSearchKey: 'web_search_enabled_drafting',
-          webSearchCategoriesKey: 'web_search_categories_drafting',
           colorClass: 'border-l-green-500'
         },
         {
           id: 'strategy',
-          name: 'Estrategia Legal',
-          description: 'Desarrollo de estrategias legales comprehensivas',
+          name: 'Estrategia',
+          description: 'Estrategias legales',
           promptKey: 'strategy_system_prompt',
           modelKey: 'strategy_ai_model',
-          reasoningEffortKey: 'strategy_reasoning_effort',
-          webSearchKey: 'web_search_enabled_strategy',
-          webSearchCategoriesKey: 'web_search_categories_strategy',
           colorClass: 'border-l-green-500'
-        }
-      ]
-    },
-    {
-      id: 'assistant-functions',
-      name: 'Asistentes Virtuales',
-      description: 'Configuración de asistentes conversacionales',
-      icon: <MessageSquare className="w-5 h-5" />,
-      functions: [
-        {
-          id: 'lexi',
-          name: 'Lexi - Asistente Legal',
-          description: 'Asistente virtual principal de tuconsultorlegal.co',
-          promptKey: 'lexi_chat_prompt',
-          modelKey: 'lexi_ai_model',
-          reasoningEffortKey: 'lexi_reasoning_effort',
-          webSearchKey: 'web_search_enabled_lexi',
-          webSearchCategoriesKey: 'web_search_categories_lexi',
-          colorClass: 'border-l-indigo-500'
-        },
-        {
-          id: 'routing',
-          name: 'Routing de Consultas',
-          description: 'Sistema de clasificación y enrutamiento de consultas',
-          promptKey: 'routing_chat_prompt',
-          modelKey: 'routing_ai_model',
-          reasoningEffortKey: 'routing_reasoning_effort',
-          colorClass: 'border-l-indigo-500'
-        },
-        {
-          id: 'training',
-          name: 'Asistente de Entrenamiento',
-          description: 'Formación y certificación de abogados en IA',
-          promptKey: 'legal_training_assistant_prompt',
-          modelKey: 'training_assistant_ai_model',
-          reasoningEffortKey: 'training_assistant_reasoning_effort',
-          webSearchKey: 'web_search_enabled_training',
-          webSearchCategoriesKey: 'web_search_categories_training',
-          colorClass: 'border-l-indigo-500'
-        }
-      ]
-    },
-    {
-      id: 'utility-functions',
-      name: 'Utilidades',
-      description: 'Funciones de soporte y optimización',
-      icon: <Wrench className="w-5 h-5" />,
-      functions: [
-        {
-          id: 'improve_document_info',
-          name: 'Mejorar Info de Documento',
-          description: 'Optimiza nombre y descripción de servicios legales',
-          promptKey: 'document_description_optimizer_prompt',
-          modelKey: 'document_description_optimizer_model',
-          reasoningEffortKey: 'improve_document_info_reasoning_effort',
-          webSearchKey: 'web_search_enabled_improve_document_info',
-          webSearchCategoriesKey: 'web_search_categories_improve_document_info',
-          colorClass: 'border-l-orange-500'
-        },
-        {
-          id: 'improve_template',
-          name: 'Mejorar Plantilla',
-          description: 'Mejora plantillas de documentos legales',
-          promptKey: 'template_optimizer_prompt',
-          modelKey: 'template_optimizer_model',
-          reasoningEffortKey: 'improve_template_reasoning_effort',
-          webSearchKey: 'web_search_enabled_improve_template',
-          webSearchCategoriesKey: 'web_search_categories_improve_template',
-          colorClass: 'border-l-orange-500'
-        },
-        {
-          id: 'crm_segmentation',
-          name: 'Segmentación CRM',
-          description: 'Clasificación inteligente de clientes',
-          promptKey: 'crm_segmentation_prompt',
-          modelKey: 'crm_segmentation_ai_model',
-          reasoningEffortKey: 'crm_segmentation_reasoning_effort',
-          colorClass: 'border-l-orange-500'
-        },
-        {
-          id: 'organize_file',
-          name: 'Organizar Archivos',
-          description: 'Organización inteligente de archivos legales',
-          promptKey: 'organize_file_prompt',
-          modelKey: 'organize_file_ai_model',
-          reasoningEffortKey: 'organize_file_reasoning_effort',
-          colorClass: 'border-l-orange-500'
-        },
-        {
-          id: 'organize_form',
-          name: 'Organizar Formularios',
-          description: 'Optimización de grupos de formularios',
-          promptKey: 'organize_form_prompt',
-          modelKey: 'organize_form_ai_model',
-          reasoningEffortKey: 'organize_form_reasoning_effort',
-          colorClass: 'border-l-orange-500'
-        },
-        {
-          id: 'training_validator',
-          name: 'Validador de Entrenamiento',
-          description: 'Evaluación de respuestas en entrenamiento',
-          promptKey: 'ai_training_validator_prompt',
-          modelKey: 'training_validator_ai_model',
-          reasoningEffortKey: 'training_validator_reasoning_effort',
-          colorClass: 'border-l-orange-500'
         }
       ]
     },
     {
       id: 'case-predictor',
       name: 'Predictor de Casos',
-      description: 'Predicción de resultados de casos legales',
-      icon: <Scale className="w-5 h-5" />,
+      description: 'Predicción de resultados',
+      icon: <Gavel className="w-4 h-4" />,
       functions: [
         {
           id: 'case_predictor',
-          name: 'Predictor de Casos',
-          description: 'Analiza casos y predice resultados probables',
+          name: 'Predictor',
+          description: 'Analiza y predice resultados',
           promptKey: 'case_predictor_system_prompt',
           modelKey: 'case_predictor_ai_model',
-          webSearchKey: 'case_predictor_web_search_enabled',
           colorClass: 'border-l-rose-500'
         }
       ]
@@ -320,13 +204,13 @@ export default function SystemConfigManager() {
     {
       id: 'legal-copilot',
       name: 'Copiloto Legal',
-      description: 'Asistente en tiempo real para redacción legal',
-      icon: <Sparkles className="w-5 h-5" />,
+      description: 'Asistencia en tiempo real',
+      icon: <Sparkles className="w-4 h-4" />,
       functions: [
         {
           id: 'copilot_suggest',
           name: 'Sugerencias',
-          description: 'Sugerencias en tiempo real mientras escribe',
+          description: 'Sugerencias mientras escribe',
           promptKey: 'copilot_suggest_prompt',
           modelKey: 'copilot_ai_model',
           additionalParams: [
@@ -337,7 +221,7 @@ export default function SystemConfigManager() {
         {
           id: 'copilot_autocomplete',
           name: 'Autocompletado',
-          description: 'Completa cláusulas y textos legales',
+          description: 'Completa cláusulas',
           promptKey: 'copilot_autocomplete_prompt',
           modelKey: 'copilot_ai_model',
           additionalParams: [
@@ -348,7 +232,7 @@ export default function SystemConfigManager() {
         {
           id: 'copilot_risks',
           name: 'Detección de Riesgos',
-          description: 'Identifica riesgos legales en documentos',
+          description: 'Identifica riesgos',
           promptKey: 'copilot_risk_detection_prompt',
           modelKey: 'copilot_ai_model',
           colorClass: 'border-l-cyan-500'
@@ -356,28 +240,116 @@ export default function SystemConfigManager() {
         {
           id: 'copilot_improve',
           name: 'Mejorar Texto',
-          description: 'Mejora claridad y precisión del texto',
+          description: 'Mejora claridad',
           promptKey: 'copilot_improve_prompt',
           modelKey: 'copilot_ai_model',
           colorClass: 'border-l-cyan-500'
         }
       ]
+    },
+    {
+      id: 'assistant-functions',
+      name: 'Asistentes',
+      description: 'Asistentes conversacionales',
+      icon: <MessageSquare className="w-4 h-4" />,
+      functions: [
+        {
+          id: 'lexi',
+          name: 'Lexi',
+          description: 'Asistente legal principal',
+          promptKey: 'lexi_chat_prompt',
+          modelKey: 'lexi_ai_model',
+          colorClass: 'border-l-indigo-500'
+        },
+        {
+          id: 'routing',
+          name: 'Routing',
+          description: 'Clasificación de consultas',
+          promptKey: 'routing_chat_prompt',
+          modelKey: 'routing_ai_model',
+          colorClass: 'border-l-indigo-500'
+        },
+        {
+          id: 'training',
+          name: 'Entrenamiento',
+          description: 'Formación de abogados',
+          promptKey: 'legal_training_assistant_prompt',
+          modelKey: 'training_assistant_ai_model',
+          colorClass: 'border-l-indigo-500'
+        }
+      ]
+    },
+    {
+      id: 'process-query',
+      name: 'Consulta Procesos',
+      description: 'Procesos judiciales',
+      icon: <Search className="w-4 h-4" />,
+      functions: [
+        {
+          id: 'process_query',
+          name: 'Consulta de Procesos',
+          description: 'Consulta en Rama Judicial',
+          promptKey: 'process_query_ai_prompt',
+          modelKey: 'process_query_ai_model',
+          colorClass: 'border-l-amber-500'
+        }
+      ]
+    },
+    {
+      id: 'utility-functions',
+      name: 'Utilidades',
+      description: 'Funciones de soporte',
+      icon: <Wrench className="w-4 h-4" />,
+      functions: [
+        {
+          id: 'improve_document_info',
+          name: 'Mejorar Info',
+          description: 'Optimiza descripciones',
+          promptKey: 'document_description_optimizer_prompt',
+          modelKey: 'document_description_optimizer_model',
+          colorClass: 'border-l-orange-500'
+        },
+        {
+          id: 'crm_segmentation',
+          name: 'Segmentación CRM',
+          description: 'Clasificación de clientes',
+          promptKey: 'crm_segmentation_prompt',
+          modelKey: 'crm_segmentation_ai_model',
+          colorClass: 'border-l-orange-500'
+        },
+        {
+          id: 'organize_file',
+          name: 'Organizar Archivos',
+          description: 'Organización de archivos',
+          promptKey: 'organize_file_prompt',
+          modelKey: 'organize_file_ai_model',
+          colorClass: 'border-l-orange-500'
+        }
+      ]
     }
   ];
 
-  // Global parameters configuration (removed reasoning effort - now per function)
+  // Operational config categories (non-AI)
+  const operationalCategories = [
+    { id: 'crm-config', name: 'CRM', icon: <Users className="w-4 h-4" />, keys: ['crm_max_leads_per_lawyer', 'crm_auto_followup_days', 'crm_reminder_hours', 'crm_lead_expiration_days', 'crm_auto_convert_lead_to_client', 'crm_email_notifications_enabled'] },
+    { id: 'calendar-config', name: 'Calendario', icon: <Calendar className="w-4 h-4" />, keys: ['calendar_reminder_hours_before', 'calendar_auto_docket_enabled', 'calendar_working_hours_start', 'calendar_working_hours_end', 'calendar_default_event_duration_minutes', 'calendar_holidays_enabled'] },
+    { id: 'client-portal-config', name: 'Portal Cliente', icon: <Shield className="w-4 h-4" />, keys: ['client_portal_document_upload_enabled', 'client_portal_appointment_scheduling_enabled', 'client_portal_case_visibility', 'client_portal_message_enabled', 'client_portal_ai_summary_enabled', 'client_portal_max_file_size_mb'] },
+    { id: 'process-config', name: 'Procesos Judiciales', icon: <Gavel className="w-4 h-4" />, keys: ['process_monitor_sync_frequency_hours', 'process_alert_new_actuacion_enabled', 'process_alert_email_enabled', 'process_auto_create_calendar_event', 'process_rama_judicial_cache_hours', 'process_auto_link_to_case'] },
+    { id: 'gamification-config', name: 'Gamificación', icon: <Trophy className="w-4 h-4" />, keys: ['gamification_enabled', 'gamification_points_config', 'gamification_streak_bonus_multiplier', 'gamification_daily_goal_credits', 'gamification_levels'] },
+    { id: 'credits-config', name: 'Créditos', icon: <CreditCard className="w-4 h-4" />, keys: ['credits_daily_free_limit', 'credits_referral_bonus', 'credits_warning_threshold', 'credits_welcome_bonus', 'credits_auto_recharge_enabled', 'credits_auto_recharge_amount'] },
+    { id: 'verification-config', name: 'Verificación', icon: <Shield className="w-4 h-4" />, keys: ['verification_verifik_enabled', 'verification_manual_approval_required', 'verification_expiration_days'] }
+  ];
 
   // Global parameters configuration
   const globalParams = [
-    { key: 'openai_api_timeout', name: 'Timeout OpenAI (segundos)', type: 'number' as const, defaultValue: '30' },
-    { key: 'max_retry_attempts', name: 'Máximo de Reintentos', type: 'number' as const, defaultValue: '3' },
-    { key: 'document_sla_hours', name: 'SLA de Documentos (horas)', type: 'number' as const, defaultValue: '4' },
-    { key: 'api_rate_limit_requests', name: 'Límite de Peticiones/min', type: 'number' as const, defaultValue: '100' }
+    { key: 'openai_api_timeout', name: 'Timeout OpenAI (ms)', type: 'number' as const, defaultValue: '120000' },
+    { key: 'max_retries_ai_requests', name: 'Máximo de Reintentos', type: 'number' as const, defaultValue: '3' },
+    { key: 'default_sla_hours', name: 'SLA de Documentos (horas)', type: 'number' as const, defaultValue: '24' }
   ];
 
   useEffect(() => {
     loadConfigs();
-    loadOpenAIModels(); // Auto-load models on mount
+    loadOpenAIModels();
   }, []);
 
   const loadConfigs = async () => {
@@ -407,22 +379,11 @@ export default function SystemConfigManager() {
       setLoadingModels(true);
       const { data, error } = await supabase.functions.invoke('get-openai-models');
       
-      if (error) {
-        toast({
-          title: "Error",
-          description: "No se pudieron cargar los modelos de OpenAI",
-          variant: "destructive"
-        });
-        return;
-      }
+      if (error) return;
 
       if (data?.success && data?.models) {
         const modelIds = data.models.map((model: any) => model.id);
         setOpenaiModels(modelIds);
-        toast({
-          title: "Éxito",
-          description: `Se cargaron ${modelIds.length} modelos`
-        });
       }
     } catch (error: any) {
       console.error('Error loading models:', error);
@@ -457,9 +418,9 @@ export default function SystemConfigManager() {
 
       if (data?.success) {
         toast({
-          title: force ? "Sincronización forzada completada" : "Configuraciones inicializadas",
+          title: force ? "Sincronización completada" : "Configuraciones inicializadas",
           description: force 
-            ? `Se actualizaron/crearon ${data.configsUpserted} configuraciones.`
+            ? `Se actualizaron ${data.configsUpserted} configuraciones.`
             : `Se agregaron ${data.insertedCount} nuevas configuraciones.`
         });
         await loadConfigs();
@@ -490,7 +451,16 @@ export default function SystemConfigManager() {
     return result;
   };
 
-  const currentCategory = functionCategories.find(cat => cat.id === selectedCategory);
+  const toggleGroup = (groupId: string) => {
+    setExpandedGroups(prev => 
+      prev.includes(groupId) 
+        ? prev.filter(g => g !== groupId)
+        : [...prev, groupId]
+    );
+  };
+
+  const currentCategory = aiCategories.find(cat => cat.id === selectedCategory);
+  const currentOperationalConfig = operationalCategories.find(cat => cat.id === selectedCategory);
 
   if (loading) {
     return (
@@ -504,21 +474,22 @@ export default function SystemConfigManager() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-200px)] gap-6">
+    <div className="flex h-[calc(100vh-200px)] gap-4">
       {/* Sidebar Navigation */}
-      <div className="w-72 flex-shrink-0">
+      <div className="w-64 flex-shrink-0">
         <Card className="h-full">
-          <CardHeader className="pb-3">
+          <CardHeader className="py-3 px-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Settings className="w-5 h-5" />
-                Configuración IA
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Settings className="w-4 h-4" />
+                Configuración
               </CardTitle>
               <Button 
                 variant="ghost" 
                 size="sm"
-                onClick={() => initializeDefaultConfigs(false)}
+                onClick={() => initializeDefaultConfigs(true)}
                 disabled={loading}
+                title="Sincronizar configuraciones"
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               </Button>
@@ -526,103 +497,114 @@ export default function SystemConfigManager() {
           </CardHeader>
           <Separator />
           <CardContent className="p-0">
-            <ScrollArea className="h-[calc(100%-80px)]">
+            <ScrollArea className="h-[calc(100%-60px)]">
               <div className="p-2 space-y-1">
-                {functionCategories.map((category) => (
-                  <button
-                    key={category.id}
-                    onClick={() => {
-                      setSelectedCategory(category.id);
-                      setShowGlobalParams(false);
-                    }}
-                    className={`w-full flex items-start gap-3 p-3 rounded-lg text-left transition-colors ${
-                      selectedCategory === category.id && !showGlobalParams
-                        ? 'bg-primary/10 text-primary'
-                        : 'hover:bg-muted'
-                    }`}
-                  >
-                    <div className={`mt-0.5 ${
-                      selectedCategory === category.id && !showGlobalParams
-                        ? 'text-primary'
-                        : 'text-muted-foreground'
-                    }`}>
-                      {category.icon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm">{category.name}</div>
-                      <div className="text-xs text-muted-foreground truncate">
-                        {category.functions.length} funciones
-                      </div>
-                    </div>
-                  </button>
-                ))}
-                
+                {/* AI Functions Group */}
+                <Collapsible 
+                  open={expandedGroups.includes('ai-functions')}
+                  onOpenChange={() => toggleGroup('ai-functions')}
+                >
+                  <CollapsibleTrigger className="w-full flex items-center gap-2 p-2 rounded-lg hover:bg-muted text-sm font-medium">
+                    {expandedGroups.includes('ai-functions') ? (
+                      <ChevronDown className="w-4 h-4" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4" />
+                    )}
+                    <Brain className="w-4 h-4 text-primary" />
+                    <span>Funciones IA</span>
+                    <Badge variant="secondary" className="ml-auto text-xs">
+                      {aiCategories.reduce((sum, cat) => sum + cat.functions.length, 0)}
+                    </Badge>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="pl-4 space-y-0.5">
+                    {aiCategories.map((category) => (
+                      <button
+                        key={category.id}
+                        onClick={() => {
+                          setSelectedCategory(category.id);
+                          setShowGlobalParams(false);
+                        }}
+                        className={`w-full flex items-center gap-2 p-2 rounded-md text-left text-sm transition-colors ${
+                          selectedCategory === category.id && !showGlobalParams
+                            ? 'bg-primary/10 text-primary'
+                            : 'hover:bg-muted text-muted-foreground'
+                        }`}
+                      >
+                        {category.icon}
+                        <span className="truncate flex-1">{category.name}</span>
+                        <span className="text-xs opacity-50">{category.functions.length}</span>
+                      </button>
+                    ))}
+                  </CollapsibleContent>
+                </Collapsible>
+
+                {/* Operational Config Group */}
+                <Collapsible 
+                  open={expandedGroups.includes('operational')}
+                  onOpenChange={() => toggleGroup('operational')}
+                >
+                  <CollapsibleTrigger className="w-full flex items-center gap-2 p-2 rounded-lg hover:bg-muted text-sm font-medium">
+                    {expandedGroups.includes('operational') ? (
+                      <ChevronDown className="w-4 h-4" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4" />
+                    )}
+                    <Settings className="w-4 h-4 text-orange-500" />
+                    <span>Operacional</span>
+                    <Badge variant="secondary" className="ml-auto text-xs">
+                      {operationalCategories.length}
+                    </Badge>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="pl-4 space-y-0.5">
+                    {operationalCategories.map((category) => (
+                      <button
+                        key={category.id}
+                        onClick={() => {
+                          setSelectedCategory(category.id);
+                          setShowGlobalParams(false);
+                        }}
+                        className={`w-full flex items-center gap-2 p-2 rounded-md text-left text-sm transition-colors ${
+                          selectedCategory === category.id && !showGlobalParams
+                            ? 'bg-primary/10 text-primary'
+                            : 'hover:bg-muted text-muted-foreground'
+                        }`}
+                      >
+                        {category.icon}
+                        <span className="truncate">{category.name}</span>
+                      </button>
+                    ))}
+                  </CollapsibleContent>
+                </Collapsible>
+
                 <Separator className="my-2" />
-                
-                {/* Prompt Optimizer */}
+
+                {/* Meta Prompt */}
                 <button
                   onClick={() => {
                     setShowGlobalParams(false);
                     setSelectedCategory('meta-prompt');
                   }}
-                  className={`w-full flex items-start gap-3 p-3 rounded-lg text-left transition-colors ${
+                  className={`w-full flex items-center gap-2 p-2 rounded-md text-left text-sm transition-colors ${
                     selectedCategory === 'meta-prompt'
                       ? 'bg-amber-500/10 text-amber-600'
-                      : 'hover:bg-muted'
+                      : 'hover:bg-muted text-muted-foreground'
                   }`}
                 >
-                  <Sparkles className={`w-5 h-5 mt-0.5 ${
-                    selectedCategory === 'meta-prompt' ? 'text-amber-500' : 'text-muted-foreground'
-                  }`} />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm">Meta Prompt</div>
-                    <div className="text-xs text-muted-foreground">
-                      Optimizador de prompts
-                    </div>
-                  </div>
-                </button>
-                
-                {/* Reasoning Effort Config */}
-                <button
-                  onClick={() => {
-                    setShowGlobalParams(false);
-                    setSelectedCategory('reasoning-effort');
-                  }}
-                  className={`w-full flex items-start gap-3 p-3 rounded-lg text-left transition-colors ${
-                    selectedCategory === 'reasoning-effort'
-                      ? 'bg-cyan-500/10 text-cyan-600'
-                      : 'hover:bg-muted'
-                  }`}
-                >
-                  <Brain className={`w-5 h-5 mt-0.5 ${
-                    selectedCategory === 'reasoning-effort' ? 'text-cyan-500' : 'text-muted-foreground'
-                  }`} />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm">Reasoning Effort</div>
-                    <div className="text-xs text-muted-foreground">
-                      Niveles de razonamiento IA
-                    </div>
-                  </div>
+                  <Sparkles className="w-4 h-4" />
+                  <span>Meta Prompt</span>
                 </button>
                 
                 {/* Global Params */}
                 <button
                   onClick={() => setShowGlobalParams(true)}
-                  className={`w-full flex items-start gap-3 p-3 rounded-lg text-left transition-colors ${
+                  className={`w-full flex items-center gap-2 p-2 rounded-md text-left text-sm transition-colors ${
                     showGlobalParams
                       ? 'bg-primary/10 text-primary'
-                      : 'hover:bg-muted'
+                      : 'hover:bg-muted text-muted-foreground'
                   }`}
                 >
-                  <Settings className={`w-5 h-5 mt-0.5 ${
-                    showGlobalParams ? 'text-primary' : 'text-muted-foreground'
-                  }`} />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm">Parámetros Globales</div>
-                    <div className="text-xs text-muted-foreground">
-                      Timeouts, límites, SLA
-                    </div>
-                  </div>
+                  <Settings className="w-4 h-4" />
+                  <span>Globales</span>
                 </button>
               </div>
             </ScrollArea>
@@ -649,15 +631,22 @@ export default function SystemConfigManager() {
               onLoadModels={loadOpenAIModels}
               onSave={saveConfig}
             />
+          ) : currentOperationalConfig ? (
+            <OperationalConfigSection
+              category={currentOperationalConfig}
+              configs={configs}
+              getConfigValue={getConfigValue}
+              onSave={saveConfig}
+            />
           ) : currentCategory && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h2 className="text-2xl font-bold flex items-center gap-3">
+                  <h2 className="text-xl font-bold flex items-center gap-2">
                     {currentCategory.icon}
                     {currentCategory.name}
                   </h2>
-                  <p className="text-muted-foreground">{currentCategory.description}</p>
+                  <p className="text-sm text-muted-foreground">{currentCategory.description}</p>
                 </div>
                 <Button
                   variant="outline"
@@ -670,11 +659,11 @@ export default function SystemConfigManager() {
                   ) : (
                     <RefreshCw className="w-4 h-4 mr-2" />
                   )}
-                  Cargar Modelos
+                  Modelos
                 </Button>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {currentCategory.functions.map((func) => (
                   <AIFunctionConfig
                     key={func.id}
@@ -712,6 +701,110 @@ export default function SystemConfigManager() {
           )}
         </ScrollArea>
       </div>
+    </div>
+  );
+}
+
+// Operational Config Section Component
+function OperationalConfigSection({
+  category,
+  configs,
+  getConfigValue,
+  onSave
+}: {
+  category: { id: string; name: string; icon: React.ReactNode; keys: string[] };
+  configs: SystemConfig[];
+  getConfigValue: (key: string, defaultValue: string) => string;
+  onSave: (key: string, value: string, description?: string) => Promise<void>;
+}) {
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const initial: Record<string, string> = {};
+    category.keys.forEach(key => {
+      initial[key] = getConfigValue(key, '');
+    });
+    setValues(initial);
+  }, [category, getConfigValue]);
+
+  const handleSave = async (key: string) => {
+    setSaving(key);
+    try {
+      const config = configs.find(c => c.config_key === key);
+      await onSave(key, values[key], config?.description);
+      toast({
+        title: "Guardado",
+        description: `${key} guardado correctamente`
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const getConfigDescription = (key: string) => {
+    const config = configs.find(c => c.config_key === key);
+    return config?.description || key;
+  };
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-xl font-bold flex items-center gap-2">
+          {category.icon}
+          {category.name}
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Configuraciones operativas de {category.name.toLowerCase()}
+        </p>
+      </div>
+
+      <Card>
+        <CardContent className="pt-6 space-y-4">
+          {category.keys.map((key) => (
+            <div key={key} className="space-y-2">
+              <Label className="text-sm">{getConfigDescription(key)}</Label>
+              <div className="flex gap-2">
+                {values[key]?.startsWith('[') || values[key]?.startsWith('{') ? (
+                  <Textarea
+                    value={values[key] || ''}
+                    onChange={(e) => setValues({ ...values, [key]: e.target.value })}
+                    className="flex-1 font-mono text-sm"
+                    rows={3}
+                  />
+                ) : (
+                  <Input
+                    value={values[key] || ''}
+                    onChange={(e) => setValues({ ...values, [key]: e.target.value })}
+                    className="flex-1"
+                  />
+                )}
+                <Button
+                  onClick={() => handleSave(key)}
+                  disabled={saving === key}
+                  size="icon"
+                >
+                  {saving === key ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4" />
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                <code className="bg-muted px-1 rounded">{key}</code>
+              </p>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -758,19 +851,19 @@ function GlobalParamsSection({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div>
-        <h2 className="text-2xl font-bold flex items-center gap-3">
-          <Settings className="w-6 h-6" />
+        <h2 className="text-xl font-bold flex items-center gap-2">
+          <Settings className="w-5 h-5" />
           Parámetros Globales
         </h2>
-        <p className="text-muted-foreground">
-          Configuraciones generales del sistema: timeouts, límites y SLA
+        <p className="text-sm text-muted-foreground">
+          Timeouts, límites y SLA del sistema
         </p>
       </div>
 
       <Card>
-        <CardContent className="pt-6 space-y-6">
+        <CardContent className="pt-6 space-y-4">
           {params.map((param) => (
             <div key={param.key} className="space-y-2">
               <Label>{param.name}</Label>
@@ -784,6 +877,7 @@ function GlobalParamsSection({
                 <Button
                   onClick={() => handleSave(param.key, param.name)}
                   disabled={saving === param.key}
+                  size="icon"
                 >
                   {saving === param.key ? (
                     <RefreshCw className="w-4 h-4 animate-spin" />
@@ -793,7 +887,7 @@ function GlobalParamsSection({
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Clave: <code className="bg-muted px-1 rounded">{param.key}</code>
+                <code className="bg-muted px-1 rounded">{param.key}</code>
               </p>
             </div>
           ))}
@@ -802,6 +896,7 @@ function GlobalParamsSection({
     </div>
   );
 }
+
 // Meta Prompt Section Component
 function MetaPromptSection({
   currentPrompt,
@@ -843,17 +938,10 @@ function MetaPromptSection({
   const handleSave = async () => {
     setSaving(true);
     try {
-      await onSave('prompt_optimizer_meta_prompt', prompt, 'Meta prompt maestro para optimización de prompts');
-      toast({
-        title: "Guardado",
-        description: "Meta prompt guardado correctamente"
-      });
+      await onSave('prompt_optimizer_meta_prompt', prompt, 'Meta prompt maestro');
+      toast({ title: "Guardado", description: "Meta prompt guardado" });
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -862,17 +950,10 @@ function MetaPromptSection({
   const handleSaveModel = async () => {
     setSavingModel(true);
     try {
-      await onSave('prompt_optimizer_model', model, 'Modelo para optimización de prompts');
-      toast({
-        title: "Guardado",
-        description: "Modelo guardado correctamente"
-      });
+      await onSave('prompt_optimizer_model', model, 'Modelo para optimización');
+      toast({ title: "Guardado", description: "Modelo guardado" });
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
       setSavingModel(false);
     }
@@ -881,204 +962,114 @@ function MetaPromptSection({
   const handleSaveReasoningEffort = async () => {
     setSavingEffort(true);
     try {
-      await onSave('reasoning_effort_prompt_optimizer', reasoningEffort, 'Nivel de reasoning para optimización de prompts');
-      toast({
-        title: "Guardado",
-        description: "Reasoning effort guardado correctamente"
-      });
+      await onSave('reasoning_effort_prompt_optimizer', reasoningEffort, 'Nivel de reasoning');
+      toast({ title: "Guardado", description: "Reasoning effort guardado" });
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
       setSavingEffort(false);
     }
   };
 
   const REASONING_EFFORT_OPTIONS = [
-    { value: 'low', label: 'Bajo', description: 'Máximo tokens para output, mínimo razonamiento' },
-    { value: 'medium', label: 'Medio', description: 'Balance entre razonamiento y output' },
-    { value: 'high', label: 'Alto', description: 'Máximo razonamiento, análisis profundo' }
+    { value: 'low', label: 'Bajo', description: 'Máximo output' },
+    { value: 'medium', label: 'Medio', description: 'Balanceado' },
+    { value: 'high', label: 'Alto', description: 'Máximo razonamiento' }
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold flex items-center gap-3">
-            <Sparkles className="w-6 h-6 text-amber-500" />
-            Meta Prompt - Optimizador
+          <h2 className="text-xl font-bold flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-amber-500" />
+            Meta Prompt
           </h2>
-          <p className="text-muted-foreground">
-            Este prompt maestro se usa para optimizar todos los demás prompts del sistema
+          <p className="text-sm text-muted-foreground">
+            Prompt maestro para optimizar otros prompts
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onLoadModels}
-          disabled={loadingModels}
-        >
-          {loadingModels ? (
-            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-          ) : (
-            <RefreshCw className="w-4 h-4 mr-2" />
-          )}
-          Cargar Modelos
+        <Button variant="outline" size="sm" onClick={onLoadModels} disabled={loadingModels}>
+          {loadingModels ? <RefreshCw className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
         </Button>
       </div>
 
-      {/* Model Configuration Card */}
-      <Card className="border-l-4 border-l-amber-500">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Modelo de Optimización</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <Label className="text-xs text-muted-foreground">
-                Clave: <code className="bg-muted px-1 rounded">prompt_optimizer_model</code>
-              </Label>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onLoadModels}
-                disabled={loadingModels}
-                className="h-7 text-xs"
-              >
-                {loadingModels ? (
-                  <RefreshCw className="w-3 h-3 animate-spin" />
-                ) : (
-                  <RefreshCw className="w-3 h-3" />
-                )}
-                <span className="ml-1">Actualizar lista</span>
-              </Button>
-            </div>
-            <Select
-              value={model}
-              onValueChange={setModel}
-              disabled={loadingModels}
-            >
+      <div className="grid grid-cols-2 gap-4">
+        <Card className="border-l-4 border-l-amber-500">
+          <CardHeader className="py-3">
+            <CardTitle className="text-sm">Modelo</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Select value={model} onValueChange={setModel} disabled={loadingModels}>
               <SelectTrigger>
-                <SelectValue placeholder="Selecciona un modelo" />
+                <SelectValue placeholder="Selecciona modelo" />
               </SelectTrigger>
               <SelectContent>
-                {openaiModels.length > 0 ? (
-                  openaiModels.map((m) => (
-                    <SelectItem key={m} value={m}>
-                      {m}
-                    </SelectItem>
-                  ))
-                ) : (
-                  <SelectItem value="no-models" disabled>
-                    {loadingModels ? 'Cargando...' : 'No hay modelos disponibles'}
-                  </SelectItem>
-                )}
+                {openaiModels.map((m) => (
+                  <SelectItem key={m} value={m}>{m}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
-            {openaiModels.length === 0 && !loadingModels && (
-              <p className="text-xs text-orange-600 mt-2">
-                ⚠️ Haz clic en "Actualizar lista" para cargar los modelos disponibles
-              </p>
-            )}
-          </div>
-          <Button 
-            onClick={handleSaveModel}
-            disabled={savingModel || !model}
-            className="w-full"
-          >
-            {savingModel ? (
-              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <Save className="w-4 h-4 mr-2" />
-            )}
-            Guardar Modelo
-          </Button>
-        </CardContent>
-      </Card>
+            <Button onClick={handleSaveModel} disabled={savingModel} size="sm" className="w-full">
+              {savingModel ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+              Guardar
+            </Button>
+          </CardContent>
+        </Card>
 
-      {/* Reasoning Effort Card */}
-      <Card className="border-l-4 border-l-cyan-500">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Brain className="w-4 h-4 text-cyan-500" />
-            Reasoning Effort
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-xs text-muted-foreground">
-            Controla cuántos tokens usa el modelo para razonamiento interno vs output final
-          </p>
-          <div className="grid grid-cols-3 gap-2">
-            {REASONING_EFFORT_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                onClick={() => setReasoningEffort(option.value)}
-                className={`p-3 rounded-lg border text-left transition-all ${
-                  reasoningEffort === option.value
-                    ? 'border-cyan-500 bg-cyan-50 dark:bg-cyan-950'
-                    : 'border-border hover:border-cyan-300'
-                }`}
-              >
-                <div className="font-medium text-sm">{option.label}</div>
-                <div className="text-xs text-muted-foreground mt-1">{option.description}</div>
-              </button>
-            ))}
-          </div>
-          <Button 
-            onClick={handleSaveReasoningEffort}
-            disabled={savingEffort}
-            className="w-full"
-          >
-            {savingEffort ? (
-              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <Save className="w-4 h-4 mr-2" />
-            )}
-            Guardar Reasoning Effort
-          </Button>
-        </CardContent>
-      </Card>
+        <Card className="border-l-4 border-l-cyan-500">
+          <CardHeader className="py-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Brain className="w-4 h-4 text-cyan-500" />
+              Reasoning
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-3 gap-1">
+              {REASONING_EFFORT_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => setReasoningEffort(option.value)}
+                  className={`p-2 rounded-md border text-xs transition-all ${
+                    reasoningEffort === option.value
+                      ? 'border-cyan-500 bg-cyan-50 dark:bg-cyan-950'
+                      : 'border-border hover:border-cyan-300'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <Button onClick={handleSaveReasoningEffort} disabled={savingEffort} size="sm" className="w-full">
+              {savingEffort ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+              Guardar
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
 
-      {/* Prompt Card */}
       <Card className="border-l-4 border-l-amber-500">
-        <CardContent className="pt-6 space-y-4">
-          <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
-            <h4 className="font-medium text-amber-800 dark:text-amber-200 mb-2 flex items-center gap-2">
-              <Sparkles className="w-4 h-4" />
-              Variables Disponibles
-            </h4>
-            <div className="text-sm text-amber-700 dark:text-amber-300 space-y-1">
-              <p><code className="bg-amber-100 dark:bg-amber-900 px-1 rounded">{"{{function_name}}"}</code> - Nombre de la función</p>
-              <p><code className="bg-amber-100 dark:bg-amber-900 px-1 rounded">{"{{function_description}}"}</code> - Descripción de la función</p>
-              <p><code className="bg-amber-100 dark:bg-amber-900 px-1 rounded">{"{{expected_output}}"}</code> - Tipo de output esperado</p>
-              <p><code className="bg-amber-100 dark:bg-amber-900 px-1 rounded">{"{{current_prompt}}"}</code> - Prompt actual a optimizar</p>
+        <CardContent className="pt-4 space-y-3">
+          <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+            <h4 className="font-medium text-amber-800 dark:text-amber-200 text-sm mb-1">Variables</h4>
+            <div className="text-xs text-amber-700 dark:text-amber-300 grid grid-cols-2 gap-1">
+              <span><code>{"{{function_name}}"}</code></span>
+              <span><code>{"{{function_description}}"}</code></span>
+              <span><code>{"{{expected_output}}"}</code></span>
+              <span><code>{"{{current_prompt}}"}</code></span>
             </div>
           </div>
 
-          <div>
-            <Label className="mb-2 block">Meta Prompt</Label>
-            <Textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              rows={20}
-              className="font-mono text-sm"
-              placeholder="Ingresa el meta prompt para optimización..."
-            />
-          </div>
+          <Textarea
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            rows={15}
+            className="font-mono text-sm"
+            placeholder="Meta prompt..."
+          />
 
-          <Button 
-            onClick={handleSave}
-            disabled={saving}
-            className="w-full"
-          >
-            {saving ? (
-              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <Save className="w-4 h-4 mr-2" />
-            )}
+          <Button onClick={handleSave} disabled={saving} className="w-full">
+            {saving ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
             Guardar Meta Prompt
           </Button>
         </CardContent>
