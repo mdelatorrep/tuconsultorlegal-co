@@ -1083,6 +1083,50 @@ Responde de forma estructurada y concisa.`,
     config_key: 'verification_expiration_days',
     config_value: '365',
     description: 'Días de validez de la verificación'
+  },
+
+  // ============================================================================
+  // 🎙️ VOICE ASSISTANT CONFIGURATION (Asistente de Voz)
+  // ============================================================================
+  {
+    config_key: 'voice_assistant_enabled',
+    config_value: 'true',
+    description: 'Habilitar asistente de voz'
+  },
+  {
+    config_key: 'voice_transcription_model',
+    config_value: 'whisper-1',
+    description: 'Modelo de transcripción de voz (whisper-1)'
+  },
+  {
+    config_key: 'voice_transcription_language',
+    config_value: 'es',
+    description: 'Idioma de transcripción (es, en, etc.)'
+  },
+  {
+    config_key: 'voice_transcription_prompt',
+    config_value: 'Transcripción de audio legal en español colombiano. Incluye términos jurídicos como demanda, tutela, sentencia, apelación, casación, habeas corpus, derecho de petición, acción popular, recurso, providencia, auto, notificación, edicto, traslado, alegatos, pruebas, testimonios, peritaje.',
+    description: 'Prompt contextual para mejorar transcripción'
+  },
+  {
+    config_key: 'voice_tts_model',
+    config_value: 'tts-1',
+    description: 'Modelo de texto a voz (tts-1, tts-1-hd)'
+  },
+  {
+    config_key: 'voice_tts_voice',
+    config_value: 'onyx',
+    description: 'Voz para TTS (alloy, echo, fable, onyx, nova, shimmer)'
+  },
+  {
+    config_key: 'voice_max_audio_size_mb',
+    config_value: '25',
+    description: 'Tamaño máximo de archivo de audio en MB'
+  },
+  {
+    config_key: 'voice_max_text_chars',
+    config_value: '4096',
+    description: 'Máximo de caracteres para texto a voz'
   }
 ];
 
