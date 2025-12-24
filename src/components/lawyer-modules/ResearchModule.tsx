@@ -528,31 +528,32 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
                       </div>
                     )}
                     
-                    <div className="space-y-2">
-                      <ToolCostIndicator toolType="research" lawyerId={user?.id} className="justify-center" />
-                      <Button
-                        onClick={handleSearch}
-                        disabled={isSearching || !hasEnoughCredits('research')}
-                        className="w-full h-14 rounded-xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-xl hover:shadow-2xl transition-all duration-300 text-lg font-semibold relative z-20 cursor-pointer"
-                        style={{
-                          pointerEvents: 'auto',
-                          position: 'relative',
-                          zIndex: 20
-                        }}
-                      >
-                        {isSearching ? (
-                          <>
-                            <Loader2 className="h-5 w-5 mr-3 animate-spin" />
-                            <span className="animate-pulse">Iniciando investigación profunda...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles className="h-5 w-5 mr-3" />
-                            Iniciar Investigación Deep Research
-                          </>
-                        )}
-                      </Button>
-                    </div>
+                    <Button
+                      onClick={handleSearch}
+                      disabled={isSearching || !hasEnoughCredits('research')}
+                      className="w-full h-14 rounded-xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-xl hover:shadow-2xl transition-all duration-300 text-lg font-semibold relative z-20 cursor-pointer"
+                      style={{
+                        pointerEvents: 'auto',
+                        position: 'relative',
+                        zIndex: 20
+                      }}
+                    >
+                      {isSearching ? (
+                        <>
+                          <Loader2 className="h-5 w-5 mr-3 animate-spin" />
+                          <span className="animate-pulse">Iniciando investigación profunda...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-5 w-5 mr-3" />
+                          <span>Iniciar Investigación</span>
+                          <span className="ml-3 flex items-center gap-1 bg-white/20 px-2 py-0.5 rounded-lg text-sm">
+                            <Coins className="h-4 w-4" />
+                            {getToolCost('research')}
+                          </span>
+                        </>
+                      )}
+                    </Button>
                   </CardContent>
                 </Card>
 
