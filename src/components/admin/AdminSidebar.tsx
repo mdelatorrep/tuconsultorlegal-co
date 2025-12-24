@@ -88,7 +88,6 @@ export const AdminSidebar = ({
       label: "Finanzas",
       items: [
         { id: 'credits', label: 'Gestión Créditos', icon: CreditCard, count: 0 },
-        { id: 'subscriptions', label: 'Suscripciones', icon: CreditCard, count: 0 },
       ]
     },
     {

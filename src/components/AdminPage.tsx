@@ -19,7 +19,7 @@ import SystemConfigManager from "./SystemConfigManager";
 import KnowledgeBaseManager from "./KnowledgeBaseManager";
 import LawyerTrainingManager from "./LawyerTrainingManager";
 import CategoryManager from "./CategoryManager";
-import SubscriptionAdminManager from "./admin/SubscriptionAdminManager";
+
 import { EmailConfigManager } from "./admin/EmailConfigManager";
 import { LegalContentManager } from "./admin/LegalContentManager";
 import { AdminDashboard } from "./admin/AdminDashboard";
@@ -920,7 +920,7 @@ function AdminPage() {
       items: [
         { id: 'knowledge', label: 'Base de Conocimiento', icon: Database, count: 0 },
         { id: 'categories', label: 'Categorías', icon: Tag, count: 0 },
-        { id: 'subscriptions', label: 'Gestión Suscripciones', icon: CreditCard, count: 0 },
+        
         { id: 'email-config', label: 'Configuración Email', icon: Mail, count: 0 },
         { id: 'stats', label: 'Estadísticas Avanzadas', icon: BarChart3, count: 0 },
         { id: 'config', label: 'Configuración Sistema', icon: Settings, count: 0 },
@@ -1566,8 +1566,6 @@ function AdminPage() {
       case 'categories':
         return <CategoryManager />;
         
-      case 'subscriptions':
-        return <SubscriptionAdminManager authHeaders={getAuthHeaders()} />;
         
       case 'custom-requests':
         return <AdminCustomDocumentRequests />;
