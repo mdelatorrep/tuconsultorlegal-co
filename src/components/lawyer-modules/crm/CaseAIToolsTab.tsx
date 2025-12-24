@@ -25,7 +25,7 @@ interface CaseAIToolsTabProps {
   caseId: string;
   caseTitle: string;
   lawyerId: string;
-  onNavigateToTool?: (toolType: string, caseId: string) => void;
+  onNavigateToTool?: (toolType: string, caseId: string, caseTitle: string) => void;
 }
 
 const CaseAIToolsTab: React.FC<CaseAIToolsTabProps> = ({
@@ -152,7 +152,7 @@ const CaseAIToolsTab: React.FC<CaseAIToolsTabProps> = ({
                 key={action.type}
                 variant="outline"
                 className="h-auto py-3 flex flex-col items-center gap-2 hover:bg-primary/5 hover:border-primary/30"
-                onClick={() => onNavigateToTool?.(action.type, caseId)}
+                onClick={() => onNavigateToTool?.(action.type, caseId, caseTitle)}
               >
                 <action.icon className={`h-5 w-5 ${action.color}`} />
                 <span className="text-xs text-center">{action.label}</span>
@@ -220,7 +220,7 @@ const CaseAIToolsTab: React.FC<CaseAIToolsTabProps> = ({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => onNavigateToTool?.('analysis', caseId)}
+                    onClick={() => onNavigateToTool?.('analysis', caseId, caseTitle)}
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Ejecutar herramienta IA
