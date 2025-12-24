@@ -9,18 +9,19 @@ const corsHeaders = {
 
 const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
-// Helper to get system config
-async function getSystemConfig(supabase: any, configKey: string, defaultValue: string): Promise<string> {
-  try {
-    const { data } = await supabase
-      .from('system_config')
-      .select('config_value')
-      .eq('config_key', configKey)
-      .single();
-    return data?.config_value || defaultValue;
-  } catch {
-    return defaultValue;
+// Helper to get required system config - throws if not found
+async function getRequiredConfig(supabase: any, configKey: string): Promise<string> {
+  const { data, error } = await supabase
+    .from('system_config')
+    .select('config_value')
+    .eq('config_key', configKey)
+    .single();
+  
+  if (error || !data?.config_value) {
+    throw new Error(`Configuration '${configKey}' not found in system_config. Please configure it in the admin panel.`);
   }
+  
+  return data.config_value;
 }
 
 serve(async (req) => {
@@ -50,23 +51,13 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    // Get configurations from system_config
-    const [model, systemPromptConfig] = await Promise.all([
-      getSystemConfig(supabase, 'case_predictor_ai_model', 'google/gemini-2.5-pro'),
-      getSystemConfig(supabase, 'case_predictor_system_prompt', '')
+    // Get configurations from system_config - NO FALLBACKS
+    const [model, basePrompt] = await Promise.all([
+      getRequiredConfig(supabase, 'case_predictor_ai_model'),
+      getRequiredConfig(supabase, 'case_predictor_system_prompt')
     ]);
 
     console.log(`[CasePredictor] Using model: ${model}`);
-
-    const defaultSystemPrompt = `Eres un experto analista legal colombiano con amplia experiencia en litigios. Tu tarea es analizar casos y proporcionar predicciones basadas en:
-- Jurisprudencia colombiana relevante
-- Tendencias de los tribunales
-- Fortalezas y debilidades del caso
-- Probabilidades realistas de éxito
-
-IMPORTANTE: Sé objetivo y realista. No exageres las probabilidades de éxito.`;
-
-    const basePrompt = systemPromptConfig || defaultSystemPrompt;
     
     const systemPrompt = `${basePrompt}
 

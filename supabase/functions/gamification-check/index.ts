@@ -6,36 +6,29 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Helper to get system config
-async function getSystemConfig(supabase: any, configKey: string, defaultValue: string): Promise<string> {
-  try {
-    const { data } = await supabase
-      .from('system_config')
-      .select('config_value')
-      .eq('config_key', configKey)
-      .single();
-    return data?.config_value || defaultValue;
-  } catch {
-    return defaultValue;
+// Get multiple configs at once - throws if any required config is missing
+async function getRequiredConfigs(supabase: any, keys: string[]): Promise<Record<string, string>> {
+  const { data, error } = await supabase
+    .from('system_config')
+    .select('config_key, config_value')
+    .in('config_key', keys);
+  
+  if (error) {
+    throw new Error(`Failed to fetch configurations: ${error.message}`);
   }
-}
-
-// Get multiple configs at once
-async function getMultipleConfigs(supabase: any, keys: string[]): Promise<Record<string, string>> {
-  try {
-    const { data } = await supabase
-      .from('system_config')
-      .select('config_key, config_value')
-      .in('config_key', keys);
-    
-    const result: Record<string, string> = {};
-    data?.forEach((item: any) => {
-      result[item.config_key] = item.config_value;
-    });
-    return result;
-  } catch {
-    return {};
+  
+  const result: Record<string, string> = {};
+  data?.forEach((item: any) => {
+    result[item.config_key] = item.config_value;
+  });
+  
+  // Validate all required configs are present
+  const missingConfigs = keys.filter(key => !result[key]);
+  if (missingConfigs.length > 0) {
+    throw new Error(`Missing required configurations: ${missingConfigs.join(', ')}. Please configure them in the admin panel.`);
   }
+  
+  return result;
 }
 
 serve(async (req) => {
@@ -52,8 +45,8 @@ serve(async (req) => {
 
     console.log(`[GAMIFICATION] Processing action: ${action} for lawyer ${lawyerId}`);
 
-    // Get gamification configs
-    const configs = await getMultipleConfigs(supabase, [
+    // Get gamification configs - NO FALLBACKS
+    const configs = await getRequiredConfigs(supabase, [
       'gamification_enabled',
       'gamification_points_config',
       'gamification_streak_bonus_multiplier',
@@ -70,17 +63,18 @@ serve(async (req) => {
       );
     }
 
-    const streakMultiplier = parseFloat(configs['gamification_streak_bonus_multiplier'] || '1.5');
-    const dailyGoal = parseInt(configs['gamification_daily_goal_credits'] || '50');
+    const streakMultiplier = parseFloat(configs['gamification_streak_bonus_multiplier']);
+    const dailyGoal = parseInt(configs['gamification_daily_goal_credits']);
     
     let pointsConfig = {};
     let levels: any[] = [];
     
     try {
-      pointsConfig = JSON.parse(configs['gamification_points_config'] || '{}');
-      levels = JSON.parse(configs['gamification_levels'] || '[]');
+      pointsConfig = JSON.parse(configs['gamification_points_config']);
+      levels = JSON.parse(configs['gamification_levels']);
     } catch (e) {
       console.error('[GAMIFICATION] Error parsing config JSON:', e);
+      throw new Error('Invalid JSON format in gamification configuration. Please fix the configuration in the admin panel.');
     }
 
     if (action === 'get_progress') {
