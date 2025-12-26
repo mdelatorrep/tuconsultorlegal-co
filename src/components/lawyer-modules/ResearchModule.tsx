@@ -19,7 +19,8 @@ interface ResearchResult {
   sources: string[];
   timestamp: string;
   conclusion?: string;
-  status?: 'completed' | 'failed';
+  status?: 'completed' | 'failed' | 'pending';
+  taskId?: string;
 }
 
 interface ResearchModuleProps {
@@ -28,6 +29,10 @@ interface ResearchModuleProps {
   onViewChange: (view: string) => void;
   onLogout: () => void;
 }
+
+// Polling interval for async tasks (5 seconds)
+const POLL_INTERVAL_MS = 5000;
+const MAX_POLL_TIME_MS = 10 * 60 * 1000; // 10 minutes max
 
 export default function ResearchModule({ user, currentView, onViewChange, onLogout }: ResearchModuleProps) {
   const [query, setQuery] = useState("");
@@ -39,6 +44,8 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
   const [filterBy, setFilterBy] = useState<'all' | 'recent' | 'archived'>('all');
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [selectedCaseData, setSelectedCaseData] = useState<any>(null);
+  const [pendingTaskId, setPendingTaskId] = useState<string | null>(null);
+  const [pollStartTime, setPollStartTime] = useState<number | null>(null);
   const { toast } = useToast();
   const { consumeCredits, hasEnoughCredits, getToolCost } = useCredits(user?.id);
   const { logAIToolUsage } = useCaseActivityLogger();
@@ -116,6 +123,134 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
     }
   };
 
+  // Poll for async task completion
+  const pollTaskStatus = async (taskId: string, queryText: string) => {
+    console.log(`📡 Polling task: ${taskId}`);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('poll-research-task', {
+        body: { taskId }
+      });
+
+      if (error) throw error;
+
+      console.log('Poll response:', data);
+
+      if (data.status === 'completed' && data.result) {
+        // Task completed successfully
+        const result: ResearchResult = {
+          query: queryText,
+          findings: data.result.findings || 'Investigación completada',
+          sources: data.result.sources || ['Fuentes legales consultadas'],
+          timestamp: new Date().toISOString(),
+          conclusion: data.result.conclusion || 'Análisis completado',
+          status: 'completed'
+        };
+
+        setResults(prev => {
+          // Replace pending result with completed result
+          const filtered = prev.filter(r => r.taskId !== taskId);
+          return [result, ...filtered];
+        });
+        
+        setPendingTaskId(null);
+        setPollStartTime(null);
+        setIsSearching(false);
+        setProgress(100);
+
+        // Log activity if case is selected
+        if (selectedCaseId && user?.id) {
+          await logAIToolUsage({
+            caseId: selectedCaseId,
+            lawyerId: user.id,
+            toolType: 'research',
+            resultId: taskId,
+            inputSummary: queryText.substring(0, 100)
+          });
+        }
+
+        toast({
+          title: "✅ Investigación completada",
+          description: "Se encontraron referencias jurídicas relevantes para tu consulta.",
+        });
+
+        return true; // Stop polling
+      }
+
+      if (data.status === 'failed') {
+        // Task failed
+        setResults(prev => {
+          const filtered = prev.filter(r => r.taskId !== taskId);
+          return [{
+            query: queryText,
+            findings: `Error: ${data.error || 'Error desconocido'}`,
+            sources: [],
+            timestamp: new Date().toISOString(),
+            status: 'failed'
+          }, ...filtered];
+        });
+
+        setPendingTaskId(null);
+        setPollStartTime(null);
+        setIsSearching(false);
+        setProgress(0);
+
+        toast({
+          title: "❌ Error en la investigación",
+          description: data.error || "Hubo un problema al procesar tu consulta.",
+          variant: "destructive",
+        });
+
+        return true; // Stop polling
+      }
+
+      // Still pending - continue polling
+      return false;
+
+    } catch (error) {
+      console.error('Polling error:', error);
+      return false; // Continue trying
+    }
+  };
+
+  // Effect for polling
+  useEffect(() => {
+    if (!pendingTaskId || !pollStartTime) return;
+
+    const pendingResult = results.find(r => r.taskId === pendingTaskId);
+    const queryText = pendingResult?.query || '';
+
+    const pollInterval = setInterval(async () => {
+      // Check if we've exceeded max poll time
+      if (Date.now() - pollStartTime > MAX_POLL_TIME_MS) {
+        clearInterval(pollInterval);
+        setPendingTaskId(null);
+        setPollStartTime(null);
+        setIsSearching(false);
+        setProgress(0);
+
+        toast({
+          title: "⏱️ Tiempo excedido",
+          description: "La investigación tardó demasiado. Intenta con una consulta más específica.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Update progress based on elapsed time (simulate progress up to 90%)
+      const elapsed = Date.now() - pollStartTime;
+      const progressValue = Math.min(90, (elapsed / MAX_POLL_TIME_MS) * 100);
+      setProgress(progressValue);
+
+      const shouldStop = await pollTaskStatus(pendingTaskId, queryText);
+      if (shouldStop) {
+        clearInterval(pollInterval);
+      }
+    }, POLL_INTERVAL_MS);
+
+    return () => clearInterval(pollInterval);
+  }, [pendingTaskId, pollStartTime]);
+
   const handleSearch = async () => {
     if (!query.trim()) {
       toast({
@@ -142,40 +277,56 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
     }
 
     setIsSearching(true);
-    setProgress(0);
-    
-    // Simulate progress animation
-    const progressInterval = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 90) {
-          clearInterval(progressInterval);
-          return 90;
-        }
-        return prev + 5;
-      });
-    }, 200);
+    setProgress(5);
+    const searchQuery = query;
+    setQuery("");
 
     try {
-      console.log('Iniciando investigación legal con query:', query);
+      console.log('Iniciando investigación legal con query:', searchQuery);
       
       // Call the legal research AI function
       const { data, error } = await supabase.functions.invoke('legal-research-ai', {
-        body: { query }
+        body: { query: searchQuery }
       });
       
       console.log('Respuesta de legal-research-ai:', { data, error });
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       if (!data.success) {
         throw new Error(data.error || 'Error en la investigación');
       }
 
-      // Handle immediate response
+      // Check if async mode
+      if (data.async && data.taskId) {
+        console.log(`🔄 Async task started: ${data.taskId}`);
+        
+        // Add pending result to show in UI
+        const pendingResult: ResearchResult = {
+          query: searchQuery,
+          findings: 'Procesando investigación...',
+          sources: [],
+          timestamp: new Date().toISOString(),
+          status: 'pending',
+          taskId: data.taskId
+        };
+
+        setResults(prev => [pendingResult, ...prev]);
+        setPendingTaskId(data.taskId);
+        setPollStartTime(Date.now());
+        setProgress(10);
+
+        toast({
+          title: "🔍 Investigación iniciada",
+          description: "Procesando tu consulta. Esto puede tomar unos minutos...",
+        });
+
+        return;
+      }
+
+      // Handle immediate response (legacy mode)
       const result: ResearchResult = {
-        query: query,
+        query: searchQuery,
         findings: data.findings || 'Investigación completada con resultados relevantes.',
         sources: data.sources || ['Legislación Colombiana', 'Jurisprudencia', 'Doctrina Legal'],
         timestamp: data.timestamp || new Date().toISOString(),
@@ -184,8 +335,8 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
       };
 
       setResults(prev => [result, ...prev]);
-      setQuery("");
       setProgress(100);
+      setIsSearching(false);
       
       // Log activity if case is selected
       if (selectedCaseId && user?.id) {
@@ -194,7 +345,7 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
           lawyerId: user.id,
           toolType: 'research',
           resultId: result.timestamp,
-          inputSummary: query.substring(0, 100)
+          inputSummary: searchQuery.substring(0, 100)
         });
       }
       
@@ -206,17 +357,12 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
     } catch (error) {
       console.error("Error en investigación:", error);
       setProgress(0);
+      setIsSearching(false);
       toast({
         title: "❌ Error en la investigación",
         description: error instanceof Error ? error.message : "Hubo un problema al procesar tu consulta.",
         variant: "destructive",
       });
-    } finally {
-      clearInterval(progressInterval);
-      setTimeout(() => {
-        setIsSearching(false);
-        setProgress(0);
-      }, 500);
     }
   };
 
@@ -378,9 +524,23 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
                           <div className="flex-1 min-w-0">
                             <CardTitle className="text-base lg:text-lg font-semibold line-clamp-2">{result.query}</CardTitle>
                             <div className="flex items-center gap-2 mt-2">
-                              <Badge variant="secondary" className={result.status === 'failed' ? "bg-red-100 text-red-800 text-xs" : "bg-emerald-100 text-emerald-800 text-xs"}>
-                                {result.status === 'failed' ? <AlertCircle className="h-3 w-3 mr-1" /> : <CheckCircle2 className="h-3 w-3 mr-1" />}
-                                {result.status === 'failed' ? 'Fallido' : 'Completado'}
+                              <Badge 
+                                variant="secondary" 
+                                className={
+                                  result.status === 'failed' 
+                                    ? "bg-red-100 text-red-800 text-xs" 
+                                    : result.status === 'pending'
+                                    ? "bg-amber-100 text-amber-800 text-xs"
+                                    : "bg-emerald-100 text-emerald-800 text-xs"
+                                }
+                              >
+                                {result.status === 'failed' ? (
+                                  <><AlertCircle className="h-3 w-3 mr-1" />Fallido</>
+                                ) : result.status === 'pending' ? (
+                                  <><Loader2 className="h-3 w-3 mr-1 animate-spin" />Procesando...</>
+                                ) : (
+                                  <><CheckCircle2 className="h-3 w-3 mr-1" />Completado</>
+                                )}
                               </Badge>
                               <Badge variant="outline" className="text-xs">
                                 <Clock className="h-3 w-3 mr-1" />
