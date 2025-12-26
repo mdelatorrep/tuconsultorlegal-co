@@ -471,6 +471,37 @@ Responde con análisis estructurado:
   },
 
   // ============================================================================
+  // ⚙️ REASONING EFFORT CONFIGURATIONS
+  // Models like gpt-5-pro only support 'high'. Others support 'low', 'medium', 'high'.
+  // The system will auto-adjust if an unsupported value is configured.
+  // ============================================================================
+  {
+    config_key: 'reasoning_effort_research',
+    config_value: 'high',
+    description: 'Nivel de razonamiento para investigación legal (low/medium/high). Nota: gpt-5-pro solo soporta high.'
+  },
+  {
+    config_key: 'reasoning_effort_analysis',
+    config_value: 'medium',
+    description: 'Nivel de razonamiento para análisis de documentos (low/medium/high). Nota: gpt-5-pro solo soporta high.'
+  },
+  {
+    config_key: 'reasoning_effort_strategy',
+    config_value: 'high',
+    description: 'Nivel de razonamiento para estrategia legal (low/medium/high). Nota: gpt-5-pro solo soporta high.'
+  },
+  {
+    config_key: 'reasoning_effort_drafting',
+    config_value: 'medium',
+    description: 'Nivel de razonamiento para redacción legal (low/medium/high). Nota: gpt-5-pro solo soporta high.'
+  },
+  {
+    config_key: 'reasoning_effort_default',
+    config_value: 'low',
+    description: 'Nivel de razonamiento por defecto para otras herramientas (low/medium/high). Nota: gpt-5-pro solo soporta high.'
+  },
+
+  // ============================================================================
   // 💬 VIRTUAL ASSISTANTS
   // ============================================================================
   {
