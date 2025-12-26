@@ -161,3 +161,6 @@ verify_jwt = true
 
 [functions.create-notification]
 verify_jwt = false
+
+[functions.poll-research-task]
+verify_jwt = true

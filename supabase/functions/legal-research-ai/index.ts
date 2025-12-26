@@ -2,7 +2,6 @@ import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { 
   buildResponsesRequestParams, 
-  callResponsesAPIWithPolling,
   logResponsesRequest,
   loadWebSearchConfigAndBuildTool,
   supportsWebSearch
@@ -29,29 +28,13 @@ async function getSystemConfig(supabaseClient: any, configKey: string, defaultVa
   }
 }
 
-// Helper function to save results
-async function saveToolResult(supabase: any, lawyerId: string, toolType: string, inputData: any, outputData: any, metadata: any = {}) {
-  try {
-    await supabase.from('legal_tools_results').insert({
-      lawyer_id: lawyerId,
-      tool_type: toolType,
-      input_data: inputData,
-      output_data: outputData,
-      metadata: { ...metadata, status: 'completed', timestamp: new Date().toISOString() }
-    });
-    console.log(`✅ Saved ${toolType} result for lawyer ${lawyerId}`);
-  } catch (error) {
-    console.error('Error saving tool result:', error);
-  }
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log('🔍 Legal research function called - using background polling mode');
+    console.log('🔍 Legal research function called - async mode');
     
     // Get authentication
     const authHeader = req.headers.get('authorization');
@@ -134,7 +117,7 @@ ${jsonFormat}`;
     // Build request parameters - JSON mode is incompatible with web search
     const useJsonMode = !webSearchTool;
     
-    // Get reasoning effort from system config - will be validated by buildResponsesRequestParams
+    // Get reasoning effort from system config
     const reasoningEffort = await getSystemConfig(supabase, 'reasoning_effort_research', 'high') as 'low' | 'medium' | 'high';
     
     const params = buildResponsesRequestParams(researchModel, {
@@ -148,106 +131,61 @@ ${jsonFormat}`;
       webSearch: webSearchTool || undefined
     });
 
-    console.log(`📡 Calling OpenAI with model: ${researchModel} using background polling`);
-    
-    // Get polling configuration from system config
-    const configuredTimeout = await getSystemConfig(supabase, 'openai_api_timeout', '120000');
-    const maxPollingTimeMs = parseInt(configuredTimeout) || 120000;
-    const pollIntervalMs = parseInt(await getSystemConfig(supabase, 'openai_polling_interval', '3000')) || 3000;
-    
-    console.log(`⏱️ Polling config: maxTime=${maxPollingTimeMs}ms, interval=${pollIntervalMs}ms`);
-    
-    // Use background polling API
-    const result = await callResponsesAPIWithPolling(openaiApiKey, params, {
-      pollIntervalMs,
-      maxPollingTimeMs,
-      onPoll: (status, iteration) => {
-        console.log(`📊 Poll #${iteration}: status=${status}`);
-      }
+    // Add background: true for async processing
+    const requestBody = { ...params, background: true };
+
+    console.log(`📡 Starting background research with model: ${researchModel}`);
+
+    // Start the background request
+    const response = await fetch('https://api.openai.com/v1/responses', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody)
     });
 
-    // Handle different result statuses
-    if (!result.success) {
-      console.error('❌ Background polling error:', result.error, 'status:', result.status);
-      
-      // Save failed/timeout result
-      if (lawyerId) {
-        await supabase.from('legal_tools_results').insert({
-          lawyer_id: lawyerId,
-          tool_type: 'research',
-          input_data: { query },
-          output_data: {},
-          metadata: { 
-            status: result.status || 'failed', 
-            error: { message: result.error },
-            model: researchModel,
-            responseId: result.responseId,
-            pollingIterations: result.pollingIterations,
-            timestamp: new Date().toISOString() 
-          }
-        });
-      }
-      
-      // Specific message for timeout
-      if (result.status === 'in_progress') {
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: 'La investigación tardó demasiado tiempo. Sugerencias: 1) Simplificar la consulta 2) Usar un modelo más rápido como gpt-4o-mini 3) Dividir la consulta en partes más pequeñas',
-            timeout: true,
-            responseId: result.responseId
-          }),
-          { status: 408, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      throw new Error(`Research failed: ${result.error}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ OpenAI API error: ${response.status} - ${errorText}`);
+      throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
     }
 
-    console.log(`✅ Research completed with status: ${result.status}, iterations: ${result.pollingIterations}`);
+    const openaiResponse = await response.json();
+    const responseId = openaiResponse.id;
+    const initialStatus = openaiResponse.status;
 
-    // Parse response
-    let researchResult;
-    try {
-      researchResult = JSON.parse(result.text || '{}');
-    } catch (e) {
-      console.warn('Failed to parse JSON response, using raw text');
-      researchResult = {
-        findings: result.text || 'Investigación completada',
-        sources: ['Fuentes legales consultadas'],
-        conclusion: 'Análisis completado - ver hallazgos',
-        keyPoints: [],
-        legalBasis: []
-      };
+    console.log(`✅ Background task started: ${responseId}, status: ${initialStatus}`);
+
+    // Create async task record
+    const { data: taskData, error: taskError } = await supabase
+      .from('async_research_tasks')
+      .insert({
+        lawyer_id: lawyerId,
+        openai_response_id: responseId,
+        query: query,
+        status: 'pending',
+        model_used: researchModel
+      })
+      .select()
+      .single();
+
+    if (taskError) {
+      console.error('❌ Error creating task record:', taskError);
+      throw new Error('Failed to create task record');
     }
 
-    // Normalize response structure
-    const normalizedResult = {
-      findings: researchResult.findings || researchResult.content || 'Investigación completada',
-      sources: researchResult.sources || researchResult.fuentes || ['Legislación Colombiana', 'Jurisprudencia'],
-      conclusion: researchResult.conclusion || researchResult.conclusiones || 'Análisis completado',
-      keyPoints: researchResult.keyPoints || researchResult.puntosClave || [],
-      legalBasis: researchResult.legalBasis || researchResult.fundamentosLegales || []
-    };
+    console.log(`📋 Created task: ${taskData.id}`);
 
-    // Save successful result
-    if (lawyerId) {
-      await saveToolResult(supabase, lawyerId, 'research', { query }, normalizedResult, { 
-        model: researchModel,
-        responseId: result.responseId,
-        pollingIterations: result.pollingIterations,
-        status: result.status
-      });
-    }
-
-    console.log('✅ Research completed successfully');
-
+    // Return immediately with task ID for frontend polling
     return new Response(
       JSON.stringify({
         success: true,
-        query,
-        ...normalizedResult,
-        timestamp: new Date().toISOString()
+        async: true,
+        taskId: taskData.id,
+        status: 'pending',
+        message: 'Investigación iniciada. El frontend realizará polling para obtener resultados.'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

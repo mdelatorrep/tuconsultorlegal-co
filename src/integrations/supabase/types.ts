@@ -310,6 +310,56 @@ export type Database = {
         }
         Relationships: []
       }
+      async_research_tasks: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          lawyer_id: string
+          model_used: string | null
+          openai_response_id: string
+          query: string
+          result: Json | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          lawyer_id: string
+          model_used?: string | null
+          openai_response_id: string
+          query: string
+          result?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          lawyer_id?: string
+          model_used?: string | null
+          openai_response_id?: string
+          query?: string
+          result?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "async_research_tasks_lawyer_id_fkey"
+            columns: ["lawyer_id"]
+            isOneToOne: false
+            referencedRelation: "lawyer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blog_posts: {
         Row: {
           author_id: string
