@@ -149,7 +149,50 @@ ${jsonFormat}`;
     });
 
     console.log(`📡 Calling OpenAI with model: ${researchModel}`);
-    const result = await callResponsesAPI(openaiApiKey, params);
+    
+    // Add timeout to prevent 504 errors (Supabase edge functions have 150s limit)
+    const TIMEOUT_MS = 120000; // 120 seconds to leave buffer
+    
+    const timeoutPromise = new Promise<{ success: false; error: string }>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error('TIMEOUT: La investigación excedió el tiempo máximo. Intente con una consulta más específica o un modelo más rápido.'));
+      }, TIMEOUT_MS);
+    });
+    
+    let result;
+    try {
+      result = await Promise.race([
+        callResponsesAPI(openaiApiKey, params),
+        timeoutPromise
+      ]);
+    } catch (timeoutError) {
+      console.error('⏱️ Request timeout:', timeoutError);
+      
+      // Save timeout result
+      if (lawyerId) {
+        await supabase.from('legal_tools_results').insert({
+          lawyer_id: lawyerId,
+          tool_type: 'research',
+          input_data: { query },
+          output_data: {},
+          metadata: { 
+            status: 'timeout', 
+            error: { message: 'Timeout - consulta demasiado compleja' }, 
+            model: researchModel,
+            timestamp: new Date().toISOString() 
+          }
+        });
+      }
+      
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'La investigación tardó demasiado tiempo. Sugerencias: 1) Simplificar la consulta 2) Usar un modelo más rápido como gpt-4o-mini 3) Dividir la consulta en partes más pequeñas',
+          timeout: true
+        }),
+        { status: 408, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     if (!result.success) {
       console.error('❌ OpenAI API error:', result.error);
