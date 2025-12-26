@@ -12,20 +12,19 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Helper function to get system configuration
-async function getSystemConfig(supabaseClient: any, configKey: string, defaultValue?: string): Promise<string> {
-  try {
-    const { data, error } = await supabaseClient
-      .from('system_config')
-      .select('config_value')
-      .eq('config_key', configKey)
-      .maybeSingle();
+// Helper function to get required system configuration - throws if not found
+async function getRequiredConfig(supabaseClient: any, configKey: string): Promise<string> {
+  const { data, error } = await supabaseClient
+    .from('system_config')
+    .select('config_value')
+    .eq('config_key', configKey)
+    .maybeSingle();
 
-    if (error || !data) return defaultValue || '';
-    return data.config_value;
-  } catch (error) {
-    return defaultValue || '';
+  if (error || !data?.config_value) {
+    throw new Error(`Configuración '${configKey}' no encontrada en system_config. Por favor configúrela en el panel de administración.`);
   }
+
+  return data.config_value;
 }
 
 serve(async (req) => {
@@ -69,17 +68,11 @@ serve(async (req) => {
       );
     }
 
-    // Get configuration
-    const researchModel = await getSystemConfig(supabase, 'research_ai_model', 'gpt-4o-mini');
-    const researchPrompt = await getSystemConfig(supabase, 'research_system_prompt', '');
-    
-    if (!researchPrompt) {
-      console.error('❌ research_system_prompt not configured in system_config');
-      return new Response(
-        JSON.stringify({ success: false, error: 'Configuración faltante: research_system_prompt' }), 
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    // Get configuration - NO FALLBACKS
+    const [researchModel, researchPrompt] = await Promise.all([
+      getRequiredConfig(supabase, 'research_ai_model'),
+      getRequiredConfig(supabase, 'research_system_prompt')
+    ]);
 
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openaiApiKey) {
@@ -118,7 +111,7 @@ ${jsonFormat}`;
     const useJsonMode = !webSearchTool;
     
     // Get reasoning effort from system config
-    const reasoningEffort = await getSystemConfig(supabase, 'reasoning_effort_research', 'high') as 'low' | 'medium' | 'high';
+    const reasoningEffort = await getRequiredConfig(supabase, 'reasoning_effort_research') as 'low' | 'medium' | 'high';
     
     const params = buildResponsesRequestParams(researchModel, {
       input: `Realiza una investigación jurídica exhaustiva sobre:\n\n${query}\n\n${useJsonMode ? 'Responde ÚNICAMENTE en formato JSON válido.' : 'Estructura tu respuesta con secciones claras: Hallazgos, Fuentes, Conclusión, Puntos Clave y Fundamentos Legales.'}`,

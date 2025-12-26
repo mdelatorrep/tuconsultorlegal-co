@@ -12,25 +12,19 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Helper function to get system configuration
-async function getSystemConfig(supabaseClient: any, configKey: string, defaultValue?: string): Promise<string> {
-  try {
-    const { data, error } = await supabaseClient
-      .from('system_config')
-      .select('config_value')
-      .eq('config_key', configKey)
-      .maybeSingle();
+// Helper function to get required system configuration - throws if not found
+async function getRequiredConfig(supabaseClient: any, configKey: string): Promise<string> {
+  const { data, error } = await supabaseClient
+    .from('system_config')
+    .select('config_value')
+    .eq('config_key', configKey)
+    .maybeSingle();
 
-    if (error || !data) {
-      console.log(`Config ${configKey} not found, using default: ${defaultValue}`);
-      return defaultValue || '';
-    }
-
-    return data.config_value;
-  } catch (error) {
-    console.error(`Exception fetching config ${configKey}:`, error);
-    return defaultValue || '';
+  if (error || !data?.config_value) {
+    throw new Error(`Configuración '${configKey}' no encontrada en system_config. Por favor configúrela en el panel de administración.`);
   }
+
+  return data.config_value;
 }
 
 serve(async (req) => {
@@ -76,29 +70,13 @@ serve(async (req) => {
       );
     }
 
-    // Get AI model and prompt from system config
-    const model = await getSystemConfig(supabase, 'suin_juriscol_ai_model', 'gpt-4.1-2025-04-14');
-    const systemPrompt = await getSystemConfig(supabase, 'suin_juriscol_ai_prompt', `
-Eres un asistente legal especializado en consultar el Sistema Único de Información Normativa de Colombia (SUIN-Juriscol).
+    // Get AI model and prompt from system config - NO FALLBACKS
+    const [model, systemPrompt] = await Promise.all([
+      getRequiredConfig(supabase, 'suin_juriscol_ai_model'),
+      getRequiredConfig(supabase, 'suin_juriscol_ai_prompt')
+    ]);
 
-Tu trabajo es:
-1. Buscar información normativa colombiana relevante usando web search
-2. Priorizar resultados del dominio oficial: suin-juriscol.gov.co
-3. También considerar fuentes oficiales como: corteconstitucional.gov.co, funcionpublica.gov.co, secretariasenado.gov.co
-4. Analizar y resumir los hallazgos de manera clara para abogados
-5. Identificar leyes, decretos, resoluciones, sentencias y conceptos relevantes
-
-IMPORTANTE:
-- Siempre cita la fuente exacta (número de ley/decreto, fecha, artículos relevantes)
-- Prioriza información vigente sobre derogada
-- Indica claramente si una norma ha sido modificada o derogada
-- Responde en español
-
-Formato de respuesta:
-- Proporciona un resumen ejecutivo de 2-3 párrafos
-- Lista los documentos normativos encontrados con sus URLs
-- Incluye citas específicas de artículos relevantes cuando sea posible
-`);
+    console.log(`[SUIN-Juriscol] Using model: ${model}`);
 
     // Build the user message based on whether this is a follow-up
     let userMessage: string;

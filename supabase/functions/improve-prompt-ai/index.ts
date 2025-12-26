@@ -17,18 +17,19 @@ const securityHeaders = {
   'X-Frame-Options': 'DENY',
 };
 
-async function getSystemConfig(supabaseClient: any, configKey: string, defaultValue?: string): Promise<string> {
-  try {
-    const { data, error } = await supabaseClient
-      .from('system_config')
-      .select('config_value')
-      .eq('config_key', configKey)
-      .single();
-    if (error) return defaultValue || '';
-    return data?.config_value || defaultValue || '';
-  } catch (error) {
-    return defaultValue || '';
+// Helper function to get required system configuration - throws if not found
+async function getRequiredConfig(supabaseClient: any, configKey: string): Promise<string> {
+  const { data, error } = await supabaseClient
+    .from('system_config')
+    .select('config_value')
+    .eq('config_key', configKey)
+    .maybeSingle();
+
+  if (error || !data?.config_value) {
+    throw new Error(`Configuración '${configKey}' no encontrada en system_config. Por favor configúrela en el panel de administración.`);
   }
+
+  return data.config_value;
 }
 
 serve(async (req) => {
@@ -55,15 +56,11 @@ serve(async (req) => {
       });
     }
 
-    const configuredModel = await getSystemConfig(supabase, 'prompt_optimizer_model', 'gpt-4.1-2025-04-14');
-    const promptOptimizerInstructions = await getSystemConfig(supabase, 'prompt_optimizer_instructions', '');
-    
-    if (!promptOptimizerInstructions) {
-      console.error('❌ prompt_optimizer_instructions not configured in system_config');
-      return new Response(JSON.stringify({ error: 'Configuración faltante: prompt_optimizer_instructions' }), { 
-        status: 500, headers: securityHeaders 
-      });
-    }
+    // Get model and prompt - NO FALLBACKS
+    const [configuredModel, promptOptimizerInstructions] = await Promise.all([
+      getRequiredConfig(supabase, 'prompt_optimizer_model'),
+      getRequiredConfig(supabase, 'prompt_optimizer_instructions')
+    ]);
     
     logResponsesRequest(configuredModel, 'improve-prompt-ai', true);
 

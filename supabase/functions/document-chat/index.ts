@@ -11,25 +11,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const getSystemConfig = async (supabaseClient: any, configKey: string, defaultValue: string): Promise<string> => {
-  try {
-    const { data, error } = await supabaseClient
-      .from('system_config')
-      .select('config_value')
-      .eq('config_key', configKey)
-      .single();
-    
-    if (error || !data) {
-      console.log(`Using default value for ${configKey}:`, defaultValue);
-      return defaultValue;
-    }
-    
-    return data.config_value;
-  } catch (e) {
-    console.error(`Error fetching config ${configKey}:`, e);
-    return defaultValue;
+// Helper function to get required system configuration - throws if not found
+async function getRequiredConfig(supabaseClient: any, configKey: string): Promise<string> {
+  const { data, error } = await supabaseClient
+    .from('system_config')
+    .select('config_value')
+    .eq('config_key', configKey)
+    .maybeSingle();
+
+  if (error || !data?.config_value) {
+    throw new Error(`Configuración '${configKey}' no encontrada en system_config. Por favor configúrela en el panel de administración.`);
   }
-};
+
+  return data.config_value;
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -51,22 +46,15 @@ serve(async (req) => {
     
     const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    const configuredModel = await getSystemConfig(supabaseClient, 'document_chat_ai_model', 'gpt-4.1-2025-04-14');
+    const configuredModel = await getRequiredConfig(supabaseClient, 'document_chat_ai_model');
     logResponsesRequest(configuredModel, 'document-chat', true);
 
     const { message, messages, agent_prompt, document_name, sessionId, agentType, context } = await req.json();
 
     // Handle different chat types
     if (agentType === 'routing') {
-      // Legal consultation routing logic - get prompt from config
-      const routingInstructions = await getSystemConfig(supabaseClient, 'routing_chat_prompt', '');
-      
-      if (!routingInstructions) {
-        console.error('❌ routing_chat_prompt not configured in system_config');
-        return new Response(JSON.stringify({ error: 'Configuración faltante: routing_chat_prompt' }), { 
-          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        });
-      }
+      // Legal consultation routing logic - get prompt from config - NO FALLBACK
+      const routingInstructions = await getRequiredConfig(supabaseClient, 'routing_chat_prompt');
 
       const userInput = message || (messages && messages[messages.length - 1]?.content) || '';
 
@@ -101,15 +89,8 @@ serve(async (req) => {
     }
 
     if (agentType === 'lexi') {
-      // General legal assistant - Lexi - get prompt from config
-      const lexiInstructions = await getSystemConfig(supabaseClient, 'lexi_chat_prompt', '');
-      
-      if (!lexiInstructions) {
-        console.error('❌ lexi_chat_prompt not configured in system_config');
-        return new Response(JSON.stringify({ error: 'Configuración faltante: lexi_chat_prompt' }), { 
-          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        });
-      }
+      // General legal assistant - Lexi - get prompt from config - NO FALLBACK
+      const lexiInstructions = await getRequiredConfig(supabaseClient, 'lexi_chat_prompt');
 
       const userMessage = message || (messages && messages[messages.length - 1]?.content) || '';
       
@@ -147,25 +128,8 @@ serve(async (req) => {
 
     console.log('Processing chat for document:', document_name);
 
-    // Get document chat prompt from config
-    const documentChatPrompt = await getSystemConfig(supabaseClient, 'document_chat_prompt', `INSTRUCCIONES CRÍTICAS PARA RECOPILACIÓN DE INFORMACIÓN:
-- Debes recopilar TODA la información necesaria ANTES de permitir generar el documento
-- Haz UNA pregunta específica y clara a la vez para cada campo requerido
-- Normaliza automáticamente la información mientras la recopilas:
-  * Nombres y apellidos: MAYÚSCULAS COMPLETAS
-  * Ciudades: MAYÚSCULAS + departamento (ej: BOGOTÁ, CUNDINAMARCA)
-  * Cédulas: formato con puntos separadores (ej: 1.234.567.890)
-  * Fechas: formato DD de MMMM de YYYY
-- Presenta un resumen completo de TODA la información recopilada antes de proceder
-- SOLO cuando tengas TODOS los campos completos, responde: "He recopilado toda la información necesaria. ¿Deseas proceder con la generación del documento?"
-- NO permitas generar el documento hasta verificar que TODOS los campos estén completos
-- Si falta información, solicítala específicamente
-
-IMPORTANTE - FORMATO DE RESPUESTA:
-- NO uses asteriscos (*) para enfatizar texto
-- NO uses guiones bajos (_) para cursiva
-- NO uses caracteres especiales para formatear (**, __, ##, etc.)
-- Escribe en texto plano sin formato markdown`);
+    // Get document chat prompt from config - NO FALLBACK
+    const documentChatPrompt = await getRequiredConfig(supabaseClient, 'document_chat_prompt');
 
     const systemInstructions = `${agent_prompt}
 
