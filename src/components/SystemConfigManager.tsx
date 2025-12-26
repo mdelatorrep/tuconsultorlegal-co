@@ -108,12 +108,13 @@ export default function SystemConfigManager() {
           reasoningEffortKey: 'suggest_blocks_reasoning_effort',
           colorClass: 'border-l-purple-500'
         },
-        {
+      {
           id: 'agent_creation',
           name: 'ADN de Agentes',
           description: 'Comportamiento base de agentes',
           promptKey: 'agent_creation_system_prompt',
           modelKey: 'agent_creation_ai_model',
+          reasoningEffortKey: 'agent_creation_reasoning_effort',
           colorClass: 'border-l-purple-500'
         }
       ]
@@ -130,6 +131,7 @@ export default function SystemConfigManager() {
           description: 'Recopila información del usuario',
           promptKey: 'document_chat_prompt',
           modelKey: 'document_chat_ai_model',
+          reasoningEffortKey: 'document_chat_reasoning_effort',
           colorClass: 'border-l-blue-500'
         },
         {
@@ -138,6 +140,7 @@ export default function SystemConfigManager() {
           description: 'Genera el documento final',
           promptKey: 'generate_document_prompt',
           modelKey: 'openai_assistant_model',
+          reasoningEffortKey: 'generate_document_reasoning_effort',
           additionalParams: [
             { key: 'openai_assistant_temperature', name: 'Temperatura', type: 'number' as const }
           ],
@@ -157,6 +160,7 @@ export default function SystemConfigManager() {
           description: 'Análisis de legislación',
           promptKey: 'research_system_prompt',
           modelKey: 'research_ai_model',
+          reasoningEffortKey: 'research_reasoning_effort',
           webSearchKey: 'web_search_enabled_research',
           colorClass: 'border-l-green-500'
         },
@@ -166,6 +170,7 @@ export default function SystemConfigManager() {
           description: 'Evaluación de documentos',
           promptKey: 'analysis_system_prompt',
           modelKey: 'analysis_ai_model',
+          reasoningEffortKey: 'analysis_reasoning_effort',
           colorClass: 'border-l-green-500'
         },
         {
@@ -174,6 +179,7 @@ export default function SystemConfigManager() {
           description: 'Creación de documentos',
           promptKey: 'drafting_system_prompt',
           modelKey: 'drafting_ai_model',
+          reasoningEffortKey: 'drafting_reasoning_effort',
           colorClass: 'border-l-green-500'
         },
         {
@@ -182,6 +188,7 @@ export default function SystemConfigManager() {
           description: 'Estrategias legales',
           promptKey: 'strategy_system_prompt',
           modelKey: 'strategy_ai_model',
+          reasoningEffortKey: 'strategy_reasoning_effort',
           colorClass: 'border-l-green-500'
         }
       ]
@@ -198,6 +205,7 @@ export default function SystemConfigManager() {
           description: 'Analiza y predice resultados',
           promptKey: 'case_predictor_system_prompt',
           modelKey: 'case_predictor_ai_model',
+          reasoningEffortKey: 'case_predictor_reasoning_effort',
           colorClass: 'border-l-rose-500'
         }
       ]
@@ -214,6 +222,7 @@ export default function SystemConfigManager() {
           description: 'Sugerencias mientras escribe',
           promptKey: 'copilot_suggest_prompt',
           modelKey: 'copilot_ai_model',
+          reasoningEffortKey: 'copilot_reasoning_effort',
           additionalParams: [
             { key: 'copilot_max_tokens_suggest', name: 'Max Tokens', type: 'number' as const }
           ],
@@ -225,6 +234,7 @@ export default function SystemConfigManager() {
           description: 'Completa cláusulas',
           promptKey: 'copilot_autocomplete_prompt',
           modelKey: 'copilot_ai_model',
+          reasoningEffortKey: 'copilot_reasoning_effort',
           additionalParams: [
             { key: 'copilot_max_tokens_autocomplete', name: 'Max Tokens', type: 'number' as const }
           ],
@@ -236,6 +246,7 @@ export default function SystemConfigManager() {
           description: 'Identifica riesgos',
           promptKey: 'copilot_risk_detection_prompt',
           modelKey: 'copilot_ai_model',
+          reasoningEffortKey: 'copilot_reasoning_effort',
           colorClass: 'border-l-cyan-500'
         },
         {
@@ -244,6 +255,7 @@ export default function SystemConfigManager() {
           description: 'Mejora claridad',
           promptKey: 'copilot_improve_prompt',
           modelKey: 'copilot_ai_model',
+          reasoningEffortKey: 'copilot_reasoning_effort',
           colorClass: 'border-l-cyan-500'
         }
       ]
@@ -260,6 +272,7 @@ export default function SystemConfigManager() {
           description: 'Asistente legal principal',
           promptKey: 'lexi_chat_prompt',
           modelKey: 'lexi_ai_model',
+          reasoningEffortKey: 'lexi_reasoning_effort',
           colorClass: 'border-l-indigo-500'
         },
         {
@@ -268,6 +281,7 @@ export default function SystemConfigManager() {
           description: 'Clasificación de consultas',
           promptKey: 'routing_chat_prompt',
           modelKey: 'routing_ai_model',
+          reasoningEffortKey: 'routing_reasoning_effort',
           colorClass: 'border-l-indigo-500'
         },
         {
@@ -276,6 +290,7 @@ export default function SystemConfigManager() {
           description: 'Formación de abogados',
           promptKey: 'legal_training_assistant_prompt',
           modelKey: 'training_assistant_ai_model',
+          reasoningEffortKey: 'training_reasoning_effort',
           colorClass: 'border-l-indigo-500'
         }
       ]
@@ -292,6 +307,7 @@ export default function SystemConfigManager() {
           description: 'Consulta en Rama Judicial',
           promptKey: 'process_query_ai_prompt',
           modelKey: 'process_query_ai_model',
+          reasoningEffortKey: 'process_query_reasoning_effort',
           colorClass: 'border-l-amber-500'
         }
       ]
@@ -308,6 +324,7 @@ export default function SystemConfigManager() {
           description: 'Optimiza descripciones',
           promptKey: 'document_description_optimizer_prompt',
           modelKey: 'document_description_optimizer_model',
+          reasoningEffortKey: 'improve_document_info_reasoning_effort',
           colorClass: 'border-l-orange-500'
         },
         {
@@ -316,6 +333,7 @@ export default function SystemConfigManager() {
           description: 'Clasificación de clientes',
           promptKey: 'crm_segmentation_prompt',
           modelKey: 'crm_segmentation_ai_model',
+          reasoningEffortKey: 'crm_segmentation_reasoning_effort',
           colorClass: 'border-l-orange-500'
         },
         {
@@ -324,6 +342,7 @@ export default function SystemConfigManager() {
           description: 'Organización de archivos',
           promptKey: 'organize_file_prompt',
           modelKey: 'organize_file_ai_model',
+          reasoningEffortKey: 'organize_file_reasoning_effort',
           colorClass: 'border-l-orange-500'
         }
       ]
