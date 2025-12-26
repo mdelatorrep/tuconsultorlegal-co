@@ -116,8 +116,8 @@ serve(async (req) => {
       );
     }
 
-    // If completed, extract result and update task
-    if (openaiStatus === 'completed') {
+    // If completed or incomplete (partial results may be available), extract result
+    if (openaiStatus === 'completed' || openaiStatus === 'incomplete') {
       // Extract text from output
       let resultText = '';
       if (openaiResponse.output && Array.isArray(openaiResponse.output)) {
@@ -132,15 +132,51 @@ serve(async (req) => {
         }
       }
 
-      // Parse the result
+      // Check if we have any content for incomplete status
+      if (openaiStatus === 'incomplete' && !resultText.trim()) {
+        // No partial results available - truly failed
+        const incompleteReason = openaiResponse.incomplete_details?.reason || 'unknown';
+        let errorMessage = 'La investigación no pudo completarse.';
+        
+        if (incompleteReason === 'max_output_tokens') {
+          errorMessage = 'La consulta generó una respuesta demasiado extensa. Por favor, divida su consulta en preguntas más específicas.';
+        } else if (incompleteReason === 'content_filter') {
+          errorMessage = 'El contenido fue filtrado por políticas de seguridad.';
+        } else {
+          errorMessage = `La investigación se interrumpió (razón: ${incompleteReason}). Intente simplificar la consulta.`;
+        }
+        
+        await supabase
+          .from('async_research_tasks')
+          .update({
+            status: 'failed',
+            error_message: errorMessage,
+            completed_at: new Date().toISOString()
+          })
+          .eq('id', taskId);
+
+        console.log(`❌ Task ${taskId} incomplete with no results: ${incompleteReason}`);
+
+        return new Response(
+          JSON.stringify({
+            success: false,
+            status: 'failed',
+            error: errorMessage
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Parse the result (complete or partial)
       let parsedResult;
       try {
         parsedResult = JSON.parse(resultText);
       } catch (e) {
+        // Not valid JSON - use as raw text
         parsedResult = {
           findings: resultText || 'Investigación completada',
           sources: ['Fuentes legales consultadas'],
-          conclusion: 'Análisis completado',
+          conclusion: openaiStatus === 'incomplete' ? 'Análisis parcial - la consulta era muy compleja' : 'Análisis completado',
           keyPoints: [],
           legalBasis: []
         };
@@ -152,10 +188,16 @@ serve(async (req) => {
         sources: parsedResult.sources || parsedResult.fuentes || ['Legislación Colombiana', 'Jurisprudencia'],
         conclusion: parsedResult.conclusion || parsedResult.conclusiones || 'Análisis completado',
         keyPoints: parsedResult.keyPoints || parsedResult.puntosClave || [],
-        legalBasis: parsedResult.legalBasis || parsedResult.fundamentosLegales || []
+        legalBasis: parsedResult.legalBasis || parsedResult.fundamentosLegales || [],
+        isPartial: openaiStatus === 'incomplete'
       };
 
-      // Update task as completed
+      // Add notice if partial
+      if (openaiStatus === 'incomplete') {
+        normalizedResult.conclusion = `⚠️ RESULTADO PARCIAL: ${normalizedResult.conclusion}. La consulta era muy extensa. Considere dividirla en preguntas más específicas para obtener respuestas completas.`;
+      }
+
+      // Update task as completed (even if partial, we have useful content)
       await supabase
         .from('async_research_tasks')
         .update({
@@ -172,28 +214,30 @@ serve(async (req) => {
         input_data: { query: task.query },
         output_data: normalizedResult,
         metadata: { 
-          status: 'completed',
+          status: openaiStatus,
           model: task.model_used,
           responseId: task.openai_response_id,
           asyncTask: true,
+          isPartial: openaiStatus === 'incomplete',
           timestamp: new Date().toISOString()
         }
       });
 
-      console.log(`✅ Task ${taskId} completed successfully`);
+      console.log(`✅ Task ${taskId} ${openaiStatus === 'incomplete' ? 'completed with partial results' : 'completed successfully'}`);
 
       return new Response(
         JSON.stringify({
           success: true,
           status: 'completed',
-          result: normalizedResult
+          result: normalizedResult,
+          isPartial: openaiStatus === 'incomplete'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Handle failed/cancelled/incomplete status
-    const errorMessage = openaiResponse.error?.message || `Research ended with status: ${openaiStatus}`;
+    // Handle failed/cancelled status
+    const errorMessage = openaiResponse.error?.message || `La investigación finalizó con estado: ${openaiStatus}`;
     
     await supabase
       .from('async_research_tasks')
