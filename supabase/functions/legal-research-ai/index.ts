@@ -131,9 +131,6 @@ Instrucciones específicas para esta investigación:
 Responde en formato JSON con esta estructura:
 ${jsonFormat}`;
 
-    // Get reasoning effort from system config
-    const reasoningEffort = await getSystemConfig(supabase, 'research_reasoning_effort', 'medium') as 'low' | 'medium' | 'high';
-    
     // Build request parameters - JSON mode is incompatible with web search
     const useJsonMode = !webSearchTool;
     
@@ -144,7 +141,6 @@ ${jsonFormat}`;
       temperature: 0.3,
       jsonMode: useJsonMode,
       store: false,
-      reasoning: { effort: reasoningEffort },
       webSearch: webSearchTool || undefined
     });
 
