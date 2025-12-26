@@ -150,8 +150,10 @@ ${jsonFormat}`;
 
     console.log(`📡 Calling OpenAI with model: ${researchModel}`);
     
-    // Add timeout to prevent 504 errors (Supabase edge functions have 150s limit)
-    const TIMEOUT_MS = 120000; // 120 seconds to leave buffer
+    // Get timeout from system config (Supabase edge functions have 150s limit)
+    const configuredTimeout = await getSystemConfig(supabase, 'openai_api_timeout', '120000');
+    const TIMEOUT_MS = Math.min(parseInt(configuredTimeout) || 120000, 140000); // Cap at 140s for safety
+    console.log(`⏱️ Using timeout: ${TIMEOUT_MS}ms`);
     
     const timeoutPromise = new Promise<{ success: false; error: string }>((_, reject) => {
       setTimeout(() => {
