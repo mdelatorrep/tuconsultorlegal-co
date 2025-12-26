@@ -114,9 +114,10 @@ Deno.serve(async (req) => {
         .order('created_at', { ascending: false })
         .limit(limit);
 
-      const { data: recentResearch } = await supabaseAdmin
-        .from('research_queue')
-        .select('id, lawyer_id, status, error_message, created_at, updated_at')
+      // Get recent AI tool results as proxy for edge function activity
+      const { data: recentAIResults } = await supabaseAdmin
+        .from('legal_tools_results')
+        .select('id, lawyer_id, tool_type, metadata, created_at')
         .order('created_at', { ascending: false })
         .limit(limit);
 
@@ -128,12 +129,12 @@ Deno.serve(async (req) => {
           level: job.status === 'failed' ? 'error' : 'info',
           details: { error: job.error_message }
         })),
-        ...(recentResearch || []).map(r => ({
+        ...(recentAIResults || []).map(r => ({
           id: r.id,
           timestamp: r.created_at,
-          event_message: `Research Queue: ${r.status}`,
-          level: r.status === 'failed' ? 'error' : r.status === 'rate_limited' ? 'warn' : 'info',
-          details: { error: r.error_message }
+          event_message: `AI Tool (${r.tool_type}): ${(r.metadata as any)?.status || 'completed'}`,
+          level: (r.metadata as any)?.status === 'failed' ? 'error' : 'info',
+          details: { tool_type: r.tool_type }
         }))
       ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
        .slice(0, limit);

@@ -79,23 +79,38 @@ export const SystemMonitoring = () => {
 
   const loadResearchQueue = async () => {
     try {
+      // Research now uses synchronous calls - load from legal_tools_results
       const { data, error } = await supabase
-        .from('research_queue')
-        .select('*')
+        .from('legal_tools_results')
+        .select('id, lawyer_id, tool_type, input_data, metadata, created_at')
+        .eq('tool_type', 'research')
         .order('created_at', { ascending: false })
         .limit(100);
 
       if (error) throw error;
-      setResearchTasks(data || []);
       
-      const tasks = data || [];
+      // Map to ResearchTask interface
+      const tasks: ResearchTask[] = (data || []).map(item => ({
+        id: item.id,
+        lawyer_id: item.lawyer_id,
+        query: (item.input_data as any)?.query || 'N/A',
+        status: (item.metadata as any)?.status || 'completed',
+        retry_count: 0,
+        created_at: item.created_at,
+        started_at: item.created_at,
+        completed_at: item.created_at,
+        last_error: (item.metadata as any)?.error?.message || null
+      }));
+      
+      setResearchTasks(tasks);
+      
       setStats(prev => ({
         ...prev,
-        pendingResearch: tasks.filter(t => t.status === 'pending' || t.status === 'processing').length,
+        pendingResearch: 0, // No pending with synchronous calls
         failedResearch: tasks.filter(t => t.status === 'failed').length
       }));
     } catch (error) {
-      console.error('Error loading research queue:', error);
+      console.error('Error loading research results:', error);
     }
   };
 
