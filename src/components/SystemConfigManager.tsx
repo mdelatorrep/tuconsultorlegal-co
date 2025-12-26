@@ -319,7 +319,20 @@ export default function SystemConfigManager() {
           promptKey: 'process_query_ai_prompt',
           modelKey: 'process_query_ai_model',
           reasoningEffortKey: 'process_query_reasoning_effort',
+          webSearchKey: 'web_search_enabled_process_query',
+          webSearchCategoriesKey: 'web_search_categories_process_query',
           colorClass: 'border-l-amber-500'
+        },
+        {
+          id: 'suin_juriscol',
+          name: 'SUIN-Juriscol',
+          description: 'Consulta normativa Colombia',
+          promptKey: 'suin_juriscol_ai_prompt',
+          modelKey: 'suin_juriscol_ai_model',
+          reasoningEffortKey: 'suin_juriscol_reasoning_effort',
+          webSearchKey: 'web_search_enabled_suin_juriscol',
+          webSearchCategoriesKey: 'web_search_categories_suin_juriscol',
+          colorClass: 'border-l-teal-500'
         }
       ]
     },
