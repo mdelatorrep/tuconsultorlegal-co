@@ -367,6 +367,7 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
               </div>
             </div>
           </div>
+      </main>
     </div>
   );
 }

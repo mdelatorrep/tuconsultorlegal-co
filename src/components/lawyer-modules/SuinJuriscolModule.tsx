@@ -756,7 +756,7 @@ export default function SuinJuriscolModule({ user, currentView, onViewChange, on
 
             </div>
           </div>
-      </div>
+      </main>
     </div>
   );
 }

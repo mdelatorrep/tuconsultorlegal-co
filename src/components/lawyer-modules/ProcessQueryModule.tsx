@@ -635,27 +635,12 @@ export default function ProcessQueryModule({
             </div>
           </div>
         </header>
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent opacity-50"></div>
-            <div className="relative flex h-14 lg:h-16 items-center px-3 lg:px-6">
-              <SidebarTrigger className="mr-2 lg:mr-4 hover:bg-blue-500/10 rounded-lg p-2 transition-all duration-200 flex-shrink-0" />
-              <div className="flex items-center gap-2 lg:gap-3 min-w-0">
-                <div className="p-1.5 lg:p-2 bg-gradient-to-br from-blue-600 to-blue-500 rounded-lg lg:rounded-xl shadow-lg flex-shrink-0">
-                  <Gavel className="h-4 w-4 lg:h-6 lg:w-6 text-white" />
-                </div>
-                <div className="min-w-0">
-                  <h1 className="font-bold text-base lg:text-lg truncate">Consulta de Procesos</h1>
-                  <p className="text-xs text-muted-foreground hidden lg:block truncate">
-                    Rama Judicial de Colombia
-                  </p>
-                </div>
-              </div>
-            </div>
-          </header>
 
         {/* Main Content */}
         <ScrollArea className="w-full">
           {renderContent()}
         </ScrollArea>
+      </main>
     </div>
   );
 }

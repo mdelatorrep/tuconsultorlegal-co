@@ -2308,6 +2308,7 @@ export default function AgentCreatorPage({ user, currentView, onViewChange, onLo
               </Card>
             </div>
           </div>
+      </main>
     </div>
   );
 }
