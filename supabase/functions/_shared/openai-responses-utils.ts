@@ -156,6 +156,59 @@ export function supportsTemperature(model: string): boolean {
 }
 
 /**
+ * Get supported reasoning efforts for a model
+ * gpt-5-pro only supports 'high'
+ * Other reasoning models support 'low', 'medium', 'high'
+ * Non-reasoning models don't use reasoning at all
+ */
+export function getSupportedReasoningEfforts(model: string): ('low' | 'medium' | 'high')[] | null {
+  const lowerModel = model.toLowerCase();
+  
+  // gpt-5-pro only supports 'high'
+  if (lowerModel.includes('gpt-5-pro') || lowerModel.includes('gpt5-pro')) {
+    return ['high'];
+  }
+  
+  // Other reasoning models support all efforts
+  if (isReasoningModel(model)) {
+    return ['low', 'medium', 'high'];
+  }
+  
+  // Non-reasoning models don't use reasoning
+  return null;
+}
+
+/**
+ * Validate and adjust reasoning effort based on model capabilities
+ * Returns the adjusted effort or null if reasoning should not be used
+ */
+export function validateReasoningEffort(
+  model: string, 
+  requestedEffort?: 'low' | 'medium' | 'high'
+): 'low' | 'medium' | 'high' | null {
+  const supportedEfforts = getSupportedReasoningEfforts(model);
+  
+  // Model doesn't support reasoning
+  if (supportedEfforts === null) {
+    return null;
+  }
+  
+  // No effort requested, use default based on model
+  if (!requestedEffort) {
+    return supportedEfforts.includes('medium') ? 'medium' : 'high';
+  }
+  
+  // Check if requested effort is supported
+  if (supportedEfforts.includes(requestedEffort)) {
+    return requestedEffort;
+  }
+  
+  // Fallback to highest supported effort
+  console.log(`[Reasoning] Model ${model} doesn't support effort '${requestedEffort}', falling back to '${supportedEfforts[supportedEfforts.length - 1]}'`);
+  return supportedEfforts[supportedEfforts.length - 1];
+}
+
+/**
  * Build request parameters for OpenAI Responses API
  */
 export function buildResponsesRequestParams(
@@ -253,9 +306,13 @@ export function buildResponsesRequestParams(
     params.tool_choice = toolChoice;
   }
 
-  // Reasoning config for o-series and GPT-5 models
+  // Reasoning config for o-series and GPT-5 models - validate and adjust effort
   if (reasoning) {
-    params.reasoning = reasoning;
+    const validatedEffort = validateReasoningEffort(model, reasoning.effort);
+    if (validatedEffort) {
+      params.reasoning = { ...reasoning, effort: validatedEffort };
+    }
+    // If validatedEffort is null, don't add reasoning (model doesn't support it)
   }
 
   return params;
