@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Search, BookOpen, FileText, Loader2, Sparkles, Target, TrendingUp, Clock, CheckCircle2, AlertCircle, Hourglass, ChevronDown, ChevronRight, Calendar, Archive, Filter, Coins, Briefcase } from "lucide-react";
+import { Search, BookOpen, FileText, Loader2, Sparkles, Target, TrendingUp, Clock, CheckCircle2, AlertCircle, ChevronDown, ChevronRight, Calendar, Archive, Filter, Coins, Briefcase } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useCredits } from "@/hooks/useCredits";
@@ -19,18 +19,7 @@ interface ResearchResult {
   sources: string[];
   timestamp: string;
   conclusion?: string;
-  task_id?: string;
-  status?: 'completed' | 'failed' | 'processing';
-}
-
-interface PendingTask {
-  task_id: string;
-  query: string;
-  started_at: string;
-  estimated_completion: string;
-  status: 'initiated' | 'processing' | 'completed' | 'failed' | 'rate_limited' | 'pending';
-  retry_count?: number;
-  next_retry_at?: string;
+  status?: 'completed' | 'failed';
 }
 
 interface ResearchModuleProps {
@@ -44,7 +33,6 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
   const [query, setQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<ResearchResult[]>([]);
-  const [pendingTasks, setPendingTasks] = useState<PendingTask[]>([]);
   const [progress, setProgress] = useState(0);
   const [expandedResults, setExpandedResults] = useState<Set<number>>(new Set());
   const [sortBy, setSortBy] = useState<'date' | 'query'>('date');
@@ -89,78 +77,10 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
     return filtered;
   };
 
-  // Debug logs
-  console.log('ResearchModule state:', { query, isSearching, results: results.length, pendingTasks: pendingTasks.length });
-
-  // Effect to load pending tasks and completed results on mount
+  // Load completed results on mount
   useEffect(() => {
-    loadPendingTasks();
     loadCompletedResults();
   }, []);
-
-  // Separate effect for continuous polling that doesn't depend on pendingTasks
-  useEffect(() => {
-    // Set up continuous polling for pending tasks
-    const pollInterval = setInterval(() => {
-      checkTaskUpdates();
-    }, 30000); // Check every 30 seconds
-    
-    return () => clearInterval(pollInterval);
-  }, []); // Empty dependency array for continuous polling
-
-  const loadPendingTasks = async () => {
-    try {
-      // Load from new research_queue table
-      const { data: queueData, error: queueError } = await supabase
-        .from('research_queue')
-        .select('*')
-        .eq('lawyer_id', user.id)
-        .in('status', ['pending', 'processing', 'rate_limited'])
-        .order('created_at', { ascending: false });
-
-      // Also check legacy legal_tools_results for initiated tasks
-      const { data: legacyData, error: legacyError } = await supabase
-        .from('legal_tools_results')
-        .select('*')
-        .eq('lawyer_id', user.id)
-        .eq('tool_type', 'research')
-        .eq('metadata->>status', 'initiated')
-        .order('created_at', { ascending: false });
-
-      const pending: PendingTask[] = [];
-
-      // Add queue tasks
-      queueData?.forEach((item: any) => {
-        pending.push({
-          task_id: item.id,
-          query: item.query || 'Consulta en progreso',
-          started_at: item.created_at,
-          estimated_completion: item.next_retry_at || new Date(Date.now() + 25 * 60 * 1000).toISOString(),
-          status: item.status as PendingTask['status'],
-          retry_count: item.retry_count || 0,
-          next_retry_at: item.next_retry_at
-        });
-      });
-
-      // Add legacy tasks (if not already in queue)
-      legacyData?.forEach((item: any) => {
-        const taskId = item.metadata?.task_id || item.input_data?.task_id;
-        if (taskId && !pending.some(p => p.task_id === taskId)) {
-          pending.push({
-            task_id: taskId,
-            query: item.input_data?.query || 'Consulta en progreso',
-            started_at: item.created_at,
-            estimated_completion: new Date(Date.now() + 25 * 60 * 1000).toISOString(),
-            status: 'processing' as const
-          });
-        }
-      });
-
-      setPendingTasks(pending);
-    } catch (error) {
-      console.error('Error loading pending tasks:', error);
-    }
-  };
 
   const loadCompletedResults = async () => {
     try {
@@ -169,80 +89,32 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
         .select('*')
         .eq('lawyer_id', user.id)
         .eq('tool_type', 'research')
-        .in('metadata->>status', ['completed', 'failed'])
         .order('created_at', { ascending: false })
-        .limit(10);
+        .limit(20);
 
       if (error) throw error;
 
-      const results = data?.map((item: any) => {
+      const loadedResults = data?.map((item: any) => {
         const itemStatus = (item.metadata as any)?.status;
         const isFailed = itemStatus === 'failed';
         
         return {
-          query: item.input_data?.query || item.input_data?.original_query || 'Consulta completada',
+          query: item.input_data?.query || 'Consulta completada',
           findings: isFailed 
             ? `Error en la investigación: ${(item.metadata as any)?.error?.message || 'Error desconocido'}` 
             : ((item.output_data as any)?.findings || 'Resultados de investigación disponibles'),
           sources: isFailed ? [] : ((item.output_data as any)?.sources || ['Fuentes legales consultadas']),
           timestamp: item.created_at,
           conclusion: isFailed ? undefined : ((item.output_data as any)?.conclusion || 'Análisis completado'),
-          task_id: item.metadata?.task_id,
-          status: itemStatus as 'completed' | 'failed'
+          status: (isFailed ? 'failed' : 'completed') as 'completed' | 'failed'
         };
       }) || [];
 
-      setResults(results);
+      setResults(loadedResults);
     } catch (error) {
       console.error('Error loading completed results:', error);
     }
   };
-
-  const checkTaskUpdates = async () => {
-    try {
-      // Check queue table for completed/failed tasks
-      const { data: queueCompleted, error: queueError } = await supabase
-        .from('research_queue')
-        .select('*')
-        .eq('lawyer_id', user.id)
-        .in('status', ['completed', 'failed'])
-        .order('completed_at', { ascending: false })
-        .limit(5);
-
-      // Reload pending to update counts
-      await loadPendingTasks();
-      await loadCompletedResults();
-
-      // Show toast for newly completed items
-      if (queueCompleted && queueCompleted.length > 0) {
-        const recentlyCompleted = queueCompleted.filter(t => {
-          const completedAt = new Date(t.completed_at);
-          const now = new Date();
-          return (now.getTime() - completedAt.getTime()) < 60000; // Within last minute
-        });
-
-        recentlyCompleted.forEach(task => {
-          if (task.status === 'completed') {
-            toast({
-              title: "🎉 Investigación completada",
-              description: `Tu consulta sobre "${task.query?.substring(0, 50)}..." ha sido procesada exitosamente.`,
-            });
-          } else if (task.status === 'failed') {
-            toast({
-              title: "⚠️ Investigación fallida",
-              description: task.last_error || "Hubo un problema procesando tu consulta. Por favor intenta nuevamente.",
-              variant: "destructive",
-            });
-          }
-        });
-      }
-      
-    } catch (error) {
-      console.error('Error in checkTaskUpdates:', error);
-    }
-  };
-
-
 
   const handleSearch = async () => {
     if (!query.trim()) {
@@ -279,9 +151,9 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
           clearInterval(progressInterval);
           return 90;
         }
-        return prev + 10;
+        return prev + 5;
       });
-    }, 500);
+    }, 200);
 
     try {
       console.log('Iniciando investigación legal con query:', query);
@@ -301,69 +173,42 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
         throw new Error(data.error || 'Error en la investigación');
       }
 
-      // Handle queue response (new system)
-      if (data.queue_id) {
-        const newTask: PendingTask = {
-          task_id: data.queue_id,
-          query: query,
-          started_at: new Date().toISOString(),
-          estimated_completion: new Date(Date.now() + 25 * 60 * 1000).toISOString(),
-          status: 'initiated' as const
-        };
+      // Handle immediate response
+      const result: ResearchResult = {
+        query: query,
+        findings: data.findings || 'Investigación completada con resultados relevantes.',
+        sources: data.sources || ['Legislación Colombiana', 'Jurisprudencia', 'Doctrina Legal'],
+        timestamp: data.timestamp || new Date().toISOString(),
+        conclusion: data.conclusion || 'Análisis completado',
+        status: 'completed'
+      };
 
-        setPendingTasks(prev => [newTask, ...prev]);
-        setQuery("");
-        setProgress(100);
-
-        toast({
-          title: "🚀 Investigación en cola",
-          description: data.message || `Tu consulta está en cola. Tiempo estimado: ${data.estimated_time || '5-30 minutos'}`,
-        });
-      } else if (data.task_id) {
-        // Legacy background task response
-        const newTask: PendingTask = {
-          task_id: data.task_id,
-          query: query,
-          started_at: new Date().toISOString(),
-          estimated_completion: new Date(Date.now() + 25 * 60 * 1000).toISOString(),
-          status: 'initiated' as const
-        };
-
-        setPendingTasks(prev => [newTask, ...prev]);
-        setQuery("");
-        setProgress(100);
-
-        toast({
-          title: "🚀 Investigación iniciada",
-          description: `Tu consulta está siendo procesada. Tiempo estimado: ${data.estimated_time || '5-30 minutos'}`,
-        });
-      } else {
-        // Handle immediate response (fallback)
-        const result: ResearchResult = {
-          query: query,
-          findings: data.findings || data.content || 'Investigación completada con resultados relevantes.',
-          sources: data.sources || ['Legislación Colombiana', 'Jurisprudencia', 'Doctrina Legal'],
-          timestamp: data.timestamp || new Date().toISOString(),
-          conclusion: data.conclusion || 'Análisis completado',
-          status: 'completed'
-        };
-
-        setResults(prev => [result, ...prev]);
-        setQuery("");
-        setProgress(100);
-        
-        toast({
-          title: "✅ Investigación completada",
-          description: "Se encontraron referencias jurídicas relevantes para tu consulta.",
+      setResults(prev => [result, ...prev]);
+      setQuery("");
+      setProgress(100);
+      
+      // Log activity if case is selected
+      if (selectedCaseId && user?.id) {
+        await logAIToolUsage({
+          caseId: selectedCaseId,
+          lawyerId: user.id,
+          toolType: 'research',
+          resultId: result.timestamp,
+          inputSummary: query.substring(0, 100)
         });
       }
+      
+      toast({
+        title: "✅ Investigación completada",
+        description: "Se encontraron referencias jurídicas relevantes para tu consulta.",
+      });
 
     } catch (error) {
       console.error("Error en investigación:", error);
       setProgress(0);
       toast({
         title: "❌ Error en la investigación",
-        description: "Hubo un problema al procesar tu consulta. Verifica tu conexión e intenta nuevamente.",
+        description: error instanceof Error ? error.message : "Hubo un problema al procesar tu consulta.",
         variant: "destructive",
       });
     } finally {
@@ -371,7 +216,7 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
       setTimeout(() => {
         setIsSearching(false);
         setProgress(0);
-      }, 1000);
+      }, 500);
     }
   };
 
@@ -395,22 +240,13 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
           </div>
           
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mt-6 lg:mt-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4 mt-6 lg:mt-8">
             <div className="bg-background/50 backdrop-blur-sm rounded-xl p-4 border border-border/50">
               <div className="flex items-center gap-3">
                 <Target className="h-8 w-8 text-primary" />
                 <div>
-                  <p className="text-2xl font-bold text-primary">{results.length}</p>
+                  <p className="text-2xl font-bold text-primary">{results.filter(r => r.status === 'completed').length}</p>
                   <p className="text-sm text-muted-foreground">Investigaciones completadas</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-background/50 backdrop-blur-sm rounded-xl p-4 border border-border/50">
-              <div className="flex items-center gap-3">
-                <Hourglass className="h-8 w-8 text-orange-600" />
-                <div>
-                  <p className="text-2xl font-bold text-orange-600">{pendingTasks.length}</p>
-                  <p className="text-sm text-muted-foreground">En progreso</p>
                 </div>
               </div>
             </div>
@@ -418,8 +254,8 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
               <div className="flex items-center gap-3">
                 <Clock className="h-8 w-8 text-blue-600" />
                 <div>
-                  <p className="text-2xl font-bold text-blue-600">5-30</p>
-                  <p className="text-sm text-muted-foreground">Minutos promedio</p>
+                  <p className="text-2xl font-bold text-blue-600">~30s</p>
+                  <p className="text-sm text-muted-foreground">Tiempo promedio</p>
                 </div>
               </div>
             </div>
@@ -474,7 +310,7 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
               <Progress value={progress} className="h-2" />
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <p className="text-sm text-blue-800 text-center">
-                  📡 Procesando consulta con IA avanzada - Esto puede tomar entre 5-30 minutos.
+                  📡 Procesando consulta con IA avanzada...
                 </p>
               </div>
             </div>
@@ -488,7 +324,7 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
             {isSearching ? (
               <>
                 <Loader2 className="h-5 w-5 mr-3 animate-spin" />
-                <span className="animate-pulse">Iniciando investigación profunda...</span>
+                <span className="animate-pulse">Investigando...</span>
               </>
             ) : (
               <>
@@ -503,44 +339,6 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
           </Button>
         </CardContent>
       </Card>
-
-      {/* Pending Tasks */}
-      {pendingTasks.length > 0 && (
-        <div className="space-y-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg">
-              <Hourglass className="h-5 w-5 text-white" />
-            </div>
-            <h3 className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-orange-500 bg-clip-text text-transparent">
-              Investigaciones en Progreso
-            </h3>
-          </div>
-          
-          {pendingTasks.map((task, index) => (
-            <Card key={task.task_id} className="border-0 shadow-xl overflow-hidden bg-gradient-to-br from-background via-background to-orange-50">
-              <CardHeader className="pb-4">
-                <div className="flex items-start justify-between gap-4">
-                  <CardTitle className="text-xl font-bold leading-tight">
-                    {task.query.length > 120 ? `${task.query.substring(0, 120)}...` : task.query}
-                  </CardTitle>
-                  <Badge variant="secondary" className="bg-orange-100 text-orange-800 animate-pulse">
-                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                    Procesando
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="bg-orange-50 border border-orange-200 p-4 rounded-xl">
-                  <p className="text-sm text-orange-700 mb-3">
-                    Tu consulta está siendo procesada por nuestro sistema de investigación avanzado.
-                  </p>
-                  <Progress value={Math.min(90, (Date.now() - new Date(task.started_at).getTime()) / (30 * 60 * 1000) * 100)} className="h-2" />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
 
       {/* Results History */}
       {results.length > 0 && (
@@ -580,8 +378,9 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
                           <div className="flex-1 min-w-0">
                             <CardTitle className="text-base lg:text-lg font-semibold line-clamp-2">{result.query}</CardTitle>
                             <div className="flex items-center gap-2 mt-2">
-                              <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 text-xs">
-                                <CheckCircle2 className="h-3 w-3 mr-1" />Completado
+                              <Badge variant="secondary" className={result.status === 'failed' ? "bg-red-100 text-red-800 text-xs" : "bg-emerald-100 text-emerald-800 text-xs"}>
+                                {result.status === 'failed' ? <AlertCircle className="h-3 w-3 mr-1" /> : <CheckCircle2 className="h-3 w-3 mr-1" />}
+                                {result.status === 'failed' ? 'Fallido' : 'Completado'}
                               </Badge>
                               <Badge variant="outline" className="text-xs">
                                 <Clock className="h-3 w-3 mr-1" />
@@ -612,16 +411,18 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
                         </div>
                       )}
                       
-                      <div>
-                        <h4 className="font-bold mb-4 text-lg"><BookOpen className="h-5 w-5 inline mr-2" />Fuentes Consultadas</h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                          {result.sources.filter(Boolean).map((source, idx) => (
-                            <Badge key={idx} variant="outline" className="text-purple-700 border-purple-300 p-3">
-                              {typeof source === 'string' ? source : 'Fuente legal'}
-                            </Badge>
-                          ))}
+                      {result.sources && result.sources.length > 0 && (
+                        <div>
+                          <h4 className="font-bold mb-4 text-lg"><BookOpen className="h-5 w-5 inline mr-2" />Fuentes Consultadas</h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {result.sources.filter(Boolean).map((source, idx) => (
+                              <Badge key={idx} variant="outline" className="text-purple-700 border-purple-300 p-3">
+                                {typeof source === 'string' ? source : 'Fuente legal'}
+                              </Badge>
+                            ))}
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </CardContent>
                   </CollapsibleContent>
                 </Card>
@@ -632,7 +433,7 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
       )}
 
       {/* Empty State */}
-      {results.length === 0 && pendingTasks.length === 0 && !isSearching && (
+      {results.length === 0 && !isSearching && (
         <Card className="border-0 shadow-xl">
           <CardContent className="p-12 text-center">
             <div className="space-y-6">
@@ -642,7 +443,7 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
               <div>
                 <h3 className="text-2xl font-bold mb-2">¡Comienza tu investigación!</h3>
                 <p className="text-lg text-muted-foreground max-w-md mx-auto">
-                  Utiliza nuestro sistema de Deep Research para realizar consultas exhaustivas
+                  Utiliza nuestro sistema de IA para realizar consultas jurídicas exhaustivas
                 </p>
               </div>
             </div>

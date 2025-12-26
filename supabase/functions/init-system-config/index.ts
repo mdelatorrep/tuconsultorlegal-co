@@ -355,8 +355,8 @@ Responde ÚNICAMENTE con un JSON válido:
   // ============================================================================
   {
     config_key: 'research_ai_model',
-    config_value: 'o4-mini-deep-research',
-    description: 'Modelo para investigación legal profunda'
+    config_value: 'gpt-4o-mini',
+    description: 'Modelo para investigación legal'
   },
   {
     config_key: 'research_system_prompt',
@@ -677,16 +677,8 @@ ESTILO:
     config_value: '24',
     description: 'Horas por defecto para SLA de documentos'
   },
-  {
-    config_key: 'research_queue_max_concurrent',
-    config_value: '1',
-    description: 'Máximo de investigaciones concurrentes'
-  },
-  {
-    config_key: 'research_queue_min_spacing_seconds',
-    config_value: '180',
-    description: 'Segundos mínimos entre investigaciones (3 minutos)'
-  },
+  // Removed: research_queue_max_concurrent and research_queue_min_spacing_seconds
+  // Research now uses synchronous API calls like other AI tools
 
   // ============================================================================
   // 🔍 PROCESS QUERY (Consulta de Procesos Judiciales)

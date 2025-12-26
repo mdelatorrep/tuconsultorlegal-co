@@ -3107,68 +3107,6 @@ export type Database = {
         }
         Relationships: []
       }
-      research_queue: {
-        Row: {
-          completed_at: string | null
-          created_at: string | null
-          id: string
-          last_error: string | null
-          lawyer_id: string
-          max_retries: number | null
-          next_retry_at: string | null
-          openai_task_id: string | null
-          priority: number | null
-          query: string
-          result_id: string | null
-          retry_count: number | null
-          started_at: string | null
-          status: string
-          updated_at: string | null
-        }
-        Insert: {
-          completed_at?: string | null
-          created_at?: string | null
-          id?: string
-          last_error?: string | null
-          lawyer_id: string
-          max_retries?: number | null
-          next_retry_at?: string | null
-          openai_task_id?: string | null
-          priority?: number | null
-          query: string
-          result_id?: string | null
-          retry_count?: number | null
-          started_at?: string | null
-          status?: string
-          updated_at?: string | null
-        }
-        Update: {
-          completed_at?: string | null
-          created_at?: string | null
-          id?: string
-          last_error?: string | null
-          lawyer_id?: string
-          max_retries?: number | null
-          next_retry_at?: string | null
-          openai_task_id?: string | null
-          priority?: number | null
-          query?: string
-          result_id?: string | null
-          retry_count?: number | null
-          started_at?: string | null
-          status?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "research_queue_result_id_fkey"
-            columns: ["result_id"]
-            isOneToOne: false
-            referencedRelation: "legal_tools_results"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       security_audit_log: {
         Row: {
           created_at: string
@@ -3868,10 +3806,6 @@ export type Database = {
         Args: { num_days: number; start_date: string }
         Returns: string
       }
-      add_to_research_queue: {
-        Args: { p_lawyer_id: string; p_priority?: number; p_query: string }
-        Returns: string
-      }
       check_rate_limit: {
         Args: {
           action_type: string
@@ -3917,16 +3851,6 @@ export type Database = {
         }[]
       }
       generate_secure_lawyer_token: { Args: never; Returns: string }
-      get_next_research_from_queue: {
-        Args: never
-        Returns: {
-          lawyer_id: string
-          query: string
-          queue_id: string
-          retry_count: number
-        }[]
-      }
-      get_next_research_slot: { Args: never; Returns: string }
       get_user_role: {
         Args: never
         Returns: Database["public"]["Enums"]["app_role"]
