@@ -36,31 +36,25 @@ Deno.serve(async (req) => {
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) throw new Error('OPENAI_API_KEY is not set');
 
-    // Helper to get system config
-    const getSystemConfig = async (key: string, defaultValue: string): Promise<string> => {
-      try {
-        const { data, error } = await supabase
-          .from('system_config')
-          .select('config_value')
-          .eq('config_key', key)
-          .maybeSingle();
-        if (error || !data) return defaultValue;
-        return data.config_value;
-      } catch (e) {
-        return defaultValue;
+    // Helper to get required system config - throws if not found
+    const getRequiredConfig = async (key: string): Promise<string> => {
+      const { data, error } = await supabase
+        .from('system_config')
+        .select('config_value')
+        .eq('config_key', key)
+        .maybeSingle();
+      
+      if (error || !data?.config_value) {
+        throw new Error(`Configuración '${key}' no encontrada en system_config. Por favor configúrela en el panel de administración.`);
       }
+      return data.config_value;
     };
 
-    // Get configured model and prompt
-    const selectedModel = await getSystemConfig('training_validator_ai_model', 'gpt-4.1-2025-04-14');
-    const systemPrompt = await getSystemConfig('ai_training_validator_prompt', '');
-    
-    if (!systemPrompt) {
-      console.error('❌ ai_training_validator_prompt not configured in system_config');
-      return new Response(JSON.stringify({ error: 'Configuración faltante: ai_training_validator_prompt' }), { 
-        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      });
-    }
+    // Get configured model and prompt - NO FALLBACKS
+    const [selectedModel, systemPrompt] = await Promise.all([
+      getRequiredConfig('training_validator_ai_model'),
+      getRequiredConfig('ai_training_validator_prompt')
+    ]);
 
     logResponsesRequest(selectedModel, 'ai-training-validator', true);
 

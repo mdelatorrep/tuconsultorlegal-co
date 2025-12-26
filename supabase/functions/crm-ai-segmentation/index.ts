@@ -11,19 +11,19 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Helper function to get system configuration
-async function getSystemConfig(supabaseClient: any, configKey: string, defaultValue: string): Promise<string> {
-  try {
-    const { data, error } = await supabaseClient
-      .from('system_config')
-      .select('config_value')
-      .eq('config_key', configKey)
-      .maybeSingle();
-    if (error || !data) return defaultValue;
-    return data.config_value;
-  } catch (e) {
-    return defaultValue;
+// Helper function to get required system configuration - throws if not found
+async function getRequiredConfig(supabaseClient: any, configKey: string): Promise<string> {
+  const { data, error } = await supabaseClient
+    .from('system_config')
+    .select('config_value')
+    .eq('config_key', configKey)
+    .maybeSingle();
+
+  if (error || !data?.config_value) {
+    throw new Error(`Configuración '${configKey}' no encontrada en system_config. Por favor configúrela en el panel de administración.`);
   }
+
+  return data.config_value;
 }
 
 serve(async (req) => {
@@ -53,16 +53,12 @@ serve(async (req) => {
       );
     }
 
-    // Get model and prompt from system config
-    const model = await getSystemConfig(supabase, 'crm_segmentation_ai_model', 'gpt-4.1-2025-04-14');
-    const systemPrompt = await getSystemConfig(supabase, 'crm_segmentation_prompt', '');
+    // Get model and prompt from system config - NO FALLBACKS
+    const [model, systemPrompt] = await Promise.all([
+      getRequiredConfig(supabase, 'crm_segmentation_ai_model'),
+      getRequiredConfig(supabase, 'crm_segmentation_prompt')
+    ]);
     
-    if (!systemPrompt) {
-      console.error('❌ crm_segmentation_prompt not configured in system_config');
-      return new Response(JSON.stringify({ error: 'Configuración faltante: crm_segmentation_prompt' }), { 
-        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      });
-    }
     logResponsesRequest(model, 'crm-ai-segmentation', true);
 
     const { data: clients, error: clientsError } = await supabase
