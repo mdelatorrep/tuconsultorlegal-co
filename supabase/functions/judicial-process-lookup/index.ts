@@ -8,6 +8,21 @@ const corsHeaders = {
 
 const VERIFIK_BASE_URL = 'https://api.verifik.co/v2';
 
+// Helper function to get required system configuration - throws if not found
+async function getRequiredConfig(supabaseClient: any, configKey: string): Promise<string> {
+  const { data, error } = await supabaseClient
+    .from('system_config')
+    .select('config_value')
+    .eq('config_key', configKey)
+    .maybeSingle();
+
+  if (error || !data?.config_value) {
+    throw new Error(`Configuración '${configKey}' no encontrada en system_config. Por favor configúrela en el panel de administración.`);
+  }
+
+  return data.config_value;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -46,9 +61,9 @@ serve(async (req) => {
     }
 
     const requestData = await req.json();
-    const { queryType, documentNumber, documentType, radicado, name, followUpQuery, conversationHistory } = requestData;
+    const { queryType, documentNumber, documentType, idProceso, followUpQuery, conversationHistory } = requestData;
 
-    console.log('[judicial-process-lookup] Query:', { queryType, documentNumber, radicado, name });
+    console.log('[judicial-process-lookup] Query:', { queryType, documentNumber, idProceso });
 
     // Service client for logging
     const serviceClient = createClient(
@@ -58,12 +73,14 @@ serve(async (req) => {
 
     let verifik_response = null;
     let processes: any[] = [];
+    let processDetails: any = null;
     let apiCost = 0;
 
-    // Call Verifik API based on query type - CORRECTED ENDPOINTS PER DOCUMENTATION
+    // Call Verifik API based on query type
     if (queryType === 'document' && documentNumber) {
       // Query by document number - GET /v2/co/rama/procesos
       // Documentation: https://docs.verifik.co/legal/colombian-legal-processes/
+      // Required params: documentType (CC, NIT), documentNumber
       const params = new URLSearchParams({
         documentType: documentType || 'CC',
         documentNumber: documentNumber,
@@ -82,35 +99,35 @@ serve(async (req) => {
 
       verifik_response = await response.json();
       console.log('[judicial-process-lookup] Verifik response status:', response.status);
-      apiCost = 0.10; // Track API cost
+      apiCost = 0.10;
 
       if (response.ok && verifik_response.data) {
-        // Map response fields according to Verifik documentation
-        const rawProcesses = verifik_response.data.procesos || verifik_response.data || [];
+        // According to docs, response structure is: data.list (array of processes)
+        const rawProcesses = verifik_response.data.list || [];
+        const consultedSubject = verifik_response.data.consultedSubject || '';
+        
         processes = Array.isArray(rawProcesses) ? rawProcesses.map((p: any) => ({
           idProceso: p.idProceso,
+          idConexion: p.idConexion,
           llaveProceso: p.llaveProceso,
           fechaProceso: p.fechaProceso,
           fechaUltimaActuacion: p.fechaUltimaActuacion,
           despacho: p.despacho,
           departamento: p.departamento,
-          tipoProceso: p.tipoProceso,
-          claseProceso: p.claseProceso,
-          subclaseProceso: p.subclaseProceso,
-          recurso: p.recurso,
-          ubicacion: p.ubicacion,
-          ponente: p.ponente,
           sujetosProcesales: p.sujetosProcesales || [],
           esPrivado: p.esPrivado,
-          cantFilas: p.cantFilas,
+          consultedSubject: consultedSubject,
         })) : [];
+      } else if (!response.ok) {
+        console.error('[judicial-process-lookup] Verifik API error:', verifik_response);
       }
 
-    } else if (queryType === 'radicado' && radicado) {
-      // Query by radicado number - GET /v2/co/rama/proceso/{processNumber}
+    } else if (queryType === 'processId' && idProceso) {
+      // Query by process ID - GET /v2/co/rama/proceso/{processNumber}
       // Documentation: https://docs.verifik.co/legal/retrieve-details-of-a-legal-process-by-number/
-      const endpoint = `${VERIFIK_BASE_URL}/co/rama/proceso/${encodeURIComponent(radicado)}`;
-      console.log('[judicial-process-lookup] Calling Verifik by radicado:', endpoint);
+      // NOTE: processNumber is the idProceso (numeric), NOT the radicado/llaveProceso
+      const endpoint = `${VERIFIK_BASE_URL}/co/rama/proceso/${encodeURIComponent(idProceso)}`;
+      console.log('[judicial-process-lookup] Calling Verifik by processId:', endpoint);
 
       const response = await fetch(endpoint, {
         method: 'GET',
@@ -125,90 +142,123 @@ serve(async (req) => {
       apiCost = 0.15; // Detail query costs more
 
       if (response.ok && verifik_response.data) {
-        const p = verifik_response.data;
+        // According to docs, response has: data.details, data.subjects, data.actions
+        const details = verifik_response.data.details || {};
+        const subjects = verifik_response.data.subjects || [];
+        const actions = verifik_response.data.actions || [];
+        
+        processDetails = {
+          // Details
+          idRegProceso: details.idRegProceso,
+          llaveProceso: details.llaveProceso,
+          idConexion: details.idConexion,
+          esPrivado: details.esPrivado,
+          fechaProceso: details.fechaProceso,
+          despacho: details.despacho,
+          ponente: details.ponente,
+          tipoProceso: details.tipoProceso,
+          claseProceso: details.claseProceso,
+          subclaseProceso: details.subclaseProceso,
+          recurso: details.recurso,
+          ubicacion: details.ubicacion,
+          contenidoRadicacion: details.contenidoRadicacion,
+          fechaConsulta: details.fechaConsulta,
+          ultimaActualizacion: details.ultimaActualizacion,
+          // Subjects (parties involved)
+          sujetos: subjects.map((s: any) => ({
+            idRegSujeto: s.idRegSujeto,
+            tipoSujeto: s.tipoSujeto,
+            esEmplazado: s.esEmplazado,
+            identificacion: s.identificacion,
+            nombreRazonSocial: s.nombreRazonSocial,
+          })),
+          // Actions/Actuaciones
+          actuaciones: actions.map((a: any) => ({
+            idRegActuacion: a.idRegActuacion,
+            consActuacion: a.consActuacion,
+            fechaActuacion: a.fechaActuacion,
+            actuacion: a.actuacion,
+            anotacion: a.anotacion,
+            fechaInicial: a.fechaInicial,
+            fechaFinal: a.fechaFinal,
+            fechaRegistro: a.fechaRegistro,
+            conDocumentos: a.conDocumentos,
+          })),
+        };
+
+        // Also add to processes array for consistency
         processes = [{
-          idProceso: p.idProceso,
-          llaveProceso: p.llaveProceso || radicado,
-          fechaProceso: p.fechaProceso,
-          fechaUltimaActuacion: p.fechaUltimaActuacion,
-          despacho: p.despacho,
-          departamento: p.departamento,
-          tipoProceso: p.tipoProceso,
-          claseProceso: p.claseProceso,
-          subclaseProceso: p.subclaseProceso,
-          recurso: p.recurso,
-          ubicacion: p.ubicacion,
-          ponente: p.ponente,
-          sujetosProcesales: p.sujetosProcesales || p.sujetos || [],
-          actuaciones: p.actuaciones || [],
-          esPrivado: p.esPrivado,
-          cantFilas: p.cantFilas,
+          idProceso: details.idRegProceso,
+          llaveProceso: details.llaveProceso,
+          fechaProceso: details.fechaProceso,
+          despacho: details.despacho,
+          tipoProceso: details.tipoProceso,
+          claseProceso: details.claseProceso,
+          subclaseProceso: details.subclaseProceso,
+          ponente: details.ponente,
+          ubicacion: details.ubicacion,
+          esPrivado: details.esPrivado,
+          actuacionesCount: actions.length,
+          sujetosCount: subjects.length,
         }];
+      } else if (!response.ok) {
+        console.error('[judicial-process-lookup] Verifik API error:', verifik_response);
       }
-
-    } else if (queryType === 'name' && name) {
-      // Query by name - GET /v2/co/rama/procesos with name parameter
-      const params = new URLSearchParams({
-        name: name,
-      });
-      
-      const endpoint = `${VERIFIK_BASE_URL}/co/rama/procesos?${params.toString()}`;
-      console.log('[judicial-process-lookup] Calling Verifik by name:', endpoint);
-
-      const response = await fetch(endpoint, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${VERIFIK_API_KEY}`,
-          'Accept': 'application/json',
-        },
-      });
-
-      verifik_response = await response.json();
-      console.log('[judicial-process-lookup] Verifik response status:', response.status);
-      apiCost = 0.10;
-
-      if (response.ok && verifik_response.data) {
-        const rawProcesses = verifik_response.data.procesos || verifik_response.data || [];
-        processes = Array.isArray(rawProcesses) ? rawProcesses.map((p: any) => ({
-          idProceso: p.idProceso,
-          llaveProceso: p.llaveProceso,
-          fechaProceso: p.fechaProceso,
-          fechaUltimaActuacion: p.fechaUltimaActuacion,
-          despacho: p.despacho,
-          departamento: p.departamento,
-          tipoProceso: p.tipoProceso,
-          claseProceso: p.claseProceso,
-          subclaseProceso: p.subclaseProceso,
-          sujetosProcesales: p.sujetosProcesales || [],
-        })) : [];
-      }
+    } else {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Invalid query type or missing parameters',
+          details: 'Use queryType="document" with documentNumber/documentType, or queryType="processId" with idProceso'
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Log API usage
-    await serviceClient.from('verifik_api_usage').insert({
-      lawyer_id: user.id,
-      endpoint: queryType === 'radicado' ? '/v2/co/rama/proceso' : '/v2/co/rama/procesos',
-      request_params: { queryType, documentNumber, documentType, radicado, name },
-      response_status: verifik_response ? 200 : 500,
-      response_data: { processCount: processes.length },
-      api_cost: apiCost,
-    });
+    try {
+      await serviceClient.from('verifik_api_usage').insert({
+        lawyer_id: user.id,
+        endpoint: queryType === 'processId' ? '/v2/co/rama/proceso' : '/v2/co/rama/procesos',
+        request_params: { queryType, documentNumber, documentType, idProceso },
+        response_status: verifik_response?.code ? 400 : 200,
+        response_data: { processCount: processes.length, hasDetails: !!processDetails },
+        api_cost: apiCost,
+      });
+    } catch (logError) {
+      console.error('[judicial-process-lookup] Error logging usage:', logError);
+    }
 
-    // If it's a follow-up query, use AI to analyze
+    // Generate AI analysis if we have results
     let aiAnalysis = null;
-    if (followUpQuery && processes.length > 0) {
-      const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-      if (OPENAI_API_KEY) {
-        const systemPrompt = `Eres un asistente legal experto en procesos judiciales colombianos. 
-Analiza los datos del proceso judicial proporcionado y responde las preguntas del usuario de manera clara y concisa.
-Proporciona información práctica sobre tiempos, próximos pasos, y recomendaciones legales.`;
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+    
+    if (OPENAI_API_KEY && (processes.length > 0 || processDetails)) {
+      try {
+        // Get AI model and prompt from system config - NO FALLBACKS
+        const [aiModel, systemPrompt] = await Promise.all([
+          getRequiredConfig(serviceClient, 'process_query_ai_model'),
+          getRequiredConfig(serviceClient, 'process_query_ai_prompt')
+        ]);
 
-        const messages = [
+        let userContent: string;
+        
+        if (followUpQuery) {
+          // Follow-up question
+          userContent = `Datos del proceso:\n${JSON.stringify(processDetails || processes, null, 2)}\n\nPregunta del usuario: ${followUpQuery}`;
+        } else if (processDetails) {
+          // Initial analysis for detailed process
+          userContent = `Analiza este proceso judicial con sus actuaciones:\n${JSON.stringify(processDetails, null, 2)}`;
+        } else {
+          // Initial analysis for list of processes
+          userContent = `Analiza estos procesos judiciales encontrados:\n${JSON.stringify(processes, null, 2)}`;
+        }
+
+        const messages: any[] = [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Datos del proceso:\n${JSON.stringify(processes, null, 2)}\n\nPregunta: ${followUpQuery}` }
+          { role: 'user', content: userContent }
         ];
 
-        if (conversationHistory) {
+        if (conversationHistory && Array.isArray(conversationHistory)) {
           messages.push(...conversationHistory);
         }
 
@@ -219,76 +269,57 @@ Proporciona información práctica sobre tiempos, próximos pasos, y recomendaci
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'gpt-4o-mini',
+            model: aiModel,
             messages: messages,
-            max_tokens: 1000,
+            max_tokens: 2000,
           }),
         });
 
         const aiData = await aiResponse.json();
         aiAnalysis = aiData.choices?.[0]?.message?.content;
-      }
-    }
-
-    // Generate initial AI analysis if this is a new query
-    if (!followUpQuery && processes.length > 0) {
-      const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-      if (OPENAI_API_KEY) {
-        const systemPrompt = `Eres un asistente legal experto en procesos judiciales colombianos.
-Analiza los datos del proceso judicial y proporciona:
-1. Un resumen ejecutivo del estado actual
-2. Las últimas actuaciones importantes
-3. Posibles próximos pasos según el tipo de proceso
-4. Alertas sobre plazos o términos que puedan estar corriendo
-
-Sé conciso pero completo.`;
-
-        const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${OPENAI_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: `Analiza este proceso judicial:\n${JSON.stringify(processes, null, 2)}` }
-            ],
-            max_tokens: 1500,
-          }),
-        });
-
-        const aiData = await aiResponse.json();
-        aiAnalysis = aiData.choices?.[0]?.message?.content;
+      } catch (aiError) {
+        console.error('[judicial-process-lookup] AI analysis error:', aiError);
+        // Don't fail the whole request if AI fails
+        aiAnalysis = `Error generando análisis: ${aiError instanceof Error ? aiError.message : 'Error desconocido'}`;
       }
     }
 
     // Save query to legal_tools_results
-    await serviceClient.from('legal_tools_results').insert({
-      lawyer_id: user.id,
-      tool_type: 'judicial_process',
-      input_data: { queryType, documentNumber, documentType, radicado, name },
-      output_data: { 
-        processes, 
-        aiAnalysis,
-        processCount: processes.length 
-      },
-      metadata: { 
-        source: 'verifik',
-        endpoint: queryType === 'radicado' ? '/v2/co/rama/proceso' : '/v2/co/rama/procesos',
-        apiCost,
-        timestamp: new Date().toISOString()
-      }
-    });
+    try {
+      await serviceClient.from('legal_tools_results').insert({
+        lawyer_id: user.id,
+        tool_type: 'judicial_process',
+        input_data: { queryType, documentNumber, documentType, idProceso, followUpQuery },
+        output_data: { 
+          processes, 
+          processDetails,
+          aiAnalysis,
+          processCount: processes.length 
+        },
+        metadata: { 
+          source: 'verifik',
+          endpoint: queryType === 'processId' ? '/v2/co/rama/proceso' : '/v2/co/rama/procesos',
+          apiCost,
+          timestamp: new Date().toISOString()
+        }
+      });
+    } catch (saveError) {
+      console.error('[judicial-process-lookup] Error saving result:', saveError);
+    }
 
     return new Response(
       JSON.stringify({
         success: true,
         processes,
+        processDetails,
         processCount: processes.length,
         aiAnalysis,
-        rawResponse: verifik_response,
+        queryType,
+        // Include error info if Verifik returned an error
+        verifik_error: verifik_response?.code ? {
+          code: verifik_response.code,
+          message: verifik_response.message
+        } : null,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -297,6 +328,7 @@ Sé conciso pero completo.`;
     console.error('[judicial-process-lookup] Error:', error);
     return new Response(
       JSON.stringify({ 
+        success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
         details: 'Error processing judicial process lookup'
       }),
