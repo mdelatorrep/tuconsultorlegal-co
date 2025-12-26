@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { 
   buildResponsesRequestParams, 
-  callResponsesAPI, 
+  callResponsesAPIWithPolling,
   logResponsesRequest,
   loadWebSearchConfigAndBuildTool,
   supportsWebSearch
@@ -51,7 +51,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🔍 Legal research function called - synchronous mode');
+    console.log('🔍 Legal research function called - using background polling mode');
     
     // Get authentication
     const authHeader = req.headers.get('authorization');
@@ -148,29 +148,29 @@ ${jsonFormat}`;
       webSearch: webSearchTool || undefined
     });
 
-    console.log(`📡 Calling OpenAI with model: ${researchModel}`);
+    console.log(`📡 Calling OpenAI with model: ${researchModel} using background polling`);
     
-    // Get timeout from system config (Supabase edge functions have 150s limit)
+    // Get polling configuration from system config
     const configuredTimeout = await getSystemConfig(supabase, 'openai_api_timeout', '120000');
-    const TIMEOUT_MS = Math.min(parseInt(configuredTimeout) || 120000, 140000); // Cap at 140s for safety
-    console.log(`⏱️ Using timeout: ${TIMEOUT_MS}ms`);
+    const maxPollingTimeMs = parseInt(configuredTimeout) || 120000;
+    const pollIntervalMs = parseInt(await getSystemConfig(supabase, 'openai_polling_interval', '3000')) || 3000;
     
-    const timeoutPromise = new Promise<{ success: false; error: string }>((_, reject) => {
-      setTimeout(() => {
-        reject(new Error('TIMEOUT: La investigación excedió el tiempo máximo. Intente con una consulta más específica o un modelo más rápido.'));
-      }, TIMEOUT_MS);
+    console.log(`⏱️ Polling config: maxTime=${maxPollingTimeMs}ms, interval=${pollIntervalMs}ms`);
+    
+    // Use background polling API
+    const result = await callResponsesAPIWithPolling(openaiApiKey, params, {
+      pollIntervalMs,
+      maxPollingTimeMs,
+      onPoll: (status, iteration) => {
+        console.log(`📊 Poll #${iteration}: status=${status}`);
+      }
     });
-    
-    let result;
-    try {
-      result = await Promise.race([
-        callResponsesAPI(openaiApiKey, params),
-        timeoutPromise
-      ]);
-    } catch (timeoutError) {
-      console.error('⏱️ Request timeout:', timeoutError);
+
+    // Handle different result statuses
+    if (!result.success) {
+      console.error('❌ Background polling error:', result.error, 'status:', result.status);
       
-      // Save timeout result
+      // Save failed/timeout result
       if (lawyerId) {
         await supabase.from('legal_tools_results').insert({
           lawyer_id: lawyerId,
@@ -178,40 +178,33 @@ ${jsonFormat}`;
           input_data: { query },
           output_data: {},
           metadata: { 
-            status: 'timeout', 
-            error: { message: 'Timeout - consulta demasiado compleja' }, 
+            status: result.status || 'failed', 
+            error: { message: result.error },
             model: researchModel,
+            responseId: result.responseId,
+            pollingIterations: result.pollingIterations,
             timestamp: new Date().toISOString() 
           }
         });
       }
       
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'La investigación tardó demasiado tiempo. Sugerencias: 1) Simplificar la consulta 2) Usar un modelo más rápido como gpt-4o-mini 3) Dividir la consulta en partes más pequeñas',
-          timeout: true
-        }),
-        { status: 408, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    if (!result.success) {
-      console.error('❌ OpenAI API error:', result.error);
-      
-      // Save failed result
-      if (lawyerId) {
-        await supabase.from('legal_tools_results').insert({
-          lawyer_id: lawyerId,
-          tool_type: 'research',
-          input_data: { query },
-          output_data: {},
-          metadata: { status: 'failed', error: { message: result.error }, timestamp: new Date().toISOString() }
-        });
+      // Specific message for timeout
+      if (result.status === 'in_progress') {
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'La investigación tardó demasiado tiempo. Sugerencias: 1) Simplificar la consulta 2) Usar un modelo más rápido como gpt-4o-mini 3) Dividir la consulta en partes más pequeñas',
+            timeout: true,
+            responseId: result.responseId
+          }),
+          { status: 408, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
       
       throw new Error(`Research failed: ${result.error}`);
     }
+
+    console.log(`✅ Research completed with status: ${result.status}, iterations: ${result.pollingIterations}`);
 
     // Parse response
     let researchResult;
@@ -239,7 +232,12 @@ ${jsonFormat}`;
 
     // Save successful result
     if (lawyerId) {
-      await saveToolResult(supabase, lawyerId, 'research', { query }, normalizedResult, { model: researchModel });
+      await saveToolResult(supabase, lawyerId, 'research', { query }, normalizedResult, { 
+        model: researchModel,
+        responseId: result.responseId,
+        pollingIterations: result.pollingIterations,
+        status: result.status
+      });
     }
 
     console.log('✅ Research completed successfully');

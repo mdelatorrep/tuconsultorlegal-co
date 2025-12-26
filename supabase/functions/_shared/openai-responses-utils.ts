@@ -484,6 +484,259 @@ export async function migratedChatToResponses(
   return callResponsesAPI(apiKey, params);
 }
 
+// ============= Background Polling API =============
+
+/**
+ * Response status types from OpenAI Background API
+ */
+export type BackgroundResponseStatus = 'queued' | 'in_progress' | 'completed' | 'failed' | 'cancelled' | 'incomplete';
+
+/**
+ * Background response result
+ */
+export interface BackgroundResponseResult {
+  success: boolean;
+  data?: Record<string, unknown>;
+  text?: string;
+  error?: string;
+  status?: BackgroundResponseStatus;
+  responseId?: string;
+  pollingIterations?: number;
+}
+
+/**
+ * Start a background response request
+ * Uses background: true to run asynchronously
+ */
+export async function startBackgroundResponse(
+  apiKey: string,
+  params: Record<string, unknown>
+): Promise<{ success: boolean; responseId?: string; error?: string; status?: BackgroundResponseStatus }> {
+  try {
+    const response = await fetch(OPENAI_RESPONSES_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        ...params,
+        background: true
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`OpenAI Background API error: ${response.status}`, errorText);
+      return {
+        success: false,
+        error: `OpenAI API error: ${response.status} ${response.statusText}`
+      };
+    }
+
+    const data = await response.json();
+    console.log(`[Background] Started response: ${data.id}, status: ${data.status}`);
+    
+    return {
+      success: true,
+      responseId: data.id,
+      status: data.status
+    };
+  } catch (error) {
+    console.error('OpenAI Background API start failed:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+}
+
+/**
+ * Poll for background response status
+ * GET /v1/responses/{id}
+ */
+export async function pollBackgroundResponse(
+  apiKey: string,
+  responseId: string
+): Promise<{ success: boolean; data?: Record<string, unknown>; status?: BackgroundResponseStatus; error?: string }> {
+  try {
+    const response = await fetch(`${OPENAI_RESPONSES_ENDPOINT}/${responseId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`OpenAI Poll API error: ${response.status}`, errorText);
+      return {
+        success: false,
+        error: `OpenAI API error: ${response.status}`,
+        status: 'failed'
+      };
+    }
+
+    const data = await response.json();
+    return {
+      success: true,
+      data,
+      status: data.status
+    };
+  } catch (error) {
+    console.error('OpenAI Poll API failed:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      status: 'failed'
+    };
+  }
+}
+
+/**
+ * Execute a background response with polling
+ * Starts the request with background: true, then polls until completion
+ * 
+ * @param apiKey - OpenAI API key
+ * @param params - Request parameters (background: true will be added)
+ * @param options - Polling options
+ * @returns Result with success/error and extracted text
+ */
+export async function callResponsesAPIWithPolling(
+  apiKey: string,
+  params: Record<string, unknown>,
+  options: {
+    pollIntervalMs?: number;
+    maxPollingTimeMs?: number;
+    onPoll?: (status: BackgroundResponseStatus, iteration: number) => void;
+  } = {}
+): Promise<BackgroundResponseResult> {
+  const {
+    pollIntervalMs = 2000,
+    maxPollingTimeMs = 300000, // 5 minutes default max
+    onPoll
+  } = options;
+
+  // Start the background request
+  console.log('[Background] Starting background request...');
+  const startResult = await startBackgroundResponse(apiKey, params);
+  
+  if (!startResult.success || !startResult.responseId) {
+    return {
+      success: false,
+      error: startResult.error || 'Failed to start background request'
+    };
+  }
+
+  const responseId = startResult.responseId;
+  console.log(`[Background] Response ID: ${responseId}, initial status: ${startResult.status}`);
+
+  // If already completed (unlikely but possible), return immediately
+  if (startResult.status === 'completed') {
+    const pollResult = await pollBackgroundResponse(apiKey, responseId);
+    if (pollResult.success && pollResult.data) {
+      const text = extractOutputText(pollResult.data);
+      return {
+        success: true,
+        data: pollResult.data,
+        text: text || undefined,
+        status: 'completed',
+        responseId,
+        pollingIterations: 0
+      };
+    }
+  }
+
+  // Poll until completion or timeout
+  const startTime = Date.now();
+  let iteration = 0;
+  
+  while (Date.now() - startTime < maxPollingTimeMs) {
+    iteration++;
+    
+    // Wait before polling
+    await new Promise(resolve => setTimeout(resolve, pollIntervalMs));
+    
+    console.log(`[Background] Polling iteration ${iteration}...`);
+    const pollResult = await pollBackgroundResponse(apiKey, responseId);
+    
+    if (!pollResult.success) {
+      console.error(`[Background] Poll failed at iteration ${iteration}:`, pollResult.error);
+      continue; // Keep trying
+    }
+
+    const status = pollResult.status as BackgroundResponseStatus;
+    console.log(`[Background] Status: ${status}`);
+    
+    // Callback for status updates
+    if (onPoll) {
+      onPoll(status, iteration);
+    }
+
+    // Check terminal states
+    if (status === 'completed') {
+      const text = extractOutputText(pollResult.data!);
+      console.log(`[Background] Completed after ${iteration} iterations, ${Date.now() - startTime}ms`);
+      return {
+        success: true,
+        data: pollResult.data,
+        text: text || undefined,
+        status: 'completed',
+        responseId,
+        pollingIterations: iteration
+      };
+    }
+
+    if (status === 'failed') {
+      const errorInfo = pollResult.data?.error as { message?: string } | undefined;
+      console.error(`[Background] Failed:`, errorInfo);
+      return {
+        success: false,
+        error: errorInfo?.message || 'Request failed',
+        status: 'failed',
+        responseId,
+        pollingIterations: iteration
+      };
+    }
+
+    if (status === 'cancelled') {
+      return {
+        success: false,
+        error: 'Request was cancelled',
+        status: 'cancelled',
+        responseId,
+        pollingIterations: iteration
+      };
+    }
+
+    if (status === 'incomplete') {
+      const text = extractOutputText(pollResult.data!);
+      console.warn(`[Background] Incomplete response after ${iteration} iterations`);
+      return {
+        success: true,
+        data: pollResult.data,
+        text: text || undefined,
+        status: 'incomplete',
+        responseId,
+        pollingIterations: iteration
+      };
+    }
+
+    // Still in queued or in_progress, continue polling
+  }
+
+  // Timeout
+  console.error(`[Background] Timeout after ${maxPollingTimeMs}ms and ${iteration} iterations`);
+  return {
+    success: false,
+    error: `Polling timeout after ${maxPollingTimeMs / 1000} seconds`,
+    status: 'in_progress',
+    responseId,
+    pollingIterations: iteration
+  };
+}
+
 // ============= Web Search Configuration Helper =============
 
 /**
