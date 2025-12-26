@@ -281,12 +281,13 @@ export default function AIFunctionConfig({
     if (!webSearchKey) return;
     setSaving(true);
     try {
-      // Save enabled state
-      await onSave(webSearchKey, JSON.stringify(webSearchEnabled), `Web Search habilitado para ${name}`);
+      // Save enabled state as plain string 'true' or 'false'
+      await onSave(webSearchKey, webSearchEnabled ? 'true' : 'false', `Web Search habilitado para ${name}`);
       
-      // Save categories if key is provided
+      // Save categories if key is provided - as JSON string
       if (webSearchCategoriesKey) {
-        await onSave(webSearchCategoriesKey, JSON.stringify(webSearchCategories), `Categorías de Web Search para ${name}`);
+        const categoriesJson = JSON.stringify(webSearchCategories);
+        await onSave(webSearchCategoriesKey, categoriesJson, `Categorías de Web Search para ${name}`);
       }
       
       toast({

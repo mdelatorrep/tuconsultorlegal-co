@@ -162,6 +162,7 @@ export default function SystemConfigManager() {
           modelKey: 'research_ai_model',
           reasoningEffortKey: 'research_reasoning_effort',
           webSearchKey: 'web_search_enabled_research',
+          webSearchCategoriesKey: 'web_search_categories_research',
           colorClass: 'border-l-green-500'
         },
         {
@@ -171,6 +172,8 @@ export default function SystemConfigManager() {
           promptKey: 'analysis_system_prompt',
           modelKey: 'analysis_ai_model',
           reasoningEffortKey: 'analysis_reasoning_effort',
+          webSearchKey: 'web_search_enabled_analysis',
+          webSearchCategoriesKey: 'web_search_categories_analysis',
           colorClass: 'border-l-green-500'
         },
         {
@@ -180,6 +183,8 @@ export default function SystemConfigManager() {
           promptKey: 'drafting_system_prompt',
           modelKey: 'drafting_ai_model',
           reasoningEffortKey: 'drafting_reasoning_effort',
+          webSearchKey: 'web_search_enabled_drafting',
+          webSearchCategoriesKey: 'web_search_categories_drafting',
           colorClass: 'border-l-green-500'
         },
         {
@@ -189,6 +194,8 @@ export default function SystemConfigManager() {
           promptKey: 'strategy_system_prompt',
           modelKey: 'strategy_ai_model',
           reasoningEffortKey: 'strategy_reasoning_effort',
+          webSearchKey: 'web_search_enabled_strategy',
+          webSearchCategoriesKey: 'web_search_categories_strategy',
           colorClass: 'border-l-green-500'
         }
       ]
@@ -273,6 +280,8 @@ export default function SystemConfigManager() {
           promptKey: 'lexi_chat_prompt',
           modelKey: 'lexi_ai_model',
           reasoningEffortKey: 'lexi_reasoning_effort',
+          webSearchKey: 'web_search_enabled_lexi',
+          webSearchCategoriesKey: 'web_search_categories_lexi',
           colorClass: 'border-l-indigo-500'
         },
         {
@@ -291,6 +300,8 @@ export default function SystemConfigManager() {
           promptKey: 'legal_training_assistant_prompt',
           modelKey: 'training_assistant_ai_model',
           reasoningEffortKey: 'training_reasoning_effort',
+          webSearchKey: 'web_search_enabled_training',
+          webSearchCategoriesKey: 'web_search_categories_training',
           colorClass: 'border-l-indigo-500'
         }
       ]
