@@ -134,13 +134,15 @@ ${jsonFormat}`;
     // Get reasoning effort from system config
     const reasoningEffort = await getSystemConfig(supabase, 'research_reasoning_effort', 'medium') as 'low' | 'medium' | 'high';
     
-    // Build request parameters
+    // Build request parameters - JSON mode is incompatible with web search
+    const useJsonMode = !webSearchTool;
+    
     const params = buildResponsesRequestParams(researchModel, {
-      input: `Realiza una investigación jurídica exhaustiva sobre:\n\n${query}\n\nResponde ÚNICAMENTE en formato JSON válido.`,
+      input: `Realiza una investigación jurídica exhaustiva sobre:\n\n${query}\n\n${useJsonMode ? 'Responde ÚNICAMENTE en formato JSON válido.' : 'Estructura tu respuesta con secciones claras: Hallazgos, Fuentes, Conclusión, Puntos Clave y Fundamentos Legales.'}`,
       instructions,
       maxOutputTokens: 8000,
       temperature: 0.3,
-      jsonMode: true,
+      jsonMode: useJsonMode,
       store: false,
       reasoning: { effort: reasoningEffort },
       webSearch: webSearchTool || undefined
