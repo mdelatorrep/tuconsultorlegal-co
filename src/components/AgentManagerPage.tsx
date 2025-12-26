@@ -982,24 +982,6 @@ export default function AgentManagerPage({ user, currentView, onViewChange, onLo
             </div>
           </div>
         </header>
-            <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-transparent opacity-50"></div>
-            <div className="relative flex h-14 lg:h-16 items-center px-3 lg:px-6">
-              
-              <div className="flex items-center gap-2 lg:gap-3 min-w-0">
-                <div className="p-1.5 lg:p-2 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg lg:rounded-xl shadow-lg flex-shrink-0">
-                  <Settings className="h-4 w-4 lg:h-6 lg:w-6 text-white" />
-                </div>
-                <div className="min-w-0">
-                  <h1 className="text-base lg:text-xl font-bold bg-gradient-to-r from-indigo-600 to-indigo-500 bg-clip-text text-transparent truncate">
-                    Gestionar Agentes
-                  </h1>
-                  <p className="text-xs lg:text-sm text-muted-foreground hidden sm:block truncate">
-                    Administra y configura tus agentes legales
-                  </p>
-                </div>
-              </div>
-            </div>
-          </header>
 
           <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 lg:py-8">
             <div className="max-w-6xl mx-auto">
@@ -2258,6 +2240,7 @@ export default function AgentManagerPage({ user, currentView, onViewChange, onLo
         </Dialog>
             </div>
           </div>
+      </main>
     </div>
   );
 }

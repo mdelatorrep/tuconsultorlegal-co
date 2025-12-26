@@ -681,6 +681,7 @@ export default function LawyerStatsSection({ user: userProp, currentView, onView
       </Card>
             </div>
           </div>
+      </main>
     </div>
   );
 }
