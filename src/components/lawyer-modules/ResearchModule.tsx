@@ -8,10 +8,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Search, BookOpen, FileText, Loader2, Sparkles, Target, TrendingUp, Clock, CheckCircle2, AlertCircle, Hourglass, ChevronDown, ChevronRight, Calendar, Archive, Filter, Coins, Briefcase } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { useCredits } from "@/hooks/useCredits";
 import { ToolCostIndicator } from "@/components/credits/ToolCostIndicator";
-import UnifiedSidebar from "../UnifiedSidebar";
 import { CaseSelectorDropdown } from "./CaseSelectorDropdown";
 import { useCaseActivityLogger } from "@/hooks/useCaseActivityLogger";
 
@@ -378,521 +376,279 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
   };
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-gradient-to-br from-background via-background to-primary/5">
-        <UnifiedSidebar 
-          user={user}
-          currentView={currentView}
-          onViewChange={onViewChange}
-          onLogout={onLogout}
-        />
-
-        {/* Main Content */}
-        <main className="flex-1 min-w-0">
-          {/* Enhanced Header - Mobile First */}
-          <header className="h-14 lg:h-16 border-b bg-gradient-to-r from-background/95 to-primary/10 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 relative overflow-hidden sticky top-0 z-40">
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-50"></div>
-            <div className="relative flex h-14 lg:h-16 items-center px-3 lg:px-6">
-              <SidebarTrigger className="mr-2 lg:mr-4 hover:bg-primary/10 rounded-lg p-2 transition-all duration-200 flex-shrink-0" />
-              <div className="flex items-center gap-2 lg:gap-3 min-w-0">
-                <div className="p-1.5 lg:p-2 bg-gradient-to-br from-primary to-primary/80 rounded-lg lg:rounded-xl shadow-lg flex-shrink-0">
-                  <Search className="h-4 w-4 lg:h-6 lg:w-6 text-primary-foreground" />
-                </div>
-                <div className="min-w-0">
-                  <h1 className="text-base lg:text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent truncate">
-                    Investigación Legal
-                  </h1>
-                  <p className="text-xs lg:text-sm text-muted-foreground hidden sm:block truncate">
-                    Búsqueda avanzada de jurisprudencia y doctrina
-                  </p>
+    <div className="space-y-4 lg:space-y-8">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden rounded-2xl lg:rounded-3xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20 p-4 lg:p-8">
+        <div className="relative z-10">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="p-4 bg-gradient-to-br from-primary to-primary/80 rounded-2xl shadow-2xl">
+              <Sparkles className="h-10 w-10 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
+                Centro de Investigación Legal
+              </h1>
+              <p className="text-lg text-muted-foreground mt-2">
+                Acceso instantáneo a jurisprudencia, doctrina y normativa colombiana con análisis IA
+              </p>
+            </div>
+          </div>
+          
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mt-6 lg:mt-8">
+            <div className="bg-background/50 backdrop-blur-sm rounded-xl p-4 border border-border/50">
+              <div className="flex items-center gap-3">
+                <Target className="h-8 w-8 text-primary" />
+                <div>
+                  <p className="text-2xl font-bold text-primary">{results.length}</p>
+                  <p className="text-sm text-muted-foreground">Investigaciones completadas</p>
                 </div>
               </div>
             </div>
-          </header>
-
-          <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 lg:py-8">
-            <div className="max-w-7xl mx-auto">
-              <div className="space-y-4 lg:space-y-8">
-                {/* Hero Section */}
-                <div className="relative overflow-hidden rounded-2xl lg:rounded-3xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20 p-4 lg:p-8">
-                  <div className="relative z-10">
-                    <div className="flex items-center gap-4 mb-6">
-                      <div className="p-4 bg-gradient-to-br from-primary to-primary/80 rounded-2xl shadow-2xl">
-                        <Sparkles className="h-10 w-10 text-primary-foreground" />
-                      </div>
-                      <div>
-                        <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
-                          Centro de Investigación Legal
-                        </h1>
-                        <p className="text-lg text-muted-foreground mt-2">
-                          Acceso instantáneo a jurisprudencia, doctrina y normativa colombiana con análisis IA
-                        </p>
-                      </div>
-                    </div>
-                    
-                    {/* Stats Cards */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mt-6 lg:mt-8">
-                      <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                        <div className="flex items-center gap-3">
-                          <Target className="h-8 w-8 text-primary" />
-                          <div>
-                            <p className="text-2xl font-bold text-primary">{results.length}</p>
-                            <p className="text-sm text-muted-foreground">Investigaciones completadas</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                        <div className="flex items-center gap-3">
-                          <Hourglass className="h-8 w-8 text-orange-600" />
-                          <div>
-                            <p className="text-2xl font-bold text-orange-600">{pendingTasks.length}</p>
-                            <p className="text-sm text-muted-foreground">En progreso</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                        <div className="flex items-center gap-3">
-                          <Clock className="h-8 w-8 text-blue-600" />
-                          <div>
-                            <p className="text-2xl font-bold text-blue-600">5-30</p>
-                            <p className="text-sm text-muted-foreground">Minutos promedio</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                        <div className="flex items-center gap-3">
-                          <CheckCircle2 className="h-8 w-8 text-emerald-600" />
-                          <div>
-                            <p className="text-2xl font-bold text-emerald-600">95%</p>
-                            <p className="text-sm text-muted-foreground">Precisión IA</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+            <div className="bg-background/50 backdrop-blur-sm rounded-xl p-4 border border-border/50">
+              <div className="flex items-center gap-3">
+                <Hourglass className="h-8 w-8 text-orange-600" />
+                <div>
+                  <p className="text-2xl font-bold text-orange-600">{pendingTasks.length}</p>
+                  <p className="text-sm text-muted-foreground">En progreso</p>
                 </div>
-
-                {/* Enhanced Search Interface */}
-                <Card className="border-0 shadow-2xl bg-gradient-to-br from-white via-white to-primary/5 overflow-hidden relative">
-                  <CardHeader className="relative z-10 pb-6">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 bg-gradient-to-br from-primary to-primary/80 rounded-xl shadow-lg">
-                        <BookOpen className="h-6 w-6 text-primary-foreground" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                          Nueva Consulta de Investigación
-                        </CardTitle>
-                        <CardDescription className="text-base mt-2">
-                          Realiza consultas avanzadas sobre legislación, jurisprudencia o normativa colombiana
-                        </CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="relative z-10 space-y-6">
-                    <div className="space-y-3">
-                      <label htmlFor="research-query" className="text-sm font-semibold text-primary">
-                        Descripción de la consulta jurídica
-                      </label>
-                      <Textarea
-                        id="research-query"
-                        name="research-query"
-                        placeholder="Ejemplo: Analiza la línea jurisprudencial más reciente de la Corte Suprema sobre terminación anticipada de contratos de arrendamiento comercial por fuerza mayor o caso fortuito en Colombia, incluyendo criterios de aplicación y requisitos..."
-                        value={query}
-                        onChange={(e) => {
-                          console.log('Textarea onChange triggered:', e.target.value);
-                          setQuery(e.target.value);
-                        }}
-                        onFocus={() => console.log('Textarea focused')}
-                        onBlur={() => console.log('Textarea blurred')}
-                        onMouseDown={() => console.log('Textarea mouse down')}
-                        onClick={() => console.log('Textarea clicked')}
-                        rows={5}
-                        disabled={isSearching}
-                        className="resize-none border-primary/20 focus:border-primary/40 rounded-xl bg-white text-base min-h-[120px] focus:ring-2 focus:ring-primary/20 relative z-20 cursor-text"
-                        style={{ 
-                          pointerEvents: 'auto',
-                          position: 'relative',
-                          zIndex: 20
-                        }}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        💡 Tip: Sé específico sobre el área del derecho, jurisdicción y tipo de análisis que necesitas
-                      </p>
-                    </div>
-                    
-                    {/* Progress indicator */}
-                    {isSearching && (
-                      <div className="space-y-3">
-                        <Progress value={progress} className="h-2" />
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                          <p className="text-sm text-blue-800 text-center">
-                            📡 <strong>Procesando consulta con IA avanzada</strong> - Esta investigación se realiza en background y puede tomar entre 5-30 minutos para obtener resultados exhaustivos.
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                    
-                    <Button
-                      onClick={handleSearch}
-                      disabled={isSearching || !hasEnoughCredits('research')}
-                      className="w-full h-14 rounded-xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-xl hover:shadow-2xl transition-all duration-300 text-lg font-semibold relative z-20 cursor-pointer"
-                      style={{
-                        pointerEvents: 'auto',
-                        position: 'relative',
-                        zIndex: 20
-                      }}
-                    >
-                      {isSearching ? (
-                        <>
-                          <Loader2 className="h-5 w-5 mr-3 animate-spin" />
-                          <span className="animate-pulse">Iniciando investigación profunda...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="h-5 w-5 mr-3" />
-                          <span>Iniciar Investigación</span>
-                          <span className="ml-3 flex items-center gap-1 bg-white/20 px-2 py-0.5 rounded-lg text-sm">
-                            <Coins className="h-4 w-4" />
-                            {getToolCost('research')}
-                          </span>
-                        </>
-                      )}
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                {/* Pending Tasks Section */}
-                {pendingTasks.length > 0 && (
-                  <div className="space-y-6">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg">
-                        <Hourglass className="h-5 w-5 text-white" />
-                      </div>
-                      <h3 className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-orange-500 bg-clip-text text-transparent">
-                        Investigaciones en Progreso
-                      </h3>
-                    </div>
-                    
-                    {pendingTasks.map((task, index) => {
-                      const isRateLimited = task.status === 'rate_limited';
-                      const isPending = task.status === 'pending';
-                      const nextRetryTime = task.next_retry_at ? new Date(task.next_retry_at) : null;
-                      const minutesUntilRetry = nextRetryTime ? Math.max(0, Math.round((nextRetryTime.getTime() - Date.now()) / 60000)) : null;
-                      
-                      return (
-                        <Card key={task.task_id} className={`border-0 shadow-xl overflow-hidden ${
-                          isRateLimited 
-                            ? 'bg-gradient-to-br from-white via-white to-amber-50' 
-                            : 'bg-gradient-to-br from-white via-white to-orange-50'
-                        }`}>
-                          <div className={`absolute inset-0 opacity-50 ${
-                            isRateLimited 
-                              ? 'bg-gradient-to-br from-amber-500/5 via-transparent to-amber-500/10'
-                              : 'bg-gradient-to-br from-orange-500/5 via-transparent to-orange-500/10'
-                          }`}></div>
-                          <CardHeader className="relative pb-4">
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="flex-1">
-                                <CardTitle className="text-xl font-bold text-gray-900 mb-2 leading-tight">
-                                  {task.query.length > 120 
-                                    ? `${task.query.substring(0, 120)}...` 
-                                    : task.query
-                                  }
-                                </CardTitle>
-                              </div>
-                              {isRateLimited ? (
-                                <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-200 whitespace-nowrap">
-                                  <Clock className="h-3 w-3 mr-1" />
-                                  En espera de reintento
-                                </Badge>
-                              ) : isPending ? (
-                                <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-200 whitespace-nowrap">
-                                  <Hourglass className="h-3 w-3 mr-1" />
-                                  En cola
-                                </Badge>
-                              ) : (
-                                <Badge variant="secondary" className="bg-orange-100 text-orange-800 border-orange-200 whitespace-nowrap animate-pulse">
-                                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                  Procesando
-                                </Badge>
-                              )}
-                            </div>
-                          </CardHeader>
-                          <CardContent className="relative space-y-4">
-                            {isRateLimited ? (
-                              <div className="bg-gradient-to-br from-amber-50 via-white to-amber-50 border border-amber-200/60 p-4 rounded-xl">
-                                <div className="flex items-center gap-3 mb-3">
-                                  <Clock className="h-5 w-5 text-amber-600" />
-                                  <span className="font-semibold text-amber-800">Reintento programado</span>
-                                </div>
-                                <p className="text-sm text-amber-700 mb-3">
-                                  Tu investigación está siendo reprogramada debido a límites temporales del servicio de IA.
-                                  Se reintentará automáticamente. {task.retry_count && task.retry_count > 0 && `(Reintento #${task.retry_count})`}
-                                </p>
-                                <div className="space-y-2">
-                                  {minutesUntilRetry !== null && minutesUntilRetry > 0 && (
-                                    <div className="flex justify-between text-xs text-amber-600">
-                                      <span>Próximo reintento en:</span>
-                                      <span className="font-semibold">{minutesUntilRetry} min</span>
-                                    </div>
-                                  )}
-                                  {minutesUntilRetry === 0 && (
-                                    <div className="flex justify-between text-xs text-amber-600">
-                                      <span>Estado:</span>
-                                      <span className="font-semibold">Reintentando ahora...</span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="bg-gradient-to-br from-orange-50 via-white to-orange-50 border border-orange-200/60 p-4 rounded-xl">
-                                <div className="flex items-center gap-3 mb-3">
-                                  <Clock className="h-5 w-5 text-orange-600" />
-                                  <span className="font-semibold text-orange-800">Deep Research en progreso</span>
-                                </div>
-                                <p className="text-sm text-orange-700 mb-3">
-                                  Tu consulta está siendo procesada por nuestro sistema de investigación avanzado con IA. 
-                                  Esto incluye análisis de jurisprudencia, normativa vigente y búsqueda web especializada.
-                                </p>
-                                <div className="space-y-2">
-                                  <div className="flex justify-between text-xs text-orange-600">
-                                    <span>Tiempo transcurrido:</span>
-                                    <span>{Math.round((Date.now() - new Date(task.started_at).getTime()) / 60000)} min</span>
-                                  </div>
-                                  <div className="flex justify-between text-xs text-orange-600">
-                                    <span>Tiempo estimado total:</span>
-                                    <span>5-30 minutos</span>
-                                  </div>
-                                </div>
-                                <Progress value={Math.min(90, (Date.now() - new Date(task.started_at).getTime()) / (30 * 60 * 1000) * 100)} className="mt-3 h-2" />
-                              </div>
-                            )}
-                            
-                            <div className={`${isRateLimited ? 'bg-amber-50 border-amber-200' : 'bg-blue-50 border-blue-200'} border rounded-lg p-3`}>
-                              <p className={`text-xs ${isRateLimited ? 'text-amber-800' : 'text-blue-800'} text-center`}>
-                                {isRateLimited 
-                                  ? '⏳ Tu investigación será procesada automáticamente cuando el servicio esté disponible.'
-                                  : '💡 Recibirás una notificación cuando tu investigación esté lista. Puedes continuar usando otras funciones mientras tanto.'
-                                }
-                              </p>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* Enhanced Results History */}
-                {results.length > 0 && (
-                  <div className="space-y-6">
-                    {/* Header with Controls */}
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 bg-gradient-to-r from-emerald-50 to-emerald-100/50 border border-emerald-200 rounded-xl">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg">
-                          <Archive className="h-5 w-5 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-500 bg-clip-text text-transparent">
-                            Historial de Investigaciones
-                          </h3>
-                          <p className="text-emerald-700 text-sm">
-                            {getFilteredResults().length} investigación{getFilteredResults().length !== 1 ? 'es' : ''} encontrada{getFilteredResults().length !== 1 ? 's' : ''}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      {/* Filter and Sort Controls */}
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant={sortBy === 'date' ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => setSortBy('date')}
-                          className="text-xs"
-                        >
-                          <Calendar className="h-3 w-3 mr-1" />
-                          Fecha
-                        </Button>
-                        <Button
-                          variant={sortBy === 'query' ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => setSortBy('query')}
-                          className="text-xs"
-                        >
-                          <Filter className="h-3 w-3 mr-1" />
-                          A-Z
-                        </Button>
-                        <Button
-                          variant={filterBy === 'recent' ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => setFilterBy(filterBy === 'recent' ? 'all' : 'recent')}
-                          className="text-xs"
-                        >
-                          Recientes
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    {/* Expandable Results List */}
-                    <div className="space-y-3">
-                      {getFilteredResults().map((result, index) => (
-                        <Collapsible 
-                          key={index} 
-                          open={expandedResults.has(index)}
-                          onOpenChange={() => toggleResult(index)}
-                        >
-                          <Card className="border-0 shadow-lg bg-gradient-to-br from-white via-white to-emerald-50/30 overflow-hidden hover:shadow-xl transition-all duration-300">
-                            <CollapsibleTrigger asChild>
-                              <CardHeader className="cursor-pointer hover:bg-emerald-50/50 transition-colors pb-4">
-                                <div className="flex items-center justify-between gap-4">
-                                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                                    <div className="flex-shrink-0">
-                                      {expandedResults.has(index) ? (
-                                        <ChevronDown className="h-5 w-5 text-emerald-600" />
-                                      ) : (
-                                        <ChevronRight className="h-5 w-5 text-emerald-600" />
-                                      )}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      <CardTitle className="text-base lg:text-lg font-semibold text-gray-900 line-clamp-2 leading-tight">
-                                        {result.query}
-                                      </CardTitle>
-                                       <div className="flex items-center gap-2 mt-2">
-                                        {result.status === 'failed' ? (
-                                          <Badge variant="destructive" className="bg-red-100 text-red-800 border-red-200 text-xs">
-                                            <AlertCircle className="h-3 w-3 mr-1" />
-                                            Fallido
-                                          </Badge>
-                                        ) : (
-                                          <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 border-emerald-200 text-xs">
-                                            <CheckCircle2 className="h-3 w-3 mr-1" />
-                                            Completado
-                                          </Badge>
-                                        )}
-                                        <Badge variant="outline" className="text-gray-600 border-gray-300 text-xs">
-                                          <Clock className="h-3 w-3 mr-1" />
-                                          {new Date(result.timestamp).toLocaleDateString('es-ES', {
-                                            day: '2-digit',
-                                            month: 'short',
-                                            year: 'numeric'
-                                          })}
-                                        </Badge>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              </CardHeader>
-                            </CollapsibleTrigger>
-                            
-                            <CollapsibleContent>
-                              <CardContent className="pt-0 space-y-6">
-                                {/* Findings Section */}
-                                <div className="bg-gradient-to-br from-white via-white to-gray-50 border border-gray-200/60 p-4 lg:p-6 rounded-xl shadow-inner">
-                                  <h4 className="font-bold mb-4 flex items-center gap-3 text-lg text-gray-900">
-                                    <div className="p-2 bg-gradient-to-br from-primary to-primary/80 rounded-lg">
-                                      <FileText className="h-4 w-4 text-white" />
-                                    </div>
-                                    Hallazgos Jurídicos
-                                  </h4>
-                                  <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed">
-                                    <div className="whitespace-pre-wrap text-sm lg:text-base">
-                                      {result.findings}
-                                    </div>
-                                  </div>
-                                </div>
-                                
-                                {/* Conclusion Section */}
-                                {result.conclusion && (
-                                  <div className="bg-gradient-to-br from-blue-50 via-white to-blue-50 border border-blue-200/60 p-4 lg:p-6 rounded-xl">
-                                    <h4 className="font-bold mb-3 flex items-center gap-3 text-lg text-blue-900">
-                                      <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg">
-                                        <Target className="h-4 w-4 text-white" />
-                                      </div>
-                                      Conclusión
-                                    </h4>
-                                    <p className="text-blue-800 leading-relaxed text-sm lg:text-base">{result.conclusion}</p>
-                                  </div>
-                                )}
-                                
-                                {/* Sources Section */}
-                                <div>
-                                  <h4 className="font-bold mb-4 flex items-center gap-3 text-lg text-gray-900">
-                                    <div className="p-2 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg">
-                                      <BookOpen className="h-4 w-4 text-white" />
-                                    </div>
-                                    Fuentes Jurídicas Consultadas
-                                  </h4>
-                                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                    {result.sources.filter(Boolean).map((source, idx) => {
-                                      let sourceText = 'Fuente legal';
-                                      
-                                      try {
-                                        if (typeof source === 'string') {
-                                          sourceText = source;
-                                        } else if (source && typeof source === 'object' && 'title' in source) {
-                                          sourceText = (source as any).title || 'Fuente legal';
-                                        }
-                                      } catch (e) {
-                                        sourceText = 'Fuente legal';
-                                      }
-                                      
-                                      return (
-                                        <div key={idx} className="bg-gradient-to-r from-purple-50 to-purple-100/50 border border-purple-200 rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow">
-                                          <Badge variant="outline" className="text-purple-700 border-purple-300 bg-white/80 text-xs font-medium">
-                                            {sourceText}
-                                          </Badge>
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              </CardContent>
-                            </CollapsibleContent>
-                          </Card>
-                        </Collapsible>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {(results.length === 0 && pendingTasks.length === 0 && !isSearching) && (
-                  <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-gray-50 to-gray-100 overflow-hidden">
-                    <CardContent className="p-12 text-center">
-                      <div className="space-y-6">
-                        <div className="relative">
-                          <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-primary/10 rounded-full blur-2xl"></div>
-                          <div className="relative p-6 bg-gradient-to-br from-primary to-primary/80 rounded-2xl shadow-2xl mx-auto w-fit">
-                            <Search className="h-16 w-16 text-primary-foreground" />
-                          </div>
-                        </div>
-                        <div>
-                          <h3 className="text-2xl font-bold text-gray-900 mb-2">¡Comienza tu investigación!</h3>
-                          <p className="text-lg text-muted-foreground max-w-md mx-auto">
-                            Utiliza nuestro sistema de Deep Research para realizar consultas exhaustivas sobre legislación y jurisprudencia colombiana
-                          </p>
-                        </div>
-                        <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-4 max-w-lg mx-auto border border-blue-200">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Sparkles className="h-4 w-4 text-blue-600" />
-                            <span className="text-sm font-semibold text-blue-800">Deep Research IA</span>
-                          </div>
-                          <p className="text-sm text-blue-700 text-left">
-                            • Análisis exhaustivo de jurisprudencia<br/>
-                            • Búsqueda web especializada en derecho<br/>
-                            • Resultados en 5-30 minutos<br/>
-                            • Procesamiento en background
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
+              </div>
+            </div>
+            <div className="bg-background/50 backdrop-blur-sm rounded-xl p-4 border border-border/50">
+              <div className="flex items-center gap-3">
+                <Clock className="h-8 w-8 text-blue-600" />
+                <div>
+                  <p className="text-2xl font-bold text-blue-600">5-30</p>
+                  <p className="text-sm text-muted-foreground">Minutos promedio</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-background/50 backdrop-blur-sm rounded-xl p-4 border border-border/50">
+              <div className="flex items-center gap-3">
+                <CheckCircle2 className="h-8 w-8 text-emerald-600" />
+                <div>
+                  <p className="text-2xl font-bold text-emerald-600">95%</p>
+                  <p className="text-sm text-muted-foreground">Precisión IA</p>
+                </div>
               </div>
             </div>
           </div>
-        </main>
+        </div>
       </div>
-    </SidebarProvider>
+
+      {/* Search Interface */}
+      <Card className="border-0 shadow-2xl bg-gradient-to-br from-background via-background to-primary/5 overflow-hidden relative">
+        <CardHeader className="relative z-10 pb-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-gradient-to-br from-primary to-primary/80 rounded-xl shadow-lg">
+              <BookOpen className="h-6 w-6 text-primary-foreground" />
+            </div>
+            <div>
+              <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                Nueva Consulta de Investigación
+              </CardTitle>
+              <CardDescription className="text-base mt-2">
+                Realiza consultas avanzadas sobre legislación, jurisprudencia o normativa colombiana
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="relative z-10 space-y-6">
+          <div className="space-y-3">
+            <label htmlFor="research-query" className="text-sm font-semibold text-primary">
+              Descripción de la consulta jurídica
+            </label>
+            <Textarea
+              id="research-query"
+              placeholder="Ejemplo: Analiza la línea jurisprudencial más reciente de la Corte Suprema sobre terminación anticipada de contratos..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              rows={5}
+              disabled={isSearching}
+              className="resize-none border-primary/20 focus:border-primary/40 rounded-xl bg-background text-base min-h-[120px]"
+            />
+          </div>
+          
+          {isSearching && (
+            <div className="space-y-3">
+              <Progress value={progress} className="h-2" />
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-800 text-center">
+                  📡 Procesando consulta con IA avanzada - Esto puede tomar entre 5-30 minutos.
+                </p>
+              </div>
+            </div>
+          )}
+          
+          <Button
+            onClick={handleSearch}
+            disabled={isSearching || !hasEnoughCredits('research')}
+            className="w-full h-14 rounded-xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-xl text-lg font-semibold"
+          >
+            {isSearching ? (
+              <>
+                <Loader2 className="h-5 w-5 mr-3 animate-spin" />
+                <span className="animate-pulse">Iniciando investigación profunda...</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-5 w-5 mr-3" />
+                <span>Iniciar Investigación</span>
+                <span className="ml-3 flex items-center gap-1 bg-white/20 px-2 py-0.5 rounded-lg text-sm">
+                  <Coins className="h-4 w-4" />
+                  {getToolCost('research')}
+                </span>
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Pending Tasks */}
+      {pendingTasks.length > 0 && (
+        <div className="space-y-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg">
+              <Hourglass className="h-5 w-5 text-white" />
+            </div>
+            <h3 className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-orange-500 bg-clip-text text-transparent">
+              Investigaciones en Progreso
+            </h3>
+          </div>
+          
+          {pendingTasks.map((task, index) => (
+            <Card key={task.task_id} className="border-0 shadow-xl overflow-hidden bg-gradient-to-br from-background via-background to-orange-50">
+              <CardHeader className="pb-4">
+                <div className="flex items-start justify-between gap-4">
+                  <CardTitle className="text-xl font-bold leading-tight">
+                    {task.query.length > 120 ? `${task.query.substring(0, 120)}...` : task.query}
+                  </CardTitle>
+                  <Badge variant="secondary" className="bg-orange-100 text-orange-800 animate-pulse">
+                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                    Procesando
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="bg-orange-50 border border-orange-200 p-4 rounded-xl">
+                  <p className="text-sm text-orange-700 mb-3">
+                    Tu consulta está siendo procesada por nuestro sistema de investigación avanzado.
+                  </p>
+                  <Progress value={Math.min(90, (Date.now() - new Date(task.started_at).getTime()) / (30 * 60 * 1000) * 100)} className="h-2" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Results History */}
+      {results.length > 0 && (
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 bg-gradient-to-r from-emerald-50 to-emerald-100/50 border border-emerald-200 rounded-xl">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg">
+                <Archive className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-500 bg-clip-text text-transparent">
+                  Historial de Investigaciones
+                </h3>
+                <p className="text-emerald-700 text-sm">{getFilteredResults().length} investigaciones</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Button variant={sortBy === 'date' ? 'default' : 'outline'} size="sm" onClick={() => setSortBy('date')}>
+                <Calendar className="h-3 w-3 mr-1" />Fecha
+              </Button>
+              <Button variant={sortBy === 'query' ? 'default' : 'outline'} size="sm" onClick={() => setSortBy('query')}>
+                <Filter className="h-3 w-3 mr-1" />A-Z
+              </Button>
+            </div>
+          </div>
+          
+          <div className="space-y-3">
+            {getFilteredResults().map((result, index) => (
+              <Collapsible key={index} open={expandedResults.has(index)} onOpenChange={() => toggleResult(index)}>
+                <Card className="border-0 shadow-lg bg-gradient-to-br from-background via-background to-emerald-50/30 overflow-hidden">
+                  <CollapsibleTrigger asChild>
+                    <CardHeader className="cursor-pointer hover:bg-emerald-50/50 transition-colors pb-4">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          {expandedResults.has(index) ? <ChevronDown className="h-5 w-5 text-emerald-600" /> : <ChevronRight className="h-5 w-5 text-emerald-600" />}
+                          <div className="flex-1 min-w-0">
+                            <CardTitle className="text-base lg:text-lg font-semibold line-clamp-2">{result.query}</CardTitle>
+                            <div className="flex items-center gap-2 mt-2">
+                              <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 text-xs">
+                                <CheckCircle2 className="h-3 w-3 mr-1" />Completado
+                              </Badge>
+                              <Badge variant="outline" className="text-xs">
+                                <Clock className="h-3 w-3 mr-1" />
+                                {new Date(result.timestamp).toLocaleDateString('es-ES')}
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </CardHeader>
+                  </CollapsibleTrigger>
+                  
+                  <CollapsibleContent>
+                    <CardContent className="pt-0 space-y-6">
+                      <div className="bg-background border rounded-xl p-4 lg:p-6">
+                        <h4 className="font-bold mb-4 flex items-center gap-3 text-lg">
+                          <FileText className="h-5 w-5 text-primary" />Hallazgos Jurídicos
+                        </h4>
+                        <div className="prose prose-sm max-w-none whitespace-pre-wrap">{result.findings}</div>
+                      </div>
+                      
+                      {result.conclusion && (
+                        <div className="bg-blue-50 border border-blue-200 p-4 lg:p-6 rounded-xl">
+                          <h4 className="font-bold mb-3 text-lg text-blue-900">
+                            <Target className="h-5 w-5 inline mr-2" />Conclusión
+                          </h4>
+                          <p className="text-blue-800">{result.conclusion}</p>
+                        </div>
+                      )}
+                      
+                      <div>
+                        <h4 className="font-bold mb-4 text-lg"><BookOpen className="h-5 w-5 inline mr-2" />Fuentes Consultadas</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {result.sources.filter(Boolean).map((source, idx) => (
+                            <Badge key={idx} variant="outline" className="text-purple-700 border-purple-300 p-3">
+                              {typeof source === 'string' ? source : 'Fuente legal'}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {results.length === 0 && pendingTasks.length === 0 && !isSearching && (
+        <Card className="border-0 shadow-xl">
+          <CardContent className="p-12 text-center">
+            <div className="space-y-6">
+              <div className="p-6 bg-gradient-to-br from-primary to-primary/80 rounded-2xl shadow-2xl mx-auto w-fit">
+                <Search className="h-16 w-16 text-primary-foreground" />
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold mb-2">¡Comienza tu investigación!</h3>
+                <p className="text-lg text-muted-foreground max-w-md mx-auto">
+                  Utiliza nuestro sistema de Deep Research para realizar consultas exhaustivas
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 }
