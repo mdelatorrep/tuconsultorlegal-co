@@ -10,8 +10,6 @@ import {
   ChevronRight
 } from "lucide-react";
 import AILegalTrainingSystem from "./AILegalTrainingSystem";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import UnifiedSidebar from "./UnifiedSidebar";
 
 interface LawyerTrainingPageProps {
   user: any;
@@ -39,22 +37,13 @@ export default function LawyerTrainingPage({ user, currentView, onViewChange, on
   }
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        <UnifiedSidebar 
-          user={user}
-          currentView={currentView}
-          onViewChange={onViewChange}
-          onLogout={onLogout}
-        />
-
-        <main className="flex-1">
-          <header className="h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="flex h-14 items-center px-4">
-              <SidebarTrigger className="mr-4" />
-              <h1 className="text-lg font-semibold">Centro de Formación IA Legal</h1>
-            </div>
-          </header>
+    <div className="min-h-screen w-full bg-background">
+      <main className="flex-1">
+        <header className="h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="flex h-14 items-center px-4">
+            <h1 className="text-lg font-semibold">Centro de Formación IA Legal</h1>
+          </div>
+        </header>
 
           <div className="container mx-auto px-6 py-12">
             <div className="max-w-2xl mx-auto">
@@ -138,8 +127,7 @@ export default function LawyerTrainingPage({ user, currentView, onViewChange, on
               </Card>
             </div>
           </div>
-        </main>
-      </div>
-    </SidebarProvider>
+      </main>
+    </div>
   );
 }

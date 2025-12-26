@@ -13,8 +13,6 @@ import { Sparkles, ArrowLeft, ArrowRight, CheckCircle, Loader2, Copy, Wand2, Sav
 import RichTextTemplateEditor from "@/components/RichTextTemplateEditor";
 import { ConversationGuideBuilder } from "@/components/ConversationGuideBuilder";
 import { FieldInstructionsManager } from "@/components/FieldInstructionsManager";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import UnifiedSidebar from "./UnifiedSidebar";
 
 interface AgentCreatorPageProps {
   user: any;
@@ -1497,20 +1495,12 @@ export default function AgentCreatorPage({ user, currentView, onViewChange, onLo
   // handleTextFormat function removed - now using RichTextTemplateEditor with ReactQuill
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-gradient-to-br from-background via-background to-purple-500/5">
-        <UnifiedSidebar 
-          user={user}
-          currentView={currentView}
-          onViewChange={onViewChange}
-          onLogout={onLogout}
-        />
-
-        <main className="flex-1 min-w-0">
-          <header className="h-14 lg:h-16 border-b bg-gradient-to-r from-background/95 to-purple-500/10 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 relative overflow-hidden sticky top-0 z-40">
+    <div className="min-h-screen flex w-full bg-gradient-to-br from-background via-background to-purple-500/5">
+      <main className="flex-1 min-w-0">
+        <header className="h-14 lg:h-16 border-b bg-gradient-to-r from-background/95 to-purple-500/10 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 relative overflow-hidden sticky top-0 z-40">
             <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-transparent opacity-50"></div>
             <div className="relative flex h-14 lg:h-16 items-center px-3 lg:px-6">
-              <SidebarTrigger className="mr-2 lg:mr-4 hover:bg-purple-500/10 rounded-lg p-2 transition-all duration-200 flex-shrink-0" />
+              
               <div className="flex items-center gap-2 lg:gap-3 min-w-0">
                 <div className="p-1.5 lg:p-2 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg lg:rounded-xl shadow-lg flex-shrink-0">
                   <Bot className="h-4 w-4 lg:h-6 lg:w-6 text-white" />
@@ -2318,8 +2308,6 @@ export default function AgentCreatorPage({ user, currentView, onViewChange, onLo
               </Card>
             </div>
           </div>
-        </main>
-      </div>
-    </SidebarProvider>
+    </div>
   );
 }
