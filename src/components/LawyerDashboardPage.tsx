@@ -58,7 +58,10 @@ import {
   UrgentDocumentsSection, 
   NewLeadsNotification, 
   PendingDocumentsList,
-  QuickToolsGrid 
+  QuickToolsGrid,
+  CasesOverview,
+  UpcomingActions,
+  SmartSearch
 } from "./dashboard";
 
 interface DocumentToken {
@@ -787,6 +790,29 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                     <div className="lg:col-span-1">
                       <DailyProgress lawyerId={user.id} onViewCredits={() => setCurrentView('credits')} />
                     </div>
+                  </div>
+
+                  {/* Smart Search Bar */}
+                  <SmartSearch 
+                    lawyerId={user.id} 
+                    onNavigate={(type, id) => {
+                      // Navigate to CRM with the appropriate tab
+                      setCurrentView('crm');
+                    }}
+                  />
+
+                  {/* Cases Overview + Upcoming Actions */}
+                  <div className="grid gap-4 lg:grid-cols-2">
+                    <CasesOverview 
+                      lawyerId={user.id}
+                      onViewCRM={() => setCurrentView('crm')}
+                      onCreateCase={() => setCurrentView('crm')}
+                    />
+                    <UpcomingActions 
+                      lawyerId={user.id}
+                      onViewCalendar={() => setCurrentView('legal-calendar')}
+                      onViewCRM={() => setCurrentView('crm')}
+                    />
                   </div>
 
                   {/* Next Best Action */}
