@@ -7,9 +7,25 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Edit2, Trash2, Phone, Mail, Building, User, Users, Calendar, UserPlus, MessageSquare } from 'lucide-react';
+import { 
+  Plus, Edit2, Trash2, Phone, Mail, Building, User, Users, Calendar, 
+  Briefcase, MapPin, ChevronRight, MoreHorizontal, Search, Filter,
+  UserCheck, UserX, Clock, Eye, X
+} from 'lucide-react';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Client {
   id: string;
@@ -23,6 +39,7 @@ interface Client {
   tags: string[];
   notes?: string;
   created_at: string;
+  cases_count?: number;
 }
 
 interface CRMClientsViewProps {
@@ -35,7 +52,11 @@ const CRMClientsView: React.FC<CRMClientsViewProps> = ({ lawyerData, searchTerm,
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -58,14 +79,25 @@ const CRMClientsView: React.FC<CRMClientsViewProps> = ({ lawyerData, searchTerm,
   const fetchClients = async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
+      
+      // Fetch clients with case count
+      const { data: clientsData, error } = await supabase
         .from('crm_clients')
-        .select('*')
+        .select(`
+          *,
+          crm_cases(id)
+        `)
         .eq('lawyer_id', lawyerData.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setClients(data || []);
+      
+      const clientsWithCounts = clientsData?.map(c => ({
+        ...c,
+        cases_count: Array.isArray(c.crm_cases) ? c.crm_cases.length : 0
+      })) || [];
+      
+      setClients(clientsWithCounts);
     } catch (error) {
       console.error('Error fetching clients:', error);
       toast({
@@ -78,13 +110,37 @@ const CRMClientsView: React.FC<CRMClientsViewProps> = ({ lawyerData, searchTerm,
     }
   };
 
-  const filteredClients = clients.filter(client =>
-    client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (client.company && client.company.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredClients = clients.filter(client => {
+    const matchesSearch = 
+      client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (client.company && client.company.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    const matchesStatus = statusFilter === 'all' || client.status === statusFilter;
+    const matchesType = typeFilter === 'all' || client.client_type === typeFilter;
+    
+    return matchesSearch && matchesStatus && matchesType;
+  });
+
+  // Stats
+  const stats = {
+    total: clients.length,
+    active: clients.filter(c => c.status === 'active').length,
+    inactive: clients.filter(c => c.status === 'inactive').length,
+    prospects: clients.filter(c => c.status === 'prospect').length,
+    companies: clients.filter(c => c.client_type === 'company').length,
+  };
 
   const handleSaveClient = async () => {
+    if (!formData.name.trim() || !formData.email.trim()) {
+      toast({
+        title: "Campos requeridos",
+        description: "El nombre y email son obligatorios",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const clientData = {
         ...formData,
@@ -110,7 +166,7 @@ const CRMClientsView: React.FC<CRMClientsViewProps> = ({ lawyerData, searchTerm,
         if (error) throw error;
         toast({
           title: "Cliente creado",
-          description: "El nuevo cliente se ha creado correctamente",
+          description: "El nuevo cliente se ha agregado correctamente",
         });
       }
 
@@ -139,14 +195,14 @@ const CRMClientsView: React.FC<CRMClientsViewProps> = ({ lawyerData, searchTerm,
       address: client.address || '',
       client_type: client.client_type,
       status: client.status,
-      tags: client.tags,
+      tags: client.tags || [],
       notes: client.notes || ''
     });
     setIsDialogOpen(true);
   };
 
   const handleDeleteClient = async (clientId: string) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar este cliente?')) return;
+    if (!confirm('¿Estás seguro de eliminar este cliente? Esta acción no se puede deshacer.')) return;
 
     try {
       const { error } = await supabase
@@ -161,13 +217,15 @@ const CRMClientsView: React.FC<CRMClientsViewProps> = ({ lawyerData, searchTerm,
         description: "El cliente se ha eliminado correctamente",
       });
 
+      setIsDetailOpen(false);
+      setSelectedClient(null);
       fetchClients();
       onRefresh();
     } catch (error) {
       console.error('Error deleting client:', error);
       toast({
         title: "Error",
-        description: "No se pudo eliminar el cliente",
+        description: "No se pudo eliminar el cliente. Puede tener casos asociados.",
         variant: "destructive",
       });
     }
@@ -187,55 +245,26 @@ const CRMClientsView: React.FC<CRMClientsViewProps> = ({ lawyerData, searchTerm,
     });
   };
 
-  const getStatusBadgeVariant = (status: string) => {
+  const getStatusConfig = (status: string) => {
     switch (status) {
-      case 'active': return 'default';
-      case 'inactive': return 'secondary';
-      case 'prospect': return 'outline';
-      default: return 'secondary';
+      case 'active': 
+        return { label: 'Activo', variant: 'default' as const, color: 'text-green-600', bg: 'bg-green-500/10' };
+      case 'inactive': 
+        return { label: 'Inactivo', variant: 'secondary' as const, color: 'text-muted-foreground', bg: 'bg-muted' };
+      case 'prospect': 
+        return { label: 'Prospecto', variant: 'outline' as const, color: 'text-amber-600', bg: 'bg-amber-500/10' };
+      default: 
+        return { label: status, variant: 'secondary' as const, color: 'text-muted-foreground', bg: 'bg-muted' };
     }
   };
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'active': return 'Activo';
-      case 'inactive': return 'Inactivo';
-      case 'prospect': return 'Prospecto';
-      default: return status;
-    }
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
-  const handleQuickAction = async (action: string, client: Client) => {
-    switch (action) {
-      case 'call':
-        if (client.phone) {
-          window.open(`tel:${client.phone}`);
-        } else {
-          toast({
-            title: "Sin número de teléfono",
-            description: "Este cliente no tiene un número de teléfono registrado",
-            variant: "destructive",
-          });
-        }
-        break;
-      case 'email':
-        window.open(`mailto:${client.email}`);
-        break;
-      case 'meeting':
-        toast({
-          title: "Programar reunión",
-          description: `Función de calendario para ${client.name} próximamente disponible`,
-        });
-        break;
-      case 'case':
-        toast({
-          title: "Crear nuevo caso",
-          description: `Redirigiendo para crear caso para ${client.name}`,
-        });
-        break;
-      default:
-        break;
-    }
+  const openClientDetail = (client: Client) => {
+    setSelectedClient(client);
+    setIsDetailOpen(true);
   };
 
   if (isLoading) {
@@ -247,287 +276,458 @@ const CRMClientsView: React.FC<CRMClientsViewProps> = ({ lawyerData, searchTerm,
   }
 
   return (
-    <div className="space-y-4 p-4 sm:p-0">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row gap-3 sm:gap-0 sm:justify-between sm:items-center">
-        <h2 className="text-lg sm:text-xl font-semibold">Gestión de Clientes</h2>
+    <div className="space-y-6">
+      {/* Header Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+          <CardContent className="p-4 text-center">
+            <p className="text-3xl font-bold text-primary">{stats.total}</p>
+            <p className="text-xs text-muted-foreground mt-1">Total Clientes</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <div className="flex items-center justify-center gap-2">
+              <UserCheck className="h-4 w-4 text-green-600" />
+              <p className="text-2xl font-bold text-green-600">{stats.active}</p>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">Activos</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <div className="flex items-center justify-center gap-2">
+              <Clock className="h-4 w-4 text-amber-500" />
+              <p className="text-2xl font-bold text-amber-500">{stats.prospects}</p>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">Prospectos</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <div className="flex items-center justify-center gap-2">
+              <UserX className="h-4 w-4 text-muted-foreground" />
+              <p className="text-2xl font-bold text-muted-foreground">{stats.inactive}</p>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">Inactivos</p>
+          </CardContent>
+        </Card>
+        <Card className="col-span-2 md:col-span-1">
+          <CardContent className="p-4 text-center">
+            <div className="flex items-center justify-center gap-2">
+              <Building className="h-4 w-4 text-blue-500" />
+              <p className="text-2xl font-bold text-blue-500">{stats.companies}</p>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">Empresas</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Actions Bar */}
+      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+        <div className="flex flex-wrap gap-2 items-center">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[130px] h-9">
+              <SelectValue placeholder="Estado" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="active">Activos</SelectItem>
+              <SelectItem value="inactive">Inactivos</SelectItem>
+              <SelectItem value="prospect">Prospectos</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="w-[130px] h-9">
+              <SelectValue placeholder="Tipo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="individual">Personas</SelectItem>
+              <SelectItem value="company">Empresas</SelectItem>
+            </SelectContent>
+          </Select>
+          {(statusFilter !== 'all' || typeFilter !== 'all') && (
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => { setStatusFilter('all'); setTypeFilter('all'); }}
+              className="h-9"
+            >
+              <X className="h-4 w-4 mr-1" />
+              Limpiar
+            </Button>
+          )}
+        </div>
+        
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button 
-              className="w-full sm:w-auto" 
-              onClick={() => { resetForm(); setEditingClient(null); }}
-            >
+            <Button onClick={() => { resetForm(); setEditingClient(null); }}>
               <Plus className="h-4 w-4 mr-2" />
-              <span className="hidden xs:inline">Nuevo Cliente</span>
-              <span className="xs:hidden">Nuevo</span>
+              Nuevo Cliente
             </Button>
           </DialogTrigger>
-          <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="w-[95vw] max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="text-lg">
+              <DialogTitle>
                 {editingClient ? 'Editar Cliente' : 'Nuevo Cliente'}
               </DialogTitle>
-              <DialogDescription className="text-sm">
-                {editingClient ? 'Modifica los datos del cliente' : 'Ingresa los datos del nuevo cliente'}
+              <DialogDescription>
+                {editingClient ? 'Actualiza la información del cliente' : 'Completa los datos para registrar un nuevo cliente'}
               </DialogDescription>
             </DialogHeader>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-sm">Nombre *</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Nombre completo"
-                  className="text-base"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm">Email *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="correo@ejemplo.com"
-                  className="text-base"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="phone" className="text-sm">Teléfono</Label>
-                <Input
-                  id="phone"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="+57 300 123 4567"
-                  className="text-base"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="company" className="text-sm">Empresa</Label>
-                <Input
-                  id="company"
-                  value={formData.company}
-                  onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                  placeholder="Nombre de la empresa"
-                  className="text-base"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="client_type" className="text-sm">Tipo de Cliente</Label>
-                <Select
-                  value={formData.client_type}
-                  onValueChange={(value) => 
-                    setFormData({ ...formData, client_type: value })
-                  }
-                >
-                  <SelectTrigger className="text-base">
-                    <SelectValue placeholder="Selecciona el tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="individual">Persona Natural</SelectItem>
-                    <SelectItem value="company">Empresa</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="status" className="text-sm">Estado</Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(value) => 
-                    setFormData({ ...formData, status: value })
-                  }
-                >
-                  <SelectTrigger className="text-base">
-                    <SelectValue placeholder="Selecciona el estado" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Activo</SelectItem>
-                    <SelectItem value="inactive">Inactivo</SelectItem>
-                    <SelectItem value="prospect">Prospecto</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="col-span-1 sm:col-span-2 space-y-2">
-                <Label htmlFor="address" className="text-sm">Dirección</Label>
-                <Input
-                  id="address"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  placeholder="Dirección completa"
-                  className="text-base"
-                />
-              </div>
-              
-              <div className="col-span-1 sm:col-span-2 space-y-2">
-                <Label htmlFor="notes" className="text-sm">Notas</Label>
-                <Textarea
-                  id="notes"
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  placeholder="Notas adicionales sobre el cliente"
-                  rows={3}
-                  className="text-base resize-none"
-                />
+            <div className="space-y-4 py-2">
+              {/* Basic Info */}
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Nombre completo *</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="Ej: Juan Pérez García"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Correo electrónico *</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      placeholder="correo@ejemplo.com"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Teléfono</Label>
+                    <Input
+                      id="phone"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      placeholder="+57 300 123 4567"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label>Tipo de cliente</Label>
+                    <Select
+                      value={formData.client_type}
+                      onValueChange={(value) => setFormData({ ...formData, client_type: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="individual">
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4" />
+                            Persona Natural
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="company">
+                          <div className="flex items-center gap-2">
+                            <Building className="h-4 w-4" />
+                            Empresa
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Estado</Label>
+                    <Select
+                      value={formData.status}
+                      onValueChange={(value) => setFormData({ ...formData, status: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">Activo</SelectItem>
+                        <SelectItem value="prospect">Prospecto</SelectItem>
+                        <SelectItem value="inactive">Inactivo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {formData.client_type === 'company' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="company">Nombre de la empresa</Label>
+                    <Input
+                      id="company"
+                      value={formData.company}
+                      onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                      placeholder="Nombre de la empresa"
+                    />
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="address">Dirección</Label>
+                  <Input
+                    id="address"
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    placeholder="Calle, número, ciudad"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="notes">Notas adicionales</Label>
+                  <Textarea
+                    id="notes"
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    placeholder="Información adicional sobre el cliente..."
+                    rows={3}
+                  />
+                </div>
               </div>
             </div>
             
-            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 mt-4">
-              <Button 
-                variant="outline" 
-                onClick={() => setIsDialogOpen(false)}
-                className="w-full sm:w-auto"
-              >
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Cancelar
               </Button>
-              <Button 
-                onClick={handleSaveClient}
-                className="w-full sm:w-auto"
-              >
-                {editingClient ? 'Actualizar' : 'Crear'} Cliente
+              <Button onClick={handleSaveClient}>
+                {editingClient ? 'Guardar Cambios' : 'Crear Cliente'}
               </Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
 
-      {/* Clients Grid */}
-      <div className="space-y-3">
-        {filteredClients.length === 0 ? (
-          <Card>
-            <CardContent className="p-6 sm:p-8 text-center">
-              <Users className="h-8 w-8 sm:h-12 sm:w-12 mx-auto mb-3 sm:mb-4 text-muted-foreground" />
-              <p className="text-sm sm:text-base text-muted-foreground">
-                {searchTerm ? 'No se encontraron clientes que coincidan con la búsqueda' : 'No tienes clientes registrados aún'}
-              </p>
-              {!searchTerm && (
-                <Button 
-                  className="mt-3 sm:mt-4 w-full sm:w-auto" 
-                  onClick={() => setIsDialogOpen(true)}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Crear primer cliente
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        ) : (
-          filteredClients.map((client) => (
-            <Card key={client.id} className="transition-all hover:shadow-md">
-              <CardContent className="p-4">
-                <div className="flex flex-col sm:flex-row sm:justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start sm:items-center gap-2 mb-2 flex-wrap">
-                      {client.client_type === 'company' ? (
-                        <Building className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5 sm:mt-0" />
-                      ) : (
-                        <User className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5 sm:mt-0" />
-                      )}
-                      <h3 className="font-semibold text-sm sm:text-base truncate flex-1 min-w-0">
-                        {client.name}
-                      </h3>
-                      <Badge 
-                        variant={getStatusBadgeVariant(client.status)}
-                        className="text-xs flex-shrink-0"
-                      >
-                        {getStatusText(client.status)}
-                      </Badge>
-                    </div>
+      {/* Clients List */}
+      {filteredClients.length === 0 ? (
+        <Card className="border-dashed">
+          <CardContent className="p-8 text-center">
+            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+              <Users className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="font-semibold text-lg mb-2">
+              {searchTerm || statusFilter !== 'all' || typeFilter !== 'all' 
+                ? 'No se encontraron clientes' 
+                : 'Aún no tienes clientes'}
+            </h3>
+            <p className="text-muted-foreground text-sm mb-4">
+              {searchTerm || statusFilter !== 'all' || typeFilter !== 'all'
+                ? 'Prueba ajustando los filtros de búsqueda'
+                : 'Comienza agregando tu primer cliente para gestionar mejor tus casos'}
+            </p>
+            {!searchTerm && statusFilter === 'all' && typeFilter === 'all' && (
+              <Button onClick={() => setIsDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Agregar mi primer cliente
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+          {filteredClients.map((client) => {
+            const statusConfig = getStatusConfig(client.status);
+            
+            return (
+              <Card 
+                key={client.id} 
+                className="group hover:shadow-md transition-all cursor-pointer border-l-4"
+                style={{ borderLeftColor: client.status === 'active' ? 'hsl(var(--primary))' : client.status === 'prospect' ? 'hsl(45 93% 47%)' : 'hsl(var(--muted))' }}
+                onClick={() => openClientDetail(client)}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <Avatar className="h-12 w-12 shrink-0">
+                      <AvatarFallback className={`${statusConfig.bg} ${statusConfig.color} font-semibold`}>
+                        {getInitials(client.name)}
+                      </AvatarFallback>
+                    </Avatar>
                     
-                    <div className="space-y-1 text-xs sm:text-sm text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <Mail className="h-3 w-3 flex-shrink-0" />
-                        <span className="truncate">{client.email}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <h3 className="font-semibold truncate">{client.name}</h3>
+                          {client.company && (
+                            <p className="text-sm text-muted-foreground truncate flex items-center gap-1">
+                              <Building className="h-3 w-3" />
+                              {client.company}
+                            </p>
+                          )}
+                        </div>
+                        <Badge variant={statusConfig.variant} className="shrink-0 text-xs">
+                          {statusConfig.label}
+                        </Badge>
                       </div>
-                      {client.phone && (
-                        <div className="flex items-center gap-2">
-                          <Phone className="h-3 w-3 flex-shrink-0" />
-                          <span className="truncate">{client.phone}</span>
+                      
+                      <div className="mt-3 space-y-1">
+                        <p className="text-sm text-muted-foreground truncate flex items-center gap-2">
+                          <Mail className="h-3 w-3 shrink-0" />
+                          {client.email}
+                        </p>
+                        {client.phone && (
+                          <p className="text-sm text-muted-foreground flex items-center gap-2">
+                            <Phone className="h-3 w-3 shrink-0" />
+                            {client.phone}
+                          </p>
+                        )}
+                      </div>
+                      
+                      <div className="mt-3 flex items-center justify-between">
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Briefcase className="h-3 w-3" />
+                          {client.cases_count || 0} casos
                         </div>
-                      )}
-                      {client.company && (
-                        <div className="flex items-center gap-2">
-                          <Building className="h-3 w-3 flex-shrink-0" />
-                          <span className="truncate">{client.company}</span>
-                        </div>
-                      )}
+                        <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
                     </div>
-                    
-                    {client.notes && (
-                      <p className="text-xs sm:text-sm text-muted-foreground mt-2 line-clamp-2">
-                        {client.notes}
-                      </p>
-                    )}
                   </div>
-                  
-                  <div className="flex gap-1 self-start sm:self-center flex-shrink-0 flex-wrap">
-                    {/* Quick Actions */}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleQuickAction('call', client)}
-                      title="Llamar cliente"
-                      className="h-8 w-8 p-0"
-                    >
-                      <Phone className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleQuickAction('email', client)}
-                      title="Enviar email"
-                      className="h-8 w-8 p-0"
-                    >
-                      <Mail className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleQuickAction('meeting', client)}
-                      title="Programar reunión"
-                      className="h-8 w-8 p-0"
-                    >
-                      <Calendar className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleQuickAction('case', client)}
-                      title="Crear nuevo caso"
-                      className="h-8 w-8 p-0"
-                    >
-                      <UserPlus className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEditClient(client)}
-                      className="h-8 w-8 p-0"
-                    >
-                      <Edit2 className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteClient(client.id)}
-                      className="h-8 w-8 p-0"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Client Detail Sheet */}
+      <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+        <DialogContent className="w-[95vw] max-w-lg max-h-[90vh] overflow-y-auto">
+          {selectedClient && (
+            <>
+              <DialogHeader>
+                <div className="flex items-start gap-4">
+                  <Avatar className="h-16 w-16">
+                    <AvatarFallback className={`${getStatusConfig(selectedClient.status).bg} ${getStatusConfig(selectedClient.status).color} text-xl font-semibold`}>
+                      {getInitials(selectedClient.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <DialogTitle className="text-xl">{selectedClient.name}</DialogTitle>
+                    <DialogDescription className="flex items-center gap-2 mt-1">
+                      {selectedClient.client_type === 'company' ? (
+                        <Building className="h-4 w-4" />
+                      ) : (
+                        <User className="h-4 w-4" />
+                      )}
+                      {selectedClient.client_type === 'company' ? 'Empresa' : 'Persona Natural'}
+                      <span>•</span>
+                      <Badge variant={getStatusConfig(selectedClient.status).variant}>
+                        {getStatusConfig(selectedClient.status).label}
+                      </Badge>
+                    </DialogDescription>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
+              </DialogHeader>
+
+              <div className="space-y-4 py-4">
+                {/* Contact Info */}
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium text-muted-foreground">Información de Contacto</h4>
+                  <div className="grid gap-2">
+                    <a 
+                      href={`mailto:${selectedClient.email}`}
+                      className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Mail className="h-4 w-4 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">{selectedClient.email}</p>
+                        <p className="text-xs text-muted-foreground">Correo electrónico</p>
+                      </div>
+                    </a>
+                    
+                    {selectedClient.phone && (
+                      <a 
+                        href={`tel:${selectedClient.phone}`}
+                        className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center">
+                          <Phone className="h-4 w-4 text-green-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">{selectedClient.phone}</p>
+                          <p className="text-xs text-muted-foreground">Teléfono</p>
+                        </div>
+                      </a>
+                    )}
+                    
+                    {selectedClient.address && (
+                      <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                        <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center">
+                          <MapPin className="h-4 w-4 text-amber-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">{selectedClient.address}</p>
+                          <p className="text-xs text-muted-foreground">Dirección</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {selectedClient.company && (
+                      <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                        <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center">
+                          <Building className="h-4 w-4 text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">{selectedClient.company}</p>
+                          <p className="text-xs text-muted-foreground">Empresa</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Stats */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 rounded-lg bg-muted/50 text-center">
+                    <p className="text-2xl font-bold text-primary">{selectedClient.cases_count || 0}</p>
+                    <p className="text-xs text-muted-foreground">Casos asociados</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted/50 text-center">
+                    <p className="text-sm font-medium">
+                      {format(new Date(selectedClient.created_at), "d MMM yyyy", { locale: es })}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Cliente desde</p>
+                  </div>
+                </div>
+
+                {/* Notes */}
+                {selectedClient.notes && (
+                  <>
+                    <Separator />
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium text-muted-foreground">Notas</h4>
+                      <p className="text-sm bg-muted/50 p-3 rounded-lg">{selectedClient.notes}</p>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2 pt-4 border-t">
+                <Button variant="outline" className="flex-1" onClick={() => handleEditClient(selectedClient)}>
+                  <Edit2 className="h-4 w-4 mr-2" />
+                  Editar
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => handleDeleteClient(selectedClient.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
