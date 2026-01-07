@@ -231,26 +231,34 @@ export const useLawyerAuth = () => {
       });
 
       if (error) {
-        console.error('SignUp error details:', {
-          message: error.message,
-          status: error.status,
-          code: error.code || 'NO_CODE'
-        });
+        console.error('=== SIGNUP ERROR DETAILS ===');
+        console.error('Status:', error.status);
+        console.error('Message:', error.message);
+        console.error('Code:', error.code || 'NO_CODE');
+        console.error('Full error:', JSON.stringify(error, null, 2));
         
         // Handle specific error cases
         if (error.message?.includes('User already registered') || error.message?.includes('already registered')) {
           throw new Error('Este email ya está registrado. Intenta iniciar sesión en su lugar.');
         }
         
-        // Handle 422 errors (often SMTP configuration issues)
+        // Handle 422 errors - This is almost always an SMTP/email sending issue
         if (error.status === 422) {
-          console.error('422 Error - Possible SMTP configuration issue');
-          throw new Error('Error de configuración del servidor de email. Por favor contacta al administrador o intenta más tarde.');
+          console.error('=== 422 ERROR - SMTP/EMAIL ISSUE ===');
+          console.error('This error occurs when Supabase cannot send the confirmation email.');
+          console.error('Solutions: 1) Disable email confirmation in Supabase Auth settings');
+          console.error('           2) Configure SMTP properly in Supabase Dashboard');
+          throw new Error('No se pudo enviar el correo de confirmación. El administrador debe verificar la configuración de email en Supabase (Authentication → Providers → Email → deshabilitar "Confirm email" o configurar SMTP).');
         }
         
         // Handle password too short
         if (error.message?.includes('password') && error.message?.includes('short')) {
           throw new Error('La contraseña debe tener al menos 6 caracteres.');
+        }
+        
+        // Handle email rate limiting
+        if (error.message?.includes('rate') || error.message?.includes('limit')) {
+          throw new Error('Demasiados intentos. Por favor espera unos minutos antes de intentar nuevamente.');
         }
         
         // Generic error with more context
