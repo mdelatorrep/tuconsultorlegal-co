@@ -242,7 +242,19 @@ export const useLawyerAuth = () => {
           throw new Error('Este email ya está registrado. Intenta iniciar sesión en su lugar.');
         }
         
-        return { success: false, requiresConfirmation: false };
+        // Handle 422 errors (often SMTP configuration issues)
+        if (error.status === 422) {
+          console.error('422 Error - Possible SMTP configuration issue');
+          throw new Error('Error de configuración del servidor de email. Por favor contacta al administrador o intenta más tarde.');
+        }
+        
+        // Handle password too short
+        if (error.message?.includes('password') && error.message?.includes('short')) {
+          throw new Error('La contraseña debe tener al menos 6 caracteres.');
+        }
+        
+        // Generic error with more context
+        throw new Error(error.message || 'Error al registrar la cuenta. Intenta nuevamente.');
       }
 
       if (!data.user) {
