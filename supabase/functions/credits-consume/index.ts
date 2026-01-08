@@ -280,7 +280,7 @@ serve(async (req) => {
 
     console.log(`[CREDITS] Consuming credits for lawyer ${lawyerId}, tool: ${toolType}`);
 
-    // Get tool cost
+    // Get tool cost including gamification settings
     const { data: toolCost, error: toolError } = await supabase
       .from('credit_tool_costs')
       .select('*')
@@ -297,6 +297,8 @@ serve(async (req) => {
     }
 
     const creditCost = toolCost.credit_cost;
+    const gamificationEnabled = toolCost.gamification_enabled ?? true;
+    const gamificationReward = toolCost.gamification_reward ?? 0;
 
     // Get current balance
     const { data: credits, error: creditsError } = await supabase
@@ -389,13 +391,27 @@ serve(async (req) => {
 
     if (transactionError) {
       console.error('[CREDITS] Error recording transaction:', transactionError);
-      // Don't fail the request, just log the error
     }
 
     console.log(`[CREDITS] Successfully consumed ${creditCost} credits. New balance: ${newBalance}`);
 
-    // Update gamification progress after successful credit consumption
-    await updateGamificationProgress(supabase, lawyerId, toolType);
+    // Prepare gamification response data
+    let gamificationData = null;
+    
+    // Only process gamification if enabled for this tool
+    if (gamificationEnabled && gamificationReward > 0) {
+      console.log(`[CREDITS] Gamification enabled for ${toolType}, potential reward: ${gamificationReward}`);
+      await updateGamificationProgress(supabase, lawyerId, toolType);
+      
+      // Check if any task was completed and include in response for UI celebration
+      gamificationData = {
+        enabled: true,
+        potentialReward: gamificationReward,
+        toolType
+      };
+    } else {
+      console.log(`[CREDITS] Gamification disabled for ${toolType}`);
+    }
 
     return new Response(
       JSON.stringify({ 
@@ -403,7 +419,9 @@ serve(async (req) => {
         allowed: true,
         creditsUsed: creditCost,
         newBalance,
-        toolName: toolCost.tool_name
+        toolName: toolCost.tool_name,
+        // Include gamification data for frontend celebration effect
+        gamification: gamificationData
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
