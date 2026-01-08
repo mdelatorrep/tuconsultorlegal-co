@@ -107,7 +107,7 @@ export const AI_CATEGORIES: AICategory[] = [
     functions: [
       { id: 'lexi', name: 'Lexi', description: 'Asistente legal principal', promptKey: 'lexi_chat_prompt', modelKey: 'lexi_ai_model', reasoningEffortKey: 'lexi_reasoning_effort', webSearchKey: 'web_search_enabled_lexi' },
       { id: 'routing', name: 'Routing', description: 'Clasificación de consultas', promptKey: 'routing_chat_prompt', modelKey: 'routing_ai_model', reasoningEffortKey: 'routing_reasoning_effort' },
-      { id: 'training', name: 'Entrenamiento', description: 'Formación de abogados', promptKey: 'legal_training_assistant_prompt', modelKey: 'training_assistant_ai_model', reasoningEffortKey: 'training_reasoning_effort', webSearchKey: 'web_search_enabled_training' }
+      { id: 'training', name: 'Entrenamiento', description: 'Formación de abogados', promptKey: 'legal_training_assistant_prompt', modelKey: 'training_assistant_ai_model', reasoningEffortKey: 'training_assistant_reasoning_effort', webSearchKey: 'web_search_enabled_training' }
     ]
   },
   {
