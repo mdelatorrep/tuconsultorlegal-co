@@ -6,10 +6,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { 
   Lightbulb, TrendingUp, TrendingDown, AlertTriangle, CheckCircle,
   Target, Zap, Users, DollarSign, Brain, RefreshCw,
-  ArrowRight, ThumbsUp, ThumbsDown
+  ArrowRight, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp,
+  Megaphone, UserPlus, Wallet, Heart
 } from "lucide-react";
 import { subDays } from "date-fns";
 import { toast } from "sonner";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 interface Insight {
   type: 'success' | 'warning' | 'action' | 'opportunity';
@@ -32,11 +38,53 @@ interface StrategicDecisionsProps {
   onNavigate?: (view: string) => void;
 }
 
+interface StrategyRecommendation {
+  title: string;
+  description: string;
+  priority: 'high' | 'medium' | 'low';
+  action?: string;
+}
+
+interface MatrixMetrics {
+  acquisition: {
+    totalLeads: number;
+    pendingLeads: number;
+    conversionRate: number;
+    recommendations: StrategyRecommendation[];
+  };
+  activation: {
+    totalLawyers: number;
+    activeLawyers: number;
+    activeRate: number;
+    recommendations: StrategyRecommendation[];
+  };
+  revenue: {
+    totalDocs: number;
+    paidDocs: number;
+    conversionRate: number;
+    creditPurchases: number;
+    recommendations: StrategyRecommendation[];
+  };
+  retention: {
+    atRiskCount: number;
+    churnedCount: number;
+    retentionRate: number;
+    recommendations: StrategyRecommendation[];
+  };
+}
+
 export const StrategicDecisions = ({ onNavigate }: StrategicDecisionsProps) => {
   const [insights, setInsights] = useState<Insight[]>([]);
   const [workingFeatures, setWorkingFeatures] = useState<FeaturePerformance[]>([]);
   const [failingFeatures, setFailingFeatures] = useState<FeaturePerformance[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [expandedMatrix, setExpandedMatrix] = useState<string | null>(null);
+  const [matrixMetrics, setMatrixMetrics] = useState<MatrixMetrics>({
+    acquisition: { totalLeads: 0, pendingLeads: 0, conversionRate: 0, recommendations: [] },
+    activation: { totalLawyers: 0, activeLawyers: 0, activeRate: 0, recommendations: [] },
+    revenue: { totalDocs: 0, paidDocs: 0, conversionRate: 0, creditPurchases: 0, recommendations: [] },
+    retention: { atRiskCount: 0, churnedCount: 0, retentionRate: 0, recommendations: [] }
+  });
 
   useEffect(() => {
     generateInsights();
@@ -215,6 +263,79 @@ export const StrategicDecisions = ({ onNavigate }: StrategicDecisionsProps) => {
 
       setWorkingFeatures(working);
       setFailingFeatures(failing);
+
+      // Build matrix metrics with recommendations
+      const acquisitionRecs: StrategyRecommendation[] = [];
+      if (totalLeads === 0) {
+        acquisitionRecs.push({ title: 'Crear landing pages específicas', description: 'Segmentar por especialidad legal para mejorar conversión', priority: 'high' });
+        acquisitionRecs.push({ title: 'Activar Google Ads', description: 'Campañas de búsqueda para abogados en Colombia', priority: 'medium' });
+      } else if (pendingLeads > 5) {
+        acquisitionRecs.push({ title: 'Automatizar seguimiento', description: `${pendingLeads} leads sin atender - configura emails automáticos`, priority: 'high' });
+      }
+      if (totalLeads < 20) {
+        acquisitionRecs.push({ title: 'Programa de referidos', description: 'Incentiva a abogados actuales a referir colegas', priority: 'medium' });
+        acquisitionRecs.push({ title: 'Content marketing', description: 'Crear blog posts sobre temas legales trending', priority: 'low' });
+      }
+
+      const activationRecs: StrategyRecommendation[] = [];
+      if (activeRate < 50) {
+        activationRecs.push({ title: 'Onboarding interactivo', description: `Solo ${activeRate.toFixed(0)}% activos - implementa tour guiado`, priority: 'high' });
+        activationRecs.push({ title: 'Email de bienvenida mejorado', description: 'Incluir video tutorial y primer documento gratis', priority: 'high' });
+      }
+      if (activeLawyers < 10) {
+        activationRecs.push({ title: 'Sesiones 1:1', description: 'Ofrecer demo personalizada a nuevos registros', priority: 'medium' });
+      }
+      activationRecs.push({ title: 'Gamificación activa', description: 'Recompensas por completar perfil y primer uso', priority: 'low' });
+
+      const revenueRecs: StrategyRecommendation[] = [];
+      if (conversionRate < 20) {
+        revenueRecs.push({ title: 'Revisar pricing', description: `${conversionRate.toFixed(1)}% conversión - considera precios más competitivos`, priority: 'high' });
+        revenueRecs.push({ title: 'Ofrecer documentos gratis', description: 'Primeros 2 documentos sin costo para nuevos usuarios', priority: 'medium' });
+      }
+      if (creditPurchases === 0) {
+        revenueRecs.push({ title: 'Promocionar créditos IA', description: 'Los abogados no están comprando créditos - destacar valor', priority: 'high' });
+      } else {
+        revenueRecs.push({ title: 'Upsell de paquetes', description: `${creditPurchases} compras - ofrecer descuentos por volumen`, priority: 'medium' });
+      }
+      revenueRecs.push({ title: 'Suscripción mensual', description: 'Plan premium con documentos ilimitados', priority: 'low' });
+
+      const retentionRecs: StrategyRecommendation[] = [];
+      const inactiveLawyers = totalLawyers - activeLawyers;
+      const estimatedAtRisk = Math.floor(inactiveLawyers * 0.3);
+      if (estimatedAtRisk > 0) {
+        retentionRecs.push({ title: 'Campaña de reactivación', description: `~${estimatedAtRisk} usuarios en riesgo - enviar email con oferta especial`, priority: 'high' });
+      }
+      retentionRecs.push({ title: 'Notificaciones push', description: 'Alertas de nuevos documentos y features', priority: 'medium' });
+      retentionRecs.push({ title: 'Encuesta de satisfacción', description: 'NPS score para identificar detractores temprano', priority: 'medium' });
+      retentionRecs.push({ title: 'Programa de fidelización', description: 'Descuentos progresivos por antigüedad', priority: 'low' });
+
+      setMatrixMetrics({
+        acquisition: {
+          totalLeads,
+          pendingLeads,
+          conversionRate: totalLeads > 0 ? ((totalLeads - pendingLeads) / totalLeads) * 100 : 0,
+          recommendations: acquisitionRecs
+        },
+        activation: {
+          totalLawyers,
+          activeLawyers,
+          activeRate,
+          recommendations: activationRecs
+        },
+        revenue: {
+          totalDocs,
+          paidDocs,
+          conversionRate,
+          creditPurchases,
+          recommendations: revenueRecs
+        },
+        retention: {
+          atRiskCount: estimatedAtRisk,
+          churnedCount: inactiveLawyers,
+          retentionRate: totalLawyers > 0 ? (activeLawyers / totalLawyers) * 100 : 0,
+          recommendations: retentionRecs
+        }
+      });
 
     } catch (error) {
       console.error('Error generating insights:', error);
@@ -443,53 +564,206 @@ export const StrategicDecisions = ({ onNavigate }: StrategicDecisionsProps) => {
             Matriz de Decisiones Rápidas
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <button 
-              onClick={() => handleMatrixClick('Adquisición')}
-              className="p-4 rounded-lg bg-muted/50 text-center hover:bg-muted transition-colors cursor-pointer"
-            >
-              <Users className="w-8 h-8 mx-auto mb-2 text-blue-500" />
-              <p className="font-medium">Adquisición</p>
-              <p className="text-xs text-muted-foreground mb-2">
-                ¿Cómo atraer más abogados?
-              </p>
-              <Badge variant="outline">Marketing</Badge>
-            </button>
-            <button 
-              onClick={() => handleMatrixClick('Activación')}
-              className="p-4 rounded-lg bg-muted/50 text-center hover:bg-muted transition-colors cursor-pointer"
-            >
-              <Zap className="w-8 h-8 mx-auto mb-2 text-amber-500" />
-              <p className="font-medium">Activación</p>
-              <p className="text-xs text-muted-foreground mb-2">
-                ¿Cómo lograr el "aha moment"?
-              </p>
-              <Badge variant="outline">Onboarding</Badge>
-            </button>
-            <button 
-              onClick={() => handleMatrixClick('Revenue')}
-              className="p-4 rounded-lg bg-muted/50 text-center hover:bg-muted transition-colors cursor-pointer"
-            >
-              <DollarSign className="w-8 h-8 mx-auto mb-2 text-emerald-500" />
-              <p className="font-medium">Revenue</p>
-              <p className="text-xs text-muted-foreground mb-2">
-                ¿Cómo monetizar mejor?
-              </p>
-              <Badge variant="outline">Pricing</Badge>
-            </button>
-            <button 
-              onClick={() => handleMatrixClick('Retención')}
-              className="p-4 rounded-lg bg-muted/50 text-center hover:bg-muted transition-colors cursor-pointer"
-            >
-              <TrendingUp className="w-8 h-8 mx-auto mb-2 text-purple-500" />
-              <p className="font-medium">Retención</p>
-              <p className="text-xs text-muted-foreground mb-2">
-                ¿Cómo reducir churn?
-              </p>
-              <Badge variant="outline">Engagement</Badge>
-            </button>
-          </div>
+        <CardContent className="space-y-4">
+          {/* Acquisition */}
+          <Collapsible 
+            open={expandedMatrix === 'acquisition'} 
+            onOpenChange={(open) => setExpandedMatrix(open ? 'acquisition' : null)}
+          >
+            <CollapsibleTrigger asChild>
+              <button className="w-full p-4 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 hover:bg-blue-100/50 dark:hover:bg-blue-900/30 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900">
+                      <Megaphone className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-medium">Adquisición</p>
+                      <p className="text-xs text-muted-foreground">¿Cómo atraer más abogados?</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-blue-600">{matrixMetrics.acquisition.totalLeads}</p>
+                      <p className="text-xs text-muted-foreground">leads totales</p>
+                    </div>
+                    {expandedMatrix === 'acquisition' ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                  </div>
+                </div>
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-2 space-y-2">
+              {matrixMetrics.acquisition.recommendations.map((rec, idx) => (
+                <div key={idx} className="p-3 rounded-lg bg-muted/50 border-l-4 border-l-blue-500">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="font-medium text-sm">{rec.title}</p>
+                      <p className="text-xs text-muted-foreground">{rec.description}</p>
+                    </div>
+                    {getPriorityBadge(rec.priority)}
+                  </div>
+                </div>
+              ))}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full mt-2"
+                onClick={() => onNavigate?.('leads')}
+              >
+                Ver Leads <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </CollapsibleContent>
+          </Collapsible>
+
+          {/* Activation */}
+          <Collapsible 
+            open={expandedMatrix === 'activation'} 
+            onOpenChange={(open) => setExpandedMatrix(open ? 'activation' : null)}
+          >
+            <CollapsibleTrigger asChild>
+              <button className="w-full p-4 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 hover:bg-amber-100/50 dark:hover:bg-amber-900/30 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900">
+                      <UserPlus className="w-5 h-5 text-amber-600" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-medium">Activación</p>
+                      <p className="text-xs text-muted-foreground">¿Cómo lograr el "aha moment"?</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-amber-600">{matrixMetrics.activation.activeRate.toFixed(0)}%</p>
+                      <p className="text-xs text-muted-foreground">{matrixMetrics.activation.activeLawyers}/{matrixMetrics.activation.totalLawyers} activos</p>
+                    </div>
+                    {expandedMatrix === 'activation' ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                  </div>
+                </div>
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-2 space-y-2">
+              {matrixMetrics.activation.recommendations.map((rec, idx) => (
+                <div key={idx} className="p-3 rounded-lg bg-muted/50 border-l-4 border-l-amber-500">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="font-medium text-sm">{rec.title}</p>
+                      <p className="text-xs text-muted-foreground">{rec.description}</p>
+                    </div>
+                    {getPriorityBadge(rec.priority)}
+                  </div>
+                </div>
+              ))}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full mt-2"
+                onClick={() => onNavigate?.('users')}
+              >
+                Ver Usuarios <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </CollapsibleContent>
+          </Collapsible>
+
+          {/* Revenue */}
+          <Collapsible 
+            open={expandedMatrix === 'revenue'} 
+            onOpenChange={(open) => setExpandedMatrix(open ? 'revenue' : null)}
+          >
+            <CollapsibleTrigger asChild>
+              <button className="w-full p-4 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100/50 dark:hover:bg-emerald-900/30 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900">
+                      <Wallet className="w-5 h-5 text-emerald-600" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-medium">Revenue</p>
+                      <p className="text-xs text-muted-foreground">¿Cómo monetizar mejor?</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-emerald-600">{matrixMetrics.revenue.conversionRate.toFixed(1)}%</p>
+                      <p className="text-xs text-muted-foreground">{matrixMetrics.revenue.paidDocs} docs pagados</p>
+                    </div>
+                    {expandedMatrix === 'revenue' ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                  </div>
+                </div>
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-2 space-y-2">
+              {matrixMetrics.revenue.recommendations.map((rec, idx) => (
+                <div key={idx} className="p-3 rounded-lg bg-muted/50 border-l-4 border-l-emerald-500">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="font-medium text-sm">{rec.title}</p>
+                      <p className="text-xs text-muted-foreground">{rec.description}</p>
+                    </div>
+                    {getPriorityBadge(rec.priority)}
+                  </div>
+                </div>
+              ))}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full mt-2"
+                onClick={() => onNavigate?.('revenue')}
+              >
+                Ver Ingresos <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </CollapsibleContent>
+          </Collapsible>
+
+          {/* Retention */}
+          <Collapsible 
+            open={expandedMatrix === 'retention'} 
+            onOpenChange={(open) => setExpandedMatrix(open ? 'retention' : null)}
+          >
+            <CollapsibleTrigger asChild>
+              <button className="w-full p-4 rounded-lg bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 hover:bg-purple-100/50 dark:hover:bg-purple-900/30 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900">
+                      <Heart className="w-5 h-5 text-purple-600" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-medium">Retención</p>
+                      <p className="text-xs text-muted-foreground">¿Cómo reducir churn?</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-purple-600">{matrixMetrics.retention.retentionRate.toFixed(0)}%</p>
+                      <p className="text-xs text-muted-foreground">{matrixMetrics.retention.atRiskCount} en riesgo</p>
+                    </div>
+                    {expandedMatrix === 'retention' ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                  </div>
+                </div>
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-2 space-y-2">
+              {matrixMetrics.retention.recommendations.map((rec, idx) => (
+                <div key={idx} className="p-3 rounded-lg bg-muted/50 border-l-4 border-l-purple-500">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="font-medium text-sm">{rec.title}</p>
+                      <p className="text-xs text-muted-foreground">{rec.description}</p>
+                    </div>
+                    {getPriorityBadge(rec.priority)}
+                  </div>
+                </div>
+              ))}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full mt-2"
+                onClick={() => onNavigate?.('retention')}
+              >
+                Ver Retención <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </CollapsibleContent>
+          </Collapsible>
         </CardContent>
       </Card>
     </div>
