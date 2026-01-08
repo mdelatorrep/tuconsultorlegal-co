@@ -82,12 +82,10 @@ interface QueryHistory {
   createdAt: Date;
 }
 
+// Según documentación Verifik: solo CC y NIT son válidos
 const DOCUMENT_TYPES = [
   { value: 'CC', label: 'Cédula de Ciudadanía' },
-  { value: 'CE', label: 'Cédula de Extranjería' },
   { value: 'NIT', label: 'NIT' },
-  { value: 'PA', label: 'Pasaporte' },
-  { value: 'TI', label: 'Tarjeta de Identidad' },
 ];
 
 export default function ProcessQueryModule({
@@ -96,11 +94,10 @@ export default function ProcessQueryModule({
   onViewChange,
   onLogout,
 }: ProcessQueryModuleProps) {
-  const [queryType, setQueryType] = useState<'radicado' | 'document' | 'name'>('radicado');
+  const [queryType, setQueryType] = useState<'radicado' | 'document'>('radicado');
   const [radicado, setRadicado] = useState('');
   const [documentType, setDocumentType] = useState('CC');
   const [documentNumber, setDocumentNumber] = useState('');
-  const [name, setName] = useState('');
   
   const [isSearching, setIsSearching] = useState(false);
   const [processes, setProcesses] = useState<JudicialProcess[]>([]);
@@ -174,16 +171,6 @@ export default function ProcessQueryModule({
         return;
       }
       queryValue = documentNumber;
-    } else if (queryType === 'name') {
-      if (!name.trim()) {
-        toast.error('Ingrese el nombre a buscar');
-        return;
-      }
-      if (name.trim().length < 3) {
-        toast.error('Ingrese al menos 3 caracteres para buscar por nombre');
-        return;
-      }
-      queryValue = name;
     }
 
     // Check and consume credits before proceeding
@@ -216,7 +203,6 @@ export default function ProcessQueryModule({
           documentNumber: queryType === 'document' ? documentNumber : undefined,
           documentType: queryType === 'document' ? documentType : undefined,
           radicado: queryType === 'radicado' ? radicado : undefined,
-          name: queryType === 'name' ? name : undefined,
         },
       });
 
@@ -417,8 +403,8 @@ export default function ProcessQueryModule({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs value={queryType} onValueChange={(v) => setQueryType(v as any)}>
-              <TabsList className="grid grid-cols-3 mb-6">
+            <Tabs value={queryType} onValueChange={(v) => setQueryType(v as 'radicado' | 'document')}>
+              <TabsList className="grid grid-cols-2 mb-6">
                 <TabsTrigger value="radicado" className="flex items-center gap-2">
                   <Hash className="h-4 w-4" />
                   Por Radicado
@@ -426,10 +412,6 @@ export default function ProcessQueryModule({
                 <TabsTrigger value="document" className="flex items-center gap-2">
                   <FileText className="h-4 w-4" />
                   Por Documento
-                </TabsTrigger>
-                <TabsTrigger value="name" className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  Por Nombre
                 </TabsTrigger>
               </TabsList>
 
@@ -475,21 +457,6 @@ export default function ProcessQueryModule({
                       onChange={(e) => setDocumentNumber(e.target.value)}
                     />
                   </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="name" className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nombre o Razón Social</Label>
-                  <Input
-                    id="name"
-                    placeholder="Ingrese nombre completo o razón social"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Ingrese al menos 3 caracteres para buscar
-                  </p>
                 </div>
               </TabsContent>
 
@@ -566,16 +533,12 @@ export default function ProcessQueryModule({
                       } else if (item.queryType === 'document') {
                         setQueryType('document');
                         setDocumentNumber(item.queryValue);
-                      } else if (item.queryType === 'name') {
-                        setQueryType('name');
-                        setName(item.queryValue);
                       }
                     }}
                   >
                     <div className="flex items-center gap-3">
                       <Badge variant="outline">
-                        {item.queryType === 'radicado' ? 'Radicado' : 
-                         item.queryType === 'document' ? 'Documento' : 'Nombre'}
+                        {item.queryType === 'radicado' ? 'Radicado' : 'Documento'}
                       </Badge>
                       <span className="font-medium text-sm truncate max-w-[200px]">
                         {item.queryValue}
