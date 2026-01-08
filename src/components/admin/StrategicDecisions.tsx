@@ -9,6 +9,7 @@ import {
   ArrowRight, ThumbsUp, ThumbsDown
 } from "lucide-react";
 import { subDays } from "date-fns";
+import { toast } from "sonner";
 
 interface Insight {
   type: 'success' | 'warning' | 'action' | 'opportunity';
@@ -27,7 +28,11 @@ interface FeaturePerformance {
   status: 'working' | 'needs_attention' | 'failing';
 }
 
-export const StrategicDecisions = () => {
+interface StrategicDecisionsProps {
+  onNavigate?: (view: string) => void;
+}
+
+export const StrategicDecisions = ({ onNavigate }: StrategicDecisionsProps) => {
   const [insights, setInsights] = useState<Insight[]>([]);
   const [workingFeatures, setWorkingFeatures] = useState<FeaturePerformance[]>([]);
   const [failingFeatures, setFailingFeatures] = useState<FeaturePerformance[]>([]);
@@ -247,6 +252,43 @@ export const StrategicDecisions = () => {
     }
   };
 
+  const getActionHandler = (action: string) => {
+    const actionMap: Record<string, string> = {
+      'Revisar flujo de onboarding': 'users',
+      'Optimizar funnel de pago': 'documents',
+      'Promocionar herramientas IA': 'ai-tools',
+      'Notificar a abogados': 'lawyers',
+      'Revisar agentes': 'agents',
+      'Campaña de creación de agentes': 'agents',
+    };
+
+    return () => {
+      const targetView = actionMap[action];
+      if (targetView && onNavigate) {
+        onNavigate(targetView);
+        toast.success(`Navegando a ${action}`);
+      } else {
+        toast.info(`Acción: ${action}`);
+      }
+    };
+  };
+
+  const handleMatrixClick = (category: string) => {
+    const categoryMap: Record<string, string> = {
+      'Adquisición': 'leads',
+      'Activación': 'users',
+      'Revenue': 'revenue',
+      'Retención': 'retention',
+    };
+
+    const targetView = categoryMap[category];
+    if (targetView && onNavigate) {
+      onNavigate(targetView);
+    } else {
+      toast.info(`Ver estrategias de ${category}`);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -376,7 +418,12 @@ export const StrategicDecisions = () => {
                       </div>
                     </div>
                     {insight.action && (
-                      <Button variant="outline" size="sm" className="shrink-0">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="shrink-0"
+                        onClick={getActionHandler(insight.action)}
+                      >
                         {insight.action}
                         <ArrowRight className="w-4 h-4 ml-2" />
                       </Button>
@@ -398,38 +445,50 @@ export const StrategicDecisions = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="p-4 rounded-lg bg-muted/50 text-center">
+            <button 
+              onClick={() => handleMatrixClick('Adquisición')}
+              className="p-4 rounded-lg bg-muted/50 text-center hover:bg-muted transition-colors cursor-pointer"
+            >
               <Users className="w-8 h-8 mx-auto mb-2 text-blue-500" />
               <p className="font-medium">Adquisición</p>
               <p className="text-xs text-muted-foreground mb-2">
                 ¿Cómo atraer más abogados?
               </p>
               <Badge variant="outline">Marketing</Badge>
-            </div>
-            <div className="p-4 rounded-lg bg-muted/50 text-center">
+            </button>
+            <button 
+              onClick={() => handleMatrixClick('Activación')}
+              className="p-4 rounded-lg bg-muted/50 text-center hover:bg-muted transition-colors cursor-pointer"
+            >
               <Zap className="w-8 h-8 mx-auto mb-2 text-amber-500" />
               <p className="font-medium">Activación</p>
               <p className="text-xs text-muted-foreground mb-2">
                 ¿Cómo lograr el "aha moment"?
               </p>
               <Badge variant="outline">Onboarding</Badge>
-            </div>
-            <div className="p-4 rounded-lg bg-muted/50 text-center">
+            </button>
+            <button 
+              onClick={() => handleMatrixClick('Revenue')}
+              className="p-4 rounded-lg bg-muted/50 text-center hover:bg-muted transition-colors cursor-pointer"
+            >
               <DollarSign className="w-8 h-8 mx-auto mb-2 text-emerald-500" />
               <p className="font-medium">Revenue</p>
               <p className="text-xs text-muted-foreground mb-2">
                 ¿Cómo monetizar mejor?
               </p>
               <Badge variant="outline">Pricing</Badge>
-            </div>
-            <div className="p-4 rounded-lg bg-muted/50 text-center">
+            </button>
+            <button 
+              onClick={() => handleMatrixClick('Retención')}
+              className="p-4 rounded-lg bg-muted/50 text-center hover:bg-muted transition-colors cursor-pointer"
+            >
               <TrendingUp className="w-8 h-8 mx-auto mb-2 text-purple-500" />
               <p className="font-medium">Retención</p>
               <p className="text-xs text-muted-foreground mb-2">
                 ¿Cómo reducir churn?
               </p>
               <Badge variant="outline">Engagement</Badge>
-            </div>
+            </button>
           </div>
         </CardContent>
       </Card>
