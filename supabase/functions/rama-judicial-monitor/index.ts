@@ -6,8 +6,71 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const RAMA_JUDICIAL_API = 'https://consultaprocesos.ramajudicial.gov.co/api/Procesos/NumeroProceso';
+const VERIFIK_BASE_URL = 'https://api.verifik.co/v2';
 
+type VerifikProcessFetchResult =
+  | { ok: true; data: { despacho: string | null; fechaUltimaActuacion: string | null; ultimaActuacion: string | null; actuaciones: any[] } }
+  | { ok: false; status: number; body: any };
+
+async function fetchProcessByRadicadoFromVerifik(radicado: string): Promise<VerifikProcessFetchResult> {
+  const apiKey = Deno.env.get('VERIFIK_API_KEY');
+  if (!apiKey) {
+    throw new Error('VERIFIK_API_KEY not configured');
+  }
+
+  const endpoint = `${VERIFIK_BASE_URL}/co/rama/proceso/${encodeURIComponent(radicado)}`;
+  const resp = await fetch(endpoint, {
+    method: 'GET',
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      // Verifik docs show Authorization: "JWT <token>" / "jwt <token>"
+      'Authorization': `JWT ${apiKey}`,
+      'User-Agent': 'Lovable-Edge/1.0',
+    },
+  });
+
+  let body: any = null;
+  try {
+    body = await resp.json();
+  } catch {
+    body = null;
+  }
+
+  if (!resp.ok) {
+    return { ok: false, status: resp.status, body };
+  }
+
+  const details = body?.data?.details ?? {};
+  const actions = Array.isArray(body?.data?.actions) ? body.data.actions : [];
+
+  const actuaciones = actions
+    .map((a: any) => ({
+      fechaActuacion: a.fechaActuacion,
+      actuacion: a.actuacion,
+      anotacion: a.anotacion,
+      fechaInicio: a.fechaInicial ?? null,
+      fechaFin: a.fechaFinal ?? null,
+    }))
+    .filter((a: any) => !!a.fechaActuacion);
+
+  const sorted = [...actuaciones].sort(
+    (a: any, b: any) => new Date(b.fechaActuacion).getTime() - new Date(a.fechaActuacion).getTime()
+  );
+
+  const fechaUltimaActuacion = sorted[0]?.fechaActuacion ?? details.ultimaActualizacion ?? null;
+  const ultimaActuacion = sorted[0]?.actuacion ?? null;
+
+  return {
+    ok: true,
+    data: {
+      despacho: details.despacho ?? null,
+      fechaUltimaActuacion,
+      ultimaActuacion,
+      actuaciones,
+    },
+  };
+}
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -37,35 +100,37 @@ serve(async (req) => {
         });
       }
 
-      // Lookup the process in Rama Judicial
-      const response = await fetch(`${RAMA_JUDICIAL_API}/${process.radicado}`, {
-        headers: { 'Accept': 'application/json' }
-      });
+      // Lookup the process in Verifik (Rama Judicial data)
+      const result = await fetchProcessByRadicadoFromVerifik(process.radicado);
 
-      if (!response.ok) {
-        console.error(`[RamaJudicial] API error: ${response.status}`);
-        return new Response(JSON.stringify({ 
-          error: 'No se pudo consultar el proceso',
-          details: `Error ${response.status}` 
-        }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+      if (!result.ok) {
+        console.error(`[RamaJudicial] Verifik API error: ${result.status}`);
+        return new Response(
+          JSON.stringify({
+            error: 'No se pudo consultar el proceso',
+            details: `Error ${result.status}`,
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
       }
 
-      const data = await response.json();
-      const processData = data?.[0];
-      
+      const processData = result.data;
+
       if (!processData) {
-        return new Response(JSON.stringify({ 
-          success: true, 
-          message: 'Proceso no encontrado en Rama Judicial',
-          newActuations: 0 
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: 'Proceso no encontrado',
+            newActuations: 0,
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
       }
-
       // Get existing actuations
       const { data: existingActs } = await supabase
         .from('process_actuations')
@@ -132,25 +197,21 @@ serve(async (req) => {
       const results: any[] = [];
       let totalNewActuations = 0;
 
-      for (const process of processes || []) {
-        try {
-          const response = await fetch(`${RAMA_JUDICIAL_API}/${process.radicado}`, {
-            headers: { 'Accept': 'application/json' }
-          });
+       for (const process of processes || []) {
+         try {
+           const result = await fetchProcessByRadicadoFromVerifik(process.radicado);
 
-          if (!response.ok) {
-            results.push({ radicado: process.radicado, success: false, error: `API error ${response.status}` });
-            continue;
-          }
+           if (!result.ok) {
+             results.push({ radicado: process.radicado, success: false, error: `API error ${result.status}` });
+             continue;
+           }
 
-          const data = await response.json();
-          const processData = data?.[0];
+           const processData = result.data;
 
-          if (!processData) {
-            results.push({ radicado: process.radicado, success: true, newActuations: 0, message: 'Not found' });
-            continue;
-          }
-
+           if (!processData) {
+             results.push({ radicado: process.radicado, success: true, newActuations: 0, message: 'Not found' });
+             continue;
+           }
           // Get existing actuations
           const { data: existingActs } = await supabase
             .from('process_actuations')
@@ -212,31 +273,28 @@ serve(async (req) => {
       });
     }
 
-    if (action === 'lookup') {
-      // Lookup process by radicado
-      const response = await fetch(`${RAMA_JUDICIAL_API}/${radicado}`, {
-        headers: { 'Accept': 'application/json' }
-      });
+     if (action === 'lookup') {
+       // Lookup process by radicado (via Verifik)
+       const result = await fetchProcessByRadicadoFromVerifik(radicado);
 
-      if (!response.ok) {
-        console.error(`[RamaJudicial] API error: ${response.status}`);
-        return new Response(JSON.stringify({ 
-          error: 'No se pudo consultar el proceso',
-          details: `Error ${response.status}` 
-        }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
+       if (!result.ok) {
+         console.error(`[RamaJudicial] Verifik API error: ${result.status}`);
+         return new Response(
+           JSON.stringify({
+             error: 'No se pudo consultar el proceso',
+             details: `Error ${result.status}`,
+           }),
+           {
+             status: 400,
+             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+           }
+         );
+       }
 
-      const data = await response.json();
-      console.log(`[RamaJudicial] Found ${data?.length || 0} processes`);
-
-      return new Response(JSON.stringify({ processes: data }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
+       return new Response(JSON.stringify({ processes: result.data ? [result.data] : [] }), {
+         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+       });
+     }
     if (action === 'add_monitor') {
       // Add process to monitoring
       if (!lawyerId || !radicado) {
@@ -246,19 +304,16 @@ serve(async (req) => {
         });
       }
 
-      // First, lookup the process
-      const lookupResponse = await fetch(`${RAMA_JUDICIAL_API}/${radicado}`, {
-        headers: { 'Accept': 'application/json' }
-      });
-
-      let processInfo = null;
-      if (lookupResponse.ok) {
-        const processes = await lookupResponse.json();
-        if (processes?.length > 0) {
-          processInfo = processes[0];
-        }
-      }
-
+       // First, lookup the process
+       let processInfo: any = null;
+       try {
+         const result = await fetchProcessByRadicadoFromVerifik(radicado);
+         if (result.ok) {
+           processInfo = result.data;
+         }
+       } catch (e) {
+         console.error('[RamaJudicial] add_monitor lookup error:', e);
+       }
       // Insert monitored process
       const { data: monitoredProcess, error: insertError } = await supabase
         .from('monitored_processes')
@@ -334,18 +389,13 @@ serve(async (req) => {
       const updates: any[] = [];
       const newActuations: any[] = [];
 
-      for (const process of processes || []) {
-        try {
-          const response = await fetch(`${RAMA_JUDICIAL_API}/${process.radicado}`, {
-            headers: { 'Accept': 'application/json' }
-          });
+       for (const process of processes || []) {
+         try {
+           const result = await fetchProcessByRadicadoFromVerifik(process.radicado);
+           if (!result.ok) continue;
 
-          if (!response.ok) continue;
-
-          const data = await response.json();
-          const processData = data?.[0];
-          if (!processData) continue;
-
+           const processData = result.data;
+           if (!processData) continue;
           // Get existing actuations
           const { data: existingActs } = await supabase
             .from('process_actuations')
