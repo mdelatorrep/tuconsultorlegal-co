@@ -61,9 +61,9 @@ serve(async (req) => {
     }
 
     const requestData = await req.json();
-    const { queryType, documentNumber, documentType, idProceso, followUpQuery, conversationHistory } = requestData;
+    const { queryType, documentNumber, documentType, idProceso, radicado, followUpQuery, conversationHistory } = requestData;
 
-    console.log('[judicial-process-lookup] Query:', { queryType, documentNumber, idProceso });
+    console.log('[judicial-process-lookup] Query:', { queryType, documentNumber, idProceso, radicado });
 
     // Service client for logging
     const serviceClient = createClient(
@@ -122,12 +122,13 @@ serve(async (req) => {
         console.error('[judicial-process-lookup] Verifik API error:', verifik_response);
       }
 
-    } else if (queryType === 'processId' && idProceso) {
-      // Query by process ID - GET /v2/co/rama/proceso/{processNumber}
-      // Documentation: https://docs.verifik.co/legal/retrieve-details-of-a-legal-process-by-number/
-      // NOTE: processNumber is the idProceso (numeric), NOT the radicado/llaveProceso
-      const endpoint = `${VERIFIK_BASE_URL}/co/rama/proceso/${encodeURIComponent(idProceso)}`;
-      console.log('[judicial-process-lookup] Calling Verifik by processId:', endpoint);
+    } else if ((queryType === 'processId' && idProceso) || (queryType === 'radicado' && radicado)) {
+      // Query by process ID or radicado - GET /v2/co/rama/proceso/{processNumber}
+      // Documentation: https://docs.verifik.co/docs-es/legal/recuperar-detalles-proceso-legal-por-numero/
+      // NOTE: Only the processNumber (numeric ID or radicado) is required, no other parameters
+      const processNumber = queryType === 'radicado' ? radicado : idProceso;
+      const endpoint = `${VERIFIK_BASE_URL}/co/rama/proceso/${encodeURIComponent(processNumber)}`;
+      console.log('[judicial-process-lookup] Calling Verifik by processNumber:', endpoint);
 
       const response = await fetch(endpoint, {
         method: 'GET',
@@ -208,7 +209,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           error: 'Invalid query type or missing parameters',
-          details: 'Use queryType="document" with documentNumber/documentType, or queryType="processId" with idProceso'
+          details: 'Use queryType="document" with documentNumber/documentType, queryType="radicado" with radicado, or queryType="processId" with idProceso'
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -218,8 +219,8 @@ serve(async (req) => {
     try {
       await serviceClient.from('verifik_api_usage').insert({
         lawyer_id: user.id,
-        endpoint: queryType === 'processId' ? '/v2/co/rama/proceso' : '/v2/co/rama/procesos',
-        request_params: { queryType, documentNumber, documentType, idProceso },
+        endpoint: (queryType === 'processId' || queryType === 'radicado') ? '/v2/co/rama/proceso' : '/v2/co/rama/procesos',
+        request_params: { queryType, documentNumber, documentType, idProceso, radicado },
         response_status: verifik_response?.code ? 400 : 200,
         response_data: { processCount: processes.length, hasDetails: !!processDetails },
         api_cost: apiCost,
@@ -289,7 +290,7 @@ serve(async (req) => {
       await serviceClient.from('legal_tools_results').insert({
         lawyer_id: user.id,
         tool_type: 'judicial_process',
-        input_data: { queryType, documentNumber, documentType, idProceso, followUpQuery },
+        input_data: { queryType, documentNumber, documentType, idProceso, radicado, followUpQuery },
         output_data: { 
           processes, 
           processDetails,
@@ -298,7 +299,7 @@ serve(async (req) => {
         },
         metadata: { 
           source: 'verifik',
-          endpoint: queryType === 'processId' ? '/v2/co/rama/proceso' : '/v2/co/rama/procesos',
+          endpoint: (queryType === 'processId' || queryType === 'radicado') ? '/v2/co/rama/proceso' : '/v2/co/rama/procesos',
           apiCost,
           timestamp: new Date().toISOString()
         }
