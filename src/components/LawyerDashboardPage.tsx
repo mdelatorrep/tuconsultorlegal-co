@@ -52,6 +52,7 @@ import { SpecializedAgentsGrid } from "./lawyer-modules/SpecializedAgentsGrid";
 import { LawyerAccountSettings } from "./lawyer-modules/LawyerAccountSettings";
 import { SpecializedAgentChat } from "./lawyer-modules/SpecializedAgentChat";
 import { NotificationCenter } from "./notifications/NotificationCenter";
+import { PendingTasksIndicator } from "./PendingTasksIndicator";
 
 // Dashboard components
 import { 
@@ -705,6 +706,14 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                     </Button>
                   </div>
                   <div className="flex items-center gap-2">
+                    <PendingTasksIndicator 
+                      lawyerId={user.id}
+                      onTaskClick={(task) => {
+                        if (task.toolType === 'research') setCurrentView('research');
+                        else if (task.toolType === 'analysis') setCurrentView('analyze');
+                        else if (task.toolType === 'strategy') setCurrentView('strategize');
+                      }}
+                    />
                     <NotificationCenter 
                       lawyerId={user.id} 
                       onNavigate={(url) => {
@@ -764,6 +773,14 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                   <h1 className="font-semibold truncate text-sm md:text-base lg:text-lg">Dashboard Legal</h1>
                 </div>
                 <div className="flex items-center gap-2">
+                  <PendingTasksIndicator 
+                    lawyerId={user.id}
+                    onTaskClick={(task) => {
+                      if (task.toolType === 'research') setCurrentView('research');
+                      else if (task.toolType === 'analysis') setCurrentView('analyze');
+                      else if (task.toolType === 'strategy') setCurrentView('strategize');
+                    }}
+                  />
                   <NotificationCenter 
                     lawyerId={user.id} 
                     onNavigate={(url) => {

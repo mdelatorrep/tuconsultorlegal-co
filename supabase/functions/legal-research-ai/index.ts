@@ -151,7 +151,9 @@ ${jsonFormat}`;
 
     console.log(`✅ Background task started: ${responseId}, status: ${initialStatus}`);
 
-    // Create async task record
+    // Create async task record with tool_type and title for realtime tracking
+    const taskTitle = query.length > 50 ? query.substring(0, 50) + '...' : query;
+    
     const { data: taskData, error: taskError } = await supabase
       .from('async_research_tasks')
       .insert({
@@ -159,7 +161,9 @@ ${jsonFormat}`;
         openai_response_id: responseId,
         query: query,
         status: 'pending',
-        model_used: researchModel
+        model_used: researchModel,
+        tool_type: 'research',
+        title: taskTitle
       })
       .select()
       .single();
