@@ -7,8 +7,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { 
   Heart, Users, TrendingDown, TrendingUp, Activity,
   AlertTriangle, Mail, Clock, Calendar, UserMinus,
-  UserCheck, RefreshCw, ChevronRight
+  UserCheck, RefreshCw, ChevronRight, ExternalLink
 } from "lucide-react";
+import { toast } from "sonner";
 import { format, subDays, differenceInDays } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -30,7 +31,11 @@ interface CohortData {
   retentionRate: number;
 }
 
-export const RetentionDashboard = () => {
+interface RetentionDashboardProps {
+  onNavigate?: (view: string) => void;
+}
+
+export const RetentionDashboard = ({ onNavigate }: RetentionDashboardProps) => {
   const [lawyers, setLawyers] = useState<LawyerEngagement[]>([]);
   const [cohorts, setCohorts] = useState<CohortData[]>([]);
   const [metrics, setMetrics] = useState({
@@ -41,6 +46,7 @@ export const RetentionDashboard = () => {
     retentionRate: 0
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [sendingEmails, setSendingEmails] = useState(false);
 
   useEffect(() => {
     loadRetentionData();
@@ -177,6 +183,43 @@ export const RetentionDashboard = () => {
     }
   };
 
+  const handleSendReengagementEmails = async () => {
+    setSendingEmails(true);
+    try {
+      const atRiskEmails = lawyers
+        .filter(l => l.status === 'at_risk')
+        .map(l => ({ email: l.email, name: l.full_name, days_inactive: l.days_inactive }));
+
+      if (atRiskEmails.length === 0) {
+        toast.info("No hay usuarios en riesgo para enviar emails");
+        return;
+      }
+
+      const { error } = await supabase.functions.invoke('send-email', {
+        body: {
+          type: 'reengagement_batch',
+          recipients: atRiskEmails
+        }
+      });
+
+      if (error) throw error;
+      toast.success(`Se enviaron ${atRiskEmails.length} emails de re-engagement`);
+    } catch (error) {
+      console.error('Error sending emails:', error);
+      toast.error("Error al enviar emails. La funcionalidad de email masivo aún no está configurada.");
+    } finally {
+      setSendingEmails(false);
+    }
+  };
+
+  const handleViewLawyerDetails = (lawyerId: string) => {
+    if (onNavigate) {
+      onNavigate(`lawyers?id=${lawyerId}`);
+    } else {
+      toast.info("Navegación a detalles del abogado");
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -279,9 +322,18 @@ export const RetentionDashboard = () => {
                   </p>
                 </div>
               </div>
-              <Button variant="outline" size="sm">
-                <Mail className="w-4 h-4 mr-2" />
-                Enviar Emails
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleSendReengagementEmails}
+                disabled={sendingEmails}
+              >
+                {sendingEmails ? (
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Mail className="w-4 h-4 mr-2" />
+                )}
+                {sendingEmails ? "Enviando..." : "Enviar Emails"}
               </Button>
             </div>
           </CardContent>
@@ -337,7 +389,13 @@ export const RetentionDashboard = () => {
                     </p>
                     <p className="text-xs text-muted-foreground">sin actividad</p>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => handleViewLawyerDetails(lawyer.id)}
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </Button>
                 </div>
               ))}
               {atRiskLawyers.length === 0 && (

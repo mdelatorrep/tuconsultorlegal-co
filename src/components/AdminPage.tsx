@@ -997,10 +997,10 @@ function AdminPage() {
         return <RevenueAnalytics />;
       
       case 'retention':
-        return <RetentionDashboard />;
+        return <RetentionDashboard onNavigate={setCurrentView} />;
       
       case 'strategic':
-        return <StrategicDecisions />;
+        return <StrategicDecisions onNavigate={setCurrentView} />;
       
       case 'verifications':
         return <LawyerVerificationAdmin adminId={user?.id || ''} />;
