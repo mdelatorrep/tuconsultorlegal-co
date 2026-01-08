@@ -2110,11 +2110,15 @@ export type Database = {
       lawyer_profiles: {
         Row: {
           active: boolean
+          address: string | null
           bar_number: string | null
           can_create_agents: boolean | null
           can_create_blogs: boolean | null
           can_use_ai_tools: boolean
+          city: string | null
           created_at: string | null
+          document_number: string | null
+          document_type: string | null
           email: string
           full_name: string
           id: string
@@ -2122,17 +2126,27 @@ export type Database = {
           is_verified: boolean | null
           last_login_at: string | null
           phone_number: string | null
+          professional_card_number: string | null
           professional_status: string | null
+          secondary_email: string | null
+          secondary_phone: string | null
+          specialization: string | null
+          university: string | null
           updated_at: string | null
           verification_date: string | null
+          years_of_experience: number | null
         }
         Insert: {
           active?: boolean
+          address?: string | null
           bar_number?: string | null
           can_create_agents?: boolean | null
           can_create_blogs?: boolean | null
           can_use_ai_tools?: boolean
+          city?: string | null
           created_at?: string | null
+          document_number?: string | null
+          document_type?: string | null
           email: string
           full_name: string
           id: string
@@ -2140,17 +2154,27 @@ export type Database = {
           is_verified?: boolean | null
           last_login_at?: string | null
           phone_number?: string | null
+          professional_card_number?: string | null
           professional_status?: string | null
+          secondary_email?: string | null
+          secondary_phone?: string | null
+          specialization?: string | null
+          university?: string | null
           updated_at?: string | null
           verification_date?: string | null
+          years_of_experience?: number | null
         }
         Update: {
           active?: boolean
+          address?: string | null
           bar_number?: string | null
           can_create_agents?: boolean | null
           can_create_blogs?: boolean | null
           can_use_ai_tools?: boolean
+          city?: string | null
           created_at?: string | null
+          document_number?: string | null
+          document_type?: string | null
           email?: string
           full_name?: string
           id?: string
@@ -2158,9 +2182,15 @@ export type Database = {
           is_verified?: boolean | null
           last_login_at?: string | null
           phone_number?: string | null
+          professional_card_number?: string | null
           professional_status?: string | null
+          secondary_email?: string | null
+          secondary_phone?: string | null
+          specialization?: string | null
+          university?: string | null
           updated_at?: string | null
           verification_date?: string | null
+          years_of_experience?: number | null
         }
         Relationships: []
       }
