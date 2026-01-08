@@ -49,6 +49,7 @@ import { QuickActionsBar } from "./QuickActionsBar";
 import { useCredits } from "@/hooks/useCredits";
 import { ToolCostIndicator } from "@/components/credits/ToolCostIndicator";
 import { SpecializedAgentsGrid } from "./lawyer-modules/SpecializedAgentsGrid";
+import { LawyerAccountSettings } from "./lawyer-modules/LawyerAccountSettings";
 import { SpecializedAgentChat } from "./lawyer-modules/SpecializedAgentChat";
 import { NotificationCenter } from "./notifications/NotificationCenter";
 
@@ -105,7 +106,7 @@ const quillFormats = [
   'list', 'bullet', 'align', 'color', 'background'
 ];
 
-type ViewType = 'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager' | 'research' | 'analyze' | 'draft' | 'strategize' | 'crm' | 'public-profile' | 'suin-juriscol' | 'process-query' | 'credits' | 'gamification' | 'process-monitor' | 'legal-calendar' | 'legal-copilot' | 'voice-assistant' | 'case-predictor' | 'client-portal' | 'lawyer-verification' | 'request-agent-access' | 'request-blog-access' | 'specialized-agents';
+type ViewType = 'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager' | 'research' | 'analyze' | 'draft' | 'strategize' | 'crm' | 'public-profile' | 'suin-juriscol' | 'process-query' | 'credits' | 'gamification' | 'process-monitor' | 'legal-calendar' | 'legal-copilot' | 'voice-assistant' | 'case-predictor' | 'client-portal' | 'lawyer-verification' | 'request-agent-access' | 'request-blog-access' | 'specialized-agents' | 'account-settings';
 
 export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageProps) {
   const [documents, setDocuments] = useState<DocumentToken[]>([]);
@@ -646,16 +647,26 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
             onSelectAgent={(agent) => setSelectedSpecializedAgent(agent)}
           />
         );
+      case 'account-settings':
+        return (
+          <LawyerAccountSettings
+            user={{
+              id: user.id,
+              name: user.name,
+              email: user.email,
+            }}
+          />
+        );
       default:
         return null;
     }
   };
 
   // Views that use full layout with sidebar
-  const viewsWithSidebar = ['dashboard', 'public-profile', 'stats', 'credits', 'gamification', 'request-agent-access', 'request-blog-access'];
+  const viewsWithSidebar = ['dashboard', 'public-profile', 'stats', 'credits', 'gamification', 'request-agent-access', 'request-blog-access', 'account-settings'];
   
   // Views that modules render their own sidebar (need to be wrapped)
-  const moduleViews = ['agent-creator', 'agent-manager', 'training', 'blog-manager', 'research', 'analyze', 'draft', 'strategize', 'crm', 'suin-juriscol', 'process-query', 'process-monitor', 'legal-calendar', 'legal-copilot', 'voice-assistant', 'case-predictor', 'client-portal', 'lawyer-verification', 'specialized-agents'];
+  const moduleViews = ['agent-creator', 'agent-manager', 'training', 'blog-manager', 'research', 'analyze', 'draft', 'strategize', 'crm', 'suin-juriscol', 'process-query', 'process-monitor', 'legal-calendar', 'legal-copilot', 'voice-assistant', 'case-predictor', 'client-portal', 'lawyer-verification', 'specialized-agents', 'account-settings'];
 
   // If it's a module view, wrap it with our SidebarProvider
   if (moduleViews.includes(currentView)) {
