@@ -102,9 +102,17 @@ Instrucciones específicas:
 - Marca con [ESPECIFICAR] los campos que requieren personalización
 - Incluye cláusulas de protección estándar
 
+FORMATO DEL CONTENIDO (MUY IMPORTANTE):
+- El campo "content" debe contener texto plano con markdown simple
+- NO uses etiquetas HTML (<p>, <br>, etc.)
+- Usa saltos de línea reales (\\n\\n) para separar párrafos
+- Usa ** para títulos importantes (ej: **CONTRATO DE ARRENDAMIENTO**)
+- Usa "Cláusula 1." para numerar cláusulas
+- NO incluyas razonamiento ni explicaciones en el contenido, solo el documento legal
+
 Responde en formato JSON:
 {
-  "content": "Contenido completo del borrador en formato markdown",
+  "content": "Contenido del documento en texto plano con markdown simple",
   "sections": ["Lista", "de", "secciones", "incluidas"],
   "documentType": "Nombre completo del tipo de documento"
 }`;
