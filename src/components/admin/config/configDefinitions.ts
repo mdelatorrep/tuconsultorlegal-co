@@ -126,6 +126,8 @@ export const AI_CATEGORIES: AICategory[] = [
     description: 'Funciones de soporte',
     icon: React.createElement(Wrench, { className: "w-4 h-4" }),
     functions: [
+      { id: 'prompt_optimizer', name: 'Optimizar Prompts', description: 'Mejora prompts para funciones IA', promptKey: 'prompt_optimizer_instructions', modelKey: 'prompt_optimizer_model', reasoningEffortKey: 'reasoning_effort_prompt_optimizer' },
+      { id: 'improve_prompt', name: 'Mejorar Prompt Agente', description: 'Optimiza prompts de agentes legales', promptKey: 'prompt_optimizer_instructions', modelKey: 'prompt_optimizer_model', reasoningEffortKey: 'reasoning_effort_prompt_optimizer' },
       { id: 'improve_document_info', name: 'Mejorar Info', description: 'Optimiza descripciones', promptKey: 'document_description_optimizer_prompt', modelKey: 'document_description_optimizer_model', reasoningEffortKey: 'improve_document_info_reasoning_effort' },
       { id: 'crm_segmentation', name: 'Segmentación CRM', description: 'Clasificación de clientes', promptKey: 'crm_segmentation_prompt', modelKey: 'crm_segmentation_ai_model', reasoningEffortKey: 'crm_segmentation_reasoning_effort' },
       { id: 'organize_file', name: 'Organizar Archivos', description: 'Organización de archivos', promptKey: 'organize_file_prompt', modelKey: 'organize_file_ai_model', reasoningEffortKey: 'organize_file_reasoning_effort' }
