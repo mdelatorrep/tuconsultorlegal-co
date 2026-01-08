@@ -34,6 +34,7 @@ import {
   Mic
 } from "lucide-react";
 import AIFunctionConfig from "./admin/AIFunctionConfig";
+import VoiceConfigSection from "./admin/VoiceConfigSection";
 
 interface SystemConfig {
   id: string;
@@ -675,6 +676,12 @@ export default function SystemConfigManager() {
               openaiModels={openaiModels}
               loadingModels={loadingModels}
               onLoadModels={loadOpenAIModels}
+              onSave={saveConfig}
+            />
+          ) : selectedCategory === 'voice-config' ? (
+            <VoiceConfigSection
+              configs={configs}
+              getConfigValue={getConfigValue}
               onSave={saveConfig}
             />
           ) : currentOperationalConfig ? (
