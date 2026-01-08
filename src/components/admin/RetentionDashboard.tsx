@@ -186,27 +186,53 @@ export const RetentionDashboard = ({ onNavigate }: RetentionDashboardProps) => {
   const handleSendReengagementEmails = async () => {
     setSendingEmails(true);
     try {
-      const atRiskEmails = lawyers
-        .filter(l => l.status === 'at_risk')
-        .map(l => ({ email: l.email, name: l.full_name, days_inactive: l.days_inactive }));
+      const atRiskLawyers = lawyers.filter(l => l.status === 'at_risk');
 
-      if (atRiskEmails.length === 0) {
+      if (atRiskLawyers.length === 0) {
         toast.info("No hay usuarios en riesgo para enviar emails");
+        setSendingEmails(false);
         return;
       }
 
-      const { error } = await supabase.functions.invoke('send-email', {
-        body: {
-          type: 'reengagement_batch',
-          recipients: atRiskEmails
-        }
-      });
+      let successCount = 0;
+      let errorCount = 0;
 
-      if (error) throw error;
-      toast.success(`Se enviaron ${atRiskEmails.length} emails de re-engagement`);
+      // Send emails individually using the existing send-email function
+      for (const lawyer of atRiskLawyers) {
+        try {
+          const { error } = await supabase.functions.invoke('send-email', {
+            body: {
+              to: lawyer.email,
+              recipient_type: 'lawyer',
+              template_key: 'lawyer_reengagement',
+              variables: {
+                lawyer_name: lawyer.full_name,
+                days_inactive: String(lawyer.days_inactive)
+              }
+            }
+          });
+
+          if (error) {
+            console.error(`Error sending to ${lawyer.email}:`, error);
+            errorCount++;
+          } else {
+            successCount++;
+          }
+        } catch (err) {
+          console.error(`Error sending to ${lawyer.email}:`, err);
+          errorCount++;
+        }
+      }
+
+      if (successCount > 0) {
+        toast.success(`Se enviaron ${successCount} emails de re-engagement`);
+      }
+      if (errorCount > 0) {
+        toast.warning(`${errorCount} emails no pudieron enviarse`);
+      }
     } catch (error) {
       console.error('Error sending emails:', error);
-      toast.error("Error al enviar emails. La funcionalidad de email masivo aún no está configurada.");
+      toast.error("Error al enviar emails de re-engagement");
     } finally {
       setSendingEmails(false);
     }
