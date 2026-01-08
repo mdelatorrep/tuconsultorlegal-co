@@ -322,56 +322,71 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout 
                                 lineHeight: '1.8'
                               }}>
                                 <div className="max-w-none space-y-6">
-                                  {draft.content.split('\n\n').map((paragraph, idx) => {
-                                    const trimmed = paragraph.trim();
+                                  {(() => {
+                                    // Clean content: remove HTML tags and convert literal \n to real line breaks
+                                    const cleanContent = draft.content
+                                      // Remove HTML tags like <p>, </p>, <br>, etc.
+                                      .replace(/<\/?[^>]+(>|$)/g, '')
+                                      // Convert literal \n to real newlines
+                                      .replace(/\\n/g, '\n')
+                                      // Normalize multiple newlines
+                                      .replace(/\n{3,}/g, '\n\n')
+                                      .trim();
                                     
-                                    // Title (bold text or starts with **)
-                                    if (trimmed.includes('**') || trimmed.match(/^[A-ZÁÉÍÓÚÑ\s]+$/)) {
+                                    return cleanContent.split('\n\n').map((paragraph, idx) => {
+                                      const trimmed = paragraph.trim();
+                                      
+                                      // Skip empty paragraphs
+                                      if (!trimmed) return null;
+                                      
+                                      // Title (bold text or starts with **)
+                                      if (trimmed.includes('**') || trimmed.match(/^[A-ZÁÉÍÓÚÑ\s]+$/)) {
+                                        return (
+                                          <h2 key={idx} className="font-bold text-xl text-center text-gray-900 uppercase tracking-wide border-b-2 border-gray-300 pb-3 mb-6 mt-8">
+                                            {trimmed.replace(/\*\*/g, '')}
+                                          </h2>
+                                        );
+                                      }
+                                      
+                                      // Section heading (starts with ### or numbered)
+                                      if (trimmed.includes('###') || trimmed.match(/^\d+\.|^[IVX]+\./)) {
+                                        return (
+                                          <h3 key={idx} className="font-bold text-lg text-gray-800 mt-8 mb-4 uppercase">
+                                            {trimmed.replace(/###/g, '').trim()}
+                                          </h3>
+                                        );
+                                      }
+                                      
+                                      // Clause or numbered item
+                                      if (trimmed.match(/^CLÁUSULA|^Artículo|^Capítulo|^Cláusula/i)) {
+                                        return (
+                                          <div key={idx} className="mb-6">
+                                            <p className="font-bold text-base text-gray-900 mb-2 uppercase">
+                                              {trimmed}
+                                            </p>
+                                          </div>
+                                        );
+                                      }
+                                      
+                                      // List item
+                                      if (trimmed.match(/^[-•]\s/) || trimmed.match(/^[a-z]\)/) || trimmed.match(/^\d+\)/)) {
+                                        return (
+                                          <div key={idx} className="ml-8 mb-2">
+                                            <p className="text-gray-700 text-base">
+                                              {trimmed}
+                                            </p>
+                                          </div>
+                                        );
+                                      }
+                                      
+                                      // Regular paragraph - handle internal line breaks
                                       return (
-                                        <h2 key={idx} className="font-bold text-xl text-center text-gray-900 uppercase tracking-wide border-b-2 border-gray-300 pb-3 mb-6 mt-8">
-                                          {trimmed.replace(/\*\*/g, '')}
-                                        </h2>
+                                        <p key={idx} className="text-gray-800 text-base text-justify leading-loose mb-4 indent-8 whitespace-pre-line">
+                                          {trimmed}
+                                        </p>
                                       );
-                                    }
-                                    
-                                    // Section heading (starts with ### or numbered)
-                                    if (trimmed.includes('###') || trimmed.match(/^\d+\.|^[IVX]+\./)) {
-                                      return (
-                                        <h3 key={idx} className="font-bold text-lg text-gray-800 mt-8 mb-4 uppercase">
-                                          {trimmed.replace(/###/g, '').trim()}
-                                        </h3>
-                                      );
-                                    }
-                                    
-                                    // Clause or numbered item
-                                    if (trimmed.match(/^CLÁUSULA|^Artículo|^Capítulo/i)) {
-                                      return (
-                                        <div key={idx} className="mb-6">
-                                          <p className="font-bold text-base text-gray-900 mb-2 uppercase">
-                                            {trimmed}
-                                          </p>
-                                        </div>
-                                      );
-                                    }
-                                    
-                                    // List item
-                                    if (trimmed.match(/^[-•]\s/) || trimmed.match(/^[a-z]\)/) || trimmed.match(/^\d+\)/)) {
-                                      return (
-                                        <div key={idx} className="ml-8 mb-2">
-                                          <p className="text-gray-700 text-base">
-                                            {trimmed}
-                                          </p>
-                                        </div>
-                                      );
-                                    }
-                                    
-                                    // Regular paragraph
-                                    return (
-                                      <p key={idx} className="text-gray-800 text-base text-justify leading-loose mb-4 indent-8">
-                                        {trimmed}
-                                      </p>
-                                    );
-                                  })}
+                                    });
+                                  })()}
                                   
                                   {/* Signature section */}
                                   <div className="mt-16 pt-8 border-t-2 border-gray-300">
