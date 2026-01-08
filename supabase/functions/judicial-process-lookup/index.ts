@@ -79,10 +79,17 @@ serve(async (req) => {
     // Call Verifik API based on query type
     if (queryType === 'document' && documentNumber) {
       // Query by document number - GET /v2/co/rama/procesos
-      // Documentation: https://docs.verifik.co/legal/colombian-legal-processes/
-      // Required params: documentType (CC, NIT), documentNumber
+      // Documentation: https://docs.verifik.co/docs-es/legal/procesos-legales-colombianos/
+      // Required params: documentType (CC, NIT ONLY), documentNumber
+      
+      // Validate documentType - Verifik only accepts CC or NIT
+      const validDocType = (documentType === 'CC' || documentType === 'NIT') ? documentType : 'CC';
+      if (documentType && documentType !== 'CC' && documentType !== 'NIT') {
+        console.warn(`[judicial-process-lookup] Invalid documentType '${documentType}', defaulting to 'CC'. Only CC and NIT are supported.`);
+      }
+      
       const params = new URLSearchParams({
-        documentType: documentType || 'CC',
+        documentType: validDocType,
         documentNumber: documentNumber,
       });
       
