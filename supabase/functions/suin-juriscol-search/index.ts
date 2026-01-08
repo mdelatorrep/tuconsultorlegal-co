@@ -4,8 +4,9 @@ import {
   buildResponsesRequestParams,
   callResponsesAPI,
   extractOutputText,
-  loadWebSearchConfigAndBuildTool,
+  extractWebSearchCitations,
 } from "../_shared/openai-responses-utils.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -109,7 +110,7 @@ ${year ? `Año: ${year}` : ""}`;
       instructions: systemPrompt,
       maxOutputTokens: 4000,
       webSearch: { type: "web_search_preview" },
-      reasoningEffort: reasoningEffort as 'low' | 'medium' | 'high',
+      reasoning: { effort: reasoningEffort as "low" | "medium" | "high" },
     });
 
     console.log("Request params:", JSON.stringify(requestParams, null, 2));
@@ -127,36 +128,64 @@ ${year ? `Año: ${year}` : ""}`;
       throw new Error(response.error || "Error calling AI API");
     }
 
-    const aiResponse = extractOutputText(response.data);
-    console.log("AI response received, length:", aiResponse?.length || 0);
+    const responseData = response.data as Record<string, unknown>;
 
-    // Parse the response to extract structured results
+    const aiResponse = extractOutputText(responseData as any) ?? "";
+    console.log("AI response received, length:", aiResponse.length);
+
+    // Parse the response to extract structured results + sources
     const results: any[] = [];
-    const sources: string[] = ["SUIN-Juriscol (suin-juriscol.gov.co)"];
+    const sourcesSet = new Set<string>(["SUIN-Juriscol (suin-juriscol.gov.co)"]);
 
-    // Extract URLs from response (simple extraction)
-    const urlMatches = aiResponse?.match(/https?:\/\/[^\s\)]+/g) || [];
-    urlMatches.forEach((url: string, idx: number) => {
-      if (
-        url.includes("suin-juriscol.gov.co") ||
-        url.includes("corteconstitucional.gov.co") ||
-        url.includes("funcionpublica.gov.co") ||
-        url.includes("secretariasenado.gov.co")
-      ) {
+    const cleanUrl = (url: string) => url.trim().replace(/[\]\)\.,;:]+$/, "");
+    const safeAddHostname = (url: string) => {
+      try {
+        sourcesSet.add(new URL(url).hostname);
+      } catch {
+        // ignore invalid URLs
+      }
+    };
+
+    // Prefer grounded citations from Responses API web_search annotations
+    const citations = extractWebSearchCitations(responseData as any);
+    const uniqueCitations = new Map<string, { url: string; title?: string }>();
+
+    for (const c of citations) {
+      if (!c?.url) continue;
+      const url = cleanUrl(c.url);
+      if (!url) continue;
+      if (!uniqueCitations.has(url)) uniqueCitations.set(url, { url, title: c.title });
+    }
+
+    for (const [url, c] of uniqueCitations.entries()) {
+      results.push({
+        title: c.title || "Fuente consultada",
+        url,
+        snippet: "Referencia encontrada en la búsqueda web",
+        type: category !== "all" ? category : "normativa",
+      });
+      safeAddHostname(url);
+    }
+
+    // Fallback: extract URLs from plain text (in case there are no citations)
+    if (results.length === 0 && aiResponse) {
+      const urlMatches = aiResponse.match(/https?:\/\/[^\s\)]+/g) || [];
+      for (const rawUrl of urlMatches) {
+        const url = cleanUrl(rawUrl);
+        // Avoid duplicates
+        if (!url || results.some((r) => r.url === url)) continue;
+
         results.push({
-          title: `Documento normativo ${idx + 1}`,
-          url: url.replace(/[.,;:]+$/, ""), // Clean trailing punctuation
-          snippet: "Ver documento en fuente oficial",
+          title: "Fuente consultada",
+          url,
+          snippet: "Ver documento en la fuente",
           type: category !== "all" ? category : "normativa",
         });
-
-        // Track unique sources
-        const domain = new URL(url).hostname;
-        if (!sources.includes(domain)) {
-          sources.push(domain);
-        }
+        safeAddHostname(url);
       }
-    });
+    }
+
+    const sources = Array.from(sourcesSet);
 
     // Save result to database
     let resultId = null;
