@@ -72,13 +72,14 @@ serve(async (req) => {
       });
     }
 
-    // Get AI model and prompt from system config - NO FALLBACKS
-    const [model, systemPrompt] = await Promise.all([
+    // Get AI model, prompt and reasoning effort from system config - NO FALLBACKS
+    const [model, systemPrompt, reasoningEffort] = await Promise.all([
       getRequiredConfig(supabase, "suin_juriscol_ai_model"),
       getRequiredConfig(supabase, "suin_juriscol_ai_prompt"),
+      getRequiredConfig(supabase, "suin_juriscol_reasoning_effort"),
     ]);
 
-    console.log(`[SUIN-Juriscol] Using model: ${model}`);
+    console.log(`[SUIN-Juriscol] Using model: ${model}, reasoning effort: ${reasoningEffort}`);
 
     // Build the user message based on whether this is a follow-up
     let userMessage: string;
@@ -102,12 +103,13 @@ ${year ? `Año: ${year}` : ""}`;
 
     console.log("Calling AI with web search for SUIN-Juriscol...");
 
-    // Build request params with web search tool
+    // Build request params with web search tool and reasoning effort
     const requestParams = buildResponsesRequestParams(model, {
       input: userMessage,
       instructions: systemPrompt,
       maxOutputTokens: 4000,
       webSearch: { type: "web_search_preview" },
+      reasoningEffort: reasoningEffort as 'low' | 'medium' | 'high',
     });
 
     console.log("Request params:", JSON.stringify(requestParams, null, 2));
