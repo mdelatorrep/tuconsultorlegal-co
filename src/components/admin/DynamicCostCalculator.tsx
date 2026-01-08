@@ -64,6 +64,7 @@ export function DynamicCostCalculator() {
   const [loading, setLoading] = useState(true);
   const [recalculating, setRecalculating] = useState(false);
   const [editingConfig, setEditingConfig] = useState<CostConfig | null>(null);
+  const [sliderValues, setSliderValues] = useState<Record<string, number>>({});
   const { toast } = useToast();
 
   useEffect(() => {
@@ -89,6 +90,12 @@ export function DynamicCostCalculator() {
 
     if (!error && data) {
       setCostConfigs(data);
+      // Initialize slider values from configs
+      const initialSliderValues: Record<string, number> = {};
+      data.forEach(config => {
+        initialSliderValues[config.id] = config.cost_multiplier;
+      });
+      setSliderValues(prev => ({ ...prev, ...initialSliderValues }));
     }
   };
 
@@ -458,14 +465,14 @@ export function DynamicCostCalculator() {
                           <code className="text-xs text-muted-foreground">{config.config_key}</code>
                         </div>
                         <Badge variant="outline" className="text-lg">
-                          {config.cost_multiplier}x
+                          {(sliderValues[config.id] ?? config.cost_multiplier).toFixed(1)}x
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">{config.description}</p>
                       <div className="flex items-center gap-4">
                         <Slider
-                          value={[config.cost_multiplier]}
-                          onValueChange={([val]) => setEditingConfig({ ...config, cost_multiplier: val })}
+                          value={[sliderValues[config.id] ?? config.cost_multiplier]}
+                          onValueChange={([val]) => setSliderValues(prev => ({ ...prev, [config.id]: val }))}
                           onValueCommit={([val]) => handleUpdateMultiplier(config, val)}
                           min={0.1}
                           max={5}
@@ -513,20 +520,21 @@ export function DynamicCostCalculator() {
                       <div className="flex items-center justify-between">
                         <p className="font-medium">{config.config_name}</p>
                         <Badge variant="outline" className="text-lg">
-                          {config.cost_multiplier}x
+                          {(sliderValues[config.id] ?? config.cost_multiplier).toFixed(1)}x
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">{config.description}</p>
                       <div className="flex items-center gap-4">
                         <Slider
-                          value={[config.cost_multiplier]}
+                          value={[sliderValues[config.id] ?? config.cost_multiplier]}
+                          onValueChange={([val]) => setSliderValues(prev => ({ ...prev, [config.id]: val }))}
                           onValueCommit={([val]) => handleUpdateMultiplier(config, val)}
                           min={1}
                           max={5}
                           step={0.1}
                           className="flex-1"
                         />
-                        <span className="text-lg font-mono w-12">{config.cost_multiplier}x</span>
+                        <span className="text-lg font-mono w-12">{(sliderValues[config.id] ?? config.cost_multiplier).toFixed(1)}x</span>
                       </div>
                     </div>
                   ))}
@@ -556,20 +564,21 @@ export function DynamicCostCalculator() {
                             <p className="font-medium">{config.config_name}</p>
                           </div>
                           <Badge variant="outline" className="text-lg">
-                            {config.cost_multiplier}x
+                            {(sliderValues[config.id] ?? config.cost_multiplier).toFixed(1)}x
                           </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground">{config.description}</p>
                         <div className="flex items-center gap-4">
                           <Slider
-                            value={[config.cost_multiplier]}
+                            value={[sliderValues[config.id] ?? config.cost_multiplier]}
+                            onValueChange={([val]) => setSliderValues(prev => ({ ...prev, [config.id]: val }))}
                             onValueCommit={([val]) => handleUpdateMultiplier(config, val)}
                             min={0.5}
                             max={5}
                             step={0.1}
                             className="flex-1"
                           />
-                          <span className="text-lg font-mono w-12">{config.cost_multiplier}x</span>
+                          <span className="text-lg font-mono w-12">{(sliderValues[config.id] ?? config.cost_multiplier).toFixed(1)}x</span>
                         </div>
                       </div>
                     );
@@ -618,7 +627,8 @@ export function DynamicCostCalculator() {
                           <span>10x (alto margen)</span>
                         </div>
                         <Slider
-                          value={[config.cost_multiplier]}
+                          value={[sliderValues[config.id] ?? config.cost_multiplier]}
+                          onValueChange={([val]) => setSliderValues(prev => ({ ...prev, [config.id]: val }))}
                           onValueCommit={([val]) => handleUpdateMultiplier(config, val)}
                           min={1}
                           max={10}
@@ -629,8 +639,12 @@ export function DynamicCostCalculator() {
                           <Label>Multiplicador exacto:</Label>
                           <Input
                             type="number"
-                            value={config.cost_multiplier}
+                            value={sliderValues[config.id] ?? config.cost_multiplier}
                             onChange={(e) => {
+                              const val = parseFloat(e.target.value) || 1;
+                              setSliderValues(prev => ({ ...prev, [config.id]: val }));
+                            }}
+                            onBlur={(e) => {
                               const val = parseFloat(e.target.value) || 1;
                               handleUpdateMultiplier(config, val);
                             }}
