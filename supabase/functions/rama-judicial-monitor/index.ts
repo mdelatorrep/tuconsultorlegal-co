@@ -19,7 +19,198 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const { action, lawyerId, radicado, processId } = await req.json();
-    console.log(`[RamaJudicial] Action: ${action}, Lawyer: ${lawyerId}, Radicado: ${radicado}`);
+    console.log(`[RamaJudicial] Action: ${action}, Lawyer: ${lawyerId}, ProcessId: ${processId}, Radicado: ${radicado}`);
+
+    // Handle 'sync' action - sync a specific process (alias for check_updates with processId)
+    if (action === 'sync' && processId) {
+      // Get the process details
+      const { data: process, error: fetchError } = await supabase
+        .from('monitored_processes')
+        .select('*')
+        .eq('id', processId)
+        .single();
+
+      if (fetchError || !process) {
+        return new Response(JSON.stringify({ error: 'Proceso no encontrado' }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // Lookup the process in Rama Judicial
+      const response = await fetch(`${RAMA_JUDICIAL_API}/${process.radicado}`, {
+        headers: { 'Accept': 'application/json' }
+      });
+
+      if (!response.ok) {
+        console.error(`[RamaJudicial] API error: ${response.status}`);
+        return new Response(JSON.stringify({ 
+          error: 'No se pudo consultar el proceso',
+          details: `Error ${response.status}` 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      const data = await response.json();
+      const processData = data?.[0];
+      
+      if (!processData) {
+        return new Response(JSON.stringify({ 
+          success: true, 
+          message: 'Proceso no encontrado en Rama Judicial',
+          newActuations: 0 
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // Get existing actuations
+      const { data: existingActs } = await supabase
+        .from('process_actuations')
+        .select('fecha_actuacion, anotacion')
+        .eq('monitored_process_id', processId);
+
+      const existingSet = new Set(
+        (existingActs || []).map(a => `${a.fecha_actuacion}-${a.anotacion}`)
+      );
+
+      // Find new actuations
+      const newActs = (processData.actuaciones || []).filter((act: any) => 
+        !existingSet.has(`${act.fechaActuacion}-${act.anotacion}`)
+      );
+
+      if (newActs.length > 0) {
+        // Insert new actuations
+        const actuationsToInsert = newActs.map((act: any) => ({
+          monitored_process_id: processId,
+          fecha_actuacion: act.fechaActuacion,
+          anotacion: act.anotacion,
+          actuacion: act.actuacion,
+          fecha_inicio: act.fechaInicio,
+          fecha_fin: act.fechaFin,
+          is_new: true
+        }));
+
+        await supabase.from('process_actuations').insert(actuationsToInsert);
+      }
+
+      // Update process info
+      await supabase
+        .from('monitored_processes')
+        .update({
+          despacho: processData.despacho || process.despacho,
+          ultima_actuacion_fecha: processData.fechaUltimaActuacion || null,
+          ultima_actuacion_descripcion: processData.ultimaActuacion || null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', processId);
+
+      console.log(`[RamaJudicial] Synced process ${process.radicado}: ${newActs.length} new actuations`);
+      return new Response(JSON.stringify({ 
+        success: true, 
+        newActuations: newActs.length,
+        process: processData 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Handle 'sync-all' action - sync all processes for a lawyer
+    if (action === 'sync-all' && lawyerId) {
+      const { data: processes, error: fetchError } = await supabase
+        .from('monitored_processes')
+        .select('*')
+        .eq('lawyer_id', lawyerId)
+        .eq('estado', 'activo');
+
+      if (fetchError) throw fetchError;
+
+      console.log(`[RamaJudicial] Syncing ${processes?.length || 0} processes for lawyer ${lawyerId}`);
+
+      const results: any[] = [];
+      let totalNewActuations = 0;
+
+      for (const process of processes || []) {
+        try {
+          const response = await fetch(`${RAMA_JUDICIAL_API}/${process.radicado}`, {
+            headers: { 'Accept': 'application/json' }
+          });
+
+          if (!response.ok) {
+            results.push({ radicado: process.radicado, success: false, error: `API error ${response.status}` });
+            continue;
+          }
+
+          const data = await response.json();
+          const processData = data?.[0];
+
+          if (!processData) {
+            results.push({ radicado: process.radicado, success: true, newActuations: 0, message: 'Not found' });
+            continue;
+          }
+
+          // Get existing actuations
+          const { data: existingActs } = await supabase
+            .from('process_actuations')
+            .select('fecha_actuacion, anotacion')
+            .eq('monitored_process_id', process.id);
+
+          const existingSet = new Set(
+            (existingActs || []).map(a => `${a.fecha_actuacion}-${a.anotacion}`)
+          );
+
+          // Find new actuations
+          const newActs = (processData.actuaciones || []).filter((act: any) => 
+            !existingSet.has(`${act.fechaActuacion}-${act.anotacion}`)
+          );
+
+          if (newActs.length > 0) {
+            const actuationsToInsert = newActs.map((act: any) => ({
+              monitored_process_id: process.id,
+              fecha_actuacion: act.fechaActuacion,
+              anotacion: act.anotacion,
+              actuacion: act.actuacion,
+              fecha_inicio: act.fechaInicio,
+              fecha_fin: act.fechaFin,
+              is_new: true
+            }));
+
+            await supabase.from('process_actuations').insert(actuationsToInsert);
+            totalNewActuations += newActs.length;
+          }
+
+          // Update process
+          await supabase
+            .from('monitored_processes')
+            .update({
+              despacho: processData.despacho || process.despacho,
+              ultima_actuacion_fecha: processData.fechaUltimaActuacion || null,
+              ultima_actuacion_descripcion: processData.ultimaActuacion || null,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', process.id);
+
+          results.push({ radicado: process.radicado, success: true, newActuations: newActs.length });
+
+          // Rate limiting
+          await new Promise(resolve => setTimeout(resolve, 300));
+        } catch (err: any) {
+          results.push({ radicado: process.radicado, success: false, error: err.message });
+        }
+      }
+
+      console.log(`[RamaJudicial] Sync-all complete: ${totalNewActuations} new actuations across ${processes?.length || 0} processes`);
+      return new Response(JSON.stringify({ 
+        success: true, 
+        synced: results.length,
+        totalNewActuations,
+        results 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
 
     if (action === 'lookup') {
       // Lookup process by radicado
