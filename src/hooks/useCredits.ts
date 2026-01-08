@@ -176,26 +176,50 @@ export function useCredits(lawyerId: string | null) {
     loadData();
   }, [fetchBalance, fetchPackages, fetchToolCosts, fetchTransactions]);
 
-  // Subscribe to balance changes
+  // Subscribe to balance changes - listen to all changes and filter locally
   useEffect(() => {
     if (!lawyerId) return;
 
     const channel = supabase
-      .channel(`credits-${lawyerId}`)
+      .channel(`credits-realtime-${lawyerId}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'lawyer_credits',
-          filter: `lawyer_id=eq.${lawyerId}`
+          table: 'lawyer_credits'
         },
-        () => {
-          fetchBalance();
-          fetchTransactions();
+        (payload) => {
+          // Filter locally to ensure we catch our lawyer's changes
+          const newData = payload.new as { lawyer_id?: string } | null;
+          const oldData = payload.old as { lawyer_id?: string } | null;
+          
+          if (newData?.lawyer_id === lawyerId || oldData?.lawyer_id === lawyerId) {
+            console.log('Credits updated via realtime:', payload);
+            fetchBalance();
+            fetchTransactions();
+          }
         }
       )
-      .subscribe();
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'credit_transactions'
+        },
+        (payload) => {
+          const newData = payload.new as { lawyer_id?: string } | null;
+          if (newData?.lawyer_id === lawyerId) {
+            console.log('New transaction via realtime:', payload);
+            fetchBalance();
+            fetchTransactions();
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('Credits realtime subscription status:', status);
+      });
 
     return () => {
       supabase.removeChannel(channel);
