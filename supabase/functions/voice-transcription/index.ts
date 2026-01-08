@@ -9,19 +9,7 @@ const corsHeaders = {
 
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 
-// Default configuration values
-const DEFAULT_VOICE_CONFIG = {
-  voice_assistant_enabled: true,
-  voice_transcription_model: 'whisper-1',
-  voice_transcription_language: 'es',
-  voice_transcription_prompt: '',
-  voice_tts_model: 'tts-1',
-  voice_tts_voice: 'alloy',
-  voice_max_audio_size_mb: 25,
-  voice_max_text_chars: 4096
-};
-
-// Fetch configurations from system_config with fallback defaults
+// Fetch required configurations from system_config
 async function getVoiceConfig(supabaseClient: any): Promise<{
   enabled: boolean;
   transcriptionModel: string;
@@ -32,47 +20,48 @@ async function getVoiceConfig(supabaseClient: any): Promise<{
   maxAudioSizeMb: number;
   maxTextChars: number;
 }> {
-  const configKeys = Object.keys(DEFAULT_VOICE_CONFIG);
+  const requiredKeys = [
+    'voice_assistant_enabled',
+    'voice_transcription_model',
+    'voice_transcription_language',
+    'voice_transcription_prompt',
+    'voice_tts_model',
+    'voice_tts_voice',
+    'voice_max_audio_size_mb',
+    'voice_max_text_chars'
+  ];
 
   const { data: configs, error } = await supabaseClient
     .from('system_config')
     .select('config_key, config_value')
-    .in('config_key', configKeys);
+    .in('config_key', requiredKeys);
 
   if (error) {
-    console.error('[VoiceTranscription] Error fetching config, using defaults:', error);
+    console.error('[VoiceTranscription] Error fetching config:', error);
+    throw new Error(`Error al obtener configuración: ${error.message}`);
   }
 
   const configMap = new Map(configs?.map((c: any) => [c.config_key, c.config_value]) || []);
   
-  // Log which configs are from DB vs defaults
-  const fromDb = configKeys.filter(key => configMap.has(key));
-  const fromDefaults = configKeys.filter(key => !configMap.has(key));
-  console.log(`[VoiceTranscription] Config from DB: ${fromDb.join(', ') || 'none'}`);
-  if (fromDefaults.length > 0) {
-    console.log(`[VoiceTranscription] Using defaults for: ${fromDefaults.join(', ')}`);
+  // Validate all required keys exist
+  const missingKeys = requiredKeys.filter(key => !configMap.has(key));
+  if (missingKeys.length > 0) {
+    console.error('[VoiceTranscription] Missing config keys:', missingKeys);
+    throw new Error(`Configuración faltante para asistente de voz: ${missingKeys.join(', ')}. Por favor sincronice la configuración en el panel de administración.`);
   }
 
-  // Helper to get config value or default
-  const getConfig = (key: string): any => {
-    if (configMap.has(key)) {
-      return configMap.get(key);
-    }
-    return DEFAULT_VOICE_CONFIG[key as keyof typeof DEFAULT_VOICE_CONFIG];
-  };
-
-  const enabledValue = getConfig('voice_assistant_enabled');
+  const enabledValue = configMap.get('voice_assistant_enabled');
   const enabled = enabledValue === true || enabledValue === 'true';
 
   return {
     enabled,
-    transcriptionModel: getConfig('voice_transcription_model'),
-    transcriptionLanguage: getConfig('voice_transcription_language'),
-    transcriptionPrompt: getConfig('voice_transcription_prompt'),
-    ttsModel: getConfig('voice_tts_model'),
-    ttsVoice: getConfig('voice_tts_voice'),
-    maxAudioSizeMb: parseInt(String(getConfig('voice_max_audio_size_mb'))) || 25,
-    maxTextChars: parseInt(String(getConfig('voice_max_text_chars'))) || 4096,
+    transcriptionModel: configMap.get('voice_transcription_model') as string,
+    transcriptionLanguage: configMap.get('voice_transcription_language') as string,
+    transcriptionPrompt: configMap.get('voice_transcription_prompt') as string,
+    ttsModel: configMap.get('voice_tts_model') as string,
+    ttsVoice: configMap.get('voice_tts_voice') as string,
+    maxAudioSizeMb: parseInt(configMap.get('voice_max_audio_size_mb') as string) || 25,
+    maxTextChars: parseInt(configMap.get('voice_max_text_chars') as string) || 4096,
   };
 }
 
