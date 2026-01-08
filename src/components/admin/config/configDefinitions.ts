@@ -271,6 +271,36 @@ export const OPERATIONAL_GROUPS: OperationalGroup[] = [
       { key: 'specialized_agents_default_credits', label: 'Créditos por uso', type: 'number', defaultValue: '5' },
       { key: 'specialized_agents_openai_integration', label: 'Integración OpenAI', type: 'boolean', defaultValue: 'true' }
     ]
+  },
+  {
+    id: 'billing-tools',
+    name: 'Facturación por Herramienta',
+    icon: React.createElement(CreditCard, { className: "w-4 h-4" }),
+    fields: [
+      // Herramientas facturables (portal abogados)
+      { key: 'is_billable_analysis', label: 'Análisis de documentos', type: 'boolean', defaultValue: 'true', description: 'Facturable al abogado' },
+      { key: 'is_billable_draft', label: 'Redacción legal', type: 'boolean', defaultValue: 'true', description: 'Facturable al abogado' },
+      { key: 'is_billable_research', label: 'Investigación legal', type: 'boolean', defaultValue: 'true', description: 'Facturable al abogado' },
+      { key: 'is_billable_strategy', label: 'Estrategia legal', type: 'boolean', defaultValue: 'true', description: 'Facturable al abogado' },
+      { key: 'is_billable_process_query', label: 'Consulta procesos judiciales', type: 'boolean', defaultValue: 'true', description: 'Facturable al abogado' },
+      { key: 'is_billable_process_monitor', label: 'Monitor de procesos', type: 'boolean', defaultValue: 'true', description: 'Facturable al abogado' },
+      { key: 'is_billable_suin_juriscol', label: 'SUIN-Juriscol', type: 'boolean', defaultValue: 'true', description: 'Facturable al abogado' },
+      { key: 'is_billable_case_predictor', label: 'Predictor de casos', type: 'boolean', defaultValue: 'true', description: 'Facturable al abogado' },
+      { key: 'is_billable_legal_copilot', label: 'Copilot legal', type: 'boolean', defaultValue: 'true', description: 'Facturable al abogado' },
+      { key: 'is_billable_spell_check', label: 'Corrector ortográfico', type: 'boolean', defaultValue: 'true', description: 'Facturable al abogado' },
+      { key: 'is_billable_calendar_deadline', label: 'Cálculo de términos', type: 'boolean', defaultValue: 'true', description: 'Facturable al abogado' },
+      { key: 'is_billable_voice_transcription', label: 'Transcripción de voz', type: 'boolean', defaultValue: 'true', description: 'Facturable al abogado' },
+      { key: 'is_billable_lawyer_verification', label: 'Verificación profesional', type: 'boolean', defaultValue: 'true', description: 'Facturable al abogado' },
+      { key: 'is_billable_crm_ai', label: 'CRM con IA', type: 'boolean', defaultValue: 'true', description: 'Facturable al abogado' },
+      { key: 'is_billable_training', label: 'Asistente entrenamiento', type: 'boolean', defaultValue: 'true', description: 'Facturable al abogado' },
+      // Herramientas internas (no facturables)
+      { key: 'is_billable_document_chat', label: 'Chat documentos públicos', type: 'boolean', defaultValue: 'false', description: 'Interno - no facturable' },
+      { key: 'is_billable_suggest_blocks', label: 'Sugerencia de bloques', type: 'boolean', defaultValue: 'false', description: 'Interno - no facturable' },
+      { key: 'is_billable_routing', label: 'Routing interno', type: 'boolean', defaultValue: 'false', description: 'Interno - no facturable' },
+      { key: 'is_billable_lexi', label: 'Asistente Lexi', type: 'boolean', defaultValue: 'false', description: 'Interno - no facturable' },
+      { key: 'is_billable_improve_clause', label: 'Mejora de cláusulas', type: 'boolean', defaultValue: 'false', description: 'Interno - no facturable' },
+      { key: 'is_billable_organize_file', label: 'Organizar archivos', type: 'boolean', defaultValue: 'false', description: 'Interno - no facturable' }
+    ]
   }
 ];
 
