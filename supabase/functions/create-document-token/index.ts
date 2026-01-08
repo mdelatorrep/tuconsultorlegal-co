@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
+import { calculateSLADeadline } from "../_shared/business-hours-utils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -78,9 +79,9 @@ serve(async (req) => {
     // Changed from 50000 to 0 to avoid charging for documents without properly configured agents
     const price = agentData?.price ?? 0;
 
-    // Calculate SLA deadline
+    // Calculate SLA deadline using business hours (Colombian working hours + holidays)
     const now = new Date();
-    const slaDeadline = new Date(now.getTime() + (sla_hours || 4) * 60 * 60 * 1000);
+    const slaDeadline = await calculateSLADeadline(supabase, now, sla_hours || 4);
 
     // Create document token record
     const { data, error } = await supabase

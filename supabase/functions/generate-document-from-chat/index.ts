@@ -4,6 +4,7 @@ import {
   callResponsesAPI, 
   logResponsesRequest 
 } from "../_shared/openai-responses-utils.ts";
+import { calculateSLADeadline } from "../_shared/business-hours-utils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -185,10 +186,10 @@ FORMATO DE RESPUESTA: Devuelve únicamente el documento final usando la plantill
       }
     }
 
-    // Create the document token
+    // Create the document token with business hours SLA
     const token = crypto.randomUUID().replace(/-/g, '').substring(0, 12).toUpperCase();
     const now = new Date();
-    const slaDeadline = new Date(now.getTime() + (sla_hours || 4) * 60 * 60 * 1000);
+    const slaDeadline = await calculateSLADeadline(supabase, now, sla_hours || 4);
 
     const { data: tokenData, error } = await supabase
       .from('document_tokens')
