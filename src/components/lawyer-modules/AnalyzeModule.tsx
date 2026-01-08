@@ -85,22 +85,28 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
 
       if (error) throw error;
 
-      const history = data?.map((item: any) => ({
-        id: item.id,
-        fileName: item.input_data?.fileName || 'Documento',
-        documentType: item.output_data?.documentType || 'Documento Legal',
-        documentCategory: item.output_data?.documentCategory || 'otro',
-        detectionConfidence: item.output_data?.detectionConfidence,
-        summary: item.output_data?.summary,
-        clauses: item.output_data?.clauses || [],
-        risks: item.output_data?.risks || [],
-        recommendations: item.output_data?.recommendations || [],
-        keyDates: item.output_data?.keyDates || [],
-        parties: item.output_data?.parties || [],
-        legalReferences: item.output_data?.legalReferences || [],
-        missingElements: item.output_data?.missingElements || [],
-        timestamp: new Date(item.created_at)
-      })) || [];
+      const history = data?.map((item: any) => {
+        const out = item.output_data || {};
+        const safeArray = <T,>(v: any): T[] => (Array.isArray(v) ? v : []);
+        const safeString = (v: any, fallback: string) => (typeof v === 'string' ? v : fallback);
+
+        return {
+          id: item.id,
+          fileName: safeString(item.input_data?.fileName, 'Documento'),
+          documentType: safeString(out?.documentType, 'Documento Legal'),
+          documentCategory: safeString(out?.documentCategory, 'otro') as any,
+          detectionConfidence: out?.detectionConfidence,
+          summary: safeString(out?.summary, ''),
+          clauses: safeArray(out?.clauses),
+          risks: safeArray(out?.risks),
+          recommendations: safeArray(out?.recommendations),
+          keyDates: safeArray(out?.keyDates),
+          parties: safeArray(out?.parties),
+          legalReferences: safeArray(out?.legalReferences),
+          missingElements: safeArray(out?.missingElements),
+          timestamp: new Date(item.created_at)
+        } as AnalysisResult;
+      }) || [];
 
       setAnalysisHistory(history);
     } catch (error) {
@@ -240,19 +246,21 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
         throw new Error(data.error || 'Error en el análisis del documento');
       }
 
+      const safeArray = <T,>(v: any): T[] => (Array.isArray(v) ? v : []);
+
       const result: AnalysisResult = {
         fileName: file.name,
         documentType: data.documentType || 'Documento Legal',
         documentCategory: data.documentCategory || 'otro',
         detectionConfidence: data.detectionConfidence,
         summary: data.summary,
-        clauses: data.clauses || [],
-        risks: data.risks || [],
-        recommendations: data.recommendations || [],
-        keyDates: data.keyDates || [],
-        parties: data.parties || [],
-        legalReferences: data.legalReferences || [],
-        missingElements: data.missingElements || [],
+        clauses: safeArray(data.clauses),
+        risks: safeArray(data.risks),
+        recommendations: safeArray(data.recommendations),
+        keyDates: safeArray(data.keyDates),
+        parties: safeArray(data.parties),
+        legalReferences: safeArray(data.legalReferences),
+        missingElements: safeArray(data.missingElements),
         timestamp: new Date(data.timestamp || Date.now())
       };
 
