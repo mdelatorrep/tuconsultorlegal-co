@@ -45,16 +45,22 @@ serve(async (req) => {
 
     console.log(`[GAMIFICATION] Processing action: ${action} for lawyer ${lawyerId}`);
 
-    // Get gamification configs - NO FALLBACKS
-    const configs = await getRequiredConfigs(supabase, [
-      'gamification_enabled',
-      'gamification_points_config',
-      'gamification_streak_bonus_multiplier',
-      'gamification_daily_goal_credits',
-      'gamification_levels'
-    ]);
+    // Get all gamification configs from system_config
+    const { data: allConfigs, error: configError } = await supabase
+      .from('system_config')
+      .select('config_key, config_value')
+      .or('config_key.like.gamification_%');
+    
+    if (configError) {
+      throw new Error(`Failed to fetch gamification configurations: ${configError.message}`);
+    }
+    
+    const configMap: Record<string, any> = {};
+    allConfigs?.forEach((item: any) => {
+      configMap[item.config_key] = item.config_value;
+    });
 
-    const gamificationEnabled = configs['gamification_enabled'] !== 'false';
+    const gamificationEnabled = configMap['gamification_enabled'] !== 'false' && configMap['gamification_enabled'] !== false;
     
     if (!gamificationEnabled) {
       return new Response(
@@ -63,18 +69,36 @@ serve(async (req) => {
       );
     }
 
-    const streakMultiplier = parseFloat(configs['gamification_streak_bonus_multiplier']);
-    const dailyGoal = parseInt(configs['gamification_daily_goal_credits']);
+    const streakMultiplier = parseFloat(configMap['gamification_streak_bonus_multiplier'] || '1.5');
+    const dailyGoal = parseInt(configMap['gamification_daily_goal_credits'] || '10');
     
-    let pointsConfig = {};
+    // Build pointsConfig from individual system_config keys
+    const pointsConfig: Record<string, number> = {
+      document_analysis: parseInt(configMap['gamification_points_document_analysis'] || '10'),
+      research: parseInt(configMap['gamification_points_research'] || '15'),
+      strategy: parseInt(configMap['gamification_points_strategy'] || '20'),
+      draft: parseInt(configMap['gamification_points_draft'] || '25'),
+      case_prediction: parseInt(configMap['gamification_points_case_prediction'] || '15'),
+      client_added: parseInt(configMap['gamification_points_client_added'] || '5'),
+      case_won: parseInt(configMap['gamification_points_case_won'] || '100'),
+      first_login: parseInt(configMap['gamification_points_first_login'] || '5'),
+      profile_complete: parseInt(configMap['gamification_points_profile_complete'] || '20'),
+      training_module: parseInt(configMap['gamification_points_training_module'] || '30'),
+      daily_login: parseInt(configMap['gamification_points_daily_login'] || '1'),
+      daily_tool_use: parseInt(configMap['gamification_points_daily_tool_use'] || '2'),
+      referral: parseInt(configMap['gamification_points_referral'] || '50'),
+      first_purchase: parseInt(configMap['gamification_points_first_purchase'] || '10'),
+      process_query: parseInt(configMap['gamification_points_process_query'] || '5'),
+      copilot_use: parseInt(configMap['gamification_points_copilot_use'] || '3'),
+      crm_ai: parseInt(configMap['gamification_points_crm_ai'] || '10')
+    };
+    
     let levels: any[] = [];
-    
     try {
-      pointsConfig = JSON.parse(configs['gamification_points_config']);
-      levels = JSON.parse(configs['gamification_levels']);
+      levels = JSON.parse(configMap['gamification_levels'] || '[]');
     } catch (e) {
-      console.error('[GAMIFICATION] Error parsing config JSON:', e);
-      throw new Error('Invalid JSON format in gamification configuration. Please fix the configuration in the admin panel.');
+      console.error('[GAMIFICATION] Error parsing levels JSON:', e);
+      levels = [{ level: 1, name: 'Novato', minCredits: 0, badge: '🌱' }];
     }
 
     if (action === 'get_progress') {

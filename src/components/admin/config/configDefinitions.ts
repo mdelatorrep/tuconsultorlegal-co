@@ -193,12 +193,36 @@ export const OPERATIONAL_GROUPS: OperationalGroup[] = [
   },
   {
     id: 'gamification',
-    name: 'Gamificación',
+    name: 'Gamificación - General',
     icon: React.createElement(Trophy, { className: "w-4 h-4" }),
     fields: [
       { key: 'gamification_enabled', label: 'Sistema habilitado', type: 'boolean', defaultValue: 'true' },
       { key: 'gamification_streak_bonus_multiplier', label: 'Multiplicador racha', type: 'number', defaultValue: '1.5' },
       { key: 'gamification_daily_goal_credits', label: 'Meta diaria (créditos)', type: 'number', defaultValue: '10' }
+    ]
+  },
+  {
+    id: 'gamification-points',
+    name: 'Gamificación - Puntos por Acción',
+    icon: React.createElement(Trophy, { className: "w-4 h-4" }),
+    fields: [
+      { key: 'gamification_points_document_analysis', label: 'Análisis de documento', type: 'number', defaultValue: '10', description: 'Puntos otorgados' },
+      { key: 'gamification_points_research', label: 'Investigación legal', type: 'number', defaultValue: '15', description: 'Puntos otorgados' },
+      { key: 'gamification_points_strategy', label: 'Análisis de estrategia', type: 'number', defaultValue: '20', description: 'Puntos otorgados' },
+      { key: 'gamification_points_draft', label: 'Redacción de documento', type: 'number', defaultValue: '25', description: 'Puntos otorgados' },
+      { key: 'gamification_points_case_prediction', label: 'Predicción de caso', type: 'number', defaultValue: '15', description: 'Puntos otorgados' },
+      { key: 'gamification_points_process_query', label: 'Consulta proceso judicial', type: 'number', defaultValue: '5', description: 'Puntos otorgados' },
+      { key: 'gamification_points_copilot_use', label: 'Uso de copiloto', type: 'number', defaultValue: '3', description: 'Puntos otorgados' },
+      { key: 'gamification_points_crm_ai', label: 'IA en CRM', type: 'number', defaultValue: '10', description: 'Puntos otorgados' },
+      { key: 'gamification_points_client_added', label: 'Agregar cliente', type: 'number', defaultValue: '5', description: 'Puntos otorgados' },
+      { key: 'gamification_points_case_won', label: 'Caso ganado', type: 'number', defaultValue: '100', description: 'Puntos otorgados' },
+      { key: 'gamification_points_first_login', label: 'Primer login', type: 'number', defaultValue: '5', description: 'Puntos otorgados' },
+      { key: 'gamification_points_daily_login', label: 'Login diario', type: 'number', defaultValue: '1', description: 'Puntos otorgados' },
+      { key: 'gamification_points_daily_tool_use', label: 'Uso diario herramientas', type: 'number', defaultValue: '2', description: 'Puntos otorgados' },
+      { key: 'gamification_points_profile_complete', label: 'Completar perfil', type: 'number', defaultValue: '20', description: 'Puntos otorgados' },
+      { key: 'gamification_points_training_module', label: 'Módulo entrenamiento', type: 'number', defaultValue: '30', description: 'Puntos otorgados' },
+      { key: 'gamification_points_referral', label: 'Referido exitoso', type: 'number', defaultValue: '50', description: 'Puntos otorgados' },
+      { key: 'gamification_points_first_purchase', label: 'Primera compra', type: 'number', defaultValue: '10', description: 'Puntos otorgados' }
     ]
   },
   {
