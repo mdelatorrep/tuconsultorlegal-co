@@ -37,29 +37,43 @@ export const AIToolsAnalytics = () => {
   const [unusedTools, setUnusedTools] = useState<string[]>([]);
 
   const toolIcons: Record<string, any> = {
-    'drafting': FileText,
-    'research': Search,
-    'analysis': Brain,
-    'strategy': Scale,
-    'case_predictor': Gavel,
-    'process_query': MessageCircle,
-    'process_monitor': Activity,
+    'redaccion_legal': FileText,
+    'investigacion_legal': Search,
+    'analisis_documentos': Brain,
+    'estrategia_legal': Scale,
+    'predictor_casos': Gavel,
+    'consulta_procesos': MessageCircle,
+    'monitor_procesos': Activity,
     'suin_juriscol': Search,
-    'consultation': MessageCircle,
+    'verificacion_profesional': CheckCircle,
     'copilot': Zap,
   };
 
   const toolNames: Record<string, string> = {
-    'drafting': 'Redacción Legal',
-    'research': 'Investigación Deep Research',
-    'analysis': 'Análisis de Documentos',
-    'strategy': 'Estrategia Legal',
-    'case_predictor': 'Predictor de Casos',
-    'process_query': 'Consulta de Procesos',
-    'process_monitor': 'Monitor de Procesos',
+    'redaccion_legal': 'Redacción Legal',
+    'investigacion_legal': 'Investigación Legal IA',
+    'analisis_documentos': 'Análisis de Documentos',
+    'estrategia_legal': 'Estrategia Legal',
+    'predictor_casos': 'Predictor de Casos',
+    'consulta_procesos': 'Consulta Procesos Judiciales',
+    'monitor_procesos': 'Monitor de Procesos',
     'suin_juriscol': 'SUIN Juriscol',
-    'consultation': 'Consultoría IA',
+    'verificacion_profesional': 'Verificación Profesional',
     'copilot': 'Legal Copilot',
+  };
+
+  // Map description keywords to tool types
+  const descriptionToToolType: Record<string, string> = {
+    'Redacción Legal': 'redaccion_legal',
+    'Investigación Legal': 'investigacion_legal',
+    'Análisis de Documentos': 'analisis_documentos',
+    'Estrategia Legal': 'estrategia_legal',
+    'Predictor de Casos': 'predictor_casos',
+    'Consulta Procesos Judiciales': 'consulta_procesos',
+    'Monitor de Procesos': 'monitor_procesos',
+    'SUIN Juriscol': 'suin_juriscol',
+    'Verificación Profesional': 'verificacion_profesional',
+    'Legal Copilot': 'copilot',
   };
 
   useEffect(() => {
@@ -84,10 +98,11 @@ export const AIToolsAnalytics = () => {
       }
 
       // Fetch credit transactions (which represent tool usage)
+      // Using 'usage' transaction_type which is what the app actually uses
       const { data: transactions } = await supabase
         .from('credit_transactions')
         .select('*')
-        .eq('transaction_type', 'consumption')
+        .eq('transaction_type', 'usage')
         .gte('created_at', thirtyDaysAgo.toISOString());
 
       // Calculate usage by tool type
@@ -98,9 +113,20 @@ export const AIToolsAnalytics = () => {
         usageByTool[tool] = { uses_7d: 0, uses_30d: 0, credits: 0 };
       });
 
+      // Helper function to extract tool type from description
+      const getToolTypeFromDescription = (description: string | null): string => {
+        if (!description) return 'unknown';
+        for (const [keyword, toolType] of Object.entries(descriptionToToolType)) {
+          if (description.includes(keyword)) {
+            return toolType;
+          }
+        }
+        return 'unknown';
+      };
+
       // Count transactions
       transactions?.forEach(tx => {
-        const toolType = tx.reference_type || 'unknown';
+        const toolType = getToolTypeFromDescription(tx.description);
         if (!usageByTool[toolType]) {
           usageByTool[toolType] = { uses_7d: 0, uses_30d: 0, credits: 0 };
         }
