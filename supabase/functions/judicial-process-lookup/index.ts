@@ -113,23 +113,37 @@ serve(async (req) => {
         const rawProcesses = verifik_response.data.list || [];
         const consultedSubject = verifik_response.data.consultedSubject || '';
         
-        processes = Array.isArray(rawProcesses) ? rawProcesses.map((p: any) => ({
-          idProceso: p.idProceso,
-          idConexion: p.idConexion,
-          llaveProceso: p.llaveProceso,
-          fechaRadicacion: p.fechaProceso, // Normalize field name
-          fechaUltimaActuacion: p.fechaUltimaActuacion,
-          despacho: p.despacho,
-          departamento: p.departamento,
-          // Normalize sujetos structure for frontend compatibility
-          sujetos: (p.sujetosProcesales || []).map((s: any) => ({
-            nombre: s.nombreRazonSocial || s.nombre,
-            tipoSujeto: s.tipoSujeto,
-            representante: s.representante,
-          })),
-          esPrivado: p.esPrivado,
-          consultedSubject: consultedSubject,
-        })) : [];
+        processes = Array.isArray(rawProcesses) ? rawProcesses.map((p: any) => {
+          // sujetosProcesales can be a string (comma-separated) or array
+          let sujetos: any[] = [];
+          if (Array.isArray(p.sujetosProcesales)) {
+            sujetos = p.sujetosProcesales.map((s: any) => ({
+              nombre: s.nombreRazonSocial || s.nombre || s,
+              tipoSujeto: s.tipoSujeto || '',
+              representante: s.representante || '',
+            }));
+          } else if (typeof p.sujetosProcesales === 'string' && p.sujetosProcesales) {
+            // Parse comma-separated string
+            sujetos = p.sujetosProcesales.split(',').map((name: string) => ({
+              nombre: name.trim(),
+              tipoSujeto: '',
+              representante: '',
+            }));
+          }
+          
+          return {
+            idProceso: p.idProceso,
+            idConexion: p.idConexion,
+            llaveProceso: p.llaveProceso,
+            fechaRadicacion: p.fechaProceso,
+            fechaUltimaActuacion: p.fechaUltimaActuacion,
+            despacho: p.despacho,
+            departamento: p.departamento,
+            sujetos,
+            esPrivado: p.esPrivado,
+            consultedSubject: consultedSubject,
+          };
+        }) : [];
       } else if (!response.ok) {
         console.error('[judicial-process-lookup] Verifik API error:', verifik_response);
       }
