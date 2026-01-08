@@ -788,6 +788,50 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                 <LawyerPublicProfileEditor lawyerId={user.id} lawyerName={user.name} />
               ) : currentView === 'stats' ? (
                 <LawyerStatsSection user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as ViewType)} onLogout={logout} />
+              ) : currentView === 'account-settings' ? (
+                <LawyerAccountSettings user={{ id: user.id, name: user.name, email: user.email }} />
+              ) : currentView === 'request-agent-access' ? (
+                <div className="flex items-center justify-center min-h-[60vh]">
+                  <Card className="max-w-md w-full">
+                    <CardHeader className="text-center">
+                      <Bot className="h-16 w-16 mx-auto mb-4 text-primary" />
+                      <CardTitle>Gestión de Agentes IA</CardTitle>
+                      <CardDescription>
+                        Para crear y gestionar agentes de IA personalizados, necesitas solicitar acceso al administrador.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="text-center">
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Una vez aprobado, podrás crear agentes de documentos, gestionar sus configuraciones y ver métricas de uso.
+                      </p>
+                      <Button onClick={() => toast({ title: "Solicitud enviada", description: "Te contactaremos pronto." })}>
+                        <Mail className="h-4 w-4 mr-2" />
+                        Solicitar Acceso
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+              ) : currentView === 'request-blog-access' ? (
+                <div className="flex items-center justify-center min-h-[60vh]">
+                  <Card className="max-w-md w-full">
+                    <CardHeader className="text-center">
+                      <BookOpen className="h-16 w-16 mx-auto mb-4 text-primary" />
+                      <CardTitle>Gestión de Blog</CardTitle>
+                      <CardDescription>
+                        Para publicar artículos en el blog, necesitas solicitar acceso al administrador.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="text-center">
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Una vez aprobado, podrás crear, editar y publicar artículos legales para compartir tu conocimiento.
+                      </p>
+                      <Button onClick={() => toast({ title: "Solicitud enviada", description: "Te contactaremos pronto." })}>
+                        <Mail className="h-4 w-4 mr-2" />
+                        Solicitar Acceso
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
               ) : (
                 <div className="max-w-7xl mx-auto space-y-4 md:space-y-6 lg:space-y-8">
                   {/* Header with Welcome + Daily Progress */}
