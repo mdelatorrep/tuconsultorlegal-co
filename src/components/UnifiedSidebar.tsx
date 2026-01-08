@@ -179,7 +179,8 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
         items: [
           { title: "Mis Créditos", icon: Coins, view: "credits" },
           { title: "Logros y Ranking", icon: Trophy, view: "gamification" },
-          { title: "Perfil Público", icon: User, view: "public-profile" }
+          { title: "Perfil Público", icon: User, view: "public-profile" },
+          { title: "Configuración", icon: Settings, view: "account-settings" }
         ]
       }
     }
