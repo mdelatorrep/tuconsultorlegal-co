@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { 
   Coins, Users, Gift, Settings, Search, Plus, Edit, Trash2, 
-  Save, X, TrendingUp, TrendingDown, History, Award, Package
+  Save, X, TrendingUp, TrendingDown, History, Award, Package, Calculator
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { DynamicCostCalculator } from './DynamicCostCalculator';
 
 interface CreditPackage {
   id: string;
@@ -347,7 +348,7 @@ export function CreditsAdminManager() {
 
       {/* Tabs */}
       <Tabs defaultValue="lawyers">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="lawyers">
             <Users className="h-4 w-4 mr-2" />
             Abogados
@@ -359,6 +360,10 @@ export function CreditsAdminManager() {
           <TabsTrigger value="tools">
             <Settings className="h-4 w-4 mr-2" />
             Costos
+          </TabsTrigger>
+          <TabsTrigger value="dynamic">
+            <Calculator className="h-4 w-4 mr-2" />
+            Cálculo Dinámico
           </TabsTrigger>
           <TabsTrigger value="transactions">
             <History className="h-4 w-4 mr-2" />
@@ -559,6 +564,11 @@ export function CreditsAdminManager() {
               </Table>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Dynamic Cost Calculator Tab */}
+        <TabsContent value="dynamic" className="mt-6">
+          <DynamicCostCalculator />
         </TabsContent>
 
         {/* Transactions Tab */}

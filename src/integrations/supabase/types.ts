@@ -795,6 +795,45 @@ export type Database = {
           },
         ]
       }
+      cost_calculation_config: {
+        Row: {
+          config_key: string
+          config_name: string
+          config_type: string
+          cost_multiplier: number | null
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          config_key: string
+          config_name: string
+          config_type: string
+          cost_multiplier?: number | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          config_key?: string
+          config_name?: string
+          config_type?: string
+          cost_multiplier?: number | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       credit_packages: {
         Row: {
           bonus_credits: number
@@ -842,34 +881,55 @@ export type Database = {
       }
       credit_tool_costs: {
         Row: {
+          auto_calculate: boolean | null
+          base_cost: number | null
+          cost_formula_version: number | null
           created_at: string
           credit_cost: number
           description: string | null
           icon: string | null
           id: string
           is_active: boolean
+          model_key: string | null
+          prompt_size_factor: number | null
+          reasoning_key: string | null
+          technology_type: string | null
           tool_name: string
           tool_type: string
           updated_at: string
         }
         Insert: {
+          auto_calculate?: boolean | null
+          base_cost?: number | null
+          cost_formula_version?: number | null
           created_at?: string
           credit_cost?: number
           description?: string | null
           icon?: string | null
           id?: string
           is_active?: boolean
+          model_key?: string | null
+          prompt_size_factor?: number | null
+          reasoning_key?: string | null
+          technology_type?: string | null
           tool_name: string
           tool_type: string
           updated_at?: string
         }
         Update: {
+          auto_calculate?: boolean | null
+          base_cost?: number | null
+          cost_formula_version?: number | null
           created_at?: string
           credit_cost?: number
           description?: string | null
           icon?: string | null
           id?: string
           is_active?: boolean
+          model_key?: string | null
+          prompt_size_factor?: number | null
+          reasoning_key?: string | null
+          technology_type?: string | null
           tool_name?: string
           tool_type?: string
           updated_at?: string
@@ -3892,6 +3952,10 @@ export type Database = {
         Args: { num_days: number; start_date: string }
         Returns: string
       }
+      calculate_tool_credit_cost: {
+        Args: { p_tool_type: string }
+        Returns: number
+      }
       check_rate_limit: {
         Args: {
           action_type: string
@@ -3959,6 +4023,14 @@ export type Database = {
         Returns: undefined
       }
       migrate_admin_accounts_to_profiles: { Args: never; Returns: number }
+      recalculate_all_tool_costs: {
+        Args: never
+        Returns: {
+          new_cost: number
+          old_cost: number
+          tool_type: string
+        }[]
+      }
       sanitize_input: { Args: { input_text: string }; Returns: string }
       validate_password_strength: {
         Args: { password: string }
