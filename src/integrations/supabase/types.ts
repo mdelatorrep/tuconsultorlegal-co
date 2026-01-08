@@ -4032,6 +4032,7 @@ export type Database = {
         }[]
       }
       sanitize_input: { Args: { input_text: string }; Returns: string }
+      sync_billable_tool_costs: { Args: never; Returns: undefined }
       validate_password_strength: {
         Args: { password: string }
         Returns: boolean
