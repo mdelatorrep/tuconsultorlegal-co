@@ -225,9 +225,7 @@ Tipo de documento: ${documentType || 'contrato'}`;
         }),
       });
 
-      if (!response.ok) {
-        throw new Error(`AI service error: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`AI service error: ${response.status}`);
 
       const data = await response.json();
       const improvedText = data.choices?.[0]?.message?.content || text;
@@ -235,6 +233,166 @@ Tipo de documento: ${documentType || 'contrato'}`;
       return new Response(JSON.stringify({ improvedText }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
+    }
+
+    if (action === 'analyze_inline') {
+      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: 'system', content: 'Eres un experto en redacción legal colombiana. Analiza el texto y encuentra problemas de gramática, claridad, estilo legal o terminología incorrecta.' },
+            { role: 'user', content: `Analiza este documento legal:\n\n${text}` }
+          ],
+          tools: [{
+            type: 'function',
+            function: {
+              name: 'report_suggestions',
+              parameters: {
+                type: 'object',
+                properties: {
+                  suggestions: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        id: { type: 'string' },
+                        type: { type: 'string', enum: ['grammar', 'legal', 'clarity', 'style'] },
+                        original: { type: 'string' },
+                        suggestion: { type: 'string' },
+                        reason: { type: 'string' },
+                        position: { type: 'object', properties: { start: { type: 'number' }, end: { type: 'number' } } }
+                      },
+                      required: ['id', 'type', 'original', 'suggestion', 'reason']
+                    }
+                  }
+                },
+                required: ['suggestions']
+              }
+            }
+          }],
+          tool_choice: { type: 'function', function: { name: 'report_suggestions' } }
+        }),
+      });
+
+      if (!response.ok) throw new Error(`AI service error: ${response.status}`);
+      const data = await response.json();
+      let result = { suggestions: [] };
+      try {
+        const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+        if (toolCall?.function?.arguments) result = JSON.parse(toolCall.function.arguments);
+      } catch (e) { console.error('Parse error:', e); }
+
+      return new Response(JSON.stringify(result), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    if (action === 'generate_variants') {
+      const { specificStyle, customPrompt } = await req.json().catch(() => ({}));
+      
+      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${LOVABLE_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: 'system', content: 'Genera variantes de redacción legal manteniendo el significado jurídico.' },
+            { role: 'user', content: `Texto: "${text}"\n${customPrompt ? `Instrucciones: ${customPrompt}` : ''}\nGenera ${specificStyle ? '1 variante estilo ' + specificStyle : '3 variantes: formal, conciso, protector'}` }
+          ],
+          tools: [{
+            type: 'function',
+            function: {
+              name: 'return_variants',
+              parameters: {
+                type: 'object',
+                properties: {
+                  variants: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        id: { type: 'string' },
+                        style: { type: 'string', enum: ['formal', 'conciso', 'protector', 'neutral'] },
+                        content: { type: 'string' },
+                        highlights: { type: 'array', items: { type: 'string' } }
+                      },
+                      required: ['id', 'style', 'content']
+                    }
+                  }
+                },
+                required: ['variants']
+              }
+            }
+          }],
+          tool_choice: { type: 'function', function: { name: 'return_variants' } }
+        }),
+      });
+
+      if (!response.ok) throw new Error(`AI service error: ${response.status}`);
+      const data = await response.json();
+      let result = { variants: [] };
+      try {
+        const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+        if (toolCall?.function?.arguments) result = JSON.parse(toolCall.function.arguments);
+      } catch (e) { console.error('Parse error:', e); }
+
+      return new Response(JSON.stringify(result), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    if (action === 'check_consistency') {
+      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${LOVABLE_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: 'system', content: 'Eres un revisor legal. Detecta contradicciones, términos sin definir, referencias faltantes y ambigüedades.' },
+            { role: 'user', content: `Verifica consistencia:\n\n${text}` }
+          ],
+          tools: [{
+            type: 'function',
+            function: {
+              name: 'report_issues',
+              parameters: {
+                type: 'object',
+                properties: {
+                  issues: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        id: { type: 'string' },
+                        type: { type: 'string', enum: ['contradiction', 'undefined_term', 'missing_reference', 'ambiguity'] },
+                        severity: { type: 'string', enum: ['info', 'warning', 'error'] },
+                        title: { type: 'string' },
+                        description: { type: 'string' },
+                        affectedText: { type: 'string' },
+                        suggestion: { type: 'string' }
+                      },
+                      required: ['id', 'type', 'severity', 'title', 'description']
+                    }
+                  }
+                },
+                required: ['issues']
+              }
+            }
+          }],
+          tool_choice: { type: 'function', function: { name: 'report_issues' } }
+        }),
+      });
+
+      if (!response.ok) throw new Error(`AI service error: ${response.status}`);
+      const data = await response.json();
+      let result = { issues: [] };
+      try {
+        const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+        if (toolCall?.function?.arguments) result = JSON.parse(toolCall.function.arguments);
+      } catch (e) { console.error('Parse error:', e); }
+
+      return new Response(JSON.stringify(result), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     return new Response(JSON.stringify({ error: 'Acción no válida' }), {
