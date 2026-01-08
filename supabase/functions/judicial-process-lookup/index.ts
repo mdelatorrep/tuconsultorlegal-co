@@ -114,21 +114,30 @@ serve(async (req) => {
         const consultedSubject = verifik_response.data.consultedSubject || '';
         
         processes = Array.isArray(rawProcesses) ? rawProcesses.map((p: any) => {
-          // sujetosProcesales can be a string (comma-separated) or array
+          // According to Verifik docs, sujetosProcesales is an array of strings like:
+          // ["Demandante: NOMBRE", "Demandado: NOMBRE"]
           let sujetos: any[] = [];
           if (Array.isArray(p.sujetosProcesales)) {
-            sujetos = p.sujetosProcesales.map((s: any) => ({
-              nombre: s.nombreRazonSocial || s.nombre || s,
-              tipoSujeto: s.tipoSujeto || '',
-              representante: s.representante || '',
-            }));
-          } else if (typeof p.sujetosProcesales === 'string' && p.sujetosProcesales) {
-            // Parse comma-separated string
-            sujetos = p.sujetosProcesales.split(',').map((name: string) => ({
-              nombre: name.trim(),
-              tipoSujeto: '',
-              representante: '',
-            }));
+            sujetos = p.sujetosProcesales.map((s: any) => {
+              if (typeof s === 'string') {
+                // Parse string format "TipoSujeto: Nombre"
+                const colonIndex = s.indexOf(':');
+                if (colonIndex > -1) {
+                  return {
+                    tipoSujeto: s.substring(0, colonIndex).trim(),
+                    nombre: s.substring(colonIndex + 1).trim(),
+                    representante: '',
+                  };
+                }
+                return { nombre: s.trim(), tipoSujeto: '', representante: '' };
+              }
+              // If it's an object (future compatibility)
+              return {
+                nombre: s.nombreRazonSocial || s.nombre || '',
+                tipoSujeto: s.tipoSujeto || '',
+                representante: s.representante || '',
+              };
+            });
           }
           
           return {
