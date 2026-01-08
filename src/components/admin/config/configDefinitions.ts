@@ -130,7 +130,9 @@ export const AI_CATEGORIES: AICategory[] = [
       { id: 'improve_prompt', name: 'Mejorar Prompt Agente', description: 'Optimiza prompts de agentes legales', promptKey: 'prompt_optimizer_instructions', modelKey: 'prompt_optimizer_model', reasoningEffortKey: 'reasoning_effort_prompt_optimizer' },
       { id: 'improve_document_info', name: 'Mejorar Info', description: 'Optimiza descripciones', promptKey: 'document_description_optimizer_prompt', modelKey: 'document_description_optimizer_model', reasoningEffortKey: 'improve_document_info_reasoning_effort' },
       { id: 'crm_segmentation', name: 'Segmentación CRM', description: 'Clasificación de clientes', promptKey: 'crm_segmentation_prompt', modelKey: 'crm_segmentation_ai_model', reasoningEffortKey: 'crm_segmentation_reasoning_effort' },
-      { id: 'organize_file', name: 'Organizar Archivos', description: 'Organización de archivos', promptKey: 'organize_file_prompt', modelKey: 'organize_file_ai_model', reasoningEffortKey: 'organize_file_reasoning_effort' }
+      { id: 'organize_file', name: 'Organizar Archivos', description: 'Organización de archivos', promptKey: 'organize_file_prompt', modelKey: 'organize_file_ai_model', reasoningEffortKey: 'organize_file_reasoning_effort' },
+      { id: 'spell_check', name: 'Corrector Ortográfico', description: 'Corrección de ortografía y gramática', promptKey: 'spell_check_prompt', modelKey: 'spell_check_ai_model', reasoningEffortKey: 'spell_check_reasoning_effort' },
+      { id: 'calendar_deadline', name: 'Cálculo de Términos', description: 'Calcula plazos legales', promptKey: 'calendar_deadline_prompt', modelKey: 'calendar_deadline_ai_model', reasoningEffortKey: 'calendar_deadline_reasoning_effort' }
     ]
   }
 ];
