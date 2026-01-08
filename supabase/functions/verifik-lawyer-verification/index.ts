@@ -100,22 +100,34 @@ serve(async (req) => {
     let verificationStatus = 'not_found';
     let lawyerData = null;
 
-    if (response.ok && verifik_response.data) {
+    // Check if Verifik returned success and data
+    // Response structure per docs: { success: true, data: { firstName, lastName, fullName, professionalStatus, barNumber, specialization, registrationDate, status } }
+    if (response.ok && verifik_response.success && verifik_response.data) {
       const data = verifik_response.data;
       
-      // Map response fields according to Verifik documentation
+      // Map response fields exactly as documented by Verifik
       lawyerData = {
-        firstName: data.firstName || data.nombres,
-        lastName: data.lastName || data.apellidos,
-        fullName: data.fullName || `${data.nombres || ''} ${data.apellidos || ''}`.trim(),
-        professionalStatus: data.professionalStatus || data.estado,
-        barNumber: data.barNumber || data.tarjetaProfesional || data.numeroTarjeta,
-        specialization: data.specialization || data.especialidad,
-        registrationDate: data.registrationDate || data.fechaRegistro,
-        isActive: data.isActive ?? (data.estado === 'VIGENTE' || data.professionalStatus === 'Active'),
+        documentType: data.documentType,
+        documentNumber: data.documentNumber,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        fullName: data.fullName || `${data.firstName || ''} ${data.lastName || ''}`.trim(),
+        professionalStatus: data.professionalStatus, // "active" or other status
+        barNumber: data.barNumber,
+        specialization: data.specialization,
+        registrationDate: data.registrationDate,
+        status: data.status, // "verified" per Verifik response
+        isActive: data.professionalStatus === 'active',
       };
 
-      verificationStatus = lawyerData.isActive ? 'verified' : 'expired';
+      // Use Verifik's status field or determine from professionalStatus
+      verificationStatus = data.status === 'verified' || data.professionalStatus === 'active' 
+        ? 'verified' 
+        : 'expired';
+    } else if (!response.ok && verifik_response.error) {
+      // Handle Verifik error response: { success: false, error: "Lawyer not found", code: "LAWYER_NOT_FOUND" }
+      console.log('[verifik-lawyer-verification] Verifik error:', verifik_response.error, verifik_response.code);
+      verificationStatus = 'not_found';
     }
 
     // Store verification result
