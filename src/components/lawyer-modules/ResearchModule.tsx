@@ -84,10 +84,91 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
     return filtered;
   };
 
-  // Load completed results on mount
+  // Load completed results and pending tasks on mount
   useEffect(() => {
     loadCompletedResults();
-  }, []);
+    loadPendingTasks();
+
+    // Subscribe to realtime updates for async_research_tasks
+    const channel = supabase
+      .channel(`research-tasks-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'async_research_tasks',
+          filter: `lawyer_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('📡 Realtime task update:', payload);
+          const updatedTask = payload.new as any;
+          
+          if (updatedTask.status === 'completed' || updatedTask.status === 'failed') {
+            // Reload results when a task completes
+            loadCompletedResults();
+            loadPendingTasks();
+            
+            // Clear polling state if this was the task being polled
+            if (pendingTaskId === updatedTask.id) {
+              setPendingTaskId(null);
+              setPollStartTime(null);
+              setIsSearching(false);
+              setProgress(100);
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user.id]);
+
+  // Load pending tasks from async_research_tasks
+  const loadPendingTasks = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('async_research_tasks')
+        .select('*')
+        .eq('lawyer_id', user.id)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        console.log(`📋 Found ${data.length} pending tasks`);
+        
+        // Add pending tasks to results
+        const pendingResults: ResearchResult[] = data.map((task: any) => ({
+          query: task.query,
+          findings: 'Procesando investigación...',
+          sources: [],
+          timestamp: task.created_at,
+          status: 'pending' as const,
+          taskId: task.id
+        }));
+
+        setResults(prev => {
+          // Merge pending with existing, avoiding duplicates
+          const existingIds = new Set(prev.filter(r => r.taskId).map(r => r.taskId));
+          const newPending = pendingResults.filter(p => !existingIds.has(p.taskId));
+          return [...newPending, ...prev];
+        });
+
+        // Start polling for the most recent pending task
+        if (!pendingTaskId && data[0]) {
+          setPendingTaskId(data[0].id);
+          setPollStartTime(Date.now());
+          setIsSearching(true);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading pending tasks:', error);
+    }
+  };
 
   const loadCompletedResults = async () => {
     try {
@@ -117,7 +198,11 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
         };
       }) || [];
 
-      setResults(loadedResults);
+      setResults(prev => {
+        // Merge with any pending tasks already loaded
+        const pendingTasks = prev.filter(r => r.status === 'pending');
+        return [...pendingTasks, ...loadedResults];
+      });
     } catch (error) {
       console.error('Error loading completed results:', error);
     }

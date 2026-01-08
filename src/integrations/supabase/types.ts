@@ -322,6 +322,8 @@ export type Database = {
           query: string
           result: Json | null
           status: string
+          title: string | null
+          tool_type: string | null
           updated_at: string
         }
         Insert: {
@@ -335,6 +337,8 @@ export type Database = {
           query: string
           result?: Json | null
           status?: string
+          title?: string | null
+          tool_type?: string | null
           updated_at?: string
         }
         Update: {
@@ -348,6 +352,8 @@ export type Database = {
           query?: string
           result?: Json | null
           status?: string
+          title?: string | null
+          tool_type?: string | null
           updated_at?: string
         }
         Relationships: [
