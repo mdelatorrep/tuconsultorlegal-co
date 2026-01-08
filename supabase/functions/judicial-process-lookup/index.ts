@@ -99,8 +99,11 @@ serve(async (req) => {
       const response = await fetch(endpoint, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${VERIFIK_API_KEY}`,
           'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          // Verifik docs show Authorization: "JWT <token>" / "jwt <token>"
+          'Authorization': `JWT ${VERIFIK_API_KEY}`,
+          'User-Agent': 'Lovable-Edge/1.0',
         },
       });
 
@@ -168,8 +171,11 @@ serve(async (req) => {
       const response = await fetch(endpoint, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${VERIFIK_API_KEY}`,
           'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          // Verifik docs show Authorization: "JWT <token>" / "jwt <token>"
+          'Authorization': `JWT ${VERIFIK_API_KEY}`,
+          'User-Agent': 'Lovable-Edge/1.0',
         },
       });
 
