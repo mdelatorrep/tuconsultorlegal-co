@@ -117,11 +117,16 @@ serve(async (req) => {
           idProceso: p.idProceso,
           idConexion: p.idConexion,
           llaveProceso: p.llaveProceso,
-          fechaProceso: p.fechaProceso,
+          fechaRadicacion: p.fechaProceso, // Normalize field name
           fechaUltimaActuacion: p.fechaUltimaActuacion,
           despacho: p.despacho,
           departamento: p.departamento,
-          sujetosProcesales: p.sujetosProcesales || [],
+          // Normalize sujetos structure for frontend compatibility
+          sujetos: (p.sujetosProcesales || []).map((s: any) => ({
+            nombre: s.nombreRazonSocial || s.nombre,
+            tipoSujeto: s.tipoSujeto,
+            representante: s.representante,
+          })),
           esPrivado: p.esPrivado,
           consultedSubject: consultedSubject,
         })) : [];
@@ -155,14 +160,40 @@ serve(async (req) => {
         const subjects = verifik_response.data.subjects || [];
         const actions = verifik_response.data.actions || [];
         
+        // Normalize subjects for frontend compatibility
+        const normalizedSujetos = subjects.map((s: any) => ({
+          nombre: s.nombreRazonSocial || s.nombre,
+          tipoSujeto: s.tipoSujeto,
+          representante: s.representante,
+          identificacion: s.identificacion,
+          esEmplazado: s.esEmplazado,
+        }));
+        
+        // Normalize actuaciones for frontend compatibility
+        const normalizedActuaciones = actions.map((a: any) => ({
+          fechaActuacion: a.fechaActuacion,
+          actuacion: a.actuacion,
+          anotacion: a.anotacion,
+          fechaInicia: a.fechaInicial,
+          fechaFinaliza: a.fechaFinal,
+          fechaRegistro: a.fechaRegistro,
+        }));
+        
+        // Find most recent actuacion date for fechaUltimaActuacion
+        const sortedActions = [...actions].sort((a, b) => 
+          new Date(b.fechaActuacion || 0).getTime() - new Date(a.fechaActuacion || 0).getTime()
+        );
+        const fechaUltimaActuacion = sortedActions[0]?.fechaActuacion || details.ultimaActualizacion;
+        
         processDetails = {
-          // Details
-          idRegProceso: details.idRegProceso,
+          idProceso: details.idRegProceso,
           llaveProceso: details.llaveProceso,
           idConexion: details.idConexion,
           esPrivado: details.esPrivado,
-          fechaProceso: details.fechaProceso,
+          fechaRadicacion: details.fechaProceso,
+          fechaUltimaActuacion: fechaUltimaActuacion,
           despacho: details.despacho,
+          departamento: details.ubicacion, // Map ubicacion to departamento
           ponente: details.ponente,
           tipoProceso: details.tipoProceso,
           claseProceso: details.claseProceso,
@@ -170,44 +201,26 @@ serve(async (req) => {
           recurso: details.recurso,
           ubicacion: details.ubicacion,
           contenidoRadicacion: details.contenidoRadicacion,
-          fechaConsulta: details.fechaConsulta,
-          ultimaActualizacion: details.ultimaActualizacion,
-          // Subjects (parties involved)
-          sujetos: subjects.map((s: any) => ({
-            idRegSujeto: s.idRegSujeto,
-            tipoSujeto: s.tipoSujeto,
-            esEmplazado: s.esEmplazado,
-            identificacion: s.identificacion,
-            nombreRazonSocial: s.nombreRazonSocial,
-          })),
-          // Actions/Actuaciones
-          actuaciones: actions.map((a: any) => ({
-            idRegActuacion: a.idRegActuacion,
-            consActuacion: a.consActuacion,
-            fechaActuacion: a.fechaActuacion,
-            actuacion: a.actuacion,
-            anotacion: a.anotacion,
-            fechaInicial: a.fechaInicial,
-            fechaFinal: a.fechaFinal,
-            fechaRegistro: a.fechaRegistro,
-            conDocumentos: a.conDocumentos,
-          })),
+          sujetos: normalizedSujetos,
+          actuaciones: normalizedActuaciones,
         };
 
         // Also add to processes array for consistency
         processes = [{
           idProceso: details.idRegProceso,
           llaveProceso: details.llaveProceso,
-          fechaProceso: details.fechaProceso,
+          fechaRadicacion: details.fechaProceso,
+          fechaUltimaActuacion: fechaUltimaActuacion,
           despacho: details.despacho,
+          departamento: details.ubicacion,
           tipoProceso: details.tipoProceso,
           claseProceso: details.claseProceso,
           subclaseProceso: details.subclaseProceso,
           ponente: details.ponente,
           ubicacion: details.ubicacion,
           esPrivado: details.esPrivado,
-          actuacionesCount: actions.length,
-          sujetosCount: subjects.length,
+          sujetos: normalizedSujetos,
+          actuaciones: normalizedActuaciones,
         }];
       } else if (!response.ok) {
         console.error('[judicial-process-lookup] Verifik API error:', verifik_response);

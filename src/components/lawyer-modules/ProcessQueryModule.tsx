@@ -526,13 +526,42 @@ export default function ProcessQueryModule({
                   <div
                     key={item.id}
                     className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted cursor-pointer"
-                    onClick={() => {
-                      if (item.queryType === 'radicado') {
-                        setQueryType('radicado');
-                        setRadicado(item.queryValue);
-                      } else if (item.queryType === 'document') {
-                        setQueryType('document');
-                        setDocumentNumber(item.queryValue);
+                    onClick={async () => {
+                      // Load the full result from database and display it
+                      try {
+                        const { data, error } = await supabase
+                          .from('legal_tools_results')
+                          .select('*')
+                          .eq('id', item.id)
+                          .single();
+                        
+                        if (error) throw error;
+                        
+                        const outputData = data.output_data as any;
+                        if (outputData?.processes?.length > 0 || outputData?.processDetails) {
+                          // Set the query params for reference
+                          if (item.queryType === 'radicado') {
+                            setQueryType('radicado');
+                            setRadicado(item.queryValue);
+                          } else if (item.queryType === 'document') {
+                            setQueryType('document');
+                            setDocumentNumber(item.queryValue);
+                          }
+                          
+                          // Load the saved results
+                          const savedProcesses = outputData.processDetails 
+                            ? [outputData.processDetails] 
+                            : (outputData.processes || []);
+                          setProcesses(savedProcesses);
+                          setAiAnalysis(outputData.aiAnalysis || '');
+                          setChatMessages([]);
+                          toast.success('Consulta cargada del historial');
+                        } else {
+                          toast.info('No hay resultados guardados para esta consulta');
+                        }
+                      } catch (error) {
+                        console.error('Error loading history item:', error);
+                        toast.error('Error al cargar la consulta');
                       }
                     }}
                   >
