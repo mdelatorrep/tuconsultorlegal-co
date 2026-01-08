@@ -887,6 +887,9 @@ export type Database = {
           created_at: string
           credit_cost: number
           description: string | null
+          gamification_enabled: boolean | null
+          gamification_percentage: number | null
+          gamification_reward: number | null
           icon: string | null
           id: string
           is_active: boolean
@@ -905,6 +908,9 @@ export type Database = {
           created_at?: string
           credit_cost?: number
           description?: string | null
+          gamification_enabled?: boolean | null
+          gamification_percentage?: number | null
+          gamification_reward?: number | null
           icon?: string | null
           id?: string
           is_active?: boolean
@@ -923,6 +929,9 @@ export type Database = {
           created_at?: string
           credit_cost?: number
           description?: string | null
+          gamification_enabled?: boolean | null
+          gamification_percentage?: number | null
+          gamification_reward?: number | null
           icon?: string | null
           id?: string
           is_active?: boolean
@@ -4033,6 +4042,7 @@ export type Database = {
       }
       sanitize_input: { Args: { input_text: string }; Returns: string }
       sync_billable_tool_costs: { Args: never; Returns: undefined }
+      sync_gamification_task_rewards: { Args: never; Returns: undefined }
       validate_password_strength: {
         Args: { password: string }
         Returns: boolean

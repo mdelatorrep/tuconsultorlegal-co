@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { 
   Calculator, RefreshCw, Settings2, Zap, Cpu, MessageSquare, 
-  Volume2, Eye, Globe, DollarSign, TrendingUp, Info, Check
+  Volume2, Eye, Globe, DollarSign, TrendingUp, Info, Check, Gift, Star
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -42,6 +42,10 @@ interface ToolCostExtended {
   auto_calculate: boolean;
   is_active: boolean;
   description: string | null;
+  // Gamification fields
+  gamification_enabled: boolean;
+  gamification_percentage: number;
+  gamification_reward: number;
   // Calculated fields
   model_name?: string;
   reasoning_level?: string;
@@ -359,12 +363,23 @@ export function DynamicCostCalculator() {
                       <TableRow>
                         <TableHead>Herramienta</TableHead>
                         <TableHead>Tecnología</TableHead>
-                        <TableHead>Modelo</TableHead>
-                        <TableHead>Reasoning</TableHead>
                         <TableHead className="text-center">Base</TableHead>
-                        <TableHead className="text-center">Factor Prompt</TableHead>
+                        <TableHead className="text-center">Factor</TableHead>
                         <TableHead className="text-center">Auto</TableHead>
-                        <TableHead className="text-right">Costo Final</TableHead>
+                        <TableHead className="text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <Gift className="h-3 w-3" />
+                            Gamif.
+                          </div>
+                        </TableHead>
+                        <TableHead className="text-center">% Reward</TableHead>
+                        <TableHead className="text-right">Costo</TableHead>
+                        <TableHead className="text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <Star className="h-3 w-3 text-yellow-500" />
+                            Reward
+                          </div>
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -384,18 +399,12 @@ export function DynamicCostCalculator() {
                                 <span className="text-sm">{getTechnologyName(tool.technology_type)}</span>
                               </div>
                             </TableCell>
-                            <TableCell>
-                              <span className="text-sm">{getModelName(tool.model_key)}</span>
-                            </TableCell>
-                            <TableCell>
-                              <span className="text-sm">{getReasoningLevel(tool.reasoning_key)}</span>
-                            </TableCell>
                             <TableCell className="text-center">
                               <Input
                                 type="number"
                                 value={tool.base_cost}
                                 onChange={(e) => handleUpdateToolConfig(tool, { base_cost: parseInt(e.target.value) || 1 })}
-                                className="w-16 text-center"
+                                className="w-14 text-center"
                                 min={1}
                               />
                             </TableCell>
@@ -404,7 +413,7 @@ export function DynamicCostCalculator() {
                                 type="number"
                                 value={tool.prompt_size_factor}
                                 onChange={(e) => handleUpdateToolConfig(tool, { prompt_size_factor: parseFloat(e.target.value) || 1 })}
-                                className="w-20 text-center"
+                                className="w-16 text-center"
                                 min={0.1}
                                 max={5}
                                 step={0.1}
@@ -427,14 +436,55 @@ export function DynamicCostCalculator() {
                                 </TooltipContent>
                               </Tooltip>
                             </TableCell>
+                            <TableCell className="text-center">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div>
+                                    <Switch
+                                      checked={tool.gamification_enabled ?? true}
+                                      onCheckedChange={(checked) => handleUpdateToolConfig(tool, { gamification_enabled: checked })}
+                                    />
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  {tool.gamification_enabled 
+                                    ? 'Otorga puntos de gamificación' 
+                                    : 'Sin recompensa de gamificación'}
+                                </TooltipContent>
+                              </Tooltip>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Input
+                                type="number"
+                                value={(tool.gamification_percentage ?? 0.25) * 100}
+                                onChange={(e) => handleUpdateToolConfig(tool, { 
+                                  gamification_percentage: (parseFloat(e.target.value) || 25) / 100 
+                                })}
+                                className="w-16 text-center"
+                                min={1}
+                                max={100}
+                                step={1}
+                                disabled={!tool.gamification_enabled}
+                              />
+                            </TableCell>
                             <TableCell className="text-right">
                               <Badge 
                                 className={tool.auto_calculate 
-                                  ? 'bg-green-100 text-green-800' 
-                                  : 'bg-amber-100 text-amber-800'}
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' 
+                                  : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'}
                               >
-                                {tool.credit_cost} créditos
+                                {tool.credit_cost}
                               </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {tool.gamification_enabled ? (
+                                <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
+                                  <Star className="h-3 w-3 mr-1" fill="currentColor" />
+                                  +{tool.gamification_reward ?? 0}
+                                </Badge>
+                              ) : (
+                                <span className="text-muted-foreground text-xs">-</span>
+                              )}
                             </TableCell>
                           </TableRow>
                         );
