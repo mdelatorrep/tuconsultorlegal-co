@@ -75,15 +75,21 @@ export default function StrategizeModule({ user, currentView, onViewChange, onLo
 
       if (error) throw error;
 
-      const history = data?.map((item: any) => ({
-        caseDescription: item.input_data?.caseDescription || 'Caso analizado',
-        legalActions: (item.output_data as any)?.legalActions || [],
-        legalArguments: (item.output_data as any)?.legalArguments || [],
-        counterarguments: (item.output_data as any)?.counterarguments || [],
-        precedents: (item.output_data as any)?.precedents || [],
-        recommendations: (item.output_data as any)?.recommendations || [],
-        timestamp: item.created_at
-      })) || [];
+      const history = data?.map((item: any) => {
+        const out = item.output_data || {};
+        const safeArray = <T,>(v: any): T[] => (Array.isArray(v) ? v : []);
+        const safeString = (v: any, fallback: string) => (typeof v === 'string' ? v : fallback);
+
+        return {
+          caseDescription: safeString(item.input_data?.caseDescription, 'Caso analizado'),
+          legalActions: safeArray(out?.legalActions),
+          legalArguments: safeArray(out?.legalArguments),
+          counterarguments: safeArray(out?.counterarguments),
+          precedents: safeArray(out?.precedents),
+          recommendations: safeArray(out?.recommendations),
+          timestamp: item.created_at
+        } as StrategicAnalysis;
+      }) || [];
 
       setAnalyses(history);
     } catch (error) {
@@ -131,13 +137,16 @@ export default function StrategizeModule({ user, currentView, onViewChange, onLo
         throw new Error(data.error || 'Error en el análisis estratégico');
       }
 
+      const safeArray = <T,>(v: any): T[] => (Array.isArray(v) ? v : []);
+      const safeString = (v: any, fallback: string) => (typeof v === 'string' ? v : fallback);
+
       const strategyResult: StrategicAnalysis = {
-        caseDescription: data.caseDescription,
-        legalActions: data.legalActions,
-        legalArguments: data.legalArguments,
-        counterarguments: data.counterarguments,
-        precedents: data.precedents,
-        recommendations: data.recommendations,
+        caseDescription: safeString(data.caseDescription, caseDescription),
+        legalActions: safeArray(data.legalActions),
+        legalArguments: safeArray(data.legalArguments),
+        counterarguments: safeArray(data.counterarguments),
+        precedents: safeArray(data.precedents),
+        recommendations: safeArray(data.recommendations),
         timestamp: data.timestamp
       };
 
