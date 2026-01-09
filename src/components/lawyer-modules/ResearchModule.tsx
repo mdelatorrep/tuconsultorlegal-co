@@ -76,6 +76,12 @@ interface ResearchResult {
   sources: string[];
   timestamp: string;
   conclusion?: string;
+  analysis?: string;
+  keyPoints?: string[];
+  legalBasis?: string[];
+  recommendations?: string;
+  risks?: string;
+  verificationNotes?: string;
   status?: 'completed' | 'failed' | 'pending';
   taskId?: string;
 }
@@ -242,15 +248,22 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
       const loadedResults = data?.map((item: any) => {
         const itemStatus = (item.metadata as any)?.status;
         const isFailed = itemStatus === 'failed';
+        const outputData = item.output_data as any;
         
         return {
           query: item.input_data?.query || 'Consulta completada',
           findings: isFailed 
             ? `Error en la investigación: ${(item.metadata as any)?.error?.message || 'Error desconocido'}` 
-            : ((item.output_data as any)?.findings || 'Resultados de investigación disponibles'),
-          sources: isFailed ? [] : ((item.output_data as any)?.sources || ['Fuentes legales consultadas']),
+            : (outputData?.findings || 'Resultados de investigación disponibles'),
+          sources: isFailed ? [] : (outputData?.sources || ['Fuentes legales consultadas']),
           timestamp: item.created_at,
-          conclusion: isFailed ? undefined : ((item.output_data as any)?.conclusion || 'Análisis completado'),
+          conclusion: isFailed ? undefined : (outputData?.conclusion || 'Análisis completado'),
+          analysis: isFailed ? undefined : outputData?.analysis,
+          keyPoints: isFailed ? undefined : outputData?.keyPoints,
+          legalBasis: isFailed ? undefined : outputData?.legalBasis,
+          recommendations: isFailed ? undefined : outputData?.recommendations,
+          risks: isFailed ? undefined : outputData?.risks,
+          verificationNotes: isFailed ? undefined : outputData?.verificationNotes,
           status: (isFailed ? 'failed' : 'completed') as 'completed' | 'failed'
         };
       }) || [];
@@ -286,6 +299,12 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
           sources: data.result.sources || ['Fuentes legales consultadas'],
           timestamp: new Date().toISOString(),
           conclusion: data.result.conclusion || 'Análisis completado',
+          analysis: data.result.analysis,
+          keyPoints: data.result.keyPoints,
+          legalBasis: data.result.legalBasis,
+          recommendations: data.result.recommendations,
+          risks: data.result.risks,
+          verificationNotes: data.result.verificationNotes,
           status: 'completed'
         };
 
@@ -711,7 +730,60 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
                           <h4 className="font-bold mb-3 text-lg text-blue-900">
                             <Target className="h-5 w-5 inline mr-2" />Conclusión
                           </h4>
-                          <p className="text-blue-800">{result.conclusion}</p>
+                          <p className="text-blue-800 whitespace-pre-wrap">{renderMarkdownLinks(result.conclusion)}</p>
+                        </div>
+                      )}
+
+                      {result.analysis && (
+                        <div className="bg-slate-50 border border-slate-200 p-4 lg:p-6 rounded-xl">
+                          <h4 className="font-bold mb-3 text-lg text-slate-900">
+                            <FileText className="h-5 w-5 inline mr-2" />Análisis
+                          </h4>
+                          <div className="text-slate-800 whitespace-pre-wrap">{renderMarkdownLinks(result.analysis)}</div>
+                        </div>
+                      )}
+
+                      {result.keyPoints && result.keyPoints.length > 0 && (
+                        <div className="bg-emerald-50 border border-emerald-200 p-4 lg:p-6 rounded-xl">
+                          <h4 className="font-bold mb-3 text-lg text-emerald-900">
+                            <CheckCircle2 className="h-5 w-5 inline mr-2" />Puntos Clave
+                          </h4>
+                          <ul className="list-disc list-inside space-y-2 text-emerald-800">
+                            {result.keyPoints.map((point, idx) => (
+                              <li key={idx}>{renderMarkdownLinks(point)}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {result.legalBasis && result.legalBasis.length > 0 && (
+                        <div className="bg-amber-50 border border-amber-200 p-4 lg:p-6 rounded-xl">
+                          <h4 className="font-bold mb-3 text-lg text-amber-900">
+                            <BookOpen className="h-5 w-5 inline mr-2" />Fundamento Legal
+                          </h4>
+                          <ul className="list-disc list-inside space-y-2 text-amber-800">
+                            {result.legalBasis.map((basis, idx) => (
+                              <li key={idx}>{renderMarkdownLinks(basis)}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {result.recommendations && (
+                        <div className="bg-green-50 border border-green-200 p-4 lg:p-6 rounded-xl">
+                          <h4 className="font-bold mb-3 text-lg text-green-900">
+                            <TrendingUp className="h-5 w-5 inline mr-2" />Recomendaciones Prácticas
+                          </h4>
+                          <div className="text-green-800 whitespace-pre-wrap">{renderMarkdownLinks(result.recommendations)}</div>
+                        </div>
+                      )}
+
+                      {result.risks && (
+                        <div className="bg-red-50 border border-red-200 p-4 lg:p-6 rounded-xl">
+                          <h4 className="font-bold mb-3 text-lg text-red-900">
+                            <AlertCircle className="h-5 w-5 inline mr-2" />Riesgos e Incertidumbres
+                          </h4>
+                          <div className="text-red-800 whitespace-pre-wrap">{renderMarkdownLinks(result.risks)}</div>
                         </div>
                       )}
                       
@@ -739,6 +811,12 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
                               );
                             })}
                           </div>
+                        </div>
+                      )}
+
+                      {result.verificationNotes && (
+                        <div className="bg-gray-100 border border-gray-300 p-4 rounded-xl text-sm text-gray-600">
+                          <strong>Nota de verificación:</strong> {result.verificationNotes}
                         </div>
                       )}
                     </CardContent>
