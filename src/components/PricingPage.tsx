@@ -155,21 +155,22 @@ const businessPlans: PricingPlan[] = [
 export default function PricingPage({ onOpenChat, onNavigate }: PricingPageProps) {
   // SEO optimization for pricing page
   useSEO({
-    title: "Planes y Precios - Servicios Legales | Tu Consultor Legal Colombia",
-    description: "Planes flexibles para personas y empresas. Desde servicios gratuitos hasta planes empresariales. Asesoría legal profesional con IA desde $0 COP.",
-    keywords: "precios servicios legales Colombia, planes asesoría legal, tarifas abogado virtual, costos documentos jurídicos, planes empresariales legales",
+    title: "Planes y Precios - IA Legal para Abogados y Documentos | Tu Consultor Legal",
+    description: "Planes flexibles de IA legal. Suite completa para abogados y generación de documentos para personas y empresas. Desde $0 COP. Prueba gratis disponible.",
+    keywords: "precios software abogados, planes IA legal, tarifas documentos legales, costos herramientas abogados, precios CRM legal, planes empresariales legales",
     canonical: "https://tuconsultorlegal.co/#precios",
     structuredData: {
       "@context": "https://schema.org",
       "@type": "WebPage",
-      "name": "Planes y Precios - Servicios Legales",
-      "description": "Planes y tarifas de servicios legales para personas y empresas",
+      "name": "Planes y Precios - Tu Consultor Legal",
+      "description": "Planes de IA legal para abogados y documentos legales",
       "url": "https://tuconsultorlegal.co/#precios",
       "offers": {
         "@type": "AggregateOffer",
         "lowPrice": "0",
         "highPrice": "400000",
-        "priceCurrency": "COP"
+        "priceCurrency": "COP",
+        "offerCount": "6"
       }
     }
   });

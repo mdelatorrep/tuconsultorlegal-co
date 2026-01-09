@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useSEO } from '@/hooks/useSEO';
 import { Scale, Brain, Search, Eye, PenTool, Target, Users, Bot, BarChart3, Shield, Zap, Sparkles, ChevronRight, Play, ArrowRight, CheckCircle, Star, Rocket, User, ChevronLeft, Database, Gavel, Calendar, Mic, Trophy } from 'lucide-react';
 import LawyerLogin from './LawyerLogin';
 import DemoResearchMockup from './demo/DemoResearchMockup';
@@ -28,6 +29,35 @@ export default function LawyerLandingPage({
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, align: 'start' });
   const demoScrollRef = useRef<HTMLDivElement>(null);
   const autoScrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  useSEO({
+    title: "Portal para Abogados - 14 Herramientas IA | Tu Consultor Legal",
+    description: "Suite completa de IA para abogados en Colombia. Investigación jurídica, análisis documental, redacción con IA, CRM clientes, procesos judiciales y más. Prueba gratis.",
+    keywords: "software abogados Colombia, herramientas IA abogados, investigación jurídica IA, CRM abogados, análisis contratos IA, redacción legal IA, procesos judiciales, SUIN Juriscol",
+    canonical: "https://tuconsultorlegal.co/#lawyer-landing",
+    structuredData: {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Tu Consultor Legal - Suite para Abogados",
+      "description": "14 herramientas de inteligencia artificial diseñadas para abogados en Colombia",
+      "applicationCategory": "Legal Software",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "COP",
+        "description": "Prueba gratuita disponible"
+      },
+      "featureList": [
+        "Investigación Legal con IA",
+        "Análisis Documental Automático",
+        "Redacción + Copilot Legal",
+        "CRM + Portal Clientes",
+        "Monitoreo Procesos Judiciales",
+        "SUIN-Juriscol Integrado"
+      ]
+    }
+  });
   
   useEffect(() => {
     setIsVisible(true);

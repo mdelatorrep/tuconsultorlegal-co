@@ -26,22 +26,21 @@ export default function ContactPage({ onOpenChat, onNavigate }: ContactPageProps
 
   // SEO optimization for contact page
   useSEO({
-    title: "Contacto - Tu Consultor Legal Colombia | Asesoría Legal Profesional",
-    description: "Contacta con Tu Consultor Legal para asesoría legal profesional en Colombia. Consultas gratuitas, soporte 24/7 y atención personalizada para personas y empresas.",
-    keywords: "contacto abogado Colombia, consulta legal gratuita, asesoría legal online, soporte jurídico, contacto tu consultor legal",
+    title: "Contacto - IA Legal para Abogados | Tu Consultor Legal Colombia",
+    description: "Contacta con Tu Consultor Legal. Soporte para abogados, consultas sobre herramientas IA, asesoría legal online. Atención 24/7 para profesionales del derecho.",
+    keywords: "contacto tu consultor legal, soporte abogados IA, consulta legal online, asesoría jurídica Colombia, contacto plataforma legal",
     canonical: "https://tuconsultorlegal.co/#contacto",
     structuredData: {
       "@context": "https://schema.org",
       "@type": "ContactPage",
       "name": "Contacto - Tu Consultor Legal",
-      "description": "Página de contacto para asesoría legal en Colombia",
+      "description": "Contacto para abogados y usuarios de la plataforma legal",
       "url": "https://tuconsultorlegal.co/#contacto",
       "mainEntity": {
         "@type": "Organization",
         "name": "Tu Consultor Legal",
         "contactPoint": {
           "@type": "ContactPoint",
-          "telephone": "+57-1-800-LEGAL",
           "contactType": "customer service",
           "areaServed": "CO",
           "availableLanguage": "Spanish"
