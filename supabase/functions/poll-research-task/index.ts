@@ -6,6 +6,81 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Extract web search citations from OpenAI response
+interface WebSearchCitation {
+  url: string;
+  title?: string;
+  start_index: number;
+  end_index: number;
+}
+
+function extractWebSearchCitations(output: any[]): WebSearchCitation[] {
+  const citations: WebSearchCitation[] = [];
+  
+  for (const item of output) {
+    if (item.type === 'message' && item.content && Array.isArray(item.content)) {
+      for (const content of item.content) {
+        if (content.type === 'output_text' && content.annotations && Array.isArray(content.annotations)) {
+          for (const annotation of content.annotations) {
+            if (annotation.type === 'url_citation') {
+              citations.push({
+                url: annotation.url,
+                title: annotation.title,
+                start_index: annotation.start_index,
+                end_index: annotation.end_index
+              });
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  return citations;
+}
+
+// Format text with proper links from citations
+function formatTextWithLinks(text: string, citations: WebSearchCitation[]): string {
+  if (!citations || citations.length === 0) return text;
+  
+  // Sort citations by start_index in reverse order to avoid offset issues when replacing
+  const sortedCitations = [...citations].sort((a, b) => b.start_index - a.start_index);
+  
+  let formattedText = text;
+  
+  for (const citation of sortedCitations) {
+    // Extract the cited text
+    const citedText = text.substring(citation.start_index, citation.end_index);
+    
+    // Create a markdown link
+    const linkText = citation.title || citedText;
+    const markdownLink = `[${linkText}](${citation.url})`;
+    
+    // Replace in the formatted text
+    formattedText = formattedText.substring(0, citation.start_index) + 
+                   markdownLink + 
+                   formattedText.substring(citation.end_index);
+  }
+  
+  return formattedText;
+}
+
+// Get unique sources from citations
+function getSourcesFromCitations(citations: WebSearchCitation[]): string[] {
+  const uniqueUrls = new Map<string, string>();
+  
+  for (const citation of citations) {
+    if (!uniqueUrls.has(citation.url)) {
+      uniqueUrls.set(citation.url, citation.title || citation.url);
+    }
+  }
+  
+  return Array.from(uniqueUrls.entries()).map(([url, title]) => {
+    // Format as markdown link
+    return `[${title}](${url})`;
+  });
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -118,9 +193,15 @@ serve(async (req) => {
 
     // If completed or incomplete (partial results may be available), extract result
     if (openaiStatus === 'completed' || openaiStatus === 'incomplete') {
-      // Extract text from output
+      // Extract text from output and citations
       let resultText = '';
+      let webCitations: WebSearchCitation[] = [];
+      
       if (openaiResponse.output && Array.isArray(openaiResponse.output)) {
+        // Extract citations first
+        webCitations = extractWebSearchCitations(openaiResponse.output);
+        console.log(`📎 Found ${webCitations.length} web citations`);
+        
         for (const item of openaiResponse.output) {
           if (item.type === 'message' && item.content) {
             for (const content of item.content) {
@@ -172,24 +253,33 @@ serve(async (req) => {
       try {
         parsedResult = JSON.parse(resultText);
       } catch (e) {
-        // Not valid JSON - use as raw text
+        // Not valid JSON - format as structured result with links
+        const formattedText = formatTextWithLinks(resultText, webCitations);
+        const sourcesFromCitations = getSourcesFromCitations(webCitations);
+        
         parsedResult = {
-          findings: resultText || 'Investigación completada',
-          sources: ['Fuentes legales consultadas'],
+          findings: formattedText || 'Investigación completada',
+          sources: sourcesFromCitations.length > 0 ? sourcesFromCitations : ['Fuentes legales consultadas'],
           conclusion: openaiStatus === 'incomplete' ? 'Análisis parcial - la consulta era muy compleja' : 'Análisis completado',
           keyPoints: [],
           legalBasis: []
         };
       }
 
+      // Get sources from citations if available and not already in result
+      const citationSources = getSourcesFromCitations(webCitations);
+      
       // Normalize result structure
       const normalizedResult = {
         findings: parsedResult.findings || parsedResult.content || 'Investigación completada',
-        sources: parsedResult.sources || parsedResult.fuentes || ['Legislación Colombiana', 'Jurisprudencia'],
+        sources: citationSources.length > 0 
+          ? citationSources 
+          : (parsedResult.sources || parsedResult.fuentes || ['Legislación Colombiana', 'Jurisprudencia']),
         conclusion: parsedResult.conclusion || parsedResult.conclusiones || 'Análisis completado',
         keyPoints: parsedResult.keyPoints || parsedResult.puntosClave || [],
         legalBasis: parsedResult.legalBasis || parsedResult.fundamentosLegales || [],
-        isPartial: openaiStatus === 'incomplete'
+        isPartial: openaiStatus === 'incomplete',
+        webCitations: webCitations.length > 0 ? webCitations : undefined
       };
 
       // Add notice if partial

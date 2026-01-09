@@ -1,17 +1,74 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Search, BookOpen, FileText, Loader2, Sparkles, Target, TrendingUp, Clock, CheckCircle2, AlertCircle, ChevronDown, ChevronRight, Calendar, Archive, Filter, Coins, Briefcase } from "lucide-react";
+import { Search, BookOpen, FileText, Loader2, Sparkles, Target, TrendingUp, Clock, CheckCircle2, AlertCircle, ChevronDown, ChevronRight, Calendar, Archive, Filter, Coins, Briefcase, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useCredits } from "@/hooks/useCredits";
 import { ToolCostIndicator } from "@/components/credits/ToolCostIndicator";
 import { CaseSelectorDropdown } from "./CaseSelectorDropdown";
 import { useCaseActivityLogger } from "@/hooks/useCaseActivityLogger";
+
+// Parse markdown links and render them as clickable links
+function renderMarkdownLinks(text: string): React.ReactNode[] {
+  if (!text) return [];
+  
+  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match;
+  let keyIndex = 0;
+  
+  while ((match = linkRegex.exec(text)) !== null) {
+    // Add text before the link
+    if (match.index > lastIndex) {
+      parts.push(text.substring(lastIndex, match.index));
+    }
+    
+    // Add the link
+    const linkText = match[1];
+    const url = match[2];
+    parts.push(
+      <a 
+        key={`link-${keyIndex++}`}
+        href={url} 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="text-primary hover:text-primary/80 underline inline-flex items-center gap-1"
+      >
+        {linkText}
+        <ExternalLink className="h-3 w-3" />
+      </a>
+    );
+    
+    lastIndex = match.index + match[0].length;
+  }
+  
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(text.substring(lastIndex));
+  }
+  
+  return parts.length > 0 ? parts : [text];
+}
+
+// Parse source which may be a markdown link or plain text
+function parseSource(source: string): { title: string; url?: string } {
+  if (!source || typeof source !== 'string') {
+    return { title: 'Fuente legal' };
+  }
+  
+  const linkMatch = source.match(/\[([^\]]+)\]\(([^)]+)\)/);
+  if (linkMatch) {
+    return { title: linkMatch[1], url: linkMatch[2] };
+  }
+  
+  return { title: source };
+}
 
 interface ResearchResult {
   query: string;
@@ -644,7 +701,9 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
                         <h4 className="font-bold mb-4 flex items-center gap-3 text-lg">
                           <FileText className="h-5 w-5 text-primary" />Hallazgos Jurídicos
                         </h4>
-                        <div className="prose prose-sm max-w-none whitespace-pre-wrap">{result.findings}</div>
+                        <div className="prose prose-sm max-w-none whitespace-pre-wrap">
+                          {renderMarkdownLinks(result.findings)}
+                        </div>
                       </div>
                       
                       {result.conclusion && (
@@ -659,12 +718,26 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
                       {result.sources && result.sources.length > 0 && (
                         <div>
                           <h4 className="font-bold mb-4 text-lg"><BookOpen className="h-5 w-5 inline mr-2" />Fuentes Consultadas</h4>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {result.sources.filter(Boolean).map((source, idx) => (
-                              <Badge key={idx} variant="outline" className="text-purple-700 border-purple-300 p-3">
-                                {typeof source === 'string' ? source : 'Fuente legal'}
-                              </Badge>
-                            ))}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {result.sources.filter(Boolean).map((source, idx) => {
+                              const parsed = parseSource(source);
+                              return parsed.url ? (
+                                <a 
+                                  key={idx}
+                                  href={parsed.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 p-3 border border-purple-300 rounded-lg hover:bg-purple-50 transition-colors group"
+                                >
+                                  <ExternalLink className="h-4 w-4 text-purple-600 flex-shrink-0" />
+                                  <span className="text-purple-700 text-sm line-clamp-2 group-hover:underline">{parsed.title}</span>
+                                </a>
+                              ) : (
+                                <Badge key={idx} variant="outline" className="text-purple-700 border-purple-300 p-3">
+                                  {parsed.title}
+                                </Badge>
+                              );
+                            })}
                           </div>
                         </div>
                       )}
