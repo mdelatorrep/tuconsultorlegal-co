@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { ArrowLeft, Calendar, User, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useSEO } from "@/hooks/useSEO";
 
 interface BlogPageProps {
   onOpenChat: (message?: string) => void;
@@ -34,6 +35,24 @@ interface BlogPost {
 export default function BlogPage({ onOpenChat, onNavigate }: BlogPageProps) {
   const [blogs, setBlogs] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
+
+  useSEO({
+    title: "Blog Legal - Artículos de Derecho e IA | Tu Consultor Legal",
+    description: "Blog de derecho colombiano. Artículos sobre legislación, herramientas IA para abogados, contratos, normativa legal. Actualizado por expertos jurídicos.",
+    keywords: "blog legal Colombia, artículos derecho, noticias jurídicas, legislación colombiana, IA legal, herramientas abogados, contratos legales",
+    canonical: "https://tuconsultorlegal.co/#blog",
+    structuredData: {
+      "@context": "https://schema.org",
+      "@type": "Blog",
+      "name": "Blog Tu Consultor Legal",
+      "description": "Artículos sobre derecho colombiano e inteligencia artificial legal",
+      "url": "https://tuconsultorlegal.co/#blog",
+      "publisher": {
+        "@type": "Organization",
+        "name": "Tu Consultor Legal"
+      }
+    }
+  });
 
   useEffect(() => {
     loadPublishedBlogs();

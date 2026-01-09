@@ -47,16 +47,17 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
 
   useSEO({
     title: "Tu Consultor Legal - IA Legal para Abogados y Documentos Legales",
-    description: "Plataforma de inteligencia artificial legal. 14 herramientas IA para abogados y generación de documentos legales para personas y empresas en Colombia.",
-    keywords: "abogados IA, documentos legales, contratos, asesoría legal, inteligencia artificial legal, derecho colombiano, investigación jurídica",
+    description: "Plataforma #1 de inteligencia artificial legal en Colombia. 14 herramientas IA para abogados profesionales. Genera documentos legales para personas y empresas en minutos.",
+    keywords: "IA legal abogados Colombia, herramientas IA abogados, software legal Colombia, investigación jurídica IA, documentos legales IA, contratos con IA, CRM abogados, análisis documental",
+    canonical: "https://tuconsultorlegal.co/",
     structuredData: {
       "@context": "https://schema.org",
       "@type": "LegalService",
       "name": "Tu Consultor Legal",
-      "description": "Plataforma de inteligencia artificial legal para abogados y generación de documentos",
+      "description": "Plataforma #1 de IA legal con 14 herramientas para abogados y generación de documentos legales",
       "url": "https://tuconsultorlegal.co",
       "areaServed": "Colombia",
-      "serviceType": ["AI Legal Tools", "Legal Document Generation", "Legal Research"]
+      "serviceType": ["IA Legal para Abogados", "Documentos Legales con IA", "Investigación Jurídica", "CRM Abogados"]
     }
   });
 

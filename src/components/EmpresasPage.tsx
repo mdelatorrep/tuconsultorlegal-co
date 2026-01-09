@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { useSEO } from "@/hooks/useSEO";
 import { Check, FileText, Building, Users, DollarSign, Scale, Handshake, Shield } from "lucide-react";
 import DocumentChatFlow from "./DocumentChatFlow";
 import DocumentCreationSuccess from "./DocumentCreationSuccess";
@@ -28,6 +29,25 @@ export default function EmpresasPage({
   const [currentView, setCurrentView] = useState<'list' | 'form' | 'success'>('list');
   const [selectedAgent, setSelectedAgent] = useState<string>('');
   const [documentToken, setDocumentToken] = useState<string>('');
+
+  useSEO({
+    title: "Documentos Legales para Empresas - Contratos Comerciales | Tu Consultor Legal",
+    description: "Documentos legales empresariales en Colombia. Contratos comerciales, compliance, due diligence, propiedad intelectual. Generados con IA y validados por abogados.",
+    keywords: "documentos legales empresas Colombia, contratos comerciales, compliance legal, due diligence, propiedad intelectual, contratos corporativos, asesoría legal empresas",
+    canonical: "https://tuconsultorlegal.co/#empresas",
+    structuredData: {
+      "@context": "https://schema.org",
+      "@type": "Service",
+      "name": "Documentos Legales para Empresas",
+      "description": "Soluciones legales corporativas con IA en Colombia",
+      "provider": {
+        "@type": "Organization",
+        "name": "Tu Consultor Legal"
+      },
+      "serviceType": "Corporate Legal Services",
+      "areaServed": "Colombia"
+    }
+  });
   const iconMap: {
     [key: string]: JSX.Element;
   } = {

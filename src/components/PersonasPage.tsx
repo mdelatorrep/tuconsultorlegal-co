@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { supabase } from "@/integrations/supabase/client";
+import { useSEO } from "@/hooks/useSEO";
 import { Check, FileText, Search, Shield, Users, User, MessageCircle, LogIn, ArrowRight, Lock } from "lucide-react";
 import DocumentChatFlow from "./DocumentChatFlow";
 import DocumentCreationSuccess from "./DocumentCreationSuccess";
@@ -35,6 +36,25 @@ export default function PersonasPage({
   const {
     isAuthenticated
   } = useUserAuth();
+
+  useSEO({
+    title: "Documentos Legales para Personas - Contratos con IA | Tu Consultor Legal",
+    description: "Genera contratos y documentos legales válidos en Colombia en minutos. Arrendamiento, trabajo, poderes, sucesiones. Con IA y respaldados por abogados profesionales.",
+    keywords: "documentos legales personas Colombia, contrato arrendamiento, contrato trabajo, poder notarial, documentos sucesión, contratos personales, documentos jurídicos IA",
+    canonical: "https://tuconsultorlegal.co/#personas",
+    structuredData: {
+      "@context": "https://schema.org",
+      "@type": "Service",
+      "name": "Documentos Legales para Personas",
+      "description": "Generación de documentos legales personales con IA en Colombia",
+      "provider": {
+        "@type": "Organization",
+        "name": "Tu Consultor Legal"
+      },
+      "serviceType": "Legal Document Generation",
+      "areaServed": "Colombia"
+    }
+  });
   useEffect(() => {
     loadServices();
   }, []);
