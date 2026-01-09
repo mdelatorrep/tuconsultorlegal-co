@@ -269,15 +269,20 @@ serve(async (req) => {
       // Get sources from citations if available and not already in result
       const citationSources = getSourcesFromCitations(webCitations);
       
-      // Normalize result structure
+      // Normalize result structure - handle all possible field names
       const normalizedResult = {
         findings: parsedResult.findings || parsedResult.content || 'Investigación completada',
+        analysis: parsedResult.analysis || null,
         sources: citationSources.length > 0 
           ? citationSources 
           : (parsedResult.sources || parsedResult.fuentes || ['Legislación Colombiana', 'Jurisprudencia']),
-        conclusion: parsedResult.conclusion || parsedResult.conclusiones || 'Análisis completado',
+        conclusion: parsedResult.finalConclusion || parsedResult.conclusion || parsedResult.conclusiones || 'Análisis completado',
         keyPoints: parsedResult.keyPoints || parsedResult.puntosClave || [],
         legalBasis: parsedResult.legalBasis || parsedResult.fundamentosLegales || [],
+        recommendations: parsedResult.recommendations_practical || parsedResult.recommendations || null,
+        risks: parsedResult.risks_uncertainties || parsedResult.risks || null,
+        lastUpdated: parsedResult.lastUpdated || null,
+        verificationNotes: parsedResult.notes_on_verification || null,
         isPartial: openaiStatus === 'incomplete',
         webCitations: webCitations.length > 0 ? webCitations : undefined
       };
