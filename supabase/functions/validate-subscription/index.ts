@@ -74,7 +74,7 @@ serve(async (req) => {
         // Validate subscription with dLocal if we have the subscription ID
         if (subscription.dlocal_subscription_id) {
           try {
-            const dLocalResponse = await supabase.functions.invoke('dlocal-admin-get-subscriptions', {
+            const dLocalResponse = await supabaseClient.functions.invoke('dlocal-admin-get-subscriptions', {
               body: { subscriptionId: subscription.dlocal_subscription_id }
             });
             
