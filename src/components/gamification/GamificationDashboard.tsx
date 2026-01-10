@@ -24,9 +24,9 @@ export function GamificationDashboard({ lawyerId, className }: GamificationDashb
     checkAndClaimTask,
     getTotalCreditsEarned,
     getCompletedTasksCount
-  } = useGamification(lawyerId);
+  } = useGamification(lawyerId || null);
   
-  const { balance, loading: creditsLoading } = useCredits(lawyerId);
+  const { balance, loading: creditsLoading } = useCredits(lawyerId || null);
   
   const [currentStreak, setCurrentStreak] = useState(0);
   const [longestStreak, setLongestStreak] = useState(0);

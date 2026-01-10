@@ -54,7 +54,10 @@ export function useCredits(lawyerId: string | null) {
   const { toast } = useToast();
 
   const fetchBalance = useCallback(async () => {
-    if (!lawyerId) return;
+    if (!lawyerId) {
+      setBalance(null);
+      return;
+    }
 
     const { data, error } = await supabase
       .from('lawyer_credits')
@@ -164,6 +167,12 @@ export function useCredits(lawyerId: string | null) {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
+      if (!lawyerId) {
+        // Still load packages and tool costs (they're public)
+        await Promise.all([fetchPackages(), fetchToolCosts()]);
+        setLoading(false);
+        return;
+      }
       await Promise.all([
         fetchBalance(),
         fetchPackages(),
@@ -174,7 +183,7 @@ export function useCredits(lawyerId: string | null) {
     };
 
     loadData();
-  }, [fetchBalance, fetchPackages, fetchToolCosts, fetchTransactions]);
+  }, [lawyerId, fetchBalance, fetchPackages, fetchToolCosts, fetchTransactions]);
 
   // Subscribe to balance changes - listen to all changes and filter locally
   useEffect(() => {

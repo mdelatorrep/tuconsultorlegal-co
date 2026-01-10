@@ -14,10 +14,10 @@ interface DailyProgressProps {
 }
 
 export function DailyProgress({ lawyerId, onViewCredits }: DailyProgressProps) {
-  const { balance, loading: creditsLoading } = useCredits(lawyerId);
-  const { tasks, progress, checkAndClaimTask, loading: gamificationLoading } = useGamification(lawyerId);
+  const { balance, loading: creditsLoading } = useCredits(lawyerId || null);
+  const { tasks, progress, checkAndClaimTask, loading: gamificationLoading } = useGamification(lawyerId || null);
 
-  const loading = creditsLoading || gamificationLoading;
+  const loading = creditsLoading || gamificationLoading || !lawyerId;
 
   // Get daily tasks
   const dailyTasks = tasks.filter(t => t.task_type === 'daily');

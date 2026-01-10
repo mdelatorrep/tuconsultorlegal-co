@@ -31,7 +31,7 @@ export function CreditsDashboard({ lawyerId }: CreditsDashboardProps) {
     transactions, 
     loading: creditsLoading,
     refreshBalance
-  } = useCredits(lawyerId);
+  } = useCredits(lawyerId || null);
   
   const { 
     tasks, 
@@ -41,7 +41,7 @@ export function CreditsDashboard({ lawyerId }: CreditsDashboardProps) {
     loading: gamificationLoading,
     checkAndClaimTask,
     processReferral
-  } = useGamification(lawyerId);
+  } = useGamification(lawyerId || null);
 
   const handlePurchaseComplete = () => {
     refreshBalance();

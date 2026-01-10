@@ -52,39 +52,53 @@ export function useGamification(lawyerId: string | null) {
   const { toast } = useToast();
 
   const fetchTasks = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('gamification_tasks')
-      .select('*')
-      .eq('is_active', true)
-      .order('display_order');
+    try {
+      const { data, error } = await supabase
+        .from('gamification_tasks')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order');
 
-    if (error) {
+      if (error) {
+        console.error('Error fetching tasks:', error);
+        return;
+      }
+
+      setTasks(data || []);
+    } catch (error) {
       console.error('Error fetching tasks:', error);
-      return;
     }
-
-    setTasks(data || []);
   }, []);
 
   const fetchProgress = useCallback(async () => {
-    if (!lawyerId) return;
-
-    const { data, error } = await supabase
-      .from('gamification_progress')
-      .select('*, task:gamification_tasks(*)')
-      .eq('lawyer_id', lawyerId);
-
-    if (error) {
-      console.error('Error fetching progress:', error);
+    if (!lawyerId) {
+      setProgress([]);
       return;
     }
 
-    setProgress(data || []);
+    try {
+      const { data, error } = await supabase
+        .from('gamification_progress')
+        .select('*, task:gamification_tasks(*)')
+        .eq('lawyer_id', lawyerId);
+
+      if (error) {
+        console.error('Error fetching progress:', error);
+        return;
+      }
+
+      setProgress(data || []);
+    } catch (error) {
+      console.error('Error fetching progress:', error);
+    }
   }, [lawyerId]);
 
   const fetchReferralInfo = useCallback(async () => {
-    if (!lawyerId) return;
-
+    if (!lawyerId) {
+      setReferralInfo(null);
+      setReferrals([]);
+      return;
+    }
     // Get own referral code
     const { data: ownReferral, error: ownError } = await supabase
       .from('lawyer_referrals')

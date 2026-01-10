@@ -30,10 +30,18 @@ export function CasesOverview({ lawyerId, onViewCRM, onCreateCase }: CasesOvervi
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetchCases();
+    if (lawyerId) {
+      fetchCases();
+    } else {
+      setIsLoading(false);
+    }
   }, [lawyerId]);
 
   const fetchCases = async () => {
+    if (!lawyerId) {
+      setIsLoading(false);
+      return;
+    }
     try {
       // Fetch recent cases with client info
       const { data: casesData, error: casesError } = await supabase

@@ -30,10 +30,18 @@ export function UpcomingActions({ lawyerId, onViewCalendar, onViewCRM }: Upcomin
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetchUpcomingTasks();
+    if (lawyerId) {
+      fetchUpcomingTasks();
+    } else {
+      setIsLoading(false);
+    }
   }, [lawyerId]);
 
   const fetchUpcomingTasks = async () => {
+    if (!lawyerId) {
+      setIsLoading(false);
+      return;
+    }
     try {
       // Fetch tasks for the next 7 days
       const nextWeek = addDays(new Date(), 7);
