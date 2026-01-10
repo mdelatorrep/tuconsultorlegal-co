@@ -71,9 +71,11 @@ export function DeadlineCalculator({ lawyerId, onEventCreated }: DeadlineCalcula
       
       const { data, error } = await supabase.functions.invoke('calculate-legal-deadlines', {
         body: {
+          action: 'calculate',
           startDate: format(startDate, 'yyyy-MM-dd'),
-          termType: termType === 'custom' ? 'custom' : termType,
-          days: daysToAdd
+          termType: termType === 'custom' ? undefined : termType,
+          customDays: daysToAdd,
+          customType: 'business'
         }
       });
 

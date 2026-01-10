@@ -39,10 +39,10 @@ export function AutoDocketing({ lawyerId, onEventsCreated }: AutoDocketingProps)
 
     try {
       setExtracting(true);
-      const { data, error } = await supabase.functions.invoke('legal-copilot', {
+      const { data, error } = await supabase.functions.invoke('process-calendar-events', {
         body: {
           action: 'extract_dates',
-          text: documentText
+          documentText: documentText
         }
       });
 

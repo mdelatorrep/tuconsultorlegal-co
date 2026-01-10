@@ -23,6 +23,7 @@ import { es } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { DeadlineCalculator } from './DeadlineCalculator';
 import { AutoDocketing } from './AutoDocketing';
+import { NewEventDialog } from './NewEventDialog';
 
 interface CalendarEvent {
   id: string;
@@ -53,6 +54,7 @@ export function SmartLegalCalendar({ lawyerId }: SmartLegalCalendarProps) {
   const [loading, setLoading] = useState(true);
   const [showCalculator, setShowCalculator] = useState(false);
   const [showAutoDocket, setShowAutoDocket] = useState(false);
+  const [showNewEvent, setShowNewEvent] = useState(false);
 
   useEffect(() => {
     loadEvents();
@@ -199,10 +201,27 @@ export function SmartLegalCalendar({ lawyerId }: SmartLegalCalendarProps) {
             </DialogContent>
           </Dialog>
           
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Nuevo Evento
-          </Button>
+          <Dialog open={showNewEvent} onOpenChange={setShowNewEvent}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Nuevo Evento
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Crear Nuevo Evento</DialogTitle>
+              </DialogHeader>
+              <NewEventDialog 
+                lawyerId={lawyerId}
+                selectedDate={selectedDate}
+                onEventCreated={() => {
+                  loadEvents();
+                  setShowNewEvent(false);
+                }}
+              />
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 

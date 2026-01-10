@@ -16,8 +16,88 @@ serve(async (req) => {
   }
 
   try {
-    const { eventDescription } = await req.json();
+    const body = await req.json();
+    const { action, eventDescription, documentText } = body;
 
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openaiApiKey) throw new Error('OpenAI API key not configured');
+
+    const model = 'gpt-4o-mini';
+
+    // Extract dates from document text
+    if (action === 'extract_dates') {
+      if (!documentText) {
+        return new Response(
+          JSON.stringify({ error: 'Document text is required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      logResponsesRequest(model, 'process-calendar-events-extract', true);
+
+      const instructions = `Eres un asistente legal colombiano especializado en extraer fechas de documentos judiciales.
+
+Analiza el documento y extrae TODAS las fechas importantes que encuentres, incluyendo:
+- Audiencias programadas
+- Vencimientos de términos
+- Fechas de notificación
+- Plazos para presentar recursos
+- Fechas de presentación de documentos
+- Cualquier otra fecha legal relevante
+
+Para cada fecha extraída, determina:
+1. La fecha exacta en formato YYYY-MM-DD
+2. El tipo de evento (audiencia, vencimiento, notificacion, presentacion, recurso, otro)
+3. Una descripción clara del evento
+4. La prioridad (alta, media, baja) basándote en la urgencia
+
+Responde ÚNICAMENTE con un JSON válido:
+{
+  "dates": [
+    {
+      "date": "YYYY-MM-DD",
+      "type": "audiencia|vencimiento|notificacion|presentacion|recurso|otro",
+      "description": "Descripción del evento",
+      "priority": "alta|media|baja"
+    }
+  ]
+}
+
+Si no encuentras fechas específicas, devuelve: {"dates": []}`;
+
+      const params = buildResponsesRequestParams(model, {
+        input: `Extrae las fechas importantes de este documento judicial:\n\n${documentText}`,
+        instructions,
+        maxOutputTokens: 2000,
+        temperature: 0.2,
+        jsonMode: true,
+        store: false,
+        reasoning: { effort: 'medium' }
+      });
+
+      const result = await callResponsesAPI(openaiApiKey, params);
+
+      if (!result.success) {
+        throw new Error(`Date extraction failed: ${result.error}`);
+      }
+
+      let extracted;
+      try {
+        extracted = JSON.parse(result.text || '{"dates": []}');
+      } catch (e) {
+        console.error('Failed to parse AI response:', result.text);
+        extracted = { dates: [] };
+      }
+
+      console.log(`✅ Extracted ${extracted.dates?.length || 0} dates from document`);
+
+      return new Response(
+        JSON.stringify({ success: true, dates: extracted.dates || [] }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Default action: process event description
     if (!eventDescription) {
       return new Response(
         JSON.stringify({ error: 'Event description is required' }),
@@ -25,10 +105,6 @@ serve(async (req) => {
       );
     }
 
-    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiApiKey) throw new Error('OpenAI API key not configured');
-
-    const model = 'gpt-4o-mini';
     logResponsesRequest(model, 'process-calendar-events', true);
 
     const instructions = `Eres un asistente legal especializado en gestión de calendario y eventos legales. Analiza descripciones de eventos y extrae información útil.
@@ -57,7 +133,7 @@ Responde en formato JSON:
       temperature: 0.3,
       jsonMode: true,
       store: false,
-      reasoning: { effort: 'low' } // Simple task - minimize reasoning tokens
+      reasoning: { effort: 'low' }
     });
 
     const result = await callResponsesAPI(openaiApiKey, params);
