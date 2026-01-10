@@ -28,7 +28,7 @@ export function SmartSearch({ lawyerId, onNavigate }: SmartSearchProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const performSearch = useCallback(async (searchQuery: string) => {
-    if (searchQuery.length < 2) {
+    if (!lawyerId || searchQuery.length < 2) {
       setResults([]);
       return;
     }

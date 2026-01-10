@@ -535,6 +535,20 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
     return <LawyerLandingPage onOpenChat={onOpenChat} />;
   }
 
+  // Safety check: if authenticated but no user data yet, show loading
+  if (!user || !user.id) {
+    return (
+      <div className="container mx-auto px-4 py-8 min-h-screen">
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Cargando perfil...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Render module content
   const renderModuleContent = () => {
     switch (currentView) {
