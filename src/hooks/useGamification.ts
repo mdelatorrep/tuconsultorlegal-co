@@ -220,6 +220,54 @@ export function useGamification(lawyerId: string | null) {
     loadData();
   }, [fetchTasks, fetchProgress, fetchReferralInfo]);
 
+  // Real-time subscription for gamification progress updates
+  useEffect(() => {
+    if (!lawyerId) return;
+
+    const channel = supabase
+      .channel(`gamification-realtime-${lawyerId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'gamification_progress'
+        },
+        (payload) => {
+          const newData = payload.new as { lawyer_id?: string } | null;
+          const oldData = payload.old as { lawyer_id?: string } | null;
+          
+          if (newData?.lawyer_id === lawyerId || oldData?.lawyer_id === lawyerId) {
+            console.log('[Gamification] Progress updated via realtime:', payload);
+            fetchProgress();
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'lawyer_notifications',
+          filter: `lawyer_id=eq.${lawyerId}`
+        },
+        (payload) => {
+          const notification = payload.new as { notification_type?: string } | null;
+          if (notification?.notification_type === 'gamification') {
+            console.log('[Gamification] New gamification notification:', payload);
+            fetchProgress();
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('[Gamification] Realtime subscription status:', status);
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [lawyerId, fetchProgress]);
+
   return {
     tasks,
     progress,

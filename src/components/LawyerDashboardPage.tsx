@@ -45,6 +45,7 @@ import { CreditsDashboard } from "./credits/CreditsDashboard";
 import { NextBestAction } from "./credits/NextBestAction";
 import { DailyProgress } from "./credits/DailyProgress";
 import { GamificationDashboard } from "./gamification/GamificationDashboard";
+import { GamificationCelebration } from "./gamification/GamificationCelebration";
 import { QuickActionsBar } from "./QuickActionsBar";
 import { useCredits } from "@/hooks/useCredits";
 import { ToolCostIndicator } from "@/components/credits/ToolCostIndicator";
@@ -120,6 +121,13 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const [isCheckingSpelling, setIsCheckingSpelling] = useState(false);
   const [showSendConfirmation, setShowSendConfirmation] = useState(false);
   const [newLeadsCount, setNewLeadsCount] = useState(0);
+  const [celebration, setCelebration] = useState<{
+    show: boolean;
+    points: number;
+    taskName: string;
+    isAchievement?: boolean;
+    badgeName?: string;
+  } | null>(null);
   const [spellCheckResults, setSpellCheckResults] = useState<{
     errors: Array<{
       word: string;
@@ -217,9 +225,48 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
         )
         .subscribe();
 
+      // Subscribe to gamification notifications for celebrations
+      const gamificationChannel = supabase
+        .channel(`gamification-celebrations-${user?.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'lawyer_notifications',
+            filter: `lawyer_id=eq.${user?.id}`
+          },
+          (payload) => {
+            const notification = payload.new as { 
+              notification_type?: string;
+              title?: string;
+              message?: string;
+            } | null;
+            
+            if (notification?.notification_type === 'gamification') {
+              console.log('[Celebration] Gamification notification received:', notification);
+              // Extract credits from message (format: "...X créditos...")
+              const creditsMatch = notification.message?.match(/(\d+)\s*créditos/);
+              const credits = creditsMatch ? parseInt(creditsMatch[1]) : 0;
+              
+              setCelebration({
+                show: true,
+                points: credits,
+                taskName: notification.title || '¡Misión completada!',
+                isAchievement: notification.title?.includes('Logro') || notification.title?.includes('Achievement'),
+                badgeName: notification.title?.includes('Logro') ? notification.title : undefined
+              });
+            }
+          }
+        )
+        .subscribe((status) => {
+          console.log('[Celebration] Gamification notifications subscription:', status);
+        });
+
       return () => {
         supabase.removeChannel(documentChannel);
         supabase.removeChannel(leadsChannel);
+        supabase.removeChannel(gamificationChannel);
       };
     }
   }, [isAuthenticated, user?.id]);
@@ -745,6 +792,16 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
               </div>
             </main>
           </div>
+          
+          {/* Gamification Celebration Overlay for module views */}
+          <GamificationCelebration
+            show={celebration?.show || false}
+            points={celebration?.points || 0}
+            taskName={celebration?.taskName || ''}
+            isAchievement={celebration?.isAchievement}
+            badgeName={celebration?.badgeName}
+            onComplete={() => setCelebration(null)}
+          />
         </SidebarProvider>
       </>
     );
@@ -1126,6 +1183,16 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
         <QuickActionsBar 
           onNavigate={(view) => setCurrentView(view as ViewType)}
           onLogout={logout}
+        />
+        
+        {/* Gamification Celebration Overlay */}
+        <GamificationCelebration
+          show={celebration?.show || false}
+          points={celebration?.points || 0}
+          taskName={celebration?.taskName || ''}
+          isAchievement={celebration?.isAchievement}
+          badgeName={celebration?.badgeName}
+          onComplete={() => setCelebration(null)}
         />
       </SidebarProvider>
     </>
