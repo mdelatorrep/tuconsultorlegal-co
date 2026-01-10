@@ -115,13 +115,27 @@ serve(async (req) => {
 
       console.log(`[VoiceTranscription] Processing audio: ${audioFile.name}, size: ${audioFile.size}, model: ${config.transcriptionModel}`);
 
-      // Prepare form data for OpenAI Whisper API
+      // Prepare form data for OpenAI Transcription API
       const whisperFormData = new FormData();
       whisperFormData.append('file', audioFile);
       whisperFormData.append('model', config.transcriptionModel);
-      whisperFormData.append('language', config.transcriptionLanguage);
-      whisperFormData.append('prompt', config.transcriptionPrompt);
-      whisperFormData.append('response_format', 'verbose_json');
+      
+      // Language and prompt only supported by whisper-1, gpt-4o-transcribe, gpt-4o-mini-transcribe
+      // Not supported by gpt-4o-transcribe-diarize
+      if (config.transcriptionModel !== 'gpt-4o-transcribe-diarize') {
+        whisperFormData.append('language', config.transcriptionLanguage);
+        if (config.transcriptionPrompt) {
+          whisperFormData.append('prompt', config.transcriptionPrompt);
+        }
+      }
+      
+      // response_format: gpt-4o models only support 'json' or 'text', whisper-1 supports more
+      const isGpt4oModel = config.transcriptionModel.startsWith('gpt-4o');
+      if (isGpt4oModel) {
+        whisperFormData.append('response_format', 'json');
+      } else {
+        whisperFormData.append('response_format', 'verbose_json');
+      }
 
       const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
         method: 'POST',
@@ -133,23 +147,31 @@ serve(async (req) => {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('[VoiceTranscription] Whisper API error:', errorText);
-        throw new Error(`Whisper API error: ${response.status}`);
+        console.error('[VoiceTranscription] OpenAI API error:', errorText);
+        throw new Error(`OpenAI Transcription API error: ${response.status} - ${errorText}`);
       }
 
       const result = await response.json();
       console.log(`[VoiceTranscription] Transcription complete: ${result.text?.length || 0} chars`);
 
-      return new Response(JSON.stringify({
+      // Build response based on model capabilities
+      // gpt-4o models return simpler JSON, whisper-1 returns verbose_json with segments
+      const responseData: any = {
         text: result.text,
-        language: result.language,
-        duration: result.duration,
-        segments: result.segments?.map((s: any) => ({
+      };
+
+      // Only whisper-1 (verbose_json) includes these fields
+      if (result.language) responseData.language = result.language;
+      if (result.duration) responseData.duration = result.duration;
+      if (result.segments) {
+        responseData.segments = result.segments.map((s: any) => ({
           start: s.start,
           end: s.end,
           text: s.text
-        }))
-      }), {
+        }));
+      }
+
+      return new Response(JSON.stringify(responseData), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }

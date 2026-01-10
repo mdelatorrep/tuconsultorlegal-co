@@ -137,37 +137,43 @@ export function useVoiceRecognition(options: UseVoiceRecognitionOptions = {}): U
           // Create audio blob
           const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
           
-          // Convert to base64
-          const reader = new FileReader();
-          reader.readAsDataURL(audioBlob);
+          // Create FormData for file upload
+          const formData = new FormData();
+          formData.append('audio', audioBlob, 'recording.webm');
           
-          reader.onloadend = async () => {
-            const base64Audio = (reader.result as string).split(',')[1];
-            
-            // Send to edge function for transcription
-            const { data, error: transcribeError } = await supabase.functions.invoke('voice-transcription', {
-              body: {
-                audio: base64Audio,
-                language
-              }
-            });
+          // Get the Supabase URL and anon key for direct fetch
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+          const supabaseAnonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY;
+          
+          // Send to edge function for transcription using fetch (supabase.functions.invoke doesn't support FormData well)
+          const response = await fetch(`${supabaseUrl}/functions/v1/voice-transcription`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${supabaseAnonKey}`,
+            },
+            body: formData
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Error en transcripción');
+          }
+          
+          const data = await response.json();
 
-            if (transcribeError) throw transcribeError;
-
-            const transcribedText = data.text || '';
-            setTranscript(prev => prev + (prev ? ' ' : '') + transcribedText);
-            setInterimTranscript('');
-            onTranscript?.(transcribedText);
-            
-            if (transcribedText) {
-              toast.success('Transcripción completada');
-            } else {
-              toast.info('No se detectó voz');
-            }
-            
-            setIsProcessing(false);
-            resolve();
-          };
+          const transcribedText = data.text || '';
+          setTranscript(prev => prev + (prev ? ' ' : '') + transcribedText);
+          setInterimTranscript('');
+          onTranscript?.(transcribedText);
+          
+          if (transcribedText) {
+            toast.success('Transcripción completada');
+          } else {
+            toast.info('No se detectó voz');
+          }
+          
+          setIsProcessing(false);
+          resolve();
         } catch (err) {
           console.error('Error transcribing audio:', err);
           setError('Error al transcribir el audio');
