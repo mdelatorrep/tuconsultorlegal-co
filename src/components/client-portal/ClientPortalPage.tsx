@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { CaseStatus } from './CaseStatus';
 import { DocumentUpload } from './DocumentUpload';
 import { AppointmentScheduler } from './AppointmentScheduler';
+import { InviteClientDialog } from './InviteClientDialog';
 
 interface ClientPortalPageProps {
   accessToken?: string;
@@ -262,7 +263,13 @@ export function ClientPortalPage({ accessToken, lawyerId }: ClientPortalPageProp
             )}
             
             {isLawyerMode && (
-              <Badge variant="secondary">Vista de Administrador</Badge>
+              <div className="flex items-center gap-3">
+                <InviteClientDialog 
+                  lawyerId={lawyerId!} 
+                  clients={clients}
+                />
+                <Badge variant="secondary">Vista de Administrador</Badge>
+              </div>
             )}
           </div>
         </div>

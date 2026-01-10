@@ -18,6 +18,7 @@ import DemoCRMMockup from "./components/demo/DemoCRMMockup";
 import DemoAgentsMockup from "./components/demo/DemoAgentsMockup";
 import { SubscriptionSuccessPage } from "./components/SubscriptionSuccessPage";
 import { SubscriptionErrorPage } from "./components/SubscriptionErrorPage";
+import { ClientPortalAccessPage } from "./components/client-portal/ClientPortalAccessPage";
 import { useAuthManager } from "@/hooks/useAuthManager";
 import { useLogRocket } from "@/hooks/useLogRocket";
 import { useUserTracking } from "@/hooks/useUserTracking";
@@ -67,6 +68,7 @@ const AppContent = () => {
           <Route path="/demo/agents" element={<DemoAgentsMockup />} />
           <Route path="/subscription-success" element={<SubscriptionSuccessPage />} />
           <Route path="/subscription-error" element={<SubscriptionErrorPage />} />
+          <Route path="/portal/:token" element={<ClientPortalAccessPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
