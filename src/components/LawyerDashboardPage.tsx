@@ -121,6 +121,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const [isCheckingSpelling, setIsCheckingSpelling] = useState(false);
   const [showSendConfirmation, setShowSendConfirmation] = useState(false);
   const [newLeadsCount, setNewLeadsCount] = useState(0);
+  const [voiceTranscript, setVoiceTranscript] = useState<string>('');
   const [celebration, setCelebration] = useState<{
     show: boolean;
     points: number;
@@ -618,7 +619,16 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
       case 'analyze':
         return <AnalyzeModule user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as ViewType)} onLogout={logout} />;
       case 'draft':
-        return <DraftModule user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as ViewType)} onLogout={logout} />;
+        return (
+          <DraftModule 
+            user={user} 
+            currentView={currentView} 
+            onViewChange={(view) => setCurrentView(view as ViewType)} 
+            onLogout={logout}
+            initialTranscript={voiceTranscript}
+            onTranscriptUsed={() => setVoiceTranscript('')}
+          />
+        );
       case 'strategize':
         return <StrategizeModule user={user} currentView={currentView} onViewChange={(view) => setCurrentView(view as ViewType)} onLogout={logout} />;
       case 'stats':
@@ -639,7 +649,15 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
         );
       // legal-copilot is now integrated into draft module
       case 'voice-assistant':
-        return <VoiceAssistant lawyerId={user.id} />;
+        return (
+          <VoiceAssistant 
+            lawyerId={user.id} 
+            onCreateDocument={(text) => {
+              setVoiceTranscript(text);
+              setCurrentView('draft');
+            }}
+          />
+        );
       case 'case-predictor':
         return <CasePredictorModule lawyerId={user.id} />;
       case 'client-portal':

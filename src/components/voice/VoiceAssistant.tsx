@@ -12,7 +12,9 @@ import {
   Trash2,
   FileText,
   Send,
-  Volume2
+  Volume2,
+  PenTool,
+  ArrowRight
 } from 'lucide-react';
 import { useVoiceRecognition } from '@/hooks/useVoiceRecognition';
 import { toast } from 'sonner';
@@ -23,10 +25,11 @@ import { ToolCostIndicator } from '@/components/credits/ToolCostIndicator';
 interface VoiceAssistantProps {
   lawyerId?: string;
   onTranscriptReady?: (text: string) => void;
+  onCreateDocument?: (text: string) => void;
   placeholder?: string;
 }
 
-export function VoiceAssistant({ lawyerId, onTranscriptReady, placeholder }: VoiceAssistantProps) {
+export function VoiceAssistant({ lawyerId, onTranscriptReady, onCreateDocument, placeholder }: VoiceAssistantProps) {
   const [notes, setNotes] = useState<string[]>([]);
   const [editedTranscript, setEditedTranscript] = useState('');
   
@@ -84,6 +87,13 @@ export function VoiceAssistant({ lawyerId, onTranscriptReady, placeholder }: Voi
     if (editedTranscript.trim()) {
       onTranscriptReady?.(editedTranscript.trim());
       setEditedTranscript('');
+    }
+  };
+
+  const handleCreateDocument = () => {
+    if (editedTranscript.trim()) {
+      onCreateDocument?.(editedTranscript.trim());
+      toast.success('Navegando al editor de documentos...');
     }
   };
 
@@ -195,7 +205,7 @@ export function VoiceAssistant({ lawyerId, onTranscriptReady, placeholder }: Voi
                 </Button>
               </div>
               
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button
                   variant="outline"
                   size="sm"
@@ -205,9 +215,23 @@ export function VoiceAssistant({ lawyerId, onTranscriptReady, placeholder }: Voi
                   <FileText className="h-4 w-4 mr-1" />
                   Guardar Nota
                 </Button>
+                {onCreateDocument && (
+                  <Button
+                    size="sm"
+                    variant="default"
+                    onClick={handleCreateDocument}
+                    disabled={!editedTranscript.trim()}
+                    className="bg-gradient-to-r from-primary to-primary/80"
+                  >
+                    <PenTool className="h-4 w-4 mr-1" />
+                    Crear Documento
+                    <ArrowRight className="h-4 w-4 ml-1" />
+                  </Button>
+                )}
                 {onTranscriptReady && (
                   <Button
                     size="sm"
+                    variant="secondary"
                     onClick={handleSend}
                     disabled={!editedTranscript.trim()}
                   >

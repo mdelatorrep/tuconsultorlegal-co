@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,6 +18,8 @@ interface DraftModuleProps {
   currentView: string;
   onViewChange: (view: string) => void;
   onLogout: () => void;
+  initialTranscript?: string;
+  onTranscriptUsed?: () => void;
 }
 
 interface DraftResult {
@@ -38,8 +40,8 @@ const DOCUMENT_TYPES = [
   { value: "documento_personalizado", label: "Documento Personalizado" }
 ];
 
-export default function DraftModule({ user, currentView, onViewChange, onLogout }: DraftModuleProps) {
-  const [prompt, setPrompt] = useState("");
+export default function DraftModule({ user, currentView, onViewChange, onLogout, initialTranscript, onTranscriptUsed }: DraftModuleProps) {
+  const [prompt, setPrompt] = useState(initialTranscript || "");
   const [documentType, setDocumentType] = useState("");
   const [isDrafting, setIsDrafting] = useState(false);
   const [drafts, setDrafts] = useState<DraftResult[]>([]);
@@ -48,6 +50,18 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout 
   const [activeTab, setActiveTab] = useState("generate");
   const { toast } = useToast();
   const { consumeCredits, hasEnoughCredits, getToolCost } = useCredits(user?.id);
+
+  // Handle initial transcript from voice assistant
+  useEffect(() => {
+    if (initialTranscript && initialTranscript.length > 0) {
+      setPrompt(initialTranscript);
+      onTranscriptUsed?.();
+      toast({
+        title: "📝 Transcripción cargada",
+        description: "Tu dictado de voz ha sido cargado. Selecciona el tipo de documento y genera.",
+      });
+    }
+  }, [initialTranscript, onTranscriptUsed, toast]);
 
   const handleGenerateDraft = async () => {
     if (!prompt.trim() || !documentType) {
