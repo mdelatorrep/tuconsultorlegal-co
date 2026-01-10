@@ -6,13 +6,15 @@ import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { User, Mail, Phone, Shield, Calendar, BadgeCheck, Key, Settings, Save, Loader2, FileText, MapPin, GraduationCap, Briefcase, AlertCircle } from 'lucide-react';
+import { User, Mail, Phone, Shield, Calendar, BadgeCheck, Key, Settings, Save, Loader2, FileText, MapPin, GraduationCap, Briefcase, AlertCircle, ShieldCheck, CheckCircle2, RefreshCw, Award } from 'lucide-react';
 import { LawyerChangeEmailDialog } from '@/components/LawyerChangeEmailDialog';
 import { LawyerChangePasswordDialog } from './LawyerChangePasswordDialog';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useCredits } from '@/hooks/useCredits';
+import { ToolCostIndicator } from '@/components/credits/ToolCostIndicator';
 
 interface LawyerAccountSettingsProps {
   user: {
@@ -68,7 +70,10 @@ export function LawyerAccountSettings({ user }: LawyerAccountSettingsProps) {
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verificationResult, setVerificationResult] = useState<any>(null);
   const { toast } = useToast();
+  const { consumeCredits, hasEnoughCredits, getToolCost } = useCredits(user.id);
 
   const [formData, setFormData] = useState<LawyerProfileData>({
     full_name: '',
@@ -182,6 +187,80 @@ export function LawyerAccountSettings({ user }: LawyerAccountSettingsProps) {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  // Verify lawyer with Rama Judicial
+  const handleVerifyWithRamaJudicial = async () => {
+    if (!formData.document_type || !formData.document_number) {
+      toast({
+        title: "Datos requeridos",
+        description: "Ingresa tu tipo y número de documento",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!hasEnoughCredits('lawyer_verification')) {
+      toast({
+        title: "Créditos insuficientes",
+        description: `Necesitas ${getToolCost('lawyer_verification')} créditos para verificar.`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsVerifying(true);
+    setVerificationResult(null);
+
+    try {
+      const creditResult = await consumeCredits('lawyer_verification', { action: 'verify' });
+      if (!creditResult.success) {
+        setIsVerifying(false);
+        return;
+      }
+      
+      const response = await supabase.functions.invoke('verifik-lawyer-verification', {
+        body: {
+          documentType: formData.document_type,
+          documentNumber: formData.document_number.trim(),
+          lawyerId: user.id,
+        },
+      });
+
+      if (response.error) throw response.error;
+
+      setVerificationResult(response.data);
+      
+      if (response.data.status === 'verified') {
+        toast({
+          title: "¡Verificación exitosa!",
+          description: "Tu tarjeta profesional ha sido verificada.",
+        });
+        // Reload profile to get updated verification status
+        loadProfile();
+      } else if (response.data.status === 'expired') {
+        toast({
+          title: "Tarjeta no vigente",
+          description: "La tarjeta profesional no está vigente.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "No encontrado",
+          description: "No se encontró información del abogado.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Verification error:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo verificar con la Rama Judicial",
+        variant: "destructive"
+      });
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
   const memberSince = formData.created_at 
     ? format(new Date(formData.created_at), "d 'de' MMMM, yyyy", { locale: es })
     : 'No disponible';
@@ -238,14 +317,26 @@ export function LawyerAccountSettings({ user }: LawyerAccountSettingsProps) {
         {/* Datos de Verificación (Obligatorios) */}
         <Card className="border-primary/20">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <BadgeCheck className="h-5 w-5 text-primary" />
-              Datos de Verificación
-              <Badge variant="outline" className="ml-2 text-xs">Requerido</Badge>
-            </CardTitle>
-            <CardDescription>
-              Información necesaria para verificar tu identidad profesional
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <BadgeCheck className="h-5 w-5 text-primary" />
+                  Verificación Profesional
+                  <Badge variant="outline" className="ml-2 text-xs">Requerido</Badge>
+                </CardTitle>
+                <CardDescription>
+                  Verifica tu tarjeta profesional con la Rama Judicial
+                </CardDescription>
+              </div>
+              {formData.is_verified ? (
+                <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
+                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                  Verificado
+                </Badge>
+              ) : (
+                <ToolCostIndicator toolType="lawyer_verification" lawyerId={user.id} />
+              )}
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -300,6 +391,85 @@ export function LawyerAccountSettings({ user }: LawyerAccountSettingsProps) {
                 />
               </div>
             </div>
+
+            {/* Verification Button */}
+            {!formData.is_verified && (
+              <div className="pt-2">
+                <Button
+                  onClick={handleVerifyWithRamaJudicial}
+                  disabled={isVerifying || !formData.document_type || !formData.document_number || !hasEnoughCredits('lawyer_verification')}
+                  className="w-full"
+                  variant="default"
+                >
+                  {isVerifying ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Verificando con Rama Judicial...
+                    </>
+                  ) : (
+                    <>
+                      <ShieldCheck className="h-4 w-4 mr-2" />
+                      Verificar mi Tarjeta Profesional
+                    </>
+                  )}
+                </Button>
+                {!hasEnoughCredits('lawyer_verification') && (
+                  <p className="text-xs text-destructive text-center mt-2">
+                    Necesitas {getToolCost('lawyer_verification')} créditos para verificar
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Verification Result */}
+            {verificationResult && (
+              <Card className={`${
+                verificationResult.status === 'verified' 
+                  ? 'border-green-500/50 bg-green-500/5' 
+                  : verificationResult.status === 'expired'
+                    ? 'border-orange-500/50 bg-orange-500/5'
+                    : 'border-muted'
+              }`}>
+                <CardContent className="pt-4">
+                  <div className="flex items-start gap-3">
+                    {verificationResult.status === 'verified' ? (
+                      <CheckCircle2 className="h-5 w-5 text-green-500" />
+                    ) : verificationResult.status === 'expired' ? (
+                      <AlertCircle className="h-5 w-5 text-orange-500" />
+                    ) : (
+                      <AlertCircle className="h-5 w-5 text-muted-foreground" />
+                    )}
+                    <div className="flex-1">
+                      <p className="font-medium">{verificationResult.message}</p>
+                      
+                      {verificationResult.lawyer && (
+                        <div className="mt-2 space-y-1 text-sm text-muted-foreground">
+                          <p>Nombre: <span className="font-medium text-foreground">{verificationResult.lawyer.fullName}</span></p>
+                          {verificationResult.lawyer.barNumber && (
+                            <p>Tarjeta: <span className="font-medium text-foreground">{verificationResult.lawyer.barNumber}</span></p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Already Verified Status */}
+            {formData.is_verified && (
+              <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+                <Award className="h-8 w-8 text-green-600" />
+                <div>
+                  <p className="font-medium text-green-700 dark:text-green-400">
+                    Tu tarjeta profesional está verificada
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {formData.bar_number && `TP: ${formData.bar_number}`}
+                  </p>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
