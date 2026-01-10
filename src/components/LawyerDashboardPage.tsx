@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Save, CheckCircle, Bot, Settings, Brain, BookOpen, Search, Eye, PenTool, Target, Crown, Users, SpellCheck, AlertCircle, Clock, FileImage, Send, Database, Radar, Wand2, Mic, TrendingUp, UserCircle, Calendar, Mail } from "lucide-react";
+import { FileText, Save, CheckCircle, Bot, Settings, Brain, BookOpen, Search, Eye, PenTool, Target, Crown, Users, SpellCheck, AlertCircle, Clock, FileImage, Send, Database, Radar, Mic, TrendingUp, UserCircle, Calendar, Mail } from "lucide-react";
 
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -32,7 +32,7 @@ import { ProcessMonitorModule } from "./lawyer-modules/ProcessMonitorModule";
 import { CasePredictorModule } from "./lawyer-modules/CasePredictorModule";
 import LawyerVerificationModule from "./lawyer-modules/LawyerVerificationModule";
 import { SmartLegalCalendar, DeadlineCalculator, AutoDocketing } from "./calendar";
-import { LegalCopilot } from "./copilot";
+// LegalCopilot is now integrated into DraftModule
 import { VoiceAssistant } from "./voice";
 import { ClientPortalPage } from "./client-portal";
 import PremiumFeatureCard from "./PremiumFeatureCard";
@@ -107,7 +107,7 @@ const quillFormats = [
   'list', 'bullet', 'align', 'color', 'background'
 ];
 
-type ViewType = 'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager' | 'research' | 'analyze' | 'draft' | 'strategize' | 'crm' | 'public-profile' | 'suin-juriscol' | 'process-query' | 'credits' | 'gamification' | 'process-monitor' | 'legal-calendar' | 'legal-copilot' | 'voice-assistant' | 'case-predictor' | 'client-portal' | 'lawyer-verification' | 'request-agent-access' | 'request-blog-access' | 'specialized-agents' | 'account-settings';
+type ViewType = 'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager' | 'research' | 'analyze' | 'draft' | 'strategize' | 'crm' | 'public-profile' | 'suin-juriscol' | 'process-query' | 'credits' | 'gamification' | 'process-monitor' | 'legal-calendar' | 'voice-assistant' | 'case-predictor' | 'client-portal' | 'lawyer-verification' | 'request-agent-access' | 'request-blog-access' | 'specialized-agents' | 'account-settings';
 
 export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageProps) {
   const [documents, setDocuments] = useState<DocumentToken[]>([]);
@@ -590,8 +590,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
             </div>
           </div>
         );
-      case 'legal-copilot':
-        return <LegalCopilot lawyerId={user.id} />;
+      // legal-copilot is now integrated into draft module
       case 'voice-assistant':
         return <VoiceAssistant lawyerId={user.id} />;
       case 'case-predictor':
@@ -681,7 +680,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const viewsWithSidebar = ['dashboard', 'public-profile', 'stats', 'credits', 'gamification', 'request-agent-access', 'request-blog-access', 'account-settings'];
   
   // Views that modules render their own sidebar (need to be wrapped)
-  const moduleViews = ['agent-creator', 'agent-manager', 'training', 'blog-manager', 'research', 'analyze', 'draft', 'strategize', 'crm', 'suin-juriscol', 'process-query', 'process-monitor', 'legal-calendar', 'legal-copilot', 'voice-assistant', 'case-predictor', 'client-portal', 'lawyer-verification', 'specialized-agents', 'account-settings'];
+  const moduleViews = ['agent-creator', 'agent-manager', 'training', 'blog-manager', 'research', 'analyze', 'draft', 'strategize', 'crm', 'suin-juriscol', 'process-query', 'process-monitor', 'legal-calendar', 'voice-assistant', 'case-predictor', 'client-portal', 'lawyer-verification', 'specialized-agents', 'account-settings'];
 
   // If it's a module view, wrap it with our SidebarProvider
   if (moduleViews.includes(currentView)) {
