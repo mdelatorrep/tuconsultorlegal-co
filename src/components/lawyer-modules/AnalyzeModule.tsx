@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from '@/integrations/supabase/client';
 import { AlertTriangle, FileText, Upload, CheckCircle, XCircle, AlertCircle, FileSignature, MessageSquare, CheckSquare, BarChart, Copy, Check, Download, Loader2, Eye, Sparkles, Shield, Target, History, Trash2, ChevronDown, Coins, Briefcase } from 'lucide-react';
+import AnalysisResultsDisplay from './analysis/AnalysisResultsDisplay';
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -62,7 +63,6 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
   const [analysisStatus, setAnalysisStatus] = useState<'idle' | 'analyzing' | 'completed' | 'error'>('idle');
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [analysisHistory, setAnalysisHistory] = useState<AnalysisResult[]>([]);
-  const [copiedSection, setCopiedSection] = useState<string | null>(null);
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [selectedCaseData, setSelectedCaseData] = useState<any>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -293,16 +293,6 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
     }
   };
 
-  const copyToClipboard = async (text: string, sectionName: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedSection(sectionName);
-      toast.success(`${sectionName} copiado al portapapeles`);
-      setTimeout(() => setCopiedSection(null), 2000);
-    } catch (error) {
-      toast.error('Error al copiar al portapapeles');
-    }
-  };
 
   const getRiskBadge = (level: string) => {
     const levels: Record<string, { color: string; icon: React.ReactNode }> = {
@@ -576,291 +566,10 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
 
                   {/* Analysis Results */}
                   {analysisResult && (
-                    <Card>
-                      <CardHeader>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            {getCategoryIcon(analysisResult.documentCategory)}
-                            <div>
-                              <CardTitle>Resultados del Análisis</CardTitle>
-                              <CardDescription>
-                                {analysisResult.fileName} • {analysisResult.documentType}
-                              </CardDescription>
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={exportAnalysisToText}
-                            >
-                              <Download className="w-4 h-4 mr-2" />
-                              Exportar
-                            </Button>
-                          </div>
-                        </div>
-                        
-                        <div className="flex flex-wrap gap-2 mt-4">
-                          <Badge variant="secondary">
-                            {getCategoryLabel(analysisResult.documentCategory)}
-                          </Badge>
-                          {analysisResult.detectionConfidence && (
-                            <Badge variant="outline">
-                              Confianza: {analysisResult.detectionConfidence}
-                            </Badge>
-                          )}
-                          {analysisResult.clauses && (
-                            <Badge variant="outline">
-                              {analysisResult.clauses.length} {getElementLabel(analysisResult.documentCategory)}(s)
-                            </Badge>
-                          )}
-                          {analysisResult.risks && (
-                            <Badge variant="outline">
-                              {analysisResult.risks.length} Riesgo(s)
-                            </Badge>
-                          )}
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <ScrollArea className="h-[600px] pr-4">
-                          {analysisResult.summary && (
-                            <div className="mb-6">
-                              <div className="flex items-center justify-between mb-2">
-                                <h3 className="text-lg font-semibold">Resumen Ejecutivo</h3>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => copyToClipboard(analysisResult.summary!, 'Resumen')}
-                                >
-                                  {copiedSection === 'Resumen' ? (
-                                    <Check className="w-4 h-4 text-green-500" />
-                                  ) : (
-                                    <Copy className="w-4 h-4" />
-                                  )}
-                                </Button>
-                              </div>
-                              <p className="text-sm text-muted-foreground bg-muted p-4 rounded-lg">
-                                {analysisResult.summary}
-                              </p>
-                            </div>
-                          )}
-
-                          {analysisResult.clauses && analysisResult.clauses.length > 0 && (
-                            <div className="mb-6">
-                              <div className="flex items-center justify-between mb-3">
-                                <h3 className="text-lg font-semibold">
-                                  {getElementLabel(analysisResult.documentCategory)}s Identificados
-                                </h3>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => copyToClipboard(
-                                    analysisResult.clauses!.map((c, i) => 
-                                      `${i + 1}. ${c.name}\n${c.content}\nRiesgo: ${c.riskLevel}\nRecomendación: ${c.recommendation}`
-                                    ).join('\n\n'),
-                                    'Elementos'
-                                  )}
-                                >
-                                  {copiedSection === 'Elementos' ? (
-                                    <Check className="w-4 h-4 text-green-500" />
-                                  ) : (
-                                    <Copy className="w-4 h-4" />
-                                  )}
-                                </Button>
-                              </div>
-                              <div className="space-y-3">
-                                {analysisResult.clauses.map((clause, index) => (
-                                  <Card key={index} className="border-l-4 border-l-primary">
-                                    <CardContent className="p-4">
-                                      <div className="flex items-start justify-between mb-2">
-                                        <h4 className="font-semibold text-base">{clause.name}</h4>
-                                        <div className="flex gap-2">
-                                          {getRiskBadge(clause.riskLevel)}
-                                          <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => copyToClipboard(
-                                              `${clause.name}\n${clause.content}\nRiesgo: ${clause.riskLevel}\nRecomendación: ${clause.recommendation}`,
-                                              `Elemento ${index + 1}`
-                                            )}
-                                          >
-                                            {copiedSection === `Elemento ${index + 1}` ? (
-                                              <Check className="w-3 h-3 text-green-500" />
-                                            ) : (
-                                              <Copy className="w-3 h-3" />
-                                            )}
-                                          </Button>
-                                        </div>
-                                      </div>
-                                      <p className="text-sm text-muted-foreground mb-2">{clause.content}</p>
-                                      <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded">
-                                        <p className="text-sm"><strong>Recomendación:</strong> {clause.recommendation}</p>
-                                      </div>
-                                    </CardContent>
-                                  </Card>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {analysisResult.risks && analysisResult.risks.length > 0 && (
-                            <div className="mb-6">
-                              <div className="flex items-center justify-between mb-3">
-                                <h3 className="text-lg font-semibold flex items-center gap-2">
-                                  <AlertTriangle className="w-5 h-5 text-orange-500" />
-                                  Riesgos Identificados
-                                </h3>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => copyToClipboard(
-                                    analysisResult.risks!.map((r, i) => 
-                                      `${i + 1}. ${r.type} [${r.severity}]\n${r.description}${r.mitigation ? `\nMitigación: ${r.mitigation}` : ''}`
-                                    ).join('\n\n'),
-                                    'Riesgos'
-                                  )}
-                                >
-                                  {copiedSection === 'Riesgos' ? (
-                                    <Check className="w-4 h-4 text-green-500" />
-                                  ) : (
-                                    <Copy className="w-4 h-4" />
-                                  )}
-                                </Button>
-                              </div>
-                              <div className="space-y-3">
-                                {analysisResult.risks.map((risk, index) => (
-                                  <Card key={index} className="border-l-4 border-l-orange-500">
-                                    <CardContent className="p-4">
-                                      <div className="flex items-start justify-between mb-2">
-                                        <h4 className="font-semibold text-base">{risk.type}</h4>
-                                        <div className="flex gap-2">
-                                          {getRiskBadge(risk.severity)}
-                                          <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => copyToClipboard(
-                                              `${risk.type} [${risk.severity}]\n${risk.description}${risk.mitigation ? `\nMitigación: ${risk.mitigation}` : ''}`,
-                                              `Riesgo ${index + 1}`
-                                            )}
-                                          >
-                                            {copiedSection === `Riesgo ${index + 1}` ? (
-                                              <Check className="w-3 h-3 text-green-500" />
-                                            ) : (
-                                              <Copy className="w-3 h-3" />
-                                            )}
-                                          </Button>
-                                        </div>
-                                      </div>
-                                      <p className="text-sm text-muted-foreground mb-2">{risk.description}</p>
-                                      {risk.mitigation && (
-                                        <div className="bg-green-50 dark:bg-green-950 p-3 rounded">
-                                          <p className="text-sm"><strong>Mitigación:</strong> {risk.mitigation}</p>
-                                        </div>
-                                      )}
-                                    </CardContent>
-                                  </Card>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {analysisResult.recommendations && analysisResult.recommendations.length > 0 && (
-                            <div className="mb-6">
-                              <div className="flex items-center justify-between mb-3">
-                                <h3 className="text-lg font-semibold flex items-center gap-2">
-                                  <CheckCircle className="w-5 h-5 text-green-500" />
-                                  Recomendaciones
-                                </h3>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => copyToClipboard(
-                                    analysisResult.recommendations!.map((r, i) => `${i + 1}. ${r}`).join('\n'),
-                                    'Recomendaciones'
-                                  )}
-                                >
-                                  {copiedSection === 'Recomendaciones' ? (
-                                    <Check className="w-4 h-4 text-green-500" />
-                                  ) : (
-                                    <Copy className="w-4 h-4" />
-                                  )}
-                                </Button>
-                              </div>
-                              <ul className="space-y-2">
-                                {analysisResult.recommendations.map((rec, index) => (
-                                  <li key={index} className="flex gap-2 items-start bg-muted p-3 rounded">
-                                    <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                                    <span className="text-sm">{rec}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-
-                          {analysisResult.keyDates && analysisResult.keyDates.length > 0 && (
-                            <div className="mb-6">
-                              <h3 className="text-lg font-semibold mb-3">Fechas Clave</h3>
-                              <div className="space-y-2">
-                                {analysisResult.keyDates.map((date, index) => (
-                                  <div key={index} className="flex items-center justify-between p-3 bg-muted rounded">
-                                    <div>
-                                      <p className="font-medium">{date.date}</p>
-                                      <p className="text-sm text-muted-foreground">{date.description}</p>
-                                    </div>
-                                    {getRiskBadge(date.importance)}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {analysisResult.parties && analysisResult.parties.length > 0 && (
-                            <div className="mb-6">
-                              <h3 className="text-lg font-semibold mb-3">Partes Involucradas</h3>
-                              <div className="grid grid-cols-2 gap-2">
-                                {analysisResult.parties.map((party, index) => (
-                                  <div key={index} className="p-3 bg-muted rounded">
-                                    <p className="font-medium">{party.name}</p>
-                                    <p className="text-sm text-muted-foreground">{party.role}</p>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {analysisResult.legalReferences && analysisResult.legalReferences.length > 0 && (
-                            <div className="mb-6">
-                              <h3 className="text-lg font-semibold mb-3">Referencias Legales</h3>
-                              <div className="space-y-2">
-                                {analysisResult.legalReferences.map((ref, index) => (
-                                  <div key={index} className="p-3 bg-muted rounded">
-                                    <p className="font-medium text-sm">{ref.reference}</p>
-                                    <p className="text-xs text-muted-foreground mt-1">{ref.context}</p>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {analysisResult.missingElements && analysisResult.missingElements.length > 0 && (
-                            <div>
-                              <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                                <AlertCircle className="w-5 h-5 text-yellow-500" />
-                                Elementos Faltantes
-                              </h3>
-                              <ul className="space-y-2">
-                                {analysisResult.missingElements.map((elem, index) => (
-                                  <li key={index} className="flex gap-2 items-start p-3 bg-yellow-50 dark:bg-yellow-950 rounded">
-                                    <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
-                                    <span className="text-sm">{elem}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                        </ScrollArea>
-                      </CardContent>
-                    </Card>
+                    <AnalysisResultsDisplay 
+                      result={analysisResult} 
+                      onExport={exportAnalysisToText}
+                    />
                   )}
                 </TabsContent>
 
