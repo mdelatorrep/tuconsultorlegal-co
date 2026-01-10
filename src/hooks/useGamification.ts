@@ -143,6 +143,17 @@ export function useGamification(lawyerId: string | null) {
           title: '🎉 ¡Tarea completada!',
           description: `Has ganado ${data.creditsAwarded} créditos por "${data.taskName}"`,
         });
+
+        // Trigger UI refresh across the app (sidebar, history, etc.)
+        window.dispatchEvent(new CustomEvent('credits:refresh'));
+        window.dispatchEvent(new CustomEvent('gamification:celebrate', {
+          detail: {
+            points: Number(data.creditsAwarded || 0),
+            taskName: data.taskName || '¡Misión completada!',
+            isAchievement: false,
+          }
+        }));
+
         await fetchProgress();
       }
 
@@ -168,6 +179,15 @@ export function useGamification(lawyerId: string | null) {
           title: '🎁 ¡Código aplicado!',
           description: `Has recibido ${data.creditsAwarded} créditos de bienvenida`,
         });
+
+        window.dispatchEvent(new CustomEvent('credits:refresh'));
+        window.dispatchEvent(new CustomEvent('gamification:celebrate', {
+          detail: {
+            points: Number(data.creditsAwarded || 0),
+            taskName: 'Créditos por referido',
+            isAchievement: false,
+          }
+        }));
       }
 
       return data;

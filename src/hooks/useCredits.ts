@@ -144,8 +144,9 @@ export function useCredits(lawyerId: string | null) {
         return { success: false, error: 'Insufficient credits', ...data };
       }
 
-      // Refresh balance after consumption
+      // Refresh balance & history after consumption
       await fetchBalance();
+      await fetchTransactions();
       return { success: true, ...data };
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Error consuming credits';
@@ -233,6 +234,19 @@ export function useCredits(lawyerId: string | null) {
     return () => {
       supabase.removeChannel(channel);
     };
+  }, [lawyerId, fetchBalance, fetchTransactions]);
+
+  // Manual refresh trigger (fallback when realtime is delayed)
+  useEffect(() => {
+    if (!lawyerId) return;
+
+    const handler = () => {
+      fetchBalance();
+      fetchTransactions();
+    };
+
+    window.addEventListener('credits:refresh', handler);
+    return () => window.removeEventListener('credits:refresh', handler);
   }, [lawyerId, fetchBalance, fetchTransactions]);
 
   return {
