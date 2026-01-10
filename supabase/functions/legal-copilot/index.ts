@@ -130,9 +130,9 @@ Tipo de documento: ${documentType || 'contrato'}`;
       }
 
       const data = await response.json();
-      const completion = data.choices?.[0]?.message?.content || '';
+      const suggestion = data.choices?.[0]?.message?.content || '';
 
-      return new Response(JSON.stringify({ completion }), {
+      return new Response(JSON.stringify({ suggestion }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
@@ -228,9 +228,9 @@ Tipo de documento: ${documentType || 'contrato'}`;
       if (!response.ok) throw new Error(`AI service error: ${response.status}`);
 
       const data = await response.json();
-      const improvedText = data.choices?.[0]?.message?.content || text;
+      const improved = data.choices?.[0]?.message?.content || text;
 
-      return new Response(JSON.stringify({ improvedText }), {
+      return new Response(JSON.stringify({ improved }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
