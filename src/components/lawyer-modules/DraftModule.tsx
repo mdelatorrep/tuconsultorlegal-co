@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import DocumentEditorWithCopilot from "./draft/DocumentEditorWithCopilot";
 import MyDocuments from "./draft/MyDocuments";
+import DraftResultDisplay from "./draft/DraftResultDisplay";
 import { useCredits } from "@/hooks/useCredits";
 import { ToolCostIndicator } from "@/components/credits/ToolCostIndicator";
 
@@ -314,159 +315,18 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout,
 
                   {/* Drafts List */}
                   {drafts.length > 0 && (
-                    <div className="space-y-4">
+                    <div className="space-y-6">
                       <h3 className="text-xl font-semibold">Borradores Generados</h3>
                       {drafts.map((draft, index) => (
-                        <Card key={index}>
-                          <CardHeader>
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <CardTitle className="text-lg">{draft.documentType}</CardTitle>
-                                <CardDescription className="mt-1">
-                                  {draft.prompt.length > 100 
-                                    ? `${draft.prompt.substring(0, 100)}...` 
-                                    : draft.prompt
-                                  }
-                                </CardDescription>
-                              </div>
-                              <Badge variant="outline">
-                                {new Date(draft.timestamp).toLocaleDateString()}
-                              </Badge>
-                            </div>
-                          </CardHeader>
-                          <CardContent className="space-y-4">
-                            <div>
-                              <h4 className="font-semibold mb-2">Secciones Incluidas</h4>
-                              <div className="flex flex-wrap gap-2">
-                                {draft.sections.map((section, idx) => (
-                                  <Badge key={idx} variant="secondary" className="text-xs">
-                                    {section}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </div>
-                            
-                            <div className="bg-gradient-to-br from-white via-white to-blue-50 border border-blue-200/60 p-6 rounded-xl shadow-inner">
-                              <h4 className="font-bold mb-4 flex items-center gap-3 text-lg text-gray-900">
-                                <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg">
-                                  <FileText className="h-4 w-4 text-white" />
-                                </div>
-                                Contenido del Borrador
-                              </h4>
-                              <div className="bg-white border-2 border-gray-300 p-12 rounded-lg max-h-[700px] overflow-y-auto shadow-lg" style={{
-                                fontFamily: 'Georgia, "Times New Roman", serif',
-                                lineHeight: '1.8'
-                              }}>
-                                <div className="max-w-none space-y-6">
-                                  {(() => {
-                                    // Clean content: remove HTML tags and convert literal \n to real line breaks
-                                    const cleanContent = draft.content
-                                      // Remove HTML tags like <p>, </p>, <br>, etc.
-                                      .replace(/<\/?[^>]+(>|$)/g, '')
-                                      // Convert literal \n to real newlines
-                                      .replace(/\\n/g, '\n')
-                                      // Normalize multiple newlines
-                                      .replace(/\n{3,}/g, '\n\n')
-                                      .trim();
-                                    
-                                    return cleanContent.split('\n\n').map((paragraph, idx) => {
-                                      const trimmed = paragraph.trim();
-                                      
-                                      // Skip empty paragraphs
-                                      if (!trimmed) return null;
-                                      
-                                      // Title (bold text or starts with **)
-                                      if (trimmed.includes('**') || trimmed.match(/^[A-ZÁÉÍÓÚÑ\s]+$/)) {
-                                        return (
-                                          <h2 key={idx} className="font-bold text-xl text-center text-gray-900 uppercase tracking-wide border-b-2 border-gray-300 pb-3 mb-6 mt-8">
-                                            {trimmed.replace(/\*\*/g, '')}
-                                          </h2>
-                                        );
-                                      }
-                                      
-                                      // Section heading (starts with ### or numbered)
-                                      if (trimmed.includes('###') || trimmed.match(/^\d+\.|^[IVX]+\./)) {
-                                        return (
-                                          <h3 key={idx} className="font-bold text-lg text-gray-800 mt-8 mb-4 uppercase">
-                                            {trimmed.replace(/###/g, '').trim()}
-                                          </h3>
-                                        );
-                                      }
-                                      
-                                      // Clause or numbered item
-                                      if (trimmed.match(/^CLÁUSULA|^Artículo|^Capítulo|^Cláusula/i)) {
-                                        return (
-                                          <div key={idx} className="mb-6">
-                                            <p className="font-bold text-base text-gray-900 mb-2 uppercase">
-                                              {trimmed}
-                                            </p>
-                                          </div>
-                                        );
-                                      }
-                                      
-                                      // List item
-                                      if (trimmed.match(/^[-•]\s/) || trimmed.match(/^[a-z]\)/) || trimmed.match(/^\d+\)/)) {
-                                        return (
-                                          <div key={idx} className="ml-8 mb-2">
-                                            <p className="text-gray-700 text-base">
-                                              {trimmed}
-                                            </p>
-                                          </div>
-                                        );
-                                      }
-                                      
-                                      // Regular paragraph - handle internal line breaks
-                                      return (
-                                        <p key={idx} className="text-gray-800 text-base text-justify leading-loose mb-4 indent-8 whitespace-pre-line">
-                                          {trimmed}
-                                        </p>
-                                      );
-                                    });
-                                  })()}
-                                  
-                                  {/* Signature section */}
-                                  <div className="mt-16 pt-8 border-t-2 border-gray-300">
-                                    <div className="grid grid-cols-2 gap-12">
-                                      <div className="text-center">
-                                        <div className="border-t-2 border-gray-800 pt-2 mt-16">
-                                          <p className="text-sm font-semibold text-gray-900">PRIMERA PARTE</p>
-                                          <p className="text-xs text-gray-600 mt-1">Nombre y Firma</p>
-                                        </div>
-                                      </div>
-                                      <div className="text-center">
-                                        <div className="border-t-2 border-gray-800 pt-2 mt-16">
-                                          <p className="text-sm font-semibold text-gray-900">SEGUNDA PARTE</p>
-                                          <p className="text-xs text-gray-600 mt-1">Nombre y Firma</p>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            <div className="flex gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => copyToClipboard(draft.content)}
-                                className="flex items-center gap-2"
-                              >
-                                <Copy className="h-4 w-4" />
-                                Copiar
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleEditDraft(draft)}
-                                className="flex items-center gap-2"
-                              >
-                                <FileText className="h-4 w-4" />
-                                Editar y Guardar
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
+                        <DraftResultDisplay
+                          key={index}
+                          content={draft.content}
+                          documentType={draft.documentType}
+                          prompt={draft.prompt}
+                          timestamp={draft.timestamp}
+                          onEdit={() => handleEditDraft(draft)}
+                          onCopy={copyToClipboard}
+                        />
                       ))}
                     </div>
                   )}
