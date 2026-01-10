@@ -5,10 +5,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PenTool, FileText, Copy, Loader2, Sparkles, Target, TrendingUp, Clock, FolderOpen, Coins } from "lucide-react";
+import { PenTool, FileText, Copy, Loader2, Sparkles, Target, TrendingUp, Clock, FolderOpen, Coins, Wand2, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import DocumentEditor from "./draft/DocumentEditor";
+import DocumentEditorWithCopilot from "./draft/DocumentEditorWithCopilot";
 import MyDocuments from "./draft/MyDocuments";
 import { useCredits } from "@/hooks/useCredits";
 import { ToolCostIndicator } from "@/components/credits/ToolCostIndicator";
@@ -173,16 +173,38 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout 
                         </div>
                         <div>
                           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-blue-500 to-blue-400 bg-clip-text text-transparent">
-                            Estudio de Redacción Legal
+                            Estudio de Redacción con Copilot
                           </h1>
                           <p className="text-lg text-muted-foreground mt-2">
-                            Generación inteligente de contratos y documentos legales personalizados
+                            Generación inteligente con asistente IA integrado
                           </p>
                         </div>
                       </div>
+
+                      {/* Copilot Features Banner */}
+                      <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-200/50 rounded-xl p-4 mb-6">
+                        <div className="flex items-center gap-3 mb-2">
+                          <Wand2 className="h-5 w-5 text-purple-600" />
+                          <h3 className="font-semibold text-purple-700 dark:text-purple-300">Copilot Legal Integrado</h3>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <Sparkles className="h-4 w-4 text-amber-500" />
+                            <span>Autocompletado inteligente</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <MessageSquare className="h-4 w-4 text-blue-500" />
+                            <span>Chat contextual de ayuda</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <Target className="h-4 w-4 text-green-500" />
+                            <span>Sugerencias en tiempo real</span>
+                          </div>
+                        </div>
+                      </div>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
-                        <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="bg-white/50 dark:bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/20">
                           <div className="flex items-center gap-3">
                             <Target className="h-8 w-8 text-blue-600" />
                             <div>
@@ -191,7 +213,7 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout 
                             </div>
                           </div>
                         </div>
-                        <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                        <div className="bg-white/50 dark:bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/20">
                           <div className="flex items-center gap-3">
                             <TrendingUp className="h-8 w-8 text-emerald-600" />
                             <div>
@@ -200,7 +222,7 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout 
                             </div>
                           </div>
                         </div>
-                        <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                        <div className="bg-white/50 dark:bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/20">
                           <div className="flex items-center gap-3">
                             <Clock className="h-8 w-8 text-purple-600" />
                             <div>
@@ -457,7 +479,7 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout 
             </div>
 
       {currentDraft && (
-        <DocumentEditor
+        <DocumentEditorWithCopilot
           open={editorOpen}
           onClose={() => {
             setEditorOpen(false);

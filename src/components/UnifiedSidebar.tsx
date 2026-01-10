@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Bot, Settings, Users, User, Database, Gavel, Coins, Trophy, Radar, Calendar, Wand2, Mic, TrendingUp, UserCircle, ChevronDown, FileSearch, FileText, Briefcase, GraduationCap, ShieldCheck, Mail, Sparkles } from "lucide-react";
+import { LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Bot, Settings, Users, User, Database, Gavel, Coins, Trophy, Radar, Calendar, Mic, TrendingUp, UserCircle, ChevronDown, FileSearch, FileText, Briefcase, GraduationCap, ShieldCheck, Mail, Sparkles } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -98,8 +98,7 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
         collapsible: true,
         items: [
           { title: "Análisis", icon: Eye, view: "analyze" },
-          { title: "Redacción", icon: PenTool, view: "draft" },
-          { title: "Copilot Legal", icon: Wand2, view: "legal-copilot" },
+          { title: "Redacción con Copilot", icon: PenTool, view: "draft" },
           { title: "Asistente de Voz", icon: Mic, view: "voice-assistant" },
         ]
       }
