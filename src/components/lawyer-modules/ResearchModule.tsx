@@ -149,6 +149,12 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
 
   // Load completed results and pending tasks on mount
   useEffect(() => {
+    // Guard: only load if user is available
+    if (!user?.id) {
+      setResults([]);
+      return;
+    }
+
     loadCompletedResults();
     loadPendingTasks();
 
@@ -187,10 +193,12 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user.id]);
+  }, [user?.id]);
 
   // Load pending tasks from async_research_tasks
   const loadPendingTasks = async () => {
+    if (!user?.id) return;
+    
     try {
       const { data, error } = await supabase
         .from('async_research_tasks')
@@ -234,6 +242,8 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
   };
 
   const loadCompletedResults = async () => {
+    if (!user?.id) return;
+    
     try {
       const { data, error } = await supabase
         .from('legal_tools_results')
@@ -526,6 +536,18 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
       });
     }
   };
+
+  // Guard: Show loading if user is not available
+  if (!user?.id) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Cargando módulo de investigación...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 lg:space-y-8">
