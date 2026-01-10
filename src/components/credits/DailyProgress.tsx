@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Coins, Flame, Trophy, Gift, CheckCircle, Circle, ChevronRight } from 'lucide-react';
+import { useEffect, useCallback } from 'react';
+import { Coins, Flame, Trophy, Gift, CheckCircle, Circle, ChevronRight, RefreshCw, Target } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
@@ -14,10 +14,26 @@ interface DailyProgressProps {
 }
 
 export function DailyProgress({ lawyerId, onViewCredits }: DailyProgressProps) {
-  const { balance, loading: creditsLoading } = useCredits(lawyerId || null);
-  const { tasks, progress, checkAndClaimTask, loading: gamificationLoading } = useGamification(lawyerId || null);
+  const { balance, loading: creditsLoading, refreshBalance } = useCredits(lawyerId || null);
+  const { tasks, progress, checkAndClaimTask, loading: gamificationLoading, refreshProgress } = useGamification(lawyerId || null);
 
   const loading = creditsLoading || gamificationLoading || !lawyerId;
+
+  // Listen for gamification updates to refresh
+  useEffect(() => {
+    const handleRefresh = () => {
+      refreshProgress();
+      refreshBalance();
+    };
+
+    window.addEventListener('credits:refresh', handleRefresh);
+    window.addEventListener('gamification:update', handleRefresh);
+
+    return () => {
+      window.removeEventListener('credits:refresh', handleRefresh);
+      window.removeEventListener('gamification:update', handleRefresh);
+    };
+  }, [refreshProgress, refreshBalance]);
 
   // Get daily tasks
   const dailyTasks = tasks.filter(t => t.task_type === 'daily');
@@ -25,24 +41,33 @@ export function DailyProgress({ lawyerId, onViewCredits }: DailyProgressProps) {
     const taskProgress = progress.find(p => p.task_id === task.id);
     return {
       id: task.id,
+      key: task.task_key,
       name: task.name,
+      description: task.description,
       reward: task.credit_reward,
       completed: taskProgress?.status === 'completed' || taskProgress?.status === 'claimed',
-      claimed: taskProgress?.status === 'claimed'
+      claimed: taskProgress?.status === 'claimed',
+      icon: task.icon
     };
   });
 
   const completedCount = dailyProgress.filter(t => t.completed).length;
-  const totalTasks = dailyProgress.length || 3; // Default to 3 if no tasks
+  const totalTasks = dailyProgress.length || 3;
   const progressPercent = (completedCount / totalTasks) * 100;
   const claimableTasks = dailyProgress.filter(t => t.completed && !t.claimed);
+  const pendingTasks = dailyProgress.filter(t => !t.completed);
 
   // Calculate streak from gamification data
   const streak = progress.filter(p => p.status === 'claimed').length > 0 ? 1 : 0;
 
-  const handleClaimReward = async (taskId: string) => {
-    await checkAndClaimTask(taskId);
+  const handleClaimReward = async (taskKey: string) => {
+    await checkAndClaimTask(taskKey);
   };
+
+  const handleRefresh = useCallback(() => {
+    refreshProgress();
+    refreshBalance();
+  }, [refreshProgress, refreshBalance]);
 
   if (loading) {
     return (
@@ -62,12 +87,23 @@ export function DailyProgress({ lawyerId, onViewCredits }: DailyProgressProps) {
             <Coins className="h-4 w-4 text-amber-600" />
             Progreso Diario
           </span>
-          {streak > 0 && (
-            <Badge variant="secondary" className="bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
-              <Flame className="h-3 w-3 mr-1" />
-              {streak} días
-            </Badge>
-          )}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              onClick={handleRefresh}
+              title="Actualizar"
+            >
+              <RefreshCw className="h-3 w-3 text-muted-foreground" />
+            </Button>
+            {streak > 0 && (
+              <Badge variant="secondary" className="bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
+                <Flame className="h-3 w-3 mr-1" />
+                {streak} días
+              </Badge>
+            )}
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent className="px-4 pb-4 space-y-3">
@@ -88,52 +124,94 @@ export function DailyProgress({ lawyerId, onViewCredits }: DailyProgressProps) {
           <Progress value={progressPercent} className="h-2" />
         </div>
 
-        {/* Quick Tasks Preview */}
-        {dailyProgress.slice(0, 2).map((task) => (
-          <div 
-            key={task.id}
-            className={cn(
-              "flex items-center justify-between p-2 rounded-lg text-xs",
-              task.completed ? "bg-green-100/50 dark:bg-green-900/20" : "bg-muted/50"
-            )}
-          >
-            <div className="flex items-center gap-2">
-              {task.completed ? (
-                <CheckCircle className="h-3 w-3 text-green-600" />
-              ) : (
-                <Circle className="h-3 w-3 text-muted-foreground" />
-              )}
-              <span className={cn(task.completed && "line-through text-muted-foreground")}>
-                {task.name}
+        {/* Claimable Tasks Alert */}
+        {claimableTasks.length > 0 && (
+          <div className="p-2 bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg">
+            <div className="flex items-center gap-2 text-xs text-green-700 dark:text-green-300">
+              <Gift className="h-4 w-4" />
+              <span className="font-medium">
+                ¡{claimableTasks.length} recompensa{claimableTasks.length > 1 ? 's' : ''} disponible{claimableTasks.length > 1 ? 's' : ''}!
               </span>
             </div>
-            {task.completed && !task.claimed ? (
-              <Button 
-                size="sm" 
-                variant="ghost" 
-                className="h-6 text-xs text-green-600 hover:text-green-700 p-1"
-                onClick={() => handleClaimReward(task.id)}
-              >
-                <Gift className="h-3 w-3 mr-1" />
-                +{task.reward}
-              </Button>
-            ) : (
-              <Badge variant="outline" className="text-xs h-5">
-                +{task.reward}
-              </Badge>
-            )}
           </div>
-        ))}
+        )}
+
+        {/* Tasks List */}
+        <div className="space-y-2">
+          {dailyProgress.slice(0, 3).map((task) => (
+            <div 
+              key={task.id}
+              className={cn(
+                "flex items-center justify-between p-2 rounded-lg text-xs transition-all",
+                task.claimed ? "bg-muted/30 opacity-60" : 
+                task.completed ? "bg-green-100/50 dark:bg-green-900/20 ring-1 ring-green-300" : 
+                "bg-muted/50 hover:bg-muted"
+              )}
+            >
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                {task.claimed ? (
+                  <CheckCircle className="h-4 w-4 text-green-600 shrink-0" />
+                ) : task.completed ? (
+                  <Trophy className="h-4 w-4 text-amber-500 shrink-0 animate-pulse" />
+                ) : (
+                  <Circle className="h-4 w-4 text-muted-foreground shrink-0" />
+                )}
+                <span className={cn(
+                  "truncate",
+                  task.claimed && "line-through text-muted-foreground"
+                )}>
+                  {task.name}
+                </span>
+              </div>
+              {task.completed && !task.claimed ? (
+                <Button 
+                  size="sm" 
+                  variant="default"
+                  className="h-6 text-xs bg-green-600 hover:bg-green-700 px-2 ml-2 shrink-0"
+                  onClick={() => handleClaimReward(task.key)}
+                >
+                  <Gift className="h-3 w-3 mr-1" />
+                  +{task.reward}
+                </Button>
+              ) : (
+                <Badge 
+                  variant={task.claimed ? "secondary" : "outline"} 
+                  className="text-xs h-5 shrink-0 ml-2"
+                >
+                  +{task.reward}
+                </Badge>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Pending Tasks CTA */}
+        {pendingTasks.length > 0 && (
+          <div className="p-3 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-200/50 dark:border-blue-800/50 rounded-lg">
+            <div className="flex items-start gap-2">
+              <Target className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
+              <div className="flex-1">
+                <p className="text-xs font-medium text-blue-700 dark:text-blue-300">
+                  {pendingTasks.length} misión{pendingTasks.length > 1 ? 'es' : ''} pendiente{pendingTasks.length > 1 ? 's' : ''}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Usa las herramientas de IA para completarlas
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* View All Button */}
         {onViewCredits && (
           <Button 
-            variant="ghost" 
+            variant="outline" 
             size="sm" 
-            className="w-full text-xs text-amber-600 hover:text-amber-700"
+            className="w-full text-xs border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-400 dark:hover:bg-amber-950/50"
             onClick={onViewCredits}
           >
-            Ver todas las misiones
+            <Trophy className="h-3 w-3 mr-2" />
+            Ver todas las misiones y recompensas
             <ChevronRight className="h-3 w-3 ml-1" />
           </Button>
         )}
