@@ -272,6 +272,25 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
     }
   }, [isAuthenticated, user?.id]);
 
+  // Fallback celebration trigger from client-side events (when DB notifications/realtime are delayed)
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<{ points?: number; taskName?: string; isAchievement?: boolean; badgeName?: string }>).detail;
+      if (!detail) return;
+
+      setCelebration({
+        show: true,
+        points: detail.points ?? 0,
+        taskName: detail.taskName ?? '¡Recompensa obtenida!',
+        isAchievement: detail.isAchievement,
+        badgeName: detail.badgeName,
+      });
+    };
+
+    window.addEventListener('gamification:celebrate', handler as EventListener);
+    return () => window.removeEventListener('gamification:celebrate', handler as EventListener);
+  }, []);
+
   const fetchDocuments = async () => {
     try {
       if (!user?.id) {
