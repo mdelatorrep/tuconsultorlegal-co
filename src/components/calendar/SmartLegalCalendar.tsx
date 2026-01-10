@@ -14,7 +14,8 @@ import {
   FileText,
   Bell,
   Calculator,
-  Loader2
+  Loader2,
+  Share2
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -24,6 +25,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { DeadlineCalculator } from './DeadlineCalculator';
 import { AutoDocketing } from './AutoDocketing';
 import { NewEventDialog } from './NewEventDialog';
+import { CalendarSyncOptions } from './CalendarSyncOptions';
 
 interface CalendarEvent {
   id: string;
@@ -55,6 +57,7 @@ export function SmartLegalCalendar({ lawyerId }: SmartLegalCalendarProps) {
   const [showCalculator, setShowCalculator] = useState(false);
   const [showAutoDocket, setShowAutoDocket] = useState(false);
   const [showNewEvent, setShowNewEvent] = useState(false);
+  const [showSyncOptions, setShowSyncOptions] = useState(false);
 
   useEffect(() => {
     loadEvents();
@@ -158,7 +161,26 @@ export function SmartLegalCalendar({ lawyerId }: SmartLegalCalendarProps) {
           <h2 className="text-2xl font-bold">Calendario Legal Inteligente</h2>
           <p className="text-muted-foreground">Gestión de términos y plazos según normativa colombiana</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <Dialog open={showSyncOptions} onOpenChange={setShowSyncOptions}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Share2 className="h-4 w-4 mr-2" />
+                Sincronizar
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Sincronizar con Google/Apple Calendar</DialogTitle>
+              </DialogHeader>
+              <CalendarSyncOptions 
+                lawyerId={lawyerId}
+                events={events}
+                onClose={() => setShowSyncOptions(false)}
+              />
+            </DialogContent>
+          </Dialog>
+          
           <Dialog open={showCalculator} onOpenChange={setShowCalculator}>
             <DialogTrigger asChild>
               <Button variant="outline">
