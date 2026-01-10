@@ -1,5 +1,5 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3';
-import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts';
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
+import { SMTPClient } from "npm:denomailer@1.6.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
