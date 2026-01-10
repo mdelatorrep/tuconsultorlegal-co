@@ -107,7 +107,7 @@ const quillFormats = [
   'list', 'bullet', 'align', 'color', 'background'
 ];
 
-type ViewType = 'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager' | 'research' | 'analyze' | 'draft' | 'strategize' | 'crm' | 'public-profile' | 'suin-juriscol' | 'process-query' | 'credits' | 'gamification' | 'process-monitor' | 'legal-calendar' | 'voice-assistant' | 'case-predictor' | 'client-portal' | 'lawyer-verification' | 'request-agent-access' | 'request-blog-access' | 'specialized-agents' | 'account-settings';
+type ViewType = 'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager' | 'research' | 'analyze' | 'draft' | 'strategize' | 'crm' | 'public-profile' | 'suin-juriscol' | 'process-query' | 'credits' | 'gamification' | 'process-monitor' | 'legal-calendar' | 'voice-assistant' | 'case-predictor' | 'client-portal' | 'request-agent-access' | 'request-blog-access' | 'specialized-agents' | 'account-settings';
 
 export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageProps) {
   const [documents, setDocuments] = useState<DocumentToken[]>([]);
@@ -597,8 +597,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
         return <CasePredictorModule lawyerId={user.id} />;
       case 'client-portal':
         return <ClientPortalPage lawyerId={user.id} />;
-      case 'lawyer-verification':
-        return <LawyerVerificationModule lawyerId={user.id} />;
+      // lawyer-verification is now integrated into account-settings
       case 'request-agent-access':
         return (
           <div className="flex items-center justify-center min-h-[60vh]">
@@ -680,7 +679,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const viewsWithSidebar = ['dashboard', 'public-profile', 'stats', 'credits', 'gamification', 'request-agent-access', 'request-blog-access', 'account-settings'];
   
   // Views that modules render their own sidebar (need to be wrapped)
-  const moduleViews = ['agent-creator', 'agent-manager', 'training', 'blog-manager', 'research', 'analyze', 'draft', 'strategize', 'crm', 'suin-juriscol', 'process-query', 'process-monitor', 'legal-calendar', 'voice-assistant', 'case-predictor', 'client-portal', 'lawyer-verification', 'specialized-agents', 'account-settings'];
+  const moduleViews = ['agent-creator', 'agent-manager', 'training', 'blog-manager', 'research', 'analyze', 'draft', 'strategize', 'crm', 'suin-juriscol', 'process-query', 'process-monitor', 'legal-calendar', 'voice-assistant', 'case-predictor', 'client-portal', 'specialized-agents', 'account-settings'];
 
   // If it's a module view, wrap it with our SidebarProvider
   if (moduleViews.includes(currentView)) {

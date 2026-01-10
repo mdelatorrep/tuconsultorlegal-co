@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Bot, Settings, Users, User, Database, Gavel, Coins, Trophy, Radar, Calendar, Mic, TrendingUp, UserCircle, ChevronDown, FileSearch, FileText, Briefcase, GraduationCap, ShieldCheck, Mail, Sparkles } from "lucide-react";
+import { LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Bot, Settings, Users, User, Database, Gavel, Coins, Trophy, Radar, Calendar, Mic, TrendingUp, UserCircle, ChevronDown, FileSearch, FileText, Briefcase, GraduationCap, Mail, Sparkles } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -126,7 +126,6 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
           { title: "Agentes Especializados", icon: Sparkles, view: "specialized-agents" },
           { title: "Estrategia Legal", icon: Target, view: "strategize" },
           { title: "Predictor de Casos", icon: TrendingUp, view: "case-predictor" },
-          { title: "Verificación", icon: ShieldCheck, view: "lawyer-verification" },
         ]
       }
     },
