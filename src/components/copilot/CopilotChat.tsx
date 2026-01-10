@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -13,11 +13,15 @@ import {
   Sparkles,
   Copy,
   Check,
-  RefreshCw
+  RefreshCw,
+  Mic,
+  MicOff,
+  Square
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useVoiceRecognition } from '@/hooks/useVoiceRecognition';
 
 interface Message {
   id: string;
@@ -55,6 +59,32 @@ export function CopilotChat({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Voice recognition hook
+  const handleVoiceTranscript = useCallback((text: string) => {
+    setInput(prev => prev ? `${prev} ${text}` : text);
+  }, []);
+
+  const {
+    isRecording,
+    isProcessing,
+    transcript,
+    interimTranscript,
+    startRecording,
+    stopRecording,
+    audioLevel
+  } = useVoiceRecognition({
+    onTranscript: handleVoiceTranscript,
+    language: 'es-CO'
+  });
+
+  const toggleRecording = async () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      await startRecording();
+    }
+  };
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -285,21 +315,68 @@ export function CopilotChat({
       </ScrollArea>
 
       {/* Input */}
-      <div className="p-3 border-t">
+      <div className="p-3 border-t space-y-2">
+        {/* Voice indicator */}
+        {(isRecording || isProcessing) && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
+            {isRecording && (
+              <>
+                <div className="flex items-center gap-1">
+                  <div 
+                    className="w-2 h-2 rounded-full bg-destructive animate-pulse"
+                    style={{ transform: `scale(${1 + audioLevel * 0.5})` }}
+                  />
+                  <span>Grabando...</span>
+                </div>
+                {interimTranscript && (
+                  <span className="text-foreground italic truncate max-w-[200px]">
+                    "{interimTranscript}"
+                  </span>
+                )}
+              </>
+            )}
+            {isProcessing && (
+              <div className="flex items-center gap-1">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                <span>Transcribiendo...</span>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="flex gap-2">
           <Input
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Pregunta sobre tu documento..."
+            placeholder={isRecording ? "Dictando..." : "Escribe o dicta tu mensaje..."}
             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-            disabled={isLoading}
+            disabled={isLoading || isRecording}
             className="text-sm"
           />
+          
+          {/* Voice button */}
+          <Button
+            size="icon"
+            variant={isRecording ? "destructive" : "outline"}
+            onClick={toggleRecording}
+            disabled={isLoading || isProcessing}
+            title={isRecording ? "Detener grabación" : "Dictar mensaje"}
+          >
+            {isProcessing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : isRecording ? (
+              <Square className="h-4 w-4" />
+            ) : (
+              <Mic className="h-4 w-4" />
+            )}
+          </Button>
+
+          {/* Send button */}
           <Button
             size="icon"
             onClick={sendMessage}
-            disabled={!input.trim() || isLoading}
+            disabled={!input.trim() || isLoading || isRecording}
           >
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
