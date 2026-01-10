@@ -346,6 +346,140 @@ serve(async (req) => {
       );
     }
 
+    // Handle 'claim' action - combines complete_task + claim_badge in one step
+    if (action === 'claim') {
+      if (!lawyerId || !taskKey) {
+        return new Response(
+          JSON.stringify({ error: 'lawyerId and taskKey are required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Get task
+      const { data: task, error: taskError } = await supabase
+        .from('gamification_tasks')
+        .select('*')
+        .eq('task_key', taskKey)
+        .eq('is_active', true)
+        .single();
+
+      if (taskError || !task) {
+        console.error('[GAMIFICATION] Task not found:', taskKey, taskError);
+        return new Response(
+          JSON.stringify({ error: 'Task not found', taskKey }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Check existing progress
+      const { data: existingProgress } = await supabase
+        .from('gamification_progress')
+        .select('*')
+        .eq('lawyer_id', lawyerId)
+        .eq('task_id', task.id)
+        .single();
+
+      // For daily tasks, check if already claimed today
+      if (task.task_type === 'daily' && existingProgress?.status === 'claimed') {
+        const claimedAt = new Date(existingProgress.claimed_at);
+        const today = new Date();
+        if (claimedAt.toDateString() === today.toDateString()) {
+          return new Response(
+            JSON.stringify({ 
+              error: 'Task already claimed today', 
+              alreadyClaimed: true,
+              claimed: false
+            }),
+            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      }
+
+      // For one-time tasks, check if already claimed
+      if (task.task_type === 'onetime' && existingProgress?.status === 'claimed') {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Task already claimed', 
+            alreadyClaimed: true,
+            claimed: false
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const completionCount = (existingProgress?.completion_count || 0) + 1;
+      const now = new Date().toISOString();
+
+      // Calculate credits with possible dynamic points from config
+      let creditReward = task.credit_reward;
+      const dynamicPoints = (pointsConfig as any)[taskKey];
+      if (dynamicPoints && typeof dynamicPoints === 'number') {
+        creditReward = dynamicPoints;
+      }
+
+      // Upsert progress - directly to 'claimed' status
+      const { error: upsertError } = await supabase
+        .from('gamification_progress')
+        .upsert({
+          lawyer_id: lawyerId,
+          task_id: task.id,
+          status: 'claimed',
+          completion_count: completionCount,
+          progress_data: progressData || {},
+          completed_at: now,
+          claimed_at: now
+        }, { onConflict: 'lawyer_id,task_id' });
+
+      if (upsertError) {
+        console.error('[GAMIFICATION] Error updating progress:', upsertError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to update progress' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Award credits
+      const { data: credits } = await supabase
+        .from('lawyer_credits')
+        .select('current_balance, total_earned')
+        .eq('lawyer_id', lawyerId)
+        .single();
+
+      const newBalance = (credits?.current_balance || 0) + creditReward;
+      const newTotalEarned = (credits?.total_earned || 0) + creditReward;
+
+      await supabase.from('lawyer_credits').upsert({
+        lawyer_id: lawyerId,
+        current_balance: newBalance,
+        total_earned: newTotalEarned,
+        updated_at: now
+      }, { onConflict: 'lawyer_id' });
+
+      await supabase.from('credit_transactions').insert({
+        lawyer_id: lawyerId,
+        transaction_type: 'gamification',
+        amount: creditReward,
+        balance_after: newBalance,
+        reference_type: 'task',
+        reference_id: task.id,
+        description: `Misión completada: ${task.name}`
+      });
+
+      console.log(`[GAMIFICATION] Task ${taskKey} claimed. Awarded ${creditReward} credits to lawyer ${lawyerId}`);
+
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          claimed: true,
+          creditsAwarded: creditReward,
+          newBalance,
+          taskName: task.name,
+          badge: task.badge_name
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     return new Response(
       JSON.stringify({ error: 'Invalid action' }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
