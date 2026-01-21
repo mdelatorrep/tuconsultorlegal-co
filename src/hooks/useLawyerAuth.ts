@@ -173,7 +173,7 @@ export const useLawyerAuth = () => {
     }
   };
 
-  const signUpWithEmailAndPassword = async (email: string, password: string, fullName: string): Promise<{ success: boolean; requiresConfirmation: boolean }> => {
+  const signUpWithEmailAndPassword = async (email: string, password: string, fullName: string): Promise<{ success: boolean; requiresConfirmation: boolean; error?: string }> => {
     try {
       console.log('=== LAWYER SIGNUP START ===');
       console.log('Attempting signup with:', { email, fullName });
@@ -181,7 +181,7 @@ export const useLawyerAuth = () => {
       // Verify inputs
       if (!email || !password || !fullName) {
         console.error('Missing required fields:', { email: !!email, password: !!password, fullName: !!fullName });
-        return { success: false, requiresConfirmation: false };
+        return { success: false, requiresConfirmation: false, error: 'Faltan campos requeridos' };
       }
 
       // VALIDAR TIPO DE USUARIO ANTES DE REGISTRAR
@@ -195,12 +195,12 @@ export const useLawyerAuth = () => {
 
       if (validationError) {
         console.error('Validation error:', validationError);
-        throw new Error('Error al validar el tipo de usuario');
+        return { success: false, requiresConfirmation: false, error: 'Error al validar el tipo de usuario' };
       }
 
       if (!validationData.canRegister) {
         console.error('Cannot register:', validationData.error);
-        throw new Error(validationData.error);
+        return { success: false, requiresConfirmation: false, error: validationData.error };
       }
 
       console.log('Validation passed, proceeding with signup');
@@ -239,35 +239,33 @@ export const useLawyerAuth = () => {
         
         // Handle specific error cases
         if (error.message?.includes('User already registered') || error.message?.includes('already registered')) {
-          throw new Error('Este email ya está registrado. Intenta iniciar sesión en su lugar.');
+          return { success: false, requiresConfirmation: false, error: 'Este email ya está registrado. Intenta iniciar sesión en su lugar.' };
         }
         
         // Handle 422 errors - This is almost always an SMTP/email sending issue
         if (error.status === 422) {
           console.error('=== 422 ERROR - SMTP/EMAIL ISSUE ===');
           console.error('This error occurs when Supabase cannot send the confirmation email.');
-          console.error('Solutions: 1) Disable email confirmation in Supabase Auth settings');
-          console.error('           2) Configure SMTP properly in Supabase Dashboard');
-          throw new Error('No se pudo enviar el correo de confirmación. El administrador debe verificar la configuración de email en Supabase (Authentication → Providers → Email → deshabilitar "Confirm email" o configurar SMTP).');
+          return { success: false, requiresConfirmation: false, error: 'No se pudo enviar el correo de confirmación. Por favor contacta al administrador.' };
         }
         
         // Handle password too short
         if (error.message?.includes('password') && error.message?.includes('short')) {
-          throw new Error('La contraseña debe tener al menos 6 caracteres.');
+          return { success: false, requiresConfirmation: false, error: 'La contraseña debe tener al menos 6 caracteres.' };
         }
         
         // Handle email rate limiting
         if (error.message?.includes('rate') || error.message?.includes('limit')) {
-          throw new Error('Demasiados intentos. Por favor espera unos minutos antes de intentar nuevamente.');
+          return { success: false, requiresConfirmation: false, error: 'Demasiados intentos. Por favor espera unos minutos antes de intentar nuevamente.' };
         }
         
         // Generic error with more context
-        throw new Error(error.message || 'Error al registrar la cuenta. Intenta nuevamente.');
+        return { success: false, requiresConfirmation: false, error: error.message || 'Error al registrar la cuenta. Intenta nuevamente.' };
       }
 
       if (!data.user) {
         console.error('No user returned from signup');
-        return { success: false, requiresConfirmation: false };
+        return { success: false, requiresConfirmation: false, error: 'No se pudo crear el usuario' };
       }
 
       const requiresConfirmation = !data.session;
@@ -335,14 +333,14 @@ export const useLawyerAuth = () => {
       }
       
       return { success: true, requiresConfirmation };
-    } catch (error) {
+    } catch (error: any) {
       console.error('=== SIGNUP CATCH ERROR ===');
       console.error('Error details:', {
         message: error?.message || 'Unknown error',
         name: error?.name || 'Unknown',
         stack: error?.stack || 'No stack trace'
       });
-      return { success: false, requiresConfirmation: false };
+      return { success: false, requiresConfirmation: false, error: error?.message || 'Error de conexión. Intenta nuevamente.' };
     }
   };
 
