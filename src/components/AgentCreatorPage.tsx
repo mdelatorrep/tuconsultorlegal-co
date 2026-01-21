@@ -1275,6 +1275,16 @@ export default function AgentCreatorPage({ user, currentView, onViewChange, onLo
   const handlePublish = async () => {
     console.log('=== HANDLEPUBLISH STARTED ===');
     console.log('Current timestamp:', new Date().toISOString());
+    
+    // CRITICAL: Prevent duplicate submissions - check and set immediately
+    if (isPublishing) {
+      console.log('⚠️ Already publishing, ignoring duplicate call');
+      return;
+    }
+    
+    // Set publishing state IMMEDIATELY to prevent race conditions
+    setIsPublishing(true);
+    
     console.log('LawyerData:', lawyerData);
     console.log('FormData:', formData);
     console.log('AIResults:', aiResults);
@@ -1287,6 +1297,7 @@ export default function AgentCreatorPage({ user, currentView, onViewChange, onLo
           description: "Por favor completa todos los campos requeridos antes de enviar a revisión.",
           variant: "destructive",
         });
+        setIsPublishing(false);
         return;
       }
 
@@ -1301,6 +1312,7 @@ export default function AgentCreatorPage({ user, currentView, onViewChange, onLo
           placeholdersCount: aiResults.extractedPlaceholders.length,
           currentStep
         });
+        setIsPublishing(false);
         return;
       }
 
