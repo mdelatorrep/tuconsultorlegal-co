@@ -316,12 +316,14 @@ function AdminPage() {
         throw new Error('Agente no encontrado');
       }
 
-      const bodyPayload = {
+      const bodyPayload: Record<string, any> = {
         agent_id: agentId,
         status: newStatus,
         user_id: user?.id || 'admin_override',
         is_admin: true,
-        document_name: agent.name // Copiar el nombre del agente al nombre del documento
+        document_name: agent.name, // Copiar el nombre del agente al nombre del documento
+        // Preservar precio al aprobar/activar para evitar que se resetee
+        price: agent.price || 0
       };
 
       const response = await supabase.functions.invoke('update-agent', {

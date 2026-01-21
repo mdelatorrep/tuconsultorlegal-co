@@ -215,6 +215,19 @@ serve(async (req) => {
 
     if (updateError) {
       console.error('❌ Error updating agent:', updateError);
+      
+      // Handle unique constraint violation for agent name
+      if (updateError.code === '23505' && updateError.message?.includes('legal_agents_name')) {
+        return new Response(JSON.stringify({ 
+          success: false,
+          error: 'Ya existe un agente activo con este nombre. Por favor, cambie el nombre del agente antes de activarlo.',
+          details: updateError.message
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      
       return new Response(JSON.stringify({ 
         success: false,
         error: 'Database error during update',
