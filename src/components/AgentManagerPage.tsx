@@ -225,6 +225,17 @@ export default function AgentManagerPage({ user, currentView, onViewChange, onLo
       return;
     }
 
+    // Obtener el agente para preservar sus datos
+    const agent = agents.find(a => a.id === agentId);
+    if (!agent) {
+      toast({
+        title: "Error",
+        description: "Agente no encontrado.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const authHeaders = await getAuthHeadersAsync('lawyer');
       
@@ -242,7 +253,10 @@ export default function AgentManagerPage({ user, currentView, onViewChange, onLo
           agent_id: agentId,
           user_id: lawyerData.id,
           is_admin: lawyerData.is_admin,
-          status: newStatus
+          status: newStatus,
+          // Preservar datos importantes del agente
+          price: agent.price || 0,
+          document_name: agent.document_name || agent.name
         },
         headers: authHeaders
       });
@@ -257,8 +271,8 @@ export default function AgentManagerPage({ user, currentView, onViewChange, onLo
       });
 
       // Update local state
-      setAgents(agents.map(agent => 
-        agent.id === agentId ? { ...agent, status: newStatus } : agent
+      setAgents(agents.map(a => 
+        a.id === agentId ? { ...a, status: newStatus } : a
       ));
     } catch (error: any) {
       console.error('Error:', error);
@@ -317,17 +331,22 @@ export default function AgentManagerPage({ user, currentView, onViewChange, onLo
 
       if (error) {
         console.error('Error updating agent:', error);
-        throw error;
+        throw new Error(error.message || 'Error al aprobar el agente');
       }
 
-      // Create OpenAI Agent after approval
+      if (!data?.success) {
+        throw new Error(data?.error || 'Error al aprobar el agente');
+      }
+
+      // Create OpenAI Agent after successful approval
       try {
         console.log('Creating OpenAI agent for approved agent:', agentId);
         const { data: openaiAgentResult, error: openaiError } = await supabase.functions.invoke('create-openai-agent', {
           body: {
             legal_agent_id: agentId,
             force_recreate: false
-          }
+          },
+          headers: authHeaders
         });
 
         if (openaiError) {
@@ -337,16 +356,21 @@ export default function AgentManagerPage({ user, currentView, onViewChange, onLo
             description: "El agente fue aprobado exitosamente, pero hubo un problema al configurar el agente de IA. Se puede configurar manualmente después.",
             variant: "destructive",
           });
-        } else {
+        } else if (openaiAgentResult?.success) {
           console.log('OpenAI agent created successfully:', openaiAgentResult);
           toast({
             title: "¡Agente aprobado!",
             description: "El agente fue aprobado y el agente de IA fue creado correctamente.",
             variant: "default",
           });
+        } else {
+          toast({
+            title: "Agente aprobado",
+            description: "El agente ha sido aprobado exitosamente.",
+          });
         }
-      } catch (error) {
-        console.error('Error creating OpenAI agent:', error);
+      } catch (openaiCatchError) {
+        console.error('Exception creating OpenAI agent:', openaiCatchError);
         toast({
           title: "Agente aprobado con advertencia",
           description: "El agente fue aprobado exitosamente, pero hubo un error al configurar el agente de IA.",
@@ -354,23 +378,15 @@ export default function AgentManagerPage({ user, currentView, onViewChange, onLo
         });
       }
 
-      if (error || !data?.success) {
-        throw new Error(data?.error || error?.message || 'Error al aprobar el agente');
-      }
-
-      toast({
-        title: "Agente aprobado",
-        description: data.message || "El agente ha sido aprobado y está activo.",
-      });
-
       // Update local state
-      setAgents(agents.map(agent => 
-        agent.id === agentId ? { 
-          ...agent, 
+      setAgents(agents.map(a => 
+        a.id === agentId ? { 
+          ...a, 
           status: 'approved',
+          openai_enabled: true,
           price_approved_by: lawyerData.id,
           price_approved_at: new Date().toISOString()
-        } : agent
+        } : a
       ));
     } catch (error: any) {
       console.error('Error:', error);
