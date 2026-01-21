@@ -193,13 +193,30 @@ export const useLawyerAuth = () => {
         }
       });
 
+      console.log('Validation response:', { validationData, validationError });
+
       if (validationError) {
         console.error('Validation error:', validationError);
-        return { success: false, requiresConfirmation: false, error: 'Error al validar el tipo de usuario' };
+        // Try to extract the error message from the response
+        const errorMessage = validationError?.message || validationError?.context?.body || 'Error al validar el tipo de usuario';
+        
+        // Parse the error if it's a JSON string
+        try {
+          if (typeof errorMessage === 'string' && errorMessage.includes('{')) {
+            const parsed = JSON.parse(errorMessage.substring(errorMessage.indexOf('{')));
+            if (parsed.error) {
+              return { success: false, requiresConfirmation: false, error: parsed.error };
+            }
+          }
+        } catch (e) {
+          // Ignore parsing errors
+        }
+        
+        return { success: false, requiresConfirmation: false, error: errorMessage };
       }
 
-      if (!validationData.canRegister) {
-        console.error('Cannot register:', validationData.error);
+      if (!validationData?.canRegister) {
+        console.error('Cannot register:', validationData?.error);
         return { success: false, requiresConfirmation: false, error: validationData.error };
       }
 
