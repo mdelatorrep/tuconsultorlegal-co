@@ -896,6 +896,52 @@ Sé amable, claro y profesional. No uses formato markdown.`
     );
   };
 
+  // Función para renderizar texto con URLs clicables
+  const renderMessageWithLinks = (text: string): React.ReactNode => {
+    if (!text) return null;
+    
+    // Primero limpiamos el markdown
+    const cleanedText = cleanMarkdown(text);
+    
+    // Regex para detectar URLs
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    
+    // Dividir el texto por URLs
+    const parts = cleanedText.split(urlRegex);
+    
+    if (parts.length === 1) {
+      // No hay URLs, retornar el texto limpio
+      return cleanedText;
+    }
+    
+    // Mapear las partes y convertir URLs a links
+    return parts.map((part, index) => {
+      if (urlRegex.test(part)) {
+        // Limpiar caracteres finales que no son parte de la URL
+        const cleanUrl = part.replace(/[.,;:!?)]+$/, '');
+        const trailingChars = part.slice(cleanUrl.length);
+        
+        return (
+          <span key={index}>
+            <a 
+              href={cleanUrl} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary hover:underline font-medium"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {cleanUrl}
+            </a>
+            {trailingChars}
+          </span>
+        );
+      }
+      // Reset regex lastIndex for next iteration
+      urlRegex.lastIndex = 0;
+      return part;
+    });
+  };
+
   // Manejar la aceptación de términos
   const handleContinue = async () => {
     if (acceptedTerms && acceptedPrivacy && dataProcessingConsent) {
@@ -1234,9 +1280,9 @@ Sé amable, claro y profesional. No uses formato markdown.`
                       /* Assistant message - left side */
                       <div className="max-w-[80%] group">
                         <div className="bg-white dark:bg-gray-700 border rounded-2xl rounded-tl-md px-4 py-2.5 shadow-sm">
-                          <p className="text-sm leading-relaxed whitespace-pre-wrap break-words text-gray-900 dark:text-gray-100">
-                            {cleanMarkdown(message.content)}
-                          </p>
+                          <div className="text-sm leading-relaxed whitespace-pre-wrap break-words text-gray-900 dark:text-gray-100">
+                            {renderMessageWithLinks(message.content)}
+                          </div>
                           <div className="flex items-center justify-start gap-1 mt-1">
                             <span className="text-xs text-gray-500 dark:text-gray-400">
                               {message.timestamp.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
