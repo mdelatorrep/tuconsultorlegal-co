@@ -261,8 +261,32 @@ export default function AgentManagerPage({ user, currentView, onViewChange, onLo
         headers: authHeaders
       });
 
-      if (error || !data?.success) {
-        throw new Error(data?.error || error?.message || 'Error al actualizar el estado del agente');
+      // Check for edge function errors - data may contain error info even with error object
+      if (error) {
+        // Try to parse error from different sources
+        let errorMessage = 'Error al actualizar el estado del agente';
+        
+        // Check if error contains context with the response body
+        if (error.context?.body) {
+          try {
+            const errorBody = JSON.parse(error.context.body);
+            errorMessage = errorBody.error || errorMessage;
+          } catch {
+            // If parsing fails, use the raw message
+          }
+        }
+        
+        // Fallback to data.error or error.message
+        errorMessage = data?.error || errorMessage;
+        if (errorMessage === 'Error al actualizar el estado del agente') {
+          errorMessage = error?.message || errorMessage;
+        }
+        
+        throw new Error(errorMessage);
+      }
+      
+      if (!data?.success) {
+        throw new Error(data?.error || 'Error al actualizar el estado del agente');
       }
 
       toast({
@@ -275,7 +299,7 @@ export default function AgentManagerPage({ user, currentView, onViewChange, onLo
         a.id === agentId ? { ...a, status: newStatus } : a
       ));
     } catch (error: any) {
-      console.error('Error:', error);
+      console.error('Error updating agent status:', error);
       toast({
         title: "Error",
         description: error.message || "Ocurrió un error inesperado al actualizar el agente.",
