@@ -217,9 +217,10 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
         }
       } else {
         console.log('=== REGISTRATION FAILED - SHOWING ERROR MESSAGE ===');
-        setErrorMessage('Error al registrar la cuenta. Intenta nuevamente.');
+        // Show specific error from the signup function
+        setErrorMessage(result.error || 'Error al registrar la cuenta. Intenta nuevamente.');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('=== HANDLEREGISTER CATCH ERROR ===');
       console.error('Register error details:', {
         message: error?.message || 'Unknown error',
