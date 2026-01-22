@@ -184,28 +184,26 @@ export const useLawyerAuth = () => {
         return { success: false, requiresConfirmation: false, error: 'Faltan campos requeridos' };
       }
 
-      // Use the new edge function that bypasses email confirmation issues
-      console.log('=== CALLING CREATE-LAWYER-ACCOUNT FUNCTION ===');
-      const { data, error: invokeError } = await supabase.functions.invoke('create-lawyer-account', {
+      // VALIDAR TIPO DE USUARIO ANTES DE REGISTRAR
+      console.log('=== VALIDATING USER TYPE ===');
+      const { data: validationData, error: validationError } = await supabase.functions.invoke('validate-user-type', {
         body: {
           email: email.trim().toLowerCase(),
-          password: password,
-          fullName: fullName
+          requestedType: 'lawyer'
         }
       });
 
-      console.log('Create lawyer account response:', { data, invokeError });
+      console.log('Validation response:', { validationData, validationError });
 
-      if (invokeError) {
-        console.error('Edge function error:', invokeError);
-        // Try to parse error message
-        let errorMessage = 'Error al crear la cuenta';
+      if (validationError) {
+        console.error('Validation error:', validationError);
+        // Try to extract the error message from the response
+        let errorMessage = 'Error al validar el tipo de usuario';
         try {
-          if (invokeError.message) {
-            const match = invokeError.message.match(/\{.*\}/);
-            if (match) {
-              const parsed = JSON.parse(match[0]);
-              errorMessage = parsed.error || errorMessage;
+          if (validationError.message && validationError.message.includes('{')) {
+            const parsed = JSON.parse(validationError.message.substring(validationError.message.indexOf('{')));
+            if (parsed.error) {
+              errorMessage = parsed.error;
             }
           }
         } catch (e) {
@@ -214,40 +212,127 @@ export const useLawyerAuth = () => {
         return { success: false, requiresConfirmation: false, error: errorMessage };
       }
 
-      if (!data?.success) {
-        console.error('Registration failed:', data?.error);
-        return { success: false, requiresConfirmation: false, error: data?.error || 'Error al crear la cuenta' };
+      if (!validationData?.canRegister) {
+        console.error('Cannot register:', validationData?.error);
+        return { success: false, requiresConfirmation: false, error: validationData?.error || 'No se puede registrar con este email' };
       }
 
-      console.log('=== LAWYER ACCOUNT CREATED ===');
-      console.log('User ID:', data.user?.id);
-
-      // Now sign in the user to get a session
-      console.log('Signing in the new user...');
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      console.log('Validation passed, proceeding with signup');
+      
+      const redirectUrl = `${window.location.origin}/#abogados`;
+      console.log('Redirect URL:', redirectUrl);
+      
+      console.log('Calling supabase.auth.signUp...');
+      const { data, error } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
-        password: password
+        password: password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            full_name: fullName,
+            is_lawyer: true,
+            can_create_agents: false,
+            can_create_blogs: false,
+            can_use_ai_tools: false
+          }
+        }
       });
 
-      if (signInError) {
-        console.error('Sign in error after registration:', signInError);
-        // Account was created but couldn't sign in - still success, ask user to login
-        return { success: true, requiresConfirmation: false, error: 'Cuenta creada. Por favor inicia sesión.' };
+      console.log('Supabase signup response:', { 
+        user: data?.user ? 'User created' : 'No user', 
+        session: data?.session ? 'Session created' : 'No session',
+        error: error ? error.message : 'No error'
+      });
+
+      if (error) {
+        console.error('=== SIGNUP ERROR DETAILS ===');
+        console.error('Status:', error.status);
+        console.error('Message:', error.message);
+        console.error('Code:', error.code || 'NO_CODE');
+        console.error('Full error:', JSON.stringify(error, null, 2));
+        
+        // Handle specific error cases
+        if (error.message?.includes('User already registered') || error.message?.includes('already registered')) {
+          return { success: false, requiresConfirmation: false, error: 'Este email ya está registrado. Intenta iniciar sesión en su lugar.' };
+        }
+        
+        // Handle 422 errors - SMTP/email issue
+        if (error.status === 422) {
+          console.error('=== 422 ERROR - Check Supabase Auth Hooks ===');
+          return { success: false, requiresConfirmation: false, error: 'Error en la configuración de email. Verifica los Auth Hooks en Supabase Dashboard → Authentication → Hooks.' };
+        }
+        
+        // Handle password too short
+        if (error.message?.includes('password') && error.message?.includes('short')) {
+          return { success: false, requiresConfirmation: false, error: 'La contraseña debe tener al menos 6 caracteres.' };
+        }
+        
+        // Handle email rate limiting
+        if (error.message?.includes('rate') || error.message?.includes('limit')) {
+          return { success: false, requiresConfirmation: false, error: 'Demasiados intentos. Por favor espera unos minutos antes de intentar nuevamente.' };
+        }
+        
+        // Generic error with more context
+        return { success: false, requiresConfirmation: false, error: error.message || 'Error al registrar la cuenta. Intenta nuevamente.' };
       }
 
-      if (signInData.user) {
-        await fetchLawyerProfile(signInData.user);
+      if (!data.user) {
+        console.error('No user returned from signup');
+        return { success: false, requiresConfirmation: false, error: 'No se pudo crear el usuario' };
       }
 
+      const requiresConfirmation = !data.session;
       console.log('=== LAWYER SIGNUP SUCCESS ===');
-      return { success: true, requiresConfirmation: false };
+      console.log('User created with ID:', data.user.id);
+      console.log('Session present:', !!data.session, '- Email confirmation required:', requiresConfirmation);
+      
+      // Send welcome email if auto-confirmed
+      if (!requiresConfirmation) {
+        setTimeout(async () => {
+          try {
+            const baseUrl = window.location.origin;
+            const dashboardUrl = `${baseUrl}/#abogados`;
+            const currentYear = new Date().getFullYear().toString();
+            
+            const { data: template } = await supabase
+              .from('email_templates')
+              .select('*')
+              .eq('template_key', 'lawyer_welcome')
+              .eq('is_active', true)
+              .single();
+            
+            if (template) {
+              const variables: Record<string, string> = {
+                lawyer_name: fullName,
+                dashboard_url: dashboardUrl,
+                current_year: currentYear,
+                site_url: baseUrl
+              };
+              
+              let subject = template.subject;
+              let html = template.html_body;
+              
+              Object.entries(variables).forEach(([key, value]) => {
+                const regex = new RegExp(`{{${key}}}`, 'g');
+                subject = subject.replace(regex, value);
+                html = html.replace(regex, value);
+              });
+              
+              await supabase.functions.invoke('send-email', {
+                body: { to: email.trim().toLowerCase(), subject, html, template_key: 'lawyer_welcome', recipient_type: 'lawyer' }
+              });
+              console.log('Welcome email sent successfully');
+            }
+          } catch (emailError) {
+            console.error('Error sending welcome email:', emailError);
+          }
+        }, 0);
+      }
+      
+      return { success: true, requiresConfirmation };
     } catch (error: any) {
       console.error('=== SIGNUP CATCH ERROR ===');
-      console.error('Error details:', {
-        message: error?.message || 'Unknown error',
-        name: error?.name || 'Unknown',
-        stack: error?.stack || 'No stack trace'
-      });
+      console.error('Error details:', { message: error?.message, name: error?.name });
       return { success: false, requiresConfirmation: false, error: error?.message || 'Error de conexión. Intenta nuevamente.' };
     }
   };

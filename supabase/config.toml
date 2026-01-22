@@ -164,6 +164,3 @@ verify_jwt = false
 
 [functions.poll-research-task]
 verify_jwt = true
-
-[functions.create-lawyer-account]
-verify_jwt = false
