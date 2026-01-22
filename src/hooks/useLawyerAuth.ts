@@ -219,8 +219,9 @@ export const useLawyerAuth = () => {
 
       console.log('Validation passed, proceeding with signup');
       
-      // Redirect sin hash - Supabase reemplaza el hash con los tokens de confirmación
-      const redirectUrl = `${window.location.origin}/`;
+      // Redirect a /auth-abogados - Supabase añade tokens al hash pero mantiene la ruta
+      // Esto asegura que el abogado llegue al login correcto incluso en otro dispositivo
+      const redirectUrl = `${window.location.origin}/auth-abogados`;
       console.log('Redirect URL for email confirmation:', redirectUrl);
       
       console.log('Calling supabase.auth.signUp...');
