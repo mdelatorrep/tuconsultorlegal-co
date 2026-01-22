@@ -327,11 +327,12 @@ export default function DocumentChatFlow({ agentId, onBack, onComplete }: Docume
           setThreadId(data.threadId);
         }
 
+        const sanitizedMessage = sanitizeAssistantMessage(data.message);
         const assistantMessage: Message = {
           role: "assistant",
-          content: data.message,
+          content: sanitizedMessage,
           timestamp: new Date(),
-          showGenerateButton: shouldShowGenerateButton(data.message),
+          showGenerateButton: shouldShowGenerateButton(sanitizedMessage),
         };
 
         setMessages((prev) => [...prev, assistantMessage]);
@@ -400,11 +401,12 @@ ${userContextInfo}`;
 
       console.log("✅ Initial response received, length:", data.message?.length);
 
+      const sanitizedMsg = sanitizeAssistantMessage(data.message);
       const assistantMessage: Message = {
         role: "assistant",
-        content: data.message,
+        content: sanitizedMsg,
         timestamp: new Date(),
-        showGenerateButton: shouldShowGenerateButton(data.message),
+        showGenerateButton: shouldShowGenerateButton(sanitizedMsg),
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -412,6 +414,30 @@ ${userContextInfo}`;
       console.error("❌ Error getting initial response:", error);
       toast.error("Error al inicializar el chat");
     }
+  };
+
+  // Function to sanitize assistant messages, removing technical info
+  const sanitizeAssistantMessage = (message: string): string => {
+    if (!message) return message;
+    
+    // Patrones de información técnica que no deben mostrarse al usuario
+    const technicalPatterns = [
+      /ID Agent Conversation:\s*[a-f0-9-]+/gi,
+      /Thread ID:\s*[a-zA-Z0-9_-]+/gi,
+      /Agent ID:\s*[a-zA-Z0-9_-]+/gi,
+      /conversation_id:\s*[a-f0-9-]+/gi,
+      /run_id:\s*[a-zA-Z0-9_-]+/gi,
+    ];
+    
+    let sanitized = message;
+    for (const pattern of technicalPatterns) {
+      sanitized = sanitized.replace(pattern, '');
+    }
+    
+    // Limpiar líneas vacías múltiples
+    sanitized = sanitized.replace(/\n{3,}/g, '\n\n').trim();
+    
+    return sanitized;
   };
 
   // Function to determine if generate button should be shown
@@ -427,6 +453,7 @@ ${userContextInfo}`;
       "¿deseas proceder con la generación",
       "proceder con la generación del documento",
       "listo para generar el documento",
+      "¿deseas que continúe con la generación",
     ];
 
     // Frases que NO deben activar el botón (está pidiendo información)
@@ -566,7 +593,7 @@ Sé amable, claro y profesional. No uses formato markdown.`
         body: requestBody,
       });
 
-      // 🚨 Manejo específico de rate limit con retry automático
+      // 🚨 Manejo específico de errores con retry automático
       if (error) {
         console.error("❌ OpenAI Agent error:", error);
         console.error("❌ Error details:", JSON.stringify(error, null, 2));
@@ -605,11 +632,12 @@ Sé amable, claro y profesional. No uses formato markdown.`
             setThreadId(retryData.threadId);
           }
 
+          const retryMsg = sanitizeAssistantMessage(retryData.message);
           const assistantMessage: Message = {
             role: "assistant",
-            content: retryData.message,
+            content: retryMsg,
             timestamp: new Date(),
-            showGenerateButton: shouldShowGenerateButton(retryData.message),
+            showGenerateButton: shouldShowGenerateButton(retryMsg),
           };
 
           const extractedData = extractInformationFromMessage(userMessage.content);
@@ -618,6 +646,17 @@ Sé amable, claro y profesional. No uses formato markdown.`
           maintainInputFocus();
           setSending(false);
           return;
+        }
+
+        // Detectar error de cuota excedida (503)
+        if (
+          error.message?.includes("quota") ||
+          error.message?.includes("exceeded") ||
+          error.message?.includes("503")
+        ) {
+          console.log("⚠️ Cuota de IA excedida, usando fallback...");
+          toast.error("El servicio de IA está temporalmente no disponible. Usando modo alternativo.");
+          // Continuar con fallback abajo
         }
 
         // Para otros errores, mostrar mensaje pero sin toast agresivo
@@ -676,11 +715,12 @@ Sé amable, claro y profesional. No uses formato markdown.`
         runStatus: data.runStatus,
       });
 
+      const cleanMessage = sanitizeAssistantMessage(data.message);
       const assistantMessage: Message = {
         role: "assistant",
-        content: data.message,
+        content: cleanMessage,
         timestamp: new Date(),
-        showGenerateButton: shouldShowGenerateButton(data.message),
+        showGenerateButton: shouldShowGenerateButton(cleanMessage),
       };
 
       // Extract information from the conversation for placeholders
