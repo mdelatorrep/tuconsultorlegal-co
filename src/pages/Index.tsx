@@ -50,11 +50,33 @@ export default function Index() {
 
   // Handle browser navigation
   useEffect(() => {
-    const handlePopState = () => {
+    const isAuthCallbackHash = (rawHash: string) => {
+      const h = rawHash.replace(/^#/, "");
+      return (
+        h.startsWith("access_token=") ||
+        h.startsWith("refresh_token=") ||
+        h.startsWith("error=") ||
+        h.includes("&access_token=") ||
+        h.includes("&error=")
+      );
+    };
+
+    const resolvePageFromHash = () => {
+      const rawHash = window.location.hash || "";
+      if (isAuthCallbackHash(rawHash)) {
+        // Decide which auth UI to show without losing the hash (tokens live in the hash)
+        const pending = localStorage.getItem('pending_signup_context');
+        return pending === 'lawyer' ? 'lawyer-landing' : 'auth';
+      }
+
       // Parse hash to separate route from query params
-      const hash = window.location.hash.replace("#", "") || "home";
-      const route = hash.split('?')[0]; // Get only the route part, ignore query params
-      setCurrentPage(route);
+      const hash = rawHash.replace("#", "") || "home";
+      const route = hash.split('?')[0];
+      return route || 'home';
+    };
+
+    const handlePopState = () => {
+      setCurrentPage(resolvePageFromHash());
     };
 
     // Check URL parameters for special views
@@ -91,10 +113,8 @@ export default function Index() {
       return;
     }
 
-    // Set initial page from URL - parse hash to separate route from query params
-    const initialHash = window.location.hash.replace("#", "") || "home";
-    const initialRoute = initialHash.split('?')[0]; // Get only the route part
-    setCurrentPage(initialRoute);
+    // Set initial page from URL
+    setCurrentPage(resolvePageFromHash());
 
     // Listen for browser back/forward
     window.addEventListener("popstate", handlePopState);
@@ -312,6 +332,9 @@ export default function Index() {
         return <IntellectualPropertyPage onOpenChat={handleOpenChat} />;
       case "proximamente-empresas":
         return <ComingSoonPage onBack={() => handleNavigate("empresas")} type="business" title="Portal Empresarial" />;
+      default:
+        // Fallback para hashes inválidos (ej: callbacks de auth) para evitar pantalla en blanco
+        return <HomePage onOpenChat={handleOpenChat} onNavigate={handleNavigate} />;
     }
   };
 
