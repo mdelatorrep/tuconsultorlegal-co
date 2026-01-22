@@ -145,6 +145,16 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
       return;
     }
 
+    // Validar complejidad de contraseña (requisito de Supabase)
+    const hasLowercase = /[a-z]/.test(password);
+    const hasUppercase = /[A-Z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    
+    if (!hasLowercase || !hasUppercase || !hasNumber) {
+      setErrorMessage('La contraseña debe contener al menos: una minúscula, una mayúscula y un número');
+      return;
+    }
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setErrorMessage('Por favor ingresa un email válido');
