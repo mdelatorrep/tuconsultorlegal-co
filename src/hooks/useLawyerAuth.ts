@@ -219,8 +219,9 @@ export const useLawyerAuth = () => {
 
       console.log('Validation passed, proceeding with signup');
       
-      const redirectUrl = `${window.location.origin}/#abogados`;
-      console.log('Redirect URL:', redirectUrl);
+      // Redirect sin hash - Supabase reemplaza el hash con los tokens de confirmación
+      const redirectUrl = `${window.location.origin}/`;
+      console.log('Redirect URL for email confirmation:', redirectUrl);
       
       console.log('Calling supabase.auth.signUp...');
       const { data, error } = await supabase.auth.signUp({
