@@ -59,7 +59,34 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
       }
     }
     
-    // Verificar si la URL contiene parámetros de confirmación de email
+    // Verificar errores de autenticación en el hash (ej: link expirado)
+    if (hash.includes('error=')) {
+      const hashParams = new URLSearchParams(hash.substring(1));
+      const errorCode = hashParams.get('error_code');
+      const errorDescription = hashParams.get('error_description');
+      
+      console.log('Auth error detected:', { errorCode, errorDescription });
+      
+      if (errorCode === 'otp_expired') {
+        setErrorMessage('El enlace de confirmación ha expirado. Por favor regístrate nuevamente para recibir un nuevo enlace.');
+        setViewMode('register');
+      } else if (errorCode === 'access_denied') {
+        setErrorMessage('Acceso denegado. El enlace ya fue usado o es inválido.');
+        setViewMode('login');
+      } else {
+        setErrorMessage(errorDescription?.replace(/\+/g, ' ') || 'Error de autenticación. Intenta nuevamente.');
+        setViewMode('login');
+      }
+      
+      // Limpiar la URL
+      setTimeout(() => {
+        window.history.replaceState({}, document.title, '/#abogados');
+      }, 100);
+      
+      return; // No procesar más
+    }
+    
+    // Verificar si la URL contiene parámetros de confirmación de email exitosa
     if (hash.includes('access_token=') && hash.includes('type=signup')) {
       console.log('Email confirmation detected');
       setShowEmailConfirmedMessage(true);
@@ -74,7 +101,7 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
       
       // Limpiar la URL después de 2 segundos
       setTimeout(() => {
-        window.history.replaceState({}, document.title, '/');
+        window.history.replaceState({}, document.title, '/#abogados');
         setShowEmailConfirmedMessage(false);
       }, 2000);
     }
