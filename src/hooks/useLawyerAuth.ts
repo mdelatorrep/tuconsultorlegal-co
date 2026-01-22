@@ -256,11 +256,20 @@ export const useLawyerAuth = () => {
           return { success: false, requiresConfirmation: false, error: 'Este email ya está registrado. Intenta iniciar sesión en su lugar.' };
         }
         
-        // Handle 422 errors - SMTP/email issue
+        // Handle 422 errors - needs the *real* Supabase message to diagnose
         if (error.status === 422) {
-          console.error('=== 422 ERROR - Email/SMTP configuration issue ===');
-          console.error('Error body:', error);
-          return { success: false, requiresConfirmation: false, error: 'No se pudo enviar el correo de confirmación. Por favor contacta al administrador.' };
+          console.error('=== 422 ERROR (Supabase /signup) ===');
+          console.error('Raw error object:', error);
+
+          const code = (error as any)?.code ? String((error as any).code) : '';
+          const message = error.message ? String(error.message) : 'Unprocessable Entity';
+          const details = [code, message].filter(Boolean).join(' - ');
+
+          return {
+            success: false,
+            requiresConfirmation: false,
+            error: `Registro falló (422): ${details}`,
+          };
         }
         
         // Handle password too short
