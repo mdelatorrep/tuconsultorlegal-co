@@ -258,8 +258,9 @@ export const useLawyerAuth = () => {
         
         // Handle 422 errors - SMTP/email issue
         if (error.status === 422) {
-          console.error('=== 422 ERROR - Check Supabase Auth Hooks ===');
-          return { success: false, requiresConfirmation: false, error: 'Error en la configuración de email. Verifica los Auth Hooks en Supabase Dashboard → Authentication → Hooks.' };
+          console.error('=== 422 ERROR - Email/SMTP configuration issue ===');
+          console.error('Error body:', error);
+          return { success: false, requiresConfirmation: false, error: 'No se pudo enviar el correo de confirmación. Por favor contacta al administrador.' };
         }
         
         // Handle password too short
