@@ -203,6 +203,19 @@ Email: ${userContext.email}
           });
         }
         
+        // Si es error de cuota excedida
+        if (errorMsg.includes('quota') || errorMsg.includes('exceeded')) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: 'quota_exceeded',
+            message: 'El servicio de IA está temporalmente no disponible. Por favor intenta de nuevo en unos minutos.',
+            retryAfter: 120
+          }), {
+            status: 503,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        
         throw new Error(`El asistente encontró un error: ${errorMsg}`);
       }
 
