@@ -1,10 +1,53 @@
+import { useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Shield, CheckCircle } from 'lucide-react';
 import LawyerLogin from './LawyerLogin';
 import Header from './Header';
+import { useToast } from '@/hooks/use-toast';
 
 export default function LawyerAuthPage() {
+  const { toast } = useToast();
+
+  // Detectar confirmación de email al cargar (cuando viene de /auth-abogados#access_token=...)
+  useEffect(() => {
+    const hash = window.location.hash;
+    
+    // Detectar errores de auth (link expirado, etc.)
+    if (hash.includes('error=')) {
+      const hashParams = new URLSearchParams(hash.substring(1));
+      const errorCode = hashParams.get('error_code');
+      
+      if (errorCode === 'otp_expired') {
+        toast({
+          title: "Enlace expirado",
+          description: "El enlace de confirmación ha expirado. Por favor regístrate nuevamente.",
+          variant: "destructive",
+          duration: 8000,
+        });
+      }
+      
+      // Limpiar la URL
+      setTimeout(() => {
+        window.history.replaceState({}, document.title, '/auth-abogados');
+      }, 100);
+    }
+    
+    // Detectar confirmación exitosa
+    if (hash.includes('access_token=') && hash.includes('type=signup')) {
+      toast({
+        title: "¡Email confirmado exitosamente!",
+        description: "Tu cuenta ha sido activada. Ahora puedes iniciar sesión.",
+        duration: 8000,
+      });
+      
+      // Limpiar la URL
+      setTimeout(() => {
+        window.history.replaceState({}, document.title, '/auth-abogados');
+      }, 2000);
+    }
+  }, [toast]);
+
   const handleNavigate = (page: string) => {
     if (page === 'home') {
       window.location.replace('/');
