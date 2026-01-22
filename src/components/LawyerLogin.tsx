@@ -77,6 +77,9 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
         setErrorMessage(errorDescription?.replace(/\+/g, ' ') || 'Error de autenticación. Intenta nuevamente.');
         setViewMode('login');
       }
+
+      // Ya no estamos esperando confirmación
+      localStorage.removeItem('pending_signup_context');
       
       // Limpiar la URL
       setTimeout(() => {
@@ -104,6 +107,9 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
         window.history.replaceState({}, document.title, '/#abogados');
         setShowEmailConfirmedMessage(false);
       }, 2000);
+
+      // Ya confirmamos el registro
+      localStorage.removeItem('pending_signup_context');
     }
   }, [toast]);
 
@@ -146,6 +152,10 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Marca el contexto para que los callbacks de Supabase (hash con tokens/error)
+    // puedan enrutar a la pantalla correcta y no dejar la página en blanco.
+    localStorage.setItem('pending_signup_context', 'lawyer');
     
     if (!email || !password || !confirmPassword || !fullName) {
       setErrorMessage('Por favor completa todos los campos');
