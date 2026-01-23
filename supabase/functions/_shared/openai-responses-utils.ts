@@ -390,6 +390,8 @@ export async function callResponsesAPI(
   text?: string;
   error?: string;
   status?: number;
+  incomplete?: boolean;
+  incompleteReason?: string;
 }> {
   try {
     const response = await fetch(OPENAI_RESPONSES_ENDPOINT, {
@@ -413,13 +415,36 @@ export async function callResponsesAPI(
 
     const data = await response.json();
     
+    // Check for incomplete responses (max_output_tokens, content_filter, etc.)
+    const responseStatus = data.status;
+    const incompleteDetails = data.incomplete_details;
+    
+    if (responseStatus === 'incomplete') {
+      const reason = incompleteDetails?.reason || 'unknown';
+      console.warn(`OpenAI response incomplete: ${reason}`, JSON.stringify(incompleteDetails));
+      
+      // Still try to extract partial text if available
+      const partialText = extractOutputText(data);
+      
+      return {
+        success: false,
+        data,
+        text: partialText || undefined,
+        error: `Response incomplete: ${reason}`,
+        incomplete: true,
+        incompleteReason: reason
+      };
+    }
+    
     // Log the full response structure for debugging
-    console.log('OpenAI Responses API full response:', JSON.stringify(data, null, 2));
+    console.log('OpenAI Responses API status:', responseStatus);
     
     const text = extractOutputText(data);
     
     // Log extraction result
-    console.log('Extracted text:', text ? `${text.substring(0, 100)}...` : 'null');
+    if (!text) {
+      console.warn('extractOutputText returned null for completed response');
+    }
 
     return {
       success: true,
