@@ -95,34 +95,31 @@ serve(async (req) => {
     logResponsesRequest(strategyModel, 'legal-strategy-analysis', true);
 
     const jsonFormat = `{
-  "legalActions": [{"action": "Nombre", "viability": "high|medium|low", "description": "...", "requirements": [...]}],
-  "legalArguments": [{"argument": "...", "foundation": "...", "strength": "strong|moderate|weak"}],
-  "counterarguments": [{"argument": "...", "response": "...", "mitigation": "..."}],
-  "precedents": [{"case": "...", "relevance": "...", "outcome": "..."}],
-  "recommendations": [...]
+  "legalActions": [{"action": "string", "viability": "high|medium|low", "description": "string", "requirements": ["string"]}],
+  "legalArguments": [{"argument": "string", "foundation": "string", "strength": "strong|moderate|weak"}],
+  "counterarguments": [{"argument": "string", "response": "string", "mitigation": "string"}],
+  "precedents": [{"case": "string", "relevance": "string", "outcome": "string"}],
+  "recommendations": ["string"]
 }`;
 
     const instructions = `${strategyPrompt}
 
-Instrucciones específicas:
-- Analiza el caso legal proporcionado
-- Identifica las mejores vías de acción legal
-- Proporciona argumentos jurídicos sólidos con fundamentos legales
-- Anticipa posibles contraargumentos y cómo responder
-- Incluye precedentes judiciales relevantes
-- Proporciona recomendaciones estratégicas
+INSTRUCCIONES CRÍTICAS:
+1. Analiza el caso y genera MÁXIMO 3 elementos por categoría para mantener respuesta concisa
+2. Sé breve pero sustancial en cada descripción
+3. Responde ÚNICAMENTE en JSON válido sin explicaciones adicionales
 
-Responde en formato JSON con esta estructura:
+Estructura requerida:
 ${jsonFormat}`;
 
-    // Get reasoning effort from system config (strategy = high by default)
-    const reasoningEffort = await getSystemConfig(supabase, 'reasoning_effort_strategy', 'high') as 'low' | 'medium' | 'high';
+    // Get reasoning effort from system config - use 'low' for JSON generation to maximize output tokens
+    const reasoningEffort = await getSystemConfig(supabase, 'reasoning_effort_strategy', 'low') as 'low' | 'medium' | 'high';
     
     // NOTE: Web search disabled when using jsonMode to avoid OpenAI API conflict
     const params = buildResponsesRequestParams(strategyModel, {
-      input: `Analiza estratégicamente el siguiente caso legal:\n\n${caseDescription}\n\nResponde ÚNICAMENTE en formato JSON válido.`,
+      input: `Caso legal para análisis estratégico:\n\n${caseDescription}\n\nResponde en JSON.`,
       instructions,
-      maxOutputTokens: 8000,
+      maxOutputTokens: 16000,
       temperature: 0.3,
       jsonMode: true,
       store: false,
@@ -131,7 +128,28 @@ ${jsonFormat}`;
 
     const result = await callResponsesAPI(openaiApiKey, params);
 
-    if (!result.success) {
+    // Handle incomplete responses (max_output_tokens exceeded)
+    if (result.incomplete) {
+      console.warn(`Strategy analysis incomplete: ${result.incompleteReason}`);
+      // Try to parse partial content if available
+      if (result.text) {
+        try {
+          const partialResult = JSON.parse(result.text);
+          console.log('Parsed partial strategy result');
+          return new Response(JSON.stringify({
+            success: true,
+            caseDescription,
+            ...partialResult,
+            partial: true,
+            timestamp: new Date().toISOString()
+          }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        } catch (e) {
+          console.error('Could not parse partial JSON');
+        }
+      }
+    }
+
+    if (!result.success && !result.text) {
       throw new Error(`Strategy analysis failed: ${result.error}`);
     }
 
