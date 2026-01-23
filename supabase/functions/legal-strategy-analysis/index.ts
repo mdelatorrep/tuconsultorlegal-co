@@ -112,14 +112,9 @@ INSTRUCCIONES CRÍTICAS:
 Estructura requerida:
 ${jsonFormat}`;
 
-    // CRITICAL: For JSON generation, we MUST use 'low' reasoning effort to maximize output tokens
-    // High effort causes tokens to be exhausted on internal reasoning, leaving empty/incomplete JSON output
-    const configuredEffort = await getSystemConfig(supabase, 'reasoning_effort_strategy', 'low') as 'low' | 'medium' | 'high';
-    const effectiveEffort = 'low'; // Force low for JSON mode to prevent incomplete responses
-    
-    if (configuredEffort !== 'low') {
-      console.log(`[Strategy] Configured effort is '${configuredEffort}' but using 'low' for JSON generation`);
-    }
+    // Get reasoning effort - use the correct key that matches admin UI
+    const reasoningEffort = await getSystemConfig(supabase, 'strategy_reasoning_effort', 'low') as 'low' | 'medium' | 'high';
+    console.log(`[Strategy] Using reasoning effort: ${reasoningEffort}`);
     
     // NOTE: Web search disabled when using jsonMode to avoid OpenAI API conflict
     const params = buildResponsesRequestParams(strategyModel, {
@@ -129,7 +124,7 @@ ${jsonFormat}`;
       temperature: 0.3,
       jsonMode: true,
       store: false,
-      reasoning: { effort: effectiveEffort }
+      reasoning: { effort: reasoningEffort }
     });
 
     const result = await callResponsesAPI(openaiApiKey, params);
