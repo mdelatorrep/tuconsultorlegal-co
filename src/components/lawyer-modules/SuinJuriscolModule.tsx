@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useCredits } from "@/hooks/useCredits";
 import { ToolCostIndicator } from "@/components/credits/ToolCostIndicator";
+import SuinJuriscolChatMessage from "./SuinJuriscolChatMessage";
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -614,24 +615,21 @@ export default function SuinJuriscolModule({ user, currentView, onViewChange, on
                       {chatMessages.map((message, index) => (
                         <div 
                           key={index}
-                          className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                          className={`${message.role === 'user' ? 'flex justify-end' : ''}`}
                         >
-                          <div 
-                            className={`max-w-[85%] rounded-2xl px-4 py-3 ${
-                              message.role === 'user' 
-                                ? 'bg-emerald-600 text-white' 
-                                : 'bg-muted border'
-                            }`}
-                          >
-                            {message.role === 'user' ? (
+                          {message.role === 'user' ? (
+                            <div className="max-w-[85%] bg-emerald-600 text-white rounded-2xl px-4 py-3">
                               <p className="text-sm">{message.content}</p>
-                            ) : (
-                              <MarkdownRenderer content={message.content} />
-                            )}
-                            <p className={`text-xs mt-2 ${message.role === 'user' ? 'text-emerald-200' : 'text-muted-foreground'}`}>
-                              {new Date(message.timestamp).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
-                            </p>
-                          </div>
+                              <p className="text-xs mt-2 text-emerald-200">
+                                {new Date(message.timestamp).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                            </div>
+                          ) : (
+                            <SuinJuriscolChatMessage 
+                              content={message.content} 
+                              timestamp={message.timestamp} 
+                            />
+                          )}
                         </div>
                       ))}
                       {isSendingMessage && (
