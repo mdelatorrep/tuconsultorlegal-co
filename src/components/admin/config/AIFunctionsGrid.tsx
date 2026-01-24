@@ -79,10 +79,33 @@ export default function AIFunctionsGrid({
     }
   };
 
+  // Models that support web search
+  const WEB_SEARCH_COMPATIBLE_MODELS = ['gpt-5', 'gpt-5-mini', 'gpt-4.1-2025-04-14', 'o3', 'o4-mini'];
+  
+  const isModelWebSearchCompatible = (model: string): boolean => {
+    if (!model) return false;
+    return WEB_SEARCH_COMPATIBLE_MODELS.some(compatible => 
+      model.toLowerCase().includes(compatible.toLowerCase()) && 
+      !model.toLowerCase().includes('nano')
+    );
+  };
+
   const handleWebSearchToggle = async (func: AIFunction, checked: boolean) => {
     if (!func.webSearchKey) return;
     setSaving(`web-${func.id}`);
     try {
+      // If enabling web search, check if model is compatible
+      if (checked && func.modelKey) {
+        const currentModel = getConfigValue(func.modelKey, '');
+        if (currentModel && !isModelWebSearchCompatible(currentModel)) {
+          // Auto-upgrade to gpt-5-mini
+          await onSave(func.modelKey, 'gpt-5-mini');
+          toast({ 
+            title: "Modelo actualizado", 
+            description: "Se cambió a gpt-5-mini (compatible con web search)" 
+          });
+        }
+      }
       await onSave(func.webSearchKey, checked ? 'true' : 'false');
       toast({ title: checked ? "Web Search activado" : "Web Search desactivado" });
     } catch (error) {
