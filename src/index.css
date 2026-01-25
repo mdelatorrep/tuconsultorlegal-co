@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -31,139 +31,128 @@ html {
   }
 }
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* Praxis Hub Design System
+   - Minimalista, editorial, institucional contemporáneo
+   - Paleta sobria y profesional
+   - Todos los colores en HSL
 */
 
 @layer base {
   :root {
-    /* Base Colors */
-    --background: 0 0% 100%; /* blanco - Complementario 2 */
-    --foreground: 217 92% 7%; /* casi negro - Complementario 1 */
+    /* Base Colors - Clean & Professional */
+    --background: 0 0% 100%; /* Pure white */
+    --foreground: 220 14% 10%; /* Deep charcoal - almost black */
 
     --card: 0 0% 100%;
-    --card-foreground: 217 92% 7%;
+    --card-foreground: 220 14% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 217 92% 7%;
+    --popover-foreground: 220 14% 10%;
 
-    /* Primary Colors - Brand Palette */
-    --primary: 213 96% 46%; /* #0372e8 - Color Principal Azul */
-    --primary-light: 213 96% 55%; /* lighter variant of primary */
+    /* Primary - Desaturated teal/slate blue for professional trust */
+    --primary: 200 25% 30%; /* Muted slate-teal */
+    --primary-light: 200 25% 40%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary/Accent Colors */
-    --secondary: 44 87% 57%; /* #f2bb31 - Color Secundario Amarillo */
-    --secondary-dark: 44 87% 50%; /* darker variant for hover */
-    --secondary-foreground: 217 92% 7%;
+    /* Secondary - Warm neutral for subtle accents */
+    --secondary: 220 10% 94%; /* Very light gray */
+    --secondary-foreground: 220 14% 10%;
     
-    /* Warning/Success Colors */
-    --warning: 44 87% 57%; /* using secondary color for consistency */
-    --warning-foreground: 217 92% 7%;
-    --success: 213 96% 46%; /* using primary for success states */
+    /* Success - Muted green for positive states */
+    --success: 160 30% 40%;
+    --success-dark: 160 30% 35%;
     --success-foreground: 0 0% 100%;
 
+    /* Warning - Muted amber */
+    --warning: 40 40% 50%;
+    --warning-foreground: 220 14% 10%;
+
     /* Neutral Colors */
-    --muted: 0 0% 95%; /* gris muy claro */
-    --muted-foreground: 213 96% 46%; /* primary color for muted text */
+    --muted: 220 10% 96%; /* Very light gray */
+    --muted-foreground: 220 10% 45%; /* Medium gray */
 
-    --accent: 0 0% 95%; /* gris claro para accent backgrounds */
-    --accent-foreground: 213 96% 46%;
+    --accent: 220 10% 94%;
+    --accent-foreground: 200 25% 30%;
 
-    --destructive: 0 84% 60%; /* clear error red */
+    --destructive: 0 65% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 20% 90%; /* subtle borders */
-    --input: 214 20% 90%; /* consistent input styling */
-    --ring: 213 96% 46%; /* matches primary for focus */
+    --border: 220 10% 90%;
+    --input: 220 10% 90%;
+    --ring: 200 25% 30%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
-    /* Brand Theme - Exact Brand Colors */
-    --brand-blue: 213 96% 46%; /* #0372e8 - Color Principal */
-    --brand-blue-light: 213 96% 55%; /* lighter variant */
-    --brand-blue-dark: 217 92% 7%; /* #010f24 - Dark blue for backgrounds */
-    --brand-yellow: 44 87% 57%; /* #f2bb31 - Color Secundario */
-    --brand-yellow-dark: 44 87% 50%; /* darker variant */
-    --brand-dark: 217 92% 7%; /* #010f24 - Complementario 1 */
-    --brand-white: 0 0% 100%; /* #ffffff - Complementario 2 */
+    /* Brand Theme - Praxis Hub */
+    --brand-primary: 200 25% 30%; /* Slate teal */
+    --brand-primary-light: 200 25% 40%;
+    --brand-dark: 220 14% 10%; /* Deep charcoal */
+    --brand-light: 220 10% 98%; /* Off-white */
+    --brand-accent: 160 20% 45%; /* Muted sage */
     
-    /* Hero Gradients - Consistent Brand Identity */
-    --gradient-hero-bg: linear-gradient(135deg, hsl(217, 92%, 7%), hsl(217, 85%, 10%), hsl(217, 92%, 7%));
-    --gradient-hero-accent: linear-gradient(90deg, hsl(213, 96%, 46%), hsl(213, 96%, 55%));
-    --gradient-text-yellow: linear-gradient(90deg, hsl(44, 87%, 57%), hsl(44, 87%, 65%));
+    /* Editorial Backgrounds */
+    --solid-hero: hsl(220, 14%, 10%);
+    --solid-card: hsl(0, 0%, 100%);
+    --solid-muted: hsl(220, 10%, 96%);
 
-    /* Solid Professional Backgrounds - Brand Colors */
-    --solid-hero: hsl(var(--brand-dark));
-    --solid-card: hsl(var(--brand-white));
-    --solid-accent: hsl(var(--brand-yellow));
-    --solid-secondary: hsl(var(--brand-yellow));
-    --solid-muted: hsl(var(--muted));
+    /* Subtle Professional Shadows */
+    --shadow-soft: 0 1px 2px 0 hsl(220 14% 10% / 0.03);
+    --shadow-card: 0 1px 3px 0 hsl(220 14% 10% / 0.04), 0 1px 2px -1px hsl(220 14% 10% / 0.04);
+    --shadow-elevated: 0 4px 6px -1px hsl(220 14% 10% / 0.05), 0 2px 4px -2px hsl(220 14% 10% / 0.04);
+    --shadow-floating: 0 10px 15px -3px hsl(220 14% 10% / 0.05), 0 4px 6px -4px hsl(220 14% 10% / 0.04);
 
-    /* Shadows - Subtle & Professional */
-    --shadow-soft: 0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-    --shadow-card: 0 4px 6px -1px hsl(0 0% 0% / 0.1), 0 2px 4px -2px hsl(0 0% 0% / 0.1);
-    --shadow-hero: 0 10px 15px -3px hsl(0 0% 0% / 0.1), 0 4px 6px -4px hsl(0 0% 0% / 0.1);
-    --shadow-trust: 0 8px 25px -8px hsl(0 0% 0% / 0.1);
-    --shadow-elevated: 0 20px 25px -5px hsl(0 0% 0% / 0.1), 0 8px 10px -6px hsl(0 0% 0% / 0.1);
-    --shadow-floating: 0 25px 50px -12px hsl(0 0% 0% / 0.25);
-
-    /* Animations & Transitions */
+    /* Smooth Transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-bounce: all 0.2s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-    --transition-spring: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    --transition-subtle: all 0.2s ease-out;
 
-    /* Glass Morphism Effects */
-    --glass-bg: rgba(255, 255, 255, 0.08);
-    --glass-border: rgba(255, 255, 255, 0.18);
-    --glass-backdrop: blur(16px);
-
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Sidebar */
+    --sidebar-background: 220 10% 98%;
+    --sidebar-foreground: 220 14% 10%;
+    --sidebar-primary: 200 25% 30%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 10% 94%;
+    --sidebar-accent-foreground: 220 14% 10%;
+    --sidebar-border: 220 10% 90%;
+    --sidebar-ring: 200 25% 30%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 220 14% 8%;
+    --foreground: 220 10% 96%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 220 14% 10%;
+    --card-foreground: 220 10% 96%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 220 14% 10%;
+    --popover-foreground: 220 10% 96%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 200 25% 50%;
+    --primary-foreground: 220 14% 8%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 220 14% 15%;
+    --secondary-foreground: 220 10% 96%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 220 14% 15%;
+    --muted-foreground: 220 10% 60%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 220 14% 15%;
+    --accent-foreground: 200 25% 50%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 60% 40%;
+    --destructive-foreground: 220 10% 96%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --border: 220 14% 18%;
+    --input: 220 14% 18%;
+    --ring: 200 25% 50%;
+    
+    --sidebar-background: 220 14% 8%;
+    --sidebar-foreground: 220 10% 96%;
+    --sidebar-primary: 200 25% 50%;
+    --sidebar-primary-foreground: 220 14% 8%;
+    --sidebar-accent: 220 14% 15%;
+    --sidebar-accent-foreground: 220 10% 96%;
+    --sidebar-border: 220 14% 18%;
+    --sidebar-ring: 200 25% 50%;
   }
 }
 
@@ -174,7 +163,7 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Montserrat', sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 
   /* Clean Professional Solid Backgrounds */
@@ -186,35 +175,12 @@ All colors MUST be HSL.
     background: var(--solid-card);
   }
 
-  .success-solid {
-    background: var(--solid-success);
-  }
-
-  .accent-solid {
-    background: var(--solid-accent);
-  }
-
-  .glass-card {
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    backdrop-filter: var(--glass-backdrop);
-    -webkit-backdrop-filter: var(--glass-backdrop);
-  }
-
   .shadow-soft {
     box-shadow: var(--shadow-soft);
   }
 
   .shadow-card {
     box-shadow: var(--shadow-card);
-  }
-
-  .shadow-hero {
-    box-shadow: var(--shadow-hero);
-  }
-
-  .shadow-glow {
-    box-shadow: var(--shadow-glow);
   }
 
   .shadow-elevated {
@@ -229,64 +195,42 @@ All colors MUST be HSL.
     transition: var(--transition-smooth);
   }
 
-  .transition-bounce {
-    transition: var(--transition-bounce);
+  .transition-subtle {
+    transition: var(--transition-subtle);
   }
 
-  .transition-spring {
-    transition: var(--transition-spring);
-  }
-
-  /* Advanced Hover Effects */
+  /* Subtle Hover Effects - Editorial Style */
   .hover-lift {
     transition: var(--transition-smooth);
   }
 
   .hover-lift:hover {
-    transform: translateY(-8px) scale(1.02);
-    box-shadow: var(--shadow-floating);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-elevated);
   }
 
   .hover-subtle:hover {
     box-shadow: var(--shadow-card);
-    transform: translateY(-2px);
+    transform: translateY(-1px);
   }
 
-  /* Professional Animations */
-  @keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-10px); }
-  }
-
-  @keyframes pulse-subtle {
-    0%, 100% { box-shadow: var(--shadow-soft); }
-    50% { box-shadow: var(--shadow-card); }
+  /* Minimal Animations */
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
 
   @keyframes slide-up {
-    from { opacity: 0; transform: translateY(30px); }
+    from { opacity: 0; transform: translateY(16px); }
     to { opacity: 1; transform: translateY(0); }
   }
 
-  @keyframes scale-in {
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
-  }
-
-  .animate-float {
-    animation: float 6s ease-in-out infinite;
-  }
-
-  .animate-pulse-subtle {
-    animation: pulse-subtle 3s ease-in-out infinite;
+  .animate-fade-in {
+    animation: fade-in 0.5s ease-out;
   }
 
   .animate-slide-up {
     animation: slide-up 0.6s ease-out;
-  }
-
-  .animate-scale-in {
-    animation: scale-in 0.4s ease-out;
   }
 
   /* Smooth scrolling */
@@ -297,16 +241,16 @@ All colors MUST be HSL.
   /* Page transitions */
   .page-enter {
     opacity: 0;
-    transform: translateY(30px) scale(0.98);
+    transform: translateY(16px);
   }
 
   .page-enter-active {
     opacity: 1;
-    transform: translateY(0) scale(1);
-    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+    transform: translateY(0);
+    transition: opacity 0.4s ease-out, transform 0.4s ease-out;
   }
   
-  /* Hide Lovable chat widget to prevent conflicts */
+  /* Hide conflicting chat widgets */
   [data-lovable-chat],
   .lovable-chat,
   .gptengineer-chat,
@@ -329,17 +273,17 @@ All colors MUST be HSL.
     z-index: 10000 !important;
   }
 
-  /* Mobile scrollbar utilities */
+  /* Scrollbar utilities */
   .scrollbar-hide {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
   
   .scrollbar-hide::-webkit-scrollbar {
-    display: none;  /* Chrome, Safari and Opera */
+    display: none;
   }
 
-  /* Modern Grid Layouts */
+  /* Grid Layouts */
   .grid-auto-fit {
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   }
@@ -348,21 +292,13 @@ All colors MUST be HSL.
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   }
 
-  /* Micro-interacciones estilo Apple */
+  /* Editorial hover effects */
   .hover-lift-subtle {
-    transition: transform 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+    transition: transform 0.3s ease-out;
   }
 
   .hover-lift-subtle:hover {
-    transform: translateY(-4px);
-  }
-
-  .hover-glow {
-    transition: box-shadow 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
-  }
-
-  .hover-glow:hover {
-    box-shadow: 0 20px 60px rgba(3, 114, 232, 0.15);
+    transform: translateY(-2px);
   }
 
   /* React Quill Editor Styles */
@@ -416,7 +352,7 @@ All colors MUST be HSL.
 
   .ql-editor h1, .ql-editor h2, .ql-editor h3, 
   .ql-editor h4, .ql-editor h5, .ql-editor h6 {
-    font-weight: 700;
+    font-weight: 600;
     color: hsl(var(--foreground));
     margin-top: 1.5em;
     margin-bottom: 0.75em;
@@ -498,19 +434,15 @@ All colors MUST be HSL.
     color: hsl(var(--foreground));
   }
 
-  .dark .ql-editor.ql-blank::before {
-    color: hsl(var(--muted-foreground));
-  }
-
-  .dark .ql-stroke {
+  .dark .ql-snow .ql-stroke {
     stroke: hsl(var(--foreground));
   }
 
-  .dark .ql-fill {
+  .dark .ql-snow .ql-fill {
     fill: hsl(var(--foreground));
   }
 
-  .dark .ql-picker-label {
+  .dark .ql-snow .ql-picker-label {
     color: hsl(var(--foreground));
   }
 }
