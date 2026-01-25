@@ -58,13 +58,16 @@ export default {
 					dark: 'hsl(var(--success-dark))',
 					foreground: 'hsl(var(--success-foreground))'
 				},
+				warning: {
+					DEFAULT: 'hsl(var(--warning))',
+					foreground: 'hsl(var(--warning-foreground))'
+				},
 				brand: {
-					blue: 'hsl(var(--brand-blue))',
-					'blue-light': 'hsl(var(--brand-blue-light))',
-					orange: 'hsl(var(--brand-orange))',
-					'orange-dark': 'hsl(var(--brand-orange-dark))',
-					'gray-light': 'hsl(var(--brand-gray-light))',
-					'text-light': 'hsl(var(--brand-text-light))'
+					primary: 'hsl(var(--brand-primary))',
+					'primary-light': 'hsl(var(--brand-primary-light))',
+					dark: 'hsl(var(--brand-dark))',
+					light: 'hsl(var(--brand-light))',
+					accent: 'hsl(var(--brand-accent))'
 				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
@@ -78,7 +81,7 @@ export default {
 				}
 			},
 			fontFamily: {
-				sans: ['Montserrat', 'sans-serif'],
+				sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
