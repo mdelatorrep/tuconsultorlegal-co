@@ -31,15 +31,15 @@ export default function LawyerLandingPage({
   const autoScrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useSEO({
-    title: "Portal para Abogados - 14 Herramientas IA | Tu Consultor Legal",
-    description: "Suite completa de IA para abogados en Colombia. Investigación jurídica, análisis documental, redacción con IA, CRM clientes, procesos judiciales y más. Prueba gratis.",
-    keywords: "software abogados Colombia, herramientas IA abogados, investigación jurídica IA, CRM abogados, análisis contratos IA, redacción legal IA, procesos judiciales, SUIN Juriscol",
-    canonical: "https://tuconsultorlegal.co/#lawyer-landing",
+    title: "Portal para Abogados | Praxis Hub",
+    description: "Entorno profesional integrado para abogados. Investigación jurídica, análisis documental, redacción, CRM clientes y más. Eleva tu práctica legal.",
+    keywords: "software abogados Colombia, herramientas abogados, investigación jurídica, CRM abogados, análisis contratos, redacción legal, procesos judiciales, SUIN Juriscol",
+    canonical: "https://praxishub.co/#abogados",
     structuredData: {
       "@context": "https://schema.org",
       "@type": "SoftwareApplication",
-      "name": "Tu Consultor Legal - Suite para Abogados",
-      "description": "14 herramientas de inteligencia artificial diseñadas para abogados en Colombia",
+      "name": "Praxis Hub - Suite para Abogados",
+      "description": "Entorno profesional integrado para abogados en Colombia",
       "applicationCategory": "Legal Software",
       "operatingSystem": "Web",
       "offers": {
@@ -49,8 +49,8 @@ export default function LawyerLandingPage({
         "description": "Prueba gratuita disponible"
       },
       "featureList": [
-        "Investigación Legal con IA",
-        "Análisis Documental Automático",
+        "Investigación Legal",
+        "Análisis Documental",
         "Redacción + Copilot Legal",
         "CRM + Portal Clientes",
         "Monitoreo Procesos Judiciales",
@@ -121,79 +121,80 @@ export default function LawyerLandingPage({
   };
 
   const features = [{
-    title: "Investigación Legal IA",
-    description: "Análisis avanzado de jurisprudencia y normativa con inteligencia artificial",
+    title: "Investigación Legal",
+    description: "Análisis avanzado de jurisprudencia y normativa con herramientas especializadas",
     icon: Search,
-    color: "from-blue-500 to-blue-600",
+    color: "from-brand-primary to-brand-accent",
     demo: "Buscar precedentes sobre contratos de arrendamiento",
     component: DemoResearchMockup
   }, {
     title: "SUIN-Juriscol",
     description: "Búsqueda avanzada en el Sistema Único de Información Normativa colombiano",
     icon: Database,
-    color: "from-teal-500 to-teal-600",
+    color: "from-brand-accent to-brand-primary",
     demo: "Consultar leyes, decretos y resoluciones vigentes",
     component: DemoSuinJuriscolMockup
   }, {
     title: "Procesos Judiciales",
     description: "Consulta y monitoreo de procesos con alertas automáticas",
     icon: Gavel,
-    color: "from-amber-500 to-amber-600",
+    color: "from-brand-primary to-brand-dark",
     demo: "Monitorear actuaciones y recibir notificaciones",
     component: DemoProcessMonitorMockup
   }, {
     title: "Análisis Documental",
     description: "Revisión automática de documentos con detección de riesgos",
     icon: Eye,
-    color: "from-orange-500 to-orange-600",
+    color: "from-brand-accent to-brand-dark",
     demo: "Analizar contratos para identificar cláusulas problemáticas",
     component: DemoAnalysisMockup
   }, {
     title: "Redacción + Copilot",
-    description: "Generación de documentos con asistencia IA en tiempo real",
+    description: "Generación de documentos con asistencia en tiempo real",
     icon: PenTool,
-    color: "from-green-500 to-green-600",
+    color: "from-brand-primary to-brand-accent",
     demo: "Redactar demandas con sugerencias inteligentes",
     component: DemoDraftingMockup
   }, {
     title: "Estrategia + Predicción",
     description: "Análisis predictivo y planificación estratégica de casos",
     icon: Target,
-    color: "from-purple-500 to-purple-600",
+    color: "from-brand-dark to-brand-primary",
     demo: "Predecir probabilidad de éxito del caso",
     component: DemoStrategyMockup
   }, {
     title: "CRM + Portal Clientes",
     description: "Gestión de clientes con portal de acceso seguro",
     icon: Users,
-    color: "from-indigo-500 to-indigo-600",
+    color: "from-brand-accent to-brand-primary",
     demo: "Gestionar clientes y compartir documentos",
     component: DemoCRMMockup
   }, {
     title: "Calendario Legal",
     description: "Gestión de términos y audiencias con cálculo automático",
     icon: Calendar,
-    color: "from-cyan-500 to-cyan-600",
+    color: "from-brand-primary to-brand-dark",
     demo: "Calcular vencimientos con días hábiles",
     component: DemoCalendarMockup
   }, {
     title: "Asistente de Voz",
-    description: "Dicta documentos y transcribe audiencias con IA",
+    description: "Dicta documentos y transcribe audiencias",
     icon: Mic,
-    color: "from-violet-500 to-violet-600",
+    color: "from-brand-dark to-brand-accent",
     demo: "Transcribir audiencias automáticamente",
     component: DemoVoiceAssistantMockup
   }, {
-    title: "Agentes + Gamificación",
-    description: "Crea asistentes IA y gana recompensas por usar la plataforma",
+    title: "Agentes Especializados",
+    description: "Crea asistentes especializados para tu práctica",
     icon: Bot,
-    color: "from-pink-500 to-pink-600",
-    demo: "Crear agentes especializados y ganar XP",
+    color: "from-brand-accent to-brand-dark",
+    demo: "Crear agentes especializados para cada área",
     component: DemoAgentsMockup
   }];
+
   const stats = [{
     value: "14",
-    label: "Herramientas IA",
+    label: "Herramientas",
     icon: Brain
   }, {
     value: "1M+",
@@ -201,7 +202,7 @@ export default function LawyerLandingPage({
     icon: Database
   }, {
     value: "95%",
-    label: "Precisión IA",
+    label: "Precisión",
     icon: Target
   }, {
     value: "24/7",
@@ -216,78 +217,77 @@ export default function LawyerLandingPage({
     { name: "Monitor de Procesos", icon: Eye, category: "Investigación" },
     { name: "Análisis Documental", icon: Eye, category: "Análisis" },
     { name: "Predictor de Casos", icon: BarChart3, category: "Análisis" },
-    { name: "Redacción IA", icon: PenTool, category: "Redacción" },
+    { name: "Redacción", icon: PenTool, category: "Redacción" },
     { name: "Copilot Legal", icon: Sparkles, category: "Redacción" },
     { name: "Estrategia Legal", icon: Target, category: "Estrategia" },
     { name: "Calendario Legal", icon: Calendar, category: "Gestión" },
     { name: "CRM Clientes", icon: Users, category: "Gestión" },
     { name: "Portal Clientes", icon: Shield, category: "Gestión" },
     { name: "Asistente de Voz", icon: Mic, category: "Asistencia" },
-    { name: "Agentes IA", icon: Bot, category: "Asistencia" },
+    { name: "Agentes Especializados", icon: Bot, category: "Asistencia" },
   ];
+
   const testimonials = [{
     name: "Dr. María González",
     role: "Socia, González & Asociados",
-    content: "La plataforma ha revolucionado mi práctica. Ahora puedo revisar contratos complejos en minutos y enfocarme en estrategia.",
+    content: "La plataforma ha transformado nuestra práctica. Ahora puedo revisar contratos complejos en minutos y enfocarme en estrategia.",
     rating: 5
   }, {
     name: "Lic. Carlos Ruiz",
     role: "Abogado Litigante",
-    content: "Las herramientas de investigación IA me dan ventaja competitiva. Encuentro precedentes relevantes que antes me tomaban horas.",
+    content: "Las herramientas de investigación me dan claridad en cada caso. Encuentro precedentes relevantes que antes me tomaban horas.",
     rating: 5
   }, {
     name: "Dra. Ana Martínez",
     role: "Directora Legal, TechCorp",
-    content: "El CRM integrado y la automatización han mejorado nuestra eficiencia operativa en un 300%.",
+    content: "El CRM integrado y la automatización han mejorado nuestra eficiencia operativa significativamente.",
     rating: 5
   }];
+
   return <div className="min-h-screen bg-background">
       {/* Sticky Quick Access Bar */}
-      <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b shadow-sm">
+      <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b shadow-sm">
         
       </div>
 
-      {/* Hero Section - Unified Brand Identity */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-[#010f24] via-[#011838] to-[#010f24]">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width=%2260%22%20height=%2260%22%20viewBox=%220%200%2060%2060%22%20xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cg%20fill=%22none%22%20fill-rule=%22evenodd%22%3E%3Cg%20fill=%22%23ffffff%22%20fill-opacity=%220.05%22%3E%3Ccircle%20cx=%2230%22%20cy=%2230%22%20r=%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] animate-pulse"></div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#0372e8]/10 rounded-full blur-[120px]"></div>
+      {/* Hero Section - Professional & Institutional */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-brand-dark via-brand-primary/90 to-brand-dark">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width=%2260%22%20height=%2260%22%20viewBox=%220%200%2060%2060%22%20xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cg%20fill=%22none%22%20fill-rule=%22evenodd%22%3E%3Cg%20fill=%22%23ffffff%22%20fill-opacity=%220.03%22%3E%3Ccircle%20cx=%2230%22%20cy=%2230%22%20r=%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')]"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-brand-accent/5 rounded-full blur-[120px]"></div>
         
         <div className="relative container mx-auto px-4 sm:px-6 py-12 sm:py-16 lg:py-20">
           <div className="max-w-4xl mx-auto">
             {/* Hero Content */}
             <div className={`space-y-6 sm:space-y-8 text-center transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
               {/* Professional Badge */}
-              <div className="inline-flex items-center bg-white/20 backdrop-blur-sm border border-white/30 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium mx-auto">
+              <div className="inline-flex items-center bg-white/10 backdrop-blur-sm border border-white/20 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium mx-auto">
                 <Scale className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
-                <span className="whitespace-nowrap">Portal Exclusivo para Abogados</span>
-                <Shield className="w-3 h-3 sm:w-4 sm:h-4 ml-2 text-yellow-300" />
+                <span className="whitespace-nowrap">Entorno Profesional para Abogados</span>
               </div>
               <div className="space-y-3 sm:space-y-4">
-                
-                
-                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold text-white leading-tight px-4">
-                  El Futuro de la
-                  <span className="block bg-gradient-to-r from-[#f2bb31] to-[#ffd666] bg-clip-text text-transparent">
-                    Práctica Legal
+                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight px-4">
+                  El Entorno que
+                  <span className="block text-brand-accent">
+                    Eleva tu Práctica Legal
                   </span>
                 </h1>
                 
-                <p className="text-base sm:text-lg lg:text-xl text-white/90 max-w-3xl mx-auto leading-relaxed px-4">
-                  Revoluciona tu despacho con inteligencia artificial avanzada. 
-                  Automatiza, analiza y optimiza cada aspecto de tu práctica profesional.
+                <p className="text-base sm:text-lg lg:text-xl text-white/80 max-w-3xl mx-auto leading-relaxed px-4">
+                  Praxis Hub integra las herramientas esenciales en un entorno profesional 
+                  para que puedas ofrecer servicios legales de alta calidad.
                 </p>
               </div>
 
               {/* Clear CTAs for Login/Register */}
               <div className="space-y-3 sm:space-y-4 px-4">
                 <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center max-w-lg mx-auto">
-                  <Button size="lg" variant="accent" onClick={() => window.location.href = '/auth-abogados'} className="font-semibold px-6 sm:px-8 py-4 sm:py-6 shadow-glow transition-all duration-300 hover:scale-105 text-sm sm:text-base w-full sm:w-auto">
+                  <Button size="lg" onClick={() => window.location.href = '/auth-abogados'} className="bg-brand-accent hover:bg-brand-accent/90 text-white font-semibold px-6 sm:px-8 py-4 sm:py-6 shadow-soft transition-all duration-300 hover:scale-105 text-sm sm:text-base w-full sm:w-auto">
                     <User className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                    Crear Cuenta Gratis
+                    Sumarse a Praxis Hub
                     <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />
                   </Button>
                   
-                  <Button variant="outline" size="lg" onClick={() => window.location.href = '/auth-abogados'} className="border-white/50 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white px-6 sm:px-8 py-4 sm:py-6 text-sm sm:text-base w-full sm:w-auto">
+                  <Button variant="outline" size="lg" onClick={() => window.location.href = '/auth-abogados'} className="border-white/30 bg-white/5 backdrop-blur-sm hover:bg-white/10 text-white px-6 sm:px-8 py-4 sm:py-6 text-sm sm:text-base w-full sm:w-auto">
                     <Scale className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                     Ya tengo cuenta
                   </Button>
@@ -296,22 +296,22 @@ export default function LawyerLandingPage({
                 <div className="flex justify-center">
                   <Button variant="ghost" size="sm" onClick={() => document.getElementById('demo-section')?.scrollIntoView({
                   behavior: 'smooth'
-                })} className="text-white/80 hover:text-white hover:bg-white/10 text-xs sm:text-sm">
+                })} className="text-white/70 hover:text-white hover:bg-white/5 text-xs sm:text-sm">
                     <Play className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
-                    Ver cómo funciona
+                    Explorar el entorno
                     <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 ml-1" />
                   </Button>
                 </div>
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 pt-6 sm:pt-8 border-t border-white/20 max-w-4xl mx-auto px-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 pt-6 sm:pt-8 border-t border-white/10 max-w-4xl mx-auto px-4">
                 {stats.map((stat, index) => <div key={index} className="text-center">
                     <div className="flex justify-center mb-1 sm:mb-2">
-                      <stat.icon className="w-5 h-5 sm:w-6 sm:h-6 text-success" />
+                      <stat.icon className="w-5 h-5 sm:w-6 sm:h-6 text-brand-accent" />
                     </div>
                     <div className="text-xl sm:text-2xl font-bold text-white">{stat.value}</div>
-                    <div className="text-xs sm:text-sm text-white/80">{stat.label}</div>
+                    <div className="text-xs sm:text-sm text-white/70">{stat.label}</div>
                   </div>)}
               </div>
             </div>
@@ -323,18 +323,18 @@ export default function LawyerLandingPage({
       <section id="demo-section" className="py-12 sm:py-16 lg:py-20 bg-muted/30">
         <div className="container mx-auto px-4 sm:px-6">
           <div className="text-center mb-10 sm:mb-16">
-            <Badge className="mb-4 sm:mb-6 text-xs sm:text-sm">
+            <Badge className="mb-4 sm:mb-6 text-xs sm:text-sm bg-brand-primary/10 text-brand-primary border-brand-primary/20">
               <Brain className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
-              Capacidades Avanzadas
+              Entorno Integrado
             </Badge>
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 sm:mb-6 px-4">
               Herramientas que 
-              <span className="text-primary"> Transforman </span>
+              <span className="text-brand-primary"> Elevan </span>
               tu Práctica
             </h2>
             <p className="text-base sm:text-lg lg:text-xl text-muted-foreground max-w-3xl mx-auto px-4">
-              Cada herramienta está diseñada específicamente para abogados, 
-              con IA entrenada en derecho colombiano y mejores prácticas internacionales.
+              Cada herramienta está diseñada para abogados, 
+              con estándares de calidad y flujos profesionales integrados.
             </p>
           </div>
 
@@ -347,10 +347,10 @@ export default function LawyerLandingPage({
                   {features.map((feature, index) => (
                     <div key={index} className="flex-[0_0_85%] sm:flex-[0_0_70%] md:flex-[0_0_45%] lg:flex-[0_0_30%] min-w-0">
                       <Card 
-                        className={`h-full cursor-pointer transition-all duration-500 hover:shadow-hero group ${
+                        className={`h-full cursor-pointer transition-all duration-500 hover:shadow-soft group ${
                           activeFeature === index 
-                            ? 'border-primary shadow-card scale-105 bg-gradient-to-br from-background to-primary/5' 
-                            : 'border-border hover:border-primary/50'
+                            ? 'border-brand-primary shadow-soft scale-105 bg-gradient-to-br from-background to-brand-primary/5' 
+                            : 'border-border hover:border-brand-primary/50'
                         }`}
                         onClick={() => setActiveFeature(index)}
                       >
@@ -362,7 +362,7 @@ export default function LawyerLandingPage({
                                 <feature.icon className="w-8 h-8 text-white" />
                               </div>
                               {activeFeature === index && (
-                                <Badge className="bg-success/20 text-success border-success/30">
+                                <Badge className="bg-brand-accent/20 text-brand-accent border-brand-accent/30">
                                   <Zap className="w-3 h-3 mr-1" />
                                   Activo
                                 </Badge>
@@ -380,7 +380,7 @@ export default function LawyerLandingPage({
                             {/* Demo Preview */}
                             <div className="pt-4 border-t border-border/50">
                               <div className="flex items-start space-x-2">
-                                <Sparkles className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                                <Sparkles className="w-4 h-4 text-brand-primary mt-0.5 flex-shrink-0" />
                                 <p className="text-xs text-muted-foreground italic">
                                   {feature.demo}
                                 </p>
@@ -411,7 +411,7 @@ export default function LawyerLandingPage({
                       key={index}
                       onClick={() => setActiveFeature(index)}
                       className={`h-2 rounded-full transition-all ${
-                        activeFeature === index ? 'bg-primary w-8' : 'bg-muted w-2'
+                        activeFeature === index ? 'bg-brand-primary w-8' : 'bg-muted w-2'
                       }`}
                     />
                   ))}
@@ -428,98 +428,98 @@ export default function LawyerLandingPage({
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Live Demo Visual - Laptop Mockup */}
-          <div className="relative max-w-7xl mx-auto">
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-primary/10 rounded-3xl blur-3xl"></div>
-            
-            {/* Laptop Frame */}
-            <div className="relative">
-              {/* Screen */}
-              <div className="relative bg-gray-900 rounded-t-2xl p-2 sm:p-3 shadow-2xl">
-                {/* Browser Header */}
-                <div className="bg-gray-800 rounded-t-xl p-2 sm:p-3 flex items-center gap-2">
-                  <div className="flex gap-1.5">
-                    <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-red-500"></div>
-                    <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-yellow-500"></div>
-                    <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-green-500"></div>
-                  </div>
-                  <div className="flex-1 bg-gray-700 rounded px-3 py-1 text-[10px] sm:text-xs text-gray-400 ml-2">
-                    {features[activeFeature].title}
-                  </div>
+        {/* Live Demo Visual - Laptop Mockup */}
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="absolute inset-0 bg-gradient-to-r from-brand-primary/10 to-brand-accent/5 rounded-3xl blur-3xl"></div>
+          
+          {/* Laptop Frame */}
+          <div className="relative">
+            {/* Screen */}
+            <div className="relative bg-gray-900 rounded-t-2xl p-2 sm:p-3 shadow-2xl">
+              {/* Browser Header */}
+              <div className="bg-gray-800 rounded-t-xl p-2 sm:p-3 flex items-center gap-2">
+                <div className="flex gap-1.5">
+                  <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-red-500"></div>
+                  <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-yellow-500"></div>
+                  <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-green-500"></div>
+                </div>
+                <div className="flex-1 bg-gray-700 rounded px-3 py-1 text-[10px] sm:text-xs text-gray-400 ml-2">
+                  {features[activeFeature].title}
+                </div>
+              </div>
+              
+              {/* Demo Content */}
+              <div className="relative bg-white rounded-b-xl overflow-hidden">
+                <div className="relative w-full h-[400px] sm:h-[500px] lg:h-[600px]">
+                  {features.map((feature, index) => {
+                    const DemoComponent = feature.component;
+                    return <div 
+                      key={index} 
+                      className={`absolute inset-0 transition-all duration-700 ${activeFeature === index ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}
+                    >
+                      <div 
+                        ref={activeFeature === index ? demoScrollRef : null}
+                        className="w-full h-full overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-brand-primary/30 scrollbar-track-gray-100"
+                        style={{ scrollBehavior: 'smooth' }}
+                      >
+                        <DemoComponent />
+                      </div>
+                    </div>;
+                  })}
                 </div>
                 
-                {/* Demo Content */}
-                <div className="relative bg-white rounded-b-xl overflow-hidden">
-                  <div className="relative w-full h-[400px] sm:h-[500px] lg:h-[600px]">
-                    {features.map((feature, index) => {
-                      const DemoComponent = feature.component;
-                      return <div 
-                        key={index} 
-                        className={`absolute inset-0 transition-all duration-700 ${activeFeature === index ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}
-                      >
-                        <div 
-                          ref={activeFeature === index ? demoScrollRef : null}
-                          className="w-full h-full overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-primary/30 scrollbar-track-gray-100"
-                          style={{ scrollBehavior: 'smooth' }}
-                        >
-                          <DemoComponent />
-                        </div>
-                      </div>;
-                    })}
-                  </div>
-                  
-                  {/* Auto-scroll Indicator */}
-                  <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-sm text-white text-xs px-3 py-2 rounded-lg flex items-center gap-2 pointer-events-none">
-                    <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
-                    <span>Auto-scroll activo</span>
-                  </div>
-                  
-                  {/* Navigation Dots */}
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 bg-black/70 backdrop-blur-sm px-4 py-2 rounded-full">
-                    {features.map((_, index) => <button 
-                      key={index} 
-                      onClick={() => setActiveFeature(index)} 
-                      className={`rounded-full transition-all duration-300 ${
-                        activeFeature === index 
-                          ? 'bg-white w-8 h-2' 
-                          : 'bg-white/50 hover:bg-white/75 w-2 h-2'
-                      }`} 
-                      aria-label={`Ver demo ${index + 1}`} 
-                    />)}
-                  </div>
+                {/* Auto-scroll Indicator */}
+                <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-sm text-white text-xs px-3 py-2 rounded-lg flex items-center gap-2 pointer-events-none">
+                  <div className="w-2 h-2 rounded-full bg-brand-accent animate-pulse"></div>
+                  <span>Vista previa activa</span>
                 </div>
-              </div>
-              
-              {/* Laptop Base */}
-              <div className="relative">
-                <div className="h-2 sm:h-3 bg-gradient-to-b from-gray-800 to-gray-900"></div>
-                <div className="h-3 sm:h-4 bg-gradient-to-b from-gray-900 to-gray-950 rounded-b-2xl"></div>
-                <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-gray-700 to-transparent"></div>
+                
+                {/* Navigation Dots */}
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 bg-black/70 backdrop-blur-sm px-4 py-2 rounded-full">
+                  {features.map((_, index) => <button 
+                    key={index} 
+                    onClick={() => setActiveFeature(index)} 
+                    className={`rounded-full transition-all duration-300 ${
+                      activeFeature === index 
+                        ? 'bg-white w-8 h-2' 
+                        : 'bg-white/50 hover:bg-white/75 w-2 h-2'
+                    }`} 
+                    aria-label={`Ver demo ${index + 1}`} 
+                  />)}
+                </div>
               </div>
             </div>
             
-            {/* Feature Info Below */}
-            <div className="mt-8 text-center space-y-4">
-              <div className="space-y-2">
-                <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold">{features[activeFeature].title}</h3>
-                <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto">{features[activeFeature].description}</p>
-              </div>
-              
-              <div className="flex items-center justify-center gap-3 text-sm text-muted-foreground">
-                <Sparkles className="w-4 h-4 text-primary" />
-                <span>Ejemplo: {features[activeFeature].demo}</span>
-              </div>
-              
-              <Button 
-                size="lg" 
-                onClick={() => window.location.href = '/auth-abogados'} 
-                className="mt-4"
-              >
-                Probar Ahora
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
+            {/* Laptop Base */}
+            <div className="relative">
+              <div className="h-2 sm:h-3 bg-gradient-to-b from-gray-800 to-gray-900"></div>
+              <div className="h-3 sm:h-4 bg-gradient-to-b from-gray-900 to-gray-950 rounded-b-2xl"></div>
+              <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-gray-700 to-transparent"></div>
             </div>
+          </div>
+          
+          {/* Feature Info Below */}
+          <div className="mt-8 text-center space-y-4">
+            <div className="space-y-2">
+              <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold">{features[activeFeature].title}</h3>
+              <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto">{features[activeFeature].description}</p>
+            </div>
+            
+            <div className="flex items-center justify-center gap-3 text-sm text-muted-foreground">
+              <Sparkles className="w-4 h-4 text-brand-primary" />
+              <span>Ejemplo: {features[activeFeature].demo}</span>
+            </div>
+            
+            <Button 
+              size="lg" 
+              onClick={() => window.location.href = '/auth-abogados'} 
+              className="mt-4 bg-brand-primary hover:bg-brand-primary/90"
+            >
+              Explorar el Entorno
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
           </div>
         </div>
       </section>
@@ -528,15 +528,15 @@ export default function LawyerLandingPage({
       <section className="py-12 sm:py-16 lg:py-20 bg-muted/30">
         <div className="container mx-auto px-4 sm:px-6">
           <div className="text-center mb-10 sm:mb-12">
-            <Badge className="mb-4 sm:mb-6 text-xs sm:text-sm">
+            <Badge className="mb-4 sm:mb-6 text-xs sm:text-sm bg-brand-accent/10 text-brand-accent border-brand-accent/20">
               <Zap className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
               Suite Completa
             </Badge>
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 sm:mb-6 px-4">
-              Todo lo que Incluye el <span className="text-primary">Portal</span>
+              Todo lo que Incluye el <span className="text-brand-primary">Entorno</span>
             </h2>
             <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto px-4">
-              14 herramientas de inteligencia artificial diseñadas exclusivamente para abogados
+              14 herramientas profesionales diseñadas exclusivamente para abogados
             </p>
           </div>
 
@@ -544,11 +544,11 @@ export default function LawyerLandingPage({
             {allTools.map((tool, index) => (
               <Card 
                 key={index} 
-                className="border-0 shadow-sm hover:shadow-card transition-all duration-300 hover:scale-105 cursor-pointer group"
+                className="border-0 shadow-sm hover:shadow-soft transition-all duration-300 hover:scale-105 cursor-pointer group"
               >
                 <CardContent className="p-4 text-center">
-                  <div className="p-3 bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl mx-auto w-fit mb-3 group-hover:from-primary/20 group-hover:to-primary/10 transition-colors">
-                    <tool.icon className="w-6 h-6 text-primary" />
+                  <div className="p-3 bg-gradient-to-br from-brand-primary/10 to-brand-primary/5 rounded-xl mx-auto w-fit mb-3 group-hover:from-brand-primary/20 group-hover:to-brand-primary/10 transition-colors">
+                    <tool.icon className="w-6 h-6 text-brand-primary" />
                   </div>
                   <h4 className="text-xs sm:text-sm font-medium leading-tight">{tool.name}</h4>
                   <p className="text-[10px] text-muted-foreground mt-1">{tool.category}</p>
@@ -558,9 +558,9 @@ export default function LawyerLandingPage({
           </div>
 
           <div className="text-center mt-8 sm:mt-10">
-            <div className="inline-flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-full text-sm text-primary font-medium">
+            <div className="inline-flex items-center gap-2 bg-brand-primary/10 px-4 py-2 rounded-full text-sm text-brand-primary font-medium">
               <Trophy className="w-4 h-4" />
-              <span>+ Sistema de Gamificación con logros y recompensas</span>
+              <span>+ Sistema de reconocimientos y progreso profesional</span>
             </div>
           </div>
         </div>
@@ -570,21 +570,21 @@ export default function LawyerLandingPage({
       <section className="py-12 sm:py-16 lg:py-20 bg-background">
         <div className="container mx-auto px-4 sm:px-6">
           <div className="text-center mb-10 sm:mb-16">
-            <Badge className="mb-4 sm:mb-6 text-xs sm:text-sm">
+            <Badge className="mb-4 sm:mb-6 text-xs sm:text-sm bg-brand-primary/10 text-brand-primary border-brand-primary/20">
               <Star className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
-              Testimonios
+              Experiencias
             </Badge>
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 sm:mb-6 px-4">
-              Casos de <span className="text-primary">Éxito</span> Reales
+              Casos de <span className="text-brand-primary">Éxito</span> Reales
             </h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
-            {testimonials.map((testimonial, index) => <Card key={index} className="border-0 shadow-card hover:shadow-hero transition-all duration-300">
+            {testimonials.map((testimonial, index) => <Card key={index} className="border-0 shadow-soft hover:shadow-card transition-all duration-300">
                 <CardContent className="p-6">
                   <div className="space-y-4">
                     <div className="flex space-x-1">
-                      {[...Array(testimonial.rating)].map((_, i) => <Star key={i} className="w-4 h-4 fill-success text-success" />)}
+                      {[...Array(testimonial.rating)].map((_, i) => <Star key={i} className="w-4 h-4 fill-brand-accent text-brand-accent" />)}
                     </div>
                     
                     <p className="text-muted-foreground italic">
@@ -603,12 +603,15 @@ export default function LawyerLandingPage({
       </section>
 
       {/* CTA Section */}
-      <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-r from-[#010f24] via-[#0372e8] to-[#011838] text-center text-white">
+      <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-r from-brand-dark via-brand-primary to-brand-dark text-center text-white">
         <div className="container mx-auto px-4 sm:px-6">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 sm:mb-6 px-4">¿Listo para transformar tu práctica legal?</h2>
-          <Button size="lg" variant="secondary" onClick={() => window.location.href = '/auth-abogados'} className="font-semibold px-6 sm:px-8 py-4 sm:py-6 text-sm sm:text-base w-full sm:w-auto max-w-xs sm:max-w-none mx-4 sm:mx-0">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 sm:mb-6 px-4">¿Listo para elevar tu práctica legal?</h2>
+          <p className="text-lg text-white/80 max-w-2xl mx-auto mb-8">
+            Únete al entorno profesional que potencia tu trabajo y fortalece la confianza con tus clientes.
+          </p>
+          <Button size="lg" onClick={() => window.location.href = '/auth-abogados'} className="bg-white text-brand-primary hover:bg-white/90 font-semibold px-6 sm:px-8 py-4 sm:py-6 text-sm sm:text-base w-full sm:w-auto max-w-xs sm:max-w-none mx-4 sm:mx-0">
             <User className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-            Comenzar Ahora
+            Sumarse a Praxis Hub
             <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />
           </Button>
         </div>

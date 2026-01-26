@@ -1,7 +1,7 @@
 // Email templates for Supabase Auth email flows
 
 export const getConfirmSignupTemplate = (confirmationUrl: string, userType: 'user' | 'lawyer') => {
-  const platformName = userType === 'lawyer' ? 'Portal del Abogado' : 'Tu Consultor Legal';
+  const platformName = userType === 'lawyer' ? 'Portal del Abogado - Praxis Hub' : 'Praxis Hub';
   const greeting = userType === 'lawyer' ? 'Estimado colega' : 'Hola';
 
   return `
@@ -19,7 +19,7 @@ export const getConfirmSignupTemplate = (confirmationUrl: string, userType: 'use
             <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
               <!-- Header -->
               <tr>
-                <td style="background: linear-gradient(135deg, #172554 0%, #1e40af 100%); padding: 40px 30px; text-align: center;">
+                <td style="background: linear-gradient(135deg, #1a1a2e 0%, #3d5a5a 100%); padding: 40px 30px; text-align: center;">
                   <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">
                     ${platformName}
                   </h1>
@@ -29,8 +29,8 @@ export const getConfirmSignupTemplate = (confirmationUrl: string, userType: 'use
               <!-- Content -->
               <tr>
                 <td style="padding: 40px 30px;">
-                  <h2 style="color: #172554; margin: 0 0 20px 0; font-size: 24px;">
-                    ¡Bienvenido! 🎉
+                  <h2 style="color: #1a1a2e; margin: 0 0 20px 0; font-size: 24px;">
+                    ¡Bienvenido! 
                   </h2>
                   <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
                     ${greeting}, gracias por registrarte en ${platformName}. Estás a un paso de comenzar.
@@ -43,7 +43,7 @@ export const getConfirmSignupTemplate = (confirmationUrl: string, userType: 'use
                   <table width="100%" cellpadding="0" cellspacing="0">
                     <tr>
                       <td align="center" style="padding: 20px 0;">
-                        <a href="${confirmationUrl}" style="background-color: #172554; color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 6px; font-size: 16px; font-weight: bold; display: inline-block;">
+                        <a href="${confirmationUrl}" style="background-color: #3d5a5a; color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 6px; font-size: 16px; font-weight: bold; display: inline-block;">
                           Confirmar mi correo
                         </a>
                       </td>
@@ -53,7 +53,7 @@ export const getConfirmSignupTemplate = (confirmationUrl: string, userType: 'use
                   <p style="color: #6b7280; font-size: 14px; line-height: 1.6; margin: 30px 0 0 0;">
                     Si no puedes hacer clic en el botón, copia y pega este enlace en tu navegador:
                   </p>
-                  <p style="color: #3b82f6; font-size: 14px; word-break: break-all; margin: 10px 0 0 0;">
+                  <p style="color: #3d5a5a; font-size: 14px; word-break: break-all; margin: 10px 0 0 0;">
                     ${confirmationUrl}
                   </p>
                 </td>
@@ -66,7 +66,7 @@ export const getConfirmSignupTemplate = (confirmationUrl: string, userType: 'use
                     Si no creaste esta cuenta, puedes ignorar este mensaje.
                   </p>
                   <p style="color: #6b7280; font-size: 12px; margin: 0;">
-                    © ${new Date().getFullYear()} Tu Consultor Legal. Todos los derechos reservados.
+                    © ${new Date().getFullYear()} Praxis Hub. Todos los derechos reservados.
                   </p>
                 </td>
               </tr>
@@ -80,7 +80,7 @@ export const getConfirmSignupTemplate = (confirmationUrl: string, userType: 'use
 };
 
 export const getMagicLinkTemplate = (magicLink: string, userType: 'user' | 'lawyer') => {
-  const platformName = userType === 'lawyer' ? 'Portal del Abogado' : 'Tu Consultor Legal';
+  const platformName = userType === 'lawyer' ? 'Portal del Abogado - Praxis Hub' : 'Praxis Hub';
   
   return `
     <!DOCTYPE html>
@@ -96,7 +96,7 @@ export const getMagicLinkTemplate = (magicLink: string, userType: 'user' | 'lawy
           <td align="center">
             <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
               <tr>
-                <td style="background: linear-gradient(135deg, #172554 0%, #1e40af 100%); padding: 40px 30px; text-align: center;">
+                <td style="background: linear-gradient(135deg, #1a1a2e 0%, #3d5a5a 100%); padding: 40px 30px; text-align: center;">
                   <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">
                     ${platformName}
                   </h1>
@@ -105,8 +105,8 @@ export const getMagicLinkTemplate = (magicLink: string, userType: 'user' | 'lawy
               
               <tr>
                 <td style="padding: 40px 30px;">
-                  <h2 style="color: #172554; margin: 0 0 20px 0; font-size: 24px;">
-                    🔗 Tu enlace mágico de acceso
+                  <h2 style="color: #1a1a2e; margin: 0 0 20px 0; font-size: 24px;">
+                    🔗 Tu enlace de acceso
                   </h2>
                   <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
                     Haz clic en el botón de abajo para iniciar sesión sin contraseña:
@@ -115,21 +115,21 @@ export const getMagicLinkTemplate = (magicLink: string, userType: 'user' | 'lawy
                   <table width="100%" cellpadding="0" cellspacing="0">
                     <tr>
                       <td align="center" style="padding: 20px 0;">
-                        <a href="${magicLink}" style="background-color: #172554; color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 6px; font-size: 16px; font-weight: bold; display: inline-block;">
+                        <a href="${magicLink}" style="background-color: #3d5a5a; color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 6px; font-size: 16px; font-weight: bold; display: inline-block;">
                           Iniciar Sesión
                         </a>
                       </td>
                     </tr>
                   </table>
                   
-                  <p style="color: #ef4444; font-size: 14px; line-height: 1.6; margin: 20px 0 0 0; padding: 15px; background-color: #fef2f2; border-left: 4px solid #ef4444; border-radius: 4px;">
+                  <p style="color: #dc2626; font-size: 14px; line-height: 1.6; margin: 20px 0 0 0; padding: 15px; background-color: #fef2f2; border-left: 4px solid #dc2626; border-radius: 4px;">
                     ⚠️ Este enlace expira en 1 hora y solo puede usarse una vez.
                   </p>
                   
                   <p style="color: #6b7280; font-size: 14px; line-height: 1.6; margin: 30px 0 0 0;">
                     Si no puedes hacer clic en el botón, copia y pega este enlace en tu navegador:
                   </p>
-                  <p style="color: #3b82f6; font-size: 14px; word-break: break-all; margin: 10px 0 0 0;">
+                  <p style="color: #3d5a5a; font-size: 14px; word-break: break-all; margin: 10px 0 0 0;">
                     ${magicLink}
                   </p>
                 </td>
@@ -141,7 +141,7 @@ export const getMagicLinkTemplate = (magicLink: string, userType: 'user' | 'lawy
                     Si no solicitaste este enlace, puedes ignorar este mensaje de forma segura.
                   </p>
                   <p style="color: #6b7280; font-size: 12px; margin: 0;">
-                    © ${new Date().getFullYear()} Tu Consultor Legal. Todos los derechos reservados.
+                    © ${new Date().getFullYear()} Praxis Hub. Todos los derechos reservados.
                   </p>
                 </td>
               </tr>
@@ -155,7 +155,7 @@ export const getMagicLinkTemplate = (magicLink: string, userType: 'user' | 'lawy
 };
 
 export const getResetPasswordTemplate = (resetLink: string, userType: 'user' | 'lawyer') => {
-  const platformName = userType === 'lawyer' ? 'Portal del Abogado' : 'Tu Consultor Legal';
+  const platformName = userType === 'lawyer' ? 'Portal del Abogado - Praxis Hub' : 'Praxis Hub';
   
   return `
     <!DOCTYPE html>
@@ -171,7 +171,7 @@ export const getResetPasswordTemplate = (resetLink: string, userType: 'user' | '
           <td align="center">
             <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
               <tr>
-                <td style="background: linear-gradient(135deg, #172554 0%, #1e40af 100%); padding: 40px 30px; text-align: center;">
+                <td style="background: linear-gradient(135deg, #1a1a2e 0%, #3d5a5a 100%); padding: 40px 30px; text-align: center;">
                   <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">
                     ${platformName}
                   </h1>
@@ -180,7 +180,7 @@ export const getResetPasswordTemplate = (resetLink: string, userType: 'user' | '
               
               <tr>
                 <td style="padding: 40px 30px;">
-                  <h2 style="color: #172554; margin: 0 0 20px 0; font-size: 24px;">
+                  <h2 style="color: #1a1a2e; margin: 0 0 20px 0; font-size: 24px;">
                     🔐 Restablece tu contraseña
                   </h2>
                   <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
@@ -190,21 +190,21 @@ export const getResetPasswordTemplate = (resetLink: string, userType: 'user' | '
                   <table width="100%" cellpadding="0" cellspacing="0">
                     <tr>
                       <td align="center" style="padding: 20px 0;">
-                        <a href="${resetLink}" style="background-color: #172554; color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 6px; font-size: 16px; font-weight: bold; display: inline-block;">
+                        <a href="${resetLink}" style="background-color: #3d5a5a; color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 6px; font-size: 16px; font-weight: bold; display: inline-block;">
                           Restablecer Contraseña
                         </a>
                       </td>
                     </tr>
                   </table>
                   
-                  <p style="color: #ef4444; font-size: 14px; line-height: 1.6; margin: 20px 0 0 0; padding: 15px; background-color: #fef2f2; border-left: 4px solid #ef4444; border-radius: 4px;">
+                  <p style="color: #dc2626; font-size: 14px; line-height: 1.6; margin: 20px 0 0 0; padding: 15px; background-color: #fef2f2; border-left: 4px solid #dc2626; border-radius: 4px;">
                     ⚠️ Este enlace expira en 1 hora.
                   </p>
                   
                   <p style="color: #6b7280; font-size: 14px; line-height: 1.6; margin: 30px 0 0 0;">
                     Si no puedes hacer clic en el botón, copia y pega este enlace en tu navegador:
                   </p>
-                  <p style="color: #3b82f6; font-size: 14px; word-break: break-all; margin: 10px 0 0 0;">
+                  <p style="color: #3d5a5a; font-size: 14px; word-break: break-all; margin: 10px 0 0 0;">
                     ${resetLink}
                   </p>
                 </td>
@@ -216,7 +216,7 @@ export const getResetPasswordTemplate = (resetLink: string, userType: 'user' | '
                     Si no solicitaste restablecer tu contraseña, puedes ignorar este mensaje de forma segura.
                   </p>
                   <p style="color: #6b7280; font-size: 12px; margin: 0;">
-                    © ${new Date().getFullYear()} Tu Consultor Legal. Todos los derechos reservados.
+                    © ${new Date().getFullYear()} Praxis Hub. Todos los derechos reservados.
                   </p>
                 </td>
               </tr>
@@ -230,7 +230,7 @@ export const getResetPasswordTemplate = (resetLink: string, userType: 'user' | '
 };
 
 export const getChangeEmailTemplate = (confirmationUrl: string, newEmail: string, userType: 'user' | 'lawyer') => {
-  const platformName = userType === 'lawyer' ? 'Portal del Abogado' : 'Tu Consultor Legal';
+  const platformName = userType === 'lawyer' ? 'Portal del Abogado - Praxis Hub' : 'Praxis Hub';
   
   return `
     <!DOCTYPE html>
@@ -246,7 +246,7 @@ export const getChangeEmailTemplate = (confirmationUrl: string, newEmail: string
           <td align="center">
             <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
               <tr>
-                <td style="background: linear-gradient(135deg, #172554 0%, #1e40af 100%); padding: 40px 30px; text-align: center;">
+                <td style="background: linear-gradient(135deg, #1a1a2e 0%, #3d5a5a 100%); padding: 40px 30px; text-align: center;">
                   <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">
                     ${platformName}
                   </h1>
@@ -255,13 +255,13 @@ export const getChangeEmailTemplate = (confirmationUrl: string, newEmail: string
               
               <tr>
                 <td style="padding: 40px 30px;">
-                  <h2 style="color: #172554; margin: 0 0 20px 0; font-size: 24px;">
+                  <h2 style="color: #1a1a2e; margin: 0 0 20px 0; font-size: 24px;">
                     🔄 Confirma tu nuevo correo electrónico
                   </h2>
                   <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
                     Has solicitado cambiar tu correo electrónico a:
                   </p>
-                  <p style="color: #172554; font-size: 18px; font-weight: bold; margin: 0 0 30px 0;">
+                  <p style="color: #1a1a2e; font-size: 18px; font-weight: bold; margin: 0 0 30px 0;">
                     ${newEmail}
                   </p>
                   <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">
@@ -271,7 +271,7 @@ export const getChangeEmailTemplate = (confirmationUrl: string, newEmail: string
                   <table width="100%" cellpadding="0" cellspacing="0">
                     <tr>
                       <td align="center" style="padding: 20px 0;">
-                        <a href="${confirmationUrl}" style="background-color: #172554; color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 6px; font-size: 16px; font-weight: bold; display: inline-block;">
+                        <a href="${confirmationUrl}" style="background-color: #3d5a5a; color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 6px; font-size: 16px; font-weight: bold; display: inline-block;">
                           Confirmar Cambio de Correo
                         </a>
                       </td>
@@ -281,7 +281,7 @@ export const getChangeEmailTemplate = (confirmationUrl: string, newEmail: string
                   <p style="color: #6b7280; font-size: 14px; line-height: 1.6; margin: 30px 0 0 0;">
                     Si no puedes hacer clic en el botón, copia y pega este enlace en tu navegador:
                   </p>
-                  <p style="color: #3b82f6; font-size: 14px; word-break: break-all; margin: 10px 0 0 0;">
+                  <p style="color: #3d5a5a; font-size: 14px; word-break: break-all; margin: 10px 0 0 0;">
                     ${confirmationUrl}
                   </p>
                 </td>
@@ -293,7 +293,7 @@ export const getChangeEmailTemplate = (confirmationUrl: string, newEmail: string
                     Si no solicitaste este cambio, contacta inmediatamente a nuestro soporte.
                   </p>
                   <p style="color: #6b7280; font-size: 12px; margin: 0;">
-                    © ${new Date().getFullYear()} Tu Consultor Legal. Todos los derechos reservados.
+                    © ${new Date().getFullYear()} Praxis Hub. Todos los derechos reservados.
                   </p>
                 </td>
               </tr>
@@ -307,7 +307,7 @@ export const getChangeEmailTemplate = (confirmationUrl: string, newEmail: string
 };
 
 export const getInvitationTemplate = (invitationUrl: string, userType: 'user' | 'lawyer', invitedBy: string) => {
-  const platformName = userType === 'lawyer' ? 'Portal del Abogado' : 'Tu Consultor Legal';
+  const platformName = userType === 'lawyer' ? 'Portal del Abogado - Praxis Hub' : 'Praxis Hub';
   const welcome = userType === 'lawyer' 
     ? 'Has sido invitado a unirte a nuestro equipo de abogados en' 
     : 'Has sido invitado a unirte a';
@@ -326,7 +326,7 @@ export const getInvitationTemplate = (invitationUrl: string, userType: 'user' | 
           <td align="center">
             <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
               <tr>
-                <td style="background: linear-gradient(135deg, #172554 0%, #1e40af 100%); padding: 40px 30px; text-align: center;">
+                <td style="background: linear-gradient(135deg, #1a1a2e 0%, #3d5a5a 100%); padding: 40px 30px; text-align: center;">
                   <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">
                     ${platformName}
                   </h1>
@@ -335,7 +335,7 @@ export const getInvitationTemplate = (invitationUrl: string, userType: 'user' | 
               
               <tr>
                 <td style="padding: 40px 30px;">
-                  <h2 style="color: #172554; margin: 0 0 20px 0; font-size: 24px;">
+                  <h2 style="color: #1a1a2e; margin: 0 0 20px 0; font-size: 24px;">
                     📧 ¡Has sido invitado!
                   </h2>
                   <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
@@ -348,7 +348,7 @@ export const getInvitationTemplate = (invitationUrl: string, userType: 'user' | 
                   <table width="100%" cellpadding="0" cellspacing="0">
                     <tr>
                       <td align="center" style="padding: 20px 0;">
-                        <a href="${invitationUrl}" style="background-color: #172554; color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 6px; font-size: 16px; font-weight: bold; display: inline-block;">
+                        <a href="${invitationUrl}" style="background-color: #3d5a5a; color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 6px; font-size: 16px; font-weight: bold; display: inline-block;">
                           Aceptar Invitación
                         </a>
                       </td>
@@ -358,7 +358,7 @@ export const getInvitationTemplate = (invitationUrl: string, userType: 'user' | 
                   <p style="color: #6b7280; font-size: 14px; line-height: 1.6; margin: 30px 0 0 0;">
                     Si no puedes hacer clic en el botón, copia y pega este enlace en tu navegador:
                   </p>
-                  <p style="color: #3b82f6; font-size: 14px; word-break: break-all; margin: 10px 0 0 0;">
+                  <p style="color: #3d5a5a; font-size: 14px; word-break: break-all; margin: 10px 0 0 0;">
                     ${invitationUrl}
                   </p>
                 </td>
@@ -367,10 +367,10 @@ export const getInvitationTemplate = (invitationUrl: string, userType: 'user' | 
               <tr>
                 <td style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
                   <p style="color: #6b7280; font-size: 12px; margin: 0 0 10px 0;">
-                    Si no esperabas esta invitación, puedes ignorar este mensaje.
+                    Si no esperabas esta invitación, puedes ignorar este mensaje de forma segura.
                   </p>
                   <p style="color: #6b7280; font-size: 12px; margin: 0;">
-                    © ${new Date().getFullYear()} Tu Consultor Legal. Todos los derechos reservados.
+                    © ${new Date().getFullYear()} Praxis Hub. Todos los derechos reservados.
                   </p>
                 </td>
               </tr>

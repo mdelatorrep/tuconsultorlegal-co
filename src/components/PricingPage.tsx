@@ -32,7 +32,7 @@ const personalPlans: PricingPlan[] = [
     id: "personal-basic",
     name: "Básico Personal",
     price: 0,
-    description: "Perfecto para necesidades ocasionales",
+    description: "Acceso inicial al entorno",
     documents: 1,
     consultations: 1,
     features: [
@@ -48,7 +48,7 @@ const personalPlans: PricingPlan[] = [
     id: "personal-standard",
     name: "Estándar Personal",
     price: 49900,
-    description: "Para personas con necesidades regulares",
+    description: "Para necesidades regulares",
     documents: 5,
     consultations: 3,
     features: [
@@ -155,16 +155,16 @@ const businessPlans: PricingPlan[] = [
 export default function PricingPage({ onOpenChat, onNavigate }: PricingPageProps) {
   // SEO optimization for pricing page
   useSEO({
-    title: "Planes y Precios - IA Legal para Abogados y Documentos | Tu Consultor Legal",
-    description: "Planes flexibles de IA legal. Suite completa para abogados y generación de documentos para personas y empresas. Desde $0 COP. Prueba gratis disponible.",
-    keywords: "precios software abogados, planes IA legal, tarifas documentos legales, costos herramientas abogados, precios CRM legal, planes empresariales legales",
-    canonical: "https://tuconsultorlegal.co/#precios",
+    title: "Planes y Precios | Praxis Hub",
+    description: "Planes de acceso al entorno profesional. Suite para abogados y generación de documentos para personas y empresas. Desde $0 COP.",
+    keywords: "precios software abogados, planes legal, tarifas documentos legales, costos herramientas abogados, precios CRM legal, planes empresariales legales",
+    canonical: "https://praxishub.co/#precios",
     structuredData: {
       "@context": "https://schema.org",
       "@type": "WebPage",
-      "name": "Planes y Precios - Tu Consultor Legal",
-      "description": "Planes de IA legal para abogados y documentos legales",
-      "url": "https://tuconsultorlegal.co/#precios",
+      "name": "Planes y Precios - Praxis Hub",
+      "description": "Planes de acceso al entorno profesional legal",
+      "url": "https://praxishub.co/#precios",
       "offers": {
         "@type": "AggregateOffer",
         "lowPrice": "0",
@@ -193,10 +193,10 @@ export default function PricingPage({ onOpenChat, onNavigate }: PricingPageProps
   };
 
   const renderPlanCard = (plan: PricingPlan) => (
-    <Card key={plan.id} className={`relative h-full flex flex-col ${plan.popular ? 'ring-2 ring-primary' : ''}`}>
+    <Card key={plan.id} className={`relative h-full flex flex-col ${plan.popular ? 'ring-2 ring-brand-primary' : ''}`}>
       {plan.badge && (
         <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-          <Badge variant={plan.popular ? "default" : plan.recommended ? "secondary" : "outline"}>
+          <Badge variant={plan.popular ? "default" : plan.recommended ? "secondary" : "outline"} className={plan.popular ? "bg-brand-primary" : ""}>
             {plan.badge}
           </Badge>
         </div>
@@ -204,7 +204,7 @@ export default function PricingPage({ onOpenChat, onNavigate }: PricingPageProps
       
       <CardHeader className="text-center pb-4">
         <div className="flex justify-center mb-3">
-          <div className={`p-3 rounded-full ${plan.popular ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+          <div className={`p-3 rounded-full ${plan.popular ? 'bg-brand-primary text-white' : 'bg-muted'}`}>
             {plan.icon}
           </div>
         </div>
@@ -215,7 +215,7 @@ export default function PricingPage({ onOpenChat, onNavigate }: PricingPageProps
           {plan.id === "business-enterprise" ? (
             <div className="text-2xl font-bold">Contactar</div>
           ) : plan.price === 0 ? (
-            <div className="text-2xl font-bold text-success">Gratis</div>
+            <div className="text-2xl font-bold text-brand-accent">Gratis</div>
           ) : (
             <div>
               {plan.originalPrice && (
@@ -251,7 +251,7 @@ export default function PricingPage({ onOpenChat, onNavigate }: PricingPageProps
         <div className="space-y-3 mb-6 flex-1">
           {plan.features.map((feature, index) => (
             <div key={index} className="flex items-start gap-2">
-              <Check className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
+              <Check className="h-4 w-4 text-brand-accent mt-0.5 flex-shrink-0" />
               <span className="text-sm">{feature}</span>
             </div>
           ))}
@@ -278,8 +278,8 @@ export default function PricingPage({ onOpenChat, onNavigate }: PricingPageProps
             Planes y Precios
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Elige el plan perfecto para tus necesidades legales. Desde personas hasta grandes empresas, 
-            tenemos la solución ideal para cada volumen de documentos y asesorías.
+            Elige el plan adecuado para tus necesidades legales. Desde personas hasta grandes empresas, 
+            tenemos la solución para cada volumen de documentos y asesorías.
           </p>
         </div>
 
@@ -318,11 +318,11 @@ export default function PricingPage({ onOpenChat, onNavigate }: PricingPageProps
             <div className="space-y-6">
               <div>
                 <h3 className="font-semibold mb-2">¿Puedo cambiar de plan en cualquier momento?</h3>
-                <p className="text-muted-foreground">Sí, puedes actualizar o degradar tu plan en cualquier momento. Los cambios se aplicarán en tu próximo ciclo de facturación.</p>
+                <p className="text-muted-foreground">Sí, puedes actualizar o ajustar tu plan en cualquier momento. Los cambios se aplicarán en tu próximo ciclo de facturación.</p>
               </div>
               <div>
                 <h3 className="font-semibold mb-2">¿Qué sucede si excedo mi límite de documentos?</h3>
-                <p className="text-muted-foreground">Te notificaremos cuando estés cerca del límite. Puedes actualizar tu plan o pagar por documentos adicionales.</p>
+                <p className="text-muted-foreground">Te notificaremos cuando estés cerca del límite. Puedes actualizar tu plan o adquirir documentos adicionales.</p>
               </div>
               <div>
                 <h3 className="font-semibold mb-2">¿Incluyen revisión legal todos los planes?</h3>
@@ -351,11 +351,12 @@ export default function PricingPage({ onOpenChat, onNavigate }: PricingPageProps
           <div className="bg-muted/50 rounded-2xl p-8 max-w-4xl mx-auto">
             <h2 className="text-3xl font-bold mb-4">¿No estás seguro qué plan elegir?</h2>
             <p className="text-muted-foreground mb-6">
-              Nuestro equipo puede ayudarte a encontrar el plan perfecto para tus necesidades específicas.
+              Nuestro equipo puede ayudarte a encontrar el plan adecuado para tus necesidades específicas.
             </p>
             <Button 
               size="lg" 
-              onClick={() => onNavigate("user-dashboard")}
+              onClick={() => onNavigate?.("contacto")}
+              className="bg-brand-primary hover:bg-brand-primary/90"
             >
               Hablar con un Asesor
             </Button>

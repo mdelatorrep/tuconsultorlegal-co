@@ -27,7 +27,7 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
-      content: '¡Hola! Soy Lexi, tu asistente legal inteligente de tuconsultorlegal.co 🤖⚖️\n\nTengo acceso a un equipo de especialistas legales y puedo ayudarte con:\n\n🎯 CONSULTAS ESPECIALIZADAS:\n• Derecho Civil (contratos, propiedad, familia)\n• Derecho Laboral (empleos, prestaciones)\n• Derecho Comercial (empresas, sociedades)\n• Derecho Administrativo y más\n\n📋 SERVICIOS GENERALES:\n• Información sobre documentos legales\n• Orientación sobre trámites\n• Consultas básicas de legislación\n\nCuando detecte que necesitas asesoría especializada, te conectaré automáticamente con el experto apropiado.\n\n¿En qué puedo ayudarte hoy?',
+      content: '¡Hola! Soy Lexi, tu asistente legal en Praxis Hub 🤖⚖️\n\nTengo acceso a un equipo de especialistas legales y puedo ayudarte con:\n\n🎯 CONSULTAS ESPECIALIZADAS:\n• Derecho Civil (contratos, propiedad, familia)\n• Derecho Laboral (empleos, prestaciones)\n• Derecho Comercial (empresas, sociedades)\n• Derecho Administrativo y más\n\n📋 SERVICIOS GENERALES:\n• Información sobre documentos legales\n• Orientación sobre trámites\n• Consultas básicas de legislación\n\nCuando detecte que necesitas asesoría especializada, te conectaré automáticamente con el experto apropiado.\n\n¿En qué puedo ayudarte hoy?',
       sender: 'assistant',
       timestamp: new Date()
     }
@@ -326,7 +326,7 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
     return (
       <button
         onClick={onToggle}
-        className="fixed bottom-6 right-6 w-16 h-16 bg-orange-500 hover:bg-orange-400 text-white rounded-full shadow-hero flex items-center justify-center z-[9999] md:w-20 md:h-20 hover-scale transition-all duration-500 animate-[pulse_3s_ease-in-out_infinite] hover:animate-none hover:shadow-2xl hover:shadow-orange-500/50"
+        className="fixed bottom-6 right-6 w-16 h-16 bg-brand-primary hover:bg-brand-primary/90 text-white rounded-full shadow-soft flex items-center justify-center z-[9999] md:w-20 md:h-20 hover-scale transition-all duration-500 animate-[pulse_3s_ease-in-out_infinite] hover:animate-none hover:shadow-card"
         aria-label="Abrir chat de asistencia legal"
       >
         <Scale size={28} className="md:w-8 md:h-8 transition-transform duration-300" />
@@ -336,25 +336,25 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
 
   return (
     <div
-      className="fixed bottom-4 right-4 left-4 md:left-auto md:right-6 md:bottom-6 w-auto md:w-96 h-[calc(100vh-2rem)] md:h-[500px] max-h-[80vh] bg-card rounded-lg shadow-hero flex flex-col z-[9999] border"
+      className="fixed bottom-4 right-4 left-4 md:left-auto md:right-6 md:bottom-6 w-auto md:w-96 h-[calc(100vh-2rem)] md:h-[500px] max-h-[80vh] bg-card rounded-lg shadow-card flex flex-col z-[9999] border"
       style={{ zIndex: 9999 }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-success to-success-dark text-success-foreground rounded-t-lg">
+      <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-brand-primary to-brand-dark text-white rounded-t-lg">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
             ⚖️
           </div>
           <div>
             <h3 className="font-semibold text-sm md:text-base">Lexi - Asistente Legal</h3>
-            <p className="text-xs opacity-90">tuconsultorlegal.co</p>
+            <p className="text-xs opacity-90">Praxis Hub</p>
           </div>
         </div>
         <Button
           variant="ghost"
           size="sm"
           onClick={onToggle}
-          className="text-success-foreground hover:bg-white/20 p-1 h-8 w-8"
+          className="text-white hover:bg-white/20 p-1 h-8 w-8"
         >
           <X size={16} />
         </Button>
@@ -370,13 +370,13 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
             <div
               className={`max-w-[85%] rounded-2xl px-4 py-2 ${
                 message.sender === 'user'
-                  ? 'bg-success text-success-foreground rounded-br-sm'
+                  ? 'bg-brand-primary text-white rounded-br-sm'
                   : 'bg-card text-card-foreground border shadow-soft rounded-bl-sm'
               }`}
             >
               <p className="text-sm leading-relaxed">{message.content}</p>
               <p className={`text-xs mt-1 opacity-70 ${
-                message.sender === 'user' ? 'text-success-foreground' : 'text-muted-foreground'
+                message.sender === 'user' ? 'text-white' : 'text-muted-foreground'
               }`}>
                 {message.timestamp.toLocaleTimeString('es-ES', { 
                   hour: '2-digit', 
@@ -419,14 +419,14 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="Escribe tu consulta legal aquí..."
             disabled={isLoading}
-            className="flex-1 rounded-full bg-background border-border focus:border-success transition-smooth"
+            className="flex-1 rounded-full bg-background border-border focus:border-brand-primary transition-smooth"
             autoComplete="off"
           />
           <Button
             type="submit"
             size="sm"
             disabled={!inputValue.trim() || isLoading}
-            className="rounded-full w-10 h-10 p-0 bg-success hover:bg-success-dark transition-smooth"
+            className="rounded-full w-10 h-10 p-0 bg-brand-primary hover:bg-brand-primary/90 transition-smooth"
           >
             <Send size={16} />
           </Button>
