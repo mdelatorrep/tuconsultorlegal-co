@@ -37,19 +37,19 @@ export default function BlogPage({ onOpenChat, onNavigate }: BlogPageProps) {
   const [loading, setLoading] = useState(true);
 
   useSEO({
-    title: "Blog Legal - Artículos de Derecho e IA | Tu Consultor Legal",
-    description: "Blog de derecho colombiano. Artículos sobre legislación, herramientas IA para abogados, contratos, normativa legal. Actualizado por expertos jurídicos.",
-    keywords: "blog legal Colombia, artículos derecho, noticias jurídicas, legislación colombiana, IA legal, herramientas abogados, contratos legales",
-    canonical: "https://tuconsultorlegal.co/#blog",
+    title: "Blog Legal - Artículos de Derecho | Praxis Hub",
+    description: "Blog de derecho colombiano. Artículos sobre legislación, herramientas para abogados, contratos, normativa legal. Actualizado por expertos jurídicos.",
+    keywords: "blog legal Colombia, artículos derecho, noticias jurídicas, legislación colombiana, herramientas abogados, contratos legales",
+    canonical: "https://praxishub.co/#blog",
     structuredData: {
       "@context": "https://schema.org",
       "@type": "Blog",
-      "name": "Blog Tu Consultor Legal",
-      "description": "Artículos sobre derecho colombiano e inteligencia artificial legal",
-      "url": "https://tuconsultorlegal.co/#blog",
+      "name": "Blog Praxis Hub",
+      "description": "Artículos sobre derecho colombiano y práctica legal profesional",
+      "url": "https://praxishub.co/#blog",
       "publisher": {
         "@type": "Organization",
-        "name": "Tu Consultor Legal"
+        "name": "Praxis Hub"
       }
     }
   });
@@ -90,24 +90,24 @@ export default function BlogPage({ onOpenChat, onNavigate }: BlogPageProps) {
   };
 
   const getCategoryFromTags = (tags?: string[]) => {
-    if (!tags || tags.length === 0) return { name: "GENERAL", color: "text-gray-600" };
+    if (!tags || tags.length === 0) return { name: "GENERAL", color: "text-muted-foreground" };
     
     const tag = tags[0].toLowerCase();
     const categoryMap: Record<string, { name: string; color: string }> = {
-      'vivienda': { name: "VIVIENDA Y ARRIENDOS", color: "text-blue-600" },
-      'arriendo': { name: "VIVIENDA Y ARRIENDOS", color: "text-blue-600" },
+      'vivienda': { name: "VIVIENDA Y ARRIENDOS", color: "text-brand-primary" },
+      'arriendo': { name: "VIVIENDA Y ARRIENDOS", color: "text-brand-primary" },
       'trabajo': { name: "TRABAJO Y EMPLEO", color: "text-rose-600" },
       'empleo': { name: "TRABAJO Y EMPLEO", color: "text-rose-600" },
       'laboral': { name: "TRABAJO Y EMPLEO", color: "text-rose-600" },
-      'finanzas': { name: "FINANZAS Y ACUERDOS", color: "text-orange-600" },
-      'contratos': { name: "FINANZAS Y ACUERDOS", color: "text-orange-600" },
-      'vehiculo': { name: "FINANZAS Y ACUERDOS", color: "text-orange-600" },
+      'finanzas': { name: "FINANZAS Y ACUERDOS", color: "text-brand-accent" },
+      'contratos': { name: "FINANZAS Y ACUERDOS", color: "text-brand-accent" },
+      'vehiculo': { name: "FINANZAS Y ACUERDOS", color: "text-brand-accent" },
       'civil': { name: "DERECHO CIVIL", color: "text-purple-600" },
       'penal': { name: "DERECHO PENAL", color: "text-red-600" },
       'familia': { name: "DERECHO DE FAMILIA", color: "text-pink-600" },
     };
 
-    return categoryMap[tag] || { name: tags[0].toUpperCase(), color: "text-gray-600" };
+    return categoryMap[tag] || { name: tags[0].toUpperCase(), color: "text-muted-foreground" };
   };
 
   const getDefaultImage = (category: string) => {
@@ -130,8 +130,8 @@ export default function BlogPage({ onOpenChat, onNavigate }: BlogPageProps) {
     return (
       <div className="container mx-auto px-6 py-20">
         <div className="text-center">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-primary mb-4">
-            Blog de Tu Consultor Legal
+          <h1 className="text-4xl md:text-5xl font-extrabold text-brand-primary mb-4">
+            Blog de Praxis Hub
           </h1>
           <p className="text-lg text-muted-foreground">Cargando artículos...</p>
         </div>
@@ -143,8 +143,8 @@ export default function BlogPage({ onOpenChat, onNavigate }: BlogPageProps) {
     <div className="container mx-auto px-6 py-20">
       {/* Header */}
       <div className="text-center mb-16">
-        <h1 className="text-4xl md:text-5xl font-extrabold text-primary mb-4">
-          Blog de Tu Consultor Legal
+        <h1 className="text-4xl md:text-5xl font-extrabold text-brand-primary mb-4">
+          Blog de Praxis Hub
         </h1>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
           Resolvemos tus dudas legales con explicaciones claras y sencillas. 
@@ -161,17 +161,17 @@ export default function BlogPage({ onOpenChat, onNavigate }: BlogPageProps) {
             Estamos trabajando en contenido de calidad para ti. Vuelve pronto.
           </p>
           <Button
-            variant="success"
-            onClick={() => onNavigate("user-dashboard")}
+            onClick={() => onNavigate?.("user-dashboard")}
+            className="bg-brand-primary hover:bg-brand-primary/90"
           >
-            Hablar con Lexi
+            Iniciar Consulta
           </Button>
         </div>
       ) : (
         <>
           {/* Featured Article */}
           {featuredBlog && (
-            <div className="grid lg:grid-cols-2 gap-12 items-center mb-16 bg-card p-8 rounded-lg shadow-card">
+            <div className="grid lg:grid-cols-2 gap-12 items-center mb-16 bg-card p-8 rounded-lg shadow-soft">
               <img 
                 src={featuredBlog.featured_image || getDefaultImage(getCategoryFromTags(featuredBlog.tags).name)} 
                 alt={featuredBlog.title}
@@ -204,8 +204,8 @@ export default function BlogPage({ onOpenChat, onNavigate }: BlogPageProps) {
                   </div>
                 </div>
                 <Button
-                  variant="success"
                   onClick={() => handleReadArticle(featuredBlog.slug)}
+                  className="bg-brand-primary hover:bg-brand-primary/90"
                 >
                   Leer más →
                 </Button>
@@ -216,7 +216,7 @@ export default function BlogPage({ onOpenChat, onNavigate }: BlogPageProps) {
           {/* Other Articles */}
           {otherBlogs.length > 0 && (
             <>
-              <h3 className="text-2xl font-bold mb-8 border-l-4 border-success pl-4">
+              <h3 className="text-2xl font-bold mb-8 border-l-4 border-brand-accent pl-4">
                 Otros Artículos de Interés
               </h3>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -225,7 +225,7 @@ export default function BlogPage({ onOpenChat, onNavigate }: BlogPageProps) {
                   return (
                     <div 
                       key={blog.id}
-                      className="bg-card rounded-lg shadow-card overflow-hidden transform hover:-translate-y-2 transition-smooth"
+                      className="bg-card rounded-lg shadow-soft overflow-hidden transform hover:-translate-y-2 transition-smooth"
                     >
                       <img 
                         src={blog.featured_image || getDefaultImage(category.name)} 
@@ -272,19 +272,19 @@ export default function BlogPage({ onOpenChat, onNavigate }: BlogPageProps) {
       )}
 
       {/* CTA Section */}
-      <div className="mt-16 bg-success/10 border-l-4 border-success p-8 rounded-r-lg">
-        <h3 className="text-2xl font-bold text-success mb-4">
+      <div className="mt-16 bg-brand-primary/10 border-l-4 border-brand-primary p-8 rounded-r-lg">
+        <h3 className="text-2xl font-bold text-foreground mb-4">
           ¿Necesitas ayuda con tu caso específico?
         </h3>
         <p className="text-muted-foreground mb-6">
-          Ya sea para crear tu contrato o resolver una duda específica, nuestro asistente con IA está listo para ayudarte.
+          Ya sea para crear tu contrato o resolver una duda específica, nuestro equipo está listo para ayudarte.
         </p>
         <Button
-          variant="success"
           size="lg"
-          onClick={() => onNavigate("user-dashboard")}
+          onClick={() => onNavigate?.("user-dashboard")}
+          className="bg-brand-primary hover:bg-brand-primary/90"
         >
-          Hablar con Lexi
+          Iniciar Consulta
         </Button>
       </div>
     </div>

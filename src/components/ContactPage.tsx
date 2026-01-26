@@ -26,19 +26,19 @@ export default function ContactPage({ onOpenChat, onNavigate }: ContactPageProps
 
   // SEO optimization for contact page
   useSEO({
-    title: "Contacto - IA Legal para Abogados | Tu Consultor Legal Colombia",
-    description: "Contacta con Tu Consultor Legal. Soporte para abogados, consultas sobre herramientas IA, asesoría legal online. Atención 24/7 para profesionales del derecho.",
-    keywords: "contacto tu consultor legal, soporte abogados IA, consulta legal online, asesoría jurídica Colombia, contacto plataforma legal",
-    canonical: "https://tuconsultorlegal.co/#contacto",
+    title: "Contacto | Praxis Hub",
+    description: "Contacta con Praxis Hub. Soporte para abogados, consultas sobre el entorno profesional, asesoría legal online. Atención 24/7.",
+    keywords: "contacto praxis hub, soporte abogados, consulta legal online, asesoría jurídica Colombia, contacto plataforma legal",
+    canonical: "https://praxishub.co/#contacto",
     structuredData: {
       "@context": "https://schema.org",
       "@type": "ContactPage",
-      "name": "Contacto - Tu Consultor Legal",
-      "description": "Contacto para abogados y usuarios de la plataforma legal",
-      "url": "https://tuconsultorlegal.co/#contacto",
+      "name": "Contacto - Praxis Hub",
+      "description": "Contacto para abogados y usuarios del entorno profesional",
+      "url": "https://praxishub.co/#contacto",
       "mainEntity": {
         "@type": "Organization",
-        "name": "Tu Consultor Legal",
+        "name": "Praxis Hub",
         "contactPoint": {
           "@type": "ContactPoint",
           "contactType": "customer service",
@@ -50,7 +50,7 @@ export default function ContactPage({ onOpenChat, onNavigate }: ContactPageProps
   });
 
   const handleConsultationRequest = () => {
-    onOpenChat("Hola, me gustaría solicitar una consulta legal gratuita. ¿Pueden ayudarme?");
+    onOpenChat("Hola, me gustaría solicitar una consulta. ¿Pueden ayudarme?");
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -101,7 +101,7 @@ export default function ContactPage({ onOpenChat, onNavigate }: ContactPageProps
               user_name: formData.name,
               consultation_type: formData.consultation_type,
               message_preview: formData.message.substring(0, 200) + (formData.message.length > 200 ? '...' : ''),
-              site_url: 'https://tuconsultorlegal.co',
+              site_url: 'https://praxishub.co',
               current_year: new Date().getFullYear().toString()
             }
           }
@@ -147,8 +147,8 @@ export default function ContactPage({ onOpenChat, onNavigate }: ContactPageProps
             Contáctanos
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            ¿Tienes preguntas sobre nuestros servicios o necesitas asesoría legal personalizada? 
-            Estamos aquí para ayudarte las 24 horas del día.
+            ¿Tienes preguntas sobre nuestros servicios o necesitas asesoría personalizada? 
+            Estamos aquí para ayudarte.
           </p>
         </div>
 
@@ -160,19 +160,19 @@ export default function ContactPage({ onOpenChat, onNavigate }: ContactPageProps
               <div className="space-y-6">
 
                 <div className="flex items-start gap-4">
-                  <div className="p-3 bg-primary/10 rounded-full">
-                    <Mail className="h-6 w-6 text-primary" />
+                  <div className="p-3 bg-brand-primary/10 rounded-full">
+                    <Mail className="h-6 w-6 text-brand-primary" />
                   </div>
                   <div>
                     <h3 className="font-semibold mb-1">Email</h3>
-                    <p className="text-muted-foreground">contacto@tuconsultorlegal.co</p>
+                    <p className="text-muted-foreground">contacto@praxishub.co</p>
                     <p className="text-sm text-muted-foreground">Respuesta en 24 horas</p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-4">
-                  <div className="p-3 bg-primary/10 rounded-full">
-                    <MapPin className="h-6 w-6 text-primary" />
+                  <div className="p-3 bg-brand-primary/10 rounded-full">
+                    <MapPin className="h-6 w-6 text-brand-primary" />
                   </div>
                   <div>
                     <h3 className="font-semibold mb-1">Ubicación</h3>
@@ -182,13 +182,13 @@ export default function ContactPage({ onOpenChat, onNavigate }: ContactPageProps
                 </div>
 
                 <div className="flex items-start gap-4">
-                  <div className="p-3 bg-primary/10 rounded-full">
-                    <Clock className="h-6 w-6 text-primary" />
+                  <div className="p-3 bg-brand-primary/10 rounded-full">
+                    <Clock className="h-6 w-6 text-brand-primary" />
                   </div>
                   <div>
                     <h3 className="font-semibold mb-1">Horarios</h3>
-                    <p className="text-muted-foreground">24/7 - Chat con IA</p>
-                    <p className="text-sm text-muted-foreground">Lun-Vie 8AM-6PM - Abogados especialistas</p>
+                    <p className="text-muted-foreground">24/7 - Asistente digital</p>
+                    <p className="text-sm text-muted-foreground">Lun-Vie 8AM-6PM - Equipo de soporte</p>
                   </div>
                 </div>
               </div>
@@ -204,14 +204,14 @@ export default function ContactPage({ onOpenChat, onNavigate }: ContactPageProps
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-muted-foreground">
-                  ¿Necesitas ayuda ahora? Inicia una conversación con nuestro asistente legal inteligente.
+                  ¿Necesitas ayuda ahora? Inicia una conversación con nuestro asistente.
                 </p>
                 <Button 
                   onClick={() => onNavigate && onNavigate("user-dashboard")}
-                  className="w-full"
+                  className="w-full bg-brand-primary hover:bg-brand-primary/90"
                   size="lg"
                 >
-                  Iniciar Consulta Gratuita
+                  Iniciar Consulta
                 </Button>
               </CardContent>
             </Card>
@@ -285,7 +285,7 @@ export default function ContactPage({ onOpenChat, onNavigate }: ContactPageProps
                       name="message"
                       value={formData.message}
                       onChange={handleInputChange}
-                      placeholder="Describe brevemente tu consulta legal..."
+                      placeholder="Describe brevemente tu consulta..."
                       rows={5}
                       required
                     />
@@ -293,7 +293,7 @@ export default function ContactPage({ onOpenChat, onNavigate }: ContactPageProps
 
                   <Button 
                     type="submit" 
-                    className="w-full" 
+                    className="w-full bg-brand-primary hover:bg-brand-primary/90" 
                     size="lg"
                     disabled={isSubmitting}
                   >
@@ -306,14 +306,14 @@ export default function ContactPage({ onOpenChat, onNavigate }: ContactPageProps
                 Al enviar este formulario, aceptas nuestros{" "}
                 <button
                   onClick={() => onNavigate?.("terminos")}
-                  className="text-primary hover:underline"
+                  className="text-brand-primary hover:underline"
                 >
                   términos y condiciones
                 </button>{" "}
                 y{" "}
                 <button
                   onClick={() => onNavigate?.("privacidad")}
-                  className="text-primary hover:underline"
+                  className="text-brand-primary hover:underline"
                 >
                   política de privacidad
                 </button>
@@ -334,7 +334,7 @@ export default function ContactPage({ onOpenChat, onNavigate }: ContactPageProps
               </div>
               <div>
                 <h3 className="font-semibold mb-2">¿En qué horarios puedo contactarlos?</h3>
-                <p className="text-muted-foreground">Nuestro chat con IA está disponible 24/7. Los abogados especialistas atienden de lunes a viernes de 8AM a 6PM.</p>
+                <p className="text-muted-foreground">Nuestro asistente digital está disponible 24/7. El equipo de soporte atiende de lunes a viernes de 8AM a 6PM.</p>
               </div>
               <div>
                 <h3 className="font-semibold mb-2">¿Atienden casos en todo Colombia?</h3>
@@ -363,11 +363,12 @@ export default function ContactPage({ onOpenChat, onNavigate }: ContactPageProps
           <div className="bg-muted/50 rounded-2xl p-8 max-w-4xl mx-auto">
             <h2 className="text-3xl font-bold mb-4">¿Listo para Resolver tu Consulta Legal?</h2>
             <p className="text-muted-foreground mb-6">
-              No esperes más. Comienza tu consulta legal ahora mismo con nuestro equipo de expertos.
+              No esperes más. Comienza tu consulta ahora mismo con nuestro equipo.
             </p>
             <Button 
               size="lg" 
               onClick={handleConsultationRequest}
+              className="bg-brand-primary hover:bg-brand-primary/90"
             >
               Comenzar Consulta Ahora
             </Button>

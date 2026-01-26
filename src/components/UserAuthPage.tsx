@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Alert, AlertDescription } from './ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { ArrowLeft, Mail, Lock, User, Eye, EyeOff, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Mail, Lock, User, Eye, EyeOff, CheckCircle, Scale } from 'lucide-react';
 import { Checkbox } from './ui/checkbox';
 import { PasswordResetDialog } from './PasswordResetDialog';
 import { MagicLinkDialog } from './MagicLinkDialog';
@@ -207,18 +207,21 @@ export default function UserAuthPage({ onBack, onAuthSuccess }: UserAuthPageProp
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-8 bg-gradient-hero">
+    <div className="min-h-screen flex items-center justify-center px-4 py-8 bg-gradient-to-br from-background via-muted/20 to-background">
       <div className="w-full max-w-md mx-auto">
-        <Card className="shadow-trust border-border/50 bg-card/80 backdrop-blur-sm">
+        <Card className="shadow-soft border-border/50 bg-card/80 backdrop-blur-sm">
           <CardHeader className="space-y-4 pb-6">
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="sm" onClick={onBack} className="shrink-0 hover:bg-muted/50">
                 <ArrowLeft className="w-4 h-4" />
               </Button>
               <div className="flex-1 text-center">
-                <CardTitle className="text-2xl font-bold text-primary">Tu Consultor Legal</CardTitle>
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <Scale className="w-5 h-5 text-brand-primary" />
+                  <CardTitle className="text-2xl font-bold text-brand-primary">Praxis Hub</CardTitle>
+                </div>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Plataforma legal inteligente para personas
+                  Entorno profesional integrado
                 </p>
               </div>
             </div>
@@ -233,9 +236,9 @@ export default function UserAuthPage({ onBack, onAuthSuccess }: UserAuthPageProp
 
               <TabsContent value="login" className="space-y-4 mt-6">
                 {showEmailConfirmedMessage && (
-                  <Alert className="mb-4 bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-900">
-                    <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-                    <AlertDescription className="text-green-800 dark:text-green-300">
+                  <Alert className="mb-4 bg-brand-accent/10 border-brand-accent/30">
+                    <CheckCircle className="h-4 w-4 text-brand-accent" />
+                    <AlertDescription className="text-foreground">
                       ¡Email confirmado exitosamente! Tu cuenta ha sido activada. Ahora puedes iniciar sesión con tus credenciales.
                     </AlertDescription>
                   </Alert>
@@ -290,7 +293,7 @@ export default function UserAuthPage({ onBack, onAuthSuccess }: UserAuthPageProp
                   <Button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full"
+                    className="w-full bg-brand-primary hover:bg-brand-primary/90"
                     size="lg"
                   >
                     {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
@@ -397,7 +400,7 @@ export default function UserAuthPage({ onBack, onAuthSuccess }: UserAuthPageProp
                         href="/#terminos" 
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-primary underline hover:text-primary/80"
+                        className="text-brand-primary underline hover:text-brand-primary/80"
                       >
                         términos y condiciones
                       </a>
@@ -406,7 +409,7 @@ export default function UserAuthPage({ onBack, onAuthSuccess }: UserAuthPageProp
                         href="/#privacidad" 
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-primary underline hover:text-primary/80"
+                        className="text-brand-primary underline hover:text-brand-primary/80"
                       >
                         política de privacidad
                       </a>
@@ -416,7 +419,7 @@ export default function UserAuthPage({ onBack, onAuthSuccess }: UserAuthPageProp
                   <Button
                     type="submit"
                     disabled={isLoading || !termsAccepted}
-                    className="w-full"
+                    className="w-full bg-brand-primary hover:bg-brand-primary/90"
                     size="lg"
                   >
                     {isLoading ? 'Creando cuenta...' : 'Crear Cuenta'}

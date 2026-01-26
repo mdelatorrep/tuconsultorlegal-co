@@ -1,4 +1,4 @@
-# robots.txt for tuconsultorlegal.co
+# robots.txt for praxishub.co
 # Optimizado para SEO y crawling inteligente
 
 User-agent: Googlebot
@@ -65,4 +65,4 @@ Crawl-delay: 10
 Allow: /
 
 # Sitemap
-Sitemap: https://tuconsultorlegal.co/sitemap.xml
+Sitemap: https://praxishub.co/sitemap.xml
