@@ -28,7 +28,7 @@ export const useUserTracking = () => {
     trackEvent(`user_action_${action}`, {
       ...properties,
       userType: 'visitor',
-      source: 'tuconsultorlegal'
+      source: 'praxishub'
     });
   };
 

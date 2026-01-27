@@ -149,8 +149,8 @@ export function EmailConfigManager() {
     const { error } = await supabase.functions.invoke('send-email', {
       body: {
         to: config.smtp_from_email,
-        subject: 'Email de Prueba - Tu Consultor Legal',
-        html: '<h1>¡Funciona!</h1><p>Este es un email de prueba del sistema de notificaciones.</p>',
+        subject: 'Email de Prueba - Praxis Hub',
+        html: '<h1>¡Funciona!</h1><p>Este es un email de prueba del sistema de notificaciones de Praxis Hub.</p>',
         recipient_type: 'admin'
       }
     });

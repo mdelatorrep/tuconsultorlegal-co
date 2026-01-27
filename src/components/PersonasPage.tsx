@@ -38,18 +38,18 @@ export default function PersonasPage({
   } = useUserAuth();
 
   useSEO({
-    title: "Documentos Legales para Personas - Contratos con IA | Tu Consultor Legal",
-    description: "Genera contratos y documentos legales válidos en Colombia en minutos. Arrendamiento, trabajo, poderes, sucesiones. Con IA y respaldados por abogados profesionales.",
-    keywords: "documentos legales personas Colombia, contrato arrendamiento, contrato trabajo, poder notarial, documentos sucesión, contratos personales, documentos jurídicos IA",
-    canonical: "https://tuconsultorlegal.co/#personas",
+    title: "Documentos Legales para Personas | Praxis Hub",
+    description: "Genera contratos y documentos legales válidos en Colombia con estándares profesionales. Arrendamiento, trabajo, poderes, sucesiones. Respaldados por abogados certificados.",
+    keywords: "documentos legales personas Colombia, contrato arrendamiento, contrato trabajo, poder notarial, documentos sucesión, contratos personales, documentos jurídicos",
+    canonical: "https://praxishub.co/#personas",
     structuredData: {
       "@context": "https://schema.org",
       "@type": "Service",
       "name": "Documentos Legales para Personas",
-      "description": "Generación de documentos legales personales con IA en Colombia",
+      "description": "Generación de documentos legales personales con estándares profesionales en Colombia",
       "provider": {
         "@type": "Organization",
-        "name": "Tu Consultor Legal"
+        "name": "Praxis Hub"
       },
       "serviceType": "Legal Document Generation",
       "areaServed": "Colombia"

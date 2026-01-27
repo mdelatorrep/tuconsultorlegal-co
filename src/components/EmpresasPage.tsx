@@ -31,18 +31,18 @@ export default function EmpresasPage({
   const [documentToken, setDocumentToken] = useState<string>('');
 
   useSEO({
-    title: "Documentos Legales para Empresas - Contratos Comerciales | Tu Consultor Legal",
-    description: "Documentos legales empresariales en Colombia. Contratos comerciales, compliance, due diligence, propiedad intelectual. Generados con IA y validados por abogados.",
-    keywords: "documentos legales empresas Colombia, contratos comerciales, compliance legal, due diligence, propiedad intelectual, contratos corporativos, asesoría legal empresas",
-    canonical: "https://tuconsultorlegal.co/#empresas",
+    title: "Soluciones Legales para Empresas | Praxis Hub",
+    description: "Entorno profesional integrado para la gestión legal empresarial en Colombia. Contratos, compliance, due diligence y propiedad intelectual con estándares profesionales.",
+    keywords: "documentos legales empresas Colombia, contratos comerciales, compliance legal, due diligence, propiedad intelectual, contratos corporativos, gestión legal empresarial",
+    canonical: "https://praxishub.co/#empresas",
     structuredData: {
       "@context": "https://schema.org",
       "@type": "Service",
-      "name": "Documentos Legales para Empresas",
-      "description": "Soluciones legales corporativas con IA en Colombia",
+      "name": "Soluciones Legales para Empresas",
+      "description": "Entorno profesional integrado para la gestión legal empresarial en Colombia",
       "provider": {
         "@type": "Organization",
-        "name": "Tu Consultor Legal"
+        "name": "Praxis Hub"
       },
       "serviceType": "Corporate Legal Services",
       "areaServed": "Colombia"
@@ -146,50 +146,50 @@ export default function EmpresasPage({
       </div>;
   }
   return <div className="container mx-auto px-6 py-20">
-      {/* Hero Section - Unified Brand Identity */}
-      <div className="bg-gradient-to-br from-[#010f24] via-[#011838] to-[#010f24] rounded-xl p-8 mb-16 shadow-elevated relative overflow-hidden">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#0372e8]/10 rounded-full blur-[120px]"></div>
+      {/* Hero Section - Praxis Hub Brand Identity */}
+      <div className="bg-gradient-to-br from-brand-dark via-background to-muted rounded-xl p-8 mb-16 shadow-elevated relative overflow-hidden border border-border/50">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px]"></div>
         <div className="relative z-10">
         <div className="text-center max-w-4xl mx-auto">
-          <h1 className="text-4xl md:text-5xl font-extrabold mb-6">
-            <span className="text-white">Tu Centro de Control</span>{' '}
-            <span className="bg-gradient-to-r from-[#f2bb31] to-[#ffd666] bg-clip-text text-transparent">Legal Empresarial</span>
+          <h1 className="text-4xl md:text-5xl font-bold mb-6">
+            <span className="text-foreground">Entorno Profesional</span>{' '}
+            <span className="text-primary">Legal Empresarial</span>
           </h1>
-          <p className="text-lg mb-8 text-white/90">
-            Regístrate para centralizar toda la gestión legal de tu empresa en un solo panel
+          <p className="text-lg mb-8 text-muted-foreground">
+            Un entorno integrado que estructura y eleva la gestión legal de tu empresa
           </p>
           
           <div className="grid md:grid-cols-3 gap-6 mb-8">
-            <div className="text-center bg-white/10 backdrop-blur-sm rounded-lg p-6 border border-white/20">
-              <div className="bg-white/20 rounded-lg p-4 mb-3 mx-auto w-fit backdrop-blur-sm">
-                <Handshake className="w-8 h-8 text-white" />
+            <div className="text-center bg-card/80 backdrop-blur-sm rounded-lg p-6 border border-border">
+              <div className="bg-primary/10 rounded-lg p-4 mb-3 mx-auto w-fit">
+                <Handshake className="w-8 h-8 text-primary" />
               </div>
-              <h3 className="font-semibold text-white mb-2">Contratos Automatizados</h3>
-              <p className="text-sm text-white/80">Generación inteligente y personalizada</p>
+              <h3 className="font-semibold text-foreground mb-2">Contratos Estructurados</h3>
+              <p className="text-sm text-muted-foreground">Generación profesional y consistente</p>
             </div>
-            <div className="text-center bg-white/10 backdrop-blur-sm rounded-lg p-6 border border-white/20">
-              <div className="bg-white/20 rounded-lg p-4 mb-3 mx-auto w-fit backdrop-blur-sm">
-                <Shield className="w-8 h-8 text-white" />
+            <div className="text-center bg-card/80 backdrop-blur-sm rounded-lg p-6 border border-border">
+              <div className="bg-primary/10 rounded-lg p-4 mb-3 mx-auto w-fit">
+                <Shield className="w-8 h-8 text-primary" />
               </div>
-              <h3 className="font-semibold text-white mb-2">Compliance Total</h3>
-              <p className="text-sm text-white/80">Monitoreo y alertas automáticas</p>
+              <h3 className="font-semibold text-foreground mb-2">Compliance Integral</h3>
+              <p className="text-sm text-muted-foreground">Monitoreo y gestión de cumplimiento</p>
             </div>
-            <div className="text-center bg-white/10 backdrop-blur-sm rounded-lg p-6 border border-white/20">
-              <div className="bg-white/20 rounded-lg p-4 mb-3 mx-auto w-fit backdrop-blur-sm">
-                <Scale className="w-8 h-8 text-white" />
+            <div className="text-center bg-card/80 backdrop-blur-sm rounded-lg p-6 border border-border">
+              <div className="bg-primary/10 rounded-lg p-4 mb-3 mx-auto w-fit">
+                <Scale className="w-8 h-8 text-primary" />
               </div>
-              <h3 className="font-semibold text-white mb-2">Asesoría Corporativa</h3>
-              <p className="text-sm text-white/80">Expertos en derecho empresarial</p>
+              <h3 className="font-semibold text-foreground mb-2">Asesoría Corporativa</h3>
+              <p className="text-sm text-muted-foreground">Estándares profesionales elevados</p>
             </div>
           </div>
           
-          <Button onClick={() => onNavigate && onNavigate("proximamente-empresas")} className="bg-[#0372e8] hover:bg-[#0260c7] text-white shadow-glow px-8 py-3 text-lg rounded-full">
+          <Button onClick={() => onNavigate && onNavigate("proximamente-empresas")} className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-3 text-lg rounded-lg">
             <Building className="w-5 h-5 mr-2" />
-            Acceder al Portal Empresarial
+            Explorar el Entorno Empresarial
           </Button>
           
-          <p className="text-white/60 text-sm">
-            Próximamente disponible - Únete a la lista de espera
+          <p className="text-muted-foreground text-sm mt-4">
+            Próximamente disponible – Únete a la lista de espera
           </p>
         </div>
         </div>

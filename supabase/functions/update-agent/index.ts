@@ -34,10 +34,10 @@ async function sendAgentStatusEmail(
     const variables: Record<string, string> = {
       lawyer_name: lawyerName,
       agent_name: agentName,
-      agent_url: `https://tuconsultorlegal.co/#abogados?view=agentes&agent=${agentId}`,
-      share_url: `https://tuconsultorlegal.co/#documento?agent=${agentId}`,
-      dashboard_url: 'https://tuconsultorlegal.co/#abogados?view=agentes',
-      site_url: 'https://tuconsultorlegal.co',
+      agent_url: `https://praxishub.co/#abogados?view=agentes&agent=${agentId}`,
+      share_url: `https://praxishub.co/#documento?agent=${agentId}`,
+      dashboard_url: 'https://praxishub.co/#abogados?view=agentes',
+      site_url: 'https://praxishub.co',
       current_year: new Date().getFullYear().toString(),
       reason: reason || 'No se proporcionó un motivo específico.'
     };

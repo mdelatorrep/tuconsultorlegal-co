@@ -326,7 +326,7 @@ serve(async (req) => {
           legal_agent_id: legal_agent_id,
           document_type: legalAgent.document_name,
           target_audience: legalAgent.target_audience,
-          created_by_system: "tuconsultorlegal",
+          created_by_system: "praxishub",
           version: "2.0",
         },
       }),
@@ -837,7 +837,7 @@ PASO A PASO CON GUARDADO:
 11. Usuario proporciona contacto
 12. INMEDIATAMENTE llamar: request_user_contact_info({ user_name: "...", user_email: "..." })
 13. Generar documento con user_name y user_email
-14. Compartir token y link con detalles específicos: "✅ ¡Listo! Tu documento ha sido generado. Token: ABC123. Link: https://tuconsultorlegal.co/#documento?code=ABC123. Precio: $50.000. Entrega: 15 de octubre..."
+14. Compartir token y link con detalles específicos: "✅ ¡Listo! Tu documento ha sido generado. Token: ABC123. Link: https://praxishub.co/#documento?code=ABC123. Precio: $50.000. Entrega: 15 de octubre..."
 
 ${
   hasStructuredConversation && conversationBlocks && conversationBlocks.length > 0

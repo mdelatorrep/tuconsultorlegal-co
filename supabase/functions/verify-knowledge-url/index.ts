@@ -28,7 +28,7 @@ serve(async (req) => {
           method: 'HEAD',
           signal: controller.signal,
           headers: {
-            'User-Agent': 'TuConsultorLegal-URLVerifier/1.0'
+            'User-Agent': 'PraxisHub-URLVerifier/1.0'
           }
         });
 
@@ -51,7 +51,7 @@ serve(async (req) => {
             method: 'GET',
             signal: controller.signal,
             headers: {
-              'User-Agent': 'TuConsultorLegal-URLVerifier/1.0'
+              'User-Agent': 'PraxisHub-URLVerifier/1.0'
             }
           });
 
