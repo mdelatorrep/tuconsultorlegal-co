@@ -18,13 +18,13 @@ export function DashboardWelcome({ userName, onViewCredits }: DashboardWelcomePr
               Bienvenido, {userName}
             </h1>
             <p className="text-muted-foreground mt-1 text-sm md:text-base">
-              Tu suite completa de herramientas legales con IA
+              Tu entorno profesional integrado en Praxis Hub
             </p>
           </div>
           <div className="flex items-center gap-3">
             <Badge variant="outline" className="flex items-center gap-2 text-xs md:text-sm w-fit">
               <Scale className="h-3 w-3 md:h-4 md:w-4" />
-              Portal Legal
+              Praxis Hub
             </Badge>
             <Button 
               variant="default" 

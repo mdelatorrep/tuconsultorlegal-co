@@ -46,7 +46,7 @@ export default function IntellectualPropertyPage({ onOpenChat }: IntellectualPro
             <h1 className="text-4xl md:text-5xl font-extrabold text-primary mb-4">
               {content?.title || 'Propiedad Intelectual'}
             </h1>
-            <p className="text-lg text-muted-foreground">TUCONSULTORLEGAL.CO</p>
+            <p className="text-lg text-muted-foreground">PRAXISHUB.CO</p>
           </div>
 
           <div className="prose prose-lg max-w-none space-y-8">
@@ -63,9 +63,9 @@ export default function IntellectualPropertyPage({ onOpenChat }: IntellectualPro
             </p>
             <button
               onClick={() => onOpenChat("Tengo una pregunta sobre propiedad intelectual")}
-              className="bg-success text-success-foreground px-6 py-3 rounded-lg font-bold hover:bg-success/90 transition-smooth"
+              className="bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium hover:bg-primary/90 transition-all"
             >
-              Consultar con Lexi
+              Consultar con soporte
             </button>
           </div>
         </div>

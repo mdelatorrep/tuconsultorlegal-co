@@ -96,7 +96,7 @@ async function checkOpenAIStatus() {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
-        'User-Agent': 'TuConsultorLegal-Monitor/1.0'
+        'User-Agent': 'PraxisHub-Monitor/1.0'
       },
       signal: AbortSignal.timeout(10000) // 10 second timeout
     });

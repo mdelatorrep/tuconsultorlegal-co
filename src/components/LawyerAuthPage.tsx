@@ -94,33 +94,33 @@ export default function LawyerAuthPage() {
             <div className="grid lg:grid-cols-2 gap-12 items-start">
               {/* Benefits */}
               <div className="space-y-8">
-                <h3 className="text-2xl font-semibold mb-6">¿Por qué elegir nuestra plataforma?</h3>
+                <h3 className="text-2xl font-semibold mb-6">¿Por qué sumarte a Praxis Hub?</h3>
                 
                 <div className="space-y-6">
                   {[
-                    "IA especializada en derecho colombiano",
-                    "Integración completa con tu flujo de trabajo",
-                    "Seguridad bancaria para datos confidenciales",
-                    "Soporte técnico especializado 24/7",
-                    "Actualizaciones constantes de jurisprudencia",
-                    "ROI comprobado desde el primer mes"
+                    "Entorno integrado para elevar tu práctica legal",
+                    "Herramientas profesionales para trabajo de calidad",
+                    "Seguridad y confidencialidad garantizadas",
+                    "Soporte técnico especializado continuo",
+                    "Acceso a jurisprudencia y normativa actualizada",
+                    "Estándares profesionales desde el primer día"
                   ].map((benefit, index) => (
                     <div key={index} className="flex items-center space-x-3">
-                      <CheckCircle className="w-5 h-5 text-success flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-primary flex-shrink-0" />
                       <span className="text-muted-foreground">{benefit}</span>
                     </div>
                   ))}
                 </div>
 
-                <Card className="border-success/20 bg-success/5">
+                <Card className="border-primary/20 bg-primary/5">
                   <CardContent className="p-6">
                     <div className="flex items-start space-x-3">
-                      <Shield className="w-6 h-6 text-success flex-shrink-0 mt-1" />
+                      <Shield className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
                       <div>
-                        <h4 className="font-semibold mb-2">Garantía de Satisfacción</h4>
+                        <h4 className="font-semibold mb-2">Compromiso con tu Práctica</h4>
                         <p className="text-sm text-muted-foreground">
-                          30 días de prueba gratuita. Si no estás completamente satisfecho, 
-                          te devolvemos el 100% de tu inversión.
+                          30 días para explorar el entorno. Si no cumple con tus expectativas 
+                          profesionales, te devolvemos el 100% de tu inversión.
                         </p>
                       </div>
                     </div>

@@ -167,7 +167,7 @@ export const useLogRocket = () => {
     trackEvent(`legal_${eventType}`, {
       ...data,
       category: 'legal_operations',
-      source: 'tuconsultorlegal'
+      source: 'praxishub'
     });
   };
 
