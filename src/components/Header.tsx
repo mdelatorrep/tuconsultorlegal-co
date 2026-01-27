@@ -6,7 +6,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { Menu, X, User, LogIn, MoreHorizontal, Phone, Newspaper, Scale } from "lucide-react";
+import { Menu, X, User, LogIn, MoreHorizontal, Phone, Newspaper } from "lucide-react";
+import logoIcon from "@/assets/favicon.png";
 import { useAuthTypeDetection } from "@/hooks/useAuthTypeDetection";
 
 interface HeaderProps {
@@ -77,7 +78,7 @@ export default function Header({
           onClick={() => handleNavClick("home")} 
           className="flex items-center space-x-2 text-foreground hover:opacity-80 transition-opacity"
         >
-          <Scale className="w-6 h-6 text-primary" />
+          <img src={logoIcon} alt="Praxis Hub" className="w-6 h-6" />
           <span className="text-lg font-semibold tracking-tight">Praxis Hub</span>
         </button>
 
@@ -169,7 +170,7 @@ export default function Header({
                     : "text-muted-foreground hover:bg-muted/50"
                 }`}
               >
-                <Scale className="w-5 h-5 mr-3" />
+                <img src={logoIcon} alt="" className="w-5 h-5 mr-3" />
                 <div>
                   <div className="font-medium">Para Abogados</div>
                   <div className="text-xs text-muted-foreground">Entorno profesional integrado</div>

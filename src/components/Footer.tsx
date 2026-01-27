@@ -1,4 +1,4 @@
-import { Scale } from "lucide-react";
+import logoIcon from "@/assets/favicon.png";
 
 interface FooterProps {
   onNavigate: (page: string) => void;
@@ -16,7 +16,7 @@ export default function Footer({ onNavigate }: FooterProps) {
           {/* Brand */}
           <div className="md:col-span-2">
             <div className="flex items-center space-x-2 mb-4">
-              <Scale className="w-5 h-5 text-background/80" />
+              <img src={logoIcon} alt="Praxis Hub" className="w-5 h-5 brightness-0 invert opacity-80" />
               <span className="text-lg font-semibold">Praxis Hub</span>
             </div>
             <p className="text-background/60 font-light leading-relaxed max-w-md">
