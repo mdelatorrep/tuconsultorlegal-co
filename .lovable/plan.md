@@ -1,240 +1,196 @@
 
-# Plan de Rebrand Completo: Tu Consultor Legal → Praxis Hub
+# Plan de Auditoría y Corrección del Rebrand: Praxis Hub
 
 ## Resumen Ejecutivo
 
-Este plan detalla la actualización integral de todo el sitio web para reflejar la nueva identidad de marca **Praxis Hub**. El rebrand afecta aproximadamente **30+ archivos** incluyendo componentes de React, plantillas de email, configuraciones SEO, y edge functions.
+Tras una revisión exhaustiva del codebase, he identificado **múltiples inconsistencias** en la implementación del rebrand de "Tu Consultor Legal" a **Praxis Hub**. Estas inconsistencias afectan la paleta de colores, el uso del logo, referencias de texto y gradientes no conformes con la nueva identidad visual.
 
 ---
 
-## Alcance del Cambio
+## Hallazgos de la Auditoría
 
-### Archivos Identificados para Actualización
+### 1. Uso del Icono `Scale` en lugar del Logo Real
 
-| Categoría | Archivos | Cambios Principales |
-|-----------|----------|---------------------|
-| **Páginas Públicas** | LawyerLandingPage, PricingPage, ContactPage, BlogPage, EmpresasPage | SEO, textos, structured data |
-| **Autenticación** | UserAuthPage, LawyerAuthPage, LawyerLogin | Títulos, branding |
-| **Dashboards** | UserDashboardPage, LawyerDashboardPage | Headers, referencias |
-| **Páginas Legales** | PrivacyPolicyPage, TermsAndConditionsPage | Referencias a marca |
-| **Widgets** | ChatWidget | Mensaje de bienvenida, referencias |
-| **Utilidades** | emailTemplates.ts | Todas las plantillas de email |
-| **Certificaciones** | CertificationBadge | Referencias a dominio |
-| **Tracking** | useUserTracking | Referencias a fuente |
-| **Edge Functions** | send-email, document-chat | Referencias en prompts |
+El icono `Scale` de Lucide se usa como placeholder en varios lugares donde debería aparecer el logo oficial de Praxis Hub:
 
----
+| Archivo | Línea | Problema |
+|---------|-------|----------|
+| `src/components/UserAuthPage.tsx` | 220 | `<Scale className="w-5 h-5 text-brand-primary" />` |
+| `src/components/LawyerLogin.tsx` | 454 | `<Scale className="h-6 w-6 text-primary" />` |
+| `src/components/ChatWidget.tsx` | 332 | `<Scale size={28} />` - botón flotante |
+| `src/components/dashboard/DashboardWelcome.tsx` | 26 | `<Scale className="h-3 w-3" />` en Badge |
+| `src/components/UnifiedSidebar.tsx` | 3 | Importa Scale pero no se usa el logo |
+| Demos (`DemoResearchMockup.tsx`, etc.) | Varios | Uso decorativo de Scale |
 
-## Cambios Detallados por Componente
-
-### 1. Landing Page para Abogados (`LawyerLandingPage.tsx`)
-
-**Cambios SEO:**
-- Título: "Portal para Abogados - Praxis Hub"
-- Descripción: Reflejar propósito de "elevar la práctica legal"
-- Canonical: `https://praxishub.co/#abogados`
-- Structured Data: Actualizar nombre y organización
-
-**Cambios de Contenido:**
-- Hero: "El entorno que eleva tu práctica legal"
-- Subtítulo: Enfoque en infraestructura profesional, no en IA
-- CTAs: "Sumarse a Praxis Hub", "Explorar el Entorno"
-- Estadísticas: Mantener datos pero ajustar lenguaje
-- Testimonios: Ajustar contenido para tono profesional, sin "revolucionado"
-
-**Cambios de Diseño:**
-- Aplicar paleta sobria (Deep Charcoal, Slate Teal, Muted Sage)
-- Eliminar gradientes agresivos del hero
-- Usar colores desaturados para las tarjetas de features
-
-### 2. Página de Precios (`PricingPage.tsx`)
-
-**Cambios SEO:**
-- Título: "Planes y Precios | Praxis Hub"
-- Canonical: `https://praxishub.co/#precios`
-- Actualizar structured data
-
-**Cambios de Contenido:**
-- Eliminar lenguaje promocional exagerado
-- Enfoque en "acceso al entorno profesional"
-- Ajustar descripciones de planes con tono institucional
-
-### 3. Página de Contacto (`ContactPage.tsx`)
-
-**Cambios SEO:**
-- Título: "Contacto | Praxis Hub"
-- Descripción: Actualizar para reflejar nueva propuesta
-- Canonical: `https://praxishub.co/#contacto`
-
-**Cambios de Contenido:**
-- Email de contacto: `contacto@praxishub.co` (o mantener el actual temporalmente)
-- Mensajes y descripciones con tono profesional
-
-### 4. Blog (`BlogPage.tsx`)
-
-**Cambios:**
-- Título: "Blog | Praxis Hub"
-- SEO: Actualizar canonical y structured data
-- Contenido: "Blog de Praxis Hub" en vez de "Blog de Tu Consultor Legal"
-
-### 5. Página Empresas (`EmpresasPage.tsx`)
-
-**Cambios SEO:**
-- Título: "Soluciones Empresariales | Praxis Hub"
-- Actualizar canonical y structured data
-
-**Cambios de Contenido:**
-- Hero con nueva identidad visual
-- Textos alineados al tono institucional
-
-### 6. Autenticación de Usuarios (`UserAuthPage.tsx`)
-
-**Cambios:**
-- Título de tarjeta: "Praxis Hub" en lugar de "Tu Consultor Legal"
-- Subtítulo: "Entorno profesional integrado"
-
-### 7. Autenticación de Abogados (`LawyerAuthPage.tsx`)
-
-**Cambios:**
-- Aplicar nuevo branding visual
-- Actualizar beneficios listados con nuevo tono
-
-### 8. Chat Widget (`ChatWidget.tsx`)
-
-**Cambios Críticos:**
-- Mensaje de bienvenida: Actualizar referencia a "praxishub.co"
-- Header del chat: "Praxis Hub" en subtítulo
-- Mantener "Lexi" como nombre del asistente (puede conservarse)
-
-### 9. Dashboard de Usuario (`UserDashboardPage.tsx`)
-
-**Cambios:**
-- Referencias a la marca en headers
-- Textos descriptivos con nuevo tono
-
-### 10. Dashboard de Abogados (`LawyerDashboardPage.tsx`)
-
-**Cambios:**
-- Headers y welcome messages
-- Referencias a la plataforma
-
-### 11. Páginas Legales
-
-**PrivacyPolicyPage.tsx y TermsAndConditionsPage.tsx:**
-- Cambiar "TUCONSULTORLEGAL.CO" por "PRAXISHUB.CO"
-- Botón de consulta: "Consultar con soporte" (más neutral)
-
-### 12. Plantillas de Email (`emailTemplates.ts`)
-
-**Cambios Masivos:**
-- `getConfirmSignupTemplate`: 
-  - platformName: "Praxis Hub" para usuarios, "Portal del Abogado - Praxis Hub" para abogados
-  - Footer: "© Praxis Hub. Todos los derechos reservados."
-- `getMagicLinkTemplate`: Mismos cambios
-- `getResetPasswordTemplate`: Mismos cambios
-- `getChangeEmailTemplate`: Mismos cambios
-- `getInvitationTemplate`: Mismos cambios
-
-**Colores de Email:**
-- Actualizar gradientes a paleta sobria (Slate Teal: #3d5a5a)
-
-### 13. Otros Componentes
-
-| Componente | Cambio |
-|------------|--------|
-| `CertificationBadge.tsx` | "praxishub.co" en referencias |
-| `useUserTracking.ts` | source: 'praxishub' |
-| `CustomDocumentRequestDialog.tsx` | site_url, emails de fallback |
-| `IntellectualPropertyPage.tsx` | Referencia a marca |
-| `DocumentChatFlow.tsx` | Prompts de Lexi con nueva referencia |
-
-### 14. Edge Functions (Supabase)
-
-**Archivos a revisar:**
-- `send-email/index.ts`: Nombre de remitente
-- `document-chat/index.ts`: Referencias en prompts
-
-### 15. Admin Components
-
-**AdminPage.tsx:**
-- Template de respuesta de email: Actualizar header y footer
-
-**EmailConfigManager.tsx:**
-- Subject de prueba: "Email de Prueba - Praxis Hub"
+**Solución**: Reemplazar con `<img src={logoIcon} alt="Praxis Hub" />` usando el asset `@/assets/favicon.png`.
 
 ---
 
-## Sección Técnica
+### 2. Colores y Gradientes No Conformes a la Marca
 
-### Patrón de Cambios de Marca
+**Paleta Oficial de Praxis Hub (definida en CSS):**
+- `--brand-primary`: `hsl(200 25% 30%)` - Slate Teal (#3d5a5a aprox.)
+- `--brand-dark`: `hsl(220 14% 10%)` - Deep Charcoal
+- `--brand-accent`: `hsl(160 20% 45%)` - Muted Sage
+- `--primary`: `hsl(200 25% 30%)`
 
-Para cada archivo, aplicar estas transformaciones de texto:
+**Problemas encontrados:**
 
-```text
-"Tu Consultor Legal" → "Praxis Hub"
-"tuconsultorlegal.co" → "praxishub.co"
-"tuconsultorlegal" → "praxishub"
-"TCL" → "Praxis Hub"
-"consultor legal" → "Praxis Hub" (donde aplique)
+| Archivo | Problema | Color incorrecto |
+|---------|----------|------------------|
+| `PersonasPage.tsx` L136 | Gradiente del hero | `from-[#010f24] via-[#011838] to-[#010f24]` (azul oscuro antiguo) |
+| `PersonasPage.tsx` L156 | Texto gradiente | `from-[#f2bb31] to-[#ffd666]` (dorado vibrante) |
+| `PersonasPage.tsx` L171 | Botón CTA | `from-[#f2bb31] to-[#ffd666]` (dorado vibrante) |
+| `LawyerAuthPage.tsx` L68 | Background | `from-brand-gray-light` (variable inexistente) |
+| `LawyerAuthPage.tsx` L133 | Gradiente | `to-brand-blue-light/5` (variable inexistente) |
+| `PWAInstallPrompt.tsx` L104 | Icono container | `from-[#0372e8] to-[#0a8fff]` (azul vibrante) |
+| `DashboardWelcome.tsx` L33 | Botón créditos | `from-amber-500 to-orange-500` (no alineado) |
+
+**Solución**: Reemplazar con la paleta sobria de Praxis Hub:
+- `from-brand-dark via-brand-primary/90 to-brand-dark`
+- Usar `bg-brand-primary`, `bg-brand-accent` para botones
+- Eliminar gradientes vibrantes y dorados
+
+---
+
+### 3. Referencias de Texto a la Marca Antigua
+
+| Archivo | Problema |
+|---------|----------|
+| `PWAInstallPrompt.tsx` L107-114 | `alt="tuconsultorlegal.co"` y `"Instalar tuconsultorlegal.co"` |
+
+**Solución**: Actualizar a "Praxis Hub" y "praxishub.co".
+
+---
+
+### 4. Archivos de Assets Obsoletos
+
+En `/public/` existen múltiples archivos con referencias a la marca antigua:
+- `favicon-tcl.png`
+- `logo-tcl.png` 
+- `logo_tcl.png`
+- `favicon-ai-legal.png`
+- `logo-ai-legal.png`
+
+**Solución**: Estos archivos pueden eliminarse para evitar confusión (o mantenerse como respaldo histórico).
+
+---
+
+### 5. Variables CSS Inexistentes
+
+Algunas clases de Tailwind hacen referencia a variables que no existen en el sistema de diseño:
+- `brand-gray-light` - No definida
+- `brand-blue-light` - No definida
+
+**Solución**: Reemplazar con variables existentes (`muted`, `background`, `primary/5`).
+
+---
+
+## Archivos a Modificar
+
+### Prioridad Alta (Afectan páginas visibles principales)
+
+1. **`src/components/PersonasPage.tsx`**
+   - Cambiar gradiente del hero a colores sobrios
+   - Eliminar texto gradiente dorado
+   - Actualizar botón CTA
+
+2. **`src/components/UserAuthPage.tsx`**
+   - Reemplazar `Scale` icon con logo real
+
+3. **`src/components/LawyerLogin.tsx`**
+   - Reemplazar `Scale` icon con logo real
+
+4. **`src/components/ChatWidget.tsx`**
+   - Reemplazar `Scale` icon en botón flotante con logo
+
+5. **`src/components/LawyerAuthPage.tsx`**
+   - Corregir clases CSS con variables inexistentes
+
+6. **`src/components/PWAInstallPrompt.tsx`**
+   - Actualizar texto y alt a "Praxis Hub"
+   - Corregir gradiente del icono
+
+### Prioridad Media (Dashboards y componentes internos)
+
+7. **`src/components/dashboard/DashboardWelcome.tsx`**
+   - Reemplazar `Scale` icon con logo
+   - Ajustar color del botón de créditos
+
+8. **`src/components/UnifiedSidebar.tsx`**
+   - Verificar uso correcto del logo si aplica
+
+### Prioridad Baja (Demos y mockups)
+
+9. **Componentes de demo** (`DemoResearchMockup.tsx`, etc.)
+   - El uso de `Scale` como icono decorativo en demos es aceptable
+   - Podría ajustarse para consistencia visual
+
+---
+
+## Detalles Técnicos de Implementación
+
+### Patrón de Reemplazo de Logo
+
+```tsx
+// Antes
+import { Scale } from "lucide-react";
+<Scale className="w-5 h-5 text-brand-primary" />
+
+// Después
+import logoIcon from "@/assets/favicon.png";
+<img src={logoIcon} alt="Praxis Hub" className="w-5 h-5" />
 ```
 
-### Cambios de Paleta CSS
+### Patrón de Corrección de Gradientes
 
-Los colores ya fueron actualizados en `index.css` y `tailwind.config.ts`. Los componentes deben usar:
+```tsx
+// Antes (PersonasPage)
+className="bg-gradient-to-br from-[#010f24] via-[#011838] to-[#010f24]"
 
-```css
-/* Colores primarios */
---brand-primary: hsl(200 25% 30%)    /* Slate Teal */
---brand-dark: hsl(220 14% 10%)       /* Deep Charcoal */
---brand-accent: hsl(160 20% 45%)     /* Muted Sage */
+// Después
+className="bg-gradient-to-br from-brand-dark via-brand-primary/90 to-brand-dark"
 ```
 
-### Cambios de Gradientes
+```tsx
+// Antes (botones dorados)
+className="bg-gradient-to-r from-[#f2bb31] to-[#ffd666]"
 
-Reemplazar gradientes agresivos:
-```css
-/* Antes */
-from-[#010f24] via-[#011838] to-[#010f24]
-
-/* Después */
-from-brand-dark via-background to-muted
+// Después
+className="bg-brand-primary hover:bg-brand-primary/90"
 ```
 
-### SEO y Structured Data
+### Patrón de Corrección de Variables CSS
 
-Todos los hooks `useSEO` deben actualizarse con:
-- Nuevo dominio canónico
-- Nueva organización en structured data
-- Nuevas keywords alineadas al posicionamiento
+```tsx
+// Antes
+className="from-brand-gray-light to-background"
+
+// Después
+className="from-muted to-background"
+```
 
 ---
 
-## Orden de Implementación
+## Resumen de Cambios
 
-1. **Componentes de UI base** (ya completados: HomePage, Header, Footer, index.html)
-2. **Landing de Abogados** (LawyerLandingPage)
-3. **Páginas de autenticación** (UserAuthPage, LawyerAuthPage)
-4. **Chat Widget** (mensaje de bienvenida crítico)
-5. **Plantillas de Email** (afecta comunicación con usuarios)
-6. **Páginas secundarias** (Pricing, Contact, Blog, Empresas)
-7. **Dashboards** (User, Lawyer)
-8. **Páginas legales** (Privacy, Terms)
-9. **Utilidades y hooks** (tracking, certificaciones)
-10. **Edge functions** (prompts, emails)
-11. **Admin components** (respuestas de email)
+| Categoría | Archivos | Cambios |
+|-----------|----------|---------|
+| Logo (Scale → img) | 5 archivos | Reemplazar icono con logo real |
+| Gradientes vibrantes | 3 archivos | Convertir a paleta sobria |
+| Variables inexistentes | 1 archivo | Usar variables definidas |
+| Referencias de texto | 1 archivo | Actualizar a Praxis Hub |
+| **Total** | **8-10 archivos** | ~25 cambios |
 
 ---
 
-## Notas Importantes
+## Verificación Post-Implementación
 
-1. **Dominio**: El plan asume que el nuevo dominio será `praxishub.co`. Si el dominio es diferente, ajustar todas las referencias.
+Páginas a verificar visualmente tras los cambios:
+1. `/` - HomePage
+2. `/#personas` - PersonasPage (hero y botones)
+3. `/#auth` - UserAuthPage (logo en card)
+4. `/auth-abogados` - LawyerAuthPage (logo y background)
+5. Chat widget flotante (logo del botón)
+6. Dashboard de abogados (welcome section)
 
-2. **Base de datos**: Las migraciones previas con contenido de "Tu Consultor Legal" (como `legal_content`, `email_configuration`) pueden requerir actualización manual en la base de datos.
-
-3. **Lexi**: El nombre del asistente "Lexi" puede mantenerse ya que no está vinculado a la marca anterior.
-
-4. **Consistencia de tono**: Todo el contenido debe reflejar los valores de Praxis Hub:
-   - Profesional, no promocional
-   - Institucional contemporáneo
-   - Evitar: "revolución", "disrupción", "instantáneo"
-   - Usar: "entorno", "práctica", "estándares", "confianza"
