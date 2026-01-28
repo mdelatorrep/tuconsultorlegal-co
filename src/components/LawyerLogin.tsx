@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useLawyerAuth } from '@/hooks/useLawyerAuth';
-import { Scale, Lock, Mail, User, Eye, EyeOff, ArrowLeft, CheckCircle, Shield } from 'lucide-react';
+import { Lock, Mail, User, Eye, EyeOff, ArrowLeft, CheckCircle, Shield } from 'lucide-react';
+import logoIcon from "@/assets/favicon.png";
 import { useToast } from '@/hooks/use-toast';
 import { SubscriptionPlanSelector } from './SubscriptionPlanSelector';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -451,7 +452,7 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
 
             <div className="mb-6">
               <div className="w-12 h-12 mx-auto mb-4 bg-primary/10 rounded-full flex items-center justify-center">
-                <Scale className="h-6 w-6 text-primary" />
+                <img src={logoIcon} alt="Praxis Hub" className="h-6 w-6" />
               </div>
               <h3 className="text-2xl font-bold text-center mb-2">{getTitle()}</h3>
               <p className="text-muted-foreground text-center text-sm">{getDescription()}</p>

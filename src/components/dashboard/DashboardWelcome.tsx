@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Scale } from "lucide-react";
+import logoIcon from "@/assets/favicon.png";
 
 interface DashboardWelcomeProps {
   userName: string;
@@ -23,14 +23,14 @@ export function DashboardWelcome({ userName, onViewCredits }: DashboardWelcomePr
           </div>
           <div className="flex items-center gap-3">
             <Badge variant="outline" className="flex items-center gap-2 text-xs md:text-sm w-fit">
-              <Scale className="h-3 w-3 md:h-4 md:w-4" />
+              <img src={logoIcon} alt="Praxis Hub" className="h-3 w-3 md:h-4 md:w-4" />
               Praxis Hub
             </Badge>
             <Button 
               variant="default" 
               size="sm"
               onClick={onViewCredits}
-              className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+              className="bg-brand-primary hover:bg-brand-primary/90"
             >
               Mis Créditos
             </Button>
