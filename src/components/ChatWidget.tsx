@@ -2,7 +2,8 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { Scale, X, Send, AlertCircle, Settings } from "lucide-react";
+import { X, Send, AlertCircle, Settings } from "lucide-react";
+import logoIcon from "@/assets/favicon.png";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "./ui/use-toast";
 import { useLegalTracking } from "@/hooks/useLogRocket";
@@ -329,7 +330,7 @@ export default function ChatWidget({ isOpen, onToggle, initialMessage }: ChatWid
         className="fixed bottom-6 right-6 w-16 h-16 bg-brand-primary hover:bg-brand-primary/90 text-white rounded-full shadow-soft flex items-center justify-center z-[9999] md:w-20 md:h-20 hover-scale transition-all duration-500 animate-[pulse_3s_ease-in-out_infinite] hover:animate-none hover:shadow-card"
         aria-label="Abrir chat de asistencia legal"
       >
-        <Scale size={28} className="md:w-8 md:h-8 transition-transform duration-300" />
+        <img src={logoIcon} alt="Praxis Hub" className="w-7 h-7 md:w-8 md:h-8 transition-transform duration-300" />
       </button>
     );
   }

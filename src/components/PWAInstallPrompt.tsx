@@ -101,17 +101,17 @@ export const PWAInstallPrompt = () => {
             </button>
 
             <div className="flex items-start gap-4">
-              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#0372e8] to-[#0a8fff] flex items-center justify-center flex-shrink-0">
+              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-brand-primary to-brand-dark flex items-center justify-center flex-shrink-0">
                 <img 
                   src="/pwa-192x192.png" 
-                  alt="tuconsultorlegal.co" 
+                  alt="Praxis Hub" 
                   className="w-10 h-10"
                 />
               </div>
 
               <div className="flex-1">
                 <h3 className="font-semibold text-slate-900 dark:text-white mb-1">
-                  Instalar tuconsultorlegal.co
+                  Instalar Praxis Hub
                 </h3>
                 <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
                   {isIOS 

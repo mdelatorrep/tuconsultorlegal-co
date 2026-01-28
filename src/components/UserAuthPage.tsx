@@ -7,7 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Alert, AlertDescription } from './ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { ArrowLeft, Mail, Lock, User, Eye, EyeOff, CheckCircle, Scale } from 'lucide-react';
+import { ArrowLeft, Mail, Lock, User, Eye, EyeOff, CheckCircle } from 'lucide-react';
+import logoIcon from "@/assets/favicon.png";
 import { Checkbox } from './ui/checkbox';
 import { PasswordResetDialog } from './PasswordResetDialog';
 import { MagicLinkDialog } from './MagicLinkDialog';
@@ -217,7 +218,7 @@ export default function UserAuthPage({ onBack, onAuthSuccess }: UserAuthPageProp
               </Button>
               <div className="flex-1 text-center">
                 <div className="flex items-center justify-center gap-2 mb-1">
-                  <Scale className="w-5 h-5 text-brand-primary" />
+                  <img src={logoIcon} alt="Praxis Hub" className="w-5 h-5" />
                   <CardTitle className="text-2xl font-bold text-brand-primary">Praxis Hub</CardTitle>
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">

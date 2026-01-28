@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { LogOut, Scale, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Bot, Settings, Users, User, Database, Gavel, Coins, Trophy, Radar, Calendar, Mic, TrendingUp, UserCircle, ChevronDown, FileSearch, FileText, Briefcase, GraduationCap, Mail, Sparkles } from "lucide-react";
+import { LogOut, BarChart3, Brain, BookOpen, Search, Eye, PenTool, Target, Home, Bot, Settings, Users, User, Database, Gavel, Coins, Trophy, Radar, Calendar, Mic, TrendingUp, UserCircle, ChevronDown, FileSearch, FileText, Briefcase, GraduationCap, Mail, Sparkles } from "lucide-react";
+import logoIcon from "@/assets/favicon.png";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -269,7 +270,7 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
         {!collapsed && (
           <div className="p-4 border-b space-y-2">
             <div className="flex items-center gap-2 mb-2">
-              <Scale className="w-5 h-5 text-primary" />
+              <img src={logoIcon} alt="Praxis Hub" className="w-5 h-5" />
               <h2 className="font-bold text-sm">Portal Abogados</h2>
             </div>
             <p className="text-xs text-muted-foreground truncate">

@@ -65,7 +65,7 @@ export default function LawyerAuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-brand-gray-light to-background">
+    <div className="min-h-screen bg-gradient-to-b from-muted to-background">
       {/* Header del Home */}
       <Header 
         currentPage="auth-abogados" 
@@ -130,7 +130,7 @@ export default function LawyerAuthPage() {
 
               {/* Login Form */}
               <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-brand-blue-light/5 rounded-3xl blur-3xl"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-primary/10 rounded-3xl blur-3xl"></div>
                 <div className="relative">
                   <LawyerLogin onLoginSuccess={() => window.location.replace('/')} />
                 </div>

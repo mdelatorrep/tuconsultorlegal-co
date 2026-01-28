@@ -133,12 +133,12 @@ export default function PersonasPage({
   }
   return <div className="min-h-screen bg-background">
       {/* Hero Section - High Impact Design */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-[#010f24] via-[#011838] to-[#010f24]">
+      <section className="relative overflow-hidden bg-gradient-to-br from-brand-dark via-brand-primary/90 to-brand-dark">
         {/* Animated Background Pattern */}
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width=%2260%22%20height=%2260%22%20viewBox=%220%200%2060%2060%22%20xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cg%20fill=%22none%22%20fill-rule=%22evenodd%22%3E%3Cg%20fill=%22%23ffffff%22%20fill-opacity=%220.05%22%3E%3Ccircle%20cx=%2230%22%20cy=%2230%22%20r=%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] animate-pulse"></div>
         
         {/* Glow Effect */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] md:w-[800px] md:h-[800px] bg-[#0372e8]/10 rounded-full blur-[120px]"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] md:w-[800px] md:h-[800px] bg-brand-accent/10 rounded-full blur-[120px]"></div>
         
         <div className="relative container mx-auto px-6 py-16 md:py-24">
           <div className="max-w-4xl mx-auto text-center space-y-8">
@@ -153,7 +153,7 @@ export default function PersonasPage({
             <div className="space-y-4 animate-fade-in">
               <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold text-white leading-tight tracking-tight">
                 Tu Asesoría Legal
-                <span className="block bg-gradient-to-r from-[#f2bb31] to-[#ffd666] bg-clip-text text-transparent mt-2">
+                <span className="block bg-gradient-to-r from-brand-accent to-brand-primary-light bg-clip-text text-transparent mt-2">
                   Inteligente
                 </span>
               </h1>
@@ -168,7 +168,7 @@ export default function PersonasPage({
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4 animate-fade-in">
               <Button 
                 size="lg" 
-                className="bg-gradient-to-r from-[#f2bb31] to-[#ffd666] text-[#010f24] hover:shadow-xl hover:shadow-yellow-500/20 transition-all duration-300 font-semibold px-8 py-6 text-lg group" 
+                className="bg-brand-accent hover:bg-brand-accent/90 text-white hover:shadow-xl transition-all duration-300 font-semibold px-8 py-6 text-lg group" 
                 onClick={() => {
                   const element = document.getElementById('documentos-section');
                   element?.scrollIntoView({
