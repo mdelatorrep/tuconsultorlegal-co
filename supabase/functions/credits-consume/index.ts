@@ -22,10 +22,29 @@ async function updateGamificationProgress(supabase: any, lawyerId: string, toolT
       return;
     }
 
-    // Filter tasks that match this tool_type
+    const parseCriteria = (raw: unknown): any => {
+      if (!raw) return null;
+      if (typeof raw === 'string') {
+        try {
+          return JSON.parse(raw);
+        } catch {
+          return null;
+        }
+      }
+      return raw;
+    };
+
+    const getCriteriaToolType = (criteria: any): string | null => {
+      if (!criteria) return null;
+      return (criteria.tool_type ?? criteria.toolType ?? null) as string | null;
+    };
+
+    // Filter tasks that match this tool_type (robust to jsonb parsing differences)
     const matchingTasks = tasks.filter((task: any) => {
-      const criteria = task.completion_criteria;
-      return criteria?.tool_type === toolType;
+      const criteria = parseCriteria(task.completion_criteria);
+      const allTools = criteria?.all_tools === true;
+      const criteriaToolType = getCriteriaToolType(criteria);
+      return allTools || criteriaToolType === toolType;
     });
 
     if (matchingTasks.length === 0) {
@@ -35,8 +54,8 @@ async function updateGamificationProgress(supabase: any, lawyerId: string, toolT
 
     console.log(`[GAMIFICATION] Found ${matchingTasks.length} matching tasks`);
 
-    // Count total uses of this tool by this lawyer
-    const { count: totalUses } = await supabase
+    // Count total uses of this tool by this lawyer (legacy heuristic)
+    await supabase
       .from('credit_transactions')
       .select('*', { count: 'exact', head: true })
       .eq('lawyer_id', lawyerId)
@@ -59,13 +78,18 @@ async function updateGamificationProgress(supabase: any, lawyerId: string, toolT
       .eq('tool_type', toolType)
       .single();
 
-    const usesOfThisTool = allTransactions?.filter((t: any) => t.reference_id === toolCost?.id).length || 1;
+    const usesOfThisTool = allTransactions?.filter((t: any) => t.reference_id === toolCost?.id).length || 0;
+    const totalToolUses = allTransactions?.length || 0;
 
     console.log(`[GAMIFICATION] Lawyer has ${usesOfThisTool} uses of ${toolType}`);
 
     for (const task of matchingTasks) {
-      const minUses = task.completion_criteria?.min_uses || 1;
+      const criteria = parseCriteria(task.completion_criteria) || {};
+      const minUses = criteria?.min_uses || 1;
       const today = new Date().toISOString().split('T')[0];
+
+      const appliesToAllTools = criteria?.all_tools === true;
+      const currentCount = appliesToAllTools ? totalToolUses : usesOfThisTool;
 
       // Get existing progress
       const { data: existingProgress } = await supabase
@@ -84,8 +108,10 @@ async function updateGamificationProgress(supabase: any, lawyerId: string, toolT
           continue;
         }
 
-        // Complete daily task
-        await completeDailyTask(supabase, lawyerId, task, existingProgress);
+        // Only complete if min uses reached
+        if (currentCount >= minUses) {
+          await completeDailyTask(supabase, lawyerId, task, existingProgress, { currentCount, minUses, toolType });
+        }
       }
       // For weekly tasks, check if completed this week
       else if (task.task_type === 'weekly') {
@@ -101,7 +127,9 @@ async function updateGamificationProgress(supabase: any, lawyerId: string, toolT
           continue;
         }
 
-        await completeDailyTask(supabase, lawyerId, task, existingProgress);
+        if (currentCount >= minUses) {
+          await completeDailyTask(supabase, lawyerId, task, existingProgress, { currentCount, minUses, toolType });
+        }
       }
       // For achievements, check if min_uses reached
       else if (task.task_type === 'achievement') {
@@ -110,8 +138,8 @@ async function updateGamificationProgress(supabase: any, lawyerId: string, toolT
           continue;
         }
 
-        if (usesOfThisTool >= minUses) {
-          console.log(`[GAMIFICATION] Achievement ${task.task_key} unlocked! (${usesOfThisTool}/${minUses})`);
+        if (currentCount >= minUses) {
+          console.log(`[GAMIFICATION] Achievement ${task.task_key} unlocked! (${currentCount}/${minUses})`);
           await completeAchievement(supabase, lawyerId, task);
         } else {
           // Update progress data for achievement
@@ -121,8 +149,8 @@ async function updateGamificationProgress(supabase: any, lawyerId: string, toolT
               lawyer_id: lawyerId,
               task_id: task.id,
               status: 'in_progress',
-              completion_count: usesOfThisTool,
-              progress_data: { current: usesOfThisTool, target: minUses },
+              completion_count: currentCount,
+              progress_data: { current: currentCount, target: minUses },
               started_at: existingProgress?.started_at || new Date().toISOString()
             }, { onConflict: 'lawyer_id,task_id' });
         }
@@ -134,7 +162,13 @@ async function updateGamificationProgress(supabase: any, lawyerId: string, toolT
   }
 }
 
-async function completeDailyTask(supabase: any, lawyerId: string, task: any, existingProgress: any) {
+async function completeDailyTask(
+  supabase: any,
+  lawyerId: string,
+  task: any,
+  existingProgress: any,
+  meta?: { currentCount: number; minUses: number; toolType: string }
+) {
   const now = new Date().toISOString();
   const completionCount = (existingProgress?.completion_count || 0) + 1;
 
@@ -146,7 +180,11 @@ async function completeDailyTask(supabase: any, lawyerId: string, task: any, exi
       task_id: task.id,
       status: 'completed',
       completion_count: completionCount,
-      progress_data: { current: 1, target: 1 },
+      progress_data: {
+        current: meta?.currentCount ?? 1,
+        target: meta?.minUses ?? 1,
+        toolType: meta?.toolType,
+      },
       completed_at: now,
       started_at: existingProgress?.started_at || now
     }, { onConflict: 'lawyer_id,task_id' });
@@ -156,10 +194,7 @@ async function completeDailyTask(supabase: any, lawyerId: string, task: any, exi
     return;
   }
 
-  // Award credits
-  await awardCredits(supabase, lawyerId, task);
-  
-  // Send notification
+  // Send notification (credits are awarded on CLAIM via gamification-check)
   await sendGamificationNotification(supabase, lawyerId, task);
 }
 
@@ -183,44 +218,8 @@ async function completeAchievement(supabase: any, lawyerId: string, task: any) {
     return;
   }
 
-  await awardCredits(supabase, lawyerId, task);
+  // Credits are awarded on CLAIM via gamification-check
   await sendGamificationNotification(supabase, lawyerId, task, true);
-}
-
-async function awardCredits(supabase: any, lawyerId: string, task: any) {
-  const creditReward = task.credit_reward || 0;
-  if (creditReward <= 0) return;
-
-  // Get current balance
-  const { data: credits } = await supabase
-    .from('lawyer_credits')
-    .select('current_balance, total_earned')
-    .eq('lawyer_id', lawyerId)
-    .single();
-
-  const newBalance = (credits?.current_balance || 0) + creditReward;
-  const newTotalEarned = (credits?.total_earned || 0) + creditReward;
-
-  // Update balance
-  await supabase.from('lawyer_credits').upsert({
-    lawyer_id: lawyerId,
-    current_balance: newBalance,
-    total_earned: newTotalEarned,
-    updated_at: new Date().toISOString()
-  }, { onConflict: 'lawyer_id' });
-
-  // Record transaction
-  await supabase.from('credit_transactions').insert({
-    lawyer_id: lawyerId,
-    transaction_type: 'gamification',
-    amount: creditReward,
-    balance_after: newBalance,
-    reference_type: 'task',
-    reference_id: task.id,
-    description: `Misión completada: ${task.name}`
-  });
-
-  console.log(`[GAMIFICATION] Awarded ${creditReward} credits for ${task.name}`);
 }
 
 async function sendGamificationNotification(supabase: any, lawyerId: string, task: any, isAchievement = false) {
@@ -233,8 +232,8 @@ async function sendGamificationNotification(supabase: any, lawyerId: string, tas
       : `✅ ¡Misión completada: ${task.name}!`;
     
     const message = isAchievement
-      ? `Felicitaciones, has conseguido el logro "${task.badge_name || task.name}". ¡Ganaste ${task.credit_reward} créditos!`
-      : `Has completado la misión "${task.name}" y ganaste ${task.credit_reward} créditos. ¡Sigue así!`;
+      ? `Felicitaciones, has desbloqueado el logro "${task.badge_name || task.name}". Reclama tu recompensa de ${task.credit_reward} créditos en Misiones.`
+      : `Has completado la misión "${task.name}". Reclama tu recompensa de ${task.credit_reward} créditos en Misiones.`;
 
     await fetch(`${supabaseUrl}/functions/v1/create-notification`, {
       method: 'POST',
