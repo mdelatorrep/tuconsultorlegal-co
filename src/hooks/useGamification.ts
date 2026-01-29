@@ -129,16 +129,42 @@ export function useGamification(lawyerId: string | null) {
   }, [lawyerId]);
 
   const checkAndClaimTask = useCallback(async (taskKey: string) => {
-    if (!lawyerId) return { success: false };
+    if (!lawyerId) {
+      console.warn('[GAMIFICATION] checkAndClaimTask called without lawyerId');
+      return { success: false, error: 'No lawyer ID' };
+    }
+
+    console.log('[GAMIFICATION] Attempting to claim task:', taskKey, 'for lawyer:', lawyerId);
 
     try {
       const { data, error } = await supabase.functions.invoke('gamification-check', {
         body: { lawyerId, taskKey, action: 'claim' }
       });
 
-      if (error) throw error;
+      console.log('[GAMIFICATION] Edge function response:', { data, error });
 
-      if (data.claimed) {
+      if (error) {
+        console.error('[GAMIFICATION] Edge function error:', error);
+        toast({
+          title: 'Error al reclamar',
+          description: 'No se pudo procesar la solicitud. Intenta de nuevo.',
+          variant: 'destructive'
+        });
+        throw error;
+      }
+
+      if (data?.alreadyClaimed) {
+        console.log('[GAMIFICATION] Task already claimed:', taskKey);
+        toast({
+          title: 'Ya reclamado',
+          description: 'Esta misión ya fue reclamada anteriormente.',
+        });
+        return { success: true, alreadyClaimed: true, ...data };
+      }
+
+      if (data?.claimed) {
+        console.log('[GAMIFICATION] Task claimed successfully:', taskKey, 'Credits:', data.creditsAwarded);
+        
         toast({
           title: '🎉 ¡Tarea completada!',
           description: `Has ganado ${data.creditsAwarded} créditos por "${data.taskName}"`,
@@ -150,17 +176,18 @@ export function useGamification(lawyerId: string | null) {
           detail: {
             points: Number(data.creditsAwarded || 0),
             taskName: data.taskName || '¡Misión completada!',
-            isAchievement: false,
+            isAchievement: data.badge ? true : false,
           }
         }));
 
+        // Immediately refresh progress
         await fetchProgress();
       }
 
       return { success: true, ...data };
     } catch (error) {
-      console.error('Error claiming task:', error);
-      return { success: false };
+      console.error('[GAMIFICATION] Error claiming task:', error);
+      return { success: false, error: String(error) };
     }
   }, [lawyerId, fetchProgress, toast]);
 
