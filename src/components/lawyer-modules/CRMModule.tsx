@@ -37,7 +37,8 @@ interface CRMStats {
 }
 
 export default function CRMModule({ user, currentView, onViewChange, onLogout }: CRMModuleProps) {
-  const [activeTab, setActiveTab] = useState<'clients' | 'cases' | 'communications' | 'documents' | 'tasks' | 'automation' | 'analytics' | 'leads' | 'pipeline' | 'lead-pipeline' | 'health' | 'entities'>('pipeline');
+  const [activeTab, setActiveTab] = useState<'operaciones' | 'relaciones' | 'gestion' | 'inteligencia'>('operaciones');
+  const [subView, setSubView] = useState<string>('pipeline');
   const [searchTerm, setSearchTerm] = useState("");
   const [stats, setStats] = useState<CRMStats>({ clients: 0, cases: 0, tasks: 0, communications: 0 });
   const [isLoadingAI, setIsLoadingAI] = useState(false);
@@ -99,7 +100,7 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
       });
 
       // Refresh the analytics view
-      if (activeTab === 'analytics') {
+      if (activeTab === 'inteligencia') {
         // This will trigger a refresh in the analytics component
       }
     } catch (error) {
@@ -114,41 +115,76 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
     }
   };
 
-  const renderTabContent = () => {
+  const renderSubContent = () => {
     const commonProps = { 
       searchTerm, 
       onRefresh: fetchStats, 
       lawyerData: user 
     };
 
-    switch (activeTab) {
+    switch (subView) {
+      // Operaciones
       case 'pipeline':
         return <CasePipelineView lawyerData={user} />;
-      case 'lead-pipeline':
-        return <LeadPipeline {...commonProps} />;
-      case 'health':
-        return <ClientHealthView {...commonProps} />;
-      case 'entities':
-        return <CRMEntitiesView {...commonProps} />;
-      case 'clients':
-        return <CRMClientsView {...commonProps} />;
       case 'cases':
         return <CRMCasesView {...commonProps} />;
-      case 'communications':
-        return <CRMCommunicationsView {...commonProps} />;
-      case 'documents':
-        return <CRMDocumentsView {...commonProps} />;
       case 'tasks':
         return <CRMTasksView {...commonProps} />;
-      case 'automation':
-        return <CRMAutomationView {...commonProps} />;
-      case 'analytics':
-        return <CRMAnalyticsView {...commonProps} />;
+      // Relaciones
+      case 'clients':
+        return <CRMClientsView {...commonProps} />;
+      case 'entities':
+        return <CRMEntitiesView {...commonProps} />;
+      case 'health':
+        return <ClientHealthView {...commonProps} />;
+      case 'communications':
+        return <CRMCommunicationsView {...commonProps} />;
+      // Gestión
       case 'leads':
         return <CRMLeadsView {...commonProps} />;
+      case 'lead-pipeline':
+        return <LeadPipeline {...commonProps} />;
+      case 'documents':
+        return <CRMDocumentsView {...commonProps} />;
+      // Inteligencia
+      case 'analytics':
+        return <CRMAnalyticsView {...commonProps} />;
+      case 'automation':
+        return <CRMAutomationView {...commonProps} />;
       default:
         return <CasePipelineView lawyerData={user} />;
     }
+  };
+
+  // Define sub-views for each main tab
+  const tabSubViews = {
+    operaciones: [
+      { id: 'pipeline', label: 'Pipeline', icon: Kanban },
+      { id: 'cases', label: 'Casos', icon: Briefcase },
+      { id: 'tasks', label: 'Tareas', icon: Clock },
+    ],
+    relaciones: [
+      { id: 'clients', label: 'Clientes', icon: Users },
+      { id: 'entities', label: 'Entidades', icon: Building2 },
+      { id: 'health', label: 'Salud', icon: Heart },
+      { id: 'communications', label: 'Comunicaciones', icon: MessageSquare },
+    ],
+    gestion: [
+      { id: 'lead-pipeline', label: 'Leads IA', icon: Zap },
+      { id: 'leads', label: 'Lista Leads', icon: UserPlus },
+      { id: 'documents', label: 'Documentos', icon: FileText },
+    ],
+    inteligencia: [
+      { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+      { id: 'automation', label: 'Automatización', icon: Settings },
+    ],
+  };
+
+  // Set default sub-view when switching main tabs
+  const handleTabChange = (tab: string) => {
+    const newTab = tab as 'operaciones' | 'relaciones' | 'gestion' | 'inteligencia';
+    setActiveTab(newTab);
+    setSubView(tabSubViews[newTab][0].id);
   };
 
   return (
@@ -293,130 +329,63 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
                       </div>
                     </div>
 
-                    {/* Enhanced Tabs Interface - Reorganized for Value Generation */}
-                    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full">
-                      <TabsList className="flex flex-wrap justify-start gap-1 bg-gradient-to-r from-blue-50 to-blue-100/50 rounded-xl p-2 border border-blue-200 h-auto">
-                        {/* Primary Value Tabs */}
+                    {/* Simplified 4-Tab Interface */}
+                    <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+                      <TabsList className="grid grid-cols-4 bg-gradient-to-r from-blue-50 to-blue-100/50 rounded-xl p-1.5 border border-blue-200 h-auto">
                         <TabsTrigger 
-                          value="pipeline" 
-                          className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white rounded-lg transition-all duration-200"
+                          value="operaciones" 
+                          className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white rounded-lg transition-all duration-200 py-2.5"
                         >
                           <Kanban className="h-4 w-4" />
-                          <span className="hidden sm:inline">Pipeline</span>
+                          <span className="hidden sm:inline font-medium">Operaciones</span>
                         </TabsTrigger>
                         <TabsTrigger 
-                          value="lead-pipeline"
-                          className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-lg transition-all duration-200"
-                        >
-                          <Zap className="h-4 w-4" />
-                          <span className="hidden sm:inline">Leads IA</span>
-                        </TabsTrigger>
-                        <TabsTrigger 
-                          value="health"
-                          className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-pink-600 data-[state=active]:text-white rounded-lg transition-all duration-200"
-                        >
-                          <Heart className="h-4 w-4" />
-                          <span className="hidden sm:inline">Salud</span>
-                        </TabsTrigger>
-
-                        {/* Divider */}
-                        <div className="w-px h-6 bg-blue-200 mx-1 hidden md:block" />
-
-                        {/* B2B Entities Tab */}
-                        <TabsTrigger 
-                          value="entities" 
-                          className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white rounded-lg transition-all duration-200"
-                        >
-                          <Building2 className="h-4 w-4" />
-                          <span className="hidden sm:inline">Entidades</span>
-                        </TabsTrigger>
-
-                        {/* Data Tabs */}
-                        <TabsTrigger 
-                          value="clients" 
-                          className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-lg transition-all duration-200"
+                          value="relaciones"
+                          className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-lg transition-all duration-200 py-2.5"
                         >
                           <Users className="h-4 w-4" />
-                          <span className="hidden sm:inline">Clientes</span>
+                          <span className="hidden sm:inline font-medium">Relaciones</span>
                         </TabsTrigger>
                         <TabsTrigger 
-                          value="cases"
-                          className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-lg transition-all duration-200"
+                          value="gestion"
+                          className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-purple-600 data-[state=active]:text-white rounded-lg transition-all duration-200 py-2.5"
                         >
-                          <Briefcase className="h-4 w-4" />
-                          <span className="hidden sm:inline">Casos</span>
+                          <Zap className="h-4 w-4" />
+                          <span className="hidden sm:inline font-medium">Gestión</span>
                         </TabsTrigger>
                         <TabsTrigger 
-                          value="leads"
-                          className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-lg transition-all duration-200"
-                        >
-                          <UserPlus className="h-4 w-4" />
-                          <span className="hidden sm:inline">Leads</span>
-                        </TabsTrigger>
-                        <TabsTrigger 
-                          value="communications"
-                          className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-lg transition-all duration-200"
-                        >
-                          <MessageSquare className="h-4 w-4" />
-                          <span className="hidden sm:inline">Comunicaciones</span>
-                        </TabsTrigger>
-                        <TabsTrigger 
-                          value="documents"
-                          className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-lg transition-all duration-200"
-                        >
-                          <FileText className="h-4 w-4" />
-                          <span className="hidden sm:inline">Docs</span>
-                        </TabsTrigger>
-                        <TabsTrigger 
-                          value="automation"
-                          className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-lg transition-all duration-200"
-                        >
-                          <Settings className="h-4 w-4" />
-                          <span className="hidden sm:inline">Autom.</span>
-                        </TabsTrigger>
-                        <TabsTrigger 
-                          value="analytics"
-                          className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-lg transition-all duration-200"
+                          value="inteligencia"
+                          className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-amber-600 data-[state=active]:text-white rounded-lg transition-all duration-200 py-2.5"
                         >
                           <BarChart3 className="h-4 w-4" />
-                          <span className="hidden sm:inline">Analytics</span>
+                          <span className="hidden sm:inline font-medium">Inteligencia</span>
                         </TabsTrigger>
                       </TabsList>
 
+                      {/* Sub-navigation pills */}
+                      <div className="flex flex-wrap gap-2 mt-4 p-3 bg-muted/30 rounded-lg border">
+                        {tabSubViews[activeTab].map((item) => {
+                          const Icon = item.icon;
+                          return (
+                            <Button
+                              key={item.id}
+                              variant={subView === item.id ? "default" : "ghost"}
+                              size="sm"
+                              onClick={() => setSubView(item.id)}
+                              className={subView === item.id 
+                                ? "bg-primary text-primary-foreground shadow-sm" 
+                                : "hover:bg-muted"
+                              }
+                            >
+                              <Icon className="h-4 w-4 mr-2" />
+                              {item.label}
+                            </Button>
+                          );
+                        })}
+                      </div>
+
                       <div className="mt-6">
-                        <TabsContent value="pipeline" className="mt-0">
-                          {renderTabContent()}
-                        </TabsContent>
-                        <TabsContent value="lead-pipeline" className="mt-0">
-                          {renderTabContent()}
-                        </TabsContent>
-                        <TabsContent value="health" className="mt-0">
-                          {renderTabContent()}
-                        </TabsContent>
-                        <TabsContent value="clients" className="mt-0">
-                          {renderTabContent()}
-                        </TabsContent>
-                        <TabsContent value="cases" className="mt-0">
-                          {renderTabContent()}
-                        </TabsContent>
-                        <TabsContent value="communications" className="mt-0">
-                          {renderTabContent()}
-                        </TabsContent>
-                        <TabsContent value="documents" className="mt-0">
-                          {renderTabContent()}
-                        </TabsContent>
-                        <TabsContent value="tasks" className="mt-0">
-                          {renderTabContent()}
-                        </TabsContent>
-                        <TabsContent value="automation" className="mt-0">
-                          {renderTabContent()}
-                        </TabsContent>
-                        <TabsContent value="analytics" className="mt-0">
-                          {renderTabContent()}
-                        </TabsContent>
-                        <TabsContent value="leads" className="mt-0">
-                          {renderTabContent()}
-                        </TabsContent>
+                        {renderSubContent()}
                       </div>
                     </Tabs>
                   </CardContent>
