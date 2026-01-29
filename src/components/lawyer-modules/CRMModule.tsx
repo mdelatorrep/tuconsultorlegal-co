@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Briefcase, MessageSquare, FileText, Settings, BarChart3, User, Calendar, Phone, Clock, Brain, TrendingUp, Sparkles, Loader2, UserPlus, Heart, Kanban, Zap } from "lucide-react";
+import { Users, Briefcase, MessageSquare, FileText, Settings, BarChart3, User, Calendar, Phone, Clock, Brain, TrendingUp, Sparkles, Loader2, UserPlus, Heart, Kanban, Zap, Building2 } from "lucide-react";
 import { useCredits } from "@/hooks/useCredits";
 import { ToolCostIndicator } from "@/components/credits/ToolCostIndicator";
 import { useToast } from "@/hooks/use-toast";
@@ -20,6 +20,7 @@ import CRMLeadsView from "./crm/CRMLeadsView";
 import CasePipelineView from "./crm/CasePipelineView";
 import LeadPipeline from "./crm/LeadPipeline";
 import ClientHealthView from "./crm/ClientHealthView";
+import CRMEntitiesView from "./crm/CRMEntitiesView";
 
 interface CRMModuleProps {
   user: any;
@@ -36,7 +37,7 @@ interface CRMStats {
 }
 
 export default function CRMModule({ user, currentView, onViewChange, onLogout }: CRMModuleProps) {
-  const [activeTab, setActiveTab] = useState<'clients' | 'cases' | 'communications' | 'documents' | 'tasks' | 'automation' | 'analytics' | 'leads' | 'pipeline' | 'lead-pipeline' | 'health'>('pipeline');
+  const [activeTab, setActiveTab] = useState<'clients' | 'cases' | 'communications' | 'documents' | 'tasks' | 'automation' | 'analytics' | 'leads' | 'pipeline' | 'lead-pipeline' | 'health' | 'entities'>('pipeline');
   const [searchTerm, setSearchTerm] = useState("");
   const [stats, setStats] = useState<CRMStats>({ clients: 0, cases: 0, tasks: 0, communications: 0 });
   const [isLoadingAI, setIsLoadingAI] = useState(false);
@@ -127,6 +128,8 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
         return <LeadPipeline {...commonProps} />;
       case 'health':
         return <ClientHealthView {...commonProps} />;
+      case 'entities':
+        return <CRMEntitiesView {...commonProps} />;
       case 'clients':
         return <CRMClientsView {...commonProps} />;
       case 'cases':
@@ -318,6 +321,15 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
 
                         {/* Divider */}
                         <div className="w-px h-6 bg-blue-200 mx-1 hidden md:block" />
+
+                        {/* B2B Entities Tab */}
+                        <TabsTrigger 
+                          value="entities" 
+                          className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white rounded-lg transition-all duration-200"
+                        >
+                          <Building2 className="h-4 w-4" />
+                          <span className="hidden sm:inline">Entidades</span>
+                        </TabsTrigger>
 
                         {/* Data Tabs */}
                         <TabsTrigger 
