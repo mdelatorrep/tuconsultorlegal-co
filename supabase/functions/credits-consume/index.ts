@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 // Check and update gamification progress for tool usage
@@ -71,12 +71,18 @@ async function updateGamificationProgress(supabase: any, lawyerId: string, toolT
       .eq('transaction_type', 'usage')
       .eq('reference_type', 'tool');
 
-    // Get tool cost id for this tool type
-    const { data: toolCost } = await supabase
+    // Get tool cost id for this tool type (robust to duplicates by picking one active row)
+    const { data: toolCost, error: toolCostError } = await supabase
       .from('credit_tool_costs')
       .select('id')
       .eq('tool_type', toolType)
-      .single();
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle();
+
+    if (toolCostError) {
+      console.warn('[GAMIFICATION] Could not resolve tool cost id for tool_type:', toolType, toolCostError);
+    }
 
     const usesOfThisTool = allTransactions?.filter((t: any) => t.reference_id === toolCost?.id).length || 0;
     const totalToolUses = allTransactions?.length || 0;
@@ -224,9 +230,6 @@ async function completeAchievement(supabase: any, lawyerId: string, task: any) {
 
 async function sendGamificationNotification(supabase: any, lawyerId: string, task: any, isAchievement = false) {
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
     const title = isAchievement 
       ? `🏆 ¡Logro desbloqueado: ${task.badge_name || task.name}!`
       : `✅ ¡Misión completada: ${task.name}!`;
@@ -235,13 +238,8 @@ async function sendGamificationNotification(supabase: any, lawyerId: string, tas
       ? `Felicitaciones, has desbloqueado el logro "${task.badge_name || task.name}". Reclama tu recompensa de ${task.credit_reward} créditos en Misiones.`
       : `Has completado la misión "${task.name}". Reclama tu recompensa de ${task.credit_reward} créditos en Misiones.`;
 
-    await fetch(`${supabaseUrl}/functions/v1/create-notification`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${supabaseServiceKey}`
-      },
-      body: JSON.stringify({
+    await supabase.functions.invoke('create-notification', {
+      body: {
         lawyer_id: lawyerId,
         notification_type: 'gamification',
         title,
@@ -249,7 +247,7 @@ async function sendGamificationNotification(supabase: any, lawyerId: string, tas
         entity_type: 'gamification_task',
         entity_id: task.id,
         priority: isAchievement ? 'high' : 'normal'
-      })
+      }
     });
 
     console.log(`[GAMIFICATION] Notification sent for ${task.name}`);
@@ -260,7 +258,7 @@ async function sendGamificationNotification(supabase: any, lawyerId: string, tas
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
