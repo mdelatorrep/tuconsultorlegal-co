@@ -1,332 +1,315 @@
 
-# Rediseno Estrategico del CRM para Abogados
+# Plan: Integración de Entidades B2B en el CRM
 
-## Resumen Ejecutivo
+## Contexto del Problema
 
-Tras analizar exhaustivamente la plataforma Praxis Hub, he identificado que el CRM actual funciona como un sistema de registro pasivo en lugar de un motor activo de generacion de valor. El rediseno propuesto transforma el CRM en un **Centro de Operaciones Legales Inteligente** que automatiza flujos de trabajo, genera ingresos proactivamente y reduce la carga administrativa del abogado.
+Actualmente el CRM trata a todos los clientes de la misma manera: una persona = un cliente. Sin embargo, muchos abogados trabajan con **entidades corporativas** que tienen:
+- Múltiples contactos (gerente legal, CFO, asistente, CEO)
+- Jerarquías organizacionales
+- Diferentes interlocutores para diferentes casos
+- Contratos marco con la organización, no con individuos
 
----
-
-## Diagnostico: Estado Actual
-
-### Fortalezas Existentes
-- Estructura de datos robusta (crm_clients, crm_cases, crm_tasks, crm_leads, crm_communications)
-- Integracion con herramientas de IA (Research, Analysis, Strategy, Drafting)
-- Portal de cliente funcional con citas y documentos
-- Vinculacion caso-centrica con procesos judiciales y calendario
-- Sistema de gamificacion para engagement
-
-### Brechas de Valor Identificadas
-
-| Area | Problema | Impacto |
-|------|----------|---------|
-| **Leads** | Conversion manual sin seguimiento automatico | Perdida de oportunidades |
-| **Casos** | Sin estimacion de rentabilidad ni alertas de riesgo | Casos no rentables |
-| **Tareas** | Creacion manual, sin priorizacion inteligente | Sobrecarga administrativa |
-| **Clientes** | Sin scoring ni segmentacion activa | Clientes valiosos desatendidos |
-| **Comunicaciones** | Registro pasivo sin plantillas ni automatizacion | Tiempo perdido en emails |
-| **Analytics** | Metricas genericas sin insights accionables | Decisiones sin data |
+**Ejemplo real**: Un abogado que asesora a Bancolombia necesita registrar:
+- La entidad "Bancolombia S.A." con su NIT, sector, tamaño
+- María García (Gerente Legal) - contacto principal
+- Juan Pérez (Director Financiero) - para temas tributarios  
+- Ana Ruiz (Asistente Legal) - para seguimiento operativo
 
 ---
 
-## Vision del Rediseno
+## Arquitectura Propuesta
 
 ```text
-+------------------------------------------------------------------+
-|                CENTRO DE OPERACIONES LEGALES                      |
-+------------------------------------------------------------------+
-|                                                                   |
-|  +------------------+   +------------------+   +-----------------+|
-|  | COMANDO CENTRAL  |   | PIPELINE DE     |   | INTELLIGENCE    ||
-|  | (Dashboard)      |   | CASOS           |   | CENTER          ||
-|  |                  |   |                 |   |                 ||
-|  | - Hoy vs Meta    |   | - Kanban Visual |   | - Rentabilidad  ||
-|  | - Acciones Clave |   | - Etapas Legales|   | - Predicciones  ||
-|  | - Alertas IA     |   | - Valor Pipeline|   | - Tendencias    ||
-|  +------------------+   +------------------+   +-----------------+|
-|                                                                   |
-|  +------------------+   +------------------+   +-----------------+|
-|  | CLIENT SUCCESS   |   | LEAD MACHINE    |   | SMART           ||
-|  |                  |   |                 |   | AUTOMATION      ||
-|  | - Health Score   |   | - Auto-Nurture  |   | - Workflows     ||
-|  | - Engagement     |   | - Scoring IA    |   | - Templates     ||
-|  | - Retención      |   | - Conversion    |   | - Triggers      ||
-|  +------------------+   +------------------+   +-----------------+|
-|                                                                   |
-+------------------------------------------------------------------+
+MODELO ACTUAL                      MODELO PROPUESTO
+==============                     ================
+
+crm_clients                        crm_entities (NUEVA)
+  - individual                       - id, name, nit, sector
+  - company (limitado)               - entity_type (corporation, govt, ngo)
+      |                              - billing_info, address
+      v                              - health_score, lifetime_value
+crm_cases                                |
+                                         v
+                                   crm_contacts (NUEVA)
+                                     - id, entity_id (nullable)
+                                     - name, email, phone
+                                     - role, department
+                                     - is_primary_contact
+                                         |
+                                         v
+                                   crm_cases
+                                     - entity_id (nullable)
+                                     - contact_id (nullable)
+                                     - client_id (backward compatible)
 ```
 
 ---
 
-## Componentes del Rediseno
+## Componentes a Implementar
 
-### 1. Comando Central (Dashboard Renovado)
+### 1. Nueva Tabla: `crm_entities`
+Almacena información de organizaciones/empresas.
 
-**Objetivo**: Mostrar en 10 segundos que debe hacer el abogado HOY para maximizar resultados.
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| id | UUID | Identificador único |
+| lawyer_id | UUID | Abogado propietario |
+| name | TEXT | Nombre de la entidad |
+| legal_name | TEXT | Razón social |
+| tax_id | TEXT | NIT/RUT |
+| entity_type | TEXT | corporation, government, ngo, association |
+| industry | TEXT | Sector (financiero, salud, tecnología) |
+| size | TEXT | micro, small, medium, large, enterprise |
+| website | TEXT | Sitio web |
+| address | TEXT | Dirección principal |
+| phone | TEXT | Teléfono principal |
+| email | TEXT | Email corporativo |
+| billing_address | TEXT | Dirección de facturación |
+| notes | TEXT | Notas generales |
+| status | TEXT | active, inactive, prospect |
+| health_score | INTEGER | Salud de la relación (0-100) |
+| lifetime_value | NUMERIC | Valor total facturado |
+| contract_type | TEXT | retainer, hourly, fixed, hybrid |
+| contract_value | NUMERIC | Valor del contrato marco |
+| contract_start | DATE | Inicio del contrato |
+| contract_end | DATE | Fin del contrato |
 
-#### 1.1 Panel "Mi Dia" (Reemplaza DashboardWelcome)
-- **Ingresos del dia** vs meta mensual (barra de progreso)
-- **Acciones criticas**: Max 3 tareas de alto impacto
-- **Alertas inteligentes**: Casos en riesgo, leads calientes, SLAs proximos
+### 2. Nueva Tabla: `crm_contacts`
+Personas de contacto dentro de las entidades.
 
-#### 1.2 Indicadores Clave de Negocio
-- **Pipeline Value**: Valor total de casos activos
-- **Win Rate**: Tasa de conversion de leads
-- **Client Health**: Porcentaje de clientes satisfechos
-- **Revenue at Risk**: Casos con problemas de cobranza
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| id | UUID | Identificador único |
+| lawyer_id | UUID | Abogado propietario |
+| entity_id | UUID | Entidad a la que pertenece (nullable) |
+| name | TEXT | Nombre completo |
+| email | TEXT | Email de contacto |
+| phone | TEXT | Teléfono directo |
+| role | TEXT | Cargo (Gerente Legal, CFO, etc.) |
+| department | TEXT | Departamento (Legal, Finanzas, etc.) |
+| is_primary | BOOLEAN | Es contacto principal de la entidad |
+| is_billing_contact | BOOLEAN | Recibe facturas |
+| is_decision_maker | BOOLEAN | Toma decisiones |
+| notes | TEXT | Notas sobre el contacto |
+| last_contact_date | TIMESTAMP | Última comunicación |
+| communication_preference | TEXT | email, phone, whatsapp |
+| status | TEXT | active, inactive |
 
-#### Cambios Tecnicos
-- Nuevo componente `src/components/dashboard/CommandCenter.tsx`
-- Edge function `crm-daily-insights` para calcular metricas diarias
-- Tabla nueva `crm_daily_metrics` para cache de calculos
+### 3. Modificación: `crm_cases`
+Agregar soporte para entidades manteniendo compatibilidad.
+
+```sql
+ALTER TABLE crm_cases 
+ADD COLUMN entity_id UUID REFERENCES crm_entities(id),
+ADD COLUMN primary_contact_id UUID REFERENCES crm_contacts(id);
+```
+
+### 4. Modificación: `crm_communications`
+Vincular comunicaciones a contactos específicos.
+
+```sql
+ALTER TABLE crm_communications 
+ADD COLUMN contact_id UUID REFERENCES crm_contacts(id);
+```
 
 ---
 
-### 2. Pipeline de Casos Visual
+## Nuevos Componentes de UI
 
-**Objetivo**: Visualizar el flujo de trabajo legal como un embudo de ventas.
+### 4.1 `CRMEntitiesView.tsx`
+Vista principal de gestión de entidades.
 
-#### 2.1 Vista Kanban por Etapas Legales
+**Características**:
+- Lista de entidades con filtros (sector, tamaño, estado)
+- Tarjetas con información clave: nombre, contactos, casos activos, valor
+- Indicador de salud de la relación
+- Acceso rápido a contactos y casos
+- Creación/edición con formulario completo
+
+### 4.2 `EntityDetailPage.tsx`
+Vista detallada de una entidad.
+
+**Secciones**:
+- **Información General**: Datos corporativos, NIT, sector
+- **Contactos**: Lista de personas con roles y acciones rápidas
+- **Casos**: Historial de casos con la entidad
+- **Contrato**: Términos del contrato marco
+- **Documentos**: Archivos compartidos con la entidad
+- **Comunicaciones**: Historial de interacciones
+- **Facturación**: Historial de pagos y pendientes
+
+### 4.3 `ContactsListView.tsx`
+Lista de contactos dentro de una entidad.
+
+**Características**:
+- Jerarquía visual de contactos
+- Badges para roles (Principal, Facturación, Decisor)
+- Última comunicación y preferencia de contacto
+- Acciones: llamar, email, crear caso
+
+### 4.4 `EntitySelector.tsx`
+Componente reutilizable para seleccionar entidad + contacto.
+
+**Uso en**:
+- Formulario de nuevo caso
+- Formulario de nueva comunicación
+- Formulario de nueva cita
+
+---
+
+## Flujos de Usuario
+
+### Flujo 1: Crear Nueva Entidad
+1. Usuario va a CRM > Entidades > Nueva Entidad
+2. Llena datos corporativos (nombre, NIT, sector)
+3. Agrega contacto principal
+4. Opcionalmente define contrato marco
+5. Entidad creada con contacto vinculado
+
+### Flujo 2: Agregar Contacto a Entidad Existente
+1. Usuario abre detalle de entidad
+2. En sección Contactos, clic en "Agregar Contacto"
+3. Llena datos: nombre, cargo, email, teléfono
+4. Marca si es principal/facturación/decisor
+5. Contacto vinculado a la entidad
+
+### Flujo 3: Crear Caso para Entidad
+1. Usuario crea nuevo caso
+2. Selector muestra: "Individual" o "Entidad"
+3. Si elige Entidad, selecciona de lista
+4. Luego selecciona contacto principal para el caso
+5. Caso vinculado a entidad y contacto
+
+### Flujo 4: Convertir Cliente Empresa a Entidad
+1. En lista de clientes, cliente tipo "company"
+2. Botón "Convertir a Entidad"
+3. Wizard migra datos y crea estructura
+4. Cliente original se marca como migrado
+
+---
+
+## Navegación Actualizada del CRM
+
 ```text
-| Inicial | Investigacion | En Curso | Audiencias | Resolucion | Cobro |
-|---------|---------------|----------|------------|------------|-------|
-| Caso A  | Caso B        | Caso C   | Caso D     |            | Caso E|
-| $500K   | $1.2M         | $800K    |            |            | $300K |
+CRM
+├── Pipeline (casos visuales)
+├── Leads IA
+├── Salud (clientes)
+├── ─────────────────
+├── Entidades (NUEVO)     <- Empresas/Organizaciones
+│   ├── Vista lista
+│   └── Detalle entidad
+│       ├── Contactos
+│       ├── Casos
+│       └── Contratos
+├── Clientes              <- Personas individuales
+├── Casos
+├── Comunicaciones
+├── Documentos
+├── Tareas
+├── ─────────────────
+├── Automatización
+└── Analytics
 ```
 
-#### 2.2 Campos Nuevos en crm_cases
-- `pipeline_stage`: etapa actual (enum)
-- `expected_value`: valor estimado del caso
-- `probability`: probabilidad de exito (0-100%)
-- `next_action_date`: proxima accion requerida
-- `health_score`: puntuacion de salud del caso
+---
 
-#### 2.3 Arrastrar y Soltar
-- Mover casos entre etapas actualiza automaticamente
-- Triggers de IA al cambiar etapa (sugerir acciones)
+## Inteligencia y Automatización
 
-#### Cambios Tecnicos
-- Nuevo componente `src/components/lawyer-modules/crm/CasePipelineView.tsx`
-- Integracion con react-beautiful-dnd (ya instalado)
-- Migracion SQL para nuevos campos
+### Scoring de Entidades
+Factor de puntuación para entidades:
+- **Volumen de casos**: +5pts por caso activo
+- **Valor de contrato**: +10pts si > $10M/año
+- **Antigüedad**: +2pts por año de relación
+- **Frecuencia de comunicación**: +5pts si contacto < 7 días
+- **Estado de pagos**: -20pts si mora > 30 días
+
+### Alertas Automáticas
+- "Contrato de [Entidad] vence en 30 días"
+- "Sin comunicación con [Entidad] en 45 días"
+- "[Contacto principal] cambió de cargo - actualizar"
+- "Nuevo caso potencial detectado para [Entidad]"
 
 ---
 
-### 3. Lead Machine (Sistema de Conversion)
+## Migración de Datos
 
-**Objetivo**: Convertir leads en clientes automaticamente con minima intervencion.
+### Estrategia de Compatibilidad
+1. Mantener `crm_clients` funcionando (no breaking change)
+2. Clientes tipo "company" pueden migrarse a entidades
+3. Nuevos campos `entity_id` y `contact_id` en casos son opcionales
+4. Si `entity_id` está presente, usar nueva lógica; si no, usar `client_id`
 
-#### 3.1 Lead Scoring Automatico
-Factores de puntuacion:
-- Origen del lead (perfil publico: +20pts, referido: +30pts)
-- Tipo de caso (alta complejidad: +25pts)
-- Tiempo de respuesta del lead (+10pts si responde en 24h)
-- Interacciones previas (+5pts por cada interaccion)
+### Script de Migración
+```sql
+-- Crear entidades desde clientes tipo company
+INSERT INTO crm_entities (lawyer_id, name, email, phone, status)
+SELECT lawyer_id, company, email, phone, status
+FROM crm_clients
+WHERE client_type = 'company' AND company IS NOT NULL;
 
-#### 3.2 Nurture Automatico
-Secuencia automatica para leads nuevos:
-1. **Hora 0**: Email de bienvenida personalizado
-2. **Hora 24**: Si no responde, recordatorio por WhatsApp
-3. **Dia 3**: Contenido educativo (articulo del blog)
-4. **Dia 7**: Propuesta de reunion
-5. **Dia 14**: Ultima oportunidad
-
-#### 3.3 Conversion Guiada
-- Boton "Convertir a Cliente" con wizard paso a paso
-- Pre-llenado automatico de datos
-- Creacion simultanea de cliente + caso inicial
-
-#### Cambios Tecnicos
-- Nuevos campos en crm_leads: `score`, `last_activity`, `nurture_stage`
-- Edge function `crm-lead-scoring` con calculo automatico
-- Edge function `crm-lead-nurture` para envio automatico (Resend)
-- Nuevo componente `src/components/lawyer-modules/crm/LeadPipeline.tsx`
-
----
-
-### 4. Client Success Module
-
-**Objetivo**: Retener clientes y maximizar valor de vida (LTV).
-
-#### 4.1 Client Health Score
-Formula:
-```
-Health = (Comunicacion * 0.25) + (Pagos * 0.30) + (Engagement * 0.25) + (Satisfaccion * 0.20)
-```
-- **Comunicacion**: Frecuencia de interacciones (ideal: 1/semana)
-- **Pagos**: Historial de pagos a tiempo
-- **Engagement**: Uso del portal cliente
-- **Satisfaccion**: Ratings y feedback
-
-#### 4.2 Alertas de Riesgo
-- Cliente sin comunicacion en 30+ dias: ALERTA AMARILLA
-- Pago pendiente > 60 dias: ALERTA ROJA
-- Caso sin actividad > 14 dias: ALERTA NARANJA
-
-#### 4.3 Acciones Recomendadas por IA
-Sugerencias automaticas:
-- "Llamar a [Cliente] - 45 dias sin contacto"
-- "Enviar actualizacion de caso a [Cliente] - Portal no visitado en 2 semanas"
-- "Programar reunion de seguimiento - Caso [X] completando fase"
-
-#### Cambios Tecnicos
-- Nuevos campos en crm_clients: `health_score`, `last_contact`, `payment_status`
-- Nuevo componente `src/components/lawyer-modules/crm/ClientHealthView.tsx`
-- Edge function `crm-client-health` para calculo diario
-
----
-
-### 5. Smart Automation Engine
-
-**Objetivo**: Eliminar tareas repetitivas con workflows automatizados.
-
-#### 5.1 Templates de Comunicacion
-Plantillas predefinidas:
-- Bienvenida a nuevo cliente
-- Actualizacion de caso
-- Recordatorio de pago
-- Confirmacion de cita
-- Resumen mensual
-
-#### 5.2 Workflows Predefinidos
-```text
-TRIGGER: Nuevo Lead Creado
-  -> Enviar email de bienvenida
-  -> Crear tarea de seguimiento (24h)
-  -> Notificar al abogado
-
-TRIGGER: Caso Cambia a "En Curso"
-  -> Enviar notificacion al cliente
-  -> Crear tareas estandar de la fase
-  -> Programar primera reunion
-
-TRIGGER: Audiencia en 48h
-  -> Recordatorio al abogado
-  -> Recordatorio al cliente
-  -> Generar checklist pre-audiencia
+-- Crear contactos desde clientes tipo company
+INSERT INTO crm_contacts (lawyer_id, entity_id, name, email, phone, is_primary)
+SELECT c.lawyer_id, e.id, c.name, c.email, c.phone, true
+FROM crm_clients c
+JOIN crm_entities e ON e.email = c.email AND e.lawyer_id = c.lawyer_id
+WHERE c.client_type = 'company';
 ```
 
-#### 5.3 Builder Visual de Automatizaciones
-Interfaz drag-and-drop para crear reglas personalizadas:
-- Seleccionar trigger (evento)
-- Agregar condiciones (filtros)
-- Definir acciones (tareas, emails, notificaciones)
-
-#### Cambios Tecnicos
-- Refactor de `CRMAutomationView.tsx` con builder visual
-- Tabla nueva `crm_communication_templates`
-- Tabla nueva `crm_workflow_executions` para logs
-- Edge function `crm-workflow-executor` para procesar triggers
-
 ---
 
-### 6. Intelligence Center (Analytics Avanzados)
-
-**Objetivo**: Transformar datos en decisiones de negocio.
-
-#### 6.1 Metricas de Rentabilidad
-- **Costo por caso**: Horas invertidas * tarifa vs ingreso real
-- **Tipos de caso mas rentables**: Ranking por ROI
-- **Clientes mas valiosos**: LTV y frecuencia
-- **Tiempo promedio de resolucion**: Por tipo de caso
-
-#### 6.2 Predicciones IA
-- Probabilidad de exito del caso (basado en historico)
-- Tiempo estimado de resolucion
-- Ingresos proyectados del mes
-
-#### 6.3 Comparativas Temporales
-- Este mes vs mes anterior
-- Este ano vs ano anterior
-- Tendencias de crecimiento
-
-#### Cambios Tecnicos
-- Refactor de `CRMAnalyticsView.tsx` con nuevas visualizaciones
-- Tabla nueva `crm_case_profitability` para tracking de costos
-- Edge function `crm-analytics-generate` para calculos complejos
-
----
-
-## Implementacion por Fases
-
-### Fase 1: Fundamentos (Semana 1-2)
-1. Migraciones de base de datos (nuevos campos y tablas)
-2. Edge functions base (lead-scoring, client-health)
-3. Comando Central basico
-
-### Fase 2: Pipeline Visual (Semana 3-4)
-1. Vista Kanban de casos
-2. Drag and drop con actualizacion de etapas
-3. Indicadores de valor de pipeline
-
-### Fase 3: Lead Machine (Semana 5-6)
-1. Sistema de scoring automatico
-2. Lead Pipeline visual
-3. Nurture sequences basicas
-
-### Fase 4: Client Success (Semana 7-8)
-1. Health score calculation
-2. Alertas automaticas
-3. Recomendaciones IA
-
-### Fase 5: Automation Engine (Semana 9-10)
-1. Templates de comunicacion
-2. Workflows predefinidos
-3. Builder visual
-
-### Fase 6: Intelligence Center (Semana 11-12)
-1. Analytics avanzados
-2. Predicciones IA
-3. Dashboards ejecutivos
-
----
-
-## Resumen de Archivos a Crear/Modificar
+## Archivos a Crear
 
 ### Nuevos Componentes
-- `src/components/dashboard/CommandCenter.tsx`
-- `src/components/lawyer-modules/crm/CasePipelineView.tsx`
-- `src/components/lawyer-modules/crm/LeadPipeline.tsx`
-- `src/components/lawyer-modules/crm/ClientHealthView.tsx`
-- `src/components/lawyer-modules/crm/AutomationBuilder.tsx`
-- `src/components/lawyer-modules/crm/TemplatesManager.tsx`
-- `src/components/lawyer-modules/crm/ProfitabilityDashboard.tsx`
+- `src/components/lawyer-modules/crm/CRMEntitiesView.tsx`
+- `src/components/lawyer-modules/crm/EntityDetailPage.tsx`
+- `src/components/lawyer-modules/crm/EntityContactsList.tsx`
+- `src/components/lawyer-modules/crm/EntityCasesList.tsx`
+- `src/components/lawyer-modules/crm/EntityContractCard.tsx`
+- `src/components/lawyer-modules/crm/EntitySelector.tsx`
+- `src/components/lawyer-modules/crm/ContactForm.tsx`
+- `src/components/lawyer-modules/crm/EntityForm.tsx`
 
-### Componentes a Refactorizar
-- `src/components/lawyer-modules/CRMModule.tsx` (nuevas tabs)
-- `src/components/lawyer-modules/crm/CRMLeadsView.tsx` (scoring visual)
-- `src/components/lawyer-modules/crm/CRMClientsView.tsx` (health indicator)
-- `src/components/lawyer-modules/crm/CRMCasesView.tsx` (pipeline stage)
-- `src/components/lawyer-modules/crm/CRMAutomationView.tsx` (builder visual)
-- `src/components/lawyer-modules/crm/CRMAnalyticsView.tsx` (metricas avanzadas)
+### Modificaciones
+- `src/components/lawyer-modules/CRMModule.tsx` - agregar tab Entidades
+- `src/components/lawyer-modules/crm/CRMCasesView.tsx` - soporte entity_id
+- `src/components/lawyer-modules/crm/CRMClientsView.tsx` - botón migrar
+- `src/components/lawyer-modules/crm/CRMCommunicationsView.tsx` - contacto
 
-### Nuevas Edge Functions
-- `supabase/functions/crm-daily-insights/index.ts`
-- `supabase/functions/crm-lead-scoring/index.ts`
-- `supabase/functions/crm-lead-nurture/index.ts`
-- `supabase/functions/crm-client-health/index.ts`
-- `supabase/functions/crm-workflow-executor/index.ts`
-- `supabase/functions/crm-analytics-generate/index.ts`
+### Migraciones
+- Nueva migración SQL para tablas `crm_entities` y `crm_contacts`
+- Alteración de `crm_cases` y `crm_communications`
 
-### Migraciones de Base de Datos
-- Nuevos campos en `crm_cases`
-- Nuevos campos en `crm_clients`
-- Nuevos campos en `crm_leads`
-- Nueva tabla `crm_communication_templates`
-- Nueva tabla `crm_workflow_executions`
-- Nueva tabla `crm_daily_metrics`
-- Nueva tabla `crm_case_profitability`
+### Edge Functions
+- `supabase/functions/crm-entity-health/index.ts` - scoring de entidades
 
 ---
 
-## Valor Generado para el Abogado
+## Fases de Implementación
 
-| Metrica | Antes | Despues | Impacto |
-|---------|-------|---------|---------|
-| Tiempo en admin/dia | 2 horas | 30 min | -75% |
-| Leads convertidos | 20% | 45% | +125% |
-| Clientes retenidos | 70% | 90% | +28% |
-| Casos cerrados/mes | 5 | 8 | +60% |
-| Ingresos promedio | $10M COP | $16M COP | +60% |
+### Fase 1: Fundamentos (Esta sesión)
+1. Crear tablas `crm_entities` y `crm_contacts`
+2. Alterar `crm_cases` para soporte dual
+3. Componente básico `CRMEntitiesView.tsx`
 
-El CRM pasa de ser un repositorio pasivo a un **motor de crecimiento activo** que trabaja 24/7 para el abogado.
+### Fase 2: UI Completa
+1. `EntityDetailPage.tsx` con todas las secciones
+2. `EntitySelector.tsx` reutilizable
+3. Integración en formularios de casos
+
+### Fase 3: Inteligencia
+1. Edge function para scoring de entidades
+2. Alertas automáticas de contratos
+3. Recomendaciones IA para entidades
+
+---
+
+## Beneficios para el Abogado
+
+| Métrica | Sin Entidades | Con Entidades |
+|---------|---------------|---------------|
+| Tiempo registro cliente corporativo | 5 min por contacto | 2 min total |
+| Visibilidad de relación | Fragmentada | Unificada |
+| Seguimiento de contratos | Manual | Automatizado |
+| Facturación consolidada | Imposible | Nativa |
+| Historial por organización | No existe | Completo |
