@@ -1142,6 +1142,7 @@ export type Database = {
           created_at: string
           description: string | null
           end_date: string | null
+          entity_id: string | null
           estimated_hours: number | null
           expected_value: number | null
           health_score: number | null
@@ -1149,6 +1150,7 @@ export type Database = {
           lawyer_id: string
           next_action_date: string | null
           pipeline_stage: string | null
+          primary_contact_id: string | null
           priority: string
           probability: number | null
           start_date: string | null
@@ -1166,6 +1168,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           end_date?: string | null
+          entity_id?: string | null
           estimated_hours?: number | null
           expected_value?: number | null
           health_score?: number | null
@@ -1173,6 +1176,7 @@ export type Database = {
           lawyer_id: string
           next_action_date?: string | null
           pipeline_stage?: string | null
+          primary_contact_id?: string | null
           priority?: string
           probability?: number | null
           start_date?: string | null
@@ -1190,6 +1194,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           end_date?: string | null
+          entity_id?: string | null
           estimated_hours?: number | null
           expected_value?: number | null
           health_score?: number | null
@@ -1197,6 +1202,7 @@ export type Database = {
           lawyer_id?: string
           next_action_date?: string | null
           pipeline_stage?: string | null
+          primary_contact_id?: string | null
           priority?: string
           probability?: number | null
           start_date?: string | null
@@ -1211,6 +1217,20 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "crm_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_cases_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "crm_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_cases_primary_contact_id_fkey"
+            columns: ["primary_contact_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contacts"
             referencedColumns: ["id"]
           },
         ]
@@ -1363,6 +1383,7 @@ export type Database = {
         Row: {
           case_id: string | null
           client_id: string
+          contact_id: string | null
           content: string
           created_at: string
           direction: string
@@ -1379,6 +1400,7 @@ export type Database = {
         Insert: {
           case_id?: string | null
           client_id: string
+          contact_id?: string | null
           content: string
           created_at?: string
           direction?: string
@@ -1395,6 +1417,7 @@ export type Database = {
         Update: {
           case_id?: string | null
           client_id?: string
+          contact_id?: string | null
           content?: string
           created_at?: string
           direction?: string
@@ -1421,6 +1444,81 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "crm_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_communications_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_contacts: {
+        Row: {
+          communication_preference: string | null
+          created_at: string
+          department: string | null
+          email: string | null
+          entity_id: string | null
+          id: string
+          is_billing_contact: boolean | null
+          is_decision_maker: boolean | null
+          is_primary: boolean | null
+          last_contact_date: string | null
+          lawyer_id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          role: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          communication_preference?: string | null
+          created_at?: string
+          department?: string | null
+          email?: string | null
+          entity_id?: string | null
+          id?: string
+          is_billing_contact?: boolean | null
+          is_decision_maker?: boolean | null
+          is_primary?: boolean | null
+          last_contact_date?: string | null
+          lawyer_id: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          role?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          communication_preference?: string | null
+          created_at?: string
+          department?: string | null
+          email?: string | null
+          entity_id?: string | null
+          id?: string
+          is_billing_contact?: boolean | null
+          is_decision_maker?: boolean | null
+          is_primary?: boolean | null
+          last_contact_date?: string | null
+          lawyer_id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          role?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_contacts_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "crm_entities"
             referencedColumns: ["id"]
           },
         ]
@@ -1556,6 +1654,87 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      crm_entities: {
+        Row: {
+          address: string | null
+          billing_address: string | null
+          city: string | null
+          contract_end: string | null
+          contract_start: string | null
+          contract_type: string | null
+          contract_value: number | null
+          created_at: string
+          email: string | null
+          entity_type: string | null
+          health_score: number | null
+          id: string
+          industry: string | null
+          lawyer_id: string
+          legal_name: string | null
+          lifetime_value: number | null
+          name: string
+          notes: string | null
+          phone: string | null
+          size: string | null
+          status: string | null
+          tax_id: string | null
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          billing_address?: string | null
+          city?: string | null
+          contract_end?: string | null
+          contract_start?: string | null
+          contract_type?: string | null
+          contract_value?: number | null
+          created_at?: string
+          email?: string | null
+          entity_type?: string | null
+          health_score?: number | null
+          id?: string
+          industry?: string | null
+          lawyer_id: string
+          legal_name?: string | null
+          lifetime_value?: number | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+          size?: string | null
+          status?: string | null
+          tax_id?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          billing_address?: string | null
+          city?: string | null
+          contract_end?: string | null
+          contract_start?: string | null
+          contract_type?: string | null
+          contract_value?: number | null
+          created_at?: string
+          email?: string | null
+          entity_type?: string | null
+          health_score?: number | null
+          id?: string
+          industry?: string | null
+          lawyer_id?: string
+          legal_name?: string | null
+          lifetime_value?: number | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          size?: string | null
+          status?: string | null
+          tax_id?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
       }
       crm_lead_interactions: {
         Row: {
