@@ -1,196 +1,332 @@
 
-# Plan de Auditoría y Corrección del Rebrand: Praxis Hub
+# Rediseno Estrategico del CRM para Abogados
 
 ## Resumen Ejecutivo
 
-Tras una revisión exhaustiva del codebase, he identificado **múltiples inconsistencias** en la implementación del rebrand de "Tu Consultor Legal" a **Praxis Hub**. Estas inconsistencias afectan la paleta de colores, el uso del logo, referencias de texto y gradientes no conformes con la nueva identidad visual.
+Tras analizar exhaustivamente la plataforma Praxis Hub, he identificado que el CRM actual funciona como un sistema de registro pasivo en lugar de un motor activo de generacion de valor. El rediseno propuesto transforma el CRM en un **Centro de Operaciones Legales Inteligente** que automatiza flujos de trabajo, genera ingresos proactivamente y reduce la carga administrativa del abogado.
 
 ---
 
-## Hallazgos de la Auditoría
+## Diagnostico: Estado Actual
 
-### 1. Uso del Icono `Scale` en lugar del Logo Real
+### Fortalezas Existentes
+- Estructura de datos robusta (crm_clients, crm_cases, crm_tasks, crm_leads, crm_communications)
+- Integracion con herramientas de IA (Research, Analysis, Strategy, Drafting)
+- Portal de cliente funcional con citas y documentos
+- Vinculacion caso-centrica con procesos judiciales y calendario
+- Sistema de gamificacion para engagement
 
-El icono `Scale` de Lucide se usa como placeholder en varios lugares donde debería aparecer el logo oficial de Praxis Hub:
+### Brechas de Valor Identificadas
 
-| Archivo | Línea | Problema |
-|---------|-------|----------|
-| `src/components/UserAuthPage.tsx` | 220 | `<Scale className="w-5 h-5 text-brand-primary" />` |
-| `src/components/LawyerLogin.tsx` | 454 | `<Scale className="h-6 w-6 text-primary" />` |
-| `src/components/ChatWidget.tsx` | 332 | `<Scale size={28} />` - botón flotante |
-| `src/components/dashboard/DashboardWelcome.tsx` | 26 | `<Scale className="h-3 w-3" />` en Badge |
-| `src/components/UnifiedSidebar.tsx` | 3 | Importa Scale pero no se usa el logo |
-| Demos (`DemoResearchMockup.tsx`, etc.) | Varios | Uso decorativo de Scale |
-
-**Solución**: Reemplazar con `<img src={logoIcon} alt="Praxis Hub" />` usando el asset `@/assets/favicon.png`.
-
----
-
-### 2. Colores y Gradientes No Conformes a la Marca
-
-**Paleta Oficial de Praxis Hub (definida en CSS):**
-- `--brand-primary`: `hsl(200 25% 30%)` - Slate Teal (#3d5a5a aprox.)
-- `--brand-dark`: `hsl(220 14% 10%)` - Deep Charcoal
-- `--brand-accent`: `hsl(160 20% 45%)` - Muted Sage
-- `--primary`: `hsl(200 25% 30%)`
-
-**Problemas encontrados:**
-
-| Archivo | Problema | Color incorrecto |
-|---------|----------|------------------|
-| `PersonasPage.tsx` L136 | Gradiente del hero | `from-[#010f24] via-[#011838] to-[#010f24]` (azul oscuro antiguo) |
-| `PersonasPage.tsx` L156 | Texto gradiente | `from-[#f2bb31] to-[#ffd666]` (dorado vibrante) |
-| `PersonasPage.tsx` L171 | Botón CTA | `from-[#f2bb31] to-[#ffd666]` (dorado vibrante) |
-| `LawyerAuthPage.tsx` L68 | Background | `from-brand-gray-light` (variable inexistente) |
-| `LawyerAuthPage.tsx` L133 | Gradiente | `to-brand-blue-light/5` (variable inexistente) |
-| `PWAInstallPrompt.tsx` L104 | Icono container | `from-[#0372e8] to-[#0a8fff]` (azul vibrante) |
-| `DashboardWelcome.tsx` L33 | Botón créditos | `from-amber-500 to-orange-500` (no alineado) |
-
-**Solución**: Reemplazar con la paleta sobria de Praxis Hub:
-- `from-brand-dark via-brand-primary/90 to-brand-dark`
-- Usar `bg-brand-primary`, `bg-brand-accent` para botones
-- Eliminar gradientes vibrantes y dorados
+| Area | Problema | Impacto |
+|------|----------|---------|
+| **Leads** | Conversion manual sin seguimiento automatico | Perdida de oportunidades |
+| **Casos** | Sin estimacion de rentabilidad ni alertas de riesgo | Casos no rentables |
+| **Tareas** | Creacion manual, sin priorizacion inteligente | Sobrecarga administrativa |
+| **Clientes** | Sin scoring ni segmentacion activa | Clientes valiosos desatendidos |
+| **Comunicaciones** | Registro pasivo sin plantillas ni automatizacion | Tiempo perdido en emails |
+| **Analytics** | Metricas genericas sin insights accionables | Decisiones sin data |
 
 ---
 
-### 3. Referencias de Texto a la Marca Antigua
+## Vision del Rediseno
 
-| Archivo | Problema |
-|---------|----------|
-| `PWAInstallPrompt.tsx` L107-114 | `alt="tuconsultorlegal.co"` y `"Instalar tuconsultorlegal.co"` |
-
-**Solución**: Actualizar a "Praxis Hub" y "praxishub.co".
-
----
-
-### 4. Archivos de Assets Obsoletos
-
-En `/public/` existen múltiples archivos con referencias a la marca antigua:
-- `favicon-tcl.png`
-- `logo-tcl.png` 
-- `logo_tcl.png`
-- `favicon-ai-legal.png`
-- `logo-ai-legal.png`
-
-**Solución**: Estos archivos pueden eliminarse para evitar confusión (o mantenerse como respaldo histórico).
-
----
-
-### 5. Variables CSS Inexistentes
-
-Algunas clases de Tailwind hacen referencia a variables que no existen en el sistema de diseño:
-- `brand-gray-light` - No definida
-- `brand-blue-light` - No definida
-
-**Solución**: Reemplazar con variables existentes (`muted`, `background`, `primary/5`).
-
----
-
-## Archivos a Modificar
-
-### Prioridad Alta (Afectan páginas visibles principales)
-
-1. **`src/components/PersonasPage.tsx`**
-   - Cambiar gradiente del hero a colores sobrios
-   - Eliminar texto gradiente dorado
-   - Actualizar botón CTA
-
-2. **`src/components/UserAuthPage.tsx`**
-   - Reemplazar `Scale` icon con logo real
-
-3. **`src/components/LawyerLogin.tsx`**
-   - Reemplazar `Scale` icon con logo real
-
-4. **`src/components/ChatWidget.tsx`**
-   - Reemplazar `Scale` icon en botón flotante con logo
-
-5. **`src/components/LawyerAuthPage.tsx`**
-   - Corregir clases CSS con variables inexistentes
-
-6. **`src/components/PWAInstallPrompt.tsx`**
-   - Actualizar texto y alt a "Praxis Hub"
-   - Corregir gradiente del icono
-
-### Prioridad Media (Dashboards y componentes internos)
-
-7. **`src/components/dashboard/DashboardWelcome.tsx`**
-   - Reemplazar `Scale` icon con logo
-   - Ajustar color del botón de créditos
-
-8. **`src/components/UnifiedSidebar.tsx`**
-   - Verificar uso correcto del logo si aplica
-
-### Prioridad Baja (Demos y mockups)
-
-9. **Componentes de demo** (`DemoResearchMockup.tsx`, etc.)
-   - El uso de `Scale` como icono decorativo en demos es aceptable
-   - Podría ajustarse para consistencia visual
-
----
-
-## Detalles Técnicos de Implementación
-
-### Patrón de Reemplazo de Logo
-
-```tsx
-// Antes
-import { Scale } from "lucide-react";
-<Scale className="w-5 h-5 text-brand-primary" />
-
-// Después
-import logoIcon from "@/assets/favicon.png";
-<img src={logoIcon} alt="Praxis Hub" className="w-5 h-5" />
-```
-
-### Patrón de Corrección de Gradientes
-
-```tsx
-// Antes (PersonasPage)
-className="bg-gradient-to-br from-[#010f24] via-[#011838] to-[#010f24]"
-
-// Después
-className="bg-gradient-to-br from-brand-dark via-brand-primary/90 to-brand-dark"
-```
-
-```tsx
-// Antes (botones dorados)
-className="bg-gradient-to-r from-[#f2bb31] to-[#ffd666]"
-
-// Después
-className="bg-brand-primary hover:bg-brand-primary/90"
-```
-
-### Patrón de Corrección de Variables CSS
-
-```tsx
-// Antes
-className="from-brand-gray-light to-background"
-
-// Después
-className="from-muted to-background"
+```text
++------------------------------------------------------------------+
+|                CENTRO DE OPERACIONES LEGALES                      |
++------------------------------------------------------------------+
+|                                                                   |
+|  +------------------+   +------------------+   +-----------------+|
+|  | COMANDO CENTRAL  |   | PIPELINE DE     |   | INTELLIGENCE    ||
+|  | (Dashboard)      |   | CASOS           |   | CENTER          ||
+|  |                  |   |                 |   |                 ||
+|  | - Hoy vs Meta    |   | - Kanban Visual |   | - Rentabilidad  ||
+|  | - Acciones Clave |   | - Etapas Legales|   | - Predicciones  ||
+|  | - Alertas IA     |   | - Valor Pipeline|   | - Tendencias    ||
+|  +------------------+   +------------------+   +-----------------+|
+|                                                                   |
+|  +------------------+   +------------------+   +-----------------+|
+|  | CLIENT SUCCESS   |   | LEAD MACHINE    |   | SMART           ||
+|  |                  |   |                 |   | AUTOMATION      ||
+|  | - Health Score   |   | - Auto-Nurture  |   | - Workflows     ||
+|  | - Engagement     |   | - Scoring IA    |   | - Templates     ||
+|  | - Retención      |   | - Conversion    |   | - Triggers      ||
+|  +------------------+   +------------------+   +-----------------+|
+|                                                                   |
++------------------------------------------------------------------+
 ```
 
 ---
 
-## Resumen de Cambios
+## Componentes del Rediseno
 
-| Categoría | Archivos | Cambios |
-|-----------|----------|---------|
-| Logo (Scale → img) | 5 archivos | Reemplazar icono con logo real |
-| Gradientes vibrantes | 3 archivos | Convertir a paleta sobria |
-| Variables inexistentes | 1 archivo | Usar variables definidas |
-| Referencias de texto | 1 archivo | Actualizar a Praxis Hub |
-| **Total** | **8-10 archivos** | ~25 cambios |
+### 1. Comando Central (Dashboard Renovado)
+
+**Objetivo**: Mostrar en 10 segundos que debe hacer el abogado HOY para maximizar resultados.
+
+#### 1.1 Panel "Mi Dia" (Reemplaza DashboardWelcome)
+- **Ingresos del dia** vs meta mensual (barra de progreso)
+- **Acciones criticas**: Max 3 tareas de alto impacto
+- **Alertas inteligentes**: Casos en riesgo, leads calientes, SLAs proximos
+
+#### 1.2 Indicadores Clave de Negocio
+- **Pipeline Value**: Valor total de casos activos
+- **Win Rate**: Tasa de conversion de leads
+- **Client Health**: Porcentaje de clientes satisfechos
+- **Revenue at Risk**: Casos con problemas de cobranza
+
+#### Cambios Tecnicos
+- Nuevo componente `src/components/dashboard/CommandCenter.tsx`
+- Edge function `crm-daily-insights` para calcular metricas diarias
+- Tabla nueva `crm_daily_metrics` para cache de calculos
 
 ---
 
-## Verificación Post-Implementación
+### 2. Pipeline de Casos Visual
 
-Páginas a verificar visualmente tras los cambios:
-1. `/` - HomePage
-2. `/#personas` - PersonasPage (hero y botones)
-3. `/#auth` - UserAuthPage (logo en card)
-4. `/auth-abogados` - LawyerAuthPage (logo y background)
-5. Chat widget flotante (logo del botón)
-6. Dashboard de abogados (welcome section)
+**Objetivo**: Visualizar el flujo de trabajo legal como un embudo de ventas.
 
+#### 2.1 Vista Kanban por Etapas Legales
+```text
+| Inicial | Investigacion | En Curso | Audiencias | Resolucion | Cobro |
+|---------|---------------|----------|------------|------------|-------|
+| Caso A  | Caso B        | Caso C   | Caso D     |            | Caso E|
+| $500K   | $1.2M         | $800K    |            |            | $300K |
+```
+
+#### 2.2 Campos Nuevos en crm_cases
+- `pipeline_stage`: etapa actual (enum)
+- `expected_value`: valor estimado del caso
+- `probability`: probabilidad de exito (0-100%)
+- `next_action_date`: proxima accion requerida
+- `health_score`: puntuacion de salud del caso
+
+#### 2.3 Arrastrar y Soltar
+- Mover casos entre etapas actualiza automaticamente
+- Triggers de IA al cambiar etapa (sugerir acciones)
+
+#### Cambios Tecnicos
+- Nuevo componente `src/components/lawyer-modules/crm/CasePipelineView.tsx`
+- Integracion con react-beautiful-dnd (ya instalado)
+- Migracion SQL para nuevos campos
+
+---
+
+### 3. Lead Machine (Sistema de Conversion)
+
+**Objetivo**: Convertir leads en clientes automaticamente con minima intervencion.
+
+#### 3.1 Lead Scoring Automatico
+Factores de puntuacion:
+- Origen del lead (perfil publico: +20pts, referido: +30pts)
+- Tipo de caso (alta complejidad: +25pts)
+- Tiempo de respuesta del lead (+10pts si responde en 24h)
+- Interacciones previas (+5pts por cada interaccion)
+
+#### 3.2 Nurture Automatico
+Secuencia automatica para leads nuevos:
+1. **Hora 0**: Email de bienvenida personalizado
+2. **Hora 24**: Si no responde, recordatorio por WhatsApp
+3. **Dia 3**: Contenido educativo (articulo del blog)
+4. **Dia 7**: Propuesta de reunion
+5. **Dia 14**: Ultima oportunidad
+
+#### 3.3 Conversion Guiada
+- Boton "Convertir a Cliente" con wizard paso a paso
+- Pre-llenado automatico de datos
+- Creacion simultanea de cliente + caso inicial
+
+#### Cambios Tecnicos
+- Nuevos campos en crm_leads: `score`, `last_activity`, `nurture_stage`
+- Edge function `crm-lead-scoring` con calculo automatico
+- Edge function `crm-lead-nurture` para envio automatico (Resend)
+- Nuevo componente `src/components/lawyer-modules/crm/LeadPipeline.tsx`
+
+---
+
+### 4. Client Success Module
+
+**Objetivo**: Retener clientes y maximizar valor de vida (LTV).
+
+#### 4.1 Client Health Score
+Formula:
+```
+Health = (Comunicacion * 0.25) + (Pagos * 0.30) + (Engagement * 0.25) + (Satisfaccion * 0.20)
+```
+- **Comunicacion**: Frecuencia de interacciones (ideal: 1/semana)
+- **Pagos**: Historial de pagos a tiempo
+- **Engagement**: Uso del portal cliente
+- **Satisfaccion**: Ratings y feedback
+
+#### 4.2 Alertas de Riesgo
+- Cliente sin comunicacion en 30+ dias: ALERTA AMARILLA
+- Pago pendiente > 60 dias: ALERTA ROJA
+- Caso sin actividad > 14 dias: ALERTA NARANJA
+
+#### 4.3 Acciones Recomendadas por IA
+Sugerencias automaticas:
+- "Llamar a [Cliente] - 45 dias sin contacto"
+- "Enviar actualizacion de caso a [Cliente] - Portal no visitado en 2 semanas"
+- "Programar reunion de seguimiento - Caso [X] completando fase"
+
+#### Cambios Tecnicos
+- Nuevos campos en crm_clients: `health_score`, `last_contact`, `payment_status`
+- Nuevo componente `src/components/lawyer-modules/crm/ClientHealthView.tsx`
+- Edge function `crm-client-health` para calculo diario
+
+---
+
+### 5. Smart Automation Engine
+
+**Objetivo**: Eliminar tareas repetitivas con workflows automatizados.
+
+#### 5.1 Templates de Comunicacion
+Plantillas predefinidas:
+- Bienvenida a nuevo cliente
+- Actualizacion de caso
+- Recordatorio de pago
+- Confirmacion de cita
+- Resumen mensual
+
+#### 5.2 Workflows Predefinidos
+```text
+TRIGGER: Nuevo Lead Creado
+  -> Enviar email de bienvenida
+  -> Crear tarea de seguimiento (24h)
+  -> Notificar al abogado
+
+TRIGGER: Caso Cambia a "En Curso"
+  -> Enviar notificacion al cliente
+  -> Crear tareas estandar de la fase
+  -> Programar primera reunion
+
+TRIGGER: Audiencia en 48h
+  -> Recordatorio al abogado
+  -> Recordatorio al cliente
+  -> Generar checklist pre-audiencia
+```
+
+#### 5.3 Builder Visual de Automatizaciones
+Interfaz drag-and-drop para crear reglas personalizadas:
+- Seleccionar trigger (evento)
+- Agregar condiciones (filtros)
+- Definir acciones (tareas, emails, notificaciones)
+
+#### Cambios Tecnicos
+- Refactor de `CRMAutomationView.tsx` con builder visual
+- Tabla nueva `crm_communication_templates`
+- Tabla nueva `crm_workflow_executions` para logs
+- Edge function `crm-workflow-executor` para procesar triggers
+
+---
+
+### 6. Intelligence Center (Analytics Avanzados)
+
+**Objetivo**: Transformar datos en decisiones de negocio.
+
+#### 6.1 Metricas de Rentabilidad
+- **Costo por caso**: Horas invertidas * tarifa vs ingreso real
+- **Tipos de caso mas rentables**: Ranking por ROI
+- **Clientes mas valiosos**: LTV y frecuencia
+- **Tiempo promedio de resolucion**: Por tipo de caso
+
+#### 6.2 Predicciones IA
+- Probabilidad de exito del caso (basado en historico)
+- Tiempo estimado de resolucion
+- Ingresos proyectados del mes
+
+#### 6.3 Comparativas Temporales
+- Este mes vs mes anterior
+- Este ano vs ano anterior
+- Tendencias de crecimiento
+
+#### Cambios Tecnicos
+- Refactor de `CRMAnalyticsView.tsx` con nuevas visualizaciones
+- Tabla nueva `crm_case_profitability` para tracking de costos
+- Edge function `crm-analytics-generate` para calculos complejos
+
+---
+
+## Implementacion por Fases
+
+### Fase 1: Fundamentos (Semana 1-2)
+1. Migraciones de base de datos (nuevos campos y tablas)
+2. Edge functions base (lead-scoring, client-health)
+3. Comando Central basico
+
+### Fase 2: Pipeline Visual (Semana 3-4)
+1. Vista Kanban de casos
+2. Drag and drop con actualizacion de etapas
+3. Indicadores de valor de pipeline
+
+### Fase 3: Lead Machine (Semana 5-6)
+1. Sistema de scoring automatico
+2. Lead Pipeline visual
+3. Nurture sequences basicas
+
+### Fase 4: Client Success (Semana 7-8)
+1. Health score calculation
+2. Alertas automaticas
+3. Recomendaciones IA
+
+### Fase 5: Automation Engine (Semana 9-10)
+1. Templates de comunicacion
+2. Workflows predefinidos
+3. Builder visual
+
+### Fase 6: Intelligence Center (Semana 11-12)
+1. Analytics avanzados
+2. Predicciones IA
+3. Dashboards ejecutivos
+
+---
+
+## Resumen de Archivos a Crear/Modificar
+
+### Nuevos Componentes
+- `src/components/dashboard/CommandCenter.tsx`
+- `src/components/lawyer-modules/crm/CasePipelineView.tsx`
+- `src/components/lawyer-modules/crm/LeadPipeline.tsx`
+- `src/components/lawyer-modules/crm/ClientHealthView.tsx`
+- `src/components/lawyer-modules/crm/AutomationBuilder.tsx`
+- `src/components/lawyer-modules/crm/TemplatesManager.tsx`
+- `src/components/lawyer-modules/crm/ProfitabilityDashboard.tsx`
+
+### Componentes a Refactorizar
+- `src/components/lawyer-modules/CRMModule.tsx` (nuevas tabs)
+- `src/components/lawyer-modules/crm/CRMLeadsView.tsx` (scoring visual)
+- `src/components/lawyer-modules/crm/CRMClientsView.tsx` (health indicator)
+- `src/components/lawyer-modules/crm/CRMCasesView.tsx` (pipeline stage)
+- `src/components/lawyer-modules/crm/CRMAutomationView.tsx` (builder visual)
+- `src/components/lawyer-modules/crm/CRMAnalyticsView.tsx` (metricas avanzadas)
+
+### Nuevas Edge Functions
+- `supabase/functions/crm-daily-insights/index.ts`
+- `supabase/functions/crm-lead-scoring/index.ts`
+- `supabase/functions/crm-lead-nurture/index.ts`
+- `supabase/functions/crm-client-health/index.ts`
+- `supabase/functions/crm-workflow-executor/index.ts`
+- `supabase/functions/crm-analytics-generate/index.ts`
+
+### Migraciones de Base de Datos
+- Nuevos campos en `crm_cases`
+- Nuevos campos en `crm_clients`
+- Nuevos campos en `crm_leads`
+- Nueva tabla `crm_communication_templates`
+- Nueva tabla `crm_workflow_executions`
+- Nueva tabla `crm_daily_metrics`
+- Nueva tabla `crm_case_profitability`
+
+---
+
+## Valor Generado para el Abogado
+
+| Metrica | Antes | Despues | Impacto |
+|---------|-------|---------|---------|
+| Tiempo en admin/dia | 2 horas | 30 min | -75% |
+| Leads convertidos | 20% | 45% | +125% |
+| Clientes retenidos | 70% | 90% | +28% |
+| Casos cerrados/mes | 5 | 8 | +60% |
+| Ingresos promedio | $10M COP | $16M COP | +60% |
+
+El CRM pasa de ser un repositorio pasivo a un **motor de crecimiento activo** que trabaja 24/7 para el abogado.
