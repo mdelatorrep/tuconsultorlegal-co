@@ -1,4 +1,5 @@
 export { DashboardWelcome } from "./DashboardWelcome";
+export { CommandCenter } from "./CommandCenter";
 export { UrgentDocumentsSection } from "./UrgentDocumentsSection";
 export { NewLeadsNotification } from "./NewLeadsNotification";
 export { PendingDocumentsList } from "./PendingDocumentsList";

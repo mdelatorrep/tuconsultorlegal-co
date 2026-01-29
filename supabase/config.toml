@@ -164,3 +164,12 @@ verify_jwt = false
 
 [functions.poll-research-task]
 verify_jwt = true
+
+[functions.crm-daily-insights]
+verify_jwt = false
+
+[functions.crm-lead-scoring]
+verify_jwt = false
+
+[functions.crm-client-health]
+verify_jwt = false
