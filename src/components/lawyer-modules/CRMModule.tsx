@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Briefcase, MessageSquare, FileText, Settings, BarChart3, User, Calendar, Phone, Clock, Brain, TrendingUp, Sparkles, Loader2, UserPlus } from "lucide-react";
+import { Users, Briefcase, MessageSquare, FileText, Settings, BarChart3, User, Calendar, Phone, Clock, Brain, TrendingUp, Sparkles, Loader2, UserPlus, Heart, Kanban, Zap } from "lucide-react";
 import { useCredits } from "@/hooks/useCredits";
 import { ToolCostIndicator } from "@/components/credits/ToolCostIndicator";
 import { useToast } from "@/hooks/use-toast";
@@ -17,6 +17,9 @@ import CRMTasksView from "./crm/CRMTasksView";
 import CRMAutomationView from "./crm/CRMAutomationView";
 import CRMAnalyticsView from "./crm/CRMAnalyticsView";
 import CRMLeadsView from "./crm/CRMLeadsView";
+import CasePipelineView from "./crm/CasePipelineView";
+import LeadPipeline from "./crm/LeadPipeline";
+import ClientHealthView from "./crm/ClientHealthView";
 
 interface CRMModuleProps {
   user: any;
@@ -33,7 +36,7 @@ interface CRMStats {
 }
 
 export default function CRMModule({ user, currentView, onViewChange, onLogout }: CRMModuleProps) {
-  const [activeTab, setActiveTab] = useState<'clients' | 'cases' | 'communications' | 'documents' | 'tasks' | 'automation' | 'analytics' | 'leads'>('clients');
+  const [activeTab, setActiveTab] = useState<'clients' | 'cases' | 'communications' | 'documents' | 'tasks' | 'automation' | 'analytics' | 'leads' | 'pipeline' | 'lead-pipeline' | 'health'>('pipeline');
   const [searchTerm, setSearchTerm] = useState("");
   const [stats, setStats] = useState<CRMStats>({ clients: 0, cases: 0, tasks: 0, communications: 0 });
   const [isLoadingAI, setIsLoadingAI] = useState(false);
@@ -118,6 +121,12 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
     };
 
     switch (activeTab) {
+      case 'pipeline':
+        return <CasePipelineView lawyerData={user} />;
+      case 'lead-pipeline':
+        return <LeadPipeline {...commonProps} />;
+      case 'health':
+        return <ClientHealthView {...commonProps} />;
       case 'clients':
         return <CRMClientsView {...commonProps} />;
       case 'cases':
@@ -135,7 +144,7 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
       case 'leads':
         return <CRMLeadsView {...commonProps} />;
       default:
-        return <CRMClientsView {...commonProps} />;
+        return <CasePipelineView lawyerData={user} />;
     }
   };
 
@@ -281,9 +290,36 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
                       </div>
                     </div>
 
-                    {/* Enhanced Tabs Interface */}
+                    {/* Enhanced Tabs Interface - Reorganized for Value Generation */}
                     <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full">
-                      <TabsList className="grid w-full grid-cols-7 bg-gradient-to-r from-blue-50 to-blue-100/50 rounded-xl p-1 border border-blue-200">
+                      <TabsList className="flex flex-wrap justify-start gap-1 bg-gradient-to-r from-blue-50 to-blue-100/50 rounded-xl p-2 border border-blue-200 h-auto">
+                        {/* Primary Value Tabs */}
+                        <TabsTrigger 
+                          value="pipeline" 
+                          className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white rounded-lg transition-all duration-200"
+                        >
+                          <Kanban className="h-4 w-4" />
+                          <span className="hidden sm:inline">Pipeline</span>
+                        </TabsTrigger>
+                        <TabsTrigger 
+                          value="lead-pipeline"
+                          className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-lg transition-all duration-200"
+                        >
+                          <Zap className="h-4 w-4" />
+                          <span className="hidden sm:inline">Leads IA</span>
+                        </TabsTrigger>
+                        <TabsTrigger 
+                          value="health"
+                          className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-pink-600 data-[state=active]:text-white rounded-lg transition-all duration-200"
+                        >
+                          <Heart className="h-4 w-4" />
+                          <span className="hidden sm:inline">Salud</span>
+                        </TabsTrigger>
+
+                        {/* Divider */}
+                        <div className="w-px h-6 bg-blue-200 mx-1 hidden md:block" />
+
+                        {/* Data Tabs */}
                         <TabsTrigger 
                           value="clients" 
                           className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-lg transition-all duration-200"
@@ -299,6 +335,13 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
                           <span className="hidden sm:inline">Casos</span>
                         </TabsTrigger>
                         <TabsTrigger 
+                          value="leads"
+                          className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-lg transition-all duration-200"
+                        >
+                          <UserPlus className="h-4 w-4" />
+                          <span className="hidden sm:inline">Leads</span>
+                        </TabsTrigger>
+                        <TabsTrigger 
                           value="communications"
                           className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-lg transition-all duration-200"
                         >
@@ -310,32 +353,34 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
                           className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-lg transition-all duration-200"
                         >
                           <FileText className="h-4 w-4" />
-                          <span className="hidden sm:inline">Documentos</span>
+                          <span className="hidden sm:inline">Docs</span>
                         </TabsTrigger>
                         <TabsTrigger 
                           value="automation"
                           className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-lg transition-all duration-200"
                         >
                           <Settings className="h-4 w-4" />
-                          <span className="hidden sm:inline">Automatización</span>
+                          <span className="hidden sm:inline">Autom.</span>
                         </TabsTrigger>
                         <TabsTrigger 
                           value="analytics"
                           className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-lg transition-all duration-200"
                         >
                           <BarChart3 className="h-4 w-4" />
-                          <span className="hidden sm:inline">Analíticas</span>
-                        </TabsTrigger>
-                        <TabsTrigger 
-                          value="leads"
-                          className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-lg transition-all duration-200"
-                        >
-                          <UserPlus className="h-4 w-4" />
-                          <span className="hidden sm:inline">Leads</span>
+                          <span className="hidden sm:inline">Analytics</span>
                         </TabsTrigger>
                       </TabsList>
 
                       <div className="mt-6">
+                        <TabsContent value="pipeline" className="mt-0">
+                          {renderTabContent()}
+                        </TabsContent>
+                        <TabsContent value="lead-pipeline" className="mt-0">
+                          {renderTabContent()}
+                        </TabsContent>
+                        <TabsContent value="health" className="mt-0">
+                          {renderTabContent()}
+                        </TabsContent>
                         <TabsContent value="clients" className="mt-0">
                           {renderTabContent()}
                         </TabsContent>

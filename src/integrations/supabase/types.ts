@@ -1084,6 +1084,54 @@ export type Database = {
           },
         ]
       }
+      crm_case_profitability: {
+        Row: {
+          case_id: string
+          created_at: string
+          expenses: number | null
+          fixed_fee: number | null
+          hourly_rate: number | null
+          hours_billed: number | null
+          id: string
+          last_calculated_at: string | null
+          lawyer_id: string
+          profit_margin: number | null
+          revenue_collected: number | null
+          revenue_pending: number | null
+          updated_at: string
+        }
+        Insert: {
+          case_id: string
+          created_at?: string
+          expenses?: number | null
+          fixed_fee?: number | null
+          hourly_rate?: number | null
+          hours_billed?: number | null
+          id?: string
+          last_calculated_at?: string | null
+          lawyer_id: string
+          profit_margin?: number | null
+          revenue_collected?: number | null
+          revenue_pending?: number | null
+          updated_at?: string
+        }
+        Update: {
+          case_id?: string
+          created_at?: string
+          expenses?: number | null
+          fixed_fee?: number | null
+          hourly_rate?: number | null
+          hours_billed?: number | null
+          id?: string
+          last_calculated_at?: string | null
+          lawyer_id?: string
+          profit_margin?: number | null
+          revenue_collected?: number | null
+          revenue_pending?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       crm_cases: {
         Row: {
           actual_hours: number | null
@@ -1095,12 +1143,18 @@ export type Database = {
           description: string | null
           end_date: string | null
           estimated_hours: number | null
+          expected_value: number | null
+          health_score: number | null
           id: string
           lawyer_id: string
+          next_action_date: string | null
+          pipeline_stage: string | null
           priority: string
+          probability: number | null
           start_date: string | null
           status: string
           title: string
+          total_hours_worked: number | null
           updated_at: string
         }
         Insert: {
@@ -1113,12 +1167,18 @@ export type Database = {
           description?: string | null
           end_date?: string | null
           estimated_hours?: number | null
+          expected_value?: number | null
+          health_score?: number | null
           id?: string
           lawyer_id: string
+          next_action_date?: string | null
+          pipeline_stage?: string | null
           priority?: string
+          probability?: number | null
           start_date?: string | null
           status?: string
           title: string
+          total_hours_worked?: number | null
           updated_at?: string
         }
         Update: {
@@ -1131,12 +1191,18 @@ export type Database = {
           description?: string | null
           end_date?: string | null
           estimated_hours?: number | null
+          expected_value?: number | null
+          health_score?: number | null
           id?: string
           lawyer_id?: string
+          next_action_date?: string | null
+          pipeline_stage?: string | null
           priority?: string
+          probability?: number | null
           start_date?: string | null
           status?: string
           title?: string
+          total_hours_worked?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -1192,11 +1258,17 @@ export type Database = {
           company: string | null
           created_at: string
           email: string
+          engagement_score: number | null
+          health_score: number | null
           id: string
+          last_contact_date: string | null
           lawyer_id: string
+          lifetime_value: number | null
           name: string
           notes: string | null
+          payment_status: string | null
           phone: string | null
+          risk_level: string | null
           status: string
           tags: string[] | null
           updated_at: string
@@ -1207,11 +1279,17 @@ export type Database = {
           company?: string | null
           created_at?: string
           email: string
+          engagement_score?: number | null
+          health_score?: number | null
           id?: string
+          last_contact_date?: string | null
           lawyer_id: string
+          lifetime_value?: number | null
           name: string
           notes?: string | null
+          payment_status?: string | null
           phone?: string | null
+          risk_level?: string | null
           status?: string
           tags?: string[] | null
           updated_at?: string
@@ -1222,14 +1300,62 @@ export type Database = {
           company?: string | null
           created_at?: string
           email?: string
+          engagement_score?: number | null
+          health_score?: number | null
           id?: string
+          last_contact_date?: string | null
           lawyer_id?: string
+          lifetime_value?: number | null
           name?: string
           notes?: string | null
+          payment_status?: string | null
           phone?: string | null
+          risk_level?: string | null
           status?: string
           tags?: string[] | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      crm_communication_templates: {
+        Row: {
+          category: string
+          content: string
+          created_at: string
+          id: string
+          is_active: boolean | null
+          lawyer_id: string
+          name: string
+          subject: string | null
+          updated_at: string
+          usage_count: number | null
+          variables: Json | null
+        }
+        Insert: {
+          category?: string
+          content: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          lawyer_id: string
+          name: string
+          subject?: string | null
+          updated_at?: string
+          usage_count?: number | null
+          variables?: Json | null
+        }
+        Update: {
+          category?: string
+          content?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          lawyer_id?: string
+          name?: string
+          subject?: string | null
+          updated_at?: string
+          usage_count?: number | null
+          variables?: Json | null
         }
         Relationships: []
       }
@@ -1299,6 +1425,75 @@ export type Database = {
           },
         ]
       }
+      crm_daily_metrics: {
+        Row: {
+          avg_case_health: number | null
+          avg_client_health: number | null
+          cases_active: number | null
+          cases_lost: number | null
+          cases_won: number | null
+          clients_active: number | null
+          clients_at_risk: number | null
+          created_at: string
+          id: string
+          lawyer_id: string
+          leads_converted: number | null
+          leads_count: number | null
+          leads_new: number | null
+          metric_date: string
+          pipeline_value: number | null
+          revenue_collected: number | null
+          revenue_pending: number | null
+          tasks_overdue: number | null
+          tasks_pending: number | null
+          win_rate: number | null
+        }
+        Insert: {
+          avg_case_health?: number | null
+          avg_client_health?: number | null
+          cases_active?: number | null
+          cases_lost?: number | null
+          cases_won?: number | null
+          clients_active?: number | null
+          clients_at_risk?: number | null
+          created_at?: string
+          id?: string
+          lawyer_id: string
+          leads_converted?: number | null
+          leads_count?: number | null
+          leads_new?: number | null
+          metric_date: string
+          pipeline_value?: number | null
+          revenue_collected?: number | null
+          revenue_pending?: number | null
+          tasks_overdue?: number | null
+          tasks_pending?: number | null
+          win_rate?: number | null
+        }
+        Update: {
+          avg_case_health?: number | null
+          avg_client_health?: number | null
+          cases_active?: number | null
+          cases_lost?: number | null
+          cases_won?: number | null
+          clients_active?: number | null
+          clients_at_risk?: number | null
+          created_at?: string
+          id?: string
+          lawyer_id?: string
+          leads_converted?: number | null
+          leads_count?: number | null
+          leads_new?: number | null
+          metric_date?: string
+          pipeline_value?: number | null
+          revenue_collected?: number | null
+          revenue_pending?: number | null
+          tasks_overdue?: number | null
+          tasks_pending?: number | null
+          win_rate?: number | null
+        }
+        Relationships: []
+      }
       crm_documents: {
         Row: {
           case_id: string | null
@@ -1362,40 +1557,100 @@ export type Database = {
           },
         ]
       }
+      crm_lead_interactions: {
+        Row: {
+          channel: string | null
+          created_at: string
+          id: string
+          interaction_type: string
+          lawyer_id: string
+          lead_id: string
+          next_action: string | null
+          next_action_date: string | null
+          notes: string | null
+          outcome: string | null
+        }
+        Insert: {
+          channel?: string | null
+          created_at?: string
+          id?: string
+          interaction_type: string
+          lawyer_id: string
+          lead_id: string
+          next_action?: string | null
+          next_action_date?: string | null
+          notes?: string | null
+          outcome?: string | null
+        }
+        Update: {
+          channel?: string | null
+          created_at?: string
+          id?: string
+          interaction_type?: string
+          lawyer_id?: string
+          lead_id?: string
+          next_action?: string | null
+          next_action_date?: string | null
+          notes?: string | null
+          outcome?: string | null
+        }
+        Relationships: []
+      }
       crm_leads: {
         Row: {
           created_at: string | null
           email: string
+          estimated_case_value: number | null
           id: string
+          interaction_count: number | null
+          last_activity_date: string | null
           lawyer_id: string
           message: string
           name: string
+          nurture_stage: string | null
           origin: string | null
           phone: string | null
+          response_time_hours: number | null
+          score: number | null
+          source_quality: string | null
           status: string | null
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
           email: string
+          estimated_case_value?: number | null
           id?: string
+          interaction_count?: number | null
+          last_activity_date?: string | null
           lawyer_id: string
           message: string
           name: string
+          nurture_stage?: string | null
           origin?: string | null
           phone?: string | null
+          response_time_hours?: number | null
+          score?: number | null
+          source_quality?: string | null
           status?: string | null
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
           email?: string
+          estimated_case_value?: number | null
           id?: string
+          interaction_count?: number | null
+          last_activity_date?: string | null
           lawyer_id?: string
           message?: string
           name?: string
+          nurture_stage?: string | null
           origin?: string | null
           phone?: string | null
+          response_time_hours?: number | null
+          score?: number | null
+          source_quality?: string | null
           status?: string | null
           updated_at?: string | null
         }
@@ -1477,6 +1732,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      crm_workflow_executions: {
+        Row: {
+          actions_executed: Json | null
+          completed_at: string | null
+          error_message: string | null
+          id: string
+          lawyer_id: string
+          rule_id: string
+          started_at: string
+          status: string
+          trigger_data: Json | null
+          trigger_event: string
+        }
+        Insert: {
+          actions_executed?: Json | null
+          completed_at?: string | null
+          error_message?: string | null
+          id?: string
+          lawyer_id: string
+          rule_id: string
+          started_at?: string
+          status?: string
+          trigger_data?: Json | null
+          trigger_event: string
+        }
+        Update: {
+          actions_executed?: Json | null
+          completed_at?: string | null
+          error_message?: string | null
+          id?: string
+          lawyer_id?: string
+          rule_id?: string
+          started_at?: string
+          status?: string
+          trigger_data?: Json | null
+          trigger_event?: string
+        }
+        Relationships: []
       }
       custom_document_requests: {
         Row: {
