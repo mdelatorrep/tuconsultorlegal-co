@@ -31,13 +31,13 @@ export default defineConfig(({ mode }) => ({
     mode === 'development' && componentTagger(),
     VitePWA({
       registerType: 'prompt',
-      includeAssets: ['favicon-tcl.png', 'logo_tcl.png'],
+      includeAssets: ['favicon.png'],
       manifest: {
-        name: 'Tu Consultor Legal - Documentos Legales con IA',
-        short_name: 'tuconsultorlegal.co',
-        description: 'Crea contratos y documentos jurídicos válidos en Colombia con IA. Respaldados por abogados profesionales.',
-        theme_color: '#0372e8',
-        background_color: '#010f24',
+        name: 'Praxis Hub - Infraestructura Legal Profesional',
+        short_name: 'Praxis Hub',
+        description: 'El entorno que eleva la práctica legal. Infraestructura profesional para abogados independientes y estudios jurídicos en Colombia.',
+        theme_color: '#1a1f2e',
+        background_color: '#0f1219',
         display: 'standalone',
         scope: '/',
         start_url: '/',
@@ -69,17 +69,17 @@ export default defineConfig(({ mode }) => ({
         categories: ['legal', 'business', 'productivity'],
         shortcuts: [
           {
-            name: 'Crear Documento',
-            short_name: 'Documento',
-            description: 'Crear nuevo documento legal',
-            url: '/#user-dashboard',
+            name: 'Dashboard',
+            short_name: 'Dashboard',
+            description: 'Acceder al dashboard profesional',
+            url: '/#lawyer-dashboard',
             icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }]
           },
           {
-            name: 'Consulta Legal',
-            short_name: 'Consulta',
-            description: 'Iniciar consulta legal',
-            url: '/#personas',
+            name: 'CRM Legal',
+            short_name: 'CRM',
+            description: 'Gestión de clientes y casos',
+            url: '/#lawyer-crm',
             icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }]
           }
         ]
