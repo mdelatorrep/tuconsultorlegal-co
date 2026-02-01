@@ -1736,6 +1736,39 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_financial_audit_log: {
+        Row: {
+          access_time: string | null
+          accessed_by: string | null
+          data_summary: Json | null
+          id: string
+          lawyer_id: string
+          operation: string
+          record_id: string | null
+          table_name: string
+        }
+        Insert: {
+          access_time?: string | null
+          accessed_by?: string | null
+          data_summary?: Json | null
+          id?: string
+          lawyer_id: string
+          operation: string
+          record_id?: string | null
+          table_name: string
+        }
+        Update: {
+          access_time?: string | null
+          accessed_by?: string | null
+          data_summary?: Json | null
+          id?: string
+          lawyer_id?: string
+          operation?: string
+          record_id?: string | null
+          table_name?: string
+        }
+        Relationships: []
+      }
       crm_lead_interactions: {
         Row: {
           channel: string | null
