@@ -101,11 +101,11 @@ export const PWAInstallPrompt = () => {
             </button>
 
             <div className="flex items-start gap-4">
-              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-brand-primary to-brand-dark flex items-center justify-center flex-shrink-0">
+              <div className="w-14 h-14 rounded-xl bg-slate-900 flex items-center justify-center flex-shrink-0 border border-slate-700">
                 <img 
-                  src="/pwa-192x192.png" 
+                  src="/favicon.png" 
                   alt="Praxis Hub" 
-                  className="w-10 h-10"
+                  className="w-10 h-10 object-contain"
                 />
               </div>
 
