@@ -193,72 +193,21 @@ export default function StrategizeModule({ user, currentView, onViewChange, onLo
   };
 
   return (
-    <div className="space-y-4 lg:space-y-8">
+    <div className="space-y-4 lg:space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="grid w-full max-w-md grid-cols-2">
           <TabsTrigger value="strategize" className="flex items-center gap-2">
             <Sparkles className="h-4 w-4" />
             Nuevo Análisis
-                  </TabsTrigger>
-                  <TabsTrigger value="history" className="flex items-center gap-2">
-                    <History className="h-4 w-4" />
-                    Historial ({analyses.length})
-                  </TabsTrigger>
-                </TabsList>
+          </TabsTrigger>
+          <TabsTrigger value="history" className="flex items-center gap-2">
+            <History className="h-4 w-4" />
+            Historial ({analyses.length})
+          </TabsTrigger>
+        </TabsList>
 
-                <TabsContent value="strategize" className="space-y-4 lg:space-y-8">
-                {/* Hero Section */}
-                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-purple-500/10 via-purple-500/5 to-transparent border border-purple-500/20 p-8">
-                  <div className="absolute inset-0 bg-grid-pattern opacity-10"></div>
-                  <div className="relative">
-                    <div className="flex items-center gap-4 mb-6">
-                      <div className="p-4 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl shadow-2xl">
-                        <Brain className="h-10 w-10 text-white" />
-                      </div>
-                      <div>
-                        <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-purple-500 to-purple-400 bg-clip-text text-transparent">
-                          Centro de Estrategia Legal
-                        </h1>
-                        <p className="text-lg text-muted-foreground mt-2">
-                          Análisis estratégico avanzado, planificación de casos y desarrollo de argumentos
-                        </p>
-                      </div>
-                    </div>
-                    
-                    {/* Stats Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
-                      <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                        <div className="flex items-center gap-3">
-                          <Target className="h-8 w-8 text-purple-600" />
-                          <div>
-                            <p className="text-2xl font-bold text-purple-600">{analyses.length}</p>
-                            <p className="text-sm text-muted-foreground">Estrategias desarrolladas</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                        <div className="flex items-center gap-3">
-                          <TrendingUp className="h-8 w-8 text-emerald-600" />
-                          <div>
-                            <p className="text-2xl font-bold text-emerald-600">92%</p>
-                            <p className="text-sm text-muted-foreground">Éxito estratégico</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                        <div className="flex items-center gap-3">
-                          <Clock className="h-8 w-8 text-blue-600" />
-                          <div>
-                            <p className="text-2xl font-bold text-blue-600">5 min</p>
-                            <p className="text-sm text-muted-foreground">Análisis completo</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Enhanced Analysis Interface */}
+        <TabsContent value="strategize" className="space-y-4">
+          {/* Analysis Interface */}
                 <Card className="border-0 shadow-2xl bg-gradient-to-br from-white via-white to-purple-500/5 overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-purple-500/10 opacity-50"></div>
                   <CardHeader className="relative pb-6">
