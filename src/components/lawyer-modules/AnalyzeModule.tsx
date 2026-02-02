@@ -440,71 +440,21 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
   };
 
   return (
-    <div className="space-y-4 lg:space-y-8">
+    <div className="space-y-4 lg:space-y-6">
       <Tabs defaultValue="analyze" className="space-y-4">
         <TabsList className="grid w-full max-w-md grid-cols-2">
           <TabsTrigger value="analyze" className="flex items-center gap-2">
             <Sparkles className="h-4 w-4" />
-                    Nuevo Análisis
-                  </TabsTrigger>
-                  <TabsTrigger value="history" className="flex items-center gap-2">
-                    <History className="h-4 w-4" />
-                    Historial ({analysisHistory.length})
-                  </TabsTrigger>
-                </TabsList>
+            Nuevo Análisis
+          </TabsTrigger>
+          <TabsTrigger value="history" className="flex items-center gap-2">
+            <History className="h-4 w-4" />
+            Historial ({analysisHistory.length})
+          </TabsTrigger>
+        </TabsList>
 
-                <TabsContent value="analyze" className="space-y-4 lg:space-y-8">
-                  {/* Hero Section */}
-                  <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-orange-500/10 via-orange-500/5 to-transparent border border-orange-500/20 p-8">
-                    <div className="absolute inset-0 bg-grid-pattern opacity-10"></div>
-                    <div className="relative">
-                      <div className="flex items-center gap-4 mb-6">
-                        <div className="p-4 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl shadow-2xl">
-                          <Eye className="h-10 w-10 text-white" />
-                        </div>
-                        <div>
-                          <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-600 via-orange-500 to-orange-400 bg-clip-text text-transparent">
-                            Análisis Inteligente de Documentos
-                          </h1>
-                          <p className="text-lg text-muted-foreground mt-2">
-                            Análisis automático de todo tipo de documentos legales con detección de riesgos y recomendaciones expertas
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
-                        <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                          <div className="flex items-center gap-3">
-                            <Target className="h-8 w-8 text-orange-600" />
-                            <div>
-                              <p className="text-2xl font-bold text-orange-600">{analysisHistory.length}</p>
-                              <p className="text-sm text-muted-foreground">Análisis realizados</p>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                          <div className="flex items-center gap-3">
-                            <Shield className="h-8 w-8 text-red-600" />
-                            <div>
-                              <p className="text-2xl font-bold text-red-600">{analysisResult?.risks.length || 0}</p>
-                              <p className="text-sm text-muted-foreground">Riesgos detectados</p>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                          <div className="flex items-center gap-3">
-                            <CheckCircle className="h-8 w-8 text-emerald-600" />
-                            <div>
-                              <p className="text-2xl font-bold text-emerald-600">{analysisResult?.recommendations?.length || 0}</p>
-                              <p className="text-sm text-muted-foreground">Recomendaciones</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Upload Section */}
+        <TabsContent value="analyze" className="space-y-4">
+          {/* Upload Section */}
                   <Card>
                     <CardHeader>
                       <CardTitle>Subir Documento para Análisis</CardTitle>

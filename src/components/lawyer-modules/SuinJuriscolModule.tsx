@@ -435,84 +435,9 @@ export default function SuinJuriscolModule({ user, currentView, onViewChange, on
   };
 
   return (
-    <div className="min-h-screen flex w-full bg-gradient-to-br from-background via-background to-emerald-500/5">
-      <main className="flex-1 min-w-0">
-          {/* Header */}
-          <header className="h-14 lg:h-16 border-b bg-gradient-to-r from-background/95 to-emerald-500/10 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 relative overflow-hidden sticky top-0 z-40">
-            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 to-transparent opacity-50"></div>
-            <div className="relative flex h-14 lg:h-16 items-center px-3 lg:px-6">
-              
-              <div className="flex items-center gap-2 lg:gap-3 min-w-0">
-                <div className="p-1.5 lg:p-2 bg-gradient-to-br from-emerald-600 to-emerald-500 rounded-lg lg:rounded-xl shadow-lg flex-shrink-0">
-                  <Database className="h-4 w-4 lg:h-6 lg:w-6 text-white" />
-                </div>
-                <div className="min-w-0">
-                  <h1 className="text-base lg:text-xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-500 bg-clip-text text-transparent truncate">
-                    SUIN-Juriscol
-                  </h1>
-                  <p className="text-xs lg:text-sm text-muted-foreground hidden sm:block truncate">
-                    Sistema Único de Información Normativa
-                  </p>
-                </div>
-              </div>
-            </div>
-          </header>
-
-          <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 lg:py-8">
-            <div className="max-w-7xl mx-auto space-y-6">
-              
-              {/* Hero Section */}
-              <div className="relative overflow-hidden rounded-2xl lg:rounded-3xl bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent border border-emerald-500/20 p-4 lg:p-8">
-                <div className="relative z-10">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="p-4 bg-gradient-to-br from-emerald-600 to-emerald-500 rounded-2xl shadow-2xl">
-                      <Scale className="h-10 w-10 text-white" />
-                    </div>
-                    <div>
-                      <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 bg-clip-text text-transparent">
-                        Consulta SUIN-Juriscol
-                      </h1>
-                      <p className="text-sm lg:text-base text-muted-foreground mt-1">
-                        Acceso directo a normativa colombiana con análisis IA
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {/* Info Cards */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-6">
-                    <div className="bg-white/50 dark:bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20">
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-5 w-5 text-emerald-600" />
-                        <div>
-                          <p className="text-sm font-medium">Leyes y Decretos</p>
-                          <p className="text-xs text-muted-foreground">Normativa vigente</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="bg-white/50 dark:bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20">
-                      <div className="flex items-center gap-2">
-                        <BookOpen className="h-5 w-5 text-emerald-600" />
-                        <div>
-                          <p className="text-sm font-medium">Jurisprudencia</p>
-                          <p className="text-xs text-muted-foreground">Sentencias y fallos</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="bg-white/50 dark:bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20">
-                      <div className="flex items-center gap-2">
-                        <Globe className="h-5 w-5 text-emerald-600" />
-                        <div>
-                          <p className="text-sm font-medium">Fuente Oficial</p>
-                          <p className="text-xs text-muted-foreground">suin-juriscol.gov.co</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Search Interface */}
-              <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-white to-emerald-50/50 dark:from-card dark:via-card dark:to-emerald-950/20">
+    <div className="space-y-4 lg:space-y-6">
+      {/* Search Interface */}
+      <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Search className="h-5 w-5 text-emerald-600" />
@@ -741,9 +666,6 @@ export default function SuinJuriscolModule({ user, currentView, onViewChange, on
                             <Badge variant="outline" className="text-xs">
                               {item.results.length} fuentes
                             </Badge>
-                            <span className="text-xs text-muted-foreground">
-                              {new Date(item.timestamp).toLocaleDateString('es-CO')}
-                            </span>
                           </div>
                         </div>
                       ))}
@@ -751,10 +673,6 @@ export default function SuinJuriscolModule({ user, currentView, onViewChange, on
                   </CardContent>
                 </Card>
               )}
-
-            </div>
-          </div>
-      </main>
     </div>
   );
 }

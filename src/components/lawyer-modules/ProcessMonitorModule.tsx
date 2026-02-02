@@ -254,18 +254,24 @@ export function ProcessMonitorModule({ lawyerId }: ProcessMonitorModuleProps) {
   const canSync = hasEnoughCredits('process_monitor');
 
   return (
-    <div className="flex flex-col h-full gap-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Monitor de Procesos</h2>
-          <p className="text-muted-foreground">Seguimiento automático de actuaciones en Rama Judicial</p>
+    <div className="space-y-4 lg:space-y-6">
+      {/* Toolbar */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input 
+            placeholder="Buscar por radicado o partes..."
+            className="pl-10"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+          />
         </div>
         <div className="flex gap-2 items-center">
           <Button 
             variant="outline" 
             onClick={syncAllProcesses}
             disabled={syncing || processes.length === 0 || !canSync}
+            size="sm"
           >
             {syncing ? (
               <>
@@ -285,7 +291,7 @@ export function ProcessMonitorModule({ lawyerId }: ProcessMonitorModuleProps) {
           </Button>
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
             <DialogTrigger asChild>
-              <Button>
+              <Button size="sm">
                 <Plus className="h-4 w-4 mr-2" />
                 Agregar Proceso
               </Button>
@@ -357,20 +363,9 @@ export function ProcessMonitorModule({ lawyerId }: ProcessMonitorModuleProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-1 min-h-0">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Process List */}
         <Card className="lg:col-span-1">
-          <CardHeader className="pb-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Buscar por radicado o partes..."
-                className="pl-10"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-              />
-            </div>
-          </CardHeader>
           <CardContent className="p-0">
             <ScrollArea className="h-[500px]">
               {loading ? (

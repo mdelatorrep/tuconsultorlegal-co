@@ -188,212 +188,125 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
   };
 
   return (
-    <div className="min-h-screen flex w-full bg-gradient-to-br from-background via-background to-blue-500/5">
-      {/* Main Content */}
-      <main className="flex-1 min-w-0">
-        {/* Enhanced Header - Mobile First */}
-        <header className="h-14 lg:h-16 border-b bg-gradient-to-r from-background/95 to-blue-500/10 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 relative overflow-hidden sticky top-0 z-40">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent opacity-50"></div>
-          <div className="relative flex h-14 lg:h-16 items-center px-3 lg:px-6">
-            <div className="flex items-center gap-2 lg:gap-3 min-w-0">
-              <div className="p-1.5 lg:p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg lg:rounded-xl shadow-lg flex-shrink-0">
-                <Users className="h-4 w-4 lg:h-6 lg:w-6 text-white" />
-              </div>
-              <div className="min-w-0">
-                <h1 className="text-base lg:text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent truncate">
-                  Gestión de Clientes IA
-                </h1>
-                <p className="text-xs lg:text-sm text-muted-foreground hidden sm:block truncate">
-                  Sistema integral de relaciones con clientes
-                </p>
-              </div>
+    <div className="space-y-4 lg:space-y-6">
+      {/* Toolbar with Search and AI Button */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="flex-1 max-w-md">
+          <Input
+            placeholder="Buscar clientes, casos, comunicaciones..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <ToolCostIndicator toolType="crm_ai" lawyerId={user?.id} />
+          <Button
+            onClick={handleAISegmentation}
+            disabled={isLoadingAI || !hasEnoughCredits('crm_ai')}
+            size="sm"
+          >
+            {isLoadingAI ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Procesando IA...
+              </>
+            ) : (
+              <>
+                <Brain className="h-4 w-4 mr-2" />
+                Segmentación IA
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <Card className="p-3">
+          <div className="flex items-center gap-3">
+            <Users className="h-5 w-5 text-primary" />
+            <div>
+              <p className="text-xl font-bold">{stats.clients}</p>
+              <p className="text-xs text-muted-foreground">Clientes</p>
             </div>
           </div>
-        </header>
-
-          <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 lg:py-8">
-            <div className="max-w-7xl mx-auto">
-              <div className="space-y-8">
-                {/* Hero Section */}
-                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-transparent border border-blue-500/20 p-8">
-                  <div className="absolute inset-0 bg-grid-pattern opacity-10"></div>
-                  <div className="relative">
-                    <div className="flex items-center gap-4 mb-6">
-                      <div className="p-4 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-2xl">
-                        <Users className="h-10 w-10 text-white" />
-                      </div>
-                      <div>
-                        <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-blue-500 to-blue-400 bg-clip-text text-transparent">
-                          Centro de Gestión de Clientes
-                        </h2>
-                        <p className="text-lg text-muted-foreground mt-2">
-                          Organiza, comunica y administra la relación con tus clientes de manera profesional
-                        </p>
-                      </div>
-                    </div>
-                    
-                    {/* Stats Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-8">
-                      <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                        <div className="flex items-center gap-3">
-                          <Users className="h-8 w-8 text-blue-600" />
-                          <div>
-                            <p className="text-2xl font-bold text-blue-600">{stats.clients}</p>
-                            <p className="text-sm text-muted-foreground">Clientes activos</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                        <div className="flex items-center gap-3">
-                          <Briefcase className="h-8 w-8 text-emerald-600" />
-                          <div>
-                            <p className="text-2xl font-bold text-emerald-600">{stats.cases}</p>
-                            <p className="text-sm text-muted-foreground">Casos en progreso</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                        <div className="flex items-center gap-3">
-                          <MessageSquare className="h-8 w-8 text-purple-600" />
-                          <div>
-                            <p className="text-2xl font-bold text-purple-600">{stats.communications}</p>
-                            <p className="text-sm text-muted-foreground">Comunicaciones</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                        <div className="flex items-center gap-3">
-                          <Calendar className="h-8 w-8 text-orange-600" />
-                          <div>
-                            <p className="text-2xl font-bold text-orange-600">{stats.tasks}</p>
-                            <p className="text-sm text-muted-foreground">Tareas pendientes</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Enhanced CRM Interface */}
-                <Card className="border-0 shadow-2xl bg-gradient-to-br from-white via-white to-blue-500/5 overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-blue-500/10 opacity-50"></div>
-                  <CardHeader className="relative pb-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
-                          <BarChart3 className="h-6 w-6 text-white" />
-                        </div>
-                        <div>
-                          <CardTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
-                            Panel de Control CRM
-                          </CardTitle>
-                          <CardDescription className="text-base mt-2">
-                            Gestiona todos los aspectos de tu práctica legal desde un solo lugar
-                          </CardDescription>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-3">
-                        <ToolCostIndicator toolType="crm_ai" lawyerId={user?.id} />
-                        <Button
-                          onClick={handleAISegmentation}
-                          disabled={isLoadingAI || !hasEnoughCredits('crm_ai')}
-                          className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-500 shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
-                        >
-                          {isLoadingAI ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Procesando IA...
-                            </>
-                          ) : (
-                            <>
-                              <Brain className="h-4 w-4 mr-2" />
-                              Segmentación IA
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  
-                  <CardContent className="relative space-y-6">
-                    {/* Search Bar */}
-                    <div className="flex items-center gap-4">
-                      <div className="flex-1">
-                        <Input
-                          placeholder="Buscar clientes, casos, comunicaciones..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="border-blue-200 focus:border-blue-400 rounded-xl bg-white/80 backdrop-blur-sm"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Simplified 4-Tab Interface */}
-                    <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-                      <TabsList className="grid grid-cols-4 bg-gradient-to-r from-blue-50 to-blue-100/50 rounded-xl p-1.5 border border-blue-200 h-auto">
-                        <TabsTrigger 
-                          value="operaciones" 
-                          className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white rounded-lg transition-all duration-200 py-2.5"
-                        >
-                          <Kanban className="h-4 w-4" />
-                          <span className="hidden sm:inline font-medium">Operaciones</span>
-                        </TabsTrigger>
-                        <TabsTrigger 
-                          value="relaciones"
-                          className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-lg transition-all duration-200 py-2.5"
-                        >
-                          <Users className="h-4 w-4" />
-                          <span className="hidden sm:inline font-medium">Relaciones</span>
-                        </TabsTrigger>
-                        <TabsTrigger 
-                          value="gestion"
-                          className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-purple-600 data-[state=active]:text-white rounded-lg transition-all duration-200 py-2.5"
-                        >
-                          <Zap className="h-4 w-4" />
-                          <span className="hidden sm:inline font-medium">Gestión</span>
-                        </TabsTrigger>
-                        <TabsTrigger 
-                          value="inteligencia"
-                          className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-amber-600 data-[state=active]:text-white rounded-lg transition-all duration-200 py-2.5"
-                        >
-                          <BarChart3 className="h-4 w-4" />
-                          <span className="hidden sm:inline font-medium">Inteligencia</span>
-                        </TabsTrigger>
-                      </TabsList>
-
-                      {/* Sub-navigation pills */}
-                      <div className="flex flex-wrap gap-2 mt-4 p-3 bg-muted/30 rounded-lg border">
-                        {tabSubViews[activeTab].map((item) => {
-                          const Icon = item.icon;
-                          return (
-                            <Button
-                              key={item.id}
-                              variant={subView === item.id ? "default" : "ghost"}
-                              size="sm"
-                              onClick={() => setSubView(item.id)}
-                              className={subView === item.id 
-                                ? "bg-primary text-primary-foreground shadow-sm" 
-                                : "hover:bg-muted"
-                              }
-                            >
-                              <Icon className="h-4 w-4 mr-2" />
-                              {item.label}
-                            </Button>
-                          );
-                        })}
-                      </div>
-
-                      <div className="mt-6">
-                        {renderSubContent()}
-                      </div>
-                    </Tabs>
-                  </CardContent>
-                </Card>
-              </div>
+        </Card>
+        <Card className="p-3">
+          <div className="flex items-center gap-3">
+            <Briefcase className="h-5 w-5 text-primary" />
+            <div>
+              <p className="text-xl font-bold">{stats.cases}</p>
+              <p className="text-xs text-muted-foreground">Casos</p>
             </div>
           </div>
-      </main>
+        </Card>
+        <Card className="p-3">
+          <div className="flex items-center gap-3">
+            <MessageSquare className="h-5 w-5 text-primary" />
+            <div>
+              <p className="text-xl font-bold">{stats.communications}</p>
+              <p className="text-xs text-muted-foreground">Comunicaciones</p>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-3">
+          <div className="flex items-center gap-3">
+            <Clock className="h-5 w-5 text-primary" />
+            <div>
+              <p className="text-xl font-bold">{stats.tasks}</p>
+              <p className="text-xs text-muted-foreground">Tareas</p>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Main CRM Tabs */}
+      <Card>
+        <CardContent className="p-4">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+            <TabsList className="grid grid-cols-4 h-auto p-1">
+              <TabsTrigger value="operaciones" className="flex items-center gap-2 py-2">
+                <Kanban className="h-4 w-4" />
+                <span className="hidden sm:inline">Operaciones</span>
+              </TabsTrigger>
+              <TabsTrigger value="relaciones" className="flex items-center gap-2 py-2">
+                <Users className="h-4 w-4" />
+                <span className="hidden sm:inline">Relaciones</span>
+              </TabsTrigger>
+              <TabsTrigger value="gestion" className="flex items-center gap-2 py-2">
+                <Zap className="h-4 w-4" />
+                <span className="hidden sm:inline">Gestión</span>
+              </TabsTrigger>
+              <TabsTrigger value="inteligencia" className="flex items-center gap-2 py-2">
+                <BarChart3 className="h-4 w-4" />
+                <span className="hidden sm:inline">Inteligencia</span>
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Sub-navigation pills */}
+            <div className="flex flex-wrap gap-2 mt-4 p-3 bg-muted/30 rounded-lg border">
+              {tabSubViews[activeTab].map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Button
+                    key={item.id}
+                    variant={subView === item.id ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setSubView(item.id)}
+                  >
+                    <Icon className="h-4 w-4 mr-2" />
+                    {item.label}
+                  </Button>
+                );
+              })}
+            </div>
+
+            <div className="mt-4">
+              {renderSubContent()}
+            </div>
+          </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 }
