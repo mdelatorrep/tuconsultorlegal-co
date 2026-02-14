@@ -24,13 +24,13 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
     title: "Praxis Hub - El entorno que eleva la práctica legal",
     description: "Praxis Hub potencia a los abogados con un entorno profesional integrado para ofrecer servicios legales de alta calidad, confiables y más accesibles.",
     keywords: "plataforma legal, entorno profesional abogados, práctica legal, herramientas abogados, gestión legal",
-    canonical: "https://praxishub.co/",
+    canonical: "https://praxis-hub.co/",
     structuredData: {
       "@context": "https://schema.org",
       "@type": "Organization",
       "name": "Praxis Hub",
       "description": "El entorno que eleva la práctica legal. Infraestructura profesional para abogados.",
-      "url": "https://praxishub.co"
+      "url": "https://praxis-hub.co"
     }
   });
 

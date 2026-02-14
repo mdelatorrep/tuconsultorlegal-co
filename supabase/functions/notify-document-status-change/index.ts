@@ -195,9 +195,9 @@ Deno.serve(async (req) => {
             hour: '2-digit',
             minute: '2-digit'
           }) : 'No definido',
-          tracking_url: `https://praxishub.co/#documento?code=${document.token}`,
-          site_url: 'https://praxishub.co',
-          dashboard_url: 'https://praxishub.co/#abogados',
+          tracking_url: `https://praxis-hub.co/#documento?code=${document.token}`,
+          site_url: 'https://praxis-hub.co',
+          dashboard_url: 'https://praxis-hub.co/#abogados',
           current_year: new Date().getFullYear().toString(),
           payment_date: new Date().toLocaleDateString('es-CO', {
             year: 'numeric',
@@ -271,7 +271,7 @@ Deno.serve(async (req) => {
               user_email: document.user_email,
               total_documents: agentStats?.openai_conversations_count || 0,
               success_rate: Math.round(agentStats?.openai_success_rate || 0),
-              dashboard_url: 'https://praxishub.co/#abogados?view=agentes',
+              dashboard_url: 'https://praxis-hub.co/#abogados?view=agentes',
               current_year: new Date().getFullYear().toString()
             };
 

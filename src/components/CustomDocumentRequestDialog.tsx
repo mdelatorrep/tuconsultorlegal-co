@@ -49,7 +49,7 @@ export function CustomDocumentRequestDialog({ open, onOpenChange }: CustomDocume
         .from('custom_document_requests')
         .insert({
           user_id: user?.id || null,
-          user_email: user?.email || 'anonimo@praxishub.co',
+          user_email: user?.email || 'anonimo@praxis-hub.co',
           user_name: user?.user_metadata?.full_name || 'Usuario Anónimo',
           document_type: formData.documentType.trim(),
           description: formData.description.trim(),
@@ -60,7 +60,7 @@ export function CustomDocumentRequestDialog({ open, onOpenChange }: CustomDocume
       if (error) throw error;
 
       // Enviar email de confirmación al usuario
-      const userEmail = user?.email || 'anonimo@praxishub.co';
+      const userEmail = user?.email || 'anonimo@praxis-hub.co';
       const userName = user?.user_metadata?.full_name || 'Usuario';
       
       const urgencyLabels: Record<string, string> = {
@@ -91,7 +91,7 @@ export function CustomDocumentRequestDialog({ open, onOpenChange }: CustomDocume
               urgency: urgencyLabels[formData.urgency] || 'Normal',
               urgency_class: urgencyClasses[formData.urgency] || 'urgency-normal',
               description_preview: formData.description.trim().substring(0, 300) + (formData.description.length > 300 ? '...' : ''),
-              site_url: 'https://praxishub.co',
+              site_url: 'https://praxis-hub.co',
               current_year: new Date().getFullYear().toString()
             }
           }

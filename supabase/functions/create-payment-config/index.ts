@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
     // Build description and redirect URL based on type
     let description: string;
     let redirectionUrl: string;
-    const origin = req.headers.get('origin') || 'https://praxishub.co';
+    const origin = req.headers.get('origin') || 'https://praxis-hub.co';
     
     if (type === 'credits') {
       description = `Compra de ${credits || 0} créditos - ${packageName || 'Paquete de créditos'}`;

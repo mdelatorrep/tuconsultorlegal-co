@@ -34,7 +34,7 @@ export default function LawyerLandingPage({
     title: "Portal para Abogados | Praxis Hub",
     description: "Entorno profesional integrado para abogados. Investigación jurídica, análisis documental, redacción, CRM clientes y más. Eleva tu práctica legal.",
     keywords: "software abogados Colombia, herramientas abogados, investigación jurídica, CRM abogados, análisis contratos, redacción legal, procesos judiciales, SUIN Juriscol",
-    canonical: "https://praxishub.co/#abogados",
+    canonical: "https://praxis-hub.co/#abogados",
     structuredData: {
       "@context": "https://schema.org",
       "@type": "SoftwareApplication",

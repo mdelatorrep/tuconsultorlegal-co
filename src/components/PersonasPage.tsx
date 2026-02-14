@@ -41,7 +41,7 @@ export default function PersonasPage({
     title: "Documentos Legales para Personas | Praxis Hub",
     description: "Genera contratos y documentos legales válidos en Colombia con estándares profesionales. Arrendamiento, trabajo, poderes, sucesiones. Respaldados por abogados certificados.",
     keywords: "documentos legales personas Colombia, contrato arrendamiento, contrato trabajo, poder notarial, documentos sucesión, contratos personales, documentos jurídicos",
-    canonical: "https://praxishub.co/#personas",
+    canonical: "https://praxis-hub.co/#personas",
     structuredData: {
       "@context": "https://schema.org",
       "@type": "Service",

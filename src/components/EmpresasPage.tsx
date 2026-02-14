@@ -34,7 +34,7 @@ export default function EmpresasPage({
     title: "Soluciones Legales para Empresas | Praxis Hub",
     description: "Entorno profesional integrado para la gestión legal empresarial en Colombia. Contratos, compliance, due diligence y propiedad intelectual con estándares profesionales.",
     keywords: "documentos legales empresas Colombia, contratos comerciales, compliance legal, due diligence, propiedad intelectual, contratos corporativos, gestión legal empresarial",
-    canonical: "https://praxishub.co/#empresas",
+    canonical: "https://praxis-hub.co/#empresas",
     structuredData: {
       "@context": "https://schema.org",
       "@type": "Service",

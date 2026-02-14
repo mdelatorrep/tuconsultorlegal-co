@@ -40,13 +40,13 @@ export default function BlogPage({ onOpenChat, onNavigate }: BlogPageProps) {
     title: "Blog Legal - Artículos de Derecho | Praxis Hub",
     description: "Blog de derecho colombiano. Artículos sobre legislación, herramientas para abogados, contratos, normativa legal. Actualizado por expertos jurídicos.",
     keywords: "blog legal Colombia, artículos derecho, noticias jurídicas, legislación colombiana, herramientas abogados, contratos legales",
-    canonical: "https://praxishub.co/#blog",
+    canonical: "https://praxis-hub.co/#blog",
     structuredData: {
       "@context": "https://schema.org",
       "@type": "Blog",
       "name": "Blog Praxis Hub",
       "description": "Artículos sobre derecho colombiano y práctica legal profesional",
-      "url": "https://praxishub.co/#blog",
+      "url": "https://praxis-hub.co/#blog",
       "publisher": {
         "@type": "Organization",
         "name": "Praxis Hub"

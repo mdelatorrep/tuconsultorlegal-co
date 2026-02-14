@@ -117,7 +117,7 @@ serve(async (req) => {
                 lawyer_name: lawyer.full_name,
                 notification_title: title,
                 notification_message: message,
-                action_url: action_url || 'https://praxishub.co/#abogados',
+                action_url: action_url || 'https://praxis-hub.co/#abogados',
                 current_year: new Date().getFullYear().toString(),
                 ...email_variables
               },

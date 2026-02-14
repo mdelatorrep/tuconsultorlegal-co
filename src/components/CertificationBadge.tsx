@@ -68,7 +68,7 @@ export default function CertificationBadge({ certificate, showShareOptions = tru
             {certificate.certificate_name}
           </h3>
           <p className="text-sm text-muted-foreground">
-            praxishub.co
+            praxis-hub.co
           </p>
         </div>
 
@@ -139,7 +139,7 @@ export default function CertificationBadge({ certificate, showShareOptions = tru
               rel="noopener noreferrer"
               className="text-primary hover:underline"
             >
-              praxishub.co/certificacion
+              praxis-hub.co/certificacion
             </a>
           </p>
         </div>
