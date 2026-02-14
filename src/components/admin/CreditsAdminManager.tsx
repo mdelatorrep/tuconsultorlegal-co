@@ -199,7 +199,23 @@ export function CreditsAdminManager() {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        // Try to extract body from FunctionsHttpError
+        let errorMessage = 'No se pudieron otorgar los créditos';
+        try {
+          const context = (error as any)?.context;
+          if (context && typeof context.json === 'function') {
+            const body = await context.json();
+            errorMessage = body?.error || errorMessage;
+          }
+        } catch (_) {}
+        throw new Error(errorMessage);
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
       toast({
         title: '✅ Créditos otorgados',
@@ -212,9 +228,9 @@ export function CreditsAdminManager() {
       setGrantReason('');
       await loadLawyersWithCredits();
       await loadTransactions();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error granting credits:', error);
-      toast({ title: 'Error', description: 'No se pudieron otorgar los créditos', variant: 'destructive' });
+      toast({ title: 'Error', description: error?.message || 'No se pudieron otorgar los créditos', variant: 'destructive' });
     } finally {
       setGranting(false);
     }
