@@ -120,11 +120,25 @@ export function CreditsAdminManager() {
   };
 
   const loadLawyersWithCredits = async () => {
-    const { data: lawyerData, error: lawyerError } = await supabase
-      .from('lawyer_profiles')
-      .select('id, full_name, email');
+    // Use edge function with service role to bypass RLS and get ALL lawyers
+    const { data: fnData, error: fnError } = await supabase.functions.invoke('get-lawyers-admin');
 
-    if (lawyerError) return;
+    let lawyerData: { id: string; full_name: string; email: string }[] = [];
+
+    if (fnError || !fnData) {
+      // Fallback to direct query
+      const { data, error } = await supabase
+        .from('lawyer_profiles')
+        .select('id, full_name, email');
+      if (error) return;
+      lawyerData = data || [];
+    } else {
+      lawyerData = (fnData as any[]).map(l => ({
+        id: l.id,
+        full_name: l.full_name,
+        email: l.email
+      }));
+    }
 
     const { data: creditsData, error: creditsError } = await supabase
       .from('lawyer_credits')
@@ -132,7 +146,7 @@ export function CreditsAdminManager() {
 
     if (creditsError) return;
 
-    const merged = lawyerData?.map(lawyer => {
+    const merged = lawyerData.map(lawyer => {
       const credits = creditsData?.find(c => c.lawyer_id === lawyer.id);
       return {
         ...lawyer,
@@ -140,7 +154,7 @@ export function CreditsAdminManager() {
         total_earned: credits?.total_earned || 0,
         total_spent: credits?.total_spent || 0
       };
-    }) || [];
+    });
 
     setLawyers(merged);
   };
