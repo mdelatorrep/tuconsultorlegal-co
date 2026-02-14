@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Bot, BookOpen, BarChart3, Save, X, Brain } from 'lucide-react';
+import { Bot, BookOpen, BarChart3, Save, X, Brain, Power } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,6 +14,7 @@ interface LawyerPermissions {
   can_create_agents: boolean;
   can_create_blogs: boolean;
   can_use_ai_tools: boolean;
+  is_active: boolean;
 }
 
 interface Lawyer {
@@ -44,11 +45,11 @@ export default function LawyerPermissionsDialog({
   const [permissions, setPermissions] = useState<LawyerPermissions>({
     can_create_agents: false,
     can_create_blogs: false,
-    can_use_ai_tools: false
+    can_use_ai_tools: false,
+    is_active: true
   });
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  // const { refreshUserPermissions } = useLawyerAuthContext();
 
   // Initialize permissions when lawyer changes
   useEffect(() => {
@@ -56,7 +57,8 @@ export default function LawyerPermissionsDialog({
       setPermissions({
         can_create_agents: lawyer.can_create_agents ?? false,
         can_create_blogs: lawyer.can_create_blogs ?? false,
-        can_use_ai_tools: lawyer.can_use_ai_tools ?? false
+        can_use_ai_tools: lawyer.can_use_ai_tools ?? false,
+        is_active: lawyer.active ?? true
       });
     }
   }, [lawyer]);
@@ -78,7 +80,8 @@ export default function LawyerPermissionsDialog({
             can_create_agents: permissions.can_create_agents,
             can_create_blogs: permissions.can_create_blogs,
             can_use_ai_tools: permissions.can_use_ai_tools
-          }
+          },
+          is_active: permissions.is_active
         },
         headers: authHeaders
       });
@@ -192,9 +195,37 @@ export default function LawyerPermissionsDialog({
               <div className="font-medium">{lawyer.full_name}</div>
               <div className="text-sm text-muted-foreground">{lawyer.email}</div>
             </div>
-            <Badge variant={lawyer.active ? "default" : "secondary"}>
-              {lawyer.active ? "Activo" : "Inactivo"}
+            <Badge variant={permissions.is_active ? "default" : "secondary"}>
+              {permissions.is_active ? "Activo" : "Inactivo"}
             </Badge>
+          </div>
+
+          <Separator />
+
+          {/* Active Status Toggle */}
+          <div className="flex items-start gap-3 p-3 border rounded-lg">
+            <div className={`p-2 rounded-lg bg-muted ${permissions.is_active ? 'text-green-600' : 'text-destructive'}`}>
+              <Power className="w-4 h-4" />
+            </div>
+            <div className="flex-1 space-y-1">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="is_active" className="text-sm font-medium cursor-pointer">
+                  Estado de la Cuenta
+                </Label>
+                <Switch
+                  id="is_active"
+                  checked={permissions.is_active}
+                  onCheckedChange={(checked) => 
+                    setPermissions(prev => ({ ...prev, is_active: checked }))
+                  }
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {permissions.is_active 
+                  ? 'El abogado puede acceder al portal. Sus créditos se mantienen.' 
+                  : 'El abogado no podrá iniciar sesión. Sus créditos se conservan para cuando se reactive.'}
+              </p>
+            </div>
           </div>
 
           <Separator />
