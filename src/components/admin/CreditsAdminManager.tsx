@@ -64,7 +64,11 @@ interface CreditTransaction {
   };
 }
 
-export function CreditsAdminManager() {
+interface CreditsAdminManagerProps {
+  authHeaders?: Record<string, string>;
+}
+
+export function CreditsAdminManager({ authHeaders }: CreditsAdminManagerProps) {
   const [packages, setPackages] = useState<CreditPackage[]>([]);
   const [toolCosts, setToolCosts] = useState<CreditToolCost[]>([]);
   const [lawyers, setLawyers] = useState<LawyerWithCredits[]>([]);
@@ -196,7 +200,8 @@ export function CreditsAdminManager() {
           lawyerId: selectedLawyer.id,
           amount: parseInt(grantAmount),
           reason: grantReason || 'Créditos otorgados por administrador'
-        }
+        },
+        headers: authHeaders
       });
 
       if (error) {
