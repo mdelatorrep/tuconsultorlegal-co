@@ -195,14 +195,19 @@ export function CreditsAdminManager({ authHeaders }: CreditsAdminManagerProps) {
 
     setGranting(true);
     try {
-      const { data, error } = await supabase.functions.invoke('credits-admin-grant', {
+      console.log('[CREDITS-GRANT] authHeaders:', JSON.stringify(authHeaders));
+      const invokeOptions: any = {
         body: {
           lawyerId: selectedLawyer.id,
           amount: parseInt(grantAmount),
           reason: grantReason || 'Créditos otorgados por administrador'
-        },
-        headers: authHeaders
-      });
+        }
+      };
+      // Only pass headers if they contain an Authorization token
+      if (authHeaders && authHeaders['Authorization']) {
+        invokeOptions.headers = authHeaders;
+      }
+      const { data, error } = await supabase.functions.invoke('credits-admin-grant', invokeOptions);
 
       if (error) {
         console.error('Edge function error:', error);

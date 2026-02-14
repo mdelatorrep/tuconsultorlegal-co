@@ -16,9 +16,14 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    console.log('[CREDITS-ADMIN] Request received, method:', req.method);
+
     // Verify admin authorization
-    const authHeader = req.headers.get('Authorization');
+    const authHeader = req.headers.get('Authorization') || req.headers.get('authorization');
+    console.log('[CREDITS-ADMIN] Auth header present:', !!authHeader);
+    
     if (!authHeader) {
+      console.log('[CREDITS-ADMIN] No auth header found');
       return new Response(
         JSON.stringify({ error: 'Authorization required' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -27,6 +32,8 @@ serve(async (req) => {
 
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    console.log('[CREDITS-ADMIN] User lookup result:', user?.id, user?.email, 'error:', authError?.message);
     
     if (authError || !user) {
       return new Response(
@@ -41,11 +48,13 @@ serve(async (req) => {
       .select('*')
       .eq('user_id', user.id)
       .eq('active', true)
-      .single();
+      .maybeSingle();
+
+    console.log('[CREDITS-ADMIN] Admin profile lookup for user_id:', user.id, 'result:', adminProfile?.id, 'error:', adminError?.message);
 
     if (adminError || !adminProfile) {
       return new Response(
-        JSON.stringify({ error: 'Admin access required' }),
+        JSON.stringify({ error: 'Admin access required', debug_user_id: user.id, debug_email: user.email }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
