@@ -1592,7 +1592,7 @@ function AdminPage() {
         return <RevenueAnalytics />;
       
       case 'credits':
-        return <CreditsAdminManager />;
+        return <CreditsAdminManager authHeaders={getAuthHeaders()} />;
         
       default:
         return (
