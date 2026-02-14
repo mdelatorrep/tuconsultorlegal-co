@@ -56,9 +56,9 @@ async function sendSubscriptionEmail(
     const variables: Record<string, string> = {
       lawyer_name: lawyerName,
       plan_name: planName || 'Premium',
-      dashboard_url: 'https://praxishub.co/#abogados',
-      reactivation_url: 'https://praxishub.co/#abogados?view=suscripcion',
-      site_url: 'https://praxishub.co',
+      dashboard_url: 'https://praxis-hub.co/#abogados',
+      reactivation_url: 'https://praxis-hub.co/#abogados?view=suscripcion',
+      site_url: 'https://praxis-hub.co',
       current_year: new Date().getFullYear().toString(),
       end_date: endDate || new Date().toLocaleDateString('es-CO', {
         year: 'numeric',

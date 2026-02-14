@@ -837,7 +837,7 @@ PASO A PASO CON GUARDADO:
 11. Usuario proporciona contacto
 12. INMEDIATAMENTE llamar: request_user_contact_info({ user_name: "...", user_email: "..." })
 13. Generar documento con user_name y user_email
-14. Compartir token y link con detalles específicos: "✅ ¡Listo! Tu documento ha sido generado. Token: ABC123. Link: https://praxishub.co/#documento?code=ABC123. Precio: $50.000. Entrega: 15 de octubre..."
+14. Compartir token y link con detalles específicos: "✅ ¡Listo! Tu documento ha sido generado. Token: ABC123. Link: https://praxis-hub.co/#documento?code=ABC123. Precio: $50.000. Entrega: 15 de octubre..."
 
 ${
   hasStructuredConversation && conversationBlocks && conversationBlocks.length > 0

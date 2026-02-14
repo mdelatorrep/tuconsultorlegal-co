@@ -46,7 +46,7 @@ export default function IntellectualPropertyPage({ onOpenChat }: IntellectualPro
             <h1 className="text-4xl md:text-5xl font-extrabold text-primary mb-4">
               {content?.title || 'Propiedad Intelectual'}
             </h1>
-            <p className="text-lg text-muted-foreground">PRAXISHUB.CO</p>
+            <p className="text-lg text-muted-foreground">PRAXIS-HUB.CO</p>
           </div>
 
           <div className="prose prose-lg max-w-none space-y-8">

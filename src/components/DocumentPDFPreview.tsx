@@ -227,7 +227,7 @@ export default function DocumentPDFPreview({
               }}
             >
               <span>TOKEN: ABC123DEF456</span>
-              <span>www.praxishub.co</span>
+              <span>www.praxis-hub.co</span>
               <span>Revisado por: Abogado Certificado</span>
             </div>
           </div>

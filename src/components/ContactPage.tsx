@@ -29,13 +29,13 @@ export default function ContactPage({ onOpenChat, onNavigate }: ContactPageProps
     title: "Contacto | Praxis Hub",
     description: "Contacta con Praxis Hub. Soporte para abogados, consultas sobre el entorno profesional, asesoría legal online. Atención 24/7.",
     keywords: "contacto praxis hub, soporte abogados, consulta legal online, asesoría jurídica Colombia, contacto plataforma legal",
-    canonical: "https://praxishub.co/#contacto",
+    canonical: "https://praxis-hub.co/#contacto",
     structuredData: {
       "@context": "https://schema.org",
       "@type": "ContactPage",
       "name": "Contacto - Praxis Hub",
       "description": "Contacto para abogados y usuarios del entorno profesional",
-      "url": "https://praxishub.co/#contacto",
+      "url": "https://praxis-hub.co/#contacto",
       "mainEntity": {
         "@type": "Organization",
         "name": "Praxis Hub",
@@ -101,7 +101,7 @@ export default function ContactPage({ onOpenChat, onNavigate }: ContactPageProps
               user_name: formData.name,
               consultation_type: formData.consultation_type,
               message_preview: formData.message.substring(0, 200) + (formData.message.length > 200 ? '...' : ''),
-              site_url: 'https://praxishub.co',
+              site_url: 'https://praxis-hub.co',
               current_year: new Date().getFullYear().toString()
             }
           }
@@ -165,7 +165,7 @@ export default function ContactPage({ onOpenChat, onNavigate }: ContactPageProps
                   </div>
                   <div>
                     <h3 className="font-semibold mb-1">Email</h3>
-                    <p className="text-muted-foreground">contacto@praxishub.co</p>
+                    <p className="text-muted-foreground">contacto@praxis-hub.co</p>
                     <p className="text-sm text-muted-foreground">Respuesta en 24 horas</p>
                   </div>
                 </div>

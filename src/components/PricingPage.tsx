@@ -158,13 +158,13 @@ export default function PricingPage({ onOpenChat, onNavigate }: PricingPageProps
     title: "Planes y Precios | Praxis Hub",
     description: "Planes de acceso al entorno profesional. Suite para abogados y generación de documentos para personas y empresas. Desde $0 COP.",
     keywords: "precios software abogados, planes legal, tarifas documentos legales, costos herramientas abogados, precios CRM legal, planes empresariales legales",
-    canonical: "https://praxishub.co/#precios",
+    canonical: "https://praxis-hub.co/#precios",
     structuredData: {
       "@context": "https://schema.org",
       "@type": "WebPage",
       "name": "Planes y Precios - Praxis Hub",
       "description": "Planes de acceso al entorno profesional legal",
-      "url": "https://praxishub.co/#precios",
+      "url": "https://praxis-hub.co/#precios",
       "offers": {
         "@type": "AggregateOffer",
         "lowPrice": "0",
