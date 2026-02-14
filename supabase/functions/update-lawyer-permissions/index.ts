@@ -54,43 +54,53 @@ Deno.serve(async (req) => {
     }
 
     // Parse request body
-    const { lawyerId, permissions } = await req.json();
-    console.log('Request data:', { lawyerId, permissions });
+    const { lawyerId, permissions, is_active } = await req.json();
+    console.log('Request data:', { lawyerId, permissions, is_active });
 
-    if (!lawyerId || !permissions) {
+    if (!lawyerId) {
       console.error('Missing required fields');
-      return new Response(JSON.stringify({ error: 'Missing lawyerId or permissions' }), {
+      return new Response(JSON.stringify({ error: 'Missing lawyerId' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    // Validar campos de permisos
-    const { can_create_agents, can_create_blogs, can_use_ai_tools } = permissions;
-    
-    if (typeof can_create_agents !== 'boolean' || 
-        typeof can_create_blogs !== 'boolean' || 
-        typeof can_use_ai_tools !== 'boolean') {
-      console.error('Invalid permission values');
-      return new Response(JSON.stringify({ error: 'Invalid permission values' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+    // Build update object dynamically
+    const updateData: Record<string, any> = {
+      updated_at: new Date().toISOString()
+    };
+
+    // Handle permissions if provided
+    if (permissions) {
+      const { can_create_agents, can_create_blogs, can_use_ai_tools } = permissions;
+      
+      if (typeof can_create_agents !== 'boolean' || 
+          typeof can_create_blogs !== 'boolean' || 
+          typeof can_use_ai_tools !== 'boolean') {
+        console.error('Invalid permission values');
+        return new Response(JSON.stringify({ error: 'Invalid permission values' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      updateData.can_create_agents = can_create_agents;
+      updateData.can_create_blogs = can_create_blogs;
+      updateData.can_use_ai_tools = can_use_ai_tools;
     }
 
-    console.log('Updating lawyer permissions in database...');
+    // Handle is_active toggle if provided
+    if (typeof is_active === 'boolean') {
+      updateData.is_active = is_active;
+    }
+
+    console.log('Updating lawyer in database...', updateData);
     
-    // Actualizar permisos usando service role (bypasses RLS)
+    // Actualizar usando service role (bypasses RLS)
     const { data, error } = await supabase
       .from('lawyer_profiles')
-      .update({
-        can_create_agents,
-        can_create_blogs,
-        can_use_ai_tools,
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('id', lawyerId)
-      .select('id, full_name, can_create_agents, can_create_blogs, can_use_ai_tools, updated_at');
+      .select('id, full_name, is_active, can_create_agents, can_create_blogs, can_use_ai_tools, updated_at');
 
     if (error) {
       console.error('Database update error:', error);
