@@ -243,8 +243,7 @@ export const OPERATIONAL_GROUPS: OperationalGroup[] = [
     name: 'Verificación',
     icon: React.createElement(Shield, { className: "w-4 h-4" }),
     fields: [
-      { key: 'verification_verifik_enabled', label: 'Verifik habilitado', type: 'boolean', defaultValue: 'true' },
-      { key: 'verification_manual_approval_required', label: 'Aprobación manual', type: 'boolean', defaultValue: 'false' },
+      { key: 'verification_manual_approval_required', label: 'Aprobación manual requerida', type: 'boolean', defaultValue: 'false' },
       { key: 'verification_expiration_days', label: 'Expiración verificación', type: 'number', suffix: 'días', defaultValue: '365' }
     ]
   },

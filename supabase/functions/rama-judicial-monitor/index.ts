@@ -6,71 +6,99 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const VERIFIK_BASE_URL = 'https://api.verifik.co/v2';
+// Scrape actuaciones for a process from Rama Judicial using Firecrawl
+async function fetchProcessByRadicadoFromFirecrawl(radicado: string, firecrawlApiKey: string): Promise<{
+  ok: boolean;
+  data?: {
+    despacho: string | null;
+    fechaUltimaActuacion: string | null;
+    ultimaActuacion: string | null;
+    actuaciones: any[];
+    sujetos?: any[];
+    tipoProceso?: string;
+    claseProceso?: string;
+  };
+  error?: string;
+}> {
+  const targetUrl = `https://consultaprocesos.ramajudicial.gov.co/Procesos/NumeroRadicacion?llave=${encodeURIComponent(radicado)}&Generate=Consultar`;
 
-type VerifikProcessFetchResult =
-  | { ok: true; data: { despacho: string | null; fechaUltimaActuacion: string | null; ultimaActuacion: string | null; actuaciones: any[] } }
-  | { ok: false; status: number; body: any };
+  console.log(`[rama-judicial-monitor] Scraping: ${targetUrl}`);
 
-async function fetchProcessByRadicadoFromVerifik(radicado: string): Promise<VerifikProcessFetchResult> {
-  const apiKey = Deno.env.get('VERIFIK_API_KEY');
-  if (!apiKey) {
-    throw new Error('VERIFIK_API_KEY not configured');
-  }
-
-  const endpoint = `${VERIFIK_BASE_URL}/co/rama/proceso/${encodeURIComponent(radicado)}`;
-  const resp = await fetch(endpoint, {
-    method: 'GET',
+  const scrapeResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
+    method: 'POST',
     headers: {
-      'Accept': 'application/json',
+      'Authorization': `Bearer ${firecrawlApiKey}`,
       'Content-Type': 'application/json',
-      // Verifik docs show Authorization: "JWT <token>" / "jwt <token>"
-      'Authorization': `JWT ${apiKey}`,
-      'User-Agent': 'Lovable-Edge/1.0',
     },
+    body: JSON.stringify({
+      url: targetUrl,
+      formats: [
+        {
+          type: 'json',
+          prompt: `Extract judicial process data from this Colombian Rama Judicial page for monitoring purposes.
+Return a JSON object with:
+- despacho: court name (string or null)
+- tipoProceso: type of legal process (string or null)
+- claseProceso: class of process (string or null)
+- fechaUltimaActuacion: date of last action in ISO format (string or null)
+- ultimaActuacion: description of last action (string or null)
+- actuaciones: array of all process actions, each with:
+  - fechaActuacion: date in ISO format (string)
+  - actuacion: action name (string)
+  - anotacion: annotation/notes (string or null)
+  - fechaInicio: start date (string or null)
+  - fechaFin: end date (string or null)
+- sujetos: array of parties with nombre (string) and tipoSujeto (string)
+- found: boolean, true if process data was found on the page`,
+        }
+      ],
+      waitFor: 5000,
+      onlyMainContent: true,
+    }),
   });
 
-  let body: any = null;
-  try {
-    body = await resp.json();
-  } catch {
-    body = null;
+  if (!scrapeResponse.ok) {
+    const errText = await scrapeResponse.text();
+    console.error(`[rama-judicial-monitor] Firecrawl error: ${scrapeResponse.status} - ${errText}`);
+    return { ok: false, error: `Firecrawl error: ${scrapeResponse.status}` };
   }
 
-  if (!resp.ok) {
-    return { ok: false, status: resp.status, body };
+  const scrapeData = await scrapeResponse.json();
+  const jsonData = scrapeData?.data?.json || scrapeData?.json;
+
+  if (!jsonData || jsonData.found === false) {
+    console.warn(`[rama-judicial-monitor] No data found for radicado: ${radicado}`);
+    return { ok: false, error: 'Proceso no encontrado en el portal' };
   }
 
-  const details = body?.data?.details ?? {};
-  const actions = Array.isArray(body?.data?.actions) ? body.data.actions : [];
-
-  const actuaciones = actions
+  const actuaciones = (jsonData.actuaciones || [])
+    .filter((a: any) => !!a.fechaActuacion)
     .map((a: any) => ({
       fechaActuacion: a.fechaActuacion,
-      actuacion: a.actuacion,
-      anotacion: a.anotacion,
-      fechaInicio: a.fechaInicial ?? null,
-      fechaFin: a.fechaFinal ?? null,
-    }))
-    .filter((a: any) => !!a.fechaActuacion);
+      actuacion: a.actuacion || '',
+      anotacion: a.anotacion || null,
+      fechaInicio: a.fechaInicio || null,
+      fechaFin: a.fechaFin || null,
+    }));
 
   const sorted = [...actuaciones].sort(
     (a: any, b: any) => new Date(b.fechaActuacion).getTime() - new Date(a.fechaActuacion).getTime()
   );
 
-  const fechaUltimaActuacion = sorted[0]?.fechaActuacion ?? details.ultimaActualizacion ?? null;
-  const ultimaActuacion = sorted[0]?.actuacion ?? null;
-
   return {
     ok: true,
     data: {
-      despacho: details.despacho ?? null,
-      fechaUltimaActuacion,
-      ultimaActuacion,
+      despacho: jsonData.despacho || null,
+      fechaUltimaActuacion: jsonData.fechaUltimaActuacion || sorted[0]?.fechaActuacion || null,
+      ultimaActuacion: jsonData.ultimaActuacion || sorted[0]?.actuacion || null,
       actuaciones,
+      sujetos: jsonData.sujetos || [],
+      tipoProceso: jsonData.tipoProceso || null,
+      claseProceso: jsonData.claseProceso || null,
     },
   };
 }
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -81,12 +109,19 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    const FIRECRAWL_API_KEY = Deno.env.get('FIRECRAWL_API_KEY');
+    if (!FIRECRAWL_API_KEY) {
+      return new Response(
+        JSON.stringify({ error: 'Firecrawl API not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { action, lawyerId, radicado, processId } = await req.json();
     console.log(`[RamaJudicial] Action: ${action}, Lawyer: ${lawyerId}, ProcessId: ${processId}, Radicado: ${radicado}`);
 
-    // Handle 'sync' action - sync a specific process (alias for check_updates with processId)
+    // Handle 'sync' action - sync a specific process
     if (action === 'sync' && processId) {
-      // Get the process details
       const { data: process, error: fetchError } = await supabase
         .from('monitored_processes')
         .select('*')
@@ -100,37 +135,17 @@ serve(async (req) => {
         });
       }
 
-      // Lookup the process in Verifik (Rama Judicial data)
-      const result = await fetchProcessByRadicadoFromVerifik(process.radicado);
+      const result = await fetchProcessByRadicadoFromFirecrawl(process.radicado, FIRECRAWL_API_KEY);
 
       if (!result.ok) {
-        console.error(`[RamaJudicial] Verifik API error: ${result.status}`);
         return new Response(
-          JSON.stringify({
-            error: 'No se pudo consultar el proceso',
-            details: `Error ${result.status}`,
-          }),
-          {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
+          JSON.stringify({ error: 'No se pudo consultar el proceso', details: result.error }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
-      const processData = result.data;
+      const processData = result.data!;
 
-      if (!processData) {
-        return new Response(
-          JSON.stringify({
-            success: true,
-            message: 'Proceso no encontrado',
-            newActuations: 0,
-          }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
-        );
-      }
       // Get existing actuations
       const { data: existingActs } = await supabase
         .from('process_actuations')
@@ -141,13 +156,11 @@ serve(async (req) => {
         (existingActs || []).map(a => `${a.fecha_actuacion}-${a.anotacion}`)
       );
 
-      // Find new actuations
-      const newActs = (processData.actuaciones || []).filter((act: any) => 
+      const newActs = (processData.actuaciones || []).filter((act: any) =>
         !existingSet.has(`${act.fechaActuacion}-${act.anotacion}`)
       );
 
       if (newActs.length > 0) {
-        // Insert new actuations
         const actuationsToInsert = newActs.map((act: any) => ({
           monitored_process_id: processId,
           fecha_actuacion: act.fechaActuacion,
@@ -157,11 +170,9 @@ serve(async (req) => {
           fecha_fin: act.fechaFin,
           is_new: true
         }));
-
         await supabase.from('process_actuations').insert(actuationsToInsert);
       }
 
-      // Update process info
       await supabase
         .from('monitored_processes')
         .update({
@@ -173,16 +184,14 @@ serve(async (req) => {
         .eq('id', processId);
 
       console.log(`[RamaJudicial] Synced process ${process.radicado}: ${newActs.length} new actuations`);
-      return new Response(JSON.stringify({ 
-        success: true, 
+      return new Response(JSON.stringify({
+        success: true,
         newActuations: newActs.length,
-        process: processData 
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+        process: processData
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // Handle 'sync-all' action - sync all processes for a lawyer
+    // Handle 'sync-all' action
     if (action === 'sync-all' && lawyerId) {
       const { data: processes, error: fetchError } = await supabase
         .from('monitored_processes')
@@ -192,27 +201,20 @@ serve(async (req) => {
 
       if (fetchError) throw fetchError;
 
-      console.log(`[RamaJudicial] Syncing ${processes?.length || 0} processes for lawyer ${lawyerId}`);
-
       const results: any[] = [];
       let totalNewActuations = 0;
 
-       for (const process of processes || []) {
-         try {
-           const result = await fetchProcessByRadicadoFromVerifik(process.radicado);
+      for (const process of processes || []) {
+        try {
+          const result = await fetchProcessByRadicadoFromFirecrawl(process.radicado, FIRECRAWL_API_KEY);
 
-           if (!result.ok) {
-             results.push({ radicado: process.radicado, success: false, error: `API error ${result.status}` });
-             continue;
-           }
+          if (!result.ok) {
+            results.push({ radicado: process.radicado, success: false, error: result.error });
+            continue;
+          }
 
-           const processData = result.data;
+          const processData = result.data!;
 
-           if (!processData) {
-             results.push({ radicado: process.radicado, success: true, newActuations: 0, message: 'Not found' });
-             continue;
-           }
-          // Get existing actuations
           const { data: existingActs } = await supabase
             .from('process_actuations')
             .select('fecha_actuacion, anotacion')
@@ -222,8 +224,7 @@ serve(async (req) => {
             (existingActs || []).map(a => `${a.fecha_actuacion}-${a.anotacion}`)
           );
 
-          // Find new actuations
-          const newActs = (processData.actuaciones || []).filter((act: any) => 
+          const newActs = (processData.actuaciones || []).filter((act: any) =>
             !existingSet.has(`${act.fechaActuacion}-${act.anotacion}`)
           );
 
@@ -237,12 +238,10 @@ serve(async (req) => {
               fecha_fin: act.fechaFin,
               is_new: true
             }));
-
             await supabase.from('process_actuations').insert(actuationsToInsert);
             totalNewActuations += newActs.length;
           }
 
-          // Update process
           await supabase
             .from('monitored_processes')
             .update({
@@ -255,48 +254,37 @@ serve(async (req) => {
 
           results.push({ radicado: process.radicado, success: true, newActuations: newActs.length });
 
-          // Rate limiting
-          await new Promise(resolve => setTimeout(resolve, 300));
+          // Rate limiting to avoid overwhelming the portal
+          await new Promise(resolve => setTimeout(resolve, 2000));
         } catch (err: any) {
           results.push({ radicado: process.radicado, success: false, error: err.message });
         }
       }
 
-      console.log(`[RamaJudicial] Sync-all complete: ${totalNewActuations} new actuations across ${processes?.length || 0} processes`);
-      return new Response(JSON.stringify({ 
-        success: true, 
+      return new Response(JSON.stringify({
+        success: true,
         synced: results.length,
         totalNewActuations,
-        results 
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        results
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    if (action === 'lookup') {
+      const result = await fetchProcessByRadicadoFromFirecrawl(radicado, FIRECRAWL_API_KEY);
+
+      if (!result.ok) {
+        return new Response(
+          JSON.stringify({ error: 'No se pudo consultar el proceso', details: result.error }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      return new Response(JSON.stringify({ processes: result.data ? [result.data] : [] }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-     if (action === 'lookup') {
-       // Lookup process by radicado (via Verifik)
-       const result = await fetchProcessByRadicadoFromVerifik(radicado);
-
-       if (!result.ok) {
-         console.error(`[RamaJudicial] Verifik API error: ${result.status}`);
-         return new Response(
-           JSON.stringify({
-             error: 'No se pudo consultar el proceso',
-             details: `Error ${result.status}`,
-           }),
-           {
-             status: 400,
-             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-           }
-         );
-       }
-
-       return new Response(JSON.stringify({ processes: result.data ? [result.data] : [] }), {
-         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-       });
-     }
     if (action === 'add_monitor') {
-      // Add process to monitoring
       if (!lawyerId || !radicado) {
         return new Response(JSON.stringify({ error: 'lawyerId y radicado son requeridos' }), {
           status: 400,
@@ -304,25 +292,24 @@ serve(async (req) => {
         });
       }
 
-       // First, lookup the process
-       let processInfo: any = null;
-       try {
-         const result = await fetchProcessByRadicadoFromVerifik(radicado);
-         if (result.ok) {
-           processInfo = result.data;
-         }
-       } catch (e) {
-         console.error('[RamaJudicial] add_monitor lookup error:', e);
-       }
-      // Insert monitored process
+      let processInfo: any = null;
+      try {
+        const result = await fetchProcessByRadicadoFromFirecrawl(radicado, FIRECRAWL_API_KEY);
+        if (result.ok) {
+          processInfo = result.data;
+        }
+      } catch (e) {
+        console.error('[RamaJudicial] add_monitor lookup error:', e);
+      }
+
       const { data: monitoredProcess, error: insertError } = await supabase
         .from('monitored_processes')
         .insert({
           lawyer_id: lawyerId,
           radicado,
           despacho: processInfo?.despacho || null,
-          demandante: processInfo?.sujetos?.find((s: any) => s.tipoSujeto === 'DEMANDANTE')?.nombre || null,
-          demandado: processInfo?.sujetos?.find((s: any) => s.tipoSujeto === 'DEMANDADO')?.nombre || null,
+          demandante: processInfo?.sujetos?.find((s: any) => s.tipoSujeto?.toUpperCase().includes('DEMANDANTE'))?.nombre || null,
+          demandado: processInfo?.sujetos?.find((s: any) => s.tipoSujeto?.toUpperCase().includes('DEMANDADO'))?.nombre || null,
           tipo_proceso: processInfo?.tipoProceso || null,
           ultima_actuacion_fecha: processInfo?.fechaUltimaActuacion || null,
           ultima_actuacion_descripcion: processInfo?.ultimaActuacion || null
@@ -331,7 +318,6 @@ serve(async (req) => {
         .single();
 
       if (insertError) {
-        console.error('[RamaJudicial] Insert error:', insertError);
         if (insertError.code === '23505') {
           return new Response(JSON.stringify({ error: 'Este proceso ya está siendo monitoreado' }), {
             status: 400,
@@ -341,7 +327,6 @@ serve(async (req) => {
         throw insertError;
       }
 
-      // If we have actuations, insert them
       if (processInfo?.actuaciones?.length > 0) {
         const actuations = processInfo.actuaciones.slice(0, 20).map((act: any) => ({
           monitored_process_id: monitoredProcess.id,
@@ -352,22 +337,17 @@ serve(async (req) => {
           fecha_fin: act.fechaFin,
           is_new: false
         }));
-
         await supabase.from('process_actuations').insert(actuations);
       }
 
-      console.log(`[RamaJudicial] Process ${radicado} added to monitoring`);
-      return new Response(JSON.stringify({ 
-        success: true, 
+      return new Response(JSON.stringify({
+        success: true,
         process: monitoredProcess,
         actuationsCount: processInfo?.actuaciones?.length || 0
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     if (action === 'check_updates') {
-      // Check for updates on all monitored processes (or specific one)
       let query = supabase
         .from('monitored_processes')
         .select('*')
@@ -381,22 +361,18 @@ serve(async (req) => {
       }
 
       const { data: processes, error: fetchError } = await query;
-
       if (fetchError) throw fetchError;
-
-      console.log(`[RamaJudicial] Checking ${processes?.length || 0} processes`);
 
       const updates: any[] = [];
       const newActuations: any[] = [];
 
-       for (const process of processes || []) {
-         try {
-           const result = await fetchProcessByRadicadoFromVerifik(process.radicado);
-           if (!result.ok) continue;
+      for (const process of processes || []) {
+        try {
+          const result = await fetchProcessByRadicadoFromFirecrawl(process.radicado, FIRECRAWL_API_KEY);
+          if (!result.ok) continue;
 
-           const processData = result.data;
-           if (!processData) continue;
-          // Get existing actuations
+          const processData = result.data!;
+
           const { data: existingActs } = await supabase
             .from('process_actuations')
             .select('fecha_actuacion, anotacion')
@@ -406,15 +382,11 @@ serve(async (req) => {
             (existingActs || []).map(a => `${a.fecha_actuacion}-${a.anotacion}`)
           );
 
-          // Find new actuations
-          const newActs = (processData.actuaciones || []).filter((act: any) => 
+          const newActs = (processData.actuaciones || []).filter((act: any) =>
             !existingSet.has(`${act.fechaActuacion}-${act.anotacion}`)
           );
 
           if (newActs.length > 0) {
-            console.log(`[RamaJudicial] Found ${newActs.length} new actuations for ${process.radicado}`);
-            
-            // Insert new actuations
             const actuationsToInsert = newActs.map((act: any) => ({
               monitored_process_id: process.id,
               fecha_actuacion: act.fechaActuacion,
@@ -424,10 +396,8 @@ serve(async (req) => {
               fecha_fin: act.fechaFin,
               is_new: true
             }));
-
             await supabase.from('process_actuations').insert(actuationsToInsert);
 
-            // Update process
             await supabase
               .from('monitored_processes')
               .update({
@@ -443,8 +413,6 @@ serve(async (req) => {
               newCount: newActs.length,
               actuations: newActs
             });
-
-            // TODO: Send email notification
           }
 
           updates.push({
@@ -454,9 +422,9 @@ serve(async (req) => {
             newActuations: newActs.length
           });
 
-          // Rate limiting: wait 500ms between requests
-          await new Promise(resolve => setTimeout(resolve, 500));
-        } catch (err) {
+          // Rate limiting
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        } catch (err: any) {
           console.error(`[RamaJudicial] Error checking ${process.radicado}:`, err);
           updates.push({
             processId: process.id,
@@ -467,14 +435,12 @@ serve(async (req) => {
         }
       }
 
-      return new Response(JSON.stringify({ 
-        success: true, 
+      return new Response(JSON.stringify({
+        success: true,
         checked: updates.length,
         newActuations,
         updates
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     if (action === 'remove_monitor') {
@@ -498,15 +464,19 @@ serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ error: 'Acción no válida' }), {
-      status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+    return new Response(
+      JSON.stringify({ error: 'Acción no reconocida' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
   } catch (error) {
     console.error('[RamaJudicial] Error:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+    return new Response(
+      JSON.stringify({
+        error: error instanceof Error ? error.message : 'Unknown error',
+        details: 'Error processing request'
+      }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
 });

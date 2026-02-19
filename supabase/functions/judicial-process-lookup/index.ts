@@ -6,8 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const VERIFIK_BASE_URL = 'https://api.verifik.co/v2';
-
 // Helper function to get required system configuration - throws if not found
 async function getRequiredConfig(supabaseClient: any, configKey: string): Promise<string> {
   const { data, error } = await supabaseClient
@@ -17,10 +15,106 @@ async function getRequiredConfig(supabaseClient: any, configKey: string): Promis
     .maybeSingle();
 
   if (error || !data?.config_value) {
-    throw new Error(`Configuración '${configKey}' no encontrada en system_config. Por favor configúrela en el panel de administración.`);
+    throw new Error(`Configuración '${configKey}' no encontrada en system_config.`);
   }
 
   return data.config_value;
+}
+
+// Scrape judicial process data from Rama Judicial portal using Firecrawl
+async function scrapeProcessByRadicado(radicado: string, firecrawlApiKey: string): Promise<any> {
+  // Build the URL for the Rama Judicial portal with the radicado
+  const targetUrl = `https://consultaprocesos.ramajudicial.gov.co/Procesos/NumeroRadicacion?llave=${encodeURIComponent(radicado)}&Generate=Consultar`;
+
+  console.log(`[judicial-process-lookup] Scraping URL: ${targetUrl}`);
+
+  const scrapeResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${firecrawlApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      url: targetUrl,
+      formats: [
+        'markdown',
+        {
+          type: 'json',
+          prompt: `Extract all judicial process information from this Colombian Rama Judicial page.
+Return a JSON object with:
+- processes: array of process objects, each with:
+  - llaveProceso: the radicado/process number (string)
+  - despacho: the court/despacho name (string)
+  - departamento: department/city (string)
+  - tipoProceso: type of legal process (string)
+  - claseProceso: process class (string)
+  - subclaseProceso: process subclass (string, optional)
+  - ponente: judge/magistrate name (string, optional)
+  - fechaProceso: filing date (string)
+  - fechaUltimaActuacion: date of last action (string)
+  - sujetos: array of parties with nombre (string), tipoSujeto (string, e.g. DEMANDANTE, DEMANDADO)
+  - actuaciones: array of actions with fechaActuacion (string), actuacion (string), anotacion (string)
+- found: boolean indicating if process was found
+- errorMessage: string if there was an error or no results`,
+        }
+      ],
+      waitFor: 5000,
+      onlyMainContent: true,
+    }),
+  });
+
+  if (!scrapeResponse.ok) {
+    const errText = await scrapeResponse.text();
+    throw new Error(`Firecrawl API error: ${scrapeResponse.status} - ${errText}`);
+  }
+
+  const scrapeData = await scrapeResponse.json();
+  console.log(`[judicial-process-lookup] Firecrawl scrape success`);
+  return scrapeData;
+}
+
+// Parse Firecrawl response into normalized process structure
+function parseScrapedData(scrapeData: any, radicado: string): { processes: any[]; processDetails: any | null } {
+  // Try structured JSON first
+  const jsonData = scrapeData?.data?.json || scrapeData?.json;
+  
+  if (jsonData?.processes && Array.isArray(jsonData.processes) && jsonData.processes.length > 0) {
+    const normalized = jsonData.processes.map((p: any) => ({
+      idProceso: p.llaveProceso || radicado,
+      llaveProceso: p.llaveProceso || radicado,
+      fechaRadicacion: p.fechaProceso,
+      fechaUltimaActuacion: p.fechaUltimaActuacion,
+      despacho: p.despacho,
+      departamento: p.departamento,
+      tipoProceso: p.tipoProceso,
+      claseProceso: p.claseProceso,
+      subclaseProceso: p.subclaseProceso,
+      ponente: p.ponente,
+      ubicacion: p.departamento,
+      sujetos: (p.sujetos || []).map((s: any) => ({
+        nombre: s.nombre,
+        tipoSujeto: s.tipoSujeto,
+        representante: s.representante || '',
+      })),
+      actuaciones: (p.actuaciones || []).map((a: any) => ({
+        fechaActuacion: a.fechaActuacion,
+        actuacion: a.actuacion,
+        anotacion: a.anotacion,
+        fechaInicia: a.fechaInicia,
+        fechaFinaliza: a.fechaFinaliza,
+        fechaRegistro: a.fechaRegistro,
+      })),
+    }));
+
+    return {
+      processes: normalized,
+      processDetails: normalized.length === 1 ? normalized[0] : null,
+    };
+  }
+
+  // Fallback: if JSON extraction failed, return empty (markdown is available for AI analysis)
+  console.warn('[judicial-process-lookup] JSON extraction from Firecrawl returned no processes');
+  return { processes: [], processDetails: null };
 }
 
 serve(async (req) => {
@@ -51,256 +145,63 @@ serve(async (req) => {
       );
     }
 
-    const VERIFIK_API_KEY = Deno.env.get('VERIFIK_API_KEY');
-    if (!VERIFIK_API_KEY) {
-      console.error('VERIFIK_API_KEY not configured');
+    const FIRECRAWL_API_KEY = Deno.env.get('FIRECRAWL_API_KEY');
+    if (!FIRECRAWL_API_KEY) {
       return new Response(
-        JSON.stringify({ error: 'Verifik API not configured' }),
+        JSON.stringify({ error: 'Firecrawl API not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const requestData = await req.json();
-    const { queryType, documentNumber, documentType, idProceso, radicado, followUpQuery, conversationHistory } = requestData;
-
-    console.log('[judicial-process-lookup] Query:', { queryType, documentNumber, idProceso, radicado });
-
-    // Service client for logging
     const serviceClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    let verifik_response = null;
-    let processes: any[] = [];
-    let processDetails: any = null;
-    let apiCost = 0;
+    const requestData = await req.json();
+    const { queryType, radicado, followUpQuery, conversationHistory } = requestData;
 
-    // Call Verifik API based on query type
-    if (queryType === 'document' && documentNumber) {
-      // Query by document number - GET /v2/co/rama/procesos
-      // Documentation: https://docs.verifik.co/docs-es/legal/procesos-legales-colombianos/
-      // Required params: documentType (CC, NIT ONLY), documentNumber
-      
-      // Validate documentType - Verifik only accepts CC or NIT
-      const validDocType = (documentType === 'CC' || documentType === 'NIT') ? documentType : 'CC';
-      if (documentType && documentType !== 'CC' && documentType !== 'NIT') {
-        console.warn(`[judicial-process-lookup] Invalid documentType '${documentType}', defaulting to 'CC'. Only CC and NIT are supported.`);
-      }
-      
-      const params = new URLSearchParams({
-        documentType: validDocType,
-        documentNumber: documentNumber,
-      });
-      
-      const endpoint = `${VERIFIK_BASE_URL}/co/rama/procesos?${params.toString()}`;
-      console.log('[judicial-process-lookup] Calling Verifik by document:', endpoint);
+    console.log('[judicial-process-lookup] Query:', { queryType, radicado });
 
-      const response = await fetch(endpoint, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          // Verifik docs show Authorization: "JWT <token>" / "jwt <token>"
-          'Authorization': `JWT ${VERIFIK_API_KEY}`,
-          'User-Agent': 'Lovable-Edge/1.0',
-        },
-      });
-
-      verifik_response = await response.json();
-      console.log('[judicial-process-lookup] Verifik response status:', response.status);
-      apiCost = 0.10;
-
-      if (response.ok && verifik_response.data) {
-        // According to docs, response structure is: data.list (array of processes)
-        const rawProcesses = verifik_response.data.list || [];
-        const consultedSubject = verifik_response.data.consultedSubject || '';
-        
-        processes = Array.isArray(rawProcesses) ? rawProcesses.map((p: any) => {
-          // According to Verifik docs, sujetosProcesales is an array of strings like:
-          // ["Demandante: NOMBRE", "Demandado: NOMBRE"]
-          let sujetos: any[] = [];
-          if (Array.isArray(p.sujetosProcesales)) {
-            sujetos = p.sujetosProcesales.map((s: any) => {
-              if (typeof s === 'string') {
-                // Parse string format "TipoSujeto: Nombre"
-                const colonIndex = s.indexOf(':');
-                if (colonIndex > -1) {
-                  return {
-                    tipoSujeto: s.substring(0, colonIndex).trim(),
-                    nombre: s.substring(colonIndex + 1).trim(),
-                    representante: '',
-                  };
-                }
-                return { nombre: s.trim(), tipoSujeto: '', representante: '' };
-              }
-              // If it's an object (future compatibility)
-              return {
-                nombre: s.nombreRazonSocial || s.nombre || '',
-                tipoSujeto: s.tipoSujeto || '',
-                representante: s.representante || '',
-              };
-            });
-          }
-          
-          return {
-            idProceso: p.idProceso,
-            idConexion: p.idConexion,
-            llaveProceso: p.llaveProceso,
-            fechaRadicacion: p.fechaProceso,
-            fechaUltimaActuacion: p.fechaUltimaActuacion,
-            despacho: p.despacho,
-            departamento: p.departamento,
-            sujetos,
-            esPrivado: p.esPrivado,
-            consultedSubject: consultedSubject,
-          };
-        }) : [];
-      } else if (!response.ok) {
-        console.error('[judicial-process-lookup] Verifik API error:', verifik_response);
-      }
-
-    } else if ((queryType === 'processId' && idProceso) || (queryType === 'radicado' && radicado)) {
-      // Query by process ID or radicado - GET /v2/co/rama/proceso/{processNumber}
-      // Documentation: https://docs.verifik.co/docs-es/legal/recuperar-detalles-proceso-legal-por-numero/
-      // NOTE: Only the processNumber (numeric ID or radicado) is required, no other parameters
-      const processNumber = queryType === 'radicado' ? radicado : idProceso;
-      const endpoint = `${VERIFIK_BASE_URL}/co/rama/proceso/${encodeURIComponent(processNumber)}`;
-      console.log('[judicial-process-lookup] Calling Verifik by processNumber:', endpoint);
-
-      const response = await fetch(endpoint, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          // Verifik docs show Authorization: "JWT <token>" / "jwt <token>"
-          'Authorization': `JWT ${VERIFIK_API_KEY}`,
-          'User-Agent': 'Lovable-Edge/1.0',
-        },
-      });
-
-      verifik_response = await response.json();
-      console.log('[judicial-process-lookup] Verifik response status:', response.status);
-      apiCost = 0.15; // Detail query costs more
-
-      if (response.ok && verifik_response.data) {
-        // According to docs, response has: data.details, data.subjects, data.actions
-        const details = verifik_response.data.details || {};
-        const subjects = verifik_response.data.subjects || [];
-        const actions = verifik_response.data.actions || [];
-        
-        // Normalize subjects for frontend compatibility
-        const normalizedSujetos = subjects.map((s: any) => ({
-          nombre: s.nombreRazonSocial || s.nombre,
-          tipoSujeto: s.tipoSujeto,
-          representante: s.representante,
-          identificacion: s.identificacion,
-          esEmplazado: s.esEmplazado,
-        }));
-        
-        // Normalize actuaciones for frontend compatibility
-        const normalizedActuaciones = actions.map((a: any) => ({
-          fechaActuacion: a.fechaActuacion,
-          actuacion: a.actuacion,
-          anotacion: a.anotacion,
-          fechaInicia: a.fechaInicial,
-          fechaFinaliza: a.fechaFinal,
-          fechaRegistro: a.fechaRegistro,
-        }));
-        
-        // Find most recent actuacion date for fechaUltimaActuacion
-        const sortedActions = [...actions].sort((a, b) => 
-          new Date(b.fechaActuacion || 0).getTime() - new Date(a.fechaActuacion || 0).getTime()
-        );
-        const fechaUltimaActuacion = sortedActions[0]?.fechaActuacion || details.ultimaActualizacion;
-        
-        processDetails = {
-          idProceso: details.idRegProceso,
-          llaveProceso: details.llaveProceso,
-          idConexion: details.idConexion,
-          esPrivado: details.esPrivado,
-          fechaRadicacion: details.fechaProceso,
-          fechaUltimaActuacion: fechaUltimaActuacion,
-          despacho: details.despacho,
-          departamento: details.ubicacion, // Map ubicacion to departamento
-          ponente: details.ponente,
-          tipoProceso: details.tipoProceso,
-          claseProceso: details.claseProceso,
-          subclaseProceso: details.subclaseProceso,
-          recurso: details.recurso,
-          ubicacion: details.ubicacion,
-          contenidoRadicacion: details.contenidoRadicacion,
-          sujetos: normalizedSujetos,
-          actuaciones: normalizedActuaciones,
-        };
-
-        // Also add to processes array for consistency
-        processes = [{
-          idProceso: details.idRegProceso,
-          llaveProceso: details.llaveProceso,
-          fechaRadicacion: details.fechaProceso,
-          fechaUltimaActuacion: fechaUltimaActuacion,
-          despacho: details.despacho,
-          departamento: details.ubicacion,
-          tipoProceso: details.tipoProceso,
-          claseProceso: details.claseProceso,
-          subclaseProceso: details.subclaseProceso,
-          ponente: details.ponente,
-          ubicacion: details.ubicacion,
-          esPrivado: details.esPrivado,
-          sujetos: normalizedSujetos,
-          actuaciones: normalizedActuaciones,
-        }];
-      } else if (!response.ok) {
-        console.error('[judicial-process-lookup] Verifik API error:', verifik_response);
-      }
-    } else {
+    // Only radicado search is supported via Firecrawl scraping
+    if (!radicado && queryType !== 'radicado') {
       return new Response(
-        JSON.stringify({ 
-          error: 'Invalid query type or missing parameters',
-          details: 'Use queryType="document" with documentNumber/documentType, queryType="radicado" with radicado, or queryType="processId" with idProceso'
+        JSON.stringify({
+          error: 'Solo se admite consulta por número de radicado en este modo',
+          details: 'Ingrese el número de radicación para consultar el proceso'
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Log API usage
-    try {
-      await serviceClient.from('verifik_api_usage').insert({
-        lawyer_id: user.id,
-        endpoint: (queryType === 'processId' || queryType === 'radicado') ? '/v2/co/rama/proceso' : '/v2/co/rama/procesos',
-        request_params: { queryType, documentNumber, documentType, idProceso, radicado },
-        response_status: verifik_response?.code ? 400 : 200,
-        response_data: { processCount: processes.length, hasDetails: !!processDetails },
-        api_cost: apiCost,
-      });
-    } catch (logError) {
-      console.error('[judicial-process-lookup] Error logging usage:', logError);
-    }
+    const processNumber = radicado;
 
-    // Generate AI analysis if we have results
+    // Scrape from Rama Judicial portal
+    const scrapeData = await scrapeProcessByRadicado(processNumber, FIRECRAWL_API_KEY);
+    const { processes, processDetails } = parseScrapedData(scrapeData, processNumber);
+
+    // Generate AI analysis if we have results or markdown
     let aiAnalysis = null;
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    
-    if (OPENAI_API_KEY && (processes.length > 0 || processDetails)) {
+    const markdownContent = scrapeData?.data?.markdown || scrapeData?.markdown || '';
+
+    if (OPENAI_API_KEY) {
       try {
-        // Get AI model and prompt from system config - NO FALLBACKS
         const [aiModel, systemPrompt] = await Promise.all([
           getRequiredConfig(serviceClient, 'process_query_ai_model'),
           getRequiredConfig(serviceClient, 'process_query_ai_prompt')
         ]);
 
         let userContent: string;
-        
+
         if (followUpQuery) {
-          // Follow-up question
-          userContent = `Datos del proceso:\n${JSON.stringify(processDetails || processes, null, 2)}\n\nPregunta del usuario: ${followUpQuery}`;
-        } else if (processDetails) {
-          // Initial analysis for detailed process
-          userContent = `Analiza este proceso judicial con sus actuaciones:\n${JSON.stringify(processDetails, null, 2)}`;
+          userContent = `Datos del proceso:\n${JSON.stringify(processDetails || processes, null, 2)}\n\nPregunta: ${followUpQuery}`;
+        } else if (processes.length > 0) {
+          userContent = `Analiza este proceso judicial colombiano:\n${JSON.stringify(processDetails || processes[0], null, 2)}`;
+        } else if (markdownContent) {
+          userContent = `Analiza la siguiente información extraída del portal de la Rama Judicial de Colombia para el radicado ${processNumber}:\n\n${markdownContent.substring(0, 4000)}`;
         } else {
-          // Initial analysis for list of processes
-          userContent = `Analiza estos procesos judiciales encontrados:\n${JSON.stringify(processes, null, 2)}`;
+          userContent = `No se encontró información para el radicado ${processNumber}`;
         }
 
         const messages: any[] = [
@@ -320,7 +221,7 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             model: aiModel,
-            messages: messages,
+            messages,
             max_tokens: 2000,
           }),
         });
@@ -329,27 +230,26 @@ serve(async (req) => {
         aiAnalysis = aiData.choices?.[0]?.message?.content;
       } catch (aiError) {
         console.error('[judicial-process-lookup] AI analysis error:', aiError);
-        // Don't fail the whole request if AI fails
-        aiAnalysis = `Error generando análisis: ${aiError instanceof Error ? aiError.message : 'Error desconocido'}`;
+        aiAnalysis = null;
       }
     }
 
-    // Save query to legal_tools_results
+    // Save to legal_tools_results
     try {
       await serviceClient.from('legal_tools_results').insert({
         lawyer_id: user.id,
         tool_type: 'judicial_process',
-        input_data: { queryType, documentNumber, documentType, idProceso, radicado, followUpQuery },
-        output_data: { 
-          processes, 
+        input_data: { queryType: 'radicado', radicado: processNumber, followUpQuery },
+        output_data: {
+          processes,
           processDetails,
           aiAnalysis,
-          processCount: processes.length 
+          processCount: processes.length,
+          scrapedMarkdown: markdownContent.substring(0, 2000)
         },
-        metadata: { 
-          source: 'verifik',
-          endpoint: (queryType === 'processId' || queryType === 'radicado') ? '/v2/co/rama/proceso' : '/v2/co/rama/procesos',
-          apiCost,
+        metadata: {
+          source: 'firecrawl',
+          portal: 'consultaprocesos.ramajudicial.gov.co',
           timestamp: new Date().toISOString()
         }
       });
@@ -364,12 +264,7 @@ serve(async (req) => {
         processDetails,
         processCount: processes.length,
         aiAnalysis,
-        queryType,
-        // Include error info if Verifik returned an error
-        verifik_error: verifik_response?.code ? {
-          code: verifik_response.code,
-          message: verifik_response.message
-        } : null,
+        queryType: 'radicado',
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -377,7 +272,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('[judicial-process-lookup] Error:', error);
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
         details: 'Error processing judicial process lookup'
