@@ -14,7 +14,8 @@ import {
   ArrowLeft,
   User,
   Building,
-  Gavel
+  Gavel,
+  Loader2
 } from "lucide-react";
 
 interface ProcessDetailsProps {
@@ -49,9 +50,10 @@ interface ProcessDetailsProps {
   };
   aiAnalysis?: string;
   onBack: () => void;
+  isLoadingDetails?: boolean;
 }
 
-export function ProcessDetails({ process, aiAnalysis, onBack }: ProcessDetailsProps) {
+export function ProcessDetails({ process, aiAnalysis, onBack, isLoadingDetails }: ProcessDetailsProps) {
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
     try {
@@ -167,7 +169,14 @@ export function ProcessDetails({ process, aiAnalysis, onBack }: ProcessDetailsPr
       <Tabs defaultValue="actuaciones" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="actuaciones">
-            Actuaciones ({process.actuaciones?.length || 0})
+            {isLoadingDetails ? (
+              <span className="flex items-center gap-1">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Cargando...
+              </span>
+            ) : (
+              `Actuaciones (${process.actuaciones?.length || 0})`
+            )}
           </TabsTrigger>
           <TabsTrigger value="sujetos">
             Partes ({process.sujetos?.length || 0})
@@ -180,10 +189,17 @@ export function ProcessDetails({ process, aiAnalysis, onBack }: ProcessDetailsPr
         <TabsContent value="actuaciones" className="mt-4">
           <Card>
             <CardContent className="pt-6">
-              <ProcessTimeline 
-                actuaciones={process.actuaciones || []} 
-                maxVisible={10}
-              />
+              {isLoadingDetails ? (
+                <div className="flex flex-col items-center justify-center py-12 gap-3">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <p className="text-sm text-muted-foreground">Cargando actuaciones desde la Rama Judicial...</p>
+                </div>
+              ) : (
+                <ProcessTimeline 
+                  actuaciones={process.actuaciones || []} 
+                  maxVisible={10}
+                />
+              )}
             </CardContent>
           </Card>
         </TabsContent>

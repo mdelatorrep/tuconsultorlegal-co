@@ -100,6 +100,7 @@ export default function ProcessQueryModule({
   const [documentNumber, setDocumentNumber] = useState('');
   
   const [isSearching, setIsSearching] = useState(false);
+  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [processes, setProcesses] = useState<JudicialProcess[]>([]);
   const [selectedProcess, setSelectedProcess] = useState<JudicialProcess | null>(null);
   const [aiAnalysis, setAiAnalysis] = useState<string>('');
@@ -280,14 +281,50 @@ export default function ProcessQueryModule({
     }
   };
 
-  const handleViewDetails = (process: JudicialProcess) => {
+  const handleViewDetails = async (process: JudicialProcess) => {
+    const radicadoNum = process.llaveProceso || process.idProceso;
+    
+    // Set basic process immediately so user sees something
     setSelectedProcess(process);
-    if (aiAnalysis && chatMessages.length === 0) {
-      setChatMessages([{
-        role: 'assistant',
-        content: aiAnalysis,
-        timestamp: new Date(),
-      }]);
+    setChatMessages([]);
+    
+    if (!radicadoNum) return;
+
+    // If the process doesn't have actuaciones yet, fetch full details from Verifik
+    if (!process.actuaciones || process.actuaciones.length === 0) {
+      setIsLoadingDetails(true);
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) return;
+
+        const response = await supabase.functions.invoke('verifik-process-details', {
+          body: { processNumber: radicadoNum },
+        });
+
+        if (response.error) throw new Error(response.error.message);
+
+        const { process: processDetails } = response.data || {};
+        if (processDetails) {
+          // Merge details into the process object
+          const enrichedProcess: JudicialProcess = {
+            ...process,
+            sujetos: processDetails.sujetosProcesales,
+            actuaciones: processDetails.actuaciones,
+            fechaUltimaActuacion: processDetails.fechaUltimaActuacion,
+            cantFilas: processDetails.cantFilas,
+            ponente: processDetails.ponente,
+            recurso: processDetails.recurso,
+            ubicacion: processDetails.ubicacion,
+          };
+          setSelectedProcess(enrichedProcess);
+          toast.success(`${processDetails.actuaciones?.length || 0} actuaciones cargadas`);
+        }
+      } catch (error) {
+        console.error('Error loading process details:', error);
+        toast.error('No se pudieron cargar los detalles completos del proceso');
+      } finally {
+        setIsLoadingDetails(false);
+      }
     }
   };
 
@@ -299,6 +336,7 @@ export default function ProcessQueryModule({
             process={selectedProcess}
             aiAnalysis={aiAnalysis}
             onBack={() => setSelectedProcess(null)}
+            isLoadingDetails={isLoadingDetails}
           />
 
           {/* Chat Section */}
