@@ -520,7 +520,7 @@ Categoría: ${fileTypeInference.category}
 Proporciona análisis en formato JSON con detectionConfidence: "baja" indicando que es preliminar.`;
     }
 
-    const reasoningEffort = await getSystemConfig(supabase, 'reasoning_effort_analysis', 'medium') as 'low' | 'medium' | 'high';
+    const reasoningEffort = await getSystemConfig(supabase, 'analysis_reasoning_effort', 'medium') as 'low' | 'medium' | 'high';
 
     const params = buildResponsesRequestParams(aiModel, {
       input: analysisInput,
