@@ -193,8 +193,15 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
         try {
           const arrayBuffer = await file.arrayBuffer();
           const uint8Array = new Uint8Array(arrayBuffer);
-          fileBase64 = btoa(String.fromCharCode(...uint8Array));
+          // Use chunked approach to avoid stack overflow on large files
+          const chunkSize = 8192;
+          const chunks: string[] = [];
+          for (let i = 0; i < uint8Array.length; i += chunkSize) {
+            chunks.push(String.fromCharCode(...uint8Array.slice(i, i + chunkSize)));
+          }
+          fileBase64 = btoa(chunks.join(''));
           fileContent = `Documento ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+          console.log(`✅ Binary file encoded: ${uint8Array.length} bytes → base64 length ${fileBase64.length}`);
         } catch (binaryError) {
           console.error('Error processing binary file:', binaryError);
           toast.error('Error procesando el archivo');
