@@ -122,7 +122,7 @@ export default function AnalysisResultsDisplay({ result, onExport }: AnalysisRes
   };
 
   const getRiskBadgeStyles = (level: string) => {
-    const normalizedLevel = level.toLowerCase();
+    const normalizedLevel = (level || '').toLowerCase();
     switch (normalizedLevel) {
       case 'critical':
       case 'alto':
@@ -140,7 +140,7 @@ export default function AnalysisResultsDisplay({ result, onExport }: AnalysisRes
   };
 
   const getRiskLabel = (level: string) => {
-    const normalizedLevel = level.toLowerCase();
+    const normalizedLevel = (level || '').toLowerCase();
     switch (normalizedLevel) {
       case 'critical':
       case 'alto':
@@ -153,7 +153,7 @@ export default function AnalysisResultsDisplay({ result, onExport }: AnalysisRes
       case 'bajo':
         return 'Riesgo Bajo';
       default:
-        return level;
+        return level || 'Sin clasificar';
     }
   };
 
@@ -172,7 +172,7 @@ export default function AnalysisResultsDisplay({ result, onExport }: AnalysisRes
   const clausesCount = result.clauses?.length || 0;
   const recommendationsCount = result.recommendations?.length || 0;
   const highRisksCount = result.risks?.filter(r => 
-    ['critical', 'alto', 'high'].includes(r.severity.toLowerCase())
+    ['critical', 'alto', 'high'].includes((r.severity || '').toLowerCase())
   ).length || 0;
 
   return (
