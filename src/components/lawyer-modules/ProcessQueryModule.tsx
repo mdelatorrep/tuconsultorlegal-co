@@ -28,7 +28,8 @@ import {
   ExternalLink,
   RefreshCw,
   Gavel,
-  Coins
+  Coins,
+  Brain
 } from "lucide-react";
 
 interface ProcessQueryModuleProps {
@@ -212,14 +213,19 @@ export default function ProcessQueryModule({
         throw new Error(response.error.message || 'Error en la consulta');
       }
 
-      const { processes: resultProcesses, aiAnalysis: analysis, processCount } = response.data;
+      const { processes: resultProcesses, aiAnalysis: analysis, processCount, portalUrl } = response.data;
 
-      if (processCount === 0) {
-        toast.info('No se encontraron procesos con los criterios especificados');
-      } else {
+      // Siempre mostrar resultados: procesos estructurados y/o análisis IA
+      setProcesses(resultProcesses || []);
+      setAiAnalysis(analysis || '');
+
+      if (processCount > 0) {
         toast.success(`Se encontraron ${processCount} proceso(s)`);
-        setProcesses(resultProcesses || []);
-        setAiAnalysis(analysis || '');
+      } else if (analysis) {
+        // Hay análisis de IA aunque no haya datos estructurados extraídos
+        toast.success('Análisis generado. Consulte el portal oficial para datos en tiempo real.');
+      } else {
+        toast.info('No se encontraron datos. Intente consultar directamente en el portal de la Rama Judicial.');
       }
 
       loadQueryHistory();
@@ -524,7 +530,7 @@ export default function ProcessQueryModule({
           </CardContent>
         </Card>
 
-        {/* Results */}
+        {/* Results: procesos estructurados */}
         {processes.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -547,6 +553,39 @@ export default function ProcessQueryModule({
               ))}
             </div>
           </div>
+        )}
+
+        {/* Results: análisis de IA cuando no hay procesos estructurados */}
+        {processes.length === 0 && aiAnalysis && !isSearching && (
+          <Card className="border-primary/20 bg-primary/5">
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <Brain className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <CardTitle className="text-base">Análisis del Proceso</CardTitle>
+                  <p className="text-xs text-muted-foreground">Basado en búsqueda web e IA</p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="prose prose-sm max-w-none text-foreground">
+                <div className="whitespace-pre-wrap text-sm leading-relaxed">{aiAnalysis}</div>
+              </div>
+              <div className="mt-4 p-3 bg-muted/50 rounded-lg border">
+                <p className="text-xs text-muted-foreground font-medium mb-1">📌 Para consultar datos en tiempo real:</p>
+                <a
+                  href="https://consultaprocesos.ramajudicial.gov.co/Procesos/NumeroRadicacion"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-primary hover:underline break-all"
+                >
+                  consultaprocesos.ramajudicial.gov.co → Por Número de Radicación
+                </a>
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Query History */}
