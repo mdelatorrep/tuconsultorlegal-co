@@ -102,89 +102,228 @@ async function extractTextFromPDF(base64Data: string): Promise<string> {
 
 /**
  * Extract text from legacy binary .doc files (Word 97-2003, Compound File Binary Format).
- * Reads the WordDocument stream and extracts readable text using multiple heuristics.
+ *
+ * Strategy A (primary): mammoth library via esm.sh — the gold standard for .doc → text conversion.
+ * Strategy B (fallback): Proper CFB stream parsing — locates the WordDocument stream in the CFB
+ *   directory and extracts ONLY those bytes, avoiding FAT/DIFAT binary noise.
  */
 async function extractTextFromDOC(base64Data: string): Promise<string> {
+  const bytes = base64ToUint8Array(base64Data);
+
+  // ── Strategy A: mammoth ────────────────────────────────────────────────────
   try {
-    console.log('🔍 Starting DOC binary text extraction...');
-    const bytes = base64ToUint8Array(base64Data);
+    console.log('🔍 [DOC] Trying mammoth extraction...');
+    // @ts-ignore - dynamic import from esm.sh
+    const mammoth = await import('https://esm.sh/mammoth@1.8.0');
+    const result = await mammoth.extractRawText({ arrayBuffer: bytes.buffer });
+    const text = (result?.value || '').trim();
+    if (text.length > 100) {
+      console.log(`✅ [DOC] mammoth extracted ${text.length} chars`);
+      return text;
+    }
+    console.warn('⚠️ [DOC] mammoth returned minimal content, trying CFB fallback...');
+  } catch (mammothErr) {
+    console.warn('⚠️ [DOC] mammoth failed:', mammothErr?.message ?? mammothErr);
+  }
 
-    // --- Strategy 1: CFB (Compound File Binary) stream parsing ---
-    // DOC files start with the CFB magic: D0 CF 11 E0 A1 B1 1A E1
-    const magic = [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1];
-    const isCFB = magic.every((b, i) => bytes[i] === b);
-    let extractedText = '';
+  // ── Strategy B: Correct CFB stream parsing ─────────────────────────────────
+  // The DOC format is a Compound File Binary (CFB). We must:
+  //   1. Verify CFB magic
+  //   2. Parse the sector allocation table (FAT)
+  //   3. Walk the directory entries to find the "WordDocument" stream
+  //   4. Read exactly those sector bytes (no scanning the whole file)
+  //   5. Apply FIB to extract only the text portion, decoded as UTF-16LE
+  try {
+    console.log('🔍 [DOC] Trying CFB stream extraction...');
 
-    if (isCFB) {
-      // Read sector size (offset 0x1E, 2 bytes little-endian, value is log2 of sector size)
-      const sectorSizePow = bytes[0x1E] | (bytes[0x1F] << 8);
-      const sectorSize = sectorSizePow > 0 ? Math.pow(2, sectorSizePow) : 512;
+    const CFB_MAGIC = [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1];
+    if (!CFB_MAGIC.every((b, i) => bytes[i] === b)) {
+      console.warn('⚠️ [DOC] Not a CFB file');
+      return '';
+    }
 
-      // Scan entire file for UTF-16LE text sequences (most doc text is stored as UTF-16LE)
-      // Look for runs of valid UTF-16LE characters
-      const buf16 = new Uint8Array(bytes.buffer);
-      let utf16Text = '';
-      for (let i = 0; i < buf16.length - 1; i += 2) {
-        const charCode = buf16[i] | (buf16[i + 1] << 8);
-        // Keep printable ASCII + Latin Extended + Spanish chars
-        if (
-          (charCode >= 0x0020 && charCode <= 0x007E) ||
-          (charCode >= 0x00A0 && charCode <= 0x024F) ||
-          charCode === 0x000A || charCode === 0x000D || charCode === 0x0009
-        ) {
-          utf16Text += String.fromCharCode(charCode);
-        } else {
-          // Break long sequences of non-printable to avoid garbage
-          if (utf16Text.length > 0 && utf16Text[utf16Text.length - 1] !== ' ') {
-            utf16Text += ' ';
-          }
-        }
+    const view = new DataView(bytes.buffer);
+
+    // CFB header fields
+    const sectorShift   = view.getUint16(0x1E, true); // log2(sector size), usually 9 → 512
+    const sectorSize    = 1 << sectorShift;            // 512 or 4096
+    const numFATSectors = view.getUint32(0x2C, true);
+    const firstDirSect  = view.getUint32(0x30, true);
+    const firstMiniFAT  = view.getUint32(0x3C, true);
+    const miniSectorShift = view.getUint16(0x20, true); // log2(mini sector size), usually 6 → 64
+    const miniSectorSize  = 1 << miniSectorShift;
+    const miniStreamCutoff = view.getUint32(0x38, true); // usually 4096
+
+    // Read the 109 DIFAT entries in the header
+    const fatSectorList: number[] = [];
+    for (let i = 0; i < 109; i++) {
+      const sect = view.getUint32(0x4C + i * 4, true);
+      if (sect >= 0xFFFFFFFE) break; // FREESECT / ENDOFCHAIN
+      fatSectorList.push(sect);
+    }
+
+    // Helper: byte offset of sector N (sector 0 starts right after the 512-byte header)
+    const sectOffset = (sect: number) => (sect + 1) * sectorSize;
+
+    // Build FAT from collected sectors
+    const fat = new Int32Array(numFATSectors * (sectorSize / 4));
+    for (let si = 0; si < fatSectorList.length; si++) {
+      const off = sectOffset(fatSectorList[si]);
+      for (let j = 0; j < sectorSize / 4; j++) {
+        fat[si * (sectorSize / 4) + j] = view.getInt32(off + j * 4, true);
       }
-      // Clean up
-      extractedText = utf16Text.replace(/\s{3,}/g, '  ').trim();
     }
 
-    // --- Strategy 2: Latin-1 printable text scan (fallback for non-CFB or minimal CFB result) ---
-    if (extractedText.length < 300) {
-      const latin1 = new TextDecoder('latin1').decode(bytes);
-      // Extract runs of printable latin1 characters of length >= 4
-      const runs = latin1.match(/[\x20-\x7E\xA0-\xFF]{4,}/g) || [];
-      // Filter out binary garbage (runs with too many symbols)
-      const meaningful = runs.filter(r => {
-        const letters = (r.match(/[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]/g) || []).length;
-        return letters / r.length > 0.5 && r.length >= 6;
-      });
-      const latin1Text = meaningful.join(' ').replace(/\s{3,}/g, '  ').trim();
-      if (latin1Text.length > extractedText.length) {
-        extractedText = latin1Text;
+    // Follow a chain of sectors and return their concatenated bytes
+    const readChain = (startSect: number): Uint8Array => {
+      const chunks: Uint8Array[] = [];
+      let cur = startSect;
+      const visited = new Set<number>();
+      while (cur >= 0 && cur < 0xFFFFFFFE && !visited.has(cur)) {
+        visited.add(cur);
+        const off = sectOffset(cur);
+        chunks.push(bytes.slice(off, off + sectorSize));
+        cur = fat[cur] ?? -1;
+      }
+      const out = new Uint8Array(chunks.reduce((s, c) => s + c.length, 0));
+      let pos = 0;
+      for (const c of chunks) { out.set(c, pos); pos += c.length; }
+      return out;
+    };
+
+    // Read directory stream
+    const dirBytes = readChain(firstDirSect);
+    const dirView  = new DataView(dirBytes.buffer);
+    const numDirEntries = dirBytes.length / 128;
+
+    // Find root and WordDocument directory entries
+    let rootStartSect = -1;
+    let rootSize = 0;
+    let wordDocStart = -1;
+    let wordDocSize  = 0;
+
+    for (let i = 0; i < numDirEntries; i++) {
+      const base = i * 128;
+      const nameLen = dirView.getUint16(base + 0x40, true);
+      if (nameLen < 2 || nameLen > 64) continue;
+
+      let name = '';
+      for (let c = 0; c < (nameLen - 2) / 2; c++) {
+        name += String.fromCharCode(dirView.getUint16(base + c * 2, true));
+      }
+
+      const objectType = dirView.getUint8(base + 0x42);
+      const startSect  = dirView.getInt32(base + 0x74, true);
+      const sizeLow    = dirView.getUint32(base + 0x78, true);
+
+      if (i === 0 && objectType === 5) {
+        // Root entry
+        rootStartSect = startSect;
+        rootSize = sizeLow;
+      }
+
+      if (name === 'WordDocument' && objectType === 2) {
+        wordDocStart = startSect;
+        wordDocSize  = sizeLow;
       }
     }
 
-    // --- Strategy 3: UTF-8 scan ---
-    if (extractedText.length < 300) {
-      try {
-        const utf8 = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
-        const utf8Runs = (utf8.match(/[\u0020-\u007E\u00A0-\u024F]{4,}/g) || []);
-        const meaningful = utf8Runs.filter(r => {
-          const letters = (r.match(/[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]/g) || []).length;
-          return letters / r.length > 0.5 && r.length >= 6;
-        });
-        const utf8Text = meaningful.join(' ').replace(/\s{3,}/g, '  ').trim();
-        if (utf8Text.length > extractedText.length) {
-          extractedText = utf8Text;
+    if (wordDocStart < 0) {
+      console.warn('⚠️ [DOC] WordDocument stream not found in CFB directory');
+      return '';
+    }
+
+    // Read the WordDocument stream (may be in mini-stream if size < cutoff)
+    let wordDocBytes: Uint8Array;
+    if (wordDocSize < miniStreamCutoff && rootStartSect >= 0 && firstMiniFAT < 0xFFFFFFFE) {
+      // Read from mini-stream
+      const miniStreamData = readChain(rootStartSect);
+
+      // Build mini-FAT
+      const miniFATBytes = readChain(firstMiniFAT);
+      const miniFAT = new Int32Array(miniFATBytes.buffer);
+
+      const readMiniChain = (startMiniSect: number): Uint8Array => {
+        const chunks: Uint8Array[] = [];
+        let cur = startMiniSect;
+        const visited = new Set<number>();
+        while (cur >= 0 && cur < 0xFFFFFFFE && !visited.has(cur)) {
+          visited.add(cur);
+          const off = cur * miniSectorSize;
+          chunks.push(miniStreamData.slice(off, off + miniSectorSize));
+          cur = miniFAT[cur] ?? -1;
         }
-      } catch (_) { /* ignore */ }
+        const out = new Uint8Array(chunks.reduce((s, c) => s + c.length, 0));
+        let pos = 0;
+        for (const c of chunks) { out.set(c, pos); pos += c.length; }
+        return out;
+      };
+
+      wordDocBytes = readMiniChain(wordDocStart).slice(0, wordDocSize);
+    } else {
+      wordDocBytes = readChain(wordDocStart).slice(0, wordDocSize);
     }
 
-    if (extractedText.length > 200) {
-      console.log(`✅ DOC extracted ${extractedText.length} chars`);
-      return extractedText;
+    // Parse FIB (File Information Block) to find text boundaries
+    // FIB starts at offset 0 of WordDocument stream
+    // ccpText is at FIB+0x4C (4 bytes) - character count of main document text
+    // fcMin (start of text in file) and fcMac (end) are in FIB base
+    const fibView   = new DataView(wordDocBytes.buffer);
+    const fibBase   = 32; // FIBBase is 32 bytes
+    // FIBRgW97 starts at 32, FIBRgLw97 starts at 32+28=60
+    // ccpText is at offset 0 of FIBRgLw97 = byte 60 in WordDocument stream
+    const fFlags = fibView.getUint16(0x0A, true);
+    const fComplex = (fFlags >> 4) & 1; // bit 4: complex format (fast-save)
+    const fExtChar = (fFlags >> 11) & 1; // bit 11: Unicode
+
+    // For simple (non-fast-save) documents:
+    // fcMin and fcMac are at 0x18 and 0x1C in FIBBase
+    const fcMin  = fibView.getUint32(0x18, true);
+    const fcMac  = fibView.getUint32(0x1C, true);
+
+    if (!fComplex && fcMac > fcMin && fcMac <= wordDocBytes.length) {
+      const textBytes = wordDocBytes.slice(fcMin, fcMac);
+      let text: string;
+      if (fExtChar) {
+        // Unicode UTF-16LE
+        text = new TextDecoder('utf-16le').decode(textBytes);
+      } else {
+        // CP1252 / Latin-1
+        text = new TextDecoder('windows-1252', { fatal: false }).decode(textBytes);
+      }
+      // Clean up control chars but keep newlines and Spanish characters
+      text = text
+        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ')
+        .replace(/\r/g, '\n')
+        .replace(/\s{3,}/g, '  ')
+        .trim();
+
+      if (text.length > 100) {
+        console.log(`✅ [DOC] CFB FIB extraction: ${text.length} chars`);
+        return text;
+      }
     }
 
-    console.warn('⚠️ DOC extraction yielded minimal content');
-    return extractedText;
-  } catch (error) {
-    console.error('❌ Error extracting text from DOC:', error);
+    // Last resort inside CFB: decode all WordDocument bytes as UTF-16LE and filter
+    const rawUtf16 = new TextDecoder('utf-16le', { fatal: false }).decode(wordDocBytes);
+    const filtered = rawUtf16
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ')
+      .replace(/\r/g, '\n')
+      .replace(/\s{3,}/g, '  ')
+      .trim();
+
+    // Keep only runs with >50% letter ratio to avoid lingering binary noise
+    const runs = filtered.match(/\S[\s\S]{3,}\S/g) || [];
+    const meaningful = runs.filter(r => {
+      const letters = (r.match(/[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ]/g) || []).length;
+      return letters / r.length > 0.4;
+    });
+    const cleanText = meaningful.join(' ').replace(/\s{3,}/g, '  ').trim();
+    console.log(`✅ [DOC] CFB WordDocument raw decode: ${cleanText.length} chars`);
+    return cleanText;
+
+  } catch (cfbErr) {
+    console.error('❌ [DOC] CFB extraction failed:', cfbErr);
     return '';
   }
 }
