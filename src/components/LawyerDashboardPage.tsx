@@ -30,7 +30,7 @@ import SuinJuriscolModule from "./lawyer-modules/SuinJuriscolModule";
 import ProcessQueryModule from "./lawyer-modules/ProcessQueryModule";
 import { ProcessMonitorModule } from "./lawyer-modules/ProcessMonitorModule";
 import { CasePredictorModule } from "./lawyer-modules/CasePredictorModule";
-import LawyerVerificationModule from "./lawyer-modules/LawyerVerificationModule";
+// LawyerVerificationModule removed (Verifik dependency eliminated)
 import { SmartLegalCalendar, DeadlineCalculator, AutoDocketing } from "./calendar";
 // LegalCopilot is now integrated into DraftModule
 import { VoiceAssistant } from "./voice";

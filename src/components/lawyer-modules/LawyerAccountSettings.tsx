@@ -321,20 +321,18 @@ export function LawyerAccountSettings({ user }: LawyerAccountSettingsProps) {
               <div>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <BadgeCheck className="h-5 w-5 text-primary" />
-                  Verificación Profesional
+                  Información Profesional
                   <Badge variant="outline" className="ml-2 text-xs">Requerido</Badge>
                 </CardTitle>
                 <CardDescription>
-                  Verifica tu tarjeta profesional con la Rama Judicial
+                  Datos de tu tarjeta profesional para verificación manual
                 </CardDescription>
               </div>
-              {formData.is_verified ? (
+              {formData.is_verified && (
                 <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
                   <CheckCircle2 className="h-3 w-3 mr-1" />
                   Verificado
                 </Badge>
-              ) : (
-                <ToolCostIndicator toolType="lawyer_verification" lawyerId={user.id} />
               )}
             </div>
           </CardHeader>
@@ -392,72 +390,7 @@ export function LawyerAccountSettings({ user }: LawyerAccountSettingsProps) {
               </div>
             </div>
 
-            {/* Verification Button */}
-            {!formData.is_verified && (
-              <div className="pt-2">
-                <Button
-                  onClick={handleVerifyWithRamaJudicial}
-                  disabled={isVerifying || !formData.document_type || !formData.document_number || !hasEnoughCredits('lawyer_verification')}
-                  className="w-full"
-                  variant="default"
-                >
-                  {isVerifying ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Verificando con Rama Judicial...
-                    </>
-                  ) : (
-                    <>
-                      <ShieldCheck className="h-4 w-4 mr-2" />
-                      Verificar mi Tarjeta Profesional
-                    </>
-                  )}
-                </Button>
-                {!hasEnoughCredits('lawyer_verification') && (
-                  <p className="text-xs text-destructive text-center mt-2">
-                    Necesitas {getToolCost('lawyer_verification')} créditos para verificar
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Verification Result */}
-            {verificationResult && (
-              <Card className={`${
-                verificationResult.status === 'verified' 
-                  ? 'border-green-500/50 bg-green-500/5' 
-                  : verificationResult.status === 'expired'
-                    ? 'border-orange-500/50 bg-orange-500/5'
-                    : 'border-muted'
-              }`}>
-                <CardContent className="pt-4">
-                  <div className="flex items-start gap-3">
-                    {verificationResult.status === 'verified' ? (
-                      <CheckCircle2 className="h-5 w-5 text-green-500" />
-                    ) : verificationResult.status === 'expired' ? (
-                      <AlertCircle className="h-5 w-5 text-orange-500" />
-                    ) : (
-                      <AlertCircle className="h-5 w-5 text-muted-foreground" />
-                    )}
-                    <div className="flex-1">
-                      <p className="font-medium">{verificationResult.message}</p>
-                      
-                      {verificationResult.lawyer && (
-                        <div className="mt-2 space-y-1 text-sm text-muted-foreground">
-                          <p>Nombre: <span className="font-medium text-foreground">{verificationResult.lawyer.fullName}</span></p>
-                          {verificationResult.lawyer.barNumber && (
-                            <p>Tarjeta: <span className="font-medium text-foreground">{verificationResult.lawyer.barNumber}</span></p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Already Verified Status */}
-            {formData.is_verified && (
+            {formData.is_verified ? (
               <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
                 <Award className="h-8 w-8 text-green-600" />
                 <div>
@@ -469,6 +402,10 @@ export function LawyerAccountSettings({ user }: LawyerAccountSettingsProps) {
                   </p>
                 </div>
               </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                La verificación es procesada manualmente por el equipo de Praxis Hub.
+              </p>
             )}
           </CardContent>
         </Card>

@@ -82,7 +82,7 @@ interface QueryHistory {
   createdAt: Date;
 }
 
-// Según documentación Verifik: solo CC y NIT son válidos
+// Solo búsqueda por radicado (Firecrawl scraping del portal oficial)
 const DOCUMENT_TYPES = [
   { value: 'CC', label: 'Cédula de Ciudadanía' },
   { value: 'NIT', label: 'NIT' },
@@ -288,36 +288,35 @@ export default function ProcessQueryModule({
     setSelectedProcess(process);
     setChatMessages([]);
     
-    if (!radicadoNum) return;
-
-    // If the process doesn't have actuaciones yet, fetch full details from Verifik
+    // If the process doesn't have actuaciones yet, fetch full details via scraping
     if (!process.actuaciones || process.actuaciones.length === 0) {
       setIsLoadingDetails(true);
       try {
         const { data: sessionData } = await supabase.auth.getSession();
         if (!sessionData.session) return;
 
-        const response = await supabase.functions.invoke('verifik-process-details', {
-          body: { processNumber: radicadoNum },
+        // Re-query judicial-process-lookup with the radicado to get full details
+        const response = await supabase.functions.invoke('judicial-process-lookup', {
+          body: { queryType: 'radicado', radicado: radicadoNum },
         });
 
         if (response.error) throw new Error(response.error.message);
 
-        const { process: processDetails } = response.data || {};
-        if (processDetails) {
-          // Merge details into the process object
+        const { processDetails, processes: resultProcesses } = response.data || {};
+        const details = processDetails || resultProcesses?.[0];
+        if (details) {
           const enrichedProcess: JudicialProcess = {
             ...process,
-            sujetos: processDetails.sujetosProcesales,
-            actuaciones: processDetails.actuaciones,
-            fechaUltimaActuacion: processDetails.fechaUltimaActuacion,
-            cantFilas: processDetails.cantFilas,
-            ponente: processDetails.ponente,
-            recurso: processDetails.recurso,
-            ubicacion: processDetails.ubicacion,
+            sujetos: details.sujetos,
+            actuaciones: details.actuaciones,
+            fechaUltimaActuacion: details.fechaUltimaActuacion,
+            cantFilas: details.cantFilas,
+            ponente: details.ponente,
+            recurso: details.recurso,
+            ubicacion: details.ubicacion,
           };
           setSelectedProcess(enrichedProcess);
-          toast.success(`${processDetails.actuaciones?.length || 0} actuaciones cargadas`);
+          toast.success(`${details.actuaciones?.length || 0} actuaciones cargadas`);
         }
       } catch (error) {
         console.error('Error loading process details:', error);
