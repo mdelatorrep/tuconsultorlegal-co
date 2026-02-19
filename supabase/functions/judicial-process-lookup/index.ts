@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// ── Strategy 1: Firecrawl scraping del portal oficial ─────────────────────
+// ── Strategy 1: Firecrawl scraping del portal con acciones JS ─────────────
 async function scrapeWithFirecrawl(radicado: string): Promise<{ text: string; rawData: any } | null> {
   const FIRECRAWL_KEY = Deno.env.get('FIRECRAWL_API_KEY');
   if (!FIRECRAWL_KEY) {
@@ -15,12 +15,9 @@ async function scrapeWithFirecrawl(radicado: string): Promise<{ text: string; ra
   }
 
   try {
-    // Usar Firecrawl para hacer scraping del portal con JavaScript rendering
-    // El portal acepta el número en la URL de consulta directa
     const targetUrl = `https://consultaprocesos.ramajudicial.gov.co/Procesos/NumeroRadicacion`;
-    
     console.log(`[firecrawl] Scraping portal with radicado: ${radicado}`);
-    
+
     const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
       method: 'POST',
       headers: {
@@ -31,15 +28,10 @@ async function scrapeWithFirecrawl(radicado: string): Promise<{ text: string; ra
         url: targetUrl,
         formats: ['markdown', 'rawHtml'],
         actions: [
-          // Seleccionar "Todos los Procesos" para búsqueda completa
           { type: 'click', selector: 'input[type="radio"]:nth-of-type(2)' },
-          // Esperar que el campo esté disponible
           { type: 'wait', milliseconds: 500 },
-          // Escribir el número de radicado
           { type: 'write', text: radicado },
-          // Hacer clic en Consultar
           { type: 'click', selector: 'button[type="submit"], button.consultar, .btn-consultar, button:has-text("CONSULTAR"), button:has-text("Consultar")' },
-          // Esperar resultados
           { type: 'wait', milliseconds: 4000 },
         ],
         waitFor: 3000,
@@ -55,7 +47,7 @@ async function scrapeWithFirecrawl(radicado: string): Promise<{ text: string; ra
 
     const data = await response.json();
     console.log('[firecrawl] Success, content length:', data?.data?.markdown?.length || 0);
-    
+
     return {
       text: data?.data?.markdown || '',
       rawData: data?.data,
@@ -66,54 +58,14 @@ async function scrapeWithFirecrawl(radicado: string): Promise<{ text: string; ra
   }
 }
 
-// ── Strategy 2: Serper búsqueda en Google del radicado ────────────────────
-async function searchWithSerper(query: string): Promise<any[]> {
-  const SERPER_KEY = Deno.env.get('SERPER_API_KEY');
-  if (!SERPER_KEY) {
-    console.warn('[serper] No API key configured');
-    return [];
-  }
-
-  try {
-    const searchQuery = `"${query}" site:consultaprocesos.ramajudicial.gov.co OR radicado proceso judicial Colombia`;
-    console.log('[serper] Searching:', searchQuery);
-    
-    const response = await fetch('https://google.serper.dev/search', {
-      method: 'POST',
-      headers: {
-        'X-API-KEY': SERPER_KEY,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        q: searchQuery,
-        hl: 'es',
-        gl: 'co',
-        num: 5,
-      }),
-    });
-
-    if (!response.ok) {
-      console.error('[serper] Error:', response.status);
-      return [];
-    }
-
-    const data = await response.json();
-    return data?.organic || [];
-  } catch (err) {
-    console.error('[serper] Exception:', err.message);
-    return [];
-  }
-}
-
-// ── Strategy 3: Firecrawl scraping directo de resultados con JS actions ───
+// ── Strategy 2: Firecrawl scraping directo con URL de resultados ───────────
 async function scrapeResultsPage(radicado: string): Promise<string | null> {
   const FIRECRAWL_KEY = Deno.env.get('FIRECRAWL_API_KEY');
   if (!FIRECRAWL_KEY) return null;
 
   try {
-    // Intentar la URL de resultados directa que algunos portales exponen
     const searchUrl = `https://consultaprocesos.ramajudicial.gov.co/Procesos/NumeroRadicacion?numero=${encodeURIComponent(radicado)}`;
-    
+
     const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
       method: 'POST',
       headers: {
@@ -129,7 +81,7 @@ async function scrapeResultsPage(radicado: string): Promise<string | null> {
     });
 
     if (!response.ok) return null;
-    
+
     const data = await response.json();
     return data?.data?.markdown || null;
   } catch (err) {
@@ -138,11 +90,10 @@ async function scrapeResultsPage(radicado: string): Promise<string | null> {
   }
 }
 
-// ── OpenAI analysis with all collected data ───────────────────────────────
+// ── OpenAI analysis ────────────────────────────────────────────────────────
 async function analyzeWithOpenAI(
   radicado: string,
   scrapedContent: string | null,
-  serperResults: any[],
   followUpQuery?: string,
   conversationHistory?: any[],
   systemPromptOverride?: string
@@ -154,7 +105,7 @@ async function analyzeWithOpenAI(
   }
 
   try {
-    const systemPrompt = systemPromptOverride || 
+    const systemPrompt = systemPromptOverride ||
       `Eres un asistente legal especializado en derecho procesal colombiano. 
 Analiza información de procesos judiciales de la Rama Judicial de Colombia.
 Cuando tengas datos reales del proceso, preséntales de forma estructurada y clara.
@@ -180,15 +131,6 @@ Siempre proporciona el enlace directo al portal: https://consultaprocesos.ramaju
         contextParts.push(`## Nota: No fue posible extraer datos automáticamente del portal`);
       }
 
-      if (serperResults.length > 0) {
-        contextParts.push(`\n## Información encontrada en búsqueda web:`);
-        serperResults.slice(0, 3).forEach((r: any, i: number) => {
-          contextParts.push(`${i + 1}. **${r.title}**`);
-          if (r.snippet) contextParts.push(`   ${r.snippet}`);
-          if (r.link) contextParts.push(`   Fuente: ${r.link}`);
-        });
-      }
-
       contextParts.push(`\n## Tarea:`);
       contextParts.push(`Basándote en la información disponible sobre el radicado ${radicado}:`);
       contextParts.push(`1. Analiza el proceso judicial si hay datos disponibles`);
@@ -205,7 +147,7 @@ Siempre proporciona el enlace directo al portal: https://consultaprocesos.ramaju
     ];
 
     if (conversationHistory && Array.isArray(conversationHistory)) {
-      messages.push(...conversationHistory.slice(-6)); // últimas 6 para no exceder context
+      messages.push(...conversationHistory.slice(-6));
     }
 
     messages.push({ role: 'user', content: userContent });
@@ -240,40 +182,33 @@ Siempre proporciona el enlace directo al portal: https://consultaprocesos.ramaju
 // ── Parse process data from scraped content ───────────────────────────────
 function extractProcessDataFromMarkdown(markdown: string, radicado: string): any[] {
   if (!markdown || markdown.length < 50) return [];
-  
-  // Buscar patrones de datos de proceso en el markdown
-  const hasProcessData = markdown.includes('Despacho') || 
-                         markdown.includes('despacho') ||
-                         markdown.includes('Actuaci') ||
-                         markdown.includes('Proceso') ||
-                         markdown.includes(radicado.substring(0, 10));
+
+  const hasProcessData = markdown.includes('Despacho') ||
+    markdown.includes('despacho') ||
+    markdown.includes('Actuaci') ||
+    markdown.includes('Proceso') ||
+    markdown.includes(radicado.substring(0, 10));
 
   if (!hasProcessData) return [];
 
-  // Extraer datos básicos del markdown
   const process: any = {
     llaveProceso: radicado,
     source: 'firecrawl_scrape',
     rawContent: markdown.slice(0, 3000),
   };
 
-  // Buscar despacho
   const despachoMatch = markdown.match(/[Dd]espacho[:\s]+([^\n]+)/);
   if (despachoMatch) process.despacho = despachoMatch[1].trim();
 
-  // Buscar tipo proceso
   const tipoMatch = markdown.match(/[Tt]ipo\s+[Pp]roceso[:\s]+([^\n]+)/);
   if (tipoMatch) process.tipoProceso = tipoMatch[1].trim();
 
-  // Buscar clase proceso
   const claseMatch = markdown.match(/[Cc]lase\s+[Pp]roceso[:\s]+([^\n]+)/);
   if (claseMatch) process.claseProceso = claseMatch[1].trim();
 
-  // Buscar fecha radicación
   const fechaMatch = markdown.match(/[Ff]echa\s+[Rr]adicaci[oó]n[:\s]+([^\n]+)/);
   if (fechaMatch) process.fechaRadicacion = fechaMatch[1].trim();
 
-  // Buscar ponente
   const ponenteMatch = markdown.match(/[Pp]onente[:\s]+([^\n]+)/);
   if (ponenteMatch) process.ponente = ponenteMatch[1].trim();
 
@@ -319,7 +254,6 @@ serve(async (req) => {
 
     console.log('[judicial-process-lookup] Query:', { queryType, radicado, documentNumber, documentType });
 
-    // Normalizar el input
     const searchTerm = radicado || documentNumber;
     const isRadicado = queryType === 'radicado' || (radicado && !documentNumber);
 
@@ -338,38 +272,25 @@ serve(async (req) => {
       serviceClient.from('system_config').select('config_value').eq('config_key', 'process_query_ai_prompt').maybeSingle(),
     ]);
 
-    const aiModel = (modelConfigResult.status === 'fulfilled' ? modelConfigResult.value.data?.config_value : null) || 'gpt-4o';
     const systemPromptFromDB = (promptConfigResult.status === 'fulfilled' ? promptConfigResult.value.data?.config_value : null) || undefined;
 
-    // ── Step 1: Multi-strategy data collection ───────────────────────────
+    // ── Step 1: Firecrawl data collection ───────────────────────────────
     let scrapedContent: string | null = null;
     let processes: any[] = [];
-    let serperResults: any[] = [];
 
-    console.log('[judicial-process-lookup] Starting multi-strategy lookup for:', cleanTerm);
+    console.log('[judicial-process-lookup] Starting Firecrawl lookup for:', cleanTerm);
 
-    if (followUpQuery) {
-      // Para follow-up, solo usar OpenAI con el historial
-      console.log('[judicial-process-lookup] Follow-up query, skipping scraping');
-    } else {
-      // Ejecutar scraping y búsqueda en paralelo
-      const [scrapeResult, serperResult] = await Promise.allSettled([
-        scrapeWithFirecrawl(cleanTerm),
-        searchWithSerper(cleanTerm),
-      ]);
+    if (!followUpQuery) {
+      // Estrategia 1: scraping con acciones JS
+      const scrapeResult = await scrapeWithFirecrawl(cleanTerm);
 
-      if (scrapeResult.status === 'fulfilled' && scrapeResult.value) {
-        scrapedContent = scrapeResult.value.text;
+      if (scrapeResult?.text) {
+        scrapedContent = scrapeResult.text;
         processes = extractProcessDataFromMarkdown(scrapedContent, cleanTerm);
-        console.log(`[judicial-process-lookup] Firecrawl: ${scrapedContent?.length || 0} chars, ${processes.length} processes extracted`);
+        console.log(`[judicial-process-lookup] Firecrawl: ${scrapedContent.length} chars, ${processes.length} processes extracted`);
       }
 
-      if (serperResult.status === 'fulfilled') {
-        serperResults = serperResult.value;
-        console.log(`[judicial-process-lookup] Serper: ${serperResults.length} results`);
-      }
-
-      // Si no hubo resultados del scraping, intentar scraping directo
+      // Estrategia 2: fallback con URL directa
       if (!scrapedContent || scrapedContent.length < 100) {
         console.log('[judicial-process-lookup] Trying direct URL scraping...');
         const directContent = await scrapeResultsPage(cleanTerm);
@@ -385,15 +306,14 @@ serve(async (req) => {
     const aiAnalysis = await analyzeWithOpenAI(
       cleanTerm,
       scrapedContent,
-      serperResults,
       followUpQuery,
       conversationHistory,
       systemPromptFromDB
     );
 
-    // ── Step 3: Build portal URL for direct user access ──────────────────
+    // ── Step 3: Portal URL ───────────────────────────────────────────────
     const portalUrl = `https://consultaprocesos.ramajudicial.gov.co/Procesos/NumeroRadicacion`;
-    
+
     // ── Step 4: Save result ───────────────────────────────────────────────
     try {
       await serviceClient.from('legal_tools_results').insert({
@@ -406,13 +326,11 @@ serve(async (req) => {
           aiAnalysis,
           processCount: processes.length,
           scrapedContentLength: scrapedContent?.length || 0,
-          serperResultsCount: serperResults.length,
         },
         metadata: {
-          source: 'multi_strategy',
+          source: 'firecrawl_openai',
           strategies_used: [
             scrapedContent ? 'firecrawl' : null,
-            serperResults.length > 0 ? 'serper' : null,
             aiAnalysis ? 'openai' : null,
           ].filter(Boolean),
           portal: 'consultaprocesos.ramajudicial.gov.co',
@@ -431,15 +349,12 @@ serve(async (req) => {
         processCount: processes.length,
         aiAnalysis,
         queryType: isRadicado ? 'radicado' : 'document',
-        source: 'multi_strategy',
+        source: 'firecrawl_openai',
         portalUrl,
-        // Incluir info de debug
         _debug: {
           scrapedChars: scrapedContent?.length || 0,
-          serperResults: serperResults.length,
           hasOpenAI: !!Deno.env.get('OPENAI_API_KEY'),
           hasFirecrawl: !!Deno.env.get('FIRECRAWL_API_KEY'),
-          hasSerper: !!Deno.env.get('SERPER_API_KEY'),
         }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
