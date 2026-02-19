@@ -101,6 +101,95 @@ async function extractTextFromPDF(base64Data: string): Promise<string> {
 }
 
 /**
+ * Extract text from legacy binary .doc files (Word 97-2003, Compound File Binary Format).
+ * Reads the WordDocument stream and extracts readable text using multiple heuristics.
+ */
+async function extractTextFromDOC(base64Data: string): Promise<string> {
+  try {
+    console.log('🔍 Starting DOC binary text extraction...');
+    const bytes = base64ToUint8Array(base64Data);
+
+    // --- Strategy 1: CFB (Compound File Binary) stream parsing ---
+    // DOC files start with the CFB magic: D0 CF 11 E0 A1 B1 1A E1
+    const magic = [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1];
+    const isCFB = magic.every((b, i) => bytes[i] === b);
+    let extractedText = '';
+
+    if (isCFB) {
+      // Read sector size (offset 0x1E, 2 bytes little-endian, value is log2 of sector size)
+      const sectorSizePow = bytes[0x1E] | (bytes[0x1F] << 8);
+      const sectorSize = sectorSizePow > 0 ? Math.pow(2, sectorSizePow) : 512;
+
+      // Scan entire file for UTF-16LE text sequences (most doc text is stored as UTF-16LE)
+      // Look for runs of valid UTF-16LE characters
+      const buf16 = new Uint8Array(bytes.buffer);
+      let utf16Text = '';
+      for (let i = 0; i < buf16.length - 1; i += 2) {
+        const charCode = buf16[i] | (buf16[i + 1] << 8);
+        // Keep printable ASCII + Latin Extended + Spanish chars
+        if (
+          (charCode >= 0x0020 && charCode <= 0x007E) ||
+          (charCode >= 0x00A0 && charCode <= 0x024F) ||
+          charCode === 0x000A || charCode === 0x000D || charCode === 0x0009
+        ) {
+          utf16Text += String.fromCharCode(charCode);
+        } else {
+          // Break long sequences of non-printable to avoid garbage
+          if (utf16Text.length > 0 && utf16Text[utf16Text.length - 1] !== ' ') {
+            utf16Text += ' ';
+          }
+        }
+      }
+      // Clean up
+      extractedText = utf16Text.replace(/\s{3,}/g, '  ').trim();
+    }
+
+    // --- Strategy 2: Latin-1 printable text scan (fallback for non-CFB or minimal CFB result) ---
+    if (extractedText.length < 300) {
+      const latin1 = new TextDecoder('latin1').decode(bytes);
+      // Extract runs of printable latin1 characters of length >= 4
+      const runs = latin1.match(/[\x20-\x7E\xA0-\xFF]{4,}/g) || [];
+      // Filter out binary garbage (runs with too many symbols)
+      const meaningful = runs.filter(r => {
+        const letters = (r.match(/[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]/g) || []).length;
+        return letters / r.length > 0.5 && r.length >= 6;
+      });
+      const latin1Text = meaningful.join(' ').replace(/\s{3,}/g, '  ').trim();
+      if (latin1Text.length > extractedText.length) {
+        extractedText = latin1Text;
+      }
+    }
+
+    // --- Strategy 3: UTF-8 scan ---
+    if (extractedText.length < 300) {
+      try {
+        const utf8 = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+        const utf8Runs = (utf8.match(/[\u0020-\u007E\u00A0-\u024F]{4,}/g) || []);
+        const meaningful = utf8Runs.filter(r => {
+          const letters = (r.match(/[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]/g) || []).length;
+          return letters / r.length > 0.5 && r.length >= 6;
+        });
+        const utf8Text = meaningful.join(' ').replace(/\s{3,}/g, '  ').trim();
+        if (utf8Text.length > extractedText.length) {
+          extractedText = utf8Text;
+        }
+      } catch (_) { /* ignore */ }
+    }
+
+    if (extractedText.length > 200) {
+      console.log(`✅ DOC extracted ${extractedText.length} chars`);
+      return extractedText;
+    }
+
+    console.warn('⚠️ DOC extraction yielded minimal content');
+    return extractedText;
+  } catch (error) {
+    console.error('❌ Error extracting text from DOC:', error);
+    return '';
+  }
+}
+
+/**
  * Extract text from DOCX (which is a ZIP containing word/document.xml).
  * Uses JSZip available via esm.sh.
  */
@@ -232,12 +321,10 @@ serve(async (req) => {
         extractedText = await extractTextFromDOCX(fileBase64);
         extractionMethod = 'docx';
       } else if (lowerName.endsWith('.doc')) {
-        // Legacy binary DOC — attempt PDF-style extraction as best-effort
-        // Most .doc files won't yield much, but we try
-        extractedText = await extractTextFromPDF(fileBase64);
-        extractionMethod = 'doc-fallback';
+        extractedText = await extractTextFromDOC(fileBase64);
+        extractionMethod = 'doc-binary';
         if (extractedText.length < 100) {
-          console.warn('⚠️ .doc file: could not extract text from binary DOC format');
+          console.warn('⚠️ .doc file: minimal content extracted from binary DOC');
         }
       }
     }
