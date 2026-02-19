@@ -150,7 +150,8 @@ export default function ProcessQueryModule({
 
   const validateRadicado = (value: string): boolean => {
     const cleanValue = value.replace(/\s/g, '');
-    return cleanValue.length >= 20 && cleanValue.length <= 30;
+    // Radicados colombianos: mínimo 11 dígitos (código despacho), típicamente 23
+    return cleanValue.length >= 11 && cleanValue.length <= 35;
   };
 
   const handleSearch = async () => {
@@ -162,7 +163,7 @@ export default function ProcessQueryModule({
         return;
       }
       if (!validateRadicado(radicado)) {
-        toast.error('El número de radicado debe tener entre 20 y 30 caracteres');
+        toast.error('El número de radicado debe tener al menos 11 caracteres');
         return;
       }
       queryValue = radicado;
