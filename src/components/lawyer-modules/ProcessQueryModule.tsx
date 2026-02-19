@@ -18,7 +18,6 @@ import {
   Search,
   Scale,
   FileText,
-  User,
   Hash,
   Loader2,
   History,
@@ -29,7 +28,11 @@ import {
   RefreshCw,
   Gavel,
   Coins,
-  Brain
+  Brain,
+  Globe,
+  Copy,
+  CheckCheck,
+  Zap
 } from "lucide-react";
 
 interface ProcessQueryModuleProps {
@@ -106,6 +109,8 @@ export default function ProcessQueryModule({
   const [selectedProcess, setSelectedProcess] = useState<JudicialProcess | null>(null);
   const [aiAnalysis, setAiAnalysis] = useState<string>('');
   const [queryHistory, setQueryHistory] = useState<QueryHistory[]>([]);
+  const [lastSearchedRadicado, setLastSearchedRadicado] = useState<string>('');
+  const [copied, setCopied] = useState(false);
   
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [followUpQuery, setFollowUpQuery] = useState('');
@@ -192,6 +197,7 @@ export default function ProcessQueryModule({
     setSelectedProcess(null);
     setAiAnalysis('');
     setChatMessages([]);
+    setLastSearchedRadicado(queryValue);
 
     try {
       const { data: sessionData } = await supabase.auth.getSession();
@@ -213,19 +219,17 @@ export default function ProcessQueryModule({
         throw new Error(response.error.message || 'Error en la consulta');
       }
 
-      const { processes: resultProcesses, aiAnalysis: analysis, processCount, portalUrl } = response.data;
+      const { processes: resultProcesses, aiAnalysis: analysis, processCount } = response.data;
 
-      // Siempre mostrar resultados: procesos estructurados y/o análisis IA
       setProcesses(resultProcesses || []);
       setAiAnalysis(analysis || '');
 
       if (processCount > 0) {
         toast.success(`Se encontraron ${processCount} proceso(s)`);
       } else if (analysis) {
-        // Hay análisis de IA aunque no haya datos estructurados extraídos
-        toast.success('Análisis generado. Consulte el portal oficial para datos en tiempo real.');
+        toast.success('Análisis IA generado. Verifique en tiempo real en el portal oficial.');
       } else {
-        toast.info('No se encontraron datos. Intente consultar directamente en el portal de la Rama Judicial.');
+        toast.info('No se encontraron datos. Consulte directamente en el portal de la Rama Judicial.');
       }
 
       loadQueryHistory();
@@ -235,6 +239,26 @@ export default function ProcessQueryModule({
       toast.error(error instanceof Error ? error.message : 'Error al consultar procesos');
     } finally {
       setIsSearching(false);
+    }
+  };
+
+  const getPortalUrl = (radicadoNum?: string) => {
+    const base = 'https://consultaprocesos.ramajudicial.gov.co/Procesos/NumeroRadicacion';
+    return radicadoNum ? `${base}?numero=${encodeURIComponent(radicadoNum)}` : base;
+  };
+
+  const handleOpenPortal = (radicadoNum?: string) => {
+    window.open(getPortalUrl(radicadoNum), '_blank', 'noopener,noreferrer');
+  };
+
+  const handleCopyRadicado = async (radicadoNum: string) => {
+    try {
+      await navigator.clipboard.writeText(radicadoNum);
+      setCopied(true);
+      toast.success('Radicado copiado');
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error('No se pudo copiar');
     }
   };
 
@@ -555,17 +579,84 @@ export default function ProcessQueryModule({
           </div>
         )}
 
-        {/* Results: análisis de IA cuando no hay procesos estructurados */}
-        {processes.length === 0 && aiAnalysis && !isSearching && (
-          <Card className="border-primary/20 bg-primary/5">
+        {/* Panel de acceso en tiempo real — aparece tras buscar */}
+        {lastSearchedRadicado && !isSearching && (
+          <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0">
+                    <Zap className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-sm">Acceso en Tiempo Real</CardTitle>
+                    <p className="text-xs text-muted-foreground">Consulte el portal oficial directamente con su radicado</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleCopyRadicado(lastSearchedRadicado)}
+                    className="h-8 text-xs gap-1.5"
+                  >
+                    {copied ? <CheckCheck className="h-3 w-3 text-green-600" /> : <Copy className="h-3 w-3" />}
+                    {copied ? 'Copiado' : 'Copiar radicado'}
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => handleOpenPortal(lastSearchedRadicado)}
+                    className="h-8 text-xs gap-1.5"
+                  >
+                    <Globe className="h-3 w-3" />
+                    Abrir portal oficial
+                    <ExternalLink className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div className="p-3 bg-background/60 rounded-lg border border-border/50">
+                  <p className="font-semibold text-foreground mb-1 flex items-center gap-1">
+                    <span className="text-primary">1.</span> Abra el portal
+                  </p>
+                  <p className="text-muted-foreground">Haga clic en "Abrir portal oficial" para ir directamente al sistema de consulta</p>
+                </div>
+                <div className="p-3 bg-background/60 rounded-lg border border-border/50">
+                  <p className="font-semibold text-foreground mb-1 flex items-center gap-1">
+                    <span className="text-primary">2.</span> Ingrese el radicado
+                  </p>
+                  <p className="text-muted-foreground">Use el botón "Copiar radicado" y péguelo en el campo de búsqueda del portal</p>
+                </div>
+                <div className="p-3 bg-background/60 rounded-lg border border-border/50">
+                  <p className="font-semibold text-foreground mb-1 flex items-center gap-1">
+                    <span className="text-primary">3.</span> Datos en tiempo real
+                  </p>
+                  <p className="text-muted-foreground">Verá actuaciones, fechas y estado actual del proceso directamente desde la Rama Judicial</p>
+                </div>
+              </div>
+              <div className="mt-3 p-2.5 bg-muted/40 rounded-lg border border-border/40 flex items-center gap-2">
+                <Hash className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                <span className="text-xs font-mono text-foreground tracking-wide">{lastSearchedRadicado}</span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Análisis IA */}
+        {aiAnalysis && !isSearching && (
+          <Card className="border-border">
             <CardHeader className="pb-3">
               <div className="flex items-center gap-2">
                 <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                   <Brain className="h-4 w-4 text-primary" />
                 </div>
                 <div>
-                  <CardTitle className="text-base">Análisis del Proceso</CardTitle>
-                  <p className="text-xs text-muted-foreground">Basado en búsqueda web e IA</p>
+                  <CardTitle className="text-base">Análisis Legal del Proceso</CardTitle>
+                  <p className="text-xs text-muted-foreground">
+                    Análisis contextual generado por IA · Verifique siempre en el portal oficial
+                  </p>
                 </div>
               </div>
             </CardHeader>
@@ -597,23 +688,12 @@ export default function ProcessQueryModule({
                   );
                 })}
               </div>
-              <div className="mt-4 p-3 bg-muted/50 rounded-lg border">
-                <p className="text-xs text-muted-foreground font-medium mb-1">📌 Para consultar datos en tiempo real:</p>
-                <a
-                  href="https://consultaprocesos.ramajudicial.gov.co/Procesos/NumeroRadicacion"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-primary hover:underline break-all"
-                >
-                  consultaprocesos.ramajudicial.gov.co → Por Número de Radicación
-                </a>
-              </div>
             </CardContent>
           </Card>
         )}
 
         {/* Query History */}
-        {queryHistory.length > 0 && processes.length === 0 && (
+        {queryHistory.length > 0 && processes.length === 0 && !aiAnalysis && (
           <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
@@ -628,7 +708,6 @@ export default function ProcessQueryModule({
                     key={item.id}
                     className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted cursor-pointer"
                     onClick={async () => {
-                      // Load the full result from database and display it
                       try {
                         const { data, error } = await supabase
                           .from('legal_tools_results')
@@ -639,27 +718,22 @@ export default function ProcessQueryModule({
                         if (error) throw error;
                         
                         const outputData = data.output_data as any;
-                        if (outputData?.processes?.length > 0 || outputData?.processDetails) {
-                          // Set the query params for reference
-                          if (item.queryType === 'radicado') {
-                            setQueryType('radicado');
-                            setRadicado(item.queryValue);
-                          } else if (item.queryType === 'document') {
-                            setQueryType('document');
-                            setDocumentNumber(item.queryValue);
-                          }
-                          
-                          // Load the saved results
-                          const savedProcesses = outputData.processDetails 
-                            ? [outputData.processDetails] 
-                            : (outputData.processes || []);
-                          setProcesses(savedProcesses);
-                          setAiAnalysis(outputData.aiAnalysis || '');
-                          setChatMessages([]);
-                          toast.success('Consulta cargada del historial');
-                        } else {
-                          toast.info('No hay resultados guardados para esta consulta');
+                        if (item.queryType === 'radicado') {
+                          setQueryType('radicado');
+                          setRadicado(item.queryValue);
+                          setLastSearchedRadicado(item.queryValue);
+                        } else if (item.queryType === 'document') {
+                          setQueryType('document');
+                          setDocumentNumber(item.queryValue);
                         }
+                        
+                        const savedProcesses = outputData?.processDetails 
+                          ? [outputData.processDetails] 
+                          : (outputData?.processes || []);
+                        setProcesses(savedProcesses);
+                        setAiAnalysis(outputData?.aiAnalysis || '');
+                        setChatMessages([]);
+                        toast.success('Consulta cargada del historial');
                       } catch (error) {
                         console.error('Error loading history item:', error);
                         toast.error('Error al cargar la consulta');
@@ -686,24 +760,25 @@ export default function ProcessQueryModule({
           </Card>
         )}
 
-        {/* Info Alert */}
-        <Card className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
-          <CardContent className="pt-6">
-            <div className="flex gap-3">
-              <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-              <div className="space-y-1">
-                <p className="font-medium text-blue-900 dark:text-blue-100">
-                  Información sobre la consulta
-                </p>
-                <p className="text-sm text-blue-800 dark:text-blue-200">
-                  Esta herramienta consulta información en tiempo real de los procesos judiciales 
-                  registrados en la Rama Judicial de Colombia. Los datos se obtienen directamente 
-                  de fuentes oficiales y se complementan con análisis de IA para facilitar su comprensión.
-                </p>
+        {/* Info inicial cuando no hay búsqueda */}
+        {!lastSearchedRadicado && !isSearching && (
+          <Card className="border-border/50">
+            <CardContent className="pt-6">
+              <div className="flex gap-3">
+                <AlertCircle className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="font-medium text-foreground">
+                    Cómo funciona esta herramienta
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Ingrese el número de radicado y la IA analizará el proceso con información contextual del sistema judicial colombiano. 
+                    Para ver datos en tiempo real (actuaciones, fechas), use el acceso directo al portal oficial que aparecerá tras la consulta.
+                  </p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
       </div>
     );
   };
