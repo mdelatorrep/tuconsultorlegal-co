@@ -408,22 +408,37 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
         return [];
       };
 
+      // Normalize risks: handles {type,severity}, {risk,severity}, {type,level}, etc.
+      const normalizeRisks = (v: any) => safeArray(v).map((r: any) => ({
+        type: r.type || r.tipo || r.risk || r.name || 'Riesgo',
+        description: r.description || r.descripcion || r.detail || '',
+        severity: r.severity || r.severidad || r.level || r.nivel || 'medio',
+        mitigation: r.mitigation || r.mitigacion || r.recommendation || undefined,
+      }));
+
+      // Normalize parties: handles array, object {extracted, inferredRoles}, or string
+      const normalizePartiesRobust = (v: any) => {
+        if (typeof v === 'string') {
+          // e.g. "No identificadas en el contenido provisto"
+          return v.trim() && v !== 'No identificadas' ? [{ name: v, role: '' }] : [];
+        }
+        return normalizeParties(v);
+      };
+
+      // clauses may come as data.clauses OR data.keyTerms
+      const rawClauses = data.clauses || data.keyTerms || data.elements;
+
       const result: AnalysisResult = {
         fileName: file.name,
         documentType: data.documentType || 'Documento Legal',
         documentCategory: data.documentCategory || 'otro',
         detectionConfidence: normalizeConfidence(data.detectionConfidence),
         summary: data.summary,
-        clauses: normalizeClauses(data.clauses),
-        risks: safeArray(data.risks).map((r: any) => ({
-          type: r.type || r.tipo || 'Riesgo',
-          description: r.description || r.descripcion || '',
-          severity: r.severity || r.severidad || r.level || 'medio',
-          mitigation: r.mitigation || r.mitigacion || undefined,
-        })),
+        clauses: normalizeClauses(rawClauses),
+        risks: normalizeRisks(data.risks),
         recommendations: normalizeRecommendations(data.recommendations),
         keyDates: normalizeKeyDates(data.keyDates),
-        parties: normalizeParties(data.parties),
+        parties: normalizePartiesRobust(data.parties),
         legalReferences: normalizeLegalRefs(data.legalReferences),
         missingElements: normalizeMissing(data.missingElements),
         timestamp: new Date(data.timestamp || Date.now())
