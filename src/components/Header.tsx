@@ -127,7 +127,7 @@ export default function Header({
             </Button>
           ) : (
             <Button 
-              onClick={() => onNavigate("auth")} 
+              onClick={() => window.location.href = '/auth-abogados'} 
               variant="ghost" 
               size="sm"
               className="text-muted-foreground hover:text-foreground"
@@ -233,7 +233,7 @@ export default function Header({
                 <Button 
                   onClick={() => {
                     setMobileMenuOpen(false);
-                    onNavigate("auth");
+                    window.location.href = '/auth-abogados';
                   }} 
                   variant="outline" 
                   className="w-full"
