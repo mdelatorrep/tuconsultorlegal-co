@@ -96,7 +96,8 @@ async function analyzeWithOpenAI(
   scrapedContent: string | null,
   followUpQuery?: string,
   conversationHistory?: any[],
-  systemPromptOverride?: string
+  systemPromptOverride?: string,
+  modelOverride?: string
 ): Promise<string | null> {
   const OPENAI_KEY = Deno.env.get('OPENAI_API_KEY');
   if (!OPENAI_KEY) {
@@ -105,12 +106,14 @@ async function analyzeWithOpenAI(
   }
 
   try {
+    // Use prompt from system_config if provided, otherwise use a default
     const systemPrompt = systemPromptOverride ||
       `Eres un asistente legal especializado en derecho procesal colombiano. 
 Analiza información de procesos judiciales de la Rama Judicial de Colombia.
-Cuando tengas datos reales del proceso, preséntales de forma estructurada y clara.
+Cuando tengas datos reales del proceso, preséntales de forma estructurada y clara usando markdown.
 Cuando no tengas datos directos del sistema, indica claramente qué información encontraste y proporciona orientación sobre cómo consultar el proceso.
-Siempre proporciona el enlace directo al portal: https://consultaprocesos.ramajudicial.gov.co`;
+Siempre proporciona el enlace directo al portal: https://consultaprocesos.ramajudicial.gov.co
+Usa formato markdown con encabezados (##), listas y negritas para organizar la información de forma clara y visual.`;
 
     let userContent: string;
 
@@ -159,7 +162,7 @@ Siempre proporciona el enlace directo al portal: https://consultaprocesos.ramaju
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: modelOverride || 'gpt-4o',
         messages,
         max_tokens: 2500,
         temperature: 0.3,
@@ -272,7 +275,9 @@ serve(async (req) => {
       serviceClient.from('system_config').select('config_value').eq('config_key', 'process_query_ai_prompt').maybeSingle(),
     ]);
 
+    const aiModel = (modelConfigResult.status === 'fulfilled' ? modelConfigResult.value.data?.config_value : null) || 'gpt-4o';
     const systemPromptFromDB = (promptConfigResult.status === 'fulfilled' ? promptConfigResult.value.data?.config_value : null) || undefined;
+    console.log(`[judicial-process-lookup] Using model: ${aiModel}, prompt from DB: ${!!systemPromptFromDB}`);
 
     // ── Step 1: Firecrawl data collection ───────────────────────────────
     let scrapedContent: string | null = null;
@@ -308,7 +313,8 @@ serve(async (req) => {
       scrapedContent,
       followUpQuery,
       conversationHistory,
-      systemPromptFromDB
+      systemPromptFromDB,
+      aiModel
     );
 
     // ── Step 3: Portal URL ───────────────────────────────────────────────
