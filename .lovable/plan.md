@@ -1,315 +1,74 @@
 
-# Plan: Integración de Entidades B2B en el CRM
+## Diagnóstico del Problema: Extracción Incorrecta de Archivos .DOC
 
-## Contexto del Problema
+### Hallazgo Principal
 
-Actualmente el CRM trata a todos los clientes de la misma manera: una persona = un cliente. Sin embargo, muchos abogados trabajan con **entidades corporativas** que tienen:
-- Múltiples contactos (gerente legal, CFO, asistente, CEO)
-- Jerarquías organizacionales
-- Diferentes interlocutores para diferentes casos
-- Contratos marco con la organización, no con individuos
+Los logs y la base de datos revelan el problema con total claridad:
 
-**Ejemplo real**: Un abogado que asesora a Bancolombia necesita registrar:
-- La entidad "Bancolombia S.A." con su NIT, sector, tamaño
-- María García (Gerente Legal) - contacto principal
-- Juan Pérez (Director Financiero) - para temas tributarios  
-- Ana Ruiz (Asistente Legal) - para seguimiento operativo
+**El edge function SÍ extrae texto de los archivos .doc (11.452 y 8.275 caracteres respectivamente), pero el texto extraído es basura binaria, no texto legible.** La muestra de `input_data` guardada en la BD lo confirma:
 
----
-
-## Arquitectura Propuesta
-
-```text
-MODELO ACTUAL                      MODELO PROPUESTO
-==============                     ================
-
-crm_clients                        crm_entities (NUEVA)
-  - individual                       - id, name, nit, sector
-  - company (limitado)               - entity_type (corporation, govt, ngo)
-      |                              - billing_info, address
-      v                              - health_score, lifetime_value
-crm_cases                                |
-                                         v
-                                   crm_contacts (NUEVA)
-                                     - id, entity_id (nullable)
-                                     - name, email, phone
-                                     - role, department
-                                     - is_primary_contact
-                                         |
-                                         v
-                                   crm_cases
-                                     - entity_id (nullable)
-                                     - contact_id (nullable)
-                                     - client_id (backward compatible)
+```
+>  ž Ɩ Ż ż Ž ƀ Á ¿  · | X 8 Ť Č Ƥ $ " l þ Ā , Ǘ Ī 0 ¨ ^ 0 t ĺ Ē Ȱ ȩ ȍ ȍ ȍ...
 ```
 
----
+Esto no es texto del documento. Es el resultado de leer el archivo binario CFB e interpretar **bytes de datos estructurales del contenedor** (tablas FAT, metadatos del sector) como si fueran texto UTF-16LE. El algoritmo actual mezcla el contenido real de texto con la infraestructura binaria del formato DOC.
 
-## Componentes a Implementar
+La IA confirma exactamente esto en su resumen: *"El archivo provisto está gravemente corrupto/ilegible. El contenido textual es irreconocible (caracteres binarios/ruido)"*.
 
-### 1. Nueva Tabla: `crm_entities`
-Almacena información de organizaciones/empresas.
+### Causa Raíz Técnica
 
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| id | UUID | Identificador único |
-| lawyer_id | UUID | Abogado propietario |
-| name | TEXT | Nombre de la entidad |
-| legal_name | TEXT | Razón social |
-| tax_id | TEXT | NIT/RUT |
-| entity_type | TEXT | corporation, government, ngo, association |
-| industry | TEXT | Sector (financiero, salud, tecnología) |
-| size | TEXT | micro, small, medium, large, enterprise |
-| website | TEXT | Sitio web |
-| address | TEXT | Dirección principal |
-| phone | TEXT | Teléfono principal |
-| email | TEXT | Email corporativo |
-| billing_address | TEXT | Dirección de facturación |
-| notes | TEXT | Notas generales |
-| status | TEXT | active, inactive, prospect |
-| health_score | INTEGER | Salud de la relación (0-100) |
-| lifetime_value | NUMERIC | Valor total facturado |
-| contract_type | TEXT | retainer, hourly, fixed, hybrid |
-| contract_value | NUMERIC | Valor del contrato marco |
-| contract_start | DATE | Inicio del contrato |
-| contract_end | DATE | Fin del contrato |
+El formato `.doc` (Word 97-2003) es un archivo **Compound File Binary (CFB)**. Contiene múltiples streams internos:
+- `WordDocument` → contiene el texto real
+- `1Table` o `0Table` → tabla de piezas de texto (FIB + piece table)
+- Streams FAT, DIFAT, directorios → infraestructura del contenedor
 
-### 2. Nueva Tabla: `crm_contacts`
-Personas de contacto dentro de las entidades.
+La implementación actual escanea **todos los bytes del archivo** buscando secuencias UTF-16LE imprimibles, pero el 70-80% de un archivo DOC son datos binarios del contenedor (sectores FAT, offsets, campos numéricos) que, al interpretarse como UTF-16LE, generan exactamente ese "basura" que se ve.
 
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| id | UUID | Identificador único |
-| lawyer_id | UUID | Abogado propietario |
-| entity_id | UUID | Entidad a la que pertenece (nullable) |
-| name | TEXT | Nombre completo |
-| email | TEXT | Email de contacto |
-| phone | TEXT | Teléfono directo |
-| role | TEXT | Cargo (Gerente Legal, CFO, etc.) |
-| department | TEXT | Departamento (Legal, Finanzas, etc.) |
-| is_primary | BOOLEAN | Es contacto principal de la entidad |
-| is_billing_contact | BOOLEAN | Recibe facturas |
-| is_decision_maker | BOOLEAN | Toma decisiones |
-| notes | TEXT | Notas sobre el contacto |
-| last_contact_date | TIMESTAMP | Última comunicación |
-| communication_preference | TEXT | email, phone, whatsapp |
-| status | TEXT | active, inactive |
+### Tecnología Adecuada
 
-### 3. Modificación: `crm_cases`
-Agregar soporte para entidades manteniendo compatibilidad.
+La tecnología manual de parseo binario CFB es extremadamente compleja de implementar correctamente en Deno. La solución más robusta y probada en producción es usar **LibreOffice/antiword vía API externa**, pero dado que ya se tiene Firecrawl disponible, la mejor estrategia es usar la **API de File Parsing de Firecrawl** que convierte documentos .doc nativamente a texto limpio.
 
-```sql
-ALTER TABLE crm_cases 
-ADD COLUMN entity_id UUID REFERENCES crm_entities(id),
-ADD COLUMN primary_contact_id UUID REFERENCES crm_contacts(id);
+Sin embargo, Firecrawl no tiene endpoint de conversión de archivos directamente. La alternativa más confiable disponible es usar la **API de conversión de documentos de una librería Deno** correctamente o cambiar la estrategia de extracción:
+
+### Solución: Reemplazar el Motor de Extracción DOC
+
+**Usar `cfb` + parseo correcto del stream `WordDocument`**, que es la única forma correcta de leer archivos .doc en JavaScript/TypeScript sin herramientas externas. La implementación correcta requiere:
+
+1. **Parsear el directorio CFB** para localizar el stream `WordDocument` específicamente (no escanear todos los bytes)
+2. **Leer el FIB (File Information Block)** al inicio del stream WordDocument para obtener los offsets del texto
+3. **Extraer solo los bytes del texto** desde las posiciones indicadas por el FIB
+4. **Decodificar correctamente** como UTF-16LE o CP1252 según el flag del FIB
+
+Adicionalmente, como alternativa más simple y robusta, se puede usar la librería **`mammoth`** disponible en esm.sh que hace exactamente esto de forma confiable.
+
+### Plan de Implementación
+
+**Cambio 1: Edge Function `legal-document-analysis/index.ts`**
+
+Reemplazar la función `extractTextFromDOC` con dos estrategias en cascada:
+
+- **Estrategia A (Principal):** Usar `mammoth` desde esm.sh (`https://esm.sh/mammoth@1.8.0`) que convierte archivos .doc a texto plano correctamente. Es la librería estándar para esto en Node/Deno.
+- **Estrategia B (Fallback):** Parseo CFB correcto que localice específicamente el stream `WordDocument` en el directorio del contenedor y extraiga solo esos bytes, en lugar de escanear el archivo completo.
+
+El flujo sería:
+```
+archivo .doc base64
+    → mammoth.extractRawText() 
+    → texto limpio y legible
+    → si falla → parseo CFB directo del stream WordDocument
+    → análisis con OpenAI
 ```
 
-### 4. Modificación: `crm_communications`
-Vincular comunicaciones a contactos específicos.
+**Cambio 2: Verificación del frontend**
 
-```sql
-ALTER TABLE crm_communications 
-ADD COLUMN contact_id UUID REFERENCES crm_contacts(id);
-```
+Revisar si hay algún problema en cómo se muestra el estado de error cuando el backend devuelve datos válidos (el análisis SÍ llega completo pero la UI podría estar mostrando "error" o pantalla en blanco). Esto se revisará directamente al leer los logs de consola del browser durante una sesión activa.
 
----
+### Archivos a Modificar
 
-## Nuevos Componentes de UI
+- `supabase/functions/legal-document-analysis/index.ts` — Reemplazar `extractTextFromDOC` con implementación basada en `mammoth` + fallback CFB correcto
 
-### 4.1 `CRMEntitiesView.tsx`
-Vista principal de gestión de entidades.
+### Resultado Esperado
 
-**Características**:
-- Lista de entidades con filtros (sector, tamaño, estado)
-- Tarjetas con información clave: nombre, contactos, casos activos, valor
-- Indicador de salud de la relación
-- Acceso rápido a contactos y casos
-- Creación/edición con formulario completo
-
-### 4.2 `EntityDetailPage.tsx`
-Vista detallada de una entidad.
-
-**Secciones**:
-- **Información General**: Datos corporativos, NIT, sector
-- **Contactos**: Lista de personas con roles y acciones rápidas
-- **Casos**: Historial de casos con la entidad
-- **Contrato**: Términos del contrato marco
-- **Documentos**: Archivos compartidos con la entidad
-- **Comunicaciones**: Historial de interacciones
-- **Facturación**: Historial de pagos y pendientes
-
-### 4.3 `ContactsListView.tsx`
-Lista de contactos dentro de una entidad.
-
-**Características**:
-- Jerarquía visual de contactos
-- Badges para roles (Principal, Facturación, Decisor)
-- Última comunicación y preferencia de contacto
-- Acciones: llamar, email, crear caso
-
-### 4.4 `EntitySelector.tsx`
-Componente reutilizable para seleccionar entidad + contacto.
-
-**Uso en**:
-- Formulario de nuevo caso
-- Formulario de nueva comunicación
-- Formulario de nueva cita
-
----
-
-## Flujos de Usuario
-
-### Flujo 1: Crear Nueva Entidad
-1. Usuario va a CRM > Entidades > Nueva Entidad
-2. Llena datos corporativos (nombre, NIT, sector)
-3. Agrega contacto principal
-4. Opcionalmente define contrato marco
-5. Entidad creada con contacto vinculado
-
-### Flujo 2: Agregar Contacto a Entidad Existente
-1. Usuario abre detalle de entidad
-2. En sección Contactos, clic en "Agregar Contacto"
-3. Llena datos: nombre, cargo, email, teléfono
-4. Marca si es principal/facturación/decisor
-5. Contacto vinculado a la entidad
-
-### Flujo 3: Crear Caso para Entidad
-1. Usuario crea nuevo caso
-2. Selector muestra: "Individual" o "Entidad"
-3. Si elige Entidad, selecciona de lista
-4. Luego selecciona contacto principal para el caso
-5. Caso vinculado a entidad y contacto
-
-### Flujo 4: Convertir Cliente Empresa a Entidad
-1. En lista de clientes, cliente tipo "company"
-2. Botón "Convertir a Entidad"
-3. Wizard migra datos y crea estructura
-4. Cliente original se marca como migrado
-
----
-
-## Navegación Actualizada del CRM
-
-```text
-CRM
-├── Pipeline (casos visuales)
-├── Leads IA
-├── Salud (clientes)
-├── ─────────────────
-├── Entidades (NUEVO)     <- Empresas/Organizaciones
-│   ├── Vista lista
-│   └── Detalle entidad
-│       ├── Contactos
-│       ├── Casos
-│       └── Contratos
-├── Clientes              <- Personas individuales
-├── Casos
-├── Comunicaciones
-├── Documentos
-├── Tareas
-├── ─────────────────
-├── Automatización
-└── Analytics
-```
-
----
-
-## Inteligencia y Automatización
-
-### Scoring de Entidades
-Factor de puntuación para entidades:
-- **Volumen de casos**: +5pts por caso activo
-- **Valor de contrato**: +10pts si > $10M/año
-- **Antigüedad**: +2pts por año de relación
-- **Frecuencia de comunicación**: +5pts si contacto < 7 días
-- **Estado de pagos**: -20pts si mora > 30 días
-
-### Alertas Automáticas
-- "Contrato de [Entidad] vence en 30 días"
-- "Sin comunicación con [Entidad] en 45 días"
-- "[Contacto principal] cambió de cargo - actualizar"
-- "Nuevo caso potencial detectado para [Entidad]"
-
----
-
-## Migración de Datos
-
-### Estrategia de Compatibilidad
-1. Mantener `crm_clients` funcionando (no breaking change)
-2. Clientes tipo "company" pueden migrarse a entidades
-3. Nuevos campos `entity_id` y `contact_id` en casos son opcionales
-4. Si `entity_id` está presente, usar nueva lógica; si no, usar `client_id`
-
-### Script de Migración
-```sql
--- Crear entidades desde clientes tipo company
-INSERT INTO crm_entities (lawyer_id, name, email, phone, status)
-SELECT lawyer_id, company, email, phone, status
-FROM crm_clients
-WHERE client_type = 'company' AND company IS NOT NULL;
-
--- Crear contactos desde clientes tipo company
-INSERT INTO crm_contacts (lawyer_id, entity_id, name, email, phone, is_primary)
-SELECT c.lawyer_id, e.id, c.name, c.email, c.phone, true
-FROM crm_clients c
-JOIN crm_entities e ON e.email = c.email AND e.lawyer_id = c.lawyer_id
-WHERE c.client_type = 'company';
-```
-
----
-
-## Archivos a Crear
-
-### Nuevos Componentes
-- `src/components/lawyer-modules/crm/CRMEntitiesView.tsx`
-- `src/components/lawyer-modules/crm/EntityDetailPage.tsx`
-- `src/components/lawyer-modules/crm/EntityContactsList.tsx`
-- `src/components/lawyer-modules/crm/EntityCasesList.tsx`
-- `src/components/lawyer-modules/crm/EntityContractCard.tsx`
-- `src/components/lawyer-modules/crm/EntitySelector.tsx`
-- `src/components/lawyer-modules/crm/ContactForm.tsx`
-- `src/components/lawyer-modules/crm/EntityForm.tsx`
-
-### Modificaciones
-- `src/components/lawyer-modules/CRMModule.tsx` - agregar tab Entidades
-- `src/components/lawyer-modules/crm/CRMCasesView.tsx` - soporte entity_id
-- `src/components/lawyer-modules/crm/CRMClientsView.tsx` - botón migrar
-- `src/components/lawyer-modules/crm/CRMCommunicationsView.tsx` - contacto
-
-### Migraciones
-- Nueva migración SQL para tablas `crm_entities` y `crm_contacts`
-- Alteración de `crm_cases` y `crm_communications`
-
-### Edge Functions
-- `supabase/functions/crm-entity-health/index.ts` - scoring de entidades
-
----
-
-## Fases de Implementación
-
-### Fase 1: Fundamentos (Esta sesión)
-1. Crear tablas `crm_entities` y `crm_contacts`
-2. Alterar `crm_cases` para soporte dual
-3. Componente básico `CRMEntitiesView.tsx`
-
-### Fase 2: UI Completa
-1. `EntityDetailPage.tsx` con todas las secciones
-2. `EntitySelector.tsx` reutilizable
-3. Integración en formularios de casos
-
-### Fase 3: Inteligencia
-1. Edge function para scoring de entidades
-2. Alertas automáticas de contratos
-3. Recomendaciones IA para entidades
-
----
-
-## Beneficios para el Abogado
-
-| Métrica | Sin Entidades | Con Entidades |
-|---------|---------------|---------------|
-| Tiempo registro cliente corporativo | 5 min por contacto | 2 min total |
-| Visibilidad de relación | Fragmentada | Unificada |
-| Seguimiento de contratos | Manual | Automatizado |
-| Facturación consolidada | Imposible | Nativa |
-| Historial por organización | No existe | Completo |
+- Los archivos `.doc` creados en Microsoft Word serán leídos y su contenido real (sentencias, contratos, escritos) será extraído correctamente
+- La IA recibirá el texto legal real y podrá hacer un análisis de alta confianza
+- El resumen ya no dirá "archivo corrupto" sino que analizará el contenido real de la sentencia
