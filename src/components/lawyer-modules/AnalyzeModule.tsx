@@ -90,20 +90,73 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
         const safeArray = <T,>(v: any): T[] => (Array.isArray(v) ? v : []);
         const safeString = (v: any, fallback: string) => (typeof v === 'string' ? v : fallback);
 
+        const normalizeConfidenceH = (v: any): 'alta' | 'media' | 'baja' | undefined => {
+          if (typeof v === 'string') {
+            const lower = v.toLowerCase();
+            if (['alta', 'high'].includes(lower)) return 'alta';
+            if (['media', 'medium'].includes(lower)) return 'media';
+            return 'baja';
+          }
+          if (typeof v === 'number') return v >= 0.7 ? 'alta' : v >= 0.4 ? 'media' : 'baja';
+          return undefined;
+        };
+
+        const normalizeClausesH = (v: any) => safeArray(v).map((c: any) => ({
+          name: c.name || c.clause || c.title || 'Elemento',
+          content: c.content || c.description || c.text || c.clause || '',
+          riskLevel: c.riskLevel || c.risk_level || c.risk || 'medio',
+          recommendation: c.recommendation || c.recomendacion || '',
+        }));
+
+        const normalizePartiesH = (v: any) => {
+          if (Array.isArray(v)) return v.map((p: any) => ({ name: p.name || 'Parte', role: p.role || p.likelyProfile || '' }));
+          if (v && typeof v === 'object') {
+            const res: any[] = [];
+            if (Array.isArray(v.extracted)) v.extracted.forEach((p: any) => res.push({ name: p.name || 'Parte', role: p.role || '' }));
+            if (Array.isArray(v.inferredRoles)) v.inferredRoles.forEach((p: any) => res.push({ name: p.role || 'Parte inferida', role: p.likelyProfile || '' }));
+            return res;
+          }
+          return [];
+        };
+
+        const normalizeKeyDatesH = (v: any) => {
+          if (Array.isArray(v)) return v.map((d: any) => ({ date: d.date || d.fecha || '', description: d.description || d.context || '', importance: d.importance || 'normal' }));
+          if (v && typeof v === 'object' && Array.isArray(v.extractedFromFilename)) {
+            return v.extractedFromFilename.map((d: any) => ({ date: d.possibleDate1 || '', description: d.context || '', importance: 'baja' }));
+          }
+          return [];
+        };
+
+        const normalizeLegalRefsH = (v: any) => {
+          if (Array.isArray(v)) return v.map((r: any) => ({ reference: r.reference || String(r), context: r.context || r.subject || '' }));
+          if (v && typeof v === 'object') {
+            const res: any[] = [];
+            if (Array.isArray(v.foundInDocument)) v.foundInDocument.forEach((r: any) => res.push({ reference: r.reference || String(r), context: r.context || 'En documento' }));
+            if (Array.isArray(v.recommendedToCheck)) v.recommendedToCheck.forEach((r: any) => res.push({ reference: r.reference || String(r), context: r.subject || 'Recomendada' }));
+            return res;
+          }
+          return [];
+        };
+
         return {
           id: item.id,
           fileName: safeString(item.input_data?.fileName, 'Documento'),
           documentType: safeString(out?.documentType, 'Documento Legal'),
           documentCategory: safeString(out?.documentCategory, 'otro') as any,
-          detectionConfidence: out?.detectionConfidence,
+          detectionConfidence: normalizeConfidenceH(out?.detectionConfidence),
           summary: safeString(out?.summary, ''),
-          clauses: safeArray(out?.clauses),
-          risks: safeArray(out?.risks),
-          recommendations: safeArray(out?.recommendations),
-          keyDates: safeArray(out?.keyDates),
-          parties: safeArray(out?.parties),
-          legalReferences: safeArray(out?.legalReferences),
-          missingElements: safeArray(out?.missingElements),
+          clauses: normalizeClausesH(out?.clauses),
+          risks: safeArray(out?.risks).map((r: any) => ({
+            type: r.type || r.tipo || 'Riesgo',
+            description: r.description || r.descripcion || '',
+            severity: r.severity || r.severidad || r.level || 'medio',
+            mitigation: r.mitigation,
+          })),
+          recommendations: safeArray(out?.recommendations).map((r: any) => typeof r === 'string' ? r : r.recommendation || String(r)),
+          keyDates: normalizeKeyDatesH(out?.keyDates),
+          parties: normalizePartiesH(out?.parties),
+          legalReferences: normalizeLegalRefsH(out?.legalReferences),
+          missingElements: safeArray(out?.missingElements).map((m: any) => typeof m === 'string' ? m : m.description || String(m)),
           timestamp: new Date(item.created_at)
         } as AnalysisResult;
       }) || [];
@@ -255,19 +308,124 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
 
       const safeArray = <T,>(v: any): T[] => (Array.isArray(v) ? v : []);
 
+      // Normalize detectionConfidence: number (0-1) → string label
+      const normalizeConfidence = (v: any): 'alta' | 'media' | 'baja' | undefined => {
+        if (typeof v === 'string') {
+          const lower = v.toLowerCase();
+          if (['alta', 'high'].includes(lower)) return 'alta';
+          if (['media', 'medium'].includes(lower)) return 'media';
+          if (['baja', 'low'].includes(lower)) return 'baja';
+          return 'baja';
+        }
+        if (typeof v === 'number') {
+          if (v >= 0.7) return 'alta';
+          if (v >= 0.4) return 'media';
+          return 'baja';
+        }
+        return undefined;
+      };
+
+      // Normalize clauses: handle both {name, content, riskLevel} and {clause, description, ...}
+      const normalizeClauses = (v: any): AnalysisResult['clauses'] => {
+        return safeArray(v).map((c: any) => ({
+          name: c.name || c.clause || c.title || 'Elemento',
+          content: c.content || c.description || c.text || c.clause || '',
+          riskLevel: c.riskLevel || c.risk_level || c.risk || 'medio',
+          recommendation: c.recommendation || c.recomendacion || '',
+        }));
+      };
+
+      // Normalize parties: handle {name, role} and {extracted, inferredRoles}
+      const normalizeParties = (v: any): AnalysisResult['parties'] => {
+        if (Array.isArray(v)) {
+          return v.map((p: any) => ({
+            name: p.name || p.nombre || 'Parte',
+            role: p.role || p.rol || p.likelyProfile || '',
+          }));
+        }
+        if (v && typeof v === 'object') {
+          const result: AnalysisResult['parties'] = [];
+          if (Array.isArray(v.extracted)) {
+            v.extracted.forEach((p: any) => result.push({ name: p.name || p.nombre || 'Parte', role: p.role || p.rol || '' }));
+          }
+          if (Array.isArray(v.inferredRoles)) {
+            v.inferredRoles.forEach((p: any) => result.push({ name: p.role || 'Parte inferida', role: p.likelyProfile || p.role || '' }));
+          }
+          return result;
+        }
+        return [];
+      };
+
+      // Normalize keyDates: handle both array and object with sub-arrays
+      const normalizeKeyDates = (v: any): AnalysisResult['keyDates'] => {
+        if (Array.isArray(v)) {
+          return v.map((d: any) => ({
+            date: d.date || d.fecha || d.possibleDate1 || '',
+            description: d.description || d.descripcion || d.context || '',
+            importance: d.importance || d.importancia || 'normal',
+          }));
+        }
+        if (v && typeof v === 'object') {
+          const result: AnalysisResult['keyDates'] = [];
+          if (Array.isArray(v.extractedFromFilename)) {
+            v.extractedFromFilename.forEach((d: any) => {
+              result.push({ date: d.possibleDate1 || d.possibleDate2 || '', description: d.context || '', importance: 'baja' });
+            });
+          }
+          return result;
+        }
+        return [];
+      };
+
+      // Normalize legalReferences: handle object with {foundInDocument, recommendedToCheck}
+      const normalizeLegalRefs = (v: any): AnalysisResult['legalReferences'] => {
+        if (Array.isArray(v)) {
+          return v.map((r: any) => ({
+            reference: r.reference || r.referencia || r.name || '',
+            context: r.context || r.contexto || r.subject || '',
+          }));
+        }
+        if (v && typeof v === 'object') {
+          const result: AnalysisResult['legalReferences'] = [];
+          const found = Array.isArray(v.foundInDocument) ? v.foundInDocument : [];
+          const recommended = Array.isArray(v.recommendedToCheck) ? v.recommendedToCheck : [];
+          found.forEach((r: any) => result.push({ reference: r.reference || String(r), context: r.context || 'Encontrado en documento' }));
+          recommended.forEach((r: any) => result.push({ reference: r.reference || String(r), context: r.subject || r.context || 'Referencia recomendada' }));
+          return result;
+        }
+        return [];
+      };
+
+      // Normalize missingElements: handle string[] and object[] 
+      const normalizeMissing = (v: any): string[] => {
+        if (Array.isArray(v)) return v.map((m: any) => (typeof m === 'string' ? m : m.description || m.name || String(m)));
+        return [];
+      };
+
+      // Normalize recommendations: handle string[] and object[]
+      const normalizeRecommendations = (v: any): string[] => {
+        if (Array.isArray(v)) return v.map((r: any) => (typeof r === 'string' ? r : r.recommendation || r.text || String(r)));
+        return [];
+      };
+
       const result: AnalysisResult = {
         fileName: file.name,
         documentType: data.documentType || 'Documento Legal',
         documentCategory: data.documentCategory || 'otro',
-        detectionConfidence: data.detectionConfidence,
+        detectionConfidence: normalizeConfidence(data.detectionConfidence),
         summary: data.summary,
-        clauses: safeArray(data.clauses),
-        risks: safeArray(data.risks),
-        recommendations: safeArray(data.recommendations),
-        keyDates: safeArray(data.keyDates),
-        parties: safeArray(data.parties),
-        legalReferences: safeArray(data.legalReferences),
-        missingElements: safeArray(data.missingElements),
+        clauses: normalizeClauses(data.clauses),
+        risks: safeArray(data.risks).map((r: any) => ({
+          type: r.type || r.tipo || 'Riesgo',
+          description: r.description || r.descripcion || '',
+          severity: r.severity || r.severidad || r.level || 'medio',
+          mitigation: r.mitigation || r.mitigacion || undefined,
+        })),
+        recommendations: normalizeRecommendations(data.recommendations),
+        keyDates: normalizeKeyDates(data.keyDates),
+        parties: normalizeParties(data.parties),
+        legalReferences: normalizeLegalRefs(data.legalReferences),
+        missingElements: normalizeMissing(data.missingElements),
         timestamp: new Date(data.timestamp || Date.now())
       };
 
