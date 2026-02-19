@@ -6,115 +6,96 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Helper function to get required system configuration - throws if not found
-async function getRequiredConfig(supabaseClient: any, configKey: string): Promise<string> {
-  const { data, error } = await supabaseClient
-    .from('system_config')
-    .select('config_value')
-    .eq('config_key', configKey)
-    .maybeSingle();
+// ── Rama Judicial API endpoints ───────────────────────────────────────────
+// Official public API used by consultaprocesos.ramajudicial.gov.co
+const RAMA_BASE = 'https://consultaprocesos.ramajudicial.gov.co:448/api/v2';
 
-  if (error || !data?.config_value) {
-    throw new Error(`Configuración '${configKey}' no encontrada en system_config.`);
-  }
-
-  return data.config_value;
-}
-
-// Scrape judicial process data from Rama Judicial portal using Firecrawl
-async function scrapeProcessByRadicado(radicado: string, firecrawlApiKey: string): Promise<any> {
-  // Build the URL for the Rama Judicial portal with the radicado
-  const targetUrl = `https://consultaprocesos.ramajudicial.gov.co/Procesos/NumeroRadicacion?llave=${encodeURIComponent(radicado)}&Generate=Consultar`;
-
-  console.log(`[judicial-process-lookup] Scraping URL: ${targetUrl}`);
-
-  const scrapeResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
-    method: 'POST',
+async function fetchJson(url: string): Promise<any> {
+  const res = await fetch(url, {
     headers: {
-      'Authorization': `Bearer ${firecrawlApiKey}`,
-      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'User-Agent': 'Mozilla/5.0 (compatible; LegalQuery/1.0)',
     },
-    body: JSON.stringify({
-      url: targetUrl,
-      formats: [
-        'markdown',
-        {
-          type: 'json',
-          prompt: `Extract all judicial process information from this Colombian Rama Judicial page.
-Return a JSON object with:
-- processes: array of process objects, each with:
-  - llaveProceso: the radicado/process number (string)
-  - despacho: the court/despacho name (string)
-  - departamento: department/city (string)
-  - tipoProceso: type of legal process (string)
-  - claseProceso: process class (string)
-  - subclaseProceso: process subclass (string, optional)
-  - ponente: judge/magistrate name (string, optional)
-  - fechaProceso: filing date (string)
-  - fechaUltimaActuacion: date of last action (string)
-  - sujetos: array of parties with nombre (string), tipoSujeto (string, e.g. DEMANDANTE, DEMANDADO)
-  - actuaciones: array of actions with fechaActuacion (string), actuacion (string), anotacion (string)
-- found: boolean indicating if process was found
-- errorMessage: string if there was an error or no results`,
-        }
-      ],
-      waitFor: 5000,
-      onlyMainContent: true,
-    }),
   });
-
-  if (!scrapeResponse.ok) {
-    const errText = await scrapeResponse.text();
-    throw new Error(`Firecrawl API error: ${scrapeResponse.status} - ${errText}`);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Rama Judicial API ${res.status}: ${text.slice(0, 200)}`);
   }
-
-  const scrapeData = await scrapeResponse.json();
-  console.log(`[judicial-process-lookup] Firecrawl scrape success`);
-  return scrapeData;
+  return res.json();
 }
 
-// Parse Firecrawl response into normalized process structure
-function parseScrapedData(scrapeData: any, radicado: string): { processes: any[]; processDetails: any | null } {
-  // Try structured JSON first
-  const jsonData = scrapeData?.data?.json || scrapeData?.json;
-  
-  if (jsonData?.processes && Array.isArray(jsonData.processes) && jsonData.processes.length > 0) {
-    const normalized = jsonData.processes.map((p: any) => ({
-      idProceso: p.llaveProceso || radicado,
-      llaveProceso: p.llaveProceso || radicado,
-      fechaRadicacion: p.fechaProceso,
-      fechaUltimaActuacion: p.fechaUltimaActuacion,
-      despacho: p.despacho,
-      departamento: p.departamento,
-      tipoProceso: p.tipoProceso,
-      claseProceso: p.claseProceso,
-      subclaseProceso: p.subclaseProceso,
-      ponente: p.ponente,
-      ubicacion: p.departamento,
-      sujetos: (p.sujetos || []).map((s: any) => ({
-        nombre: s.nombre,
-        tipoSujeto: s.tipoSujeto,
-        representante: s.representante || '',
-      })),
-      actuaciones: (p.actuaciones || []).map((a: any) => ({
-        fechaActuacion: a.fechaActuacion,
-        actuacion: a.actuacion,
-        anotacion: a.anotacion,
-        fechaInicia: a.fechaInicia,
-        fechaFinaliza: a.fechaFinaliza,
-        fechaRegistro: a.fechaRegistro,
-      })),
-    }));
+// Search by radicado (process number)
+async function searchByRadicado(radicado: string) {
+  const clean = radicado.replace(/\s/g, '');
+  const url = `${RAMA_BASE}/Proceso/Consulta/NumeroRadicacion?numero=${encodeURIComponent(clean)}&SoloActivos=false&pagina=1`;
+  console.log(`[rama-api] GET ${url}`);
+  return fetchJson(url);
+}
 
-    return {
-      processes: normalized,
-      processDetails: normalized.length === 1 ? normalized[0] : null,
-    };
+// Search by identification document (cedula/NIT)
+async function searchByDocument(documentNumber: string, documentType: string = 'CC') {
+  const clean = documentNumber.replace(/\s/g, '');
+  const url = `${RAMA_BASE}/Proceso/Consulta/NombreRazonSocial?nombre=${encodeURIComponent(clean)}&tipoPersona=jur%C3%ADdica&SoloActivos=false&pagina=1`;
+  // Try cedula-based search  
+  const cedulaUrl = `${RAMA_BASE}/Proceso/Consulta/NumeroIdentificacion?tipoIdentificacion=${documentType}&identificacion=${encodeURIComponent(clean)}&SoloActivos=false&pagina=1`;
+  console.log(`[rama-api] GET ${cedulaUrl}`);
+  return fetchJson(cedulaUrl);
+}
+
+// Get process actuaciones (proceedings detail)
+async function getProcessActuaciones(idProceso: string) {
+  const url = `${RAMA_BASE}/Proceso/Actuaciones/${encodeURIComponent(idProceso)}`;
+  console.log(`[rama-api] GET ${url}`);
+  try {
+    return await fetchJson(url);
+  } catch (e) {
+    console.warn('[rama-api] No actuaciones:', e.message);
+    return null;
   }
+}
 
-  // Fallback: if JSON extraction failed, return empty (markdown is available for AI analysis)
-  console.warn('[judicial-process-lookup] JSON extraction from Firecrawl returned no processes');
-  return { processes: [], processDetails: null };
+// Get process sujetos (parties)
+async function getProcessSujetos(idProceso: string) {
+  const url = `${RAMA_BASE}/Proceso/Sujetos/${encodeURIComponent(idProceso)}`;
+  console.log(`[rama-api] GET ${url}`);
+  try {
+    return await fetchJson(url);
+  } catch (e) {
+    console.warn('[rama-api] No sujetos:', e.message);
+    return null;
+  }
+}
+
+// Normalize process data from the API response
+function normalizeProcess(p: any) {
+  return {
+    idProceso: p.idProceso || p.llaveProceso,
+    llaveProceso: p.llaveProceso || p.idProceso,
+    fechaRadicacion: p.fechaProceso || p.fechaRadicacion,
+    fechaUltimaActuacion: p.fechaUltimaActuacion,
+    despacho: p.despacho,
+    departamento: p.departamento,
+    tipoProceso: p.tipoProceso,
+    claseProceso: p.claseProceso,
+    subclaseProceso: p.subclaseProceso,
+    ponente: p.ponente,
+    ubicacion: p.ubicacion || p.departamento,
+    esPrivado: p.esPrivado || false,
+    cantFilas: p.cantFilas,
+    sujetos: (p.sujetos || []).map((s: any) => ({
+      nombre: s.nombre,
+      tipoSujeto: s.tipoSujeto,
+      representante: s.representante || '',
+    })),
+    actuaciones: (p.actuaciones || []).map((a: any) => ({
+      fechaActuacion: a.fechaActuacion,
+      actuacion: a.actuacion || a.nombre,
+      anotacion: a.anotacion,
+      fechaInicia: a.fechaInicia,
+      fechaFinaliza: a.fechaFinaliza,
+      fechaRegistro: a.fechaRegistro,
+    })),
+  };
 }
 
 serve(async (req) => {
@@ -145,75 +126,124 @@ serve(async (req) => {
       );
     }
 
-    const FIRECRAWL_API_KEY = Deno.env.get('FIRECRAWL_API_KEY');
-    if (!FIRECRAWL_API_KEY) {
-      return new Response(
-        JSON.stringify({ error: 'Firecrawl API not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     const serviceClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
     const requestData = await req.json();
-    const { queryType, radicado, followUpQuery, conversationHistory } = requestData;
+    const { queryType, radicado, documentNumber, documentType, followUpQuery, conversationHistory } = requestData;
 
-    console.log('[judicial-process-lookup] Query:', { queryType, radicado });
+    console.log('[judicial-process-lookup] Query:', { queryType, radicado, documentNumber, documentType });
 
-    // Only radicado search is supported via Firecrawl scraping
-    if (!radicado && queryType !== 'radicado') {
+    // ── Step 1: Query the official Rama Judicial API ──────────────────────
+    let apiResponse: any = null;
+    let processes: any[] = [];
+    let rawProcesses: any[] = [];
+
+    if (queryType === 'radicado' && radicado) {
+      apiResponse = await searchByRadicado(radicado);
+    } else if (queryType === 'document' && documentNumber) {
+      apiResponse = await searchByDocument(documentNumber, documentType || 'CC');
+    } else if (radicado) {
+      // Fallback: if radicado is provided regardless of queryType
+      apiResponse = await searchByRadicado(radicado);
+    } else {
       return new Response(
-        JSON.stringify({
-          error: 'Solo se admite consulta por número de radicado en este modo',
-          details: 'Ingrese el número de radicación para consultar el proceso'
-        }),
+        JSON.stringify({ error: 'Debe especificar un número de radicado o documento' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const processNumber = radicado;
+    console.log('[judicial-process-lookup] API response keys:', Object.keys(apiResponse || {}));
 
-    // Scrape from Rama Judicial portal
-    const scrapeData = await scrapeProcessByRadicado(processNumber, FIRECRAWL_API_KEY);
-    const { processes, processDetails } = parseScrapedData(scrapeData, processNumber);
+    // ── Step 2: Parse the API response ───────────────────────────────────
+    // The Rama Judicial API returns { procesos: [...], cantidadRegistros: N }
+    if (apiResponse?.procesos && Array.isArray(apiResponse.procesos)) {
+      rawProcesses = apiResponse.procesos;
+    } else if (Array.isArray(apiResponse)) {
+      rawProcesses = apiResponse;
+    } else if (apiResponse?.proceso) {
+      rawProcesses = [apiResponse.proceso];
+    }
 
-    // Generate AI analysis if we have results or markdown
-    let aiAnalysis = null;
+    console.log(`[judicial-process-lookup] Found ${rawProcesses.length} processes`);
+
+    // ── Step 3: For each process, enrich with sujetos and actuaciones ─────
+    // Limit to first 5 to avoid timeouts
+    const enrichmentPromises = rawProcesses.slice(0, 5).map(async (p: any) => {
+      const idProceso = p.idProceso || p.llaveProceso;
+      if (!idProceso) return normalizeProcess(p);
+
+      const [sujetosData, actuacionesData] = await Promise.allSettled([
+        getProcessSujetos(idProceso),
+        getProcessActuaciones(idProceso),
+      ]);
+
+      const enriched = { ...p };
+      
+      if (sujetosData.status === 'fulfilled' && sujetosData.value) {
+        const suj = sujetosData.value;
+        enriched.sujetos = Array.isArray(suj) ? suj : (suj.sujetos || suj.partes || []);
+      }
+      
+      if (actuacionesData.status === 'fulfilled' && actuacionesData.value) {
+        const act = actuacionesData.value;
+        enriched.actuaciones = Array.isArray(act) ? act : (act.actuaciones || act.actuacion || []);
+        if (enriched.actuaciones.length > 0) {
+          enriched.fechaUltimaActuacion = enriched.actuaciones[0].fechaActuacion || enriched.fechaUltimaActuacion;
+        }
+      }
+
+      return normalizeProcess(enriched);
+    });
+
+    processes = await Promise.all(enrichmentPromises);
+
+    // ── Step 4: AI analysis ───────────────────────────────────────────────
+    let aiAnalysis: string | null = null;
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    const markdownContent = scrapeData?.data?.markdown || scrapeData?.markdown || '';
 
     if (OPENAI_API_KEY) {
       try {
-        const [aiModel, systemPrompt] = await Promise.all([
-          getRequiredConfig(serviceClient, 'process_query_ai_model'),
-          getRequiredConfig(serviceClient, 'process_query_ai_prompt')
-        ]);
+        const { data: modelConfig } = await serviceClient
+          .from('system_config')
+          .select('config_value')
+          .eq('config_key', 'process_query_ai_model')
+          .maybeSingle();
+        
+        const { data: promptConfig } = await serviceClient
+          .from('system_config')
+          .select('config_value')
+          .eq('config_key', 'process_query_ai_prompt')
+          .maybeSingle();
+
+        const aiModel = modelConfig?.config_value || 'gpt-4o-mini';
+        const systemPrompt = promptConfig?.config_value || 
+          'Eres un asistente legal especializado en derecho colombiano. Analiza procesos judiciales de la Rama Judicial y proporciona análisis claros y útiles para abogados.';
 
         let userContent: string;
 
-        if (followUpQuery) {
-          userContent = `Datos del proceso:\n${JSON.stringify(processDetails || processes, null, 2)}\n\nPregunta: ${followUpQuery}`;
+        if (followUpQuery && conversationHistory) {
+          userContent = `Contexto del proceso:\n${JSON.stringify(processes[0] || {}, null, 2)}\n\nPregunta: ${followUpQuery}`;
         } else if (processes.length > 0) {
-          userContent = `Analiza este proceso judicial colombiano:\n${JSON.stringify(processDetails || processes[0], null, 2)}`;
-        } else if (markdownContent) {
-          userContent = `Analiza la siguiente información extraída del portal de la Rama Judicial de Colombia para el radicado ${processNumber}:\n\n${markdownContent.substring(0, 4000)}`;
+          const processToAnalyze = processes[0];
+          userContent = `Analiza este proceso judicial colombiano y proporciona un resumen ejecutivo para el abogado:\n\n${JSON.stringify(processToAnalyze, null, 2)}`;
         } else {
-          userContent = `No se encontró información para el radicado ${processNumber}`;
+          userContent = `No se encontraron procesos judiciales con los criterios de búsqueda proporcionados (${queryType}: ${radicado || documentNumber}).`;
         }
 
         const messages: any[] = [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: userContent }
         ];
 
         if (conversationHistory && Array.isArray(conversationHistory)) {
           messages.push(...conversationHistory);
         }
 
-        const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        messages.push({ role: 'user', content: userContent });
+
+        const aiResp = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${OPENAI_API_KEY}`,
@@ -226,45 +256,45 @@ serve(async (req) => {
           }),
         });
 
-        const aiData = await aiResponse.json();
-        aiAnalysis = aiData.choices?.[0]?.message?.content;
-      } catch (aiError) {
-        console.error('[judicial-process-lookup] AI analysis error:', aiError);
-        aiAnalysis = null;
+        const aiData = await aiResp.json();
+        aiAnalysis = aiData.choices?.[0]?.message?.content || null;
+      } catch (aiErr) {
+        console.error('[judicial-process-lookup] AI error:', aiErr);
       }
     }
 
-    // Save to legal_tools_results
+    // ── Step 5: Save result ───────────────────────────────────────────────
     try {
       await serviceClient.from('legal_tools_results').insert({
         lawyer_id: user.id,
         tool_type: 'judicial_process',
-        input_data: { queryType: 'radicado', radicado: processNumber, followUpQuery },
+        input_data: { queryType, radicado, documentNumber, documentType, followUpQuery },
         output_data: {
           processes,
-          processDetails,
+          processDetails: processes[0] || null,
           aiAnalysis,
           processCount: processes.length,
-          scrapedMarkdown: markdownContent.substring(0, 2000)
         },
         metadata: {
-          source: 'firecrawl',
+          source: 'rama_judicial_api_v2',
           portal: 'consultaprocesos.ramajudicial.gov.co',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          rawCount: rawProcesses.length,
         }
       });
-    } catch (saveError) {
-      console.error('[judicial-process-lookup] Error saving result:', saveError);
+    } catch (saveErr) {
+      console.error('[judicial-process-lookup] Save error:', saveErr);
     }
 
     return new Response(
       JSON.stringify({
         success: true,
         processes,
-        processDetails,
+        processDetails: processes[0] || null,
         processCount: processes.length,
         aiAnalysis,
-        queryType: 'radicado',
+        queryType,
+        source: 'rama_judicial_api_v2',
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -274,8 +304,10 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        details: 'Error processing judicial process lookup'
+        error: error instanceof Error ? error.message : 'Error desconocido',
+        details: 'Error al consultar el sistema de la Rama Judicial. Verifique el número ingresado e intente nuevamente.',
+        processes: [],
+        processCount: 0,
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
