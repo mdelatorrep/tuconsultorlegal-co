@@ -66,8 +66,8 @@ const AGENT_SCHEMA = {
   required: ["judicial_process_details"],
 };
 
-// ── Firecrawl v2 Agent extraction ─────────────────────────────────────────
-async function extractWithFirecrawlAgent(radicado: string): Promise<{ details: any; raw: any } | null> {
+// ── Submit Firecrawl Agent job (no polling) ──────────────────────────────
+async function submitFirecrawlAgentJob(radicado: string): Promise<string | null> {
   const FIRECRAWL_KEY = Deno.env.get('FIRECRAWL_API_KEY');
   if (!FIRECRAWL_KEY) {
     console.warn('[firecrawl-agent] No API key configured');
@@ -79,7 +79,6 @@ async function extractWithFirecrawlAgent(radicado: string): Promise<{ details: a
 
     const agentPrompt = `Extract judicial process details for the radication number '${radicado}' using the 'Todos los Procesos' option on the Rama Judicial portal (https://siugj.ramajudicial.gov.co/principalPortal/consultarProceso.php). For every extracted field, including nested items, you must provide the source URL in a corresponding field named with the suffix '_citation'. Ensure you capture all proceedings, including the date, description, and any available links to documents.`;
 
-    // Step 1: Submit agent job
     const submitResponse = await fetch('https://api.firecrawl.dev/v2/agent', {
       method: 'POST',
       headers: {
@@ -101,74 +100,14 @@ async function extractWithFirecrawlAgent(radicado: string): Promise<{ details: a
 
     const submitResult = await submitResponse.json();
     const jobId = submitResult.id;
-    
+
     if (!jobId) {
       console.error('[firecrawl-agent] No job ID returned:', JSON.stringify(submitResult).slice(0, 200));
-      // Check if data was returned directly (sync response)
-      const directDetails = submitResult?.data?.judicial_process_details || submitResult?.judicial_process_details;
-      if (directDetails) {
-        return { details: directDetails, raw: submitResult };
-      }
       return null;
     }
 
-    console.log(`[firecrawl-agent] Job submitted: ${jobId}, polling for results...`);
-
-    // Step 2: Poll for results (max ~5 min with 15-30s intervals)
-    const maxAttempts = 12;
-    let attempt = 0;
-
-    while (attempt < maxAttempts) {
-      attempt++;
-      const waitMs = attempt <= 2 ? 15000 : attempt <= 6 ? 20000 : 30000;
-      await new Promise(resolve => setTimeout(resolve, waitMs));
-
-      console.log(`[firecrawl-agent] Polling attempt ${attempt}/${maxAttempts}...`);
-
-      const pollResponse = await fetch(`https://api.firecrawl.dev/v2/agent/${jobId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${FIRECRAWL_KEY}`,
-        },
-      });
-
-      if (!pollResponse.ok) {
-        const errText = await pollResponse.text();
-        console.error(`[firecrawl-agent] Poll error: ${pollResponse.status} ${errText.slice(0, 200)}`);
-        if (pollResponse.status === 404) {
-          console.error('[firecrawl-agent] Job not found, aborting');
-          return null;
-        }
-        continue;
-      }
-
-      const pollResult = await pollResponse.json();
-      const status = pollResult.status || pollResult.state;
-      
-      console.log(`[firecrawl-agent] Job status: ${status}`);
-
-      if (status === 'completed' || status === 'done') {
-        const details = pollResult?.data?.judicial_process_details || pollResult?.judicial_process_details || pollResult?.result?.judicial_process_details;
-        if (details) {
-          console.log('[firecrawl-agent] ✅ Data extracted successfully');
-          return { details, raw: pollResult };
-        }
-        console.warn('[firecrawl-agent] Job completed but no judicial_process_details found');
-        console.log('[firecrawl-agent] Response keys:', JSON.stringify(Object.keys(pollResult)));
-        console.log('[firecrawl-agent] Full response:', JSON.stringify(pollResult).slice(0, 500));
-        return null;
-      }
-
-      if (status === 'failed' || status === 'error') {
-        console.error('[firecrawl-agent] Job failed:', JSON.stringify(pollResult).slice(0, 300));
-        return null;
-      }
-
-      // Still processing, continue polling
-    }
-
-    console.warn(`[firecrawl-agent] Timeout after ${maxAttempts} polling attempts`);
-    return null;
+    console.log(`[firecrawl-agent] Job submitted successfully: ${jobId}`);
+    return jobId;
   } catch (err: any) {
     console.error('[firecrawl-agent] Exception:', err.message);
     return null;
@@ -347,20 +286,64 @@ serve(async (req) => {
     const systemPromptFromDB = (promptConfigResult.status === 'fulfilled' ? promptConfigResult.value.data?.config_value : null) || undefined;
     console.log(`[judicial-process-lookup] Using model: ${aiModel}, prompt from DB: ${!!systemPromptFromDB}`);
 
-    // ── Step 1: Firecrawl Agent v2 extraction ───────────────────────────
+    // ── Step 1: Check for existing completed job ──────────────────────
     let processData: any = null;
     let processes: any[] = [];
+    let firecrawlJobId: string | null = null;
+    let jobStatus = 'none';
 
     if (!followUpQuery) {
-      const agentResult = await extractWithFirecrawlAgent(cleanTerm);
-      if (agentResult) {
-        processData = mapAgentDataToProcess(agentResult.details, cleanTerm);
+      // Check if there's a recent completed job for this radicado
+      const { data: existingJob } = await serviceClient
+        .from('firecrawl_agent_jobs')
+        .select('*')
+        .eq('radicado', cleanTerm)
+        .eq('status', 'completed')
+        .order('completed_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (existingJob?.extracted_data) {
+        console.log('[judicial-process-lookup] Using cached extraction result');
+        processData = mapAgentDataToProcess(existingJob.extracted_data, cleanTerm);
         processes = [processData];
-        console.log(`[judicial-process-lookup] Agent extracted: court=${processData.despacho}, proceedings=${processData.actuaciones?.length}`);
+        jobStatus = 'completed';
+      } else {
+        // Check if there's a pending/processing job
+        const { data: pendingJob } = await serviceClient
+          .from('firecrawl_agent_jobs')
+          .select('id, firecrawl_job_id, status')
+          .eq('radicado', cleanTerm)
+          .in('status', ['pending', 'processing'])
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (pendingJob) {
+          console.log(`[judicial-process-lookup] Existing job in progress: ${pendingJob.firecrawl_job_id}`);
+          firecrawlJobId = pendingJob.firecrawl_job_id;
+          jobStatus = 'processing';
+        } else {
+          // Submit new Firecrawl Agent job
+          const newJobId = await submitFirecrawlAgentJob(cleanTerm);
+          if (newJobId) {
+            // Save job to DB for async processing
+            await serviceClient.from('firecrawl_agent_jobs').insert({
+              lawyer_id: user.id,
+              radicado: cleanTerm,
+              firecrawl_job_id: newJobId,
+              status: 'pending',
+              query_type: queryType || 'radicado',
+            });
+            firecrawlJobId = newJobId;
+            jobStatus = 'submitted';
+            console.log(`[judicial-process-lookup] Job saved to DB: ${newJobId}`);
+          }
+        }
       }
     }
 
-    // ── Step 2: AI Analysis ──────────────────────────────────────────────
+    // ── Step 2: AI Analysis (immediate, always runs) ─────────────────
     const aiAnalysis = await analyzeWithOpenAI(
       cleanTerm,
       processData,
@@ -370,7 +353,7 @@ serve(async (req) => {
       aiModel
     );
 
-    // ── Step 3: Save result ───────────────────────────────────────────────
+    // ── Step 3: Save result ───────────────────────────────────────────
     try {
       await serviceClient.from('legal_tools_results').insert({
         lawyer_id: user.id,
@@ -384,6 +367,8 @@ serve(async (req) => {
         },
         metadata: {
           source: 'firecrawl_agent_v2',
+          firecrawlJobId,
+          jobStatus,
           strategies_used: [
             processData ? 'firecrawl_agent' : null,
             aiAnalysis ? 'openai' : null,
@@ -403,6 +388,8 @@ serve(async (req) => {
         processDetails: processes[0] || null,
         processCount: processes.length,
         aiAnalysis,
+        firecrawlJobStatus: jobStatus,
+        firecrawlJobId,
         queryType: 'radicado',
         source: 'firecrawl_agent_v2',
         portalUrl: 'https://siugj.ramajudicial.gov.co/principalPortal/consultarProceso.php',

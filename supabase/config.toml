@@ -173,3 +173,6 @@ verify_jwt = false
 
 [functions.crm-client-health]
 verify_jwt = false
+
+[functions.process-firecrawl-jobs]
+verify_jwt = false

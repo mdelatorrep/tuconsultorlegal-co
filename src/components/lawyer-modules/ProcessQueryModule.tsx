@@ -219,13 +219,15 @@ export default function ProcessQueryModule({
         throw new Error(response.error.message || 'Error en la consulta');
       }
 
-      const { processes: resultProcesses, aiAnalysis: analysis, processCount } = response.data;
+      const { processes: resultProcesses, aiAnalysis: analysis, processCount, firecrawlJobStatus } = response.data;
 
       setProcesses(resultProcesses || []);
       setAiAnalysis(analysis || '');
 
       if (processCount > 0) {
         toast.success(`Se encontraron ${processCount} proceso(s)`);
+      } else if (firecrawlJobStatus === 'submitted' || firecrawlJobStatus === 'processing') {
+        toast.success('Extracción en proceso. Los datos del portal se actualizarán automáticamente en unos minutos.');
       } else if (analysis) {
         toast.success('Análisis IA generado. Verifique en tiempo real en el portal oficial.');
       } else {
