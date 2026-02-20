@@ -371,9 +371,10 @@ export const useLawyerAuth = () => {
 
   const updateEmail = async (newEmail: string): Promise<boolean> => {
     try {
-      const { error } = await supabase.auth.updateUser({
-        email: newEmail
-      });
+      const { error } = await supabase.auth.updateUser(
+        { email: newEmail },
+        { emailRedirectTo: `${window.location.origin}/auth-abogados` }
+      );
 
       if (error) {
         console.error('Update email error:', error);

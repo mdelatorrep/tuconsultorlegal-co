@@ -73,7 +73,7 @@ export const UserInvitationDialog: React.FC<UserInvitationDialogProps> = ({ trig
       // Send password reset email so user can set their own password
       if (data.user) {
         await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: redirectUrl,
+          redirectTo: `${window.location.origin}/reset-password`,
         });
       }
 
