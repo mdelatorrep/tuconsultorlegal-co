@@ -33,7 +33,9 @@ import {
   Globe,
   Copy,
   CheckCheck,
-  Zap
+  Zap,
+  Bell,
+  Star
 } from "lucide-react";
 
 interface ProcessQueryModuleProps {
@@ -112,6 +114,7 @@ export default function ProcessQueryModule({
   const [queryHistory, setQueryHistory] = useState<QueryHistory[]>([]);
   const [lastSearchedRadicado, setLastSearchedRadicado] = useState<string>('');
   const [copied, setCopied] = useState(false);
+  const [trackedProcesses, setTrackedProcesses] = useState<Set<string>>(new Set());
   
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [followUpQuery, setFollowUpQuery] = useState('');
@@ -313,6 +316,22 @@ export default function ProcessQueryModule({
     } finally {
       setIsSendingMessage(false);
     }
+  };
+
+  const handleTrackProcess = (process: JudicialProcess) => {
+    const key = process.llaveProceso || process.idProceso || '';
+    if (!key) return;
+    setTrackedProcesses(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+        toast.info('Proceso removido del monitoreo');
+      } else {
+        next.add(key);
+        toast.success('Proceso agregado al monitoreo. Recibirá alertas de nuevas actuaciones.');
+      }
+      return next;
+    });
   };
 
   const handleViewDetails = async (process: JudicialProcess) => {
@@ -560,15 +579,21 @@ export default function ProcessQueryModule({
         {/* Results: procesos estructurados */}
         {processes.length > 0 && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">
-                Resultados ({processes.length} proceso{processes.length !== 1 ? 's' : ''})
-              </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">
+              Resultados ({processes.length} proceso{processes.length !== 1 ? 's' : ''})
+            </h2>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="gap-1 text-xs">
+                <Bell className="h-3 w-3" />
+                Toca <Star className="h-3 w-3 inline" /> para monitorear
+              </Badge>
               <Button variant="ghost" size="sm" onClick={handleSearch}>
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Actualizar
               </Button>
             </div>
+          </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {processes.map((process, index) => (
@@ -576,6 +601,8 @@ export default function ProcessQueryModule({
                   key={process.idProceso || process.llaveProceso || index}
                   process={process}
                   onViewDetails={() => handleViewDetails(process)}
+                  onTrack={() => handleTrackProcess(process)}
+                  isTracked={trackedProcesses.has(process.llaveProceso || process.idProceso || '')}
                 />
               ))}
             </div>
