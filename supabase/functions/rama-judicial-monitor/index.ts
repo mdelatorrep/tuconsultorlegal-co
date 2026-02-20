@@ -167,6 +167,87 @@ async function sendProcessNotifications(
   }
 }
 
+// Detect audiencias/hearings in actuations and create calendar events
+async function syncAudienciasToCalendar(
+  supabase: any,
+  process: any,
+  newActs: any[]
+) {
+  try {
+    // Check if audiencias alert is enabled
+    const alertAudiencias = process.alerta_audiencias !== false;
+    const alertsEnabled = process.notificaciones_activas !== false;
+    if (!alertsEnabled || !alertAudiencias) return;
+
+    // Keywords that indicate a scheduled hearing/audiencia
+    const audienciaKeywords = [
+      'audiencia', 'diligencia', 'inspección judicial',
+      'declaración de parte', 'interrogatorio', 'conciliación',
+      'vista pública', 'alegatos', 'lectura de fallo',
+    ];
+
+    const audienciaActs = newActs.filter((act: any) => {
+      const desc = (act.actuacion || act.descripcion || '').toLowerCase();
+      return audienciaKeywords.some(kw => desc.includes(kw));
+    });
+
+    if (audienciaActs.length === 0) return;
+
+    console.log(`[RamaJudicial] Found ${audienciaActs.length} audiencia(s) for process ${process.radicado}`);
+
+    for (const act of audienciaActs) {
+      // Parse the date - try multiple formats
+      let eventDate: Date | null = null;
+      const rawDate = act.fechaActuacion || act.date;
+      if (rawDate) {
+        eventDate = new Date(rawDate);
+        if (isNaN(eventDate.getTime())) eventDate = null;
+      }
+      if (!eventDate) continue;
+
+      // Check if this event already exists to avoid duplicates
+      const eventTitle = `⚖️ ${act.actuacion || 'Audiencia'} - Rad. ${process.radicado.slice(-10)}`;
+      const { data: existing } = await supabase
+        .from('legal_calendar_events')
+        .select('id')
+        .eq('lawyer_id', process.lawyer_id)
+        .eq('monitored_process_id', process.id)
+        .eq('start_date', eventDate.toISOString().split('T')[0])
+        .ilike('title', `%${process.radicado.slice(-10)}%`)
+        .limit(1);
+
+      if (existing && existing.length > 0) {
+        console.log(`[RamaJudicial] Calendar event already exists for audiencia on ${rawDate}`);
+        continue;
+      }
+
+      // Create calendar event
+      const { error: insertError } = await supabase
+        .from('legal_calendar_events')
+        .insert({
+          lawyer_id: process.lawyer_id,
+          monitored_process_id: process.id,
+          title: eventTitle,
+          description: `Actuación detectada automáticamente del proceso ${process.radicado}.\n\nDespacho: ${process.despacho || 'No especificado'}\nDetalle: ${act.actuacion || ''}\n${act.anotacion ? 'Nota: ' + act.anotacion : ''}`,
+          event_type: 'audiencia',
+          start_date: eventDate.toISOString(),
+          all_day: true,
+          is_auto_generated: true,
+          alert_before_minutes: [1440, 60], // 1 day and 1 hour before
+          color: '#dc2626',
+        });
+
+      if (insertError) {
+        console.error(`[RamaJudicial] Failed to create calendar event:`, insertError);
+      } else {
+        console.log(`[RamaJudicial] ✅ Calendar event created for audiencia on ${rawDate}`);
+      }
+    }
+  } catch (err) {
+    console.error(`[RamaJudicial] Calendar sync error:`, err);
+  }
+}
+
 async function fetchProcessByRadicado(radicado: string, firecrawlApiKey: string): Promise<{
   ok: boolean;
   data?: {
@@ -325,6 +406,9 @@ serve(async (req) => {
           process, newActs.length,
           newActs[0]?.actuacion || ''
         );
+
+        // Sync audiencias to lawyer's calendar
+        await syncAudienciasToCalendar(supabase, process, newActs);
       }
 
       await supabase.from('monitored_processes').update({
@@ -395,6 +479,9 @@ serve(async (req) => {
               process, newActs.length,
               newActs[0]?.actuacion || ''
             );
+
+            // Sync audiencias to lawyer's calendar
+            await syncAudienciasToCalendar(supabase, process, newActs);
           }
 
           await supabase.from('monitored_processes').update({
@@ -550,6 +637,9 @@ serve(async (req) => {
               process, newActs.length,
               newActs[0]?.actuacion || ''
             );
+
+            // Sync audiencias to lawyer's calendar
+            await syncAudienciasToCalendar(supabase, process, newActs);
 
             newActuations.push({
               processId: process.id, radicado: process.radicado,
