@@ -4,11 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ProcessCard } from "./process/ProcessCard";
@@ -90,10 +88,6 @@ interface QueryHistory {
 }
 
 // Solo búsqueda por radicado (Firecrawl scraping del portal oficial)
-const DOCUMENT_TYPES = [
-  { value: 'CC', label: 'Cédula de Ciudadanía' },
-  { value: 'NIT', label: 'NIT' },
-];
 
 export default function ProcessQueryModule({
   user,
@@ -101,10 +95,7 @@ export default function ProcessQueryModule({
   onViewChange,
   onLogout,
 }: ProcessQueryModuleProps) {
-  const [queryType, setQueryType] = useState<'radicado' | 'document'>('radicado');
   const [radicado, setRadicado] = useState('');
-  const [documentType, setDocumentType] = useState('CC');
-  const [documentNumber, setDocumentNumber] = useState('');
   
   const [isSearching, setIsSearching] = useState(false);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
@@ -165,24 +156,13 @@ export default function ProcessQueryModule({
   };
 
   const handleSearch = async () => {
-    let queryValue = '';
-    
-    if (queryType === 'radicado') {
-      if (!radicado.trim()) {
-        toast.error('Ingrese el número de radicado');
-        return;
-      }
-      if (!validateRadicado(radicado)) {
-        toast.error('El número de radicado debe tener al menos 11 caracteres');
-        return;
-      }
-      queryValue = radicado;
-    } else if (queryType === 'document') {
-      if (!documentNumber.trim()) {
-        toast.error('Ingrese el número de documento');
-        return;
-      }
-      queryValue = documentNumber;
+    if (!radicado.trim()) {
+      toast.error('Ingrese el número de radicado');
+      return;
+    }
+    if (!validateRadicado(radicado)) {
+      toast.error('El número de radicado debe tener al menos 11 caracteres');
+      return;
     }
 
     // Check and consume credits before proceeding
@@ -191,7 +171,7 @@ export default function ProcessQueryModule({
       return;
     }
 
-    const creditResult = await consumeCredits('process_query', { queryType, queryValue });
+    const creditResult = await consumeCredits('process_query', { queryType: 'radicado', queryValue: radicado });
     if (!creditResult.success) {
       return;
     }
@@ -201,7 +181,7 @@ export default function ProcessQueryModule({
     setSelectedProcess(null);
     setAiAnalysis('');
     setChatMessages([]);
-    setLastSearchedRadicado(queryValue);
+    setLastSearchedRadicado(radicado);
 
     try {
       const { data: sessionData } = await supabase.auth.getSession();
@@ -212,10 +192,8 @@ export default function ProcessQueryModule({
 
       const response = await supabase.functions.invoke('judicial-process-lookup', {
         body: {
-          queryType,
-          documentNumber: queryType === 'document' ? documentNumber : undefined,
-          documentType: queryType === 'document' ? documentType : undefined,
-          radicado: queryType === 'radicado' ? radicado : undefined,
+          queryType: 'radicado',
+          radicado: radicado,
         },
       });
 
@@ -535,62 +513,20 @@ export default function ProcessQueryModule({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs value={queryType} onValueChange={(v) => setQueryType(v as 'radicado' | 'document')}>
-              <TabsList className="grid grid-cols-2 mb-6">
-                <TabsTrigger value="radicado" className="flex items-center gap-2">
-                  <Hash className="h-4 w-4" />
-                  Por Radicado
-                </TabsTrigger>
-                <TabsTrigger value="document" className="flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  Por Documento
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="radicado" className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="radicado">Número de Radicación (23 dígitos)</Label>
-                  <Input
-                    id="radicado"
-                    placeholder="Ej: 11001310304220230012300"
-                    value={radicado}
-                    onChange={(e) => setRadicado(e.target.value.replace(/\s/g, ''))}
-                    maxLength={30}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Formato: Código del despacho (11 dígitos) + Año (4) + Número (5) + Otros (3)
-                  </p>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="document" className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="documentType">Tipo de Documento</Label>
-                    <Select value={documentType} onValueChange={setDocumentType}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccione tipo" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {DOCUMENT_TYPES.map((type) => (
-                          <SelectItem key={type.value} value={type.value}>
-                            {type.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="documentNumber">Número de Documento</Label>
-                    <Input
-                      id="documentNumber"
-                      placeholder="Ingrese el número"
-                      value={documentNumber}
-                      onChange={(e) => setDocumentNumber(e.target.value)}
-                    />
-                  </div>
-                </div>
-              </TabsContent>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="radicado">Número de Radicación (23 dígitos)</Label>
+                <Input
+                  id="radicado"
+                  placeholder="Ej: 11001310304220230012300"
+                  value={radicado}
+                  onChange={(e) => setRadicado(e.target.value.replace(/\s/g, ''))}
+                  maxLength={30}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Formato: Código del despacho (11 dígitos) + Año (4) + Número (5) + Otros (3)
+                </p>
+              </div>
 
               <Button
                 onClick={handleSearch}
@@ -614,7 +550,7 @@ export default function ProcessQueryModule({
                   </>
                 )}
               </Button>
-            </Tabs>
+            </div>
           </CardContent>
         </Card>
 
@@ -764,14 +700,8 @@ export default function ProcessQueryModule({
                         if (error) throw error;
                         
                         const outputData = data.output_data as any;
-                        if (item.queryType === 'radicado') {
-                          setQueryType('radicado');
-                          setRadicado(item.queryValue);
-                          setLastSearchedRadicado(item.queryValue);
-                        } else if (item.queryType === 'document') {
-                          setQueryType('document');
-                          setDocumentNumber(item.queryValue);
-                        }
+                        setRadicado(item.queryValue);
+                        setLastSearchedRadicado(item.queryValue);
                         
                         const savedProcesses = outputData?.processDetails 
                           ? [outputData.processDetails] 
@@ -787,9 +717,7 @@ export default function ProcessQueryModule({
                     }}
                   >
                     <div className="flex items-center gap-3">
-                      <Badge variant="outline">
-                        {item.queryType === 'radicado' ? 'Radicado' : 'Documento'}
-                      </Badge>
+                      <Badge variant="outline">Radicado</Badge>
                       <span className="font-medium text-sm truncate max-w-[200px]">
                         {item.queryValue}
                       </span>
