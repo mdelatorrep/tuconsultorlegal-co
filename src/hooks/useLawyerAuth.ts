@@ -351,7 +351,7 @@ export const useLawyerAuth = () => {
 
   const resetPassword = async (email: string): Promise<boolean> => {
     try {
-      const redirectUrl = `${window.location.origin}/#abogados`;
+      const redirectUrl = `${window.location.origin}/reset-password`;
       
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: redirectUrl
