@@ -2335,6 +2335,60 @@ export type Database = {
           },
         ]
       }
+      firecrawl_agent_jobs: {
+        Row: {
+          ai_analysis: string | null
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          extracted_data: Json | null
+          firecrawl_job_id: string
+          id: string
+          last_polled_at: string | null
+          lawyer_id: string
+          max_poll_attempts: number | null
+          poll_attempts: number | null
+          query_type: string | null
+          radicado: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          ai_analysis?: string | null
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          extracted_data?: Json | null
+          firecrawl_job_id: string
+          id?: string
+          last_polled_at?: string | null
+          lawyer_id: string
+          max_poll_attempts?: number | null
+          poll_attempts?: number | null
+          query_type?: string | null
+          radicado: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          ai_analysis?: string | null
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          extracted_data?: Json | null
+          firecrawl_job_id?: string
+          id?: string
+          last_polled_at?: string | null
+          lawyer_id?: string
+          max_poll_attempts?: number | null
+          poll_attempts?: number | null
+          query_type?: string | null
+          radicado?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       gamification_progress: {
         Row: {
           claimed_at: string | null
