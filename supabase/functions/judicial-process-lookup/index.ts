@@ -114,13 +114,13 @@ async function extractWithFirecrawlAgent(radicado: string): Promise<{ details: a
 
     console.log(`[firecrawl-agent] Job submitted: ${jobId}, polling for results...`);
 
-    // Step 2: Poll for results (max ~90 seconds with increasing intervals)
-    const maxAttempts = 18;
+    // Step 2: Poll for results (max ~5 min with 15-30s intervals)
+    const maxAttempts = 12;
     let attempt = 0;
 
     while (attempt < maxAttempts) {
       attempt++;
-      const waitMs = attempt <= 3 ? 5000 : attempt <= 8 ? 8000 : 10000;
+      const waitMs = attempt <= 2 ? 15000 : attempt <= 6 ? 20000 : 30000;
       await new Promise(resolve => setTimeout(resolve, waitMs));
 
       console.log(`[firecrawl-agent] Polling attempt ${attempt}/${maxAttempts}...`);
