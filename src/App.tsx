@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import ResetPassword from "./pages/ResetPassword";
 import AdminPage from "./components/AdminPage";
 import LawyerAuthPage from "./components/LawyerAuthPage";
 import LawyerPublicProfilePage from "./components/LawyerPublicProfilePage";
@@ -69,6 +70,7 @@ const AppContent = () => {
           <Route path="/subscription-success" element={<SubscriptionSuccessPage />} />
           <Route path="/subscription-error" element={<SubscriptionErrorPage />} />
           <Route path="/portal/:token" element={<ClientPortalAccessPage />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
