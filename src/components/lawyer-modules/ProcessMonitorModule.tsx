@@ -124,8 +124,12 @@ export function ProcessMonitorModule({ lawyerId }: ProcessMonitorModuleProps) {
         .from('monitored_processes')
         .update({
           notificaciones_activas: alertConfig.notificaciones_activas,
-          ...(alertConfig as any),
-        })
+          alerta_email: alertConfig.alerta_email,
+          alerta_app: alertConfig.alerta_app,
+          alerta_nuevas_actuaciones: alertConfig.alerta_nuevas_actuaciones,
+          alerta_cambio_estado: alertConfig.alerta_cambio_estado,
+          alerta_audiencias: alertConfig.alerta_audiencias,
+        } as any)
         .eq('id', selectedProcess.id);
 
       if (error) throw error;

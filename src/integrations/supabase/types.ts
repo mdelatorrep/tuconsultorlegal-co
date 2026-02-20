@@ -3495,6 +3495,11 @@ export type Database = {
       }
       monitored_processes: {
         Row: {
+          alerta_app: boolean | null
+          alerta_audiencias: boolean | null
+          alerta_cambio_estado: boolean | null
+          alerta_email: boolean | null
+          alerta_nuevas_actuaciones: boolean | null
           case_id: string | null
           client_id: string | null
           created_at: string | null
@@ -3512,6 +3517,11 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          alerta_app?: boolean | null
+          alerta_audiencias?: boolean | null
+          alerta_cambio_estado?: boolean | null
+          alerta_email?: boolean | null
+          alerta_nuevas_actuaciones?: boolean | null
           case_id?: string | null
           client_id?: string | null
           created_at?: string | null
@@ -3529,6 +3539,11 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          alerta_app?: boolean | null
+          alerta_audiencias?: boolean | null
+          alerta_cambio_estado?: boolean | null
+          alerta_email?: boolean | null
+          alerta_nuevas_actuaciones?: boolean | null
           case_id?: string | null
           client_id?: string | null
           created_at?: string | null
