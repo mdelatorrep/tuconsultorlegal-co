@@ -23,7 +23,8 @@ import {
   Mail,
   Smartphone,
   Gavel,
-  Save
+  Save,
+  ListPlus
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -35,6 +36,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useCredits } from '@/hooks/useCredits';
 import { PushNotificationToggle } from '@/components/notifications/PushNotificationToggle';
 import { ToolCostIndicator } from '@/components/credits/ToolCostIndicator';
+import { BulkProcessAddDialog } from './BulkProcessAddDialog';
 
 interface MonitoredProcess {
   id: string;
@@ -80,6 +82,7 @@ export function ProcessMonitorModule({ lawyerId }: ProcessMonitorModuleProps) {
   const [loadingActuations, setLoadingActuations] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showBulkDialog, setShowBulkDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [savingAlerts, setSavingAlerts] = useState(false);
   const [alertConfig, setAlertConfig] = useState<AlertConfig>({
@@ -357,6 +360,14 @@ export function ProcessMonitorModule({ lawyerId }: ProcessMonitorModuleProps) {
                 </span>
               </>
             )}
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setShowBulkDialog(true)}
+          >
+            <ListPlus className="h-4 w-4 mr-2" />
+            Agregar Varios
           </Button>
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
             <DialogTrigger asChild>
@@ -724,6 +735,12 @@ export function ProcessMonitorModule({ lawyerId }: ProcessMonitorModuleProps) {
           )}
         </Card>
       </div>
+      <BulkProcessAddDialog
+        open={showBulkDialog}
+        onOpenChange={setShowBulkDialog}
+        lawyerId={lawyerId}
+        onComplete={loadProcesses}
+      />
     </div>
   );
 }
