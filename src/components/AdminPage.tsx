@@ -770,7 +770,7 @@ function AdminPage() {
               </div>
               <div style="background: #333; padding: 20px; text-align: center;">
                 <p style="color: #999; margin: 0; font-size: 12px;">
-                  © ${new Date().getFullYear()} Tu Consultor Legal | www.tuconsultorlegal.co
+                  © ${new Date().getFullYear()} Praxis Hub | www.praxis-hub.co
                 </p>
               </div>
             </div>

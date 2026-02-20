@@ -42,7 +42,7 @@ export const LawyerTermsAndConditions: React.FC<LawyerTermsAndConditionsProps> =
                 <div>
                   <h4 className="font-semibold text-orange-800 mb-2">Aviso Importante</h4>
                   <p className="text-orange-700">
-                    Estos términos complementan los términos generales de uso de tuconsultorlegal.co y se aplican
+                    Estos términos complementan los términos generales de uso de Praxis Hub y se aplican
                     específicamente a los servicios de suscripción para abogados.
                   </p>
                 </div>
@@ -55,7 +55,7 @@ export const LawyerTermsAndConditions: React.FC<LawyerTermsAndConditionsProps> =
                 <div>
                   <h4 className="font-semibold mb-2">1.1 Naturaleza del Servicio</h4>
                   <p className="text-muted-foreground">
-                    Los servicios de suscripción para abogados en tuconsultorlegal.co proporcionan acceso a herramientas
+                    Los servicios de suscripción para abogados en Praxis Hub proporcionan acceso a herramientas
                     tecnológicas de inteligencia artificial y automatización para la práctica legal, incluyendo:
                   </p>
                   <ul className="list-disc pl-6 mt-2 space-y-1 text-muted-foreground">
@@ -183,7 +183,7 @@ export const LawyerTermsAndConditions: React.FC<LawyerTermsAndConditionsProps> =
                 </div>
 
                 <div>
-                  <h4 className="font-semibold mb-2">5.2 Limitaciones de Responsabilidad de TuConsultorLegal.co</h4>
+                  <h4 className="font-semibold mb-2">5.2 Limitaciones de Responsabilidad de Praxis Hub</h4>
                   <p className="text-muted-foreground">
                     Nuestra responsabilidad se limita a proporcionar las herramientas tecnológicas según los términos de
                     la suscripción. No asumimos responsabilidad por decisiones profesionales tomadas por el suscriptor.
@@ -215,8 +215,8 @@ export const LawyerTermsAndConditions: React.FC<LawyerTermsAndConditionsProps> =
               <h3 className="text-lg font-bold text-primary mb-3">8. CONTACTO Y SOPORTE</h3>
               <p className="text-muted-foreground">Para consultas sobre suscripciones:</p>
               <ul className="list-disc pl-6 mt-2 space-y-1 text-muted-foreground">
-                <li>Email: contacto@tuconsultorlegal.co</li>
-                <li>Soporte técnico: contacto@tuconsultorlegal.co</li>
+                <li>Email: contacto@praxis-hub.co</li>
+                <li>Soporte técnico: contacto@praxis-hub.co</li>
                 <li>Horario de atención: Lunes a Viernes 8:00 AM - 6:00 PM</li>
               </ul>
             </section>
@@ -244,7 +244,7 @@ export const LawyerTermsAndConditions: React.FC<LawyerTermsAndConditionsProps> =
                 >
                   Política de Privacidad
                 </a>
-                {' '}de tuconsultorlegal.co
+                {' '}de Praxis Hub
               </label>
             </div>
 

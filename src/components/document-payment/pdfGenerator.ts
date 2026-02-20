@@ -49,7 +49,7 @@ const addFooter = (doc: jsPDF, token: string, reviewedByLawyer?: string) => {
   doc.setTextColor(COLORS.primary[0], COLORS.primary[1], COLORS.primary[2]);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
-  const webText = "www.tuconsultorlegal.co";
+  const webText = "www.praxis-hub.co";
   const webTextWidth = doc.getTextWidth(webText);
   doc.text(webText, (PAGE_WIDTH - webTextWidth) / 2, footerY + 11);
 };

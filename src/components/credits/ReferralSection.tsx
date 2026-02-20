@@ -30,7 +30,7 @@ export function ReferralSection({
     : '';
 
   const shareMessage = referralInfo?.referral_code 
-    ? `¡Únete a tuconsultorlegal.co! Usa mi código de referido ${referralInfo.referral_code} y obtén 15 créditos gratis. Regístrate aquí: ${referralLink}`
+    ? `¡Únete a Praxis Hub! Usa mi código de referido ${referralInfo.referral_code} y obtén 15 créditos gratis. Regístrate aquí: ${referralLink}`
     : '';
 
   const handleCopy = async () => {
@@ -52,7 +52,7 @@ export function ReferralSection({
   };
 
   const handleShareEmail = () => {
-    const subject = encodeURIComponent('Te invito a tuconsultorlegal.co');
+    const subject = encodeURIComponent('Te invito a Praxis Hub');
     const body = encodeURIComponent(shareMessage);
     window.location.href = `mailto:?subject=${subject}&body=${body}`;
   };
