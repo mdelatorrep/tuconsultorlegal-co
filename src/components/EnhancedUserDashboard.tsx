@@ -1109,9 +1109,10 @@ export default function EnhancedUserDashboard({ onBack, onOpenChat, onNavigate }
                           </Button>
                         }
                         onChangeEmail={async (newEmail) => {
-                          const { error } = await supabase.auth.updateUser({
-                            email: newEmail
-                          });
+                          const { error } = await supabase.auth.updateUser(
+                            { email: newEmail },
+                            { emailRedirectTo: `${window.location.origin}/` }
+                          );
                           
                           if (error) {
                             toast.error('Error al cambiar correo', {
