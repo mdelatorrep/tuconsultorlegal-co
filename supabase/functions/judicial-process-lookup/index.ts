@@ -75,11 +75,12 @@ async function extractWithFirecrawlAgent(radicado: string): Promise<{ details: a
   }
 
   try {
-    console.log(`[firecrawl-agent] Extracting data for radicado: ${radicado}`);
+    console.log(`[firecrawl-agent] Submitting agent job for radicado: ${radicado}`);
 
     const agentPrompt = `Extract judicial process details for the radication number '${radicado}' using the 'Todos los Procesos' option on the Rama Judicial portal (https://siugj.ramajudicial.gov.co/principalPortal/consultarProceso.php). For every extracted field, including nested items, you must provide the source URL in a corresponding field named with the suffix '_citation'. Ensure you capture all proceedings, including the date, description, and any available links to documents.`;
 
-    const response = await fetch('https://api.firecrawl.dev/v2/agent', {
+    // Step 1: Submit agent job
+    const submitResponse = await fetch('https://api.firecrawl.dev/v2/agent', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${FIRECRAWL_KEY}`,
@@ -92,22 +93,82 @@ async function extractWithFirecrawlAgent(radicado: string): Promise<{ details: a
       }),
     });
 
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error('[firecrawl-agent] Error:', response.status, errText.slice(0, 300));
+    if (!submitResponse.ok) {
+      const errText = await submitResponse.text();
+      console.error('[firecrawl-agent] Submit error:', submitResponse.status, errText.slice(0, 300));
       return null;
     }
 
-    const result = await response.json();
-    console.log('[firecrawl-agent] Success:', JSON.stringify(result).slice(0, 200));
-
-    const details = result?.data?.judicial_process_details || result?.judicial_process_details;
-    if (!details) {
-      console.warn('[firecrawl-agent] No judicial_process_details in response');
+    const submitResult = await submitResponse.json();
+    const jobId = submitResult.id;
+    
+    if (!jobId) {
+      console.error('[firecrawl-agent] No job ID returned:', JSON.stringify(submitResult).slice(0, 200));
+      // Check if data was returned directly (sync response)
+      const directDetails = submitResult?.data?.judicial_process_details || submitResult?.judicial_process_details;
+      if (directDetails) {
+        return { details: directDetails, raw: submitResult };
+      }
       return null;
     }
 
-    return { details, raw: result };
+    console.log(`[firecrawl-agent] Job submitted: ${jobId}, polling for results...`);
+
+    // Step 2: Poll for results (max ~90 seconds with increasing intervals)
+    const maxAttempts = 18;
+    let attempt = 0;
+
+    while (attempt < maxAttempts) {
+      attempt++;
+      const waitMs = attempt <= 3 ? 5000 : attempt <= 8 ? 8000 : 10000;
+      await new Promise(resolve => setTimeout(resolve, waitMs));
+
+      console.log(`[firecrawl-agent] Polling attempt ${attempt}/${maxAttempts}...`);
+
+      const pollResponse = await fetch(`https://api.firecrawl.dev/v2/agent/${jobId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${FIRECRAWL_KEY}`,
+        },
+      });
+
+      if (!pollResponse.ok) {
+        const errText = await pollResponse.text();
+        console.error(`[firecrawl-agent] Poll error: ${pollResponse.status} ${errText.slice(0, 200)}`);
+        if (pollResponse.status === 404) {
+          console.error('[firecrawl-agent] Job not found, aborting');
+          return null;
+        }
+        continue;
+      }
+
+      const pollResult = await pollResponse.json();
+      const status = pollResult.status || pollResult.state;
+      
+      console.log(`[firecrawl-agent] Job status: ${status}`);
+
+      if (status === 'completed' || status === 'done') {
+        const details = pollResult?.data?.judicial_process_details || pollResult?.judicial_process_details || pollResult?.result?.judicial_process_details;
+        if (details) {
+          console.log('[firecrawl-agent] ✅ Data extracted successfully');
+          return { details, raw: pollResult };
+        }
+        console.warn('[firecrawl-agent] Job completed but no judicial_process_details found');
+        console.log('[firecrawl-agent] Response keys:', JSON.stringify(Object.keys(pollResult)));
+        console.log('[firecrawl-agent] Full response:', JSON.stringify(pollResult).slice(0, 500));
+        return null;
+      }
+
+      if (status === 'failed' || status === 'error') {
+        console.error('[firecrawl-agent] Job failed:', JSON.stringify(pollResult).slice(0, 300));
+        return null;
+      }
+
+      // Still processing, continue polling
+    }
+
+    console.warn(`[firecrawl-agent] Timeout after ${maxAttempts} polling attempts`);
+    return null;
   } catch (err: any) {
     console.error('[firecrawl-agent] Exception:', err.message);
     return null;
