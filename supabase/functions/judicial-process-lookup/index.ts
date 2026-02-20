@@ -159,11 +159,15 @@ async function analyzeWithOpenAI(
 
   try {
     const systemPrompt = systemPromptOverride ||
-      `Eres un asistente legal especializado en derecho procesal colombiano. 
-Analiza información de procesos judiciales de la Rama Judicial de Colombia.
-Cuando tengas datos reales del proceso, preséntales de forma estructurada y clara usando markdown.
-Siempre proporciona el enlace directo al portal: https://consultaprocesos.ramajudicial.gov.co
-Usa formato markdown con encabezados (##), listas y negritas para organizar la información.`;
+      `Eres un asistente legal especializado en derecho procesal colombiano.
+
+REGLAS CRÍTICAS:
+- SOLO presenta información que provenga de los datos extraídos del portal oficial.
+- NUNCA inventes, supongas o deduzcas información que no esté en los datos proporcionados (partes, estado, actuaciones, despacho).
+- NO hagas "desglose del número de radicación" ni análisis genérico del formato del radicado.
+- Si NO tienes datos reales del proceso, di claramente que la extracción está en progreso o no fue posible, y proporciona ÚNICAMENTE el enlace directo al portal para que el abogado consulte manualmente.
+- Cuando SÍ tengas datos reales, preséntalos de forma estructurada y clara usando markdown con encabezados (##), listas y negritas.
+- Siempre incluye el enlace directo: https://consultaprocesos.ramajudicial.gov.co`;
 
     let userContent: string;
 
@@ -177,19 +181,22 @@ Usa formato markdown con encabezados (##), listas y negritas para organizar la i
       ];
 
       if (processData) {
-        contextParts.push(`## Datos extraídos del portal oficial (Firecrawl Agent v2):`);
+        contextParts.push(`## Datos extraídos del portal oficial:`);
         contextParts.push(JSON.stringify(processData, null, 2));
+        contextParts.push(`\n## Tarea:`);
+        contextParts.push(`Presenta la información extraída de forma clara y estructurada:`);
+        contextParts.push(`1. Despacho y tipo de proceso`);
+        contextParts.push(`2. Partes involucradas`);
+        contextParts.push(`3. Estado actual del proceso`);
+        contextParts.push(`4. Actuaciones más recientes (con fechas)`);
+        contextParts.push(`5. Enlace directo al portal oficial`);
       } else {
-        contextParts.push(`## Nota: No fue posible extraer datos automáticamente del portal`);
+        contextParts.push(`## IMPORTANTE: No se obtuvieron datos reales del proceso.`);
+        contextParts.push(`No inventes ni supongas información. Responde brevemente indicando que:`);
+        contextParts.push(`1. La extracción de datos del portal está en proceso o no fue posible en este momento.`);
+        contextParts.push(`2. Proporciona el enlace directo para consulta manual: https://consultaprocesos.ramajudicial.gov.co/procesos/Index`);
+        contextParts.push(`3. Sugiere al abogado intentar nuevamente en unos minutos.`);
       }
-
-      contextParts.push(`\n## Tarea:`);
-      contextParts.push(`Basándote en la información disponible sobre el radicado ${radicado}:`);
-      contextParts.push(`1. Analiza el proceso judicial con los datos disponibles`);
-      contextParts.push(`2. Identifica las partes, tipo de proceso, despacho y estado`);
-      contextParts.push(`3. Resume las actuaciones más recientes`);
-      contextParts.push(`4. Proporciona recomendaciones legales relevantes`);
-      contextParts.push(`5. Indica el enlace directo donde el abogado puede consultar el expediente`);
 
       userContent = contextParts.join('\n');
     }
