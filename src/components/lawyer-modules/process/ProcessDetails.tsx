@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import { ProcessTimeline } from "./ProcessTimeline";
 import { 
   Scale, 
@@ -16,7 +17,10 @@ import {
   User,
   Building,
   Gavel,
-  Loader2
+  Loader2,
+  Brain,
+  ClipboardList,
+  Info
 } from "lucide-react";
 
 interface ProcessDetailsProps {
@@ -83,194 +87,179 @@ export function ProcessDetails({ process, aiAnalysis, onBack, isLoadingDetails }
     !demandantes.includes(s) && !demandados.includes(s)
   ) || [];
 
+  const daysSinceLastAction = process.fechaUltimaActuacion
+    ? Math.floor((Date.now() - new Date(process.fechaUltimaActuacion).getTime()) / (1000 * 60 * 60 * 24))
+    : null;
+
+  const getActivityStatus = () => {
+    if (daysSinceLastAction === null) return { label: 'Sin datos', variant: 'outline' as const, color: 'text-muted-foreground' };
+    if (daysSinceLastAction < 30) return { label: 'Activo', variant: 'default' as const, color: 'text-green-600 dark:text-green-400' };
+    if (daysSinceLastAction < 90) return { label: 'Moderado', variant: 'secondary' as const, color: 'text-yellow-600 dark:text-yellow-400' };
+    return { label: 'Inactivo', variant: 'outline' as const, color: 'text-red-600 dark:text-red-400' };
+  };
+
+  const activityStatus = getActivityStatus();
+
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={onBack}>
+    <div className="space-y-5">
+      {/* Header - Compact and clear */}
+      <div className="flex items-start gap-3">
+        <Button variant="ghost" size="icon" onClick={onBack} className="mt-0.5 shrink-0">
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <div className="flex-1">
-          <h2 className="text-xl font-bold flex items-center gap-2">
-            <Scale className="h-5 w-5 text-primary" />
-            {process.llaveProceso || 'Proceso sin radicado'}
-          </h2>
-          <p className="text-muted-foreground">{process.despacho}</p>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Scale className="h-5 w-5 text-primary shrink-0" />
+            <h2 className="text-lg font-bold font-mono tracking-tight">
+              {process.llaveProceso || 'Proceso sin radicado'}
+            </h2>
+            <Badge variant={activityStatus.variant} className="text-xs">
+              {activityStatus.label}
+            </Badge>
+          </div>
+          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{process.despacho}</p>
         </div>
         <Button
           variant="outline"
+          size="sm"
+          className="shrink-0"
           onClick={() => {
             const url = `https://consultaprocesos.ramajudicial.gov.co/procesos/Procesos/NumeroRadicacion?radicado=${process.llaveProceso}`;
             window.open(url, '_blank');
           }}
         >
           <ExternalLink className="h-4 w-4 mr-2" />
-          Ver en Rama Judicial
+          Portal Oficial
         </Button>
       </div>
 
-      {/* Process Info Card */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            Información del Proceso
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-            <div>
-              <span className="text-muted-foreground block mb-1">Tipo de Proceso</span>
-              <Badge variant="default">{process.tipoProceso || 'N/A'}</Badge>
-            </div>
-            <div>
-              <span className="text-muted-foreground block mb-1">Clase</span>
-              <span className="font-medium">{process.claseProceso || 'N/A'}</span>
-            </div>
-            {process.subclaseProceso && (
-              <div>
-                <span className="text-muted-foreground block mb-1">Subclase</span>
-                <span className="font-medium">{process.subclaseProceso}</span>
-              </div>
-            )}
-            <div className="flex items-start gap-2">
-              <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-              <div>
-                <span className="text-muted-foreground block text-xs">Ubicación</span>
-                <span className="font-medium">{process.departamento || process.ubicacion || 'N/A'}</span>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <Calendar className="h-4 w-4 text-muted-foreground mt-0.5" />
-              <div>
-                <span className="text-muted-foreground block text-xs">Fecha Radicación</span>
-                <span className="font-medium">{formatDate(process.fechaRadicacion)}</span>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <Calendar className="h-4 w-4 text-muted-foreground mt-0.5" />
-              <div>
-                <span className="text-muted-foreground block text-xs">Última Actuación</span>
-                <span className="font-medium">{formatDate(process.fechaUltimaActuacion)}</span>
-              </div>
-            </div>
-            {process.ponente && (
-              <div className="flex items-start gap-2">
-                <Gavel className="h-4 w-4 text-muted-foreground mt-0.5" />
-                <div>
-                  <span className="text-muted-foreground block text-xs">Ponente</span>
-                  <span className="font-medium">{process.ponente}</span>
-                </div>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Key Facts - Horizontal summary strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <InfoPill icon={<FileText className="h-4 w-4" />} label="Tipo" value={process.tipoProceso || 'N/A'} />
+        <InfoPill icon={<Gavel className="h-4 w-4" />} label="Clase" value={process.claseProceso || 'N/A'} />
+        <InfoPill icon={<MapPin className="h-4 w-4" />} label="Ubicación" value={process.departamento || process.ubicacion || 'N/A'} />
+        <InfoPill icon={<Calendar className="h-4 w-4" />} label="Radicación" value={formatDate(process.fechaRadicacion)} />
+      </div>
 
+      {/* Extra details row */}
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm px-1">
+        {process.ponente && (
+          <span className="flex items-center gap-1.5 text-muted-foreground">
+            <Gavel className="h-3.5 w-3.5" />
+            <span className="font-medium text-foreground">{process.ponente}</span>
+          </span>
+        )}
+        {process.subclaseProceso && (
+          <span className="flex items-center gap-1.5 text-muted-foreground">
+            <Info className="h-3.5 w-3.5" />
+            {process.subclaseProceso}
+          </span>
+        )}
+        <span className="flex items-center gap-1.5 text-muted-foreground">
+          <Calendar className="h-3.5 w-3.5" />
+          Última actuación: <span className={`font-medium ${activityStatus.color}`}>{formatDate(process.fechaUltimaActuacion)}</span>
+          {daysSinceLastAction !== null && (
+            <span className="text-xs">({daysSinceLastAction}d)</span>
+          )}
+        </span>
+      </div>
+
+      {/* Tabs - Redesigned with icons and better visual separation */}
       <Tabs defaultValue="actuaciones" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="actuaciones">
-            {isLoadingDetails ? (
-              <span className="flex items-center gap-1">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                Cargando...
-              </span>
-            ) : (
-              `Actuaciones (${process.actuaciones?.length || 0})`
+        <TabsList className="w-full h-auto p-1 bg-muted/60 rounded-xl grid grid-cols-3 gap-1">
+          <TabsTrigger 
+            value="actuaciones" 
+            className="flex items-center gap-2 py-2.5 px-3 text-sm rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
+          >
+            <ClipboardList className="h-4 w-4 shrink-0" />
+            <span className="truncate">
+              {isLoadingDetails ? 'Cargando...' : `Actuaciones`}
+            </span>
+            {!isLoadingDetails && (
+              <Badge variant="secondary" className="text-[10px] h-5 px-1.5 rounded-full ml-auto">
+                {process.actuaciones?.length || 0}
+              </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="sujetos">
-            Partes ({process.sujetos?.length || 0})
+          <TabsTrigger 
+            value="sujetos"
+            className="flex items-center gap-2 py-2.5 px-3 text-sm rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
+          >
+            <Users className="h-4 w-4 shrink-0" />
+            <span className="truncate">Partes</span>
+            <Badge variant="secondary" className="text-[10px] h-5 px-1.5 rounded-full ml-auto">
+              {process.sujetos?.length || 0}
+            </Badge>
           </TabsTrigger>
-          <TabsTrigger value="analisis">
-            Análisis IA
+          <TabsTrigger 
+            value="analisis"
+            className="flex items-center gap-2 py-2.5 px-3 text-sm rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
+          >
+            <Brain className="h-4 w-4 shrink-0" />
+            <span className="truncate">Análisis IA</span>
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="actuaciones" className="mt-4">
-          <Card>
-            <CardContent className="pt-6">
-              {isLoadingDetails ? (
-                <div className="flex flex-col items-center justify-center py-12 gap-3">
+          {isLoadingDetails ? (
+            <Card>
+              <CardContent className="py-12">
+                <div className="flex flex-col items-center justify-center gap-3">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   <p className="text-sm text-muted-foreground">Cargando actuaciones desde la Rama Judicial...</p>
                 </div>
-              ) : (
-                <ProcessTimeline 
-                  actuaciones={process.actuaciones || []} 
-                  maxVisible={10}
-                />
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          ) : (
+            <ProcessTimeline 
+              actuaciones={process.actuaciones || []} 
+              maxVisible={10}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="sujetos" className="mt-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Demandantes */}
-            <Card>
-              <CardHeader className="pb-2">
+            <Card className="border-l-4 border-l-primary/60">
+              <CardHeader className="pb-2 pt-4 px-4">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <User className="h-4 w-4 text-blue-500" />
-                  Demandantes / Actores ({demandantes.length})
+                  <User className="h-4 w-4 text-primary" />
+                  Demandantes / Actores
+                  <Badge variant="secondary" className="text-[10px] ml-auto">{demandantes.length}</Badge>
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-4 pb-4">
                 {demandantes.length > 0 ? (
-                  <ScrollArea className="h-[200px]">
-                    <div className="space-y-2">
-                      {demandantes.map((sujeto, index) => (
-                        <div 
-                          key={index} 
-                          className="p-2 bg-blue-50 dark:bg-blue-950/30 rounded-lg"
-                        >
-                          <p className="font-medium text-sm">{sujeto.nombre}</p>
-                          <p className="text-xs text-muted-foreground">{sujeto.tipoSujeto}</p>
-                          {sujeto.representante && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Rep: {sujeto.representante}
-                            </p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
+                  <div className="space-y-2">
+                    {demandantes.map((sujeto, index) => (
+                      <SubjectRow key={index} sujeto={sujeto} />
+                    ))}
+                  </div>
                 ) : (
-                  <p className="text-muted-foreground text-sm">Sin demandantes registrados</p>
+                  <p className="text-muted-foreground text-sm py-2">Sin demandantes registrados</p>
                 )}
               </CardContent>
             </Card>
 
             {/* Demandados */}
-            <Card>
-              <CardHeader className="pb-2">
+            <Card className="border-l-4 border-l-destructive/60">
+              <CardHeader className="pb-2 pt-4 px-4">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <Building className="h-4 w-4 text-red-500" />
-                  Demandados ({demandados.length})
+                  <Building className="h-4 w-4 text-destructive" />
+                  Demandados
+                  <Badge variant="secondary" className="text-[10px] ml-auto">{demandados.length}</Badge>
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-4 pb-4">
                 {demandados.length > 0 ? (
-                  <ScrollArea className="h-[200px]">
-                    <div className="space-y-2">
-                      {demandados.map((sujeto, index) => (
-                        <div 
-                          key={index} 
-                          className="p-2 bg-red-50 dark:bg-red-950/30 rounded-lg"
-                        >
-                          <p className="font-medium text-sm">{sujeto.nombre}</p>
-                          <p className="text-xs text-muted-foreground">{sujeto.tipoSujeto}</p>
-                          {sujeto.representante && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Rep: {sujeto.representante}
-                            </p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
+                  <div className="space-y-2">
+                    {demandados.map((sujeto, index) => (
+                      <SubjectRow key={index} sujeto={sujeto} />
+                    ))}
+                  </div>
                 ) : (
-                  <p className="text-muted-foreground text-sm">Sin demandados registrados</p>
+                  <p className="text-muted-foreground text-sm py-2">Sin demandados registrados</p>
                 )}
               </CardContent>
             </Card>
@@ -278,22 +267,17 @@ export function ProcessDetails({ process, aiAnalysis, onBack, isLoadingDetails }
             {/* Otros Sujetos */}
             {otrosSujetos.length > 0 && (
               <Card className="md:col-span-2">
-                <CardHeader className="pb-2">
+                <CardHeader className="pb-2 pt-4 px-4">
                   <CardTitle className="text-sm flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    Otros Intervinientes ({otrosSujetos.length})
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                    Otros Intervinientes
+                    <Badge variant="secondary" className="text-[10px] ml-auto">{otrosSujetos.length}</Badge>
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-2">
+                <CardContent className="px-4 pb-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {otrosSujetos.map((sujeto, index) => (
-                      <div 
-                        key={index} 
-                        className="p-2 bg-muted/50 rounded-lg"
-                      >
-                        <p className="font-medium text-sm">{sujeto.nombre}</p>
-                        <p className="text-xs text-muted-foreground">{sujeto.tipoSujeto}</p>
-                      </div>
+                      <SubjectRow key={index} sujeto={sujeto} />
                     ))}
                   </div>
                 </CardContent>
@@ -304,21 +288,59 @@ export function ProcessDetails({ process, aiAnalysis, onBack, isLoadingDetails }
 
         <TabsContent value="analisis" className="mt-4">
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Análisis con Inteligencia Artificial</CardTitle>
+            <CardHeader className="pb-2 pt-4 px-4">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Brain className="h-4 w-4 text-primary" />
+                Análisis con Inteligencia Artificial
+              </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-4 pb-4">
               {aiAnalysis ? (
-                <MarkdownRenderer content={aiAnalysis} />
+                <div className="prose prose-sm max-w-none dark:prose-invert">
+                  <MarkdownRenderer content={aiAnalysis} />
+                </div>
               ) : (
-                <p className="text-muted-foreground text-sm">
-                  El análisis de IA se generará automáticamente cuando consulte un proceso.
-                </p>
+                <div className="text-center py-8">
+                  <Brain className="h-10 w-10 mx-auto mb-3 text-muted-foreground/40" />
+                  <p className="text-muted-foreground text-sm">
+                    El análisis de IA se generará automáticamente cuando consulte un proceso.
+                  </p>
+                </div>
               )}
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+/* ---- Sub-components ---- */
+
+function InfoPill({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="flex items-center gap-2.5 bg-muted/50 rounded-lg px-3 py-2.5 min-w-0">
+      <div className="text-muted-foreground shrink-0">{icon}</div>
+      <div className="min-w-0">
+        <p className="text-[11px] uppercase tracking-wider text-muted-foreground leading-none mb-1">{label}</p>
+        <p className="text-sm font-medium truncate">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function SubjectRow({ sujeto }: { sujeto: { nombre?: string; tipoSujeto?: string; representante?: string } }) {
+  return (
+    <div className="flex items-start gap-2 p-2.5 bg-muted/30 rounded-lg">
+      <div className="min-w-0 flex-1">
+        <p className="font-medium text-sm leading-tight">{sujeto.nombre || 'Sin nombre'}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">{sujeto.tipoSujeto}</p>
+        {sujeto.representante && (
+          <p className="text-xs text-muted-foreground mt-1">
+            <span className="font-medium">Rep:</span> {sujeto.representante}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

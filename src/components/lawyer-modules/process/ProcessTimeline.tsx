@@ -1,6 +1,6 @@
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Calendar, ChevronDown, ChevronUp } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { FileText, Calendar, ChevronDown, ChevronUp, Clock } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
@@ -23,10 +23,14 @@ export function ProcessTimeline({ actuaciones, maxVisible = 5 }: ProcessTimeline
 
   if (!actuaciones || actuaciones.length === 0) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
-        <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-        <p>No hay actuaciones registradas</p>
-      </div>
+      <Card>
+        <CardContent className="py-12">
+          <div className="text-center text-muted-foreground">
+            <FileText className="h-10 w-10 mx-auto mb-3 opacity-40" />
+            <p className="text-sm">No hay actuaciones registradas</p>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -53,78 +57,113 @@ export function ProcessTimeline({ actuaciones, maxVisible = 5 }: ProcessTimeline
     }
   };
 
+  const formatShortDate = (dateString?: string) => {
+    if (!dateString) return '';
+    try {
+      const d = new Date(dateString);
+      return `${d.getDate()} ${d.toLocaleDateString('es-CO', { month: 'short' })}`;
+    } catch {
+      return dateString;
+    }
+  };
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h4 className="font-semibold flex items-center gap-2">
-          <Calendar className="h-4 w-4" />
-          Actuaciones ({actuaciones.length})
-        </h4>
-        {actuaciones.length > maxVisible && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowAll(!showAll)}
-          >
-            {showAll ? (
-              <>
-                <ChevronUp className="h-4 w-4 mr-1" />
-                Ver menos
-              </>
-            ) : (
-              <>
-                <ChevronDown className="h-4 w-4 mr-1" />
-                Ver todas ({actuaciones.length})
-              </>
-            )}
-          </Button>
-        )}
-      </div>
+    <div className="space-y-3">
+      {/* Actuaciones list */}
+      <div className="space-y-2">
+        {visibleActuaciones.map((actuacion, index) => {
+          const isFirst = index === 0;
+          return (
+            <Card 
+              key={index} 
+              className={`transition-colors ${isFirst ? 'border-primary/40 bg-primary/[0.03]' : 'hover:bg-muted/30'}`}
+            >
+              <CardContent className="p-3 sm:p-4">
+                <div className="flex gap-3">
+                  {/* Date column */}
+                  <div className="shrink-0 w-16 text-center pt-0.5">
+                    <div className={`text-xs font-semibold ${isFirst ? 'text-primary' : 'text-muted-foreground'}`}>
+                      {formatShortDate(actuacion.fechaActuacion || actuacion.fechaRegistro)}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5">
+                      {actuacion.fechaActuacion || actuacion.fechaRegistro
+                        ? new Date(actuacion.fechaActuacion || actuacion.fechaRegistro || '').getFullYear()
+                        : ''}
+                    </div>
+                  </div>
 
-      <ScrollArea className={showAll ? "h-[400px]" : ""}>
-        <div className="relative pl-6 border-l-2 border-muted space-y-4">
-          {visibleActuaciones.map((actuacion, index) => (
-            <div key={index} className="relative">
-              {/* Timeline dot */}
-              <div className="absolute -left-[25px] top-1 w-3 h-3 rounded-full bg-primary border-2 border-background" />
-              
-              <div className="bg-muted/30 rounded-lg p-3 space-y-2">
-                <div className="flex items-start justify-between gap-2">
-                  <Badge variant="outline" className="text-xs">
-                    {formatDate(actuacion.fechaActuacion || actuacion.fechaRegistro)}
-                  </Badge>
-                  {index === 0 && (
-                    <Badge variant="default" className="text-xs">
-                      Más reciente
-                    </Badge>
-                  )}
-                </div>
-                
-                <p className="font-medium text-sm">
-                  {actuacion.actuacion || 'Sin descripción'}
-                </p>
-                
-                {actuacion.anotacion && (
-                  <p className="text-sm text-muted-foreground">
-                    {actuacion.anotacion}
-                  </p>
-                )}
-
-                {(actuacion.fechaInicia || actuacion.fechaFinaliza) && (
-                  <div className="flex gap-4 text-xs text-muted-foreground">
-                    {actuacion.fechaInicia && (
-                      <span>Inicia: {formatDate(actuacion.fechaInicia)}</span>
-                    )}
-                    {actuacion.fechaFinaliza && (
-                      <span>Finaliza: {formatDate(actuacion.fechaFinaliza)}</span>
+                  {/* Vertical line + dot */}
+                  <div className="flex flex-col items-center shrink-0">
+                    <div className={`w-2.5 h-2.5 rounded-full border-2 shrink-0 ${isFirst ? 'bg-primary border-primary' : 'bg-background border-muted-foreground/40'}`} />
+                    {index < visibleActuaciones.length - 1 && (
+                      <div className="w-px flex-1 bg-border mt-1" />
                     )}
                   </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </ScrollArea>
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0 pb-2">
+                    <div className="flex items-start gap-2 flex-wrap">
+                      <p className={`text-sm leading-snug ${isFirst ? 'font-semibold' : 'font-medium'}`}>
+                        {actuacion.actuacion || 'Sin descripción'}
+                      </p>
+                      {isFirst && (
+                        <Badge className="text-[10px] h-4 px-1.5 shrink-0">
+                          Reciente
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    {actuacion.anotacion && (
+                      <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">
+                        {actuacion.anotacion}
+                      </p>
+                    )}
+
+                    {(actuacion.fechaInicia || actuacion.fechaFinaliza) && (
+                      <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
+                        {actuacion.fechaInicia && (
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            Inicia: {formatDate(actuacion.fechaInicia)}
+                          </span>
+                        )}
+                        {actuacion.fechaFinaliza && (
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            Finaliza: {formatDate(actuacion.fechaFinaliza)}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Show more/less */}
+      {actuaciones.length > maxVisible && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowAll(!showAll)}
+          className="w-full"
+        >
+          {showAll ? (
+            <>
+              <ChevronUp className="h-4 w-4 mr-2" />
+              Ver menos
+            </>
+          ) : (
+            <>
+              <ChevronDown className="h-4 w-4 mr-2" />
+              Ver todas las actuaciones ({actuaciones.length})
+            </>
+          )}
+        </Button>
+      )}
     </div>
   );
 }
