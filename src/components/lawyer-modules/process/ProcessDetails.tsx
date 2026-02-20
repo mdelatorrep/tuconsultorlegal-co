@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MarkdownRenderer } from "@/components/ui/MarkdownRenderer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -308,11 +309,7 @@ export function ProcessDetails({ process, aiAnalysis, onBack, isLoadingDetails }
             </CardHeader>
             <CardContent>
               {aiAnalysis ? (
-                <div className="prose prose-sm max-w-none dark:prose-invert">
-                  <div className="whitespace-pre-wrap text-sm">
-                    {aiAnalysis}
-                  </div>
-                </div>
+                <MarkdownRenderer content={aiAnalysis} />
               ) : (
                 <p className="text-muted-foreground text-sm">
                   El análisis de IA se generará automáticamente cuando consulte un proceso.

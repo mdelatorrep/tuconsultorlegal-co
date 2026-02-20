@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { MarkdownRenderer } from "@/components/ui/MarkdownRenderer";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -663,33 +664,7 @@ export default function ProcessQueryModule({
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-1 text-sm leading-relaxed">
-                {aiAnalysis.split('\n').map((line, i) => {
-                  if (line.startsWith('### ')) return <h3 key={i} className="font-semibold text-sm text-foreground mt-3 mb-1">{line.replace('### ', '')}</h3>;
-                  if (line.startsWith('## ')) return <h2 key={i} className="font-bold text-base text-foreground mt-4 mb-2 border-b border-border pb-1">{line.replace('## ', '')}</h2>;
-                  if (line.startsWith('# ')) return <h1 key={i} className="font-bold text-lg text-foreground mt-2 mb-2">{line.replace('# ', '')}</h1>;
-                  if (line.startsWith('- ') || line.startsWith('* ')) {
-                    const txt = line.replace(/^[-*] /, '').replace(/\*\*(.+?)\*\*/g, '$1');
-                    return <div key={i} className="flex gap-2 ml-2"><span className="text-primary mt-0.5 flex-shrink-0">•</span><span className="text-foreground">{txt}</span></div>;
-                  }
-                  if (/^\d+\. /.test(line)) {
-                    const num = line.match(/^(\d+)\./)?.[1];
-                    const txt = line.replace(/^\d+\. /, '').replace(/\*\*(.+?)\*\*/g, '$1');
-                    return <div key={i} className="flex gap-2 ml-2"><span className="text-primary font-semibold flex-shrink-0 w-4">{num}.</span><span className="text-foreground">{txt}</span></div>;
-                  }
-                  if (line.trim() === '') return <div key={i} className="h-2" />;
-                  const rendered = line.replace(/\*\*(.+?)\*\*/g, '[[BOLD]]$1[[/BOLD]]');
-                  const parts = rendered.split(/(\[\[BOLD\]\].*?\[\[\/BOLD\]\])/);
-                  return (
-                    <p key={i} className="text-foreground">
-                      {parts.map((part, j) => {
-                        if (part.startsWith('[[BOLD]]')) return <strong key={j} className="font-semibold text-foreground">{part.replace('[[BOLD]]', '').replace('[[/BOLD]]', '')}</strong>;
-                        return <span key={j}>{part}</span>;
-                      })}
-                    </p>
-                  );
-                })}
-              </div>
+              <MarkdownRenderer content={aiAnalysis} />
             </CardContent>
           </Card>
         )}
