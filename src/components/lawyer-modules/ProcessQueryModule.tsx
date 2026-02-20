@@ -318,20 +318,62 @@ export default function ProcessQueryModule({
     }
   };
 
-  const handleTrackProcess = (process: JudicialProcess) => {
+  const handleTrackProcess = async (process: JudicialProcess) => {
     const key = process.llaveProceso || process.idProceso || '';
     if (!key) return;
-    setTrackedProcesses(prev => {
-      const next = new Set(prev);
-      if (next.has(key)) {
-        next.delete(key);
-        toast.info('Proceso removido del monitoreo');
-      } else {
-        next.add(key);
-        toast.success('Proceso agregado al monitoreo. Recibirá alertas de nuevas actuaciones.');
+
+    const isAlreadyTracked = trackedProcesses.has(key);
+
+    if (isAlreadyTracked) {
+      // Remove from DB
+      const { error } = await supabase
+        .from('monitored_processes')
+        .delete()
+        .eq('lawyer_id', user.id)
+        .eq('radicado', key);
+
+      if (error) {
+        toast.error('Error al remover del monitoreo');
+        return;
       }
-      return next;
-    });
+      setTrackedProcesses(prev => {
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
+      toast.info('Proceso removido del monitoreo');
+    } else {
+      // Save to DB
+      const demandante = process.sujetos?.find(s =>
+        s.tipoSujeto?.toLowerCase().includes('demandante') ||
+        s.tipoSujeto?.toLowerCase().includes('actor')
+      )?.nombre || null;
+      const demandado = process.sujetos?.find(s =>
+        s.tipoSujeto?.toLowerCase().includes('demandado')
+      )?.nombre || null;
+
+      const { error } = await supabase
+        .from('monitored_processes')
+        .insert({
+          lawyer_id: user.id,
+          radicado: key,
+          despacho: process.despacho || null,
+          tipo_proceso: process.tipoProceso || process.claseProceso || 'general',
+          demandante,
+          demandado,
+          estado: 'activo',
+          notificaciones_activas: true,
+          ultima_actuacion_fecha: process.fechaUltimaActuacion || null,
+        });
+
+      if (error) {
+        console.error('Error tracking process:', error);
+        toast.error('Error al agregar al monitoreo');
+        return;
+      }
+      setTrackedProcesses(prev => new Set([...prev, key]));
+      toast.success('✅ Proceso agregado al monitoreo. Recibirás alertas de nuevas actuaciones.');
+    }
   };
 
   const handleViewDetails = async (process: JudicialProcess) => {
