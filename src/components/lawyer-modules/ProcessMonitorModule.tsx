@@ -5,11 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
 import { 
   Search, 
   Plus, 
   RefreshCw, 
   Bell, 
+  BellOff,
   FileText, 
   Calendar,
   ExternalLink,
@@ -17,7 +19,11 @@ import {
   AlertCircle,
   CheckCircle2,
   Clock,
-  Coins
+  Coins,
+  Mail,
+  Smartphone,
+  Gavel,
+  Save
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -56,6 +62,15 @@ interface ProcessMonitorModuleProps {
   lawyerId: string;
 }
 
+interface AlertConfig {
+  notificaciones_activas: boolean;
+  alerta_email: boolean;
+  alerta_app: boolean;
+  alerta_nuevas_actuaciones: boolean;
+  alerta_cambio_estado: boolean;
+  alerta_audiencias: boolean;
+}
+
 export function ProcessMonitorModule({ lawyerId }: ProcessMonitorModuleProps) {
   const [processes, setProcesses] = useState<MonitoredProcess[]>([]);
   const [selectedProcess, setSelectedProcess] = useState<MonitoredProcess | null>(null);
@@ -65,6 +80,15 @@ export function ProcessMonitorModule({ lawyerId }: ProcessMonitorModuleProps) {
   const [syncing, setSyncing] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [savingAlerts, setSavingAlerts] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<AlertConfig>({
+    notificaciones_activas: true,
+    alerta_email: true,
+    alerta_app: true,
+    alerta_nuevas_actuaciones: true,
+    alerta_cambio_estado: true,
+    alerta_audiencias: true,
+  });
   
   const { consumeCredits, hasEnoughCredits, getToolCost } = useCredits(lawyerId);
   
@@ -81,6 +105,46 @@ export function ProcessMonitorModule({ lawyerId }: ProcessMonitorModuleProps) {
     loadProcesses();
   }, [lawyerId]);
 
+  const loadAlertConfig = (process: MonitoredProcess) => {
+    setAlertConfig({
+      notificaciones_activas: process.notificaciones_activas ?? true,
+      alerta_email: (process as any).alerta_email ?? true,
+      alerta_app: (process as any).alerta_app ?? true,
+      alerta_nuevas_actuaciones: (process as any).alerta_nuevas_actuaciones ?? true,
+      alerta_cambio_estado: (process as any).alerta_cambio_estado ?? true,
+      alerta_audiencias: (process as any).alerta_audiencias ?? true,
+    });
+  };
+
+  const saveAlertConfig = async () => {
+    if (!selectedProcess) return;
+    try {
+      setSavingAlerts(true);
+      const { error } = await supabase
+        .from('monitored_processes')
+        .update({
+          notificaciones_activas: alertConfig.notificaciones_activas,
+          ...(alertConfig as any),
+        })
+        .eq('id', selectedProcess.id);
+
+      if (error) throw error;
+      // Update local state
+      setProcesses(prev => prev.map(p => 
+        p.id === selectedProcess.id 
+          ? { ...p, notificaciones_activas: alertConfig.notificaciones_activas } 
+          : p
+      ));
+      setSelectedProcess(prev => prev ? { ...prev, notificaciones_activas: alertConfig.notificaciones_activas } : null);
+      toast.success('Configuración de alertas guardada');
+    } catch (error) {
+      console.error('Error saving alert config:', error);
+      toast.error('Error al guardar alertas');
+    } finally {
+      setSavingAlerts(false);
+    }
+  };
+
   const loadProcesses = async () => {
     try {
       setLoading(true);
@@ -88,7 +152,6 @@ export function ProcessMonitorModule({ lawyerId }: ProcessMonitorModuleProps) {
         .from('monitored_processes')
         .select('*')
         .eq('lawyer_id', lawyerId)
-        .eq('notificaciones_activas', true)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -97,6 +160,7 @@ export function ProcessMonitorModule({ lawyerId }: ProcessMonitorModuleProps) {
       if (data && data.length > 0 && !selectedProcess) {
         setSelectedProcess(data[0] as MonitoredProcess);
         loadActuations(data[0].id);
+        loadAlertConfig(data[0] as MonitoredProcess);
       }
     } catch (error) {
       console.error('Error loading processes:', error);
@@ -391,6 +455,7 @@ export function ProcessMonitorModule({ lawyerId }: ProcessMonitorModuleProps) {
                       onClick={() => {
                         setSelectedProcess(process);
                         loadActuations(process.id);
+                        loadAlertConfig(process);
                       }}
                     >
                       <div className="flex items-start justify-between gap-2">
@@ -510,9 +575,127 @@ export function ProcessMonitorModule({ lawyerId }: ProcessMonitorModuleProps) {
                     )}
                   </TabsContent>
                   <TabsContent value="alertas" className="mt-4">
-                    <div className="text-center p-8 text-muted-foreground">
-                      <Bell className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                      <p>Configuración de alertas próximamente</p>
+                    <div className="space-y-5">
+                      {/* Master toggle */}
+                      <div className={`flex items-center justify-between p-4 rounded-lg border-2 transition-colors ${
+                        alertConfig.notificaciones_activas 
+                          ? 'border-primary/30 bg-primary/5' 
+                          : 'border-muted bg-muted/30'
+                      }`}>
+                        <div className="flex items-center gap-3">
+                          {alertConfig.notificaciones_activas 
+                            ? <Bell className="h-5 w-5 text-primary" /> 
+                            : <BellOff className="h-5 w-5 text-muted-foreground" />
+                          }
+                          <div>
+                            <p className="font-semibold text-sm">Alertas Activas</p>
+                            <p className="text-xs text-muted-foreground">
+                              {alertConfig.notificaciones_activas 
+                                ? 'Recibirás notificaciones de cambios en este proceso' 
+                                : 'Las alertas están desactivadas para este proceso'}
+                            </p>
+                          </div>
+                        </div>
+                        <Switch
+                          checked={alertConfig.notificaciones_activas}
+                          onCheckedChange={v => setAlertConfig(c => ({ ...c, notificaciones_activas: v }))}
+                        />
+                      </div>
+
+                      {alertConfig.notificaciones_activas && (
+                        <>
+                          {/* Notification channels */}
+                          <div>
+                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Canales de notificación</p>
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/40">
+                                <div className="flex items-center gap-3">
+                                  <Mail className="h-4 w-4 text-muted-foreground" />
+                                  <div>
+                                    <Label className="text-sm font-medium cursor-pointer">Correo electrónico</Label>
+                                    <p className="text-xs text-muted-foreground">Recibir alertas por email</p>
+                                  </div>
+                                </div>
+                                <Switch
+                                  checked={alertConfig.alerta_email}
+                                  onCheckedChange={v => setAlertConfig(c => ({ ...c, alerta_email: v }))}
+                                />
+                              </div>
+                              <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/40">
+                                <div className="flex items-center gap-3">
+                                  <Smartphone className="h-4 w-4 text-muted-foreground" />
+                                  <div>
+                                    <Label className="text-sm font-medium cursor-pointer">Notificación en app</Label>
+                                    <p className="text-xs text-muted-foreground">Alertas en el panel de notificaciones</p>
+                                  </div>
+                                </div>
+                                <Switch
+                                  checked={alertConfig.alerta_app}
+                                  onCheckedChange={v => setAlertConfig(c => ({ ...c, alerta_app: v }))}
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Event types */}
+                          <div>
+                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Tipos de eventos</p>
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/40">
+                                <div className="flex items-center gap-3">
+                                  <FileText className="h-4 w-4 text-muted-foreground" />
+                                  <div>
+                                    <Label className="text-sm font-medium cursor-pointer">Nuevas actuaciones</Label>
+                                    <p className="text-xs text-muted-foreground">Cuando se registren nuevas actuaciones</p>
+                                  </div>
+                                </div>
+                                <Switch
+                                  checked={alertConfig.alerta_nuevas_actuaciones}
+                                  onCheckedChange={v => setAlertConfig(c => ({ ...c, alerta_nuevas_actuaciones: v }))}
+                                />
+                              </div>
+                              <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/40">
+                                <div className="flex items-center gap-3">
+                                  <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                                  <div>
+                                    <Label className="text-sm font-medium cursor-pointer">Cambio de estado</Label>
+                                    <p className="text-xs text-muted-foreground">Cuando el proceso cambie de estado</p>
+                                  </div>
+                                </div>
+                                <Switch
+                                  checked={alertConfig.alerta_cambio_estado}
+                                  onCheckedChange={v => setAlertConfig(c => ({ ...c, alerta_cambio_estado: v }))}
+                                />
+                              </div>
+                              <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/40">
+                                <div className="flex items-center gap-3">
+                                  <Gavel className="h-4 w-4 text-muted-foreground" />
+                                  <div>
+                                    <Label className="text-sm font-medium cursor-pointer">Audiencias programadas</Label>
+                                    <p className="text-xs text-muted-foreground">Recordatorio de audiencias con fechas</p>
+                                  </div>
+                                </div>
+                                <Switch
+                                  checked={alertConfig.alerta_audiencias}
+                                  onCheckedChange={v => setAlertConfig(c => ({ ...c, alerta_audiencias: v }))}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      <Button 
+                        className="w-full" 
+                        onClick={saveAlertConfig}
+                        disabled={savingAlerts}
+                      >
+                        {savingAlerts ? (
+                          <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Guardando...</>
+                        ) : (
+                          <><Save className="h-4 w-4 mr-2" />Guardar configuración</>
+                        )}
+                      </Button>
                     </div>
                   </TabsContent>
                 </Tabs>
