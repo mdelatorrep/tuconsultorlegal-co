@@ -439,7 +439,7 @@ export default function UnifiedDocumentPage({ onOpenChat }: UnifiedDocumentPageP
                       hour: '2-digit',
                       minute: '2-digit'
                     }),
-                    tracking_url: `https://tuconsultorlegal.co/#documento?code=${documentData.token}`
+                    tracking_url: `${window.location.origin}/#documento?code=${documentData.token}`
                   }
                 }
               });
@@ -532,8 +532,8 @@ export default function UnifiedDocumentPage({ onOpenChat }: UnifiedDocumentPageP
                   year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' 
                 }),
                 observations_preview: userObservations.trim().substring(0, 300) + (userObservations.length > 300 ? '...' : ''),
-                document_url: `https://tuconsultorlegal.co/#documento?code=${documentData.token}`,
-                site_url: 'https://tuconsultorlegal.co',
+                document_url: `${window.location.origin}/#documento?code=${documentData.token}`,
+                site_url: window.location.origin,
                 current_year: new Date().getFullYear().toString()
               }
             }

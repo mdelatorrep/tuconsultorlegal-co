@@ -124,7 +124,7 @@ export const AdminSidebar = ({
               <h2 className="font-bold text-sm">Admin Panel</h2>
             </div>
             <p className="text-xs text-muted-foreground">
-              tuconsultorlegal.co
+              praxis-hub.co
             </p>
             {userEmail && (
               <p className="text-xs text-primary font-medium truncate">

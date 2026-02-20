@@ -128,7 +128,7 @@ export default function CertificationVerificationPage() {
           </div>
           <h1 className="text-4xl font-bold text-primary mb-4">Verificación de Certificaciones</h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Verifica la autenticidad de las certificaciones emitidas por tuconsultorlegal.co
+            Verifica la autenticidad de las certificaciones emitidas por Praxis Hub
           </p>
         </div>
 
@@ -247,7 +247,7 @@ export default function CertificationVerificationPage() {
                     <h4 className="font-semibold mb-2">IA Lawyer Fundamentals</h4>
                     <p className="text-sm text-muted-foreground leading-relaxed">
                       Esta certificación valida que el abogado ha completado exitosamente el programa de formación en
-                      Inteligencia Artificial Legal de tuconsultorlegal.co, que incluye 10 módulos especializados en
+                      Inteligencia Artificial Legal de Praxis Hub, que incluye 10 módulos especializados en
                       herramientas de IA, automatización de documentos, análisis predictivo y ética en IA legal.
                     </p>
                   </div>
@@ -270,8 +270,8 @@ export default function CertificationVerificationPage() {
                         <p>
                           Esta verificación confirma la autenticidad del certificado al momento de la consulta. Para
                           consultas sobre la validez o el programa de certificación, contacta a{" "}
-                          <a href="mailto:contacto@tuconsultorlegal.co" className="text-primary hover:underline">
-                            contacto@tuconsultorlegal.co
+                          <a href="mailto:contacto@praxis-hub.co" className="text-primary hover:underline">
+                            contacto@praxis-hub.co
                           </a>
                         </p>
                       </div>

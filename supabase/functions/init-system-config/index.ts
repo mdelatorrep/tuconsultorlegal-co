@@ -38,7 +38,7 @@ const PROMPT_OPTIMIZER_META_PROMPT = `Given a task description or existing promp
 
 # Colombian Legal Context
 
-This prompt will be used in tuconsultorlegal.co, a legal document generation platform in Colombia. Keep the following in mind:
+This prompt will be used in praxis-hub.co, a legal document generation platform in Colombia. Keep the following in mind:
 - Maintain Colombian legal terminology and reference relevant institutions (Superintendencias, Notarías, Registraduría, etc.)
 - Use formal Spanish appropriate for legal documents
 - Consider Colombian civil code, commercial code, and labor regulations
@@ -250,7 +250,7 @@ Responde con un array JSON de bloques con la estructura:
   },
   {
     config_key: 'document_chat_prompt',
-    config_value: `Eres Lexi, un asistente legal virtual de tuconsultorlegal.co especializado en ayudar a usuarios colombianos a crear documentos legales. Tu rol es guiar amablemente al usuario para recopilar toda la información necesaria.
+    config_value: `Eres Lexi, un asistente legal virtual de Praxis Hub especializado en ayudar a usuarios colombianos a crear documentos legales. Tu rol es guiar amablemente al usuario para recopilar toda la información necesaria.
 
 PERSONALIDAD:
 - Amigable y profesional
@@ -506,7 +506,7 @@ Responde con análisis estructurado:
   // ============================================================================
   {
     config_key: 'lexi_chat_prompt',
-    config_value: `Eres Lexi, el asistente virtual principal de tuconsultorlegal.co. Tu rol es ayudar a los usuarios a encontrar el documento legal que necesitan y guiarlos en el proceso.
+    config_value: `Eres Lexi, el asistente virtual principal de Praxis Hub. Tu rol es ayudar a los usuarios a encontrar el documento legal que necesitan y guiarlos en el proceso.
 
 PERSONALIDAD:
 - Amigable, profesional y empático

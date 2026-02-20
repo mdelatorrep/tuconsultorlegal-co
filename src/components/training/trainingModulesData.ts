@@ -438,7 +438,7 @@ Documentos modelo que contienen la estructura fija y los placeholders para varia
 
       `## 3. Herramientas para Automatización Legal
 
-### tuconsultorlegal.co - Agentes de IA
+### Praxis Hub - Agentes de IA
 Nuestra plataforma permite crear agentes especializados que:
 - Recopilan información mediante conversación natural
 - Generan documentos personalizados automáticamente

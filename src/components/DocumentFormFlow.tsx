@@ -637,7 +637,7 @@ export default function DocumentFormFlow({ agentId, onBack, onComplete }: Docume
                     Tratamiento de Datos Personales *
                   </Label>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Acepto el tratamiento de mis datos personales conforme a la Ley 1581 de 2012 (Ley de Habeas Data en Colombia) y autorizo a tuconsultorlegal.co para recopilar, almacenar, usar y circular mi información personal para los fines relacionados con la gestión y seguimiento de este documento legal.
+                    Acepto el tratamiento de mis datos personales conforme a la Ley 1581 de 2012 (Ley de Habeas Data en Colombia) y autorizo a Praxis Hub para recopilar, almacenar, usar y circular mi información personal para los fines relacionados con la gestión y seguimiento de este documento legal.
                   </p>
                 </div>
               </div>

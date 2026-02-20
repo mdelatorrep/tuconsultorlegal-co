@@ -33,16 +33,16 @@ Deno.serve(async (req) => {
         page_key: 'terms-and-conditions',
         title: 'Términos y Condiciones de Uso',
         content: `<h1>Términos y Condiciones de Uso</h1>
-<p><strong>TUCONSULTORLEGAL.CO</strong></p>
+<p><strong>PRAXIS HUB</strong></p>
 <p>Fecha de última actualización: 5 de julio de 2025</p>
 
-<p>¡Bienvenido a <strong>tuconsultorlegal.co</strong>! Antes de utilizar nuestros servicios, te pedimos que leas detenidamente los siguientes Términos y Condiciones (en adelante, "T&C"). Al acceder y utilizar nuestra plataforma, aceptas y te comprometes a cumplir con lo aquí estipulado. Si no estás de acuerdo con estos T&C, por favor, no utilices nuestros servicios.</p>
+<p>¡Bienvenido a <strong>Praxis Hub</strong>! Antes de utilizar nuestros servicios, te pedimos que leas detenidamente los siguientes Términos y Condiciones (en adelante, "T&C"). Al acceder y utilizar nuestra plataforma, aceptas y te comprometes a cumplir con lo aquí estipulado. Si no estás de acuerdo con estos T&C, por favor, no utilices nuestros servicios.</p>
 
 <p>Este sitio web es operado por <strong>TU CONSULTOR LEGAL S.A.S.</strong>, una sociedad legalmente constituida en Colombia.</p>
 
 <h2>1. DEFINICIONES</h2>
 <ul>
-<li><strong>Plataforma:</strong> Se refiere al sitio web www.tuconsultorlegal.co y todas sus funcionalidades.</li>
+<li><strong>Plataforma:</strong> Se refiere al sitio web www.praxis-hub.co y todas sus funcionalidades.</li>
 <li><strong>Usuario:</strong> Toda persona natural o jurídica que accede y/o utiliza los servicios de la Plataforma.</li>
 <li><strong>Lexi (Asistente de IA):</strong> La herramienta de inteligencia artificial de la Plataforma que interactúa con el Usuario para recopilar información, ofrecer orientación preliminar y generar borradores iniciales de documentos.</li>
 <li><strong>Servicios:</strong> Incluye, pero no se limita a, la generación de documentos legales y la prestación de asesoría jurídica inicial a través del Asistente de IA, siempre sujetos a una Revisión Humana final.</li>
@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
         page_key: 'privacy-policy',
         title: 'Política de Privacidad y Tratamiento de Datos Personales',
         content: `<h1>Política de Privacidad y Tratamiento de Datos Personales</h1>
-<p><strong>TUCONSULTORLEGAL.CO</strong></p>
+<p><strong>PRAXIS HUB</strong></p>
 <p>Fecha de última actualización: 5 de julio de 2025</p>
 
 <p>En <strong>TU CONSULTOR LEGAL S.A.S.</strong>, sociedad legalmente constituida en Colombia e identificada con NIT [Número de NIT de la empresa], estamos comprometidos con la protección de tu privacidad y la seguridad de tu información. Esta Política de Privacidad describe cómo recopilamos, usamos, almacenamos, compartimos y protegemos tus datos personales, en cumplimiento estricto de la Ley Estatutaria 1581 de 2012, el Decreto 1377 de 2013 y demás normas concordantes en Colombia.</p>
@@ -67,15 +67,15 @@ Deno.serve(async (req) => {
 <li><strong>Razón Social:</strong> TU CONSULTOR LEGAL S.A.S.</li>
 <li><strong>NIT:</strong> [Número de NIT de la empresa]</li>
 <li><strong>Domicilio:</strong> Envigado, Antioquia, Colombia.</li>
-<li><strong>Correo electrónico:</strong> contacto@tuconsultorlegal.co</li>
-<li><strong>Sitio web:</strong> www.tuconsultorlegal.co</li>
+<li><strong>Correo electrónico:</strong> contacto@praxis-hub.co</li>
+<li><strong>Sitio web:</strong> www.praxis-hub.co</li>
 </ul>`
       },
       {
         page_key: 'intellectual-property',
         title: 'Propiedad Intelectual',
         content: `<h1>Propiedad Intelectual</h1>
-<p><strong>TUCONSULTORLEGAL.CO</strong></p>
+<p><strong>PRAXIS HUB</strong></p>
 
 <h2>DERECHOS DE PROPIEDAD INTELECTUAL</h2>
 
