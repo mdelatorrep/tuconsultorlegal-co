@@ -77,7 +77,7 @@ async function submitFirecrawlAgentJob(radicado: string): Promise<string | null>
   try {
     console.log(`[firecrawl-agent] Submitting agent job for radicado: ${radicado}`);
 
-    const agentPrompt = `Extract judicial process details for the radication number '${radicado}' using the 'Todos los Procesos' option on the Rama Judicial portal (https://siugj.ramajudicial.gov.co/principalPortal/consultarProceso.php). For every extracted field, including nested items, you must provide the source URL in a corresponding field named with the suffix '_citation'. Ensure you capture all proceedings, including the date, description, and any available links to documents.`;
+    const agentPrompt = `Go to https://consultaprocesos.ramajudicial.gov.co/procesos/Index and search for the radicado number '${radicado}'. Select 'Todos los Procesos' if prompted. Extract all judicial process details shown: court/despacho, parties (sujetos procesales), process type, status, filing date, last action date, and all proceedings/actuaciones with their dates and descriptions. For every extracted field, including nested items, provide the source URL in a corresponding field named with the suffix '_citation'. Capture all proceedings including dates, descriptions, and any document links.`;
 
     const submitResponse = await fetch('https://api.firecrawl.dev/v2/agent', {
       method: 'POST',
