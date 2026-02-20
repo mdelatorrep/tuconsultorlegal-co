@@ -66,6 +66,83 @@ const AGENT_SCHEMA = {
   required: ["judicial_process_details"],
 };
 
+// Send notifications when new actuations are detected
+async function sendProcessNotifications(
+  supabase: any,
+  supabaseUrl: string,
+  supabaseServiceKey: string,
+  process: any,
+  newActsCount: number,
+  latestActuation: string
+) {
+  try {
+    // Check alert config on the process
+    const alertsEnabled = process.notificaciones_activas !== false;
+    const alertApp = process.alerta_app !== false;
+    const alertEmail = process.alerta_email !== false;
+    const alertNuevasActuaciones = process.alerta_nuevas_actuaciones !== false;
+
+    if (!alertsEnabled || !alertNuevasActuaciones) {
+      console.log(`[RamaJudicial] Notifications disabled for process ${process.radicado}`);
+      return;
+    }
+
+    const title = `📋 ${newActsCount} nueva(s) actuación(es)`;
+    const message = `Proceso ${process.radicado.slice(-10)}: ${latestActuation || 'Nueva actuación registrada'}`;
+
+    // Create in-app notification
+    if (alertApp) {
+      await supabase.from('lawyer_notifications').insert({
+        lawyer_id: process.lawyer_id,
+        notification_type: 'process_update',
+        title,
+        message,
+        entity_type: 'process',
+        entity_id: process.id,
+        action_url: '/monitor',
+        priority: newActsCount >= 3 ? 'high' : 'normal',
+      });
+      console.log(`[RamaJudicial] In-app notification created for ${process.radicado}`);
+    }
+
+    // Send email notification
+    if (alertEmail) {
+      try {
+        const emailResponse = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseServiceKey}`,
+          },
+          body: JSON.stringify({
+            to: null, // Will be resolved by lawyer_id lookup
+            subject: title,
+            template_key: 'process_update',
+            variables: {
+              notification_title: title,
+              notification_message: message,
+              radicado: process.radicado,
+              action_url: 'https://praxis-hub.co/#abogados?view=monitor',
+              current_year: new Date().getFullYear().toString(),
+            },
+            recipient_type: 'lawyer',
+            lawyer_id: process.lawyer_id,
+          }),
+        });
+        if (!emailResponse.ok) {
+          console.warn(`[RamaJudicial] Email failed: ${await emailResponse.text()}`);
+        } else {
+          console.log(`[RamaJudicial] Email notification sent for ${process.radicado}`);
+        }
+      } catch (emailErr) {
+        console.error(`[RamaJudicial] Email error:`, emailErr);
+      }
+    }
+  } catch (err) {
+    console.error(`[RamaJudicial] Notification error:`, err);
+  }
+}
+
 async function fetchProcessByRadicado(radicado: string, firecrawlApiKey: string): Promise<{
   ok: boolean;
   data?: {
@@ -217,6 +294,13 @@ serve(async (req) => {
             is_new: true,
           }))
         );
+
+        // Send notifications for new actuations
+        await sendProcessNotifications(
+          supabase, supabaseUrl, supabaseKey,
+          process, newActs.length,
+          newActs[0]?.actuacion || ''
+        );
       }
 
       await supabase.from('monitored_processes').update({
@@ -280,6 +364,13 @@ serve(async (req) => {
               }))
             );
             totalNewActuations += newActs.length;
+
+            // Send notifications for new actuations
+            await sendProcessNotifications(
+              supabase, supabaseUrl, supabaseKey,
+              process, newActs.length,
+              newActs[0]?.actuacion || ''
+            );
           }
 
           await supabase.from('monitored_processes').update({
@@ -428,6 +519,13 @@ serve(async (req) => {
               ultima_actuacion_descripcion: processData.ultimaActuacion,
               updated_at: new Date().toISOString(),
             }).eq('id', process.id);
+
+            // Send notifications for new actuations
+            await sendProcessNotifications(
+              supabase, supabaseUrl, supabaseKey,
+              process, newActs.length,
+              newActs[0]?.actuacion || ''
+            );
 
             newActuations.push({
               processId: process.id, radicado: process.radicado,
