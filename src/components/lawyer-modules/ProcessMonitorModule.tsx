@@ -33,6 +33,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCredits } from '@/hooks/useCredits';
+import { PushNotificationToggle } from '@/components/notifications/PushNotificationToggle';
 import { ToolCostIndicator } from '@/components/credits/ToolCostIndicator';
 
 interface MonitoredProcess {
@@ -580,6 +581,14 @@ export function ProcessMonitorModule({ lawyerId }: ProcessMonitorModuleProps) {
                   </TabsContent>
                   <TabsContent value="alertas" className="mt-4">
                     <div className="space-y-5">
+                      {/* Push notification toggle */}
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-muted/40 border">
+                        <div>
+                          <p className="text-sm font-medium">Notificaciones Push del navegador</p>
+                          <p className="text-xs text-muted-foreground">Recibe alertas incluso con la app cerrada</p>
+                        </div>
+                        <PushNotificationToggle userId={lawyerId} />
+                      </div>
                       {/* Master toggle */}
                       <div className={`flex items-center justify-between p-4 rounded-lg border-2 transition-colors ${
                         alertConfig.notificaciones_activas 

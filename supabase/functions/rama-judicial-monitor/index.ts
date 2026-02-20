@@ -138,6 +138,30 @@ async function sendProcessNotifications(
         console.error(`[RamaJudicial] Email error:`, emailErr);
       }
     }
+
+    // Send push notification
+    if (alertApp) {
+      try {
+        await fetch(`${supabaseUrl}/functions/v1/push-notifications`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseServiceKey}`,
+          },
+          body: JSON.stringify({
+            action: 'send',
+            user_id: process.lawyer_id,
+            title,
+            body: message,
+            url: '/#abogados?view=monitor',
+            tag: `process-${process.radicado}`,
+          }),
+        });
+        console.log(`[RamaJudicial] Push notification sent for ${process.radicado}`);
+      } catch (pushErr) {
+        console.error(`[RamaJudicial] Push error:`, pushErr);
+      }
+    }
   } catch (err) {
     console.error(`[RamaJudicial] Notification error:`, err);
   }
