@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { 
-  buildResponsesRequestParams, 
   callResponsesAPI, 
   logResponsesRequest,
 } from "../_shared/openai-responses-utils.ts";
@@ -12,583 +11,34 @@ const corsHeaders = {
 };
 
 // ──────────────────────────────────────────────
-// TEXT EXTRACTION HELPERS
+// HELPERS
 // ──────────────────────────────────────────────
 
-function base64ToUint8Array(base64: string): Uint8Array {
-  const clean = base64.replace(/^data:[^;]+;base64,/, '');
-  const binaryString = atob(clean);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  return bytes;
+function getMimeType(fileName: string): string {
+  const lower = fileName.toLowerCase();
+  if (lower.endsWith('.pdf')) return 'application/pdf';
+  if (lower.endsWith('.docx')) return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  if (lower.endsWith('.doc')) return 'application/msword';
+  if (lower.endsWith('.txt')) return 'text/plain';
+  if (lower.endsWith('.rtf')) return 'application/rtf';
+  return 'application/octet-stream';
 }
 
-/**
- * Extract text from PDF using regex on raw binary.
- */
-async function extractTextFromPDF(base64Data: string): Promise<string> {
-  try {
-    console.log('🔍 Starting PDF text extraction...');
-    const bytes = base64ToUint8Array(base64Data);
-    const raw = new TextDecoder('latin1').decode(bytes);
-
-    let extractedText = '';
-
-    // Strategy 1: BT...ET blocks
-    const btEtMatches = raw.match(/BT\s+([\s\S]*?)\s+ET/g) || [];
-    for (const block of btEtMatches) {
-      const parenTexts = block.match(/\(([^)\\]|\\.)*\)/g) || [];
-      for (const t of parenTexts) {
-        const decoded = t.slice(1, -1)
-          .replace(/\\n/g, ' ').replace(/\\r/g, ' ').replace(/\\t/g, ' ')
-          .replace(/\\\\/g, '\\').replace(/\\\(/g, '(').replace(/\\\)/g, ')');
-        extractedText += decoded + ' ';
-      }
-      const tjArrays = block.match(/\[([^\]]*)\]/g) || [];
-      for (const arr of tjArrays) {
-        const inner = arr.match(/\(([^)\\]|\\.)*\)/g) || [];
-        for (const t of inner) {
-          const decoded = t.slice(1, -1)
-            .replace(/\\n/g, ' ').replace(/\\r/g, ' ').replace(/\\t/g, ' ')
-            .replace(/\\\\/g, '\\').replace(/\\\(/g, '(').replace(/\\\)/g, ')');
-          extractedText += decoded + ' ';
-        }
-      }
-    }
-
-    // Strategy 2: plain-text streams
-    if (extractedText.trim().length < 200) {
-      const streamMatches = raw.match(/stream\r?\n([\s\S]*?)\r?\nendstream/g) || [];
-      for (const s of streamMatches) {
-        const inner = s.replace(/^stream\r?\n/, '').replace(/\r?\nendstream$/, '');
-        const printable = inner.replace(/[^\x20-\x7E\xA0-\xFF]/g, ' ').replace(/\s+/g, ' ').trim();
-        if (printable.length > 50) {
-          extractedText += printable + ' ';
-        }
-      }
-    }
-
-    extractedText = extractedText
-      .replace(/[^\x20-\x7E\u00A0-\uFFFF]/g, ' ')
-      .replace(/\s{3,}/g, '  ')
-      .trim();
-
-    console.log(`✅ PDF extracted ${extractedText.length} chars`);
-    return extractedText;
-  } catch (error) {
-    console.error('❌ Error extracting text from PDF:', error);
-    return '';
-  }
+function isBinaryFormat(fileName: string): boolean {
+  const lower = fileName.toLowerCase();
+  return lower.endsWith('.pdf') || lower.endsWith('.docx') || lower.endsWith('.doc');
 }
 
-/**
- * Minimal ZIP reader that doesn't depend on JSZip.
- * Reads Local File Headers to find and extract word/document.xml from DOCX.
- */
-function extractFileFromZip(zipBytes: Uint8Array, targetPath: string): Uint8Array | null {
-  const view = new DataView(zipBytes.buffer, zipBytes.byteOffset, zipBytes.byteLength);
-  let offset = 0;
-  const targetLower = targetPath.toLowerCase();
-
-  while (offset < zipBytes.length - 30) {
-    // Local file header signature = 0x04034b50
-    const sig = view.getUint32(offset, true);
-    if (sig !== 0x04034b50) break;
-
-    const compressionMethod = view.getUint16(offset + 8, true);
-    const compressedSize = view.getUint32(offset + 18, true);
-    const uncompressedSize = view.getUint32(offset + 22, true);
-    const fileNameLen = view.getUint16(offset + 26, true);
-    const extraLen = view.getUint16(offset + 28, true);
-
-    const fileNameBytes = zipBytes.slice(offset + 30, offset + 30 + fileNameLen);
-    const fileName = new TextDecoder().decode(fileNameBytes);
-
-    const dataOffset = offset + 30 + fileNameLen + extraLen;
-
-    if (fileName.toLowerCase() === targetLower) {
-      const rawData = zipBytes.slice(dataOffset, dataOffset + compressedSize);
-
-      if (compressionMethod === 0) {
-        // Stored (no compression)
-        return rawData;
-      } else if (compressionMethod === 8) {
-        // Deflate — use DecompressionStream (available in Deno)
-        try {
-          const ds = new DecompressionStream('deflate-raw');
-          const writer = ds.writable.getWriter();
-          const reader = ds.readable.getReader();
-
-          // We need to do this synchronously-ish, so we'll collect chunks
-          const chunks: Uint8Array[] = [];
-          let done = false;
-
-          // Start writing and reading concurrently
-          const writePromise = writer.write(rawData).then(() => writer.close());
-          const readPromise = (async () => {
-            while (true) {
-              const { value, done: readDone } = await reader.read();
-              if (readDone) break;
-              chunks.push(new Uint8Array(value));
-            }
-          })();
-
-          // We can't await here since this is sync, but we'll return null
-          // and use the async version instead
-          return null;
-        } catch {
-          return null;
-        }
-      }
-    }
-
-    offset = dataOffset + compressedSize;
-  }
-  return null;
+function inferDocumentTypeFromFilename(filename: string) {
+  const lower = filename.toLowerCase();
+  if (lower.includes('contrato') || lower.includes('contract'))
+    return { suggestedType: 'Contrato', category: 'contrato' };
+  if (lower.includes('respuesta') || lower.includes('contestacion'))
+    return { suggestedType: 'Respuesta Legal', category: 'respuesta_legal' };
+  if (lower.includes('demanda') || lower.includes('escrito'))
+    return { suggestedType: 'Escrito Jurídico', category: 'escrito_juridico' };
+  return { suggestedType: 'Documento Legal', category: 'otro' };
 }
-
-/**
- * Async version of ZIP file extraction using DecompressionStream for deflated entries.
- */
-async function extractFileFromZipAsync(zipBytes: Uint8Array, targetPath: string): Promise<string | null> {
-  const view = new DataView(zipBytes.buffer, zipBytes.byteOffset, zipBytes.byteLength);
-  let offset = 0;
-  const targetLower = targetPath.toLowerCase();
-
-  while (offset < zipBytes.length - 30) {
-    const sig = view.getUint32(offset, true);
-    if (sig !== 0x04034b50) break;
-
-    const compressionMethod = view.getUint16(offset + 8, true);
-    const compressedSize = view.getUint32(offset + 18, true);
-    const fileNameLen = view.getUint16(offset + 26, true);
-    const extraLen = view.getUint16(offset + 28, true);
-
-    const fileNameBytes = zipBytes.slice(offset + 30, offset + 30 + fileNameLen);
-    const fileName = new TextDecoder().decode(fileNameBytes);
-
-    const dataOffset = offset + 30 + fileNameLen + extraLen;
-
-    if (fileName.toLowerCase() === targetLower) {
-      const rawData = zipBytes.slice(dataOffset, dataOffset + compressedSize);
-
-      if (compressionMethod === 0) {
-        return new TextDecoder('utf-8').decode(rawData);
-      } else if (compressionMethod === 8) {
-        try {
-          const ds = new DecompressionStream('deflate-raw');
-          const writer = ds.writable.getWriter();
-          const reader = ds.readable.getReader();
-
-          writer.write(rawData).then(() => writer.close());
-
-          const chunks: Uint8Array[] = [];
-          while (true) {
-            const { value, done } = await reader.read();
-            if (done) break;
-            chunks.push(new Uint8Array(value));
-          }
-
-          const totalLen = chunks.reduce((s, c) => s + c.length, 0);
-          const result = new Uint8Array(totalLen);
-          let pos = 0;
-          for (const c of chunks) {
-            result.set(c, pos);
-            pos += c.length;
-          }
-          return new TextDecoder('utf-8').decode(result);
-        } catch (e) {
-          console.error('❌ DecompressionStream failed:', e);
-          return null;
-        }
-      }
-    }
-
-    // Handle data descriptor (bit 3 of general purpose flag)
-    const generalFlag = view.getUint16(offset + 6, true);
-    let nextOffset = dataOffset + compressedSize;
-    
-    if ((generalFlag & 0x08) !== 0 && compressedSize === 0) {
-      // Data descriptor present, sizes were zero — scan for next header
-      let scan = dataOffset;
-      while (scan < zipBytes.length - 4) {
-        if (view.getUint32(scan, true) === 0x04034b50 || view.getUint32(scan, true) === 0x02014b50) {
-          nextOffset = scan;
-          break;
-        }
-        scan++;
-      }
-      if (scan >= zipBytes.length - 4) break;
-    }
-    
-    offset = nextOffset;
-  }
-  return null;
-}
-
-/**
- * Extract text from DOCX - multiple strategies:
- * 1. Custom ZIP reader with DecompressionStream (no external deps)
- * 2. JSZip fallback
- * 3. Regex on raw XML content
- */
-async function extractTextFromDOCX(base64Data: string): Promise<string> {
-  const bytes = base64ToUint8Array(base64Data);
-  
-  // ── Strategy 1: Custom async ZIP reader ──
-  try {
-    console.log('🔍 [DOCX] Trying native ZIP extraction...');
-    const xmlContent = await extractFileFromZipAsync(bytes, 'word/document.xml');
-    
-    if (xmlContent && xmlContent.length > 50) {
-      const text = extractTextFromXML(xmlContent);
-      if (text.length > 100) {
-        console.log(`✅ [DOCX] Native ZIP extracted ${text.length} chars`);
-        return text;
-      }
-    }
-  } catch (e) {
-    console.warn('⚠️ [DOCX] Native ZIP failed:', e);
-  }
-
-  // ── Strategy 2: JSZip fallback ──
-  try {
-    console.log('🔍 [DOCX] Trying JSZip fallback...');
-    // @ts-ignore
-    const JSZip = (await import('https://esm.sh/jszip@3.10.1')).default;
-    const zip = await JSZip.loadAsync(bytes.buffer);
-    const docFile = zip.file('word/document.xml');
-    if (docFile) {
-      const xmlContent: string = await docFile.async('text');
-      const text = extractTextFromXML(xmlContent);
-      if (text.length > 50) {
-        console.log(`✅ [DOCX] JSZip extracted ${text.length} chars`);
-        return text;
-      }
-    }
-  } catch (e: any) {
-    console.warn('⚠️ [DOCX] JSZip failed:', e?.message);
-  }
-
-  // ── Strategy 3: Regex on raw bytes (for corrupted ZIPs where XML is readable) ──
-  try {
-    console.log('🔍 [DOCX] Trying raw regex extraction...');
-    const rawStr = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
-    
-    // Try to find XML content directly in the binary
-    const wtMatches = rawStr.match(/<w:t[^>]*>([^<]*)<\/w:t>/g) || [];
-    if (wtMatches.length > 0) {
-      const text = wtMatches.map(m => m.replace(/<[^>]+>/g, '')).join(' ')
-        .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"').replace(/&apos;/g, "'")
-        .replace(/\s{3,}/g, '  ').trim();
-      if (text.length > 50) {
-        console.log(`✅ [DOCX] Raw regex extracted ${text.length} chars`);
-        return text;
-      }
-    }
-  } catch (e) {
-    console.warn('⚠️ [DOCX] Raw regex failed:', e);
-  }
-
-  // ── Strategy 4: Try as DOC (maybe .doc saved as .docx) ──
-  try {
-    console.log('🔍 [DOCX] Trying as DOC format (misnamed file)...');
-    const docText = await extractTextFromDOC(base64Data);
-    if (docText.length > 100) {
-      console.log(`✅ [DOCX] Extracted as DOC: ${docText.length} chars`);
-      return docText;
-    }
-  } catch (e) {
-    console.warn('⚠️ [DOCX] DOC fallback failed:', e);
-  }
-
-  console.error('❌ [DOCX] All extraction strategies failed');
-  return '';
-}
-
-/**
- * Parse XML content and extract text from w:t elements
- */
-function extractTextFromXML(xmlContent: string): string {
-  let text = '';
-
-  // Strategy A: Regex for w:t elements (most reliable across parsers)
-  const wtMatches = xmlContent.match(/<w:t[^>]*>([^<]*)<\/w:t>/g) || [];
-  if (wtMatches.length > 0) {
-    text = wtMatches.map(m => {
-      // Extract text between tags
-      const inner = m.replace(/<[^>]+>/g, '');
-      return inner;
-    }).join(' ');
-  }
-
-  // Strategy B: If regex found little, strip all XML tags
-  if (text.trim().length < 100) {
-    const stripped = xmlContent
-      .replace(/<w:p[^>]*\/>/g, '\n')  // Self-closing paragraphs as newlines
-      .replace(/<\/w:p>/g, '\n')        // Paragraph ends as newlines
-      .replace(/<[^>]+>/g, '')           // Remove all tags
-      .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"').replace(/&apos;/g, "'");
-    
-    if (stripped.trim().length > text.trim().length) {
-      text = stripped;
-    }
-  }
-
-  return text
-    .replace(/\s{3,}/g, '  ')
-    .trim();
-}
-
-/**
- * Extract text from legacy binary .doc files.
- */
-async function extractTextFromDOC(base64Data: string): Promise<string> {
-  const bytes = base64ToUint8Array(base64Data);
-
-  // Strategy A: mammoth
-  try {
-    console.log('🔍 [DOC] Trying mammoth extraction...');
-    // @ts-ignore
-    const mammoth = await import('https://esm.sh/mammoth@1.8.0');
-    const result = await mammoth.extractRawText({ arrayBuffer: bytes.buffer });
-    const text = (result?.value || '').trim();
-    if (text.length > 100) {
-      console.log(`✅ [DOC] mammoth extracted ${text.length} chars`);
-      return text;
-    }
-    console.warn('⚠️ [DOC] mammoth returned minimal content, trying CFB fallback...');
-  } catch (mammothErr: any) {
-    console.warn('⚠️ [DOC] mammoth failed:', mammothErr?.message ?? mammothErr);
-  }
-
-  // Strategy B: CFB stream parsing
-  try {
-    console.log('🔍 [DOC] Trying CFB stream extraction...');
-
-    const CFB_MAGIC = [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1];
-    if (!CFB_MAGIC.every((b, i) => bytes[i] === b)) {
-      console.warn('⚠️ [DOC] Not a CFB file');
-      return '';
-    }
-
-    const view = new DataView(bytes.buffer);
-    const sectorShift = view.getUint16(0x1E, true);
-    const sectorSize = 1 << sectorShift;
-    const numFATSectors = view.getUint32(0x2C, true);
-    const firstDirSect = view.getUint32(0x30, true);
-    const firstMiniFAT = view.getUint32(0x3C, true);
-    const miniSectorShift = view.getUint16(0x20, true);
-    const miniSectorSize = 1 << miniSectorShift;
-    const miniStreamCutoff = view.getUint32(0x38, true);
-
-    const fatSectorList: number[] = [];
-    for (let i = 0; i < 109; i++) {
-      const sect = view.getUint32(0x4C + i * 4, true);
-      if (sect >= 0xFFFFFFFE) break;
-      fatSectorList.push(sect);
-    }
-
-    const sectOffset = (sect: number) => (sect + 1) * sectorSize;
-
-    const fat = new Int32Array(numFATSectors * (sectorSize / 4));
-    for (let si = 0; si < fatSectorList.length; si++) {
-      const off = sectOffset(fatSectorList[si]);
-      for (let j = 0; j < sectorSize / 4; j++) {
-        fat[si * (sectorSize / 4) + j] = view.getInt32(off + j * 4, true);
-      }
-    }
-
-    const readChain = (startSect: number): Uint8Array => {
-      const chunks: Uint8Array[] = [];
-      let cur = startSect;
-      const visited = new Set<number>();
-      while (cur >= 0 && cur < 0xFFFFFFFE && !visited.has(cur)) {
-        visited.add(cur);
-        const off = sectOffset(cur);
-        chunks.push(bytes.slice(off, off + sectorSize));
-        cur = fat[cur] ?? -1;
-      }
-      const out = new Uint8Array(chunks.reduce((s, c) => s + c.length, 0));
-      let pos = 0;
-      for (const c of chunks) { out.set(c, pos); pos += c.length; }
-      return out;
-    };
-
-    const dirBytes = readChain(firstDirSect);
-    const dirView = new DataView(dirBytes.buffer);
-    const numDirEntries = dirBytes.length / 128;
-
-    let rootStartSect = -1;
-    let wordDocStart = -1;
-    let wordDocSize = 0;
-
-    for (let i = 0; i < numDirEntries; i++) {
-      const base = i * 128;
-      const nameLen = dirView.getUint16(base + 0x40, true);
-      if (nameLen < 2 || nameLen > 64) continue;
-
-      let name = '';
-      for (let c = 0; c < (nameLen - 2) / 2; c++) {
-        name += String.fromCharCode(dirView.getUint16(base + c * 2, true));
-      }
-
-      const objectType = dirView.getUint8(base + 0x42);
-      const startSect = dirView.getInt32(base + 0x74, true);
-      const sizeLow = dirView.getUint32(base + 0x78, true);
-
-      if (i === 0 && objectType === 5) {
-        rootStartSect = startSect;
-      }
-
-      if (name === 'WordDocument' && objectType === 2) {
-        wordDocStart = startSect;
-        wordDocSize = sizeLow;
-      }
-    }
-
-    if (wordDocStart < 0) {
-      console.warn('⚠️ [DOC] WordDocument stream not found');
-      return '';
-    }
-
-    let wordDocBytes: Uint8Array;
-    if (wordDocSize < miniStreamCutoff && rootStartSect >= 0 && firstMiniFAT < 0xFFFFFFFE) {
-      const miniStreamData = readChain(rootStartSect);
-      const miniFATBytes = readChain(firstMiniFAT);
-      const miniFAT = new Int32Array(miniFATBytes.buffer);
-
-      const readMiniChain = (startMiniSect: number): Uint8Array => {
-        const chunks: Uint8Array[] = [];
-        let cur = startMiniSect;
-        const visited = new Set<number>();
-        while (cur >= 0 && cur < 0xFFFFFFFE && !visited.has(cur)) {
-          visited.add(cur);
-          const off = cur * miniSectorSize;
-          chunks.push(miniStreamData.slice(off, off + miniSectorSize));
-          cur = miniFAT[cur] ?? -1;
-        }
-        const out = new Uint8Array(chunks.reduce((s, c) => s + c.length, 0));
-        let pos = 0;
-        for (const c of chunks) { out.set(c, pos); pos += c.length; }
-        return out;
-      };
-
-      wordDocBytes = readMiniChain(wordDocStart).slice(0, wordDocSize);
-    } else {
-      wordDocBytes = readChain(wordDocStart).slice(0, wordDocSize);
-    }
-
-    const fibView = new DataView(wordDocBytes.buffer);
-    const fFlags = fibView.getUint16(0x0A, true);
-    const fComplex = (fFlags >> 4) & 1;
-    const fExtChar = (fFlags >> 11) & 1;
-    const fcMin = fibView.getUint32(0x18, true);
-    const fcMac = fibView.getUint32(0x1C, true);
-
-    if (!fComplex && fcMac > fcMin && fcMac <= wordDocBytes.length) {
-      const textBytes = wordDocBytes.slice(fcMin, fcMac);
-      let text: string;
-      if (fExtChar) {
-        text = new TextDecoder('utf-16le').decode(textBytes);
-      } else {
-        text = new TextDecoder('windows-1252', { fatal: false }).decode(textBytes);
-      }
-      text = text
-        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ')
-        .replace(/\r/g, '\n')
-        .replace(/\s{3,}/g, '  ')
-        .trim();
-
-      if (text.length > 100) {
-        console.log(`✅ [DOC] CFB FIB extraction: ${text.length} chars`);
-        return text;
-      }
-    }
-
-    // Last resort: decode WordDocument bytes as UTF-16LE
-    const rawUtf16 = new TextDecoder('utf-16le', { fatal: false }).decode(wordDocBytes);
-    const filtered = rawUtf16
-      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ')
-      .replace(/\r/g, '\n')
-      .replace(/\s{3,}/g, '  ')
-      .trim();
-
-    const runs = filtered.match(/\S[\s\S]{3,}\S/g) || [];
-    const meaningful = runs.filter(r => {
-      const letters = (r.match(/[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ]/g) || []).length;
-      return letters / r.length > 0.4;
-    });
-    const cleanText = meaningful.join(' ').replace(/\s{3,}/g, '  ').trim();
-    console.log(`✅ [DOC] CFB WordDocument raw decode: ${cleanText.length} chars`);
-    return cleanText;
-
-  } catch (cfbErr) {
-    console.error('❌ [DOC] CFB extraction failed:', cfbErr);
-    return '';
-  }
-}
-
-/**
- * Use OpenAI vision to analyze a document when text extraction fails.
- * Works for PDFs and can work for images of documents.
- */
-async function analyzeWithVision(
-  openaiApiKey: string,
-  base64Data: string,
-  fileName: string,
-  systemPrompt: string,
-  aiModel: string,
-  reasoningEffort: 'low' | 'medium' | 'high'
-): Promise<{ success: boolean; text?: string; error?: string }> {
-  console.log('🔍 Using OpenAI vision fallback for document analysis...');
-  
-  // Determine mime type
-  const lowerName = fileName.toLowerCase();
-  let mimeType = 'application/pdf';
-  if (lowerName.endsWith('.docx')) mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-  else if (lowerName.endsWith('.doc')) mimeType = 'application/msword';
-  
-  // For non-PDF, we'll just send the content as text context since vision works best with images/PDFs
-  const analysisInput = [
-    {
-      role: 'user' as const,
-      content: [
-        {
-          type: 'text',
-          text: `Analiza exhaustivamente este documento legal "${fileName}". Proporciona un análisis profundo y profesional. Responde ÚNICAMENTE en formato JSON con: documentType, documentCategory, detectionConfidence, summary, clauses, risks, recommendations, keyDates, parties, legalReferences, missingElements.`
-        },
-        {
-          type: 'image_url',
-          image_url: {
-            url: `data:${mimeType};base64,${base64Data.substring(0, 100000)}`,
-            detail: 'high'
-          }
-        }
-      ]
-    }
-  ];
-
-  const params = buildResponsesRequestParams(aiModel, {
-    input: analysisInput as any,
-    instructions: systemPrompt,
-    maxOutputTokens: 8000,
-    temperature: 0.2,
-    jsonMode: true,
-    store: false,
-    reasoning: { effort: reasoningEffort }
-  });
-
-  return await callResponsesAPI(openaiApiKey, params);
-}
-
-// ──────────────────────────────────────────────
-// SUPABASE / CONFIG HELPERS
-// ──────────────────────────────────────────────
 
 async function getSystemConfig(supabaseClient: any, configKey: string, defaultValue?: string): Promise<string> {
   try {
@@ -602,17 +52,6 @@ async function getSystemConfig(supabaseClient: any, configKey: string, defaultVa
   } catch {
     return defaultValue || '';
   }
-}
-
-function inferDocumentTypeFromFilename(filename: string) {
-  const lower = filename.toLowerCase();
-  if (lower.includes('contrato') || lower.includes('contract'))
-    return { suggestedType: 'Contrato', category: 'contrato' };
-  if (lower.includes('respuesta') || lower.includes('contestacion'))
-    return { suggestedType: 'Respuesta Legal', category: 'respuesta_legal' };
-  if (lower.includes('demanda') || lower.includes('escrito'))
-    return { suggestedType: 'Escrito Jurídico', category: 'escrito_juridico' };
-  return { suggestedType: 'Documento Legal', category: 'otro' };
 }
 
 async function saveToolResult(supabase: any, lawyerId: string, toolType: string, inputData: any, outputData: any, metadata: any = {}) {
@@ -629,10 +68,23 @@ async function saveToolResult(supabase: any, lawyerId: string, toolType: string,
   }
 }
 
-function getExtractionQuality(charCount: number): 'full' | 'partial' | 'minimal' {
-  if (charCount >= 500) return 'full';
-  if (charCount >= 100) return 'partial';
-  return 'minimal';
+function parseAnalysisJSON(text: string): any {
+  try {
+    let clean = (text || '').trim();
+    if (clean.startsWith('```json')) clean = clean.replace(/^```json\s*/i, '');
+    if (clean.startsWith('```')) clean = clean.replace(/^```\s*/i, '');
+    if (clean.endsWith('```')) clean = clean.replace(/\s*```$/i, '');
+    return JSON.parse(clean.trim());
+  } catch {
+    return {
+      documentType: "Documento Legal",
+      documentCategory: "otro",
+      detectionConfidence: "baja",
+      summary: "El documento requiere revisión manual.",
+      clauses: [], risks: [], recommendations: ["Revisar documento manualmente"],
+      keyDates: [], parties: [], legalReferences: [], missingElements: []
+    };
+  }
 }
 
 // ──────────────────────────────────────────────
@@ -668,29 +120,6 @@ serve(async (req) => {
       base64Length: fileBase64?.length ?? 0,
     });
 
-    // ── Text extraction ────────────────────────
-    let extractedText = '';
-    let extractionMethod = 'none';
-
-    if (fileBase64) {
-      if (lowerName.endsWith('.pdf')) {
-        extractedText = await extractTextFromPDF(fileBase64);
-        extractionMethod = 'pdf';
-      } else if (lowerName.endsWith('.docx')) {
-        extractedText = await extractTextFromDOCX(fileBase64);
-        extractionMethod = 'docx';
-      } else if (lowerName.endsWith('.doc')) {
-        extractedText = await extractTextFromDOC(fileBase64);
-        extractionMethod = 'doc-binary';
-      }
-    }
-
-    // Fallback to plain documentContent
-    const contentToAnalyze = extractedText || documentContent || '';
-    const extractionQuality = getExtractionQuality(contentToAnalyze.trim().length);
-
-    console.log(`📊 Extraction quality: ${extractionQuality} (${contentToAnalyze.length} chars)`);
-
     // ── Supabase & AI config ───────────────────
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -713,152 +142,201 @@ serve(async (req) => {
 
     const reasoningEffort = await getSystemConfig(supabase, 'analysis_reasoning_effort', 'medium') as 'low' | 'medium' | 'high';
 
-    // ── Vision fallback for ANY format with minimal extraction ──
-    if (extractionQuality === 'minimal' && fileBase64) {
-      console.log(`🔀 Routing to vision fallback (${extractionMethod} extraction yielded minimal text)`);
-      
-      const visionResult = await analyzeWithVision(
-        openaiApiKey, fileBase64, fileName, systemPrompt, aiModel, reasoningEffort
-      );
+    const analysisPrompt = `Analiza exhaustivamente este documento legal "${fileName}". Proporciona un análisis profundo y profesional. Responde ÚNICAMENTE en formato JSON con: documentType, documentCategory, detectionConfidence, summary, clauses, risks, recommendations, keyDates, parties, legalReferences, missingElements.`;
 
-      if (visionResult.success && visionResult.text) {
-        let analysis;
-        try {
-          let cleanContent = (visionResult.text || '').trim();
-          if (cleanContent.startsWith('```json')) cleanContent = cleanContent.replace(/^```json\s*/i, '');
-          if (cleanContent.startsWith('```')) cleanContent = cleanContent.replace(/^```\s*/i, '');
-          if (cleanContent.endsWith('```')) cleanContent = cleanContent.replace(/\s*```$/i, '');
-          analysis = JSON.parse(cleanContent.trim());
-        } catch {
-          analysis = {
-            documentType: "Documento Legal",
-            documentCategory: "otro",
-            detectionConfidence: "baja",
-            summary: "El documento requiere revisión manual.",
-            clauses: [], risks: [], recommendations: ["Revisar documento manualmente"],
-            keyDates: [], parties: [], legalReferences: [], missingElements: []
-          };
+    // ── Route: Binary file → OpenAI input_file ──
+    if (fileBase64 && isBinaryFormat(lowerName)) {
+      const mimeType = getMimeType(fileName);
+      // Ensure we have the data URI prefix for input_file
+      const cleanBase64 = fileBase64.replace(/^data:[^;]+;base64,/, '');
+      const fileDataUri = `data:${mimeType};base64,${cleanBase64}`;
+
+      console.log(`📤 Sending ${fileName} directly to OpenAI as input_file (${mimeType}, ${cleanBase64.length} base64 chars)`);
+
+      // Build input using Responses API input_file format
+      const input = [
+        {
+          role: 'user' as const,
+          content: [
+            {
+              type: 'input_file',
+              filename: fileName,
+              file_data: fileDataUri,
+            },
+            {
+              type: 'input_text',
+              text: analysisPrompt,
+            }
+          ]
         }
+      ];
 
-        const resultData = {
-          success: true,
-          fileName: fileName || 'Documento',
-          extractionQuality: 'partial',
-          extractionMethod: 'vision-fallback',
-          ...analysis,
-          timestamp: new Date().toISOString()
-        };
-
-        if (lawyerId) {
-          await saveToolResult(supabase, lawyerId, 'analysis',
-            { documentContent: 'Documento procesado por visión', fileName },
-            analysis,
-            { extractionMethod: 'vision-fallback', extractionQuality: 'partial' }
-          );
+      // Call OpenAI Responses API directly (not via buildResponsesRequestParams which may not support input_file)
+      const requestBody: any = {
+        model: aiModel,
+        input,
+        instructions: systemPrompt,
+        max_output_tokens: 8000,
+        store: false,
+        text: {
+          format: { type: 'json_object' }
         }
+      };
 
-        console.log('✅ Analysis completed via vision fallback');
-        return new Response(JSON.stringify(resultData), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+      // Add reasoning for supported models
+      const isReasoningModel = /^(o[1-4]|gpt-5)/.test(aiModel);
+      if (isReasoningModel) {
+        requestBody.reasoning = { effort: reasoningEffort };
+      } else {
+        requestBody.temperature = 0.2;
       }
-      // If vision also failed, continue with minimal content below
+
+      console.log(`🤖 Calling OpenAI Responses API with model: ${aiModel}`);
+
+      const response = await fetch('https://api.openai.com/v1/responses', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openaiApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`❌ OpenAI Responses API error: ${response.status}`, errorText);
+        throw new Error(`OpenAI API error ${response.status}: ${errorText}`);
+      }
+
+      const responseData = await response.json();
+      console.log(`✅ OpenAI response status: ${responseData.status}`);
+
+      // Extract text from response
+      let resultText = '';
+      if (responseData.output) {
+        for (const item of responseData.output) {
+          if (item.type === 'message' && item.content) {
+            for (const c of item.content) {
+              if (c.type === 'output_text') {
+                resultText += c.text;
+              }
+            }
+          }
+        }
+      }
+
+      const analysis = parseAnalysisJSON(resultText);
+      const resultData = {
+        success: true,
+        fileName: fileName || 'Documento',
+        extractionQuality: 'full',
+        extractionMethod: 'openai-input-file',
+        ...analysis,
+        timestamp: new Date().toISOString()
+      };
+
+      if (lawyerId) {
+        await saveToolResult(supabase, lawyerId, 'analysis',
+          { documentContent: `Archivo procesado directamente por OpenAI: ${fileName}`, fileName },
+          analysis,
+          { extractionMethod: 'openai-input-file', extractionQuality: 'full' }
+        );
+      }
+
+      console.log(`✅ Analysis completed via input_file (model: ${aiModel})`);
+      return new Response(JSON.stringify(resultData), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
-    if (!contentToAnalyze || contentToAnalyze.trim().length < 10) {
+    // ── Route: Text content (TXT, RTF, or plain documentContent) ──
+    const textContent = documentContent || '';
+    if (!textContent || textContent.trim().length < 10) {
       return new Response(
         JSON.stringify({ error: 'Document content is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // ── Build analysis prompt ──────────────────
-    let analysisInput = '';
-    const hasRealContent = contentToAnalyze.length > 100;
-
-    if (hasRealContent) {
-      let truncatedContent: string;
-      if (contentToAnalyze.length > 30000) {
-        const firstPart = contentToAnalyze.substring(0, 15000);
-        const lastPart = contentToAnalyze.substring(contentToAnalyze.length - 15000);
-        truncatedContent = `${firstPart}\n\n[... CONTENIDO INTERMEDIO OMITIDO (${contentToAnalyze.length - 30000} caracteres) ...]\n\n${lastPart}`;
-      } else {
-        truncatedContent = contentToAnalyze;
-      }
-
-      const qualityWarning = extractionQuality === 'partial' 
-        ? '\n\nNOTA: La extracción de texto fue parcial. Algunos segmentos pueden estar incompletos.' 
-        : '';
-
-      analysisInput = `Analiza exhaustivamente el siguiente documento legal "${fileName}":${qualityWarning}
-
-CONTENIDO DEL DOCUMENTO:
-${truncatedContent}
-
-Proporciona un análisis profundo y profesional. Responde ÚNICAMENTE en formato JSON con: documentType, documentCategory, detectionConfidence, summary, clauses, risks, recommendations, keyDates, parties, legalReferences, missingElements.`;
+    // Truncate long text content
+    let truncatedContent: string;
+    if (textContent.length > 30000) {
+      const firstPart = textContent.substring(0, 15000);
+      const lastPart = textContent.substring(textContent.length - 15000);
+      truncatedContent = `${firstPart}\n\n[... CONTENIDO INTERMEDIO OMITIDO (${textContent.length - 30000} caracteres) ...]\n\n${lastPart}`;
     } else {
-      const fileTypeInference = inferDocumentTypeFromFilename(fileName);
-      analysisInput = `Documento: "${fileName}" - análisis inferencial basado en nombre.
-Tipo sugerido: ${fileTypeInference.suggestedType}
-Categoría: ${fileTypeInference.category}
-
-Proporciona análisis en formato JSON con detectionConfidence: "baja" indicando que es preliminar.`;
+      truncatedContent = textContent;
     }
 
-    const params = buildResponsesRequestParams(aiModel, {
-      input: analysisInput,
+    const textInput = `${analysisPrompt}\n\nCONTENIDO DEL DOCUMENTO:\n${truncatedContent}`;
+
+    // Use standard Responses API flow for text
+    const requestBody: any = {
+      model: aiModel,
+      input: textInput,
       instructions: systemPrompt,
-      maxOutputTokens: 8000,
-      temperature: 0.2,
-      jsonMode: true,
+      max_output_tokens: 8000,
       store: false,
-      reasoning: { effort: reasoningEffort }
+      text: {
+        format: { type: 'json_object' }
+      }
+    };
+
+    const isReasoningModel = /^(o[1-4]|gpt-5)/.test(aiModel);
+    if (isReasoningModel) {
+      requestBody.reasoning = { effort: reasoningEffort };
+    } else {
+      requestBody.temperature = 0.2;
+    }
+
+    const response = await fetch('https://api.openai.com/v1/responses', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
     });
 
-    const result = await callResponsesAPI(openaiApiKey, params);
-
-    if (!result.success) {
-      throw new Error(`Analysis failed: ${result.error}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ OpenAI Responses API error: ${response.status}`, errorText);
+      throw new Error(`OpenAI API error ${response.status}: ${errorText}`);
     }
 
-    // ── Parse response ─────────────────────────
-    let analysis;
-    try {
-      let cleanContent = (result.text || '').trim();
-      if (cleanContent.startsWith('```json')) cleanContent = cleanContent.replace(/^```json\s*/i, '');
-      if (cleanContent.startsWith('```')) cleanContent = cleanContent.replace(/^```\s*/i, '');
-      if (cleanContent.endsWith('```')) cleanContent = cleanContent.replace(/\s*```$/i, '');
-      analysis = JSON.parse(cleanContent.trim());
-    } catch {
-      analysis = {
-        documentType: "Documento Legal",
-        documentCategory: "otro",
-        detectionConfidence: "baja",
-        summary: "El documento requiere revisión manual.",
-        clauses: [], risks: [], recommendations: ["Revisar documento manualmente"],
-        keyDates: [], parties: [], legalReferences: [], missingElements: []
-      };
+    const responseData = await response.json();
+    let resultText = '';
+    if (responseData.output) {
+      for (const item of responseData.output) {
+        if (item.type === 'message' && item.content) {
+          for (const c of item.content) {
+            if (c.type === 'output_text') {
+              resultText += c.text;
+            }
+          }
+        }
+      }
     }
 
+    const analysis = parseAnalysisJSON(resultText);
     const resultData = {
       success: true,
       fileName: fileName || 'Documento',
-      extractionQuality,
-      extractionMethod,
+      extractionQuality: 'full',
+      extractionMethod: 'text-direct',
       ...analysis,
       timestamp: new Date().toISOString()
     };
 
     if (lawyerId) {
       await saveToolResult(supabase, lawyerId, 'analysis',
-        { documentContent: contentToAnalyze.substring(0, 500) + '...', fileName },
+        { documentContent: textContent.substring(0, 500) + '...', fileName },
         analysis,
-        { extractionMethod, extractionQuality, textLength: contentToAnalyze.length }
+        { extractionMethod: 'text-direct', extractionQuality: 'full', textLength: textContent.length }
       );
     }
 
-    console.log(`✅ Analysis completed (method: ${extractionMethod}, quality: ${extractionQuality}, chars: ${contentToAnalyze.length})`);
-
+    console.log(`✅ Analysis completed (method: text-direct, chars: ${textContent.length})`);
     return new Response(JSON.stringify(resultData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
