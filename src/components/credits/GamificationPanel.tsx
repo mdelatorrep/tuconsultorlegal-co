@@ -125,8 +125,14 @@ export function GamificationPanel({
               En progreso
             </Badge>
           ) : (
-            <Button variant="outline" size="sm" className="text-xs">
-              Comenzar
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="text-xs"
+              onClick={() => handleClaim(task.task_key)}
+              disabled={claimingTask === task.task_key}
+            >
+              {claimingTask === task.task_key ? 'Reclamando...' : 'Comenzar'}
               <ChevronRight className="h-3 w-3 ml-1" />
             </Button>
           )}
