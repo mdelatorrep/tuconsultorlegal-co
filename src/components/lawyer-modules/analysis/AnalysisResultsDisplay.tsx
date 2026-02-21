@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { 
   AlertTriangle, FileText, CheckCircle, XCircle, AlertCircle, 
@@ -12,43 +10,7 @@ import {
   Sparkles, Shield, Target
 } from 'lucide-react';
 import { toast } from "sonner";
-
-interface AnalysisResult {
-  id?: string;
-  fileName: string;
-  documentType: string;
-  documentCategory?: 'contrato' | 'respuesta_legal' | 'escrito_juridico' | 'informe' | 'correspondencia' | 'anexo' | 'otro';
-  detectionConfidence?: 'alta' | 'media' | 'baja';
-  summary?: string;
-  clauses?: Array<{
-    name: string;
-    content: string;
-    riskLevel: string;
-    recommendation: string;
-  }>;
-  risks?: Array<{
-    type: string;
-    description: string;
-    severity: string;
-    mitigation?: string;
-  }>;
-  recommendations?: string[];
-  keyDates?: Array<{
-    date: string;
-    description: string;
-    importance: string;
-  }>;
-  parties?: Array<{
-    name: string;
-    role: string;
-  }>;
-  legalReferences?: Array<{
-    reference: string;
-    context: string;
-  }>;
-  missingElements?: string[];
-  timestamp: Date;
-}
+import { AnalysisResult, getCategoryLabel, getElementLabel } from './analysisNormalizer';
 
 interface AnalysisResultsDisplayProps {
   result: AnalysisResult;
@@ -93,32 +55,6 @@ export default function AnalysisResultsDisplay({ result, onExport }: AnalysisRes
       otro: <FileText className="w-5 h-5" />
     };
     return icons[category || 'otro'] || icons['otro'];
-  };
-
-  const getCategoryLabel = (category?: string) => {
-    const labels: Record<string, string> = {
-      contrato: 'Contrato',
-      respuesta_legal: 'Respuesta Legal',
-      escrito_juridico: 'Escrito Jurídico',
-      informe: 'Informe',
-      correspondencia: 'Correspondencia',
-      anexo: 'Anexo',
-      otro: 'Otro'
-    };
-    return labels[category || 'otro'] || 'Documento';
-  };
-
-  const getElementLabel = (category?: string) => {
-    const labels: Record<string, string> = {
-      contrato: 'Cláusula',
-      respuesta_legal: 'Argumento',
-      escrito_juridico: 'Fundamento',
-      informe: 'Hallazgo',
-      correspondencia: 'Punto',
-      anexo: 'Sección',
-      otro: 'Elemento'
-    };
-    return labels[category || 'otro'] || 'Elemento';
   };
 
   const getRiskBadgeStyles = (level: string) => {
