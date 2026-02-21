@@ -365,6 +365,21 @@ export default function SuinJuriscolModule({ user, currentView, onViewChange, on
   const handleSendFollowUp = async () => {
     if (!followUpQuery.trim() || !currentResult) return;
 
+    // Check and consume credits for follow-up
+    if (!hasEnoughCredits('suin_juriscol_followup')) {
+      toast({
+        title: "Créditos insuficientes",
+        description: `Necesitas ${getToolCost('suin_juriscol_followup')} créditos para enviar un mensaje de seguimiento.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const creditResult = await consumeCredits('suin_juriscol_followup', { query: followUpQuery, isFollowUp: true });
+    if (!creditResult.success) {
+      return;
+    }
+
     setIsSendingMessage(true);
     const userMessage: ChatMessage = {
       role: 'user',
@@ -570,12 +585,12 @@ export default function SuinJuriscolModule({ user, currentView, onViewChange, on
                     </div>
 
                     {/* Follow-up Input */}
-                    <div className="flex gap-2 pt-2 border-t">
+                    <div className="flex gap-2 pt-2 border-t items-center">
                       <Input
                         value={followUpQuery}
                         onChange={(e) => setFollowUpQuery(e.target.value)}
                         placeholder="Haz una pregunta de seguimiento..."
-                        disabled={isSendingMessage}
+                        disabled={isSendingMessage || !hasEnoughCredits('suin_juriscol_followup')}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && !e.shiftKey) {
                             e.preventDefault();
@@ -586,10 +601,14 @@ export default function SuinJuriscolModule({ user, currentView, onViewChange, on
                       />
                       <Button
                         onClick={handleSendFollowUp}
-                        disabled={isSendingMessage || !followUpQuery.trim()}
+                        disabled={isSendingMessage || !followUpQuery.trim() || !hasEnoughCredits('suin_juriscol_followup')}
                         className="bg-emerald-600 hover:bg-emerald-700"
                       >
-                        <Send className="h-4 w-4" />
+                        <Send className="h-4 w-4 mr-1" />
+                        <span className="flex items-center gap-1 text-xs">
+                          <Coins className="h-3 w-3" />
+                          {getToolCost('suin_juriscol_followup')}
+                        </span>
                       </Button>
                     </div>
 
