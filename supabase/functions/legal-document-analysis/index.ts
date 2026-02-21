@@ -27,7 +27,6 @@ function base64ToUint8Array(base64: string): Uint8Array {
 
 /**
  * Extract text from PDF using regex on raw binary.
- * Returns whatever it can; caller decides if quality is sufficient.
  */
 async function extractTextFromPDF(base64Data: string): Promise<string> {
   try {
@@ -85,85 +84,268 @@ async function extractTextFromPDF(base64Data: string): Promise<string> {
 }
 
 /**
- * Extract text from DOCX using proper XML namespace parsing via DOMParser.
+ * Minimal ZIP reader that doesn't depend on JSZip.
+ * Reads Local File Headers to find and extract word/document.xml from DOCX.
+ */
+function extractFileFromZip(zipBytes: Uint8Array, targetPath: string): Uint8Array | null {
+  const view = new DataView(zipBytes.buffer, zipBytes.byteOffset, zipBytes.byteLength);
+  let offset = 0;
+  const targetLower = targetPath.toLowerCase();
+
+  while (offset < zipBytes.length - 30) {
+    // Local file header signature = 0x04034b50
+    const sig = view.getUint32(offset, true);
+    if (sig !== 0x04034b50) break;
+
+    const compressionMethod = view.getUint16(offset + 8, true);
+    const compressedSize = view.getUint32(offset + 18, true);
+    const uncompressedSize = view.getUint32(offset + 22, true);
+    const fileNameLen = view.getUint16(offset + 26, true);
+    const extraLen = view.getUint16(offset + 28, true);
+
+    const fileNameBytes = zipBytes.slice(offset + 30, offset + 30 + fileNameLen);
+    const fileName = new TextDecoder().decode(fileNameBytes);
+
+    const dataOffset = offset + 30 + fileNameLen + extraLen;
+
+    if (fileName.toLowerCase() === targetLower) {
+      const rawData = zipBytes.slice(dataOffset, dataOffset + compressedSize);
+
+      if (compressionMethod === 0) {
+        // Stored (no compression)
+        return rawData;
+      } else if (compressionMethod === 8) {
+        // Deflate — use DecompressionStream (available in Deno)
+        try {
+          const ds = new DecompressionStream('deflate-raw');
+          const writer = ds.writable.getWriter();
+          const reader = ds.readable.getReader();
+
+          // We need to do this synchronously-ish, so we'll collect chunks
+          const chunks: Uint8Array[] = [];
+          let done = false;
+
+          // Start writing and reading concurrently
+          const writePromise = writer.write(rawData).then(() => writer.close());
+          const readPromise = (async () => {
+            while (true) {
+              const { value, done: readDone } = await reader.read();
+              if (readDone) break;
+              chunks.push(new Uint8Array(value));
+            }
+          })();
+
+          // We can't await here since this is sync, but we'll return null
+          // and use the async version instead
+          return null;
+        } catch {
+          return null;
+        }
+      }
+    }
+
+    offset = dataOffset + compressedSize;
+  }
+  return null;
+}
+
+/**
+ * Async version of ZIP file extraction using DecompressionStream for deflated entries.
+ */
+async function extractFileFromZipAsync(zipBytes: Uint8Array, targetPath: string): Promise<string | null> {
+  const view = new DataView(zipBytes.buffer, zipBytes.byteOffset, zipBytes.byteLength);
+  let offset = 0;
+  const targetLower = targetPath.toLowerCase();
+
+  while (offset < zipBytes.length - 30) {
+    const sig = view.getUint32(offset, true);
+    if (sig !== 0x04034b50) break;
+
+    const compressionMethod = view.getUint16(offset + 8, true);
+    const compressedSize = view.getUint32(offset + 18, true);
+    const fileNameLen = view.getUint16(offset + 26, true);
+    const extraLen = view.getUint16(offset + 28, true);
+
+    const fileNameBytes = zipBytes.slice(offset + 30, offset + 30 + fileNameLen);
+    const fileName = new TextDecoder().decode(fileNameBytes);
+
+    const dataOffset = offset + 30 + fileNameLen + extraLen;
+
+    if (fileName.toLowerCase() === targetLower) {
+      const rawData = zipBytes.slice(dataOffset, dataOffset + compressedSize);
+
+      if (compressionMethod === 0) {
+        return new TextDecoder('utf-8').decode(rawData);
+      } else if (compressionMethod === 8) {
+        try {
+          const ds = new DecompressionStream('deflate-raw');
+          const writer = ds.writable.getWriter();
+          const reader = ds.readable.getReader();
+
+          writer.write(rawData).then(() => writer.close());
+
+          const chunks: Uint8Array[] = [];
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            chunks.push(new Uint8Array(value));
+          }
+
+          const totalLen = chunks.reduce((s, c) => s + c.length, 0);
+          const result = new Uint8Array(totalLen);
+          let pos = 0;
+          for (const c of chunks) {
+            result.set(c, pos);
+            pos += c.length;
+          }
+          return new TextDecoder('utf-8').decode(result);
+        } catch (e) {
+          console.error('❌ DecompressionStream failed:', e);
+          return null;
+        }
+      }
+    }
+
+    // Handle data descriptor (bit 3 of general purpose flag)
+    const generalFlag = view.getUint16(offset + 6, true);
+    let nextOffset = dataOffset + compressedSize;
+    
+    if ((generalFlag & 0x08) !== 0 && compressedSize === 0) {
+      // Data descriptor present, sizes were zero — scan for next header
+      let scan = dataOffset;
+      while (scan < zipBytes.length - 4) {
+        if (view.getUint32(scan, true) === 0x04034b50 || view.getUint32(scan, true) === 0x02014b50) {
+          nextOffset = scan;
+          break;
+        }
+        scan++;
+      }
+      if (scan >= zipBytes.length - 4) break;
+    }
+    
+    offset = nextOffset;
+  }
+  return null;
+}
+
+/**
+ * Extract text from DOCX - multiple strategies:
+ * 1. Custom ZIP reader with DecompressionStream (no external deps)
+ * 2. JSZip fallback
+ * 3. Regex on raw XML content
  */
 async function extractTextFromDOCX(base64Data: string): Promise<string> {
+  const bytes = base64ToUint8Array(base64Data);
+  
+  // ── Strategy 1: Custom async ZIP reader ──
   try {
-    console.log('🔍 Starting DOCX text extraction (DOMParser)...');
-    // @ts-ignore - dynamic import from esm.sh
-    const JSZip = (await import('https://esm.sh/jszip@3.10.1')).default;
-
-    const bytes = base64ToUint8Array(base64Data);
-    const zip = await JSZip.loadAsync(bytes.buffer);
-
-    const docFile = zip.file('word/document.xml');
-    if (!docFile) {
-      console.warn('⚠️ word/document.xml not found in ZIP');
-      return '';
-    }
-
-    const xmlContent: string = await docFile.async('text');
-
-    // Use DOMParser for robust namespace-aware parsing
-    const { DOMParser } = await import('https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts');
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(xmlContent, 'text/xml');
-
-    let text = '';
-
-    if (doc) {
-      // Strategy 1: getElementsByTagNameNS for w:t elements
-      const WP_NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
-      const tNodes = doc.getElementsByTagNameNS(WP_NS, 't');
-      
-      if (tNodes && tNodes.length > 0) {
-        for (let i = 0; i < tNodes.length; i++) {
-          text += (tNodes[i].textContent || '') + ' ';
-        }
-      }
-
-      // Strategy 2: If namespace approach yielded little, try tagName matching
-      if (text.trim().length < 100) {
-        console.log('🔄 DOCX: namespace approach yielded little, trying tag matching...');
-        const allElements = doc.getElementsByTagName('*');
-        for (let i = 0; i < allElements.length; i++) {
-          const el = allElements[i];
-          const tagName = el.tagName || el.nodeName || '';
-          if (tagName === 'w:t' || tagName.endsWith(':t')) {
-            text += (el.textContent || '') + ' ';
-          }
-        }
+    console.log('🔍 [DOCX] Trying native ZIP extraction...');
+    const xmlContent = await extractFileFromZipAsync(bytes, 'word/document.xml');
+    
+    if (xmlContent && xmlContent.length > 50) {
+      const text = extractTextFromXML(xmlContent);
+      if (text.length > 100) {
+        console.log(`✅ [DOCX] Native ZIP extracted ${text.length} chars`);
+        return text;
       }
     }
-
-    // Strategy 3: Regex fallback for edge cases where DOMParser fails
-    if (text.trim().length < 100) {
-      console.log('🔄 DOCX: DOMParser yielded little, trying regex fallback...');
-      // Match both <w:t> and <w:t xml:space="preserve"> variants
-      const wtMatches = xmlContent.match(/<w:t[^>]*>([^<]*)<\/w:t>/g) || [];
-      text = wtMatches.map(m => m.replace(/<[^>]+>/g, '')).join(' ');
-      
-      // Also try without namespace prefix
-      if (text.trim().length < 100) {
-        const allText = xmlContent.replace(/<[^>]+>/g, ' ')
-          .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-          .replace(/&quot;/g, '"').replace(/&apos;/g, "'");
-        text = allText;
-      }
-    }
-
-    text = text.replace(/\s{3,}/g, '  ').trim();
-    console.log(`✅ DOCX extracted ${text.length} chars`);
-    return text;
-  } catch (error) {
-    console.error('❌ Error extracting text from DOCX:', error);
-    return '';
+  } catch (e) {
+    console.warn('⚠️ [DOCX] Native ZIP failed:', e);
   }
+
+  // ── Strategy 2: JSZip fallback ──
+  try {
+    console.log('🔍 [DOCX] Trying JSZip fallback...');
+    // @ts-ignore
+    const JSZip = (await import('https://esm.sh/jszip@3.10.1')).default;
+    const zip = await JSZip.loadAsync(bytes.buffer);
+    const docFile = zip.file('word/document.xml');
+    if (docFile) {
+      const xmlContent: string = await docFile.async('text');
+      const text = extractTextFromXML(xmlContent);
+      if (text.length > 50) {
+        console.log(`✅ [DOCX] JSZip extracted ${text.length} chars`);
+        return text;
+      }
+    }
+  } catch (e: any) {
+    console.warn('⚠️ [DOCX] JSZip failed:', e?.message);
+  }
+
+  // ── Strategy 3: Regex on raw bytes (for corrupted ZIPs where XML is readable) ──
+  try {
+    console.log('🔍 [DOCX] Trying raw regex extraction...');
+    const rawStr = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+    
+    // Try to find XML content directly in the binary
+    const wtMatches = rawStr.match(/<w:t[^>]*>([^<]*)<\/w:t>/g) || [];
+    if (wtMatches.length > 0) {
+      const text = wtMatches.map(m => m.replace(/<[^>]+>/g, '')).join(' ')
+        .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"').replace(/&apos;/g, "'")
+        .replace(/\s{3,}/g, '  ').trim();
+      if (text.length > 50) {
+        console.log(`✅ [DOCX] Raw regex extracted ${text.length} chars`);
+        return text;
+      }
+    }
+  } catch (e) {
+    console.warn('⚠️ [DOCX] Raw regex failed:', e);
+  }
+
+  // ── Strategy 4: Try as DOC (maybe .doc saved as .docx) ──
+  try {
+    console.log('🔍 [DOCX] Trying as DOC format (misnamed file)...');
+    const docText = await extractTextFromDOC(base64Data);
+    if (docText.length > 100) {
+      console.log(`✅ [DOCX] Extracted as DOC: ${docText.length} chars`);
+      return docText;
+    }
+  } catch (e) {
+    console.warn('⚠️ [DOCX] DOC fallback failed:', e);
+  }
+
+  console.error('❌ [DOCX] All extraction strategies failed');
+  return '';
+}
+
+/**
+ * Parse XML content and extract text from w:t elements
+ */
+function extractTextFromXML(xmlContent: string): string {
+  let text = '';
+
+  // Strategy A: Regex for w:t elements (most reliable across parsers)
+  const wtMatches = xmlContent.match(/<w:t[^>]*>([^<]*)<\/w:t>/g) || [];
+  if (wtMatches.length > 0) {
+    text = wtMatches.map(m => {
+      // Extract text between tags
+      const inner = m.replace(/<[^>]+>/g, '');
+      return inner;
+    }).join(' ');
+  }
+
+  // Strategy B: If regex found little, strip all XML tags
+  if (text.trim().length < 100) {
+    const stripped = xmlContent
+      .replace(/<w:p[^>]*\/>/g, '\n')  // Self-closing paragraphs as newlines
+      .replace(/<\/w:p>/g, '\n')        // Paragraph ends as newlines
+      .replace(/<[^>]+>/g, '')           // Remove all tags
+      .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"').replace(/&apos;/g, "'");
+    
+    if (stripped.trim().length > text.trim().length) {
+      text = stripped;
+    }
+  }
+
+  return text
+    .replace(/\s{3,}/g, '  ')
+    .trim();
 }
 
 /**
  * Extract text from legacy binary .doc files.
- * Strategy A: mammoth library. Strategy B: CFB stream parsing.
  */
 async function extractTextFromDOC(base64Data: string): Promise<string> {
   const bytes = base64ToUint8Array(base64Data);
@@ -184,7 +366,7 @@ async function extractTextFromDOC(base64Data: string): Promise<string> {
     console.warn('⚠️ [DOC] mammoth failed:', mammothErr?.message ?? mammothErr);
   }
 
-  // Strategy B: CFB stream parsing (kept from original)
+  // Strategy B: CFB stream parsing
   try {
     console.log('🔍 [DOC] Trying CFB stream extraction...');
 
@@ -352,7 +534,8 @@ async function extractTextFromDOC(base64Data: string): Promise<string> {
 }
 
 /**
- * For PDFs where text extraction fails, use OpenAI's vision to read the PDF as base64 image.
+ * Use OpenAI vision to analyze a document when text extraction fails.
+ * Works for PDFs and can work for images of documents.
  */
 async function analyzeWithVision(
   openaiApiKey: string,
@@ -362,8 +545,15 @@ async function analyzeWithVision(
   aiModel: string,
   reasoningEffort: 'low' | 'medium' | 'high'
 ): Promise<{ success: boolean; text?: string; error?: string }> {
-  console.log('🔍 Using OpenAI file input for PDF analysis (vision fallback)...');
+  console.log('🔍 Using OpenAI vision fallback for document analysis...');
   
+  // Determine mime type
+  const lowerName = fileName.toLowerCase();
+  let mimeType = 'application/pdf';
+  if (lowerName.endsWith('.docx')) mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  else if (lowerName.endsWith('.doc')) mimeType = 'application/msword';
+  
+  // For non-PDF, we'll just send the content as text context since vision works best with images/PDFs
   const analysisInput = [
     {
       role: 'user' as const,
@@ -375,7 +565,7 @@ async function analyzeWithVision(
         {
           type: 'image_url',
           image_url: {
-            url: `data:application/pdf;base64,${base64Data.substring(0, 50000)}`,
+            url: `data:${mimeType};base64,${base64Data.substring(0, 100000)}`,
             detail: 'high'
           }
         }
@@ -439,9 +629,6 @@ async function saveToolResult(supabase: any, lawyerId: string, toolType: string,
   }
 }
 
-/**
- * Determine extraction quality based on character count
- */
 function getExtractionQuality(charCount: number): 'full' | 'partial' | 'minimal' {
   if (charCount >= 500) return 'full';
   if (charCount >= 100) return 'partial';
@@ -526,9 +713,9 @@ serve(async (req) => {
 
     const reasoningEffort = await getSystemConfig(supabase, 'analysis_reasoning_effort', 'medium') as 'low' | 'medium' | 'high';
 
-    // ── Route: Vision fallback for PDFs with minimal extraction ──
-    if (extractionQuality === 'minimal' && lowerName.endsWith('.pdf') && fileBase64) {
-      console.log('🔀 Routing to vision fallback for PDF with minimal text extraction');
+    // ── Vision fallback for ANY format with minimal extraction ──
+    if (extractionQuality === 'minimal' && fileBase64) {
+      console.log(`🔀 Routing to vision fallback (${extractionMethod} extraction yielded minimal text)`);
       
       const visionResult = await analyzeWithVision(
         openaiApiKey, fileBase64, fileName, systemPrompt, aiModel, reasoningEffort
@@ -564,7 +751,7 @@ serve(async (req) => {
 
         if (lawyerId) {
           await saveToolResult(supabase, lawyerId, 'analysis',
-            { documentContent: 'PDF procesado por visión', fileName },
+            { documentContent: 'Documento procesado por visión', fileName },
             analysis,
             { extractionMethod: 'vision-fallback', extractionQuality: 'partial' }
           );
@@ -590,7 +777,6 @@ serve(async (req) => {
     const hasRealContent = contentToAnalyze.length > 100;
 
     if (hasRealContent) {
-      // Increased limit: 30K chars, with smart sectioning for very long docs
       let truncatedContent: string;
       if (contentToAnalyze.length > 30000) {
         const firstPart = contentToAnalyze.substring(0, 15000);

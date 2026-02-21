@@ -132,14 +132,18 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
 
       if (isBinaryFile) {
         try {
-          const arrayBuffer = await file.arrayBuffer();
-          const uint8Array = new Uint8Array(arrayBuffer);
-          const chunkSize = 8192;
-          const chunks: string[] = [];
-          for (let i = 0; i < uint8Array.length; i += chunkSize) {
-            chunks.push(String.fromCharCode(...uint8Array.slice(i, i + chunkSize)));
-          }
-          fileBase64 = btoa(chunks.join(''));
+          // Use FileReader.readAsDataURL for reliable binary-to-base64 encoding
+          fileBase64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              const dataUrl = reader.result as string;
+              // Strip the data:...;base64, prefix
+              const base64 = dataUrl.split(',')[1];
+              resolve(base64);
+            };
+            reader.onerror = () => reject(reader.error);
+            reader.readAsDataURL(file);
+          });
           fileContent = `Documento ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
         } catch (binaryError) {
           console.error('Error processing binary file:', binaryError);
