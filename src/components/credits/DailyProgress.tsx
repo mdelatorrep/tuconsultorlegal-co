@@ -57,8 +57,8 @@ export function DailyProgress({ lawyerId, onViewCredits }: DailyProgressProps) {
   const claimableTasks = dailyProgress.filter(t => t.completed && !t.claimed);
   const pendingTasks = dailyProgress.filter(t => !t.completed);
 
-  // Calculate streak from gamification data
-  const streak = progress.filter(p => p.status === 'claimed').length > 0 ? 1 : 0;
+  // Read streak from backend
+  const streak = balance?.current_streak || 0;
 
   const handleClaimReward = async (taskKey: string) => {
     await checkAndClaimTask(taskKey);

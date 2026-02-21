@@ -2582,9 +2582,12 @@ export type Database = {
         Row: {
           created_at: string
           current_balance: number
+          current_streak: number | null
           id: string
+          last_activity_date: string | null
           last_purchase_at: string | null
           lawyer_id: string
+          longest_streak: number | null
           total_earned: number
           total_spent: number
           updated_at: string
@@ -2592,9 +2595,12 @@ export type Database = {
         Insert: {
           created_at?: string
           current_balance?: number
+          current_streak?: number | null
           id?: string
+          last_activity_date?: string | null
           last_purchase_at?: string | null
           lawyer_id: string
+          longest_streak?: number | null
           total_earned?: number
           total_spent?: number
           updated_at?: string
@@ -2602,9 +2608,12 @@ export type Database = {
         Update: {
           created_at?: string
           current_balance?: number
+          current_streak?: number | null
           id?: string
+          last_activity_date?: string | null
           last_purchase_at?: string | null
           lawyer_id?: string
+          longest_streak?: number | null
           total_earned?: number
           total_spent?: number
           updated_at?: string

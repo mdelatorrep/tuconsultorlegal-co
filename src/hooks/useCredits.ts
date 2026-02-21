@@ -9,6 +9,9 @@ export interface CreditBalance {
   total_earned: number;
   total_spent: number;
   last_purchase_at: string | null;
+  current_streak: number;
+  longest_streak: number;
+  last_activity_date: string | null;
 }
 
 export interface CreditPackage {
