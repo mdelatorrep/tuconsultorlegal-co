@@ -212,8 +212,7 @@ serve(async (req) => {
             {
               role: 'user' as const,
               content: [
-                { type: 'input_file', file_id: fileId },
-                { type: 'input_text', text: analysisPrompt },
+                { type: 'input_text', text: `${analysisPrompt}\n\nEl archivo "${fileName}" ha sido cargado en el code interpreter. Léelo usando Python y analízalo.` },
               ]
             }
           ],
