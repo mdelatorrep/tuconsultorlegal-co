@@ -124,6 +124,11 @@ export function GamificationPanel({
               <Clock className="h-3 w-3 mr-1" />
               En progreso
             </Badge>
+          ) : task.task_type === 'daily' ? (
+            <Badge variant="outline" className="text-muted-foreground">
+              <Clock className="h-3 w-3 mr-1" />
+              Automática
+            </Badge>
           ) : (
             <Button 
               variant="outline" 
