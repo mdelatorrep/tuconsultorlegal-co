@@ -28,62 +28,9 @@ function isPdfFormat(fileName: string): boolean {
   return fileName.toLowerCase().endsWith('.pdf');
 }
 
-function isDocxFormat(fileName: string): boolean {
+function isBinaryFormat(fileName: string): boolean {
   const lower = fileName.toLowerCase();
-  return lower.endsWith('.docx') || lower.endsWith('.doc');
-}
-
-async function extractTextFromDocx(base64Data: string): Promise<string> {
-  try {
-    const binaryStr = atob(base64Data);
-    const bytes = new Uint8Array(binaryStr.length);
-    for (let i = 0; i < binaryStr.length; i++) {
-      bytes[i] = binaryStr.charCodeAt(i);
-    }
-
-    // DOCX is a ZIP file - look for word/document.xml
-    // Find PK signature and locate document.xml
-    const decoder = new TextDecoder('utf-8', { fatal: false });
-    const fullText = decoder.decode(bytes);
-    
-    // Try to find XML content between <w:t> tags (Word XML format)
-    const textParts: string[] = [];
-    const regex = /<w:t[^>]*>([^<]*)<\/w:t>/g;
-    let match;
-    while ((match = regex.exec(fullText)) !== null) {
-      if (match[1]) textParts.push(match[1]);
-    }
-    
-    if (textParts.length > 0) {
-      return textParts.join(' ');
-    }
-
-    // Fallback: extract any readable text between XML tags
-    const fallbackRegex = />([^<]{3,})</g;
-    const fallbackParts: string[] = [];
-    while ((match = fallbackRegex.exec(fullText)) !== null) {
-      const text = match[1].trim();
-      if (text && !/^[\s\x00-\x1f]*$/.test(text) && !/^[A-Za-z0-9+/=]+$/.test(text)) {
-        fallbackParts.push(text);
-      }
-    }
-    
-    return fallbackParts.join(' ');
-  } catch (e) {
-    console.error('Error extracting DOCX text:', e);
-    return '';
-  }
-}
-
-function inferDocumentTypeFromFilename(filename: string) {
-  const lower = filename.toLowerCase();
-  if (lower.includes('contrato') || lower.includes('contract'))
-    return { suggestedType: 'Contrato', category: 'contrato' };
-  if (lower.includes('respuesta') || lower.includes('contestacion'))
-    return { suggestedType: 'Respuesta Legal', category: 'respuesta_legal' };
-  if (lower.includes('demanda') || lower.includes('escrito'))
-    return { suggestedType: 'Escrito Jurídico', category: 'escrito_juridico' };
-  return { suggestedType: 'Documento Legal', category: 'otro' };
+  return lower.endsWith('.pdf') || lower.endsWith('.docx') || lower.endsWith('.doc');
 }
 
 async function getSystemConfig(supabaseClient: any, configKey: string, defaultValue?: string): Promise<string> {
@@ -131,6 +78,20 @@ function parseAnalysisJSON(text: string): any {
       keyDates: [], parties: [], legalReferences: [], missingElements: []
     };
   }
+}
+
+function extractOutputText(responseData: any): string {
+  let resultText = '';
+  if (responseData.output) {
+    for (const item of responseData.output) {
+      if (item.type === 'message' && item.content) {
+        for (const c of item.content) {
+          if (c.type === 'output_text') resultText += c.text;
+        }
+      }
+    }
+  }
+  return resultText;
 }
 
 // ──────────────────────────────────────────────
@@ -187,111 +148,19 @@ serve(async (req) => {
     logResponsesRequest(aiModel, 'legal-document-analysis', true);
 
     const reasoningEffort = await getSystemConfig(supabase, 'analysis_reasoning_effort', 'medium') as 'low' | 'medium' | 'high';
+    const isReasoningModel = /^(o[1-4]|gpt-5)/.test(aiModel);
 
     const analysisPrompt = `Analiza exhaustivamente este documento legal "${fileName}". Proporciona un análisis profundo y profesional. Responde ÚNICAMENTE en formato JSON con: documentType, documentCategory, detectionConfidence, summary, clauses, risks, recommendations, keyDates, parties, legalReferences, missingElements.`;
 
-    // ── Route: DOCX/DOC → extract text, then send as input_text ──
-    if (fileBase64 && isDocxFormat(lowerName)) {
-      const cleanBase64 = fileBase64.replace(/^data:[^;]+;base64,/, '');
-      console.log(`📄 Extracting text from DOCX: ${fileName}`);
-      
-      let extractedText = await extractTextFromDocx(cleanBase64);
-      console.log(`📝 Extracted ${extractedText.length} chars from DOCX`);
-      
-      if (extractedText.length < 50) {
-        console.warn('⚠️ DOCX extraction yielded minimal text, sending raw content');
-        extractedText = `[Documento DOCX: ${fileName} - No se pudo extraer texto completo. Analizar basándose en el nombre del archivo y contexto disponible.]`;
-      }
-
-      // Truncate if needed
-      let contentToSend = extractedText;
-      if (extractedText.length > 30000) {
-        const first = extractedText.substring(0, 15000);
-        const last = extractedText.substring(extractedText.length - 15000);
-        contentToSend = `${first}\n\n[... CONTENIDO INTERMEDIO OMITIDO (${extractedText.length - 30000} caracteres) ...]\n\n${last}`;
-      }
-
-      const textInput = `${analysisPrompt}\n\nCONTENIDO DEL DOCUMENTO:\n${contentToSend}`;
-
-      const requestBody: any = {
-        model: aiModel,
-        input: textInput,
-        instructions: systemPrompt,
-        max_output_tokens: 8000,
-        store: false,
-        text: { format: { type: 'json_object' } }
-      };
-
-      const isReasoningModel = /^(o[1-4]|gpt-5)/.test(aiModel);
-      if (isReasoningModel) {
-        requestBody.reasoning = { effort: reasoningEffort };
-      } else {
-        requestBody.temperature = 0.2;
-      }
-
-      console.log(`🤖 Calling OpenAI with extracted DOCX text (model: ${aiModel})`);
-
-      const response = await fetch('https://api.openai.com/v1/responses', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openaiApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`❌ OpenAI error: ${response.status}`, errorText);
-        throw new Error(`OpenAI API error ${response.status}: ${errorText}`);
-      }
-
-      const responseData = await response.json();
-      let resultText = '';
-      if (responseData.output) {
-        for (const item of responseData.output) {
-          if (item.type === 'message' && item.content) {
-            for (const c of item.content) {
-              if (c.type === 'output_text') resultText += c.text;
-            }
-          }
-        }
-      }
-
-      const analysis = parseAnalysisJSON(resultText);
-      const resultData = {
-        success: true,
-        fileName: fileName || 'Documento',
-        extractionQuality: extractedText.length > 200 ? 'full' : 'partial',
-        extractionMethod: 'docx-text-extraction',
-        ...analysis,
-        timestamp: new Date().toISOString()
-      };
-
-      if (lawyerId) {
-        await saveToolResult(supabase, lawyerId, 'analysis',
-          { documentContent: extractedText.substring(0, 500) + '...', fileName },
-          analysis,
-          { extractionMethod: 'docx-text-extraction', extractionQuality: extractedText.length > 200 ? 'full' : 'partial' }
-        );
-      }
-
-      console.log(`✅ DOCX analysis completed (${extractedText.length} chars extracted)`);
-      return new Response(JSON.stringify(resultData), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    // ── Route: PDF → OpenAI input_file (native processing) ──
-    if (fileBase64 && isPdfFormat(lowerName)) {
+    // ── Route: Binary file (PDF, DOCX, DOC) with base64 ──
+    if (fileBase64 && isBinaryFormat(lowerName)) {
       const mimeType = getMimeType(fileName);
-      // Ensure we have the data URI prefix for input_file
       const cleanBase64 = fileBase64.replace(/^data:[^;]+;base64,/, '');
       const fileDataUri = `data:${mimeType};base64,${cleanBase64}`;
+      const usePdfDirect = isPdfFormat(lowerName);
 
-      console.log(`📤 Sending ${fileName} directly to OpenAI as input_file (${mimeType}, ${cleanBase64.length} base64 chars)`);
+      console.log(`📤 Processing ${fileName} (${mimeType}, ${cleanBase64.length} base64 chars, method: ${usePdfDirect ? 'input_file-direct' : 'code_interpreter'})`);
 
-      // Build input using Responses API input_file format
       const input = [
         {
           role: 'user' as const,
@@ -309,27 +178,27 @@ serve(async (req) => {
         }
       ];
 
-      // Call OpenAI Responses API directly (not via buildResponsesRequestParams which may not support input_file)
       const requestBody: any = {
         model: aiModel,
         input,
         instructions: systemPrompt,
         max_output_tokens: 8000,
         store: false,
-        text: {
-          format: { type: 'json_object' }
-        }
+        text: { format: { type: 'json_object' } }
       };
 
-      // Add reasoning for supported models
-      const isReasoningModel = /^(o[1-4]|gpt-5)/.test(aiModel);
+      // For non-PDF files, add code_interpreter tool so OpenAI can extract content via Python
+      if (!usePdfDirect) {
+        requestBody.tools = [{ type: 'code_interpreter', container: { type: 'auto' } }];
+      }
+
       if (isReasoningModel) {
         requestBody.reasoning = { effort: reasoningEffort };
       } else {
         requestBody.temperature = 0.2;
       }
 
-      console.log(`🤖 Calling OpenAI Responses API with model: ${aiModel}`);
+      console.log(`🤖 Calling OpenAI Responses API (model: ${aiModel}, tools: ${usePdfDirect ? 'none' : 'code_interpreter'})`);
 
       const response = await fetch('https://api.openai.com/v1/responses', {
         method: 'POST',
@@ -342,46 +211,33 @@ serve(async (req) => {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(`❌ OpenAI Responses API error: ${response.status}`, errorText);
+        console.error(`❌ OpenAI error: ${response.status}`, errorText);
         throw new Error(`OpenAI API error ${response.status}: ${errorText}`);
       }
 
       const responseData = await response.json();
-      console.log(`✅ OpenAI response status: ${responseData.status}`);
-
-      // Extract text from response
-      let resultText = '';
-      if (responseData.output) {
-        for (const item of responseData.output) {
-          if (item.type === 'message' && item.content) {
-            for (const c of item.content) {
-              if (c.type === 'output_text') {
-                resultText += c.text;
-              }
-            }
-          }
-        }
-      }
-
+      const resultText = extractOutputText(responseData);
       const analysis = parseAnalysisJSON(resultText);
+
+      const extractionMethod = usePdfDirect ? 'openai-input-file' : 'openai-code-interpreter';
       const resultData = {
         success: true,
         fileName: fileName || 'Documento',
         extractionQuality: 'full',
-        extractionMethod: 'openai-input-file',
+        extractionMethod,
         ...analysis,
         timestamp: new Date().toISOString()
       };
 
       if (lawyerId) {
         await saveToolResult(supabase, lawyerId, 'analysis',
-          { documentContent: `Archivo procesado directamente por OpenAI: ${fileName}`, fileName },
+          { documentContent: `Archivo procesado por OpenAI (${extractionMethod}): ${fileName}`, fileName },
           analysis,
-          { extractionMethod: 'openai-input-file', extractionQuality: 'full' }
+          { extractionMethod, extractionQuality: 'full' }
         );
       }
 
-      console.log(`✅ Analysis completed via input_file (model: ${aiModel})`);
+      console.log(`✅ Analysis completed via ${extractionMethod} (model: ${aiModel})`);
       return new Response(JSON.stringify(resultData), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
@@ -408,19 +264,15 @@ serve(async (req) => {
 
     const textInput = `${analysisPrompt}\n\nCONTENIDO DEL DOCUMENTO:\n${truncatedContent}`;
 
-    // Use standard Responses API flow for text
     const requestBody: any = {
       model: aiModel,
       input: textInput,
       instructions: systemPrompt,
       max_output_tokens: 8000,
       store: false,
-      text: {
-        format: { type: 'json_object' }
-      }
+      text: { format: { type: 'json_object' } }
     };
 
-    const isReasoningModel = /^(o[1-4]|gpt-5)/.test(aiModel);
     if (isReasoningModel) {
       requestBody.reasoning = { effort: reasoningEffort };
     } else {
@@ -443,20 +295,9 @@ serve(async (req) => {
     }
 
     const responseData = await response.json();
-    let resultText = '';
-    if (responseData.output) {
-      for (const item of responseData.output) {
-        if (item.type === 'message' && item.content) {
-          for (const c of item.content) {
-            if (c.type === 'output_text') {
-              resultText += c.text;
-            }
-          }
-        }
-      }
-    }
-
+    const resultText = extractOutputText(responseData);
     const analysis = parseAnalysisJSON(resultText);
+
     const resultData = {
       success: true,
       fileName: fileName || 'Documento',
