@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import { decode as decodeBase64 } from "https://deno.land/std@0.177.0/encoding/base64.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { 
   callResponsesAPI, 
@@ -185,7 +186,7 @@ serve(async (req) => {
         // DOCX/DOC: upload via Files API first, then reference file_id with code_interpreter
         console.log(`📤 Uploading ${fileName} to OpenAI Files API...`);
 
-        const binaryData = Uint8Array.from(atob(cleanBase64), c => c.charCodeAt(0));
+        const binaryData = decodeBase64(cleanBase64);
         const formData = new FormData();
         formData.append('purpose', 'user_data');
         formData.append('file', new Blob([binaryData], { type: mimeType }), fileName);
