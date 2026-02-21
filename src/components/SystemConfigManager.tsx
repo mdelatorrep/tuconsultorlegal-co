@@ -19,10 +19,12 @@ import {
   Save,
   Zap,
   Cog,
-  FileText
+  FileText,
+  Mic
 } from "lucide-react";
 import AIFunctionsGrid from "./admin/config/AIFunctionsGrid";
 import OperationalConfigGrid from "./admin/config/OperationalConfigGrid";
+import VoiceConfigSection from "./admin/VoiceConfigSection";
 import { AI_CATEGORIES, OPERATIONAL_GROUPS, GLOBAL_PARAMS } from "./admin/config/configDefinitions";
 
 interface SystemConfig {
@@ -188,7 +190,7 @@ export default function SystemConfigManager() {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full max-w-lg grid-cols-4">
+        <TabsList className="grid w-full max-w-2xl grid-cols-5">
           <TabsTrigger value="ai-functions" className="flex items-center gap-2">
             <Brain className="w-4 h-4" />
             <span className="hidden sm:inline">IA</span>
@@ -196,6 +198,10 @@ export default function SystemConfigManager() {
           <TabsTrigger value="operational" className="flex items-center gap-2">
             <Cog className="w-4 h-4" />
             <span className="hidden sm:inline">Operacional</span>
+          </TabsTrigger>
+          <TabsTrigger value="voice" className="flex items-center gap-2">
+            <Mic className="w-4 h-4" />
+            <span className="hidden sm:inline">Voz</span>
           </TabsTrigger>
           <TabsTrigger value="meta-prompt" className="flex items-center gap-2">
             <Sparkles className="w-4 h-4" />
@@ -259,6 +265,15 @@ export default function SystemConfigManager() {
         <TabsContent value="operational" className="mt-4">
           <OperationalConfigGrid
             groups={OPERATIONAL_GROUPS}
+            getConfigValue={getConfigValue}
+            onSave={saveConfig}
+          />
+        </TabsContent>
+
+        {/* Voice Tab */}
+        <TabsContent value="voice" className="mt-4">
+          <VoiceConfigSection
+            configs={configs}
             getConfigValue={getConfigValue}
             onSave={saveConfig}
           />
