@@ -1,114 +1,106 @@
 
+# Analisis Estructural - Analisis de Documentos
 
-# Analisis Estructural - Sistema de Gamificacion
+## Proposito
+Permite a abogados subir documentos legales (PDF, DOC, DOCX, TXT) y obtener un analisis automatizado por IA que identifica: tipo de documento, partes involucradas, clausulas/elementos, riesgos, fechas clave, referencias legales, y recomendaciones.
 
 ## Diagnostico
 
 ### Arquitectura Actual
-- **15 archivos** entre componentes, hooks y edge functions dedicados a gamificacion
-- **~2,500 lineas de codigo** en el frontend
-- **495 lineas** en el edge function `gamification-check`
-- **Datos reales**: Solo **2 progresiones reclamadas** en toda la plataforma
+- **Frontend**: `AnalyzeModule.tsx` (915 lineas) + `AnalysisResultsDisplay.tsx` (629 lineas) = ~1,544 lineas
+- **Backend**: `legal-document-analysis/index.ts` (588 lineas) con extraccion manual de texto para PDF, DOC y DOCX
+- **10 analisis reales** en produccion
 
 ### Problemas Criticos Identificados
 
-#### 1. Logros y Ranking son 100% Mock Data (CRITICO)
-- `AchievementsPanel.tsx` genera **18 logros hardcodeados** con `generateAchievements()` (linea 76). Los props `achievements` siempre llegan como array vacio `[]` desde `GamificationDashboard`.
-- `Leaderboard.tsx` genera **10 usuarios ficticios** con `generateMockLeaderboard()` (linea 29). Los props `weeklyLeaderboard`, `monthlyLeaderboard`, `allTimeLeaderboard` siempre llegan como `[]`.
-- `WeeklyChallenges.tsx` genera **4 desafios ficticios** con `generateWeeklyChallenges()` (linea 41) con progreso aleatorio (`Math.random()`). Los props `challenges` siempre llegan como `[]`.
-- **Impacto**: El usuario ve datos falsos que cambian cada render, destruyendo la credibilidad del sistema.
+#### 1. Extraccion de Texto DEFICIENTE (CRITICO)
+Datos reales de produccion demuestran fallas graves:
 
-#### 2. Duplicacion de Logica entre Componentes
-- `GamificationPanel` (credits/) y `GamificationDashboard` (gamification/) **hacen exactamente lo mismo**: muestran misiones con boton "Reclamar".
-- `DailyProgress` repite la logica de filtrar tareas diarias y renderizar progreso.
-- El `GamificationDashboard` tiene 5 tabs (Misiones, Desafios, Logros, Ranking, Badges), donde 3 tabs muestran datos falsos.
+| Archivo | Metodo | Chars extraidos | Veredicto |
+|---------|--------|-----------------|-----------|
+| WAFLERIA CONTRATO...docx | docx | **91** | FALLO TOTAL |
+| SENTENCIA SC5324...docx | docx | 54,453 | OK |
+| SENTENCIA 76001...doc | doc-binary | 8,275 | OK |
+| SENTENCIA SC5324...doc | doc-binary | 11,452 | OK |
+| SENTENCIA DEBER...doc | (antiguo) | nil | FALLO |
+| CONCILIACION...doc | (antiguo) | nil | FALLO |
 
-#### 3. Sistema de Niveles Desconectado
-- `LevelProgressBar` define 8 niveles hardcodeados (Novato -> Elite Legal, 0-3500 XP).
-- El edge function `gamification-check` calcula niveles desde `system_config` (JSON `gamification_levels`).
-- **No hay sincronizacion**: el frontend y el backend tienen fuentes de verdad diferentes para los niveles.
+**El problema raiz**: La extraccion de DOCX usa JSZip + regex sobre XML (`<w:t>` tags), pero muchos DOCX modernos usan namespaces, `<w:t xml:space="preserve">`, o estructuras complejas que el regex simple no captura. El DOCX que extrajo solo 91 chars es un contrato real que fallo silenciosamente.
 
-#### 4. Streak Calculada de Forma Incorrecta
-- `GamificationDashboard` calcula streak usando `completion_count` del daily_login progress (linea 41). Esto NO es una racha real, es un contador acumulado.
-- `DailyProgress` calcula streak como `progress.filter(p => p.status === 'claimed').length > 0 ? 1 : 0` (linea 61). Siempre sera 0 o 1.
-- No hay logica real de racha consecutiva en ninguna parte del sistema.
+Para PDF: la extraccion manual por regex de streams BT/ET solo funciona en PDFs no comprimidos. La mayoria de PDFs modernos usan FlateDecode (compresion zlib) y el extractor actual NO descomprime streams, por lo que obtiene 0 texto en la mayoria de casos.
 
-#### 5. Tasks Inactivas en la Base de Datos
-- **18 tareas activas** (9 onetime, 2 daily, 2 weekly, 5 achievement)
-- **22 tareas inactivas** (muchas con `credit_reward: 0`)
-- Varias tareas tienen `is_active: false` y `credit_reward: 0` simultaneamente, son basura de datos.
+#### 2. Frontend Excesivamente Complejo
+- **~400 lineas** dedicadas SOLO a normalizar respuestas de IA (lineas 88-426 en AnalyzeModule.tsx). La normalizacion esta DUPLICADA: una vez para el historial y otra vez para resultados nuevos.
+- Tabs innecesarias (Nuevo Analisis / Historial) cuando podria ser una vista unica con el resultado mas reciente arriba y el historial abajo.
+- `AnalysisResultsDisplay.tsx` tiene 629 lineas para lo que podria ser ~250 con componentes mas limpios.
 
-#### 6. Edge Function con 4 Acciones Redundantes
-- `gamification-check` tiene: `get_progress`, `complete_task`, `claim_badge`, `claim`
-- Solo se usa `claim` desde el frontend. `get_progress` nunca se llama (el frontend consulta directamente la DB). `complete_task` y `claim_badge` son codigo muerto.
+#### 3. Limite de 15,000 Caracteres Arbitrario
+El contenido se trunca a 15,000 chars antes de enviarlo a la IA (linea 506 del edge function). Para documentos legales largos (sentencias de 50K+ chars), esto significa que el analisis solo cubre las primeras paginas.
+
+#### 4. No Hay Retroalimentacion al Usuario Sobre Calidad de Extraccion
+Cuando la extraccion falla (91 chars de un contrato completo), el sistema envia ese contenido minimo a la IA y genera un "analisis" basado en casi nada. El usuario recibe resultados que parecen legitimos pero son inventados. No hay advertencia.
 
 ---
 
 ## Plan de Ajustes Estrategicos
 
-### Fase 1: Eliminar Datos Falsos (Impacto inmediato)
+### Fase 1: Arreglar Extraccion de Documentos (Backend - CRITICO)
 
-**Eliminar completamente los componentes mock**:
-- `AchievementsPanel.tsx`: Eliminar `generateAchievements()` y conectar a datos reales de `gamification_progress` con `status: 'claimed'` + `badge_name`. Los logros SON las misiones completadas con badge.
-- `Leaderboard.tsx`: Eliminar `generateMockLeaderboard()`. Conectar a query real `SELECT lawyer_id, SUM(credit_reward) as score FROM gamification_progress JOIN gamification_tasks... WHERE status='claimed' GROUP BY lawyer_id ORDER BY score DESC`.
-- `WeeklyChallenges.tsx`: Eliminar `generateWeeklyChallenges()`. Conectar a las tareas de tipo `weekly` reales de la DB.
+**Reemplazar la extraccion manual con la libreria `pdf-parse` para PDFs y mejorar DOCX:**
 
-### Fase 2: Simplificar Arquitectura (Reducir duplicacion)
+Para **DOCX**: Reemplazar el regex `<w:t>` por un parseo XML correcto que maneje namespaces y `xml:space="preserve"`. Usar DOMParser disponible en Deno para parsear el XML de forma robusta en lugar de regex.
 
-**Consolidar en una sola vista**:
-- Eliminar `GamificationDashboard.tsx` (el componente con 5 tabs).
-- `CreditsDashboard.tsx` ya contiene `GamificationPanel` que es la vista funcional real.
-- Reducir la navegacion de gamificacion a: **Misiones** (GamificationPanel existente) + **Badges Ganados** (inline, sin tab separado).
-- Eliminar tabs de "Desafios", "Logros", "Ranking" y "Badges" como vistas separadas.
+Para **PDF**: La extraccion manual actual es fundamentalmente limitada (no descomprime FlateDecode). La solucion es enviar el archivo completo como base64 directamente al modelo `gpt-4o` que tiene capacidad nativa de procesamiento de archivos/imagenes, evitando la extraccion manual completamente para PDFs problematicos. Cuando la extraccion manual falla (< 200 chars), usar el PDF como input directo via la API de archivos de OpenAI.
 
-### Fase 3: Corregir Streak Real
+Para **DOC**: El sistema actual (mammoth + CFB fallback) funciona razonablemente. Mantener.
 
-**Implementar calculo de racha en el backend**:
-- Agregar columnas `current_streak` y `longest_streak` a `lawyer_credits` (o crear tabla `lawyer_streaks`).
-- En `gamification-check` action `claim` para `daily_login`: verificar `last_login_date`. Si es ayer, `streak++`. Si no, `streak = 1`.
-- El frontend solo lee el valor calculado, no lo aproxima.
+**Agregar indicador de calidad de extraccion:**
+- Si chars extraidos < 200: advertir al usuario "Extraccion limitada, resultados pueden ser imprecisos"
+- Incluir `extractionQuality: 'full' | 'partial' | 'minimal'` en la respuesta
 
-### Fase 4: Limpiar Edge Function
+### Fase 2: Simplificar Frontend
 
-- Eliminar acciones `complete_task`, `claim_badge` y `get_progress` del edge function.
-- Mantener solo `claim` que es la unica usada.
-- Reducir de ~495 lineas a ~150.
+**Consolidar normalizacion:**
+- Extraer las ~400 lineas de funciones de normalizacion a un archivo utilitario `analysisNormalizer.ts`
+- Usar UNA SOLA funcion para ambos contextos (historial y resultado nuevo)
 
-### Fase 5: Limpiar Base de Datos
+**Eliminar tabs, vista unica:**
+- Resultado del analisis actual arriba (si existe)
+- Boton de subir documento prominente
+- Historial colapsable debajo
+- Reducir AnalyzeModule de 915 a ~350 lineas
 
-- Ejecutar SQL para desactivar/eliminar tareas con `credit_reward: 0` e `is_active: false`.
-- Consolidar tareas duplicadas.
+### Fase 3: Aumentar Limite de Contenido
+
+- Subir el truncamiento de 15,000 a 30,000 caracteres para documentos largos
+- Para documentos > 30,000 chars, implementar analisis por secciones (enviar primeros 15K + ultimos 15K con instruccion de que hay contenido intermedio)
 
 ---
 
 ## Detalles Tecnicos
 
 ### Archivos a Modificar
-1. `src/components/gamification/AchievementsPanel.tsx` - Reescribir para usar datos reales
-2. `src/components/gamification/Leaderboard.tsx` - Reescribir con query real a Supabase
-3. `src/components/gamification/WeeklyChallenges.tsx` - Conectar a tareas weekly reales
-4. `src/components/gamification/GamificationDashboard.tsx` - Simplificar o eliminar
-5. `src/components/gamification/StreakIndicator.tsx` - Leer streak de backend
-6. `src/components/credits/DailyProgress.tsx` - Corregir calculo de streak
-7. `supabase/functions/gamification-check/index.ts` - Limpiar acciones muertas, agregar logica de streak
+1. `supabase/functions/legal-document-analysis/index.ts` - Reescribir extractores PDF/DOCX, agregar calidad de extraccion
+2. `src/components/lawyer-modules/AnalyzeModule.tsx` - Simplificar a vista unica, extraer normalizacion
+3. `src/components/lawyer-modules/analysis/AnalysisResultsDisplay.tsx` - Mantener pero simplificar
+4. **Nuevo**: `src/components/lawyer-modules/analysis/analysisNormalizer.ts` - Funciones de normalizacion consolidadas
 
-### Migracion SQL
-```sql
--- Limpiar tareas inactivas sin valor
-DELETE FROM gamification_tasks 
-WHERE is_active = false AND credit_reward = 0;
-
--- Agregar campos de streak
-ALTER TABLE lawyer_credits 
-ADD COLUMN IF NOT EXISTS current_streak INTEGER DEFAULT 0,
-ADD COLUMN IF NOT EXISTS longest_streak INTEGER DEFAULT 0,
-ADD COLUMN IF NOT EXISTS last_activity_date DATE;
+### Cambios en Edge Function (extractTextFromDOCX mejorado)
+```typescript
+// Parseo XML correcto en lugar de regex
+const parser = new DOMParser();
+const doc = parser.parseFromString(xmlContent, 'text/xml');
+const textNodes = doc.getElementsByTagNameNS(
+  'http://schemas.openxmlformats.org/wordprocessingml/2006/main', 't'
+);
+let text = '';
+for (let i = 0; i < textNodes.length; i++) {
+  text += textNodes[i].textContent + ' ';
+}
 ```
 
 ### Resultado Esperado
-- De **15 archivos / ~3,000 lineas** a **~10 archivos / ~1,500 lineas**
-- **0 datos mock** en produccion
-- Streak real calculada en backend
-- Ranking basado en datos reales de la plataforma
-- Logros = badges desbloqueados por misiones completadas (sin sistema paralelo)
-
+- De **1,544 lineas frontend** a **~900 lineas** (normalizacion extraida + tabs eliminadas)
+- **0 extraccion de texto fallida silenciosamente** - siempre hay advertencia al usuario
+- DOCX y PDF procesan correctamente documentos reales colombianos
+- Mejor cobertura de documentos largos (30K chars vs 15K)
