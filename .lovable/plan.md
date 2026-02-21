@@ -1,68 +1,76 @@
 
-# Cambio de Enfoque: Enviar Archivos Directamente a OpenAI
 
-## Diagnostico del Fallo Actual
+# Soporte Multi-Formato via Code Interpreter de OpenAI
 
-Los logs muestran exactamente por que falla:
+## Descubrimiento Clave
 
-```
-OpenAI Responses API error: 400 
-"Invalid value: 'text'. Supported values are: 'input_text', 'input_image', 
-'output_text', 'refusal', 'input_file'..."
-```
+La herramienta **Code Interpreter** de OpenAI soporta nativamente estos formatos relevantes para documentos legales:
 
-El fallback de vision usa formatos de Chat Completions (`type: 'text'`, `type: 'image_url'`) pero el sistema usa la Responses API que requiere `type: 'input_text'` y `type: 'input_file'`. Ademas, las ~400 lineas de extraccion manual de texto (ZIP, regex, CFB) son fragiles y fallan con documentos reales.
+| Formato | MIME type |
+|---------|-----------|
+| .pdf | application/pdf |
+| .doc | application/msword |
+| .docx | application/vnd.openxmlformats-officedocument.wordprocessingml.document |
+| .txt | text/plain |
+| .xlsx | application/vnd.openxmlformats-officedocument.spreadsheetml.sheet |
+| .pptx | application/vnd.openxmlformats-officedocument.presentationml.presentation |
 
-## Nuevo Enfoque: OpenAI Procesa el Archivo Directamente
+Ademas, los archivos enviados en el `input` del modelo se suben automaticamente al container de Code Interpreter. No se requiere subida manual previa.
 
-Segun la documentacion oficial de OpenAI, la Responses API soporta `input_file` con `file_data` en base64. OpenAI extrae el texto internamente y ademas genera imagenes de cada pagina para mejor comprension. Esto elimina completamente la necesidad de extraccion manual.
+## Estrategia de Procesamiento
 
-Formato correcto segun la documentacion:
 ```text
-{
-  type: "input_file",
-  filename: "contrato.pdf",
-  file_data: "data:application/pdf;base64,..."
-}
+PDF --> input_file (procesamiento nativo, mas rapido, sin container)
+DOCX/DOC/TXT/XLSX --> code_interpreter tool (OpenAI extrae el contenido via Python)
 ```
+
+- Para **PDF**: seguir usando `input_file` como esta ahora (funciona perfecto)
+- Para **DOCX/DOC y otros**: agregar `code_interpreter` como tool en la request, enviar el archivo como `input_file` en el input, y OpenAI usara Python para leer el contenido y analizarlo
 
 ## Cambios a Realizar
 
-### 1. Reescribir el Edge Function (reduccion drastica)
+### 1. Edge Function (`legal-document-analysis/index.ts`)
 
-**Eliminar** las ~450 lineas de extractores manuales:
-- `extractTextFromPDF` (regex BT/ET) 
-- `extractTextFromDOCX` (4 estrategias ZIP)
-- `extractTextFromDOC` (mammoth + CFB parser)
-- `extractFileFromZip`, `extractFileFromZipAsync`, `extractTextFromXML`
-- `analyzeWithVision` (usa formato incorrecto)
+- Eliminar la funcion `extractTextFromDocx` (regex fragil, ya no se necesita)
+- Para archivos no-PDF (DOCX, DOC, TXT, XLSX): enviar el archivo como `input_file` en el input + agregar `tools: [{ type: "code_interpreter", container: { type: "auto" } }]` en la request
+- Mantener la ruta actual de PDF sin cambios (ya funciona con `input_file` directo)
+- Mantener la ruta de texto plano sin cambios
 
-**Reemplazar** con una sola funcion que:
-1. Para archivos binarios (PDF, DOCX, DOC): enviar directamente a OpenAI via `input_file` con `file_data` en base64
-2. Para archivos de texto (TXT, RTF): enviar como `input_text` directamente
-3. Mantener un intento de extraccion de texto simple SOLO como contexto adicional, no como requisito
+### 2. Frontend (`AnalyzeModule.tsx`)
 
-### 2. Logica simplificada del handler principal
+- Restaurar el `accept` del input de archivos para incluir `.pdf,.doc,.docx,.txt`
+- Restaurar la validacion para aceptar estos tipos de archivo
+- Mantener la codificacion base64 via `FileReader.readAsDataURL()`
+
+### 3. Formato de la Request con Code Interpreter
 
 ```text
-SI tiene fileBase64 Y es archivo binario (PDF/DOCX/DOC):
-  -> Enviar a OpenAI Responses API con type: "input_file" + file_data
-  -> OpenAI procesa el archivo internamente
-SI es texto plano:
-  -> Enviar como input_text directamente
+{
+  model: "gpt-4o",
+  tools: [{ type: "code_interpreter", container: { type: "auto" } }],
+  input: [
+    {
+      role: "user",
+      content: [
+        { type: "input_file", filename: "contrato.docx", file_data: "data:application/...;base64,..." },
+        { type: "input_text", text: "Analiza este documento legal..." }
+      ]
+    }
+  ],
+  instructions: "...",
+  text: { format: { type: "json_object" } }
+}
 ```
 
-### 3. Frontend sin cambios
+## Archivos a Modificar
 
-El frontend ya envia `fileBase64` correctamente (arreglado en la iteracion anterior con `FileReader.readAsDataURL`). Solo necesita recibir la respuesta como antes.
+1. `supabase/functions/legal-document-analysis/index.ts` - Agregar ruta con code_interpreter para DOCX/DOC, eliminar extractTextFromDocx
+2. `src/components/lawyer-modules/AnalyzeModule.tsx` - Restaurar aceptacion de PDF, DOC, DOCX, TXT
 
-## Detalles Tecnicos
+## Resultado Esperado
 
-### Archivo a modificar
-- `supabase/functions/legal-document-analysis/index.ts` - Reescritura del 70% del archivo
+- Procesamiento confiable de PDF, DOC, DOCX y TXT sin extraccion manual
+- OpenAI maneja toda la complejidad de parseo via Code Interpreter (Python sandbox)
+- El regex fragil de DOCX se elimina completamente
+- Codigo mas simple: ~200 lineas en el edge function
 
-### Resultado esperado
-- De ~873 lineas a ~250 lineas
-- Procesamiento confiable de PDF, DOCX y DOC sin extraccion manual
-- OpenAI maneja toda la complejidad de parseo de archivos
-- Eliminacion del error 400 por formatos incompatibles
