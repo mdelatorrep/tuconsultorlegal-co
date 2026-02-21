@@ -253,6 +253,33 @@ export function useGamification(lawyerId: string | null) {
       }, 0);
   }, [progress, tasks]);
 
+  // Auto-claim daily_login when lawyer loads the dashboard
+  const autoclaimDailyLogin = useCallback(async () => {
+    if (!lawyerId) return;
+    
+    try {
+      console.log('[GAMIFICATION] Auto-claiming daily_login for lawyer:', lawyerId);
+      const { data, error } = await supabase.functions.invoke('gamification-check', {
+        body: { lawyerId, taskKey: 'daily_login', action: 'claim' }
+      });
+
+      if (error) {
+        console.error('[GAMIFICATION] Auto-claim daily_login error:', error);
+        return;
+      }
+
+      if (data?.claimed) {
+        console.log('[GAMIFICATION] daily_login auto-claimed, credits:', data.creditsAwarded);
+        window.dispatchEvent(new CustomEvent('credits:refresh'));
+        await fetchProgress();
+      } else if (data?.alreadyClaimed) {
+        console.log('[GAMIFICATION] daily_login already claimed today');
+      }
+    } catch (err) {
+      console.error('[GAMIFICATION] Auto-claim daily_login failed:', err);
+    }
+  }, [lawyerId, fetchProgress]);
+
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
@@ -262,10 +289,13 @@ export function useGamification(lawyerId: string | null) {
         fetchReferralInfo()
       ]);
       setLoading(false);
+      
+      // Auto-claim daily login after data is loaded
+      autoclaimDailyLogin();
     };
 
     loadData();
-  }, [fetchTasks, fetchProgress, fetchReferralInfo]);
+  }, [fetchTasks, fetchProgress, fetchReferralInfo, autoclaimDailyLogin]);
 
   // Real-time subscription for gamification progress updates
   useEffect(() => {
