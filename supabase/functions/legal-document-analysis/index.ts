@@ -157,9 +157,8 @@ serve(async (req) => {
       const mimeType = getMimeType(fileName);
       const cleanBase64 = fileBase64.replace(/^data:[^;]+;base64,/, '');
       const fileDataUri = `data:${mimeType};base64,${cleanBase64}`;
-      const usePdfDirect = isPdfFormat(lowerName);
 
-      console.log(`📤 Processing ${fileName} (${mimeType}, ${cleanBase64.length} base64 chars, method: ${usePdfDirect ? 'input_file-direct' : 'code_interpreter'})`);
+      console.log(`📤 Processing ${fileName} (${mimeType}, ${cleanBase64.length} base64 chars, method: code_interpreter)`);
 
       const input = [
         {
@@ -182,15 +181,11 @@ serve(async (req) => {
         model: aiModel,
         input,
         instructions: systemPrompt,
+        tools: [{ type: 'code_interpreter', container: { type: 'auto' } }],
         max_output_tokens: 8000,
         store: false,
         text: { format: { type: 'json_object' } }
       };
-
-      // For non-PDF files, add code_interpreter tool so OpenAI can extract content via Python
-      if (!usePdfDirect) {
-        requestBody.tools = [{ type: 'code_interpreter', container: { type: 'auto' } }];
-      }
 
       if (isReasoningModel) {
         requestBody.reasoning = { effort: reasoningEffort };
@@ -198,8 +193,7 @@ serve(async (req) => {
         requestBody.temperature = 0.2;
       }
 
-      console.log(`🤖 Calling OpenAI Responses API (model: ${aiModel}, tools: ${usePdfDirect ? 'none' : 'code_interpreter'})`);
-
+      console.log(`🤖 Calling OpenAI Responses API (model: ${aiModel}, tools: code_interpreter)`);
       const response = await fetch('https://api.openai.com/v1/responses', {
         method: 'POST',
         headers: {
@@ -219,25 +213,24 @@ serve(async (req) => {
       const resultText = extractOutputText(responseData);
       const analysis = parseAnalysisJSON(resultText);
 
-      const extractionMethod = usePdfDirect ? 'openai-input-file' : 'openai-code-interpreter';
       const resultData = {
         success: true,
         fileName: fileName || 'Documento',
         extractionQuality: 'full',
-        extractionMethod,
+        extractionMethod: 'openai-code-interpreter',
         ...analysis,
         timestamp: new Date().toISOString()
       };
 
       if (lawyerId) {
         await saveToolResult(supabase, lawyerId, 'analysis',
-          { documentContent: `Archivo procesado por OpenAI (${extractionMethod}): ${fileName}`, fileName },
+          { documentContent: `Archivo procesado por OpenAI (code-interpreter): ${fileName}`, fileName },
           analysis,
-          { extractionMethod, extractionQuality: 'full' }
+          { extractionMethod: 'openai-code-interpreter', extractionQuality: 'full' }
         );
       }
 
-      console.log(`✅ Analysis completed via ${extractionMethod} (model: ${aiModel})`);
+      console.log(`✅ Analysis completed via code-interpreter (model: ${aiModel})`);
       return new Response(JSON.stringify(resultData), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
