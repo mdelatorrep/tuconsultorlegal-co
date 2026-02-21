@@ -93,16 +93,8 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const acceptedTypes = [
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'text/plain',
-      'application/rtf'
-    ];
-
-    if (!acceptedTypes.includes(file.type) && !file.type.includes('document')) {
-      toast.error("Tipo de archivo no soportado. Por favor sube un archivo PDF, DOC, DOCX o TXT.");
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      toast.error("Solo se aceptan archivos PDF. Por favor convierte tu documento a PDF antes de subirlo.");
       return;
     }
 
@@ -119,16 +111,8 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
       let fileContent = '';
       let fileBase64 = null;
 
-      const binaryTypes = [
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      ];
-
-      const isBinaryFile = binaryTypes.includes(file.type) || 
-                          file.name.toLowerCase().endsWith('.doc') ||
-                          file.name.toLowerCase().endsWith('.docx') ||
-                          file.name.toLowerCase().endsWith('.pdf');
+      // PDF is always binary - encode as base64
+      const isBinaryFile = true;
 
       if (isBinaryFile) {
         try {
@@ -308,7 +292,7 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
             ref={fileInputRef}
             type="file"
             className="hidden"
-            accept=".pdf,.doc,.docx,.txt,.rtf"
+            accept=".pdf"
             onChange={handleFileUpload}
           />
           <Button
