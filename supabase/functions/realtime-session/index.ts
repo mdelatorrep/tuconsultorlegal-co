@@ -17,7 +17,7 @@ serve(async (req) => {
       throw new Error('OPENAI_API_KEY is not configured');
     }
 
-    const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || Deno.env.get('SUPABASE_URL');
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
@@ -49,33 +49,6 @@ serve(async (req) => {
       });
     }
 
-    // Validate credits
-    const { data: credits } = await supabase
-      .from('lawyer_credits')
-      .select('current_balance')
-      .eq('lawyer_id', lawyerId)
-      .single();
-
-    const { data: toolCost } = await supabase
-      .from('credit_tool_costs')
-      .select('credit_cost')
-      .eq('tool_type', 'voice_realtime')
-      .eq('is_active', true)
-      .single();
-
-    const cost = toolCost?.credit_cost || 5;
-
-    if (!credits || credits.current_balance < cost) {
-      return new Response(JSON.stringify({ 
-        error: `Créditos insuficientes. Necesitas ${cost} créditos.`,
-        required: cost,
-        available: credits?.current_balance || 0
-      }), {
-        status: 402,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
     // Read configuration from system_config
     const configKeys = [
       'voice_realtime_model',
@@ -84,6 +57,9 @@ serve(async (req) => {
       'voice_realtime_transcription_model',
       'voice_realtime_vad_threshold',
       'voice_realtime_max_duration_seconds',
+      'voice_realtime_mode_multiplier_dictation',
+      'voice_realtime_mode_multiplier_consultation',
+      'voice_realtime_mode_multiplier_analysis',
     ];
 
     const { data: configs } = await supabase
@@ -94,7 +70,6 @@ serve(async (req) => {
     const configMap: Record<string, string> = {};
     configs?.forEach((c: any) => {
       let val = c.config_value;
-      // Strip surrounding quotes from JSON string values
       if (typeof val === 'string' && val.startsWith('"') && val.endsWith('"')) {
         val = val.slice(1, -1);
       }
@@ -109,6 +84,43 @@ serve(async (req) => {
     const vadThreshold = parseFloat(configMap['voice_realtime_vad_threshold'] || '0.5');
     const maxDuration = parseInt(configMap['voice_realtime_max_duration_seconds'] || '300');
 
+    // Determine tool_type based on model (mini vs full)
+    const isMinModel = model.includes('mini');
+    const toolType = isMinModel ? 'voice_realtime_mini' : 'voice_realtime';
+
+    // Get mode multiplier
+    const modeKey = `voice_realtime_mode_multiplier_${mode || 'consultation'}`;
+    const modeMultiplier = parseFloat(configMap[modeKey] || '1.0');
+
+    // Get base cost from credit_tool_costs
+    const { data: toolCost } = await supabase
+      .from('credit_tool_costs')
+      .select('credit_cost')
+      .eq('tool_type', toolType)
+      .eq('is_active', true)
+      .single();
+
+    const baseCost = toolCost?.credit_cost || (isMinModel ? 1 : 5);
+    const cost = Math.max(1, Math.round(baseCost * modeMultiplier));
+
+    // Validate credits
+    const { data: credits } = await supabase
+      .from('lawyer_credits')
+      .select('current_balance')
+      .eq('lawyer_id', lawyerId)
+      .single();
+
+    if (!credits || credits.current_balance < cost) {
+      return new Response(JSON.stringify({ 
+        error: `Créditos insuficientes. Necesitas ${cost} créditos.`,
+        required: cost,
+        available: credits?.current_balance || 0
+      }), {
+        status: 402,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Build mode-specific instructions
     let modeInstructions = instructions;
     if (mode === 'dictation') {
@@ -120,7 +132,7 @@ serve(async (req) => {
     }
 
     // Create ephemeral session with OpenAI Realtime API
-    console.log(`🎤 Creating realtime session for lawyer ${lawyerId}, model: ${model}, voice: ${voice}`);
+    console.log(`🎤 Creating realtime session for lawyer ${lawyerId}, model: ${model}, voice: ${voice}, mode: ${mode}, cost: ${cost} (base: ${baseCost} × ${modeMultiplier})`);
 
     const sessionResponse = await fetch('https://api.openai.com/v1/realtime/sessions', {
       method: 'POST',
@@ -172,11 +184,11 @@ serve(async (req) => {
         transaction_type: 'consumption',
         amount: -cost,
         balance_after: newBalance,
-        description: `Sesión de voz avanzada (${mode || 'general'})`,
-        reference_type: 'voice_realtime',
+        description: `Voz Realtime ${isMinModel ? '(Mini)' : '(Pro)'} - ${mode || 'general'} [${cost} cr]`,
+        reference_type: toolType,
       });
 
-    console.log(`✅ Realtime session created. Credits consumed: ${cost}. New balance: ${newBalance}`);
+    console.log(`✅ Realtime session created. Model: ${model}, Mode: ${mode}, Cost: ${cost}. New balance: ${newBalance}`);
 
     return new Response(JSON.stringify({
       client_secret: sessionData.client_secret,
@@ -186,6 +198,8 @@ serve(async (req) => {
       max_duration_seconds: maxDuration,
       credits_consumed: cost,
       balance_after: newBalance,
+      tool_type: toolType,
+      mode_multiplier: modeMultiplier,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
