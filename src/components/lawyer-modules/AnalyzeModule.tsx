@@ -93,16 +93,11 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const allowedExtensions = ['.pdf', '.doc', '.docx', '.txt'];
-    const allowedMimeTypes = [
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'text/plain',
-    ];
+    const allowedExtensions = ['.pdf'];
+    const allowedMimeTypes = ['application/pdf'];
     const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
     if (!allowedMimeTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
-      toast.error("Formato no soportado. Archivos permitidos: PDF, DOC, DOCX, TXT.");
+      toast.error("Formato no soportado. Solo se permiten archivos PDF.");
       return;
     }
 
@@ -274,7 +269,7 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
             Analizar Documento
           </CardTitle>
           <CardDescription>
-            Sube un PDF, Word (.doc/.docx) o texto para obtener un análisis legal completo con IA
+            Sube un archivo PDF para obtener un análisis legal completo con IA
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -300,7 +295,7 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
             ref={fileInputRef}
             type="file"
             className="hidden"
-            accept=".pdf,.doc,.docx,.txt"
+            accept=".pdf"
             onChange={handleFileUpload}
           />
           <Button
