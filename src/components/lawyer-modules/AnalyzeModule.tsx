@@ -219,18 +219,38 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
 
   const exportAnalysisToText = () => {
     if (!analysisResult) return;
-    let text = `ANÁLISIS DE DOCUMENTO: ${analysisResult.fileName}\n${'='.repeat(60)}\n\n`;
-    text += `Tipo: ${analysisResult.documentType}\nCategoría: ${getCategoryLabel(analysisResult.documentCategory)}\n`;
+    let text = `ANÁLISIS JURÍDICO — ${analysisResult.documentType}\n${'='.repeat(60)}\n\n`;
+    text += `Elaborado por: Lexi – Consultor Jurídico\n`;
+    text += `Documento: ${analysisResult.fileName}\n`;
+    text += `Categoría: ${getCategoryLabel(analysisResult.documentCategory)}\n`;
+    if (analysisResult.documentSubtype) text += `Subtipo: ${analysisResult.documentSubtype}\n`;
     if (analysisResult.detectionConfidence) text += `Confianza: ${analysisResult.detectionConfidence}\n`;
-    text += `Fecha: ${analysisResult.timestamp.toLocaleString()}\n\n`;
-    if (analysisResult.summary) text += `RESUMEN:\n${analysisResult.summary}\n\n`;
+    text += `Fecha: ${analysisResult.timestamp.toLocaleString()}\n`;
+    if (analysisResult.webSearchUsed) text += `Web Search: Habilitado\n`;
+    text += '\n';
+
+    if (analysisResult.jurisdiction || analysisResult.applicableStatute) {
+      text += `JURISDICCIÓN Y ESTATUTO PROCESAL:\n`;
+      if (analysisResult.jurisdiction) text += `  Jurisdicción: ${analysisResult.jurisdiction}\n`;
+      if (analysisResult.applicableStatute) text += `  Estatuto: ${analysisResult.applicableStatute}\n`;
+      text += '\n';
+    }
+
+    if (analysisResult.activatedLegalFramework?.length) {
+      text += `MARCO NORMATIVO ACTIVADO:\n`;
+      analysisResult.activatedLegalFramework.forEach((f, i) => { text += `${i+1}. ${f.norm} [${f.status}]${f.verifiedUrl ? ` — ${f.verifiedUrl}` : ''}\n`; });
+      text += '\n';
+    }
+
+    if (analysisResult.summary) text += `RESUMEN EJECUTIVO:\n${analysisResult.summary}\n\n`;
+
     if (analysisResult.clauses?.length) {
       text += `${getElementLabel(analysisResult.documentCategory).toUpperCase()}S:\n`;
       analysisResult.clauses.forEach((c, i) => { text += `\n${i+1}. ${c.name}\n   ${c.content}\n   Riesgo: ${c.riskLevel}\n   Recomendación: ${c.recommendation}\n`; });
       text += '\n';
     }
     if (analysisResult.risks?.length) {
-      text += `RIESGOS:\n`;
+      text += `MATRIZ DE RIESGOS:\n`;
       analysisResult.risks.forEach((r, i) => { text += `\n${i+1}. ${r.type} [${r.severity}]\n   ${r.description}\n`; if (r.mitigation) text += `   Mitigación: ${r.mitigation}\n`; });
       text += '\n';
     }
@@ -246,7 +266,22 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
     }
     if (analysisResult.legalReferences?.length) {
       text += `REFERENCIAS LEGALES:\n`;
-      analysisResult.legalReferences.forEach((r, i) => { text += `${i+1}. ${r.reference} — ${r.context}\n`; });
+      analysisResult.legalReferences.forEach((r, i) => { text += `${i+1}. ${r.reference} — ${r.context}${r.verified !== undefined ? ` [${r.verified ? 'Verificado' : 'No verificado'}]` : ''}\n`; });
+      text += '\n';
+    }
+    if (analysisResult.sourcesConsulted?.length) {
+      text += `FUENTES CONSULTADAS:\n`;
+      analysisResult.sourcesConsulted.forEach((s, i) => { text += `${i+1}. ${s.data} — ${s.url} (${s.result}) [${s.consultDate}]\n`; });
+      text += '\n';
+    }
+    if (analysisResult.pendingVerifications?.length) {
+      text += `VERIFICACIONES PENDIENTES:\n`;
+      analysisResult.pendingVerifications.forEach((p, i) => { text += `${i+1}. 🔍 ${p.data}\n   Fuente: ${p.source}\n   URL: ${p.url}\n`; if (p.impact) text += `   Impacto: ${p.impact}\n`; });
+      text += '\n';
+    }
+    if (analysisResult.strategicConclusion) {
+      text += `CONCLUSIÓN ESTRATÉGICA:\n${analysisResult.strategicConclusion}\n\n`;
+      text += `⚠️ Orientación probabilística. No sustituye el criterio del abogado responsable.\n`;
     }
 
     const blob = new Blob([text], { type: 'text/plain' });

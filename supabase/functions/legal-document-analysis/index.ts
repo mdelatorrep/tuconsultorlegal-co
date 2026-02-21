@@ -65,9 +65,17 @@ async function saveToolResult(supabase: any, lawyerId: string, toolType: string,
 function parseAnalysisJSON(text: string): any {
   try {
     let clean = (text || '').trim();
+    // Remove markdown code fences if present
     if (clean.startsWith('```json')) clean = clean.replace(/^```json\s*/i, '');
     if (clean.startsWith('```')) clean = clean.replace(/^```\s*/i, '');
     if (clean.endsWith('```')) clean = clean.replace(/\s*```$/i, '');
+    
+    // Try to find a JSON object in the text if it's not pure JSON
+    const jsonMatch = clean.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      return JSON.parse(jsonMatch[0]);
+    }
+    
     return JSON.parse(clean.trim());
   } catch {
     return {
@@ -76,7 +84,9 @@ function parseAnalysisJSON(text: string): any {
       detectionConfidence: "baja",
       summary: "El documento requiere revisión manual.",
       clauses: [], risks: [], recommendations: ["Revisar documento manualmente"],
-      keyDates: [], parties: [], legalReferences: [], missingElements: []
+      keyDates: [], parties: [], legalReferences: [], missingElements: [],
+      sourcesConsulted: [], pendingVerifications: [], strategicConclusion: "",
+      jurisdiction: "", applicableStatute: "", activatedLegalFramework: []
     };
   }
 }
@@ -94,6 +104,74 @@ function extractOutputText(responseData: any): string {
   }
   return resultText;
 }
+
+// ──────────────────────────────────────────────
+// ANALYSIS PROMPT — requests JSON output matching frontend schema
+// ──────────────────────────────────────────────
+
+const ANALYSIS_JSON_PROMPT = `Analiza exhaustivamente este documento legal. Aplica todas las fases de análisis según tu protocolo (identificación, clasificación, análisis por tipo, matriz de riesgos, verificación web).
+
+IMPORTANTE: Responde ÚNICAMENTE con un objeto JSON válido (sin texto antes ni después, sin bloques de código markdown). El JSON debe seguir esta estructura exacta:
+
+{
+  "documentType": "Tipo específico del documento (ej: Demanda Civil Ordinaria, Sentencia de Tutela, Contrato de Arrendamiento)",
+  "documentSubtype": "Subtipo según la clasificación del protocolo (ej: Demanda / Contestación / Recurso / Sentencia / Auto)",
+  "documentCategory": "uno de: contrato | actuacion_procesal | providencia_judicial | mecanismo_constitucional | acto_administrativo | documento_notarial | respuesta_legal | escrito_juridico | informe | correspondencia | anexo | otro",
+  "detectionConfidence": "alta | media | baja",
+  "jurisdiction": "Jurisdicción aplicable (ej: Civil, Laboral, Contencioso-Administrativa, Constitucional)",
+  "applicableStatute": "Estatuto procesal aplicable (ej: Ley 1564 de 2012 – CGP)",
+  "activatedLegalFramework": [
+    { "norm": "Nombre de la norma o estatuto", "status": "vigente | modificada | derogada | no_verificada", "verifiedUrl": "URL de verificación o vacío" }
+  ],
+  "summary": "Resumen ejecutivo narrativo del documento en estilo formal de memorando jurídico interno. Incluye propósito, partes, situación jurídica central y estado actual. Mínimo 3 párrafos.",
+  "parties": [
+    { "name": "Nombre completo de la parte", "role": "Rol jurídico (demandante, demandado, apoderado, juez, contratante, etc.)" }
+  ],
+  "clauses": [
+    {
+      "name": "Nombre o título de la cláusula, fundamento, argumento o sección según el tipo de documento",
+      "content": "Descripción concisa del contenido de esta cláusula o sección",
+      "riskLevel": "alto | medio | bajo",
+      "recommendation": "Recomendación específica para esta cláusula"
+    }
+  ],
+  "risks": [
+    {
+      "type": "Nombre del riesgo identificado",
+      "description": "Descripción detallada del riesgo y su implicación legal",
+      "severity": "alto | medio | bajo",
+      "mitigation": "Acción concreta para mitigar este riesgo"
+    }
+  ],
+  "recommendations": [
+    "Recomendación accionable número 1 con justificación normativa",
+    "Recomendación accionable número 2"
+  ],
+  "keyDates": [
+    { "date": "Fecha en formato DD/MM/YYYY o descriptiva", "description": "Qué sucede o sucedió en esta fecha", "importance": "alto | medio | bajo" }
+  ],
+  "legalReferences": [
+    { "reference": "Artículo, Ley, Decreto o Jurisprudencia citada", "context": "Cómo aplica al documento", "verified": true }
+  ],
+  "missingElements": [
+    "Elemento legal que debería estar presente pero no está, o dato faltante del documento"
+  ],
+  "sourcesConsulted": [
+    { "data": "Dato o norma verificada", "url": "URL de la fuente consultada", "consultDate": "Fecha de consulta", "result": "verificado | no_encontrado | parcial" }
+  ],
+  "pendingVerifications": [
+    { "data": "Dato que no pudo verificarse", "source": "Fuente donde debe confirmarse", "url": "URL de la fuente oficial", "impact": "Impacto de no verificar este dato" }
+  ],
+  "strategicConclusion": "Conclusión estratégica en términos probabilísticos. Análisis de viabilidad, riesgo dominante y opciones estratégicas disponibles. Incluye la advertencia de que no sustituye el criterio del abogado responsable."
+}
+
+INSTRUCCIONES CRÍTICAS:
+- Responde SOLO con el JSON, sin texto antes ni después
+- Usa la herramienta de búsqueda web para verificar vigencia de normas y existencia de providencias ANTES de incluirlas
+- Para datos no verificables, inclúyelos en pendingVerifications con el marcador correspondiente
+- NO inventes radicados, fechas de sentencias, magistrados ponentes ni texto literal de normas sin verificación
+- Si una búsqueda web no arroja resultado concluyente, decláralo en pendingVerifications
+- El campo summary debe ser un análisis narrativo completo, no un resumen superficial`;
 
 // ──────────────────────────────────────────────
 // MAIN HANDLER
@@ -150,8 +228,18 @@ serve(async (req) => {
 
     const reasoningEffort = await getSystemConfig(supabase, 'analysis_reasoning_effort', 'medium') as 'low' | 'medium' | 'high';
     const isReasoningModel = /^(o[1-4]|gpt-5)/.test(aiModel);
+    
+    // Check if web search is enabled for analysis
+    const webSearchEnabled = await getSystemConfig(supabase, 'analysis_web_search', 'true');
+    const useWebSearch = webSearchEnabled === 'true' || webSearchEnabled === true as any;
 
-    const analysisPrompt = `Analiza exhaustivamente este documento legal "${fileName}". Proporciona un análisis profundo y profesional. Responde ÚNICAMENTE en formato JSON con: documentType, documentCategory, detectionConfidence, summary, clauses, risks, recommendations, keyDates, parties, legalReferences, missingElements.`;
+    // Build tools array — web_search_preview is added when enabled
+    const tools: any[] = [];
+    if (useWebSearch) {
+      tools.push({ type: 'web_search_preview' });
+    }
+
+    const analysisPrompt = `${ANALYSIS_JSON_PROMPT}\n\nDocumento a analizar: "${fileName}"`;
 
     // ── Route: Binary file (PDF, DOCX, DOC) with base64 ──
     if (fileBase64 && isBinaryFormat(lowerName)) {
@@ -159,7 +247,7 @@ serve(async (req) => {
       const cleanBase64 = fileBase64.replace(/^data:[^;]+;base64,/, '');
       const isPdf = isPdfFormat(lowerName);
 
-      console.log(`📤 Processing ${fileName} (${mimeType}, ${cleanBase64.length} base64 chars, method: ${isPdf ? 'input_file-direct' : 'files-api+code_interpreter'})`);
+      console.log(`📤 Processing ${fileName} (${mimeType}, ${cleanBase64.length} base64 chars, method: ${isPdf ? 'input_file-direct' : 'files-api+code_interpreter'}, webSearch: ${useWebSearch})`);
 
       let requestBody: any;
 
@@ -178,9 +266,11 @@ serve(async (req) => {
             }
           ],
           instructions: systemPrompt,
-          max_output_tokens: 8000,
+          tools: tools.length > 0 ? tools : undefined,
+          max_output_tokens: 16000,
           store: false,
-          text: { format: { type: 'json_object' } }
+          // NO json_object format — web_search is incompatible with it
+          // JSON output is enforced via prompt instructions instead
         };
       } else {
         // DOCX/DOC: upload via Files API first, then reference file_id with code_interpreter
@@ -207,6 +297,12 @@ serve(async (req) => {
         const fileId = uploadedFile.id;
         console.log(`✅ File uploaded: ${fileId}`);
 
+        // Combine web_search with code_interpreter tools
+        const docTools = [
+          ...tools,
+          { type: 'code_interpreter', container: { type: 'auto', file_ids: [fileId] } }
+        ];
+
         requestBody = {
           model: aiModel,
           input: [
@@ -218,10 +314,9 @@ serve(async (req) => {
             }
           ],
           instructions: systemPrompt,
-          tools: [{ type: 'code_interpreter', container: { type: 'auto', file_ids: [fileId] } }],
-          max_output_tokens: 8000,
+          tools: docTools,
+          max_output_tokens: 16000,
           store: false,
-          text: { format: { type: 'json_object' } }
         };
       }
 
@@ -232,7 +327,7 @@ serve(async (req) => {
       }
 
       const method = isPdf ? 'input_file-direct' : 'files-api+code_interpreter';
-      console.log(`🤖 Calling OpenAI Responses API (model: ${aiModel}, method: ${method})`);
+      console.log(`🤖 Calling OpenAI Responses API (model: ${aiModel}, method: ${method}, webSearch: ${useWebSearch})`);
 
       const response = await fetch('https://api.openai.com/v1/responses', {
         method: 'POST',
@@ -259,6 +354,7 @@ serve(async (req) => {
         fileName: fileName || 'Documento',
         extractionQuality: 'full',
         extractionMethod,
+        webSearchUsed: useWebSearch,
         ...analysis,
         timestamp: new Date().toISOString()
       };
@@ -267,11 +363,11 @@ serve(async (req) => {
         await saveToolResult(supabase, lawyerId, 'analysis',
           { documentContent: `Archivo procesado por OpenAI (${extractionMethod}): ${fileName}`, fileName },
           analysis,
-          { extractionMethod, extractionQuality: 'full' }
+          { extractionMethod, extractionQuality: 'full', webSearchUsed: useWebSearch }
         );
       }
 
-      console.log(`✅ Analysis completed via ${extractionMethod} (model: ${aiModel})`);
+      console.log(`✅ Analysis completed via ${extractionMethod} (model: ${aiModel}, webSearch: ${useWebSearch})`);
       return new Response(JSON.stringify(resultData), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
@@ -302,9 +398,10 @@ serve(async (req) => {
       model: aiModel,
       input: textInput,
       instructions: systemPrompt,
-      max_output_tokens: 8000,
+      tools: tools.length > 0 ? tools : undefined,
+      max_output_tokens: 16000,
       store: false,
-      text: { format: { type: 'json_object' } }
+      // NO json_object format — web_search is incompatible with it
     };
 
     if (isReasoningModel) {
@@ -337,6 +434,7 @@ serve(async (req) => {
       fileName: fileName || 'Documento',
       extractionQuality: 'full',
       extractionMethod: 'text-direct',
+      webSearchUsed: useWebSearch,
       ...analysis,
       timestamp: new Date().toISOString()
     };
@@ -345,11 +443,11 @@ serve(async (req) => {
       await saveToolResult(supabase, lawyerId, 'analysis',
         { documentContent: textContent.substring(0, 500) + '...', fileName },
         analysis,
-        { extractionMethod: 'text-direct', extractionQuality: 'full', textLength: textContent.length }
+        { extractionMethod: 'text-direct', extractionQuality: 'full', textLength: textContent.length, webSearchUsed: useWebSearch }
       );
     }
 
-    console.log(`✅ Analysis completed (method: text-direct, chars: ${textContent.length})`);
+    console.log(`✅ Analysis completed (method: text-direct, chars: ${textContent.length}, webSearch: ${useWebSearch})`);
     return new Response(JSON.stringify(resultData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
