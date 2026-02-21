@@ -245,8 +245,8 @@ export function VoiceAssistant({ lawyerId, onTranscriptReady, onCreateDocument, 
     <Tabs defaultValue="basic" className="w-full">
       <TabsList className="grid w-full grid-cols-2">
         <TabsTrigger value="basic" className="flex items-center gap-2">
-          <Mic className="h-4 w-4" />
-          Básico
+          <PenTool className="h-4 w-4" />
+          Dictado
         </TabsTrigger>
         <TabsTrigger value="advanced" className="flex items-center gap-2">
           <Zap className="h-4 w-4" />
