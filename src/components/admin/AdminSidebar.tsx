@@ -94,6 +94,7 @@ export const AdminSidebar = ({
     {
       label: "Sistema & Analytics",
       items: [
+        { id: 'feature-flags', label: 'Feature Flags', icon: Shield, count: 0 },
         { id: 'stats', label: 'Estadísticas', icon: BarChart3, count: 0 },
         { id: 'monitoring', label: 'Monitoreo', icon: Server, count: 0 },
         { id: 'logs', label: 'Logs Sistema', icon: ScrollText, count: 0 },

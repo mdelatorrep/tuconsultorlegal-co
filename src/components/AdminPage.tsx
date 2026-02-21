@@ -39,6 +39,7 @@ import { LeadsAnalytics } from "./admin/LeadsAnalytics";
 import { StrategicDecisions } from "./admin/StrategicDecisions";
 import LawyerVerificationAdmin from "./admin/LawyerVerificationAdmin";
 import { AdminSpecializedAgents } from "./admin/AdminSpecializedAgents";
+import FeatureFlagsManager from "./admin/FeatureFlagsManager";
 import {
   Copy, Users, Bot, BarChart3, Clock, CheckCircle, Lock, Unlock, Trash2, Check, X, Plus, RefreshCw, 
   Loader2, MessageCircle, BookOpen, Settings, Zap, Mail, Phone, Bell, LogOut, UserCheck, 
@@ -1482,6 +1483,9 @@ function AdminPage() {
         
       case 'config':
         return <SystemConfigManager />;
+      
+      case 'feature-flags':
+        return <FeatureFlagsManager />;
         
       case 'specialized-agents':
         return <AdminSpecializedAgents />;
