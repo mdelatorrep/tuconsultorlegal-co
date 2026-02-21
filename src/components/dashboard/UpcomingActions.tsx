@@ -226,8 +226,8 @@ export function UpcomingActions({ lawyerId, onViewCalendar, onViewCRM }: Upcomin
 
   const getTypeIcon = (type: 'task' | 'event' | 'appointment') => {
     switch (type) {
-      case 'event': return <Calendar className="h-4 w-4 text-blue-500" />;
-      case 'appointment': return <Users className="h-4 w-4 text-purple-500" />;
+      case 'event': return <Calendar className="h-4 w-4 text-primary" />;
+      case 'appointment': return <Users className="h-4 w-4 text-primary" />;
       default: return <CheckSquare className="h-4 w-4 text-muted-foreground" />;
     }
   };

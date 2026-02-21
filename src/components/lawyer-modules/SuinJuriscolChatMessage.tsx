@@ -41,16 +41,16 @@ function LegalMarkdownRenderer({ content }: { content: string }) {
   const getSectionIcon = (title: string) => {
     const lowerTitle = title.toLowerCase();
     if (lowerTitle.includes('ley') || lowerTitle.includes('norma') || lowerTitle.includes('decreto')) {
-      return <FileText className="h-4 w-4 text-emerald-600" />;
+      return <FileText className="h-4 w-4 text-primary" />;
     }
     if (lowerTitle.includes('sentencia') || lowerTitle.includes('jurisprudencia') || lowerTitle.includes('corte')) {
       return <Gavel className="h-4 w-4 text-amber-600" />;
     }
     if (lowerTitle.includes('concepto') || lowerTitle.includes('doctrina')) {
-      return <BookOpen className="h-4 w-4 text-blue-600" />;
+      return <BookOpen className="h-4 w-4 text-primary" />;
     }
     if (lowerTitle.includes('fuente') || lowerTitle.includes('referencia') || lowerTitle.includes('enlace')) {
-      return <Link2 className="h-4 w-4 text-purple-600" />;
+      return <Link2 className="h-4 w-4 text-primary" />;
     }
     if (lowerTitle.includes('conclus') || lowerTitle.includes('resumen')) {
       return <CheckCircle2 className="h-4 w-4 text-green-600" />;
@@ -58,7 +58,7 @@ function LegalMarkdownRenderer({ content }: { content: string }) {
     if (lowerTitle.includes('advertencia') || lowerTitle.includes('importante') || lowerTitle.includes('nota')) {
       return <AlertTriangle className="h-4 w-4 text-orange-500" />;
     }
-    return <Scale className="h-4 w-4 text-emerald-600" />;
+    return <Scale className="h-4 w-4 text-primary" />;
   };
 
   // Parse and detect legal citations
@@ -103,7 +103,7 @@ function LegalMarkdownRenderer({ content }: { content: string }) {
           <Badge 
             key={i} 
             variant="outline" 
-            className="mx-0.5 bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800 font-medium"
+            className="mx-0.5 bg-primary/10 text-primary border-primary/20 dark:bg-primary/20 dark:text-primary-foreground dark:border-primary/30 font-medium"
           >
             {citation}
           </Badge>
@@ -139,8 +139,8 @@ function LegalMarkdownRenderer({ content }: { content: string }) {
             rel="noopener noreferrer"
             className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded transition-colors ${
               isOfficialSource 
-                ? 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:text-emerald-300 dark:bg-emerald-950 dark:hover:bg-emerald-900'
-                : 'text-blue-600 hover:text-blue-800 hover:underline'
+                ? 'text-primary bg-primary/10 hover:bg-primary/20 dark:text-primary dark:bg-primary/20 dark:hover:bg-primary/30'
+                : 'text-primary hover:text-primary/80 hover:underline'
             }`}
           >
             {isOfficialSource && <Building2 className="h-3 w-3" />}
@@ -176,7 +176,7 @@ function LegalMarkdownRenderer({ content }: { content: string }) {
           <ul key={`list-${currentSection.content.length}`} className="space-y-2 my-3">
             {listItems.map((item, i) => (
               <li key={i} className="flex items-start gap-2 text-sm text-foreground/80">
-                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
                 <span className="leading-relaxed">{renderInline(item)}</span>
               </li>
             ))}
@@ -223,7 +223,7 @@ function LegalMarkdownRenderer({ content }: { content: string }) {
         if (currentSection) {
           currentSection.content.push(
             <h4 key={index} className="text-sm font-semibold mt-4 mb-2 text-foreground flex items-center gap-2">
-              <span className="h-1 w-1 rounded-full bg-emerald-500" />
+              <span className="h-1 w-1 rounded-full bg-primary" />
               {renderInline(trimmedLine.slice(4))}
             </h4>
           );
@@ -362,7 +362,7 @@ function LegalMarkdownRenderer({ content }: { content: string }) {
             </div>
           </CollapsibleTrigger>
           <CollapsibleContent>
-            <div className="pl-8 pr-2 py-2 border-l-2 border-emerald-200 dark:border-emerald-800 ml-2 mt-1">
+            <div className="pl-8 pr-2 py-2 border-l-2 border-primary/30 dark:border-primary/40 ml-2 mt-1">
               {section.content}
             </div>
           </CollapsibleContent>
@@ -377,10 +377,10 @@ export default function SuinJuriscolChatMessage({ content, timestamp }: SuinJuri
     <div className="bg-gradient-to-br from-card to-muted/30 border rounded-2xl shadow-sm">
       <div className="px-4 py-3 border-b bg-muted/20 rounded-t-2xl">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 bg-emerald-100 dark:bg-emerald-900 rounded-lg">
-            <Scale className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+          <div className="p-1.5 bg-primary/10 dark:bg-primary/20 rounded-lg">
+            <Scale className="h-4 w-4 text-primary dark:text-primary" />
           </div>
-          <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+          <span className="text-sm font-medium text-primary dark:text-primary">
             Asistente Legal SUIN
           </span>
           <span className="text-xs text-muted-foreground ml-auto">

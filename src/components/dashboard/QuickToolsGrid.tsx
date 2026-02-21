@@ -19,19 +19,19 @@ interface QuickToolsGridProps {
 }
 
 const tools: Tool[] = [
-  { title: "Investigación", icon: Search, view: "research", gradient: "from-blue-500 to-cyan-500" },
-  { title: "SUIN-Juriscol", icon: Database, view: "suin-juriscol", gradient: "from-indigo-500 to-purple-500" },
-  { title: "Consulta Procesos", icon: Gavel, view: "process-query", gradient: "from-slate-500 to-zinc-600" },
-  { title: "Monitor Procesos", icon: Radar, view: "process-monitor", gradient: "from-teal-500 to-emerald-500" },
-  { title: "Análisis", icon: Eye, view: "analyze", gradient: "from-purple-500 to-pink-500" },
-  { title: "Redacción", icon: PenTool, view: "draft", gradient: "from-green-500 to-emerald-500" },
-  { title: "Estrategia", icon: Target, view: "strategize", gradient: "from-orange-500 to-red-500" },
-  { title: "Predictor", icon: TrendingUp, view: "case-predictor", gradient: "from-rose-500 to-pink-500" },
-  { title: "CRM", icon: Users, view: "crm", gradient: "from-blue-500 to-indigo-500" },
-  { title: "Calendario", icon: Calendar, view: "legal-calendar", gradient: "from-amber-500 to-orange-500" },
-  { title: "Copilot", icon: Wand2, view: "legal-copilot", gradient: "from-violet-500 to-purple-500" },
-  { title: "Voz", icon: Mic, view: "voice-assistant", gradient: "from-cyan-500 to-blue-500" },
-  { title: "Verificación", icon: ShieldCheck, view: "lawyer-verification", gradient: "from-emerald-500 to-green-500" },
+  { title: "Investigación", icon: Search, view: "research", gradient: "from-primary to-primary/70" },
+  { title: "SUIN-Juriscol", icon: Database, view: "suin-juriscol", gradient: "from-primary/90 to-primary/60" },
+  { title: "Consulta Procesos", icon: Gavel, view: "process-query", gradient: "from-foreground/80 to-foreground/60" },
+  { title: "Monitor Procesos", icon: Radar, view: "process-monitor", gradient: "from-primary/80 to-primary/50" },
+  { title: "Análisis", icon: Eye, view: "analyze", gradient: "from-primary to-primary/70" },
+  { title: "Redacción", icon: PenTool, view: "draft", gradient: "from-primary/90 to-primary/60" },
+  { title: "Estrategia", icon: Target, view: "strategize", gradient: "from-foreground/70 to-foreground/50" },
+  { title: "Predictor", icon: TrendingUp, view: "case-predictor", gradient: "from-primary/80 to-primary/50" },
+  { title: "CRM", icon: Users, view: "crm", gradient: "from-primary to-primary/70" },
+  { title: "Calendario", icon: Calendar, view: "legal-calendar", gradient: "from-primary/90 to-primary/60" },
+  { title: "Copilot", icon: Wand2, view: "legal-copilot", gradient: "from-primary/80 to-primary/50" },
+  { title: "Voz", icon: Mic, view: "voice-assistant", gradient: "from-primary to-primary/70" },
+  { title: "Verificación", icon: ShieldCheck, view: "lawyer-verification", gradient: "from-primary/90 to-primary/60" },
 ];
 
 export function QuickToolsGrid({ onViewChange, newLeadsCount = 0 }: QuickToolsGridProps) {

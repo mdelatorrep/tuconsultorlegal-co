@@ -79,8 +79,8 @@ export function NextBestAction({
       description: '¡Gana créditos completando misiones!',
       action: onViewMissions,
       color: 'secondary',
-      bgClass: 'bg-emerald-500/10 border-emerald-500/30',
-      iconClass: 'text-emerald-500'
+      bgClass: 'bg-primary/10 border-primary/30',
+      iconClass: 'text-primary'
     }] : []),
     ...(pendingDocuments.length > 0 ? [{
       priority: 5,
@@ -97,10 +97,10 @@ export function NextBestAction({
 
   if (actions.length === 0) {
     return (
-      <Card className="bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/20 dark:to-green-950/20 border-emerald-200 dark:border-emerald-800">
+      <Card className="bg-gradient-to-br from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/5 border-primary/20 dark:border-primary/30">
         <CardContent className="p-6 text-center">
-          <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center mx-auto mb-3">
-            <Target className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+          <div className="w-12 h-12 rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center mx-auto mb-3">
+            <Target className="h-6 w-6 text-primary" />
           </div>
           <h3 className="font-semibold text-lg mb-1">¡Todo al día!</h3>
           <p className="text-sm text-muted-foreground mb-4">

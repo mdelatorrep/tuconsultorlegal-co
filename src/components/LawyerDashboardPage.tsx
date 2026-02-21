@@ -818,7 +818,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                         else if (url.includes('process')) setCurrentView('process-monitor');
                       }}
                     />
-                    <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs">
+                    <Badge className="bg-primary text-primary-foreground text-xs">
                       Portal Abogados
                     </Badge>
                   </div>
@@ -895,7 +895,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                       else if (url.includes('process')) setCurrentView('process-monitor');
                     }}
                   />
-                  <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs">
+                  <Badge className="bg-primary text-primary-foreground text-xs">
                     Portal Abogados
                   </Badge>
                 </div>
@@ -1145,13 +1145,13 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
 
                   {/* Professional Development */}
                   <Card 
-                    className="cursor-pointer transition-all hover:scale-[1.01] hover:shadow-lg bg-gradient-to-br from-pink-50 to-rose-50 dark:from-pink-900/20 dark:to-rose-900/20"
+                    className="cursor-pointer transition-all hover:scale-[1.01] hover:shadow-lg bg-gradient-to-br from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/5"
                     onClick={() => setCurrentView('training')}
                   >
                     <CardContent className="p-4 md:p-6">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-pink-500 to-rose-500 flex items-center justify-center">
-                          <Brain className="h-6 w-6 text-white" />
+                        <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-primary to-primary/80 flex items-center justify-center">
+                          <Brain className="h-6 w-6 text-primary-foreground" />
                         </div>
                         <div>
                           <h3 className="font-semibold text-lg">Formación IA</h3>
@@ -1175,13 +1175,13 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                           <>
                             <Card className="cursor-pointer hover:shadow-md" onClick={() => setCurrentView('agent-creator')}>
                               <CardContent className="p-4 text-center">
-                                <Bot className="h-8 w-8 mx-auto mb-2 text-purple-500" />
+                                <Bot className="h-8 w-8 mx-auto mb-2 text-primary" />
                                 <h4 className="font-medium">Crear Agente</h4>
                               </CardContent>
                             </Card>
                             <Card className="cursor-pointer hover:shadow-md" onClick={() => setCurrentView('agent-manager')}>
                               <CardContent className="p-4 text-center">
-                                <Settings className="h-8 w-8 mx-auto mb-2 text-indigo-500" />
+                                <Settings className="h-8 w-8 mx-auto mb-2 text-primary" />
                                 <h4 className="font-medium">Gestionar Agentes</h4>
                               </CardContent>
                             </Card>
@@ -1190,7 +1190,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                         {user?.canCreateBlogs && (
                           <Card className="cursor-pointer hover:shadow-md" onClick={() => setCurrentView('blog-manager')}>
                             <CardContent className="p-4 text-center">
-                              <BookOpen className="h-8 w-8 mx-auto mb-2 text-green-500" />
+                              <BookOpen className="h-8 w-8 mx-auto mb-2 text-primary" />
                               <h4 className="font-medium">Gestión Blog</h4>
                             </CardContent>
                           </Card>

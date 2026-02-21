@@ -118,7 +118,7 @@ export default function DraftResultDisplay({
 
   return (
     <Card className="overflow-hidden">
-      <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 border-b">
+      <CardHeader className="bg-gradient-to-r from-muted to-accent dark:from-muted/50 dark:to-accent/50 border-b">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
             <CardTitle className="text-lg flex items-center gap-2">
@@ -178,8 +178,8 @@ export default function DraftResultDisplay({
               className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg">
-                  <Brain className="h-4 w-4 text-white" />
+                <div className="p-2 bg-gradient-to-br from-primary to-primary/80 rounded-lg">
+                  <Brain className="h-4 w-4 text-primary-foreground" />
                 </div>
                 <div className="text-left">
                   <h4 className="font-semibold text-sm">Razonamiento de la IA</h4>
@@ -202,9 +202,9 @@ export default function DraftResultDisplay({
               )}
             >
               <div className="p-4 pt-0">
-                <div className="bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 border border-purple-100 dark:border-purple-900 rounded-lg p-4">
+                <div className="bg-gradient-to-br from-muted to-accent dark:from-muted/50 dark:to-accent/50 border border-border rounded-lg p-4">
                   <div className="flex items-start gap-3">
-                    <Lightbulb className="h-5 w-5 text-purple-600 mt-0.5 shrink-0" />
+                    <Lightbulb className="h-5 w-5 text-primary mt-0.5 shrink-0" />
                     <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
                       {parsed.reasoning}
                     </p>

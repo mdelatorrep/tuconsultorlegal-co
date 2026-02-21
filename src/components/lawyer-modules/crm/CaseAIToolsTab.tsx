@@ -82,11 +82,11 @@ const CaseAIToolsTab: React.FC<CaseAIToolsTabProps> = ({
 
   const getToolColor = (toolType: string) => {
     switch (toolType) {
-      case 'analysis': return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300';
-      case 'research': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
-      case 'strategy': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300';
+      case 'analysis': return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300';
+      case 'research': return 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary';
+      case 'strategy': return 'bg-accent text-accent-foreground dark:bg-accent dark:text-accent-foreground';
       case 'drafting': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -118,9 +118,9 @@ const CaseAIToolsTab: React.FC<CaseAIToolsTabProps> = ({
   };
 
   const quickActions = [
-    { type: 'analysis', label: 'Analizar documento', icon: Eye, color: 'text-orange-600' },
-    { type: 'research', label: 'Investigar jurisprudencia', icon: Search, color: 'text-blue-600' },
-    { type: 'strategy', label: 'Generar estrategia', icon: Target, color: 'text-purple-600' },
+    { type: 'analysis', label: 'Analizar documento', icon: Eye, color: 'text-amber-600' },
+    { type: 'research', label: 'Investigar jurisprudencia', icon: Search, color: 'text-primary' },
+    { type: 'strategy', label: 'Generar estrategia', icon: Target, color: 'text-primary' },
     { type: 'drafting', label: 'Redactar documento', icon: FileSignature, color: 'text-green-600' }
   ];
 
