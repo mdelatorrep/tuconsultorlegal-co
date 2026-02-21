@@ -1,4 +1,5 @@
 import logoIcon from "@/assets/favicon.png";
+import { Linkedin } from "lucide-react";
 
 interface FooterProps {
   onNavigate: (page: string) => void;
@@ -96,9 +97,18 @@ export default function Footer({ onNavigate }: FooterProps) {
           <p className="text-background/40 text-sm font-light">
             © 2025 Praxis Hub. Todos los derechos reservados.
           </p>
-          <p className="text-background/40 text-sm font-light">
-            Colombia
-          </p>
+          <div className="flex items-center gap-4">
+            <a
+              href="https://www.linkedin.com/company/praxis-hub-co"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-background/40 hover:text-background transition-colors"
+              aria-label="LinkedIn"
+            >
+              <Linkedin className="w-5 h-5" />
+            </a>
+            <span className="text-background/40 text-sm font-light">Colombia</span>
+          </div>
         </div>
       </div>
     </footer>
