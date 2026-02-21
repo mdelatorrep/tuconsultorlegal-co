@@ -61,6 +61,18 @@ serve(async (req) => {
     const { query, category, year, conversationContext, isFollowUp, originalQuery } = await req.json();
     console.log("[SUIN] Received search request:", { query, category, year, isFollowUp });
 
+    // Truncate conversation context to last 3 exchanges (~6 messages) to prevent token overflow
+    let truncatedContext = conversationContext;
+    if (conversationContext && isFollowUp) {
+      const exchanges = conversationContext.split(/(?=Usuario:|Asistente:)/g).filter((s: string) => s.trim());
+      if (exchanges.length > 6) {
+        const firstExchange = exchanges.slice(0, 2).join('\n');
+        const lastExchanges = exchanges.slice(-4).join('\n');
+        truncatedContext = `[Resumen inicial]\n${firstExchange}\n\n[...conversación previa omitida...]\n\n${lastExchanges}`;
+        console.log(`[SUIN] Context truncated from ${exchanges.length} to 6 messages`);
+      }
+    }
+
     if (!query) {
       return new Response(JSON.stringify({ success: false, error: "Query is required" }), {
         status: 400,
@@ -123,9 +135,9 @@ INSTRUCCIONES DE BÚSQUEDA WEB:
 - Cita números de ley, decreto, sentencia y artículos específicos
 ` : '';
 
-    if (isFollowUp && conversationContext) {
+    if (isFollowUp && truncatedContext) {
       userMessage = `Contexto de la conversación anterior:
-${conversationContext}
+${truncatedContext}
 
 Nueva pregunta del usuario: ${query}
 
@@ -253,7 +265,7 @@ IMPORTANTE: Proporciona información sustantiva con:
         .from("legal_tools_results")
         .insert({
           lawyer_id: lawyerId,
-          tool_type: "suin_juriscol",
+          tool_type: isFollowUp ? "suin_juriscol_followup" : "suin_juriscol",
           input_data: { query, category, year, isFollowUp },
           output_data: {
             summary: aiResponse,
