@@ -150,6 +150,17 @@ export function useCredits(lawyerId: string | null) {
       // Refresh balance & history after consumption
       await fetchBalance();
       await fetchTransactions();
+
+      // Auto-claim daily_tool_use gamification task
+      try {
+        await supabase.functions.invoke('gamification-check', {
+          body: { action: 'claim', lawyerId, taskKey: 'daily_tool_use' }
+        });
+        window.dispatchEvent(new Event('gamification:update'));
+      } catch (e) {
+        console.warn('[GAMIFICATION] Could not claim daily_tool_use:', e);
+      }
+
       return { success: true, ...data };
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Error consuming credits';
