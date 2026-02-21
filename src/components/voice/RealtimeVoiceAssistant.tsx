@@ -23,7 +23,6 @@ interface RealtimeVoiceAssistantProps {
 }
 
 const MODES: { value: RealtimeVoiceMode; label: string; icon: React.ElementType; description: string }[] = [
-  { value: 'dictation', label: 'Dictado', icon: PenTool, description: 'Dicta y el asistente transcribe con formato legal' },
   { value: 'consultation', label: 'Consulta', icon: Scale, description: 'Haz preguntas legales y recibe respuestas' },
   { value: 'analysis', label: 'Análisis', icon: FileText, description: 'Describe un caso para análisis legal' },
 ];
@@ -119,7 +118,7 @@ export function RealtimeVoiceAssistant({ lawyerId, onTranscriptReady, onCreateDo
   return (
     <div className="flex flex-col gap-4">
       {/* Mode Selector with cost per mode */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2">
         {MODES.map(m => {
           const mKey = `voice_realtime_mode_multiplier_${m.value}`;
           const mMult = parseFloat(getConfigValue(mKey, '1.0').replace(/"/g, ''));
