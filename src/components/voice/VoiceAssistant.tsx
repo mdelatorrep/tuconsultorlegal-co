@@ -4,23 +4,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  Mic, 
-  MicOff, 
-  Loader2, 
-  Copy, 
-  Trash2,
-  FileText,
-  Send,
-  Volume2,
-  PenTool,
-  ArrowRight
+  Mic, MicOff, Loader2, Copy, Trash2,
+  FileText, Send, Volume2, PenTool, ArrowRight, Zap
 } from 'lucide-react';
 import { useVoiceRecognition } from '@/hooks/useVoiceRecognition';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useCredits } from '@/hooks/useCredits';
 import { ToolCostIndicator } from '@/components/credits/ToolCostIndicator';
+import { RealtimeVoiceAssistant } from './RealtimeVoiceAssistant';
+import { useSystemConfig } from '@/hooks/useSystemConfig';
 
 interface VoiceAssistantProps {
   lawyerId?: string;
@@ -34,6 +29,9 @@ export function VoiceAssistant({ lawyerId, onTranscriptReady, onCreateDocument, 
   const [editedTranscript, setEditedTranscript] = useState('');
   
   const { consumeCredits, hasEnoughCredits, getToolCost } = useCredits(lawyerId || null);
+  const { getConfigValue } = useSystemConfig();
+
+  const realtimeEnabled = getConfigValue('voice_realtime_enabled', 'false') === 'true';
 
   const {
     isRecording,
@@ -51,13 +49,10 @@ export function VoiceAssistant({ lawyerId, onTranscriptReady, onCreateDocument, 
   const handleToggleRecording = async () => {
     if (isRecording) {
       await stopRecording();
-      
-      // Consume credits when stopping (after transcription)
       if (lawyerId && hasEnoughCredits('voice_transcription')) {
         await consumeCredits('voice_transcription', { action: 'transcription' });
       }
     } else {
-      // Check credits before starting
       if (lawyerId && !hasEnoughCredits('voice_transcription')) {
         toast.error(`Créditos insuficientes. Necesitas ${getToolCost('voice_transcription')} créditos para transcribir.`);
         return;
@@ -71,9 +66,7 @@ export function VoiceAssistant({ lawyerId, onTranscriptReady, onCreateDocument, 
     toast.success('Copiado al portapapeles');
   };
 
-  const handleClear = () => {
-    setEditedTranscript('');
-  };
+  const handleClear = () => setEditedTranscript('');
 
   const handleSaveNote = () => {
     if (editedTranscript.trim()) {
@@ -103,22 +96,20 @@ export function VoiceAssistant({ lawyerId, onTranscriptReady, onCreateDocument, 
 
   const canUseCredits = !lawyerId || hasEnoughCredits('voice_transcription');
 
-  return (
+  // Basic voice assistant content
+  const BasicAssistant = () => (
     <div className="flex flex-col gap-4">
-      {/* Recording Card */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between">
             <span className="flex items-center gap-2">
               <Volume2 className="h-5 w-5" />
-              Asistente de Voz
+              Transcripción de Voz
             </span>
             <div className="flex items-center gap-2">
               {lawyerId && <ToolCostIndicator toolType="voice_transcription" lawyerId={lawyerId} />}
               {isRecording && (
-                <Badge variant="destructive" className="animate-pulse">
-                  Grabando...
-                </Badge>
+                <Badge variant="destructive" className="animate-pulse">Grabando...</Badge>
               )}
               {isProcessing && (
                 <Badge variant="secondary">
@@ -130,26 +121,18 @@ export function VoiceAssistant({ lawyerId, onTranscriptReady, onCreateDocument, 
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Microphone Button */}
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
-              {/* Audio Level Indicator */}
               {isRecording && (
                 <div 
                   className="absolute inset-0 rounded-full bg-primary/20 animate-ping"
-                  style={{ 
-                    transform: `scale(${1 + audioLevel})`,
-                    opacity: audioLevel * 0.5 
-                  }}
+                  style={{ transform: `scale(${1 + audioLevel})`, opacity: audioLevel * 0.5 }}
                 />
               )}
               <Button
                 size="lg"
                 variant={isRecording ? 'destructive' : 'default'}
-                className={cn(
-                  "h-20 w-20 rounded-full relative z-10",
-                  isRecording && "animate-pulse"
-                )}
+                className={cn("h-20 w-20 rounded-full relative z-10", isRecording && "animate-pulse")}
                 onClick={handleToggleRecording}
                 disabled={isProcessing || !canUseCredits}
               >
@@ -165,16 +148,12 @@ export function VoiceAssistant({ lawyerId, onTranscriptReady, onCreateDocument, 
             <p className="text-sm text-muted-foreground text-center">
               {!canUseCredits 
                 ? 'Créditos insuficientes para transcribir'
-                : isRecording 
-                  ? 'Hablando... Haz clic para detener'
-                  : isProcessing 
-                    ? 'Transcribiendo tu voz...'
-                    : 'Haz clic para empezar a dictar'
-              }
+                : isRecording ? 'Hablando... Haz clic para detener'
+                : isProcessing ? 'Transcribiendo tu voz...'
+                : 'Haz clic para empezar a dictar'}
             </p>
           </div>
 
-          {/* Transcript Editor */}
           <div className="space-y-2">
             <Textarea
               value={editedTranscript}
@@ -182,61 +161,28 @@ export function VoiceAssistant({ lawyerId, onTranscriptReady, onCreateDocument, 
               placeholder={placeholder || "La transcripción aparecerá aquí... También puedes editar el texto."}
               className="min-h-[120px]"
             />
-            
             <div className="flex items-center justify-between">
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCopy}
-                  disabled={!editedTranscript}
-                >
-                  <Copy className="h-4 w-4 mr-1" />
-                  Copiar
+                <Button variant="outline" size="sm" onClick={handleCopy} disabled={!editedTranscript}>
+                  <Copy className="h-4 w-4 mr-1" />Copiar
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleClear}
-                  disabled={!editedTranscript}
-                >
-                  <Trash2 className="h-4 w-4 mr-1" />
-                  Limpiar
+                <Button variant="outline" size="sm" onClick={handleClear} disabled={!editedTranscript}>
+                  <Trash2 className="h-4 w-4 mr-1" />Limpiar
                 </Button>
               </div>
-              
               <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleSaveNote}
-                  disabled={!editedTranscript.trim()}
-                >
-                  <FileText className="h-4 w-4 mr-1" />
-                  Guardar Nota
+                <Button variant="outline" size="sm" onClick={handleSaveNote} disabled={!editedTranscript.trim()}>
+                  <FileText className="h-4 w-4 mr-1" />Guardar Nota
                 </Button>
                 {onCreateDocument && (
-                  <Button
-                    size="sm"
-                    variant="default"
-                    onClick={handleCreateDocument}
-                    disabled={!editedTranscript.trim()}
-                    className="bg-gradient-to-r from-primary to-primary/80"
-                  >
-                    <PenTool className="h-4 w-4 mr-1" />
-                    Crear Documento
-                    <ArrowRight className="h-4 w-4 ml-1" />
+                  <Button size="sm" variant="default" onClick={handleCreateDocument} disabled={!editedTranscript.trim()}
+                    className="bg-gradient-to-r from-primary to-primary/80">
+                    <PenTool className="h-4 w-4 mr-1" />Crear Documento<ArrowRight className="h-4 w-4 ml-1" />
                   </Button>
                 )}
                 {onTranscriptReady && (
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={handleSend}
-                    disabled={!editedTranscript.trim()}
-                  >
-                    <Send className="h-4 w-4 mr-1" />
-                    Usar
+                  <Button size="sm" variant="secondary" onClick={handleSend} disabled={!editedTranscript.trim()}>
+                    <Send className="h-4 w-4 mr-1" />Usar
                   </Button>
                 )}
               </div>
@@ -255,29 +201,15 @@ export function VoiceAssistant({ lawyerId, onTranscriptReady, onCreateDocument, 
             <ScrollArea className="h-[200px]">
               <div className="space-y-2">
                 {notes.map((note, index) => (
-                  <div
-                    key={index}
-                    className="flex items-start justify-between gap-2 p-3 bg-muted/50 rounded-lg"
-                  >
+                  <div key={index} className="flex items-start justify-between gap-2 p-3 bg-muted/50 rounded-lg">
                     <p className="text-sm flex-1">{note}</p>
                     <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => {
-                          navigator.clipboard.writeText(note);
-                          toast.success('Copiado');
-                        }}
-                      >
+                      <Button variant="ghost" size="icon" className="h-8 w-8"
+                        onClick={() => { navigator.clipboard.writeText(note); toast.success('Copiado'); }}>
                         <Copy className="h-4 w-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive"
-                        onClick={() => handleDeleteNote(index)}
-                      >
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"
+                        onClick={() => handleDeleteNote(index)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -302,5 +234,36 @@ export function VoiceAssistant({ lawyerId, onTranscriptReady, onCreateDocument, 
         </CardContent>
       </Card>
     </div>
+  );
+
+  // If realtime not enabled or no lawyerId, show only basic
+  if (!realtimeEnabled || !lawyerId) {
+    return <BasicAssistant />;
+  }
+
+  return (
+    <Tabs defaultValue="basic" className="w-full">
+      <TabsList className="grid w-full grid-cols-2">
+        <TabsTrigger value="basic" className="flex items-center gap-2">
+          <Mic className="h-4 w-4" />
+          Básico
+        </TabsTrigger>
+        <TabsTrigger value="advanced" className="flex items-center gap-2">
+          <Zap className="h-4 w-4" />
+          Avanzado
+          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Pro</Badge>
+        </TabsTrigger>
+      </TabsList>
+      <TabsContent value="basic">
+        <BasicAssistant />
+      </TabsContent>
+      <TabsContent value="advanced">
+        <RealtimeVoiceAssistant
+          lawyerId={lawyerId}
+          onTranscriptReady={onTranscriptReady}
+          onCreateDocument={onCreateDocument}
+        />
+      </TabsContent>
+    </Tabs>
   );
 }
