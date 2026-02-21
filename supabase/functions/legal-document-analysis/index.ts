@@ -156,36 +156,74 @@ serve(async (req) => {
     if (fileBase64 && isBinaryFormat(lowerName)) {
       const mimeType = getMimeType(fileName);
       const cleanBase64 = fileBase64.replace(/^data:[^;]+;base64,/, '');
-      const fileDataUri = `data:${mimeType};base64,${cleanBase64}`;
+      const isPdf = isPdfFormat(lowerName);
 
-      console.log(`📤 Processing ${fileName} (${mimeType}, ${cleanBase64.length} base64 chars, method: code_interpreter)`);
+      console.log(`📤 Processing ${fileName} (${mimeType}, ${cleanBase64.length} base64 chars, method: ${isPdf ? 'input_file-direct' : 'files-api+code_interpreter'})`);
 
-      const input = [
-        {
-          role: 'user' as const,
-          content: [
+      let requestBody: any;
+
+      if (isPdf) {
+        // PDF: send directly as input_file (natively supported)
+        const fileDataUri = `data:${mimeType};base64,${cleanBase64}`;
+        requestBody = {
+          model: aiModel,
+          input: [
             {
-              type: 'input_file',
-              filename: fileName,
-              file_data: fileDataUri,
-            },
-            {
-              type: 'input_text',
-              text: analysisPrompt,
+              role: 'user' as const,
+              content: [
+                { type: 'input_file', filename: fileName, file_data: fileDataUri },
+                { type: 'input_text', text: analysisPrompt },
+              ]
             }
-          ]
-        }
-      ];
+          ],
+          instructions: systemPrompt,
+          max_output_tokens: 8000,
+          store: false,
+          text: { format: { type: 'json_object' } }
+        };
+      } else {
+        // DOCX/DOC: upload via Files API first, then reference file_id with code_interpreter
+        console.log(`📤 Uploading ${fileName} to OpenAI Files API...`);
 
-      const requestBody: any = {
-        model: aiModel,
-        input,
-        instructions: systemPrompt,
-        tools: [{ type: 'code_interpreter', container: { type: 'auto' } }],
-        max_output_tokens: 8000,
-        store: false,
-        text: { format: { type: 'json_object' } }
-      };
+        const binaryData = Uint8Array.from(atob(cleanBase64), c => c.charCodeAt(0));
+        const formData = new FormData();
+        formData.append('purpose', 'user_data');
+        formData.append('file', new Blob([binaryData], { type: mimeType }), fileName);
+
+        const uploadResponse = await fetch('https://api.openai.com/v1/files', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${openaiApiKey}` },
+          body: formData,
+        });
+
+        if (!uploadResponse.ok) {
+          const uploadError = await uploadResponse.text();
+          console.error(`❌ Files API upload error: ${uploadResponse.status}`, uploadError);
+          throw new Error(`File upload failed: ${uploadError}`);
+        }
+
+        const uploadedFile = await uploadResponse.json();
+        const fileId = uploadedFile.id;
+        console.log(`✅ File uploaded: ${fileId}`);
+
+        requestBody = {
+          model: aiModel,
+          input: [
+            {
+              role: 'user' as const,
+              content: [
+                { type: 'input_file', file_id: fileId },
+                { type: 'input_text', text: analysisPrompt },
+              ]
+            }
+          ],
+          instructions: systemPrompt,
+          tools: [{ type: 'code_interpreter', container: { type: 'auto', file_ids: [fileId] } }],
+          max_output_tokens: 8000,
+          store: false,
+          text: { format: { type: 'json_object' } }
+        };
+      }
 
       if (isReasoningModel) {
         requestBody.reasoning = { effort: reasoningEffort };
@@ -193,7 +231,9 @@ serve(async (req) => {
         requestBody.temperature = 0.2;
       }
 
-      console.log(`🤖 Calling OpenAI Responses API (model: ${aiModel}, tools: code_interpreter)`);
+      const method = isPdf ? 'input_file-direct' : 'files-api+code_interpreter';
+      console.log(`🤖 Calling OpenAI Responses API (model: ${aiModel}, method: ${method})`);
+
       const response = await fetch('https://api.openai.com/v1/responses', {
         method: 'POST',
         headers: {
@@ -213,24 +253,25 @@ serve(async (req) => {
       const resultText = extractOutputText(responseData);
       const analysis = parseAnalysisJSON(resultText);
 
+      const extractionMethod = isPdf ? 'openai-input-file' : 'openai-code-interpreter';
       const resultData = {
         success: true,
         fileName: fileName || 'Documento',
         extractionQuality: 'full',
-        extractionMethod: 'openai-code-interpreter',
+        extractionMethod,
         ...analysis,
         timestamp: new Date().toISOString()
       };
 
       if (lawyerId) {
         await saveToolResult(supabase, lawyerId, 'analysis',
-          { documentContent: `Archivo procesado por OpenAI (code-interpreter): ${fileName}`, fileName },
+          { documentContent: `Archivo procesado por OpenAI (${extractionMethod}): ${fileName}`, fileName },
           analysis,
-          { extractionMethod: 'openai-code-interpreter', extractionQuality: 'full' }
+          { extractionMethod, extractionQuality: 'full' }
         );
       }
 
-      console.log(`✅ Analysis completed via code-interpreter (model: ${aiModel})`);
+      console.log(`✅ Analysis completed via ${extractionMethod} (model: ${aiModel})`);
       return new Response(JSON.stringify(resultData), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
