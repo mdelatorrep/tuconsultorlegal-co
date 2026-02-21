@@ -35,7 +35,7 @@ const notificationTypes = [
     label: 'Nuevos Leads',
     description: 'Cuando alguien envía un mensaje de contacto desde tu perfil público',
     icon: Users,
-    color: 'text-blue-500'
+    color: 'text-primary'
   },
   {
     key: 'document_status',
@@ -49,7 +49,7 @@ const notificationTypes = [
     label: 'Actuaciones Judiciales',
     description: 'Nuevas actuaciones en los procesos que monitoreas',
     icon: Radar,
-    color: 'text-purple-500'
+    color: 'text-primary'
   },
   {
     key: 'credit_low',
@@ -77,7 +77,7 @@ const notificationTypes = [
     label: 'Recordatorios de Calendario',
     description: 'Audiencias y vencimientos próximos',
     icon: Calendar,
-    color: 'text-indigo-500'
+    color: 'text-primary'
   },
   {
     key: 'system',

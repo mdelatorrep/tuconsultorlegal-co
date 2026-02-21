@@ -114,7 +114,7 @@ export const SpecializedAgentsGrid = ({ onSelectAgent, lawyerId }: SpecializedAg
       <Card 
         key={agent.id}
         className={`group cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border-2 ${
-          agent.is_featured ? 'border-amber-200 bg-gradient-to-br from-amber-50/50 to-white' : 'hover:border-primary/30'
+          agent.is_featured ? 'border-amber-200 bg-gradient-to-br from-amber-50/50 to-card' : 'hover:border-primary/30'
         }`}
         onClick={() => onSelectAgent(agent)}
       >
@@ -128,7 +128,7 @@ export const SpecializedAgentsGrid = ({ onSelectAgent, lawyerId }: SpecializedAg
                 <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
               )}
               {agent.is_premium && (
-                <Crown className="h-4 w-4 text-purple-500" />
+                <Crown className="h-4 w-4 text-primary" />
               )}
             </div>
           </div>

@@ -44,20 +44,20 @@ interface NotificationCenterProps {
 const getNotificationIcon = (type: string, entityType: string | null) => {
   switch (type) {
     case 'new_lead':
-      return <Users className="h-4 w-4 text-blue-500" />;
+      return <Users className="h-4 w-4 text-primary" />;
     case 'document_status':
       return <FileText className="h-4 w-4 text-green-500" />;
     case 'process_update':
-      return <Radar className="h-4 w-4 text-purple-500" />;
+      return <Radar className="h-4 w-4 text-primary" />;
     case 'credit_low':
     case 'credit_recharge':
       return <CreditCard className="h-4 w-4 text-amber-500" />;
     case 'sla_alert':
       return <AlertCircle className="h-4 w-4 text-red-500" />;
     case 'calendar_reminder':
-      return <Calendar className="h-4 w-4 text-indigo-500" />;
+      return <Calendar className="h-4 w-4 text-primary" />;
     case 'system':
-      return <Settings className="h-4 w-4 text-gray-500" />;
+      return <Settings className="h-4 w-4 text-muted-foreground" />;
     default:
       return <Bell className="h-4 w-4 text-muted-foreground" />;
   }

@@ -255,7 +255,7 @@ export function RealtimeVoiceAssistant({ lawyerId, onTranscriptReady, onCreateDo
                 <div className="absolute inset-0 rounded-full bg-green-500/20 animate-ping" />
               )}
               {isAiSpeaking && (
-                <div className="absolute inset-0 rounded-full bg-blue-500/20 animate-pulse" />
+                <div className="absolute inset-0 rounded-full bg-primary/20 animate-pulse" />
               )}
               <Button
                 size="lg"
@@ -298,7 +298,7 @@ export function RealtimeVoiceAssistant({ lawyerId, onTranscriptReady, onCreateDo
                 </Badge>
               )}
               {isAiSpeaking && (
-                <Badge variant="outline" className="border-blue-500 text-blue-700 dark:text-blue-400">
+                <Badge variant="outline" className="border-primary text-primary dark:text-primary">
                   <Bot className="h-3 w-3 mr-1" />
                   Respondiendo...
                 </Badge>

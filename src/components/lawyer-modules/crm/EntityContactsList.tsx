@@ -178,8 +178,8 @@ export default function EntityContactsList({
                 <div className="flex items-start gap-4">
                   <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold text-lg ${
                     contact.is_primary 
-                      ? 'bg-gradient-to-br from-blue-500 to-blue-600' 
-                      : 'bg-gradient-to-br from-gray-400 to-gray-500'
+                      ? 'bg-gradient-to-br from-primary to-primary/80' 
+                      : 'bg-gradient-to-br from-muted-foreground/60 to-muted-foreground/40'
                   }`}>
                     {contact.name.charAt(0).toUpperCase()}
                   </div>
@@ -187,7 +187,7 @@ export default function EntityContactsList({
                     <div className="flex items-center gap-2 flex-wrap">
                       <h4 className="font-semibold">{contact.name}</h4>
                       {contact.is_primary && (
-                        <Badge className="bg-blue-100 text-blue-800">
+                        <Badge className="bg-primary/10 text-primary">
                           <Star className="h-3 w-3 mr-1" />
                           Principal
                         </Badge>
@@ -199,7 +199,7 @@ export default function EntityContactsList({
                         </Badge>
                       )}
                       {contact.is_decision_maker && (
-                        <Badge variant="outline" className="bg-purple-50 text-purple-700">
+                        <Badge variant="outline" className="bg-accent text-accent-foreground">
                           <Shield className="h-3 w-3 mr-1" />
                           Decisor
                         </Badge>
@@ -217,7 +217,7 @@ export default function EntityContactsList({
                     )}
                     <div className="flex flex-wrap items-center gap-4 mt-2 text-sm">
                       {contact.email && (
-                        <a href={`mailto:${contact.email}`} className="flex items-center gap-1 text-blue-600 hover:underline">
+                        <a href={`mailto:${contact.email}`} className="flex items-center gap-1 text-primary hover:underline">
                           <Mail className="h-3.5 w-3.5" />
                           {contact.email}
                         </a>
@@ -243,7 +243,7 @@ export default function EntityContactsList({
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="text-blue-600 hover:text-blue-700"
+                      className="text-primary hover:text-primary/80"
                       onClick={() => handleSetPrimary(contact.id)}
                       title="Marcar como principal"
                     >

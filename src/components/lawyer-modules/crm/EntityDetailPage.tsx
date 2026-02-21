@@ -76,11 +76,11 @@ interface EntityDetailPageProps {
 }
 
 const ENTITY_TYPES: Record<string, { label: string; color: string }> = {
-  corporation: { label: "Empresa", color: "bg-blue-100 text-blue-800" },
-  government: { label: "Gobierno", color: "bg-purple-100 text-purple-800" },
-  ngo: { label: "ONG", color: "bg-green-100 text-green-800" },
+  corporation: { label: "Empresa", color: "bg-primary/10 text-primary" },
+  government: { label: "Gobierno", color: "bg-accent text-accent-foreground" },
+  ngo: { label: "ONG", color: "bg-muted text-muted-foreground" },
   association: { label: "Asociación", color: "bg-amber-100 text-amber-800" },
-  other: { label: "Otro", color: "bg-gray-100 text-gray-800" }
+  other: { label: "Otro", color: "bg-muted text-foreground" }
 };
 
 const CONTRACT_TYPES: Record<string, string> = {
@@ -205,8 +205,8 @@ export default function EntityDetailPage({ entity, lawyerData, onBack, onUpdate 
         </Button>
         <div className="flex-1">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl">
-              <Building2 className="h-8 w-8 text-blue-700" />
+            <div className="p-3 bg-gradient-to-br from-primary/10 to-primary/20 rounded-xl">
+              <Building2 className="h-8 w-8 text-primary" />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -233,39 +233,39 @@ export default function EntityDetailPage({ entity, lawyerData, onBack, onUpdate 
 
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50">
+        <Card className="bg-gradient-to-br from-primary/5 to-primary/10">
           <CardContent className="p-4 text-center">
-            <Users className="h-6 w-6 text-blue-600 mx-auto mb-1" />
-            <p className="text-2xl font-bold text-blue-700">{contacts.length}</p>
-            <p className="text-xs text-blue-600">Contactos</p>
+            <Users className="h-6 w-6 text-primary mx-auto mb-1" />
+            <p className="text-2xl font-bold text-primary">{contacts.length}</p>
+            <p className="text-xs text-muted-foreground">Contactos</p>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100/50">
+        <Card className="bg-gradient-to-br from-primary/5 to-primary/10">
           <CardContent className="p-4 text-center">
-            <Briefcase className="h-6 w-6 text-emerald-600 mx-auto mb-1" />
-            <p className="text-2xl font-bold text-emerald-700">{activeCases.length}</p>
-            <p className="text-xs text-emerald-600">Casos Activos</p>
+            <Briefcase className="h-6 w-6 text-primary mx-auto mb-1" />
+            <p className="text-2xl font-bold text-primary">{activeCases.length}</p>
+            <p className="text-xs text-muted-foreground">Casos Activos</p>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-purple-50 to-purple-100/50">
+        <Card className="bg-gradient-to-br from-primary/5 to-primary/10">
           <CardContent className="p-4 text-center">
-            <DollarSign className="h-6 w-6 text-purple-600 mx-auto mb-1" />
-            <p className="text-lg font-bold text-purple-700">{formatCurrency(entity.lifetime_value)}</p>
-            <p className="text-xs text-purple-600">Valor Total</p>
+            <DollarSign className="h-6 w-6 text-primary mx-auto mb-1" />
+            <p className="text-lg font-bold text-primary">{formatCurrency(entity.lifetime_value)}</p>
+            <p className="text-xs text-muted-foreground">Valor Total</p>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-amber-50 to-amber-100/50">
+        <Card className="bg-gradient-to-br from-muted to-accent">
           <CardContent className="p-4 text-center">
-            <TrendingUp className="h-6 w-6 text-amber-600 mx-auto mb-1" />
-            <p className="text-lg font-bold text-amber-700">{formatCurrency(totalCaseValue)}</p>
-            <p className="text-xs text-amber-600">Pipeline</p>
+            <TrendingUp className="h-6 w-6 text-primary mx-auto mb-1" />
+            <p className={`text-2xl font-bold ${healthColor}`}>{entity.health_score || 0}</p>
+            <p className="text-xs text-muted-foreground">Salud</p>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-pink-50 to-pink-100/50">
+        <Card className="bg-gradient-to-br from-muted to-accent">
           <CardContent className="p-4 text-center">
-            <FileText className="h-6 w-6 text-pink-600 mx-auto mb-1" />
-            <p className="text-2xl font-bold text-pink-700">{cases.length}</p>
-            <p className="text-xs text-pink-600">Total Casos</p>
+            <FileText className="h-6 w-6 text-muted-foreground mx-auto mb-1" />
+            <p className="text-2xl font-bold text-foreground">{cases.length}</p>
+            <p className="text-xs text-muted-foreground">Total Casos</p>
           </CardContent>
         </Card>
       </div>
@@ -315,7 +315,7 @@ export default function EntityDetailPage({ entity, lawyerData, onBack, onUpdate 
                     <Mail className="h-4 w-4 text-muted-foreground" />
                     <div>
                       <p className="text-sm text-muted-foreground">Email</p>
-                      <a href={`mailto:${entity.email}`} className="font-medium text-blue-600 hover:underline">
+                      <a href={`mailto:${entity.email}`} className="font-medium text-primary hover:underline">
                         {entity.email}
                       </a>
                     </div>
@@ -336,7 +336,7 @@ export default function EntityDetailPage({ entity, lawyerData, onBack, onUpdate 
                     <div>
                       <p className="text-sm text-muted-foreground">Sitio Web</p>
                       <a href={entity.website} target="_blank" rel="noopener noreferrer" 
-                         className="font-medium text-blue-600 hover:underline">
+                         className="font-medium text-primary hover:underline">
                         {entity.website}
                       </a>
                     </div>

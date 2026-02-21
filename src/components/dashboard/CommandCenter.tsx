@@ -332,11 +332,11 @@ export function CommandCenter({ userName, lawyerId, onViewCredits, onNavigateToC
         <Card className="border-primary/10 hover:border-primary/30 transition-colors cursor-pointer" onClick={() => onNavigateToCRM('cases')}>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-emerald-100 rounded-lg">
-                <DollarSign className="h-5 w-5 text-emerald-600" />
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <DollarSign className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-lg font-bold text-emerald-600">{formatCurrency(metrics.pipelineValue)}</p>
+                <p className="text-lg font-bold text-primary">{formatCurrency(metrics.pipelineValue)}</p>
                 <p className="text-xs text-muted-foreground">Pipeline</p>
               </div>
             </div>
@@ -346,11 +346,11 @@ export function CommandCenter({ userName, lawyerId, onViewCredits, onNavigateToC
         <Card className="border-primary/10 hover:border-primary/30 transition-colors cursor-pointer" onClick={() => onNavigateToCRM('leads')}>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Zap className="h-5 w-5 text-blue-600" />
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Zap className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-lg font-bold text-blue-600">{metrics.leadsNew}</p>
+                <p className="text-lg font-bold text-primary">{metrics.leadsNew}</p>
                 <p className="text-xs text-muted-foreground">Leads nuevos</p>
               </div>
             </div>
@@ -360,25 +360,25 @@ export function CommandCenter({ userName, lawyerId, onViewCredits, onNavigateToC
         <Card className="border-primary/10 hover:border-primary/30 transition-colors cursor-pointer" onClick={() => onNavigateToCRM('analytics')}>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <TrendingUp className="h-5 w-5 text-purple-600" />
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <TrendingUp className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-lg font-bold text-purple-600">{metrics.winRate}%</p>
+                <p className="text-lg font-bold text-primary">{metrics.winRate}%</p>
                 <p className="text-xs text-muted-foreground">Win Rate</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className={`border-primary/10 hover:border-primary/30 transition-colors cursor-pointer ${metrics.clientsAtRisk > 0 ? 'border-orange-300' : ''}`} onClick={() => onNavigateToCRM('clients')}>
+        <Card className={`border-primary/10 hover:border-primary/30 transition-colors cursor-pointer ${metrics.clientsAtRisk > 0 ? 'border-amber-300' : ''}`} onClick={() => onNavigateToCRM('clients')}>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg ${metrics.clientsAtRisk > 0 ? 'bg-orange-100' : 'bg-gray-100'}`}>
-                <AlertTriangle className={`h-5 w-5 ${metrics.clientsAtRisk > 0 ? 'text-orange-600' : 'text-gray-400'}`} />
+              <div className={`p-2 rounded-lg ${metrics.clientsAtRisk > 0 ? 'bg-amber-100' : 'bg-muted'}`}>
+                <AlertTriangle className={`h-5 w-5 ${metrics.clientsAtRisk > 0 ? 'text-amber-600' : 'text-muted-foreground'}`} />
               </div>
               <div>
-                <p className={`text-lg font-bold ${metrics.clientsAtRisk > 0 ? 'text-orange-600' : 'text-gray-400'}`}>
+                <p className={`text-lg font-bold ${metrics.clientsAtRisk > 0 ? 'text-amber-600' : 'text-muted-foreground'}`}>
                   {metrics.clientsAtRisk}
                 </p>
                 <p className="text-xs text-muted-foreground">En riesgo</p>
@@ -434,7 +434,7 @@ export function CommandCenter({ userName, lawyerId, onViewCredits, onNavigateToC
                       ? 'border-red-200 bg-red-50 hover:border-red-300' 
                       : action.urgency === 'medium'
                       ? 'border-orange-200 bg-orange-50 hover:border-orange-300'
-                      : 'border-blue-200 bg-blue-50 hover:border-blue-300'
+                      : 'border-primary/20 bg-primary/5 hover:border-primary/30'
                   }`}
                 >
                   <div className="flex items-center justify-between">
@@ -444,14 +444,14 @@ export function CommandCenter({ userName, lawyerId, onViewCredits, onNavigateToC
                           ? 'bg-red-100' 
                           : action.urgency === 'medium'
                           ? 'bg-orange-100'
-                          : 'bg-blue-100'
+                          : 'bg-primary/10'
                       }`}>
                         <action.icon className={`h-4 w-4 ${
                           action.urgency === 'high' 
                             ? 'text-red-600' 
                             : action.urgency === 'medium'
                             ? 'text-orange-600'
-                            : 'text-blue-600'
+                            : 'text-primary'
                         }`} />
                       </div>
                       <div>
