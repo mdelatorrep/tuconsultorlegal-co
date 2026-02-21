@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,7 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { 
   Mic, Phone, PhoneOff, Loader2, Copy, Send,
   PenTool, ArrowRight, MessageSquare, Scale, FileText,
-  Zap, User, Bot, Coins, CheckCircle, AlertCircle
+  Zap, User, Bot, Coins, CheckCircle, AlertCircle, Clock
 } from 'lucide-react';
 import { useRealtimeVoice, type RealtimeVoiceMode } from '@/hooks/useRealtimeVoice';
 import { useSystemConfig } from '@/hooks/useSystemConfig';
@@ -27,9 +27,22 @@ const MODES: { value: RealtimeVoiceMode; label: string; icon: React.ElementType;
   { value: 'analysis', label: 'Análisis', icon: FileText, description: 'Describe un caso para análisis legal' },
 ];
 
+function formatTime(date: Date) {
+  return date.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function formatDuration(seconds: number) {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return m > 0 ? `${m}m ${s}s` : `${s}s`;
+}
+
 export function RealtimeVoiceAssistant({ lawyerId, onTranscriptReady, onCreateDocument }: RealtimeVoiceAssistantProps) {
   const [mode, setMode] = useState<RealtimeVoiceMode>('consultation');
   const [textInput, setTextInput] = useState('');
+  const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const scrollEndRef = useRef<HTMLDivElement>(null);
   const { getConfigValue } = useSystemConfig();
   const { balance, toolCosts } = useCredits(lawyerId);
 
@@ -86,6 +99,30 @@ export function RealtimeVoiceAssistant({ lawyerId, onTranscriptReady, onCreateDo
     },
   });
 
+  // Session timer
+  useEffect(() => {
+    if (isConnected && !sessionStartTime) {
+      setSessionStartTime(new Date());
+      setElapsedSeconds(0);
+    }
+    if (!isConnected) {
+      setSessionStartTime(null);
+    }
+  }, [isConnected]);
+
+  useEffect(() => {
+    if (!isConnected) return;
+    const interval = setInterval(() => {
+      setElapsedSeconds(prev => prev + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isConnected]);
+
+  // Auto-scroll on new messages
+  useEffect(() => {
+    scrollEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [conversation, currentAiResponse, currentTranscript]);
+
   const handleConnect = () => {
     if (isConnected) {
       disconnect();
@@ -102,7 +139,9 @@ export function RealtimeVoiceAssistant({ lawyerId, onTranscriptReady, onCreateDo
   };
 
   const handleCopyConversation = () => {
-    const text = conversation.map(e => `${e.role === 'user' ? 'Tú' : 'Asistente'}: ${e.text}`).join('\n\n');
+    const text = conversation.map(e => 
+      `[${formatTime(e.timestamp)}] ${e.role === 'user' ? 'Tú' : 'Asistente'}: ${e.text}`
+    ).join('\n\n');
     navigator.clipboard.writeText(text);
     toast.success('Conversación copiada');
   };
@@ -115,9 +154,14 @@ export function RealtimeVoiceAssistant({ lawyerId, onTranscriptReady, onCreateDo
     return conversation.filter(e => e.role === 'assistant').map(e => e.text).join(' ');
   };
 
+  // Group consecutive messages and compute exchange count
+  const exchangeCount = useMemo(() => {
+    return conversation.filter(e => e.role === 'user').length;
+  }, [conversation]);
+
   return (
     <div className="flex flex-col gap-4">
-      {/* Mode Selector with cost per mode */}
+      {/* Mode Selector */}
       <div className="grid grid-cols-2 gap-2">
         {MODES.map(m => {
           const mKey = `voice_realtime_mode_multiplier_${m.value}`;
@@ -163,7 +207,6 @@ export function RealtimeVoiceAssistant({ lawyerId, onTranscriptReady, onCreateDo
               Voz en Tiempo Real
               <Badge variant="secondary" className="text-[10px]">{costInfo.modelLabel}</Badge>
             </span>
-            {/* Dynamic cost indicator */}
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -242,6 +285,12 @@ export function RealtimeVoiceAssistant({ lawyerId, onTranscriptReady, onCreateDo
                   Conectado
                 </Badge>
               )}
+              {isConnected && (
+                <Badge variant="outline" className="gap-1 text-muted-foreground">
+                  <Clock className="h-3 w-3" />
+                  {formatDuration(elapsedSeconds)}
+                </Badge>
+              )}
               {isUserSpeaking && (
                 <Badge variant="outline" className="border-green-500 text-green-700 dark:text-green-400">
                   <Mic className="h-3 w-3 mr-1" />
@@ -266,11 +315,16 @@ export function RealtimeVoiceAssistant({ lawyerId, onTranscriptReady, onCreateDo
                     : 'Presiona para iniciar una conversación de voz'}
             </p>
 
+            {/* Session credit info bar */}
             {sessionInfo && isConnected && (
-              <p className="text-xs text-muted-foreground">
-                Créditos: -{sessionInfo.creditsConsumed} • Balance: {sessionInfo.balanceAfter} • 
-                Máx: {Math.floor(sessionInfo.maxDuration / 60)} min
-              </p>
+              <div className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-muted/50 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <Coins className="h-3 w-3" />
+                  -{sessionInfo.creditsConsumed} cr
+                </span>
+                <span>Balance: {sessionInfo.balanceAfter}</span>
+                <span>Máx: {Math.floor(sessionInfo.maxDuration / 60)}m</span>
+              </div>
             )}
           </div>
 
@@ -278,24 +332,6 @@ export function RealtimeVoiceAssistant({ lawyerId, onTranscriptReady, onCreateDo
           {error && (
             <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
               {error}
-            </div>
-          )}
-
-          {/* Live Transcription */}
-          {(currentTranscript || currentAiResponse) && isConnected && (
-            <div className="space-y-2">
-              {currentTranscript && (
-                <div className="p-2 rounded bg-muted/50 text-sm">
-                  <span className="text-xs font-medium text-muted-foreground">Tú:</span>
-                  <p>{currentTranscript}</p>
-                </div>
-              )}
-              {currentAiResponse && (
-                <div className="p-2 rounded bg-primary/5 text-sm">
-                  <span className="text-xs font-medium text-primary">Asistente:</span>
-                  <p>{currentAiResponse}</p>
-                </div>
-              )}
             </div>
           )}
 
@@ -317,47 +353,108 @@ export function RealtimeVoiceAssistant({ lawyerId, onTranscriptReady, onCreateDo
         </CardContent>
       </Card>
 
-      {/* Conversation History */}
-      {conversation.length > 0 && (
+      {/* Conversation History — chat-style */}
+      {(conversation.length > 0 || (isConnected && (currentTranscript || currentAiResponse))) && (
         <Card>
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-2">
             <CardTitle className="flex items-center justify-between text-base">
               <span className="flex items-center gap-2">
                 <MessageSquare className="h-4 w-4" />
-                Conversación ({conversation.length})
+                Conversación
+                {exchangeCount > 0 && (
+                  <Badge variant="secondary" className="text-[10px]">
+                    {exchangeCount} intercambio{exchangeCount !== 1 ? 's' : ''}
+                  </Badge>
+                )}
               </span>
               <div className="flex gap-1">
-                <Button variant="ghost" size="sm" onClick={handleCopyConversation}>
+                <Button variant="ghost" size="sm" onClick={handleCopyConversation} disabled={conversation.length === 0}>
                   <Copy className="h-3 w-3 mr-1" />
                   Copiar
                 </Button>
               </div>
             </CardTitle>
+            {sessionInfo && (
+              <div className="flex items-center gap-3 text-[11px] text-muted-foreground pt-1">
+                <span className="flex items-center gap-1">
+                  <Coins className="h-3 w-3" />
+                  Costo: {sessionInfo.creditsConsumed} cr
+                </span>
+                <span>•</span>
+                <span>Modo: {MODES.find(m => m.value === mode)?.label}</span>
+                <span>•</span>
+                <span>Modelo: {costInfo.modelLabel}</span>
+              </div>
+            )}
           </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-[250px]">
-              <div className="space-y-3">
-                {conversation.map((entry, i) => (
-                  <div
-                    key={i}
-                    className={cn(
-                      "flex gap-2 p-3 rounded-lg text-sm",
-                      entry.role === 'user'
-                        ? "bg-muted/50 ml-4"
-                        : "bg-primary/5 mr-4"
-                    )}
-                  >
-                    <div className={cn(
-                      "w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5",
-                      entry.role === 'user' ? "bg-muted-foreground/20" : "bg-primary/20"
-                    )}>
-                      {entry.role === 'user' 
-                        ? <User className="h-3 w-3" /> 
-                        : <Bot className="h-3 w-3 text-primary" />}
+          <CardContent className="pt-0">
+            <ScrollArea className="h-[300px] pr-2">
+              <div className="space-y-1 py-2">
+                {conversation.map((entry, i) => {
+                  const isUser = entry.role === 'user';
+                  // Show timestamp separator if >30s gap from previous
+                  const showTimeSep = i === 0 || 
+                    (entry.timestamp.getTime() - conversation[i - 1].timestamp.getTime() > 30000);
+
+                  return (
+                    <div key={i}>
+                      {showTimeSep && (
+                        <div className="flex justify-center my-2">
+                          <span className="text-[10px] text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-full">
+                            {formatTime(entry.timestamp)}
+                          </span>
+                        </div>
+                      )}
+                      <div className={cn(
+                        "flex gap-2 max-w-[90%]",
+                        isUser ? "ml-auto flex-row-reverse" : "mr-auto"
+                      )}>
+                        <div className={cn(
+                          "w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-1",
+                          isUser ? "bg-muted-foreground/20" : "bg-primary/20"
+                        )}>
+                          {isUser 
+                            ? <User className="h-3 w-3" /> 
+                            : <Bot className="h-3 w-3 text-primary" />}
+                        </div>
+                        <div className={cn(
+                          "px-3 py-2 rounded-2xl text-sm leading-relaxed",
+                          isUser 
+                            ? "bg-primary text-primary-foreground rounded-br-md" 
+                            : "bg-muted rounded-bl-md"
+                        )}>
+                          {entry.text}
+                        </div>
+                      </div>
                     </div>
-                    <p className="flex-1 leading-relaxed">{entry.text}</p>
+                  );
+                })}
+
+                {/* Live typing indicators */}
+                {isConnected && currentTranscript && (
+                  <div className="flex gap-2 max-w-[90%] ml-auto flex-row-reverse">
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-1 bg-muted-foreground/20">
+                      <User className="h-3 w-3" />
+                    </div>
+                    <div className="px-3 py-2 rounded-2xl rounded-br-md text-sm leading-relaxed bg-primary/70 text-primary-foreground opacity-70">
+                      {currentTranscript}
+                      <span className="inline-block w-1.5 h-4 bg-primary-foreground/50 ml-1 animate-pulse rounded-sm align-text-bottom" />
+                    </div>
                   </div>
-                ))}
+                )}
+                {isConnected && currentAiResponse && (
+                  <div className="flex gap-2 max-w-[90%] mr-auto">
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-1 bg-primary/20">
+                      <Bot className="h-3 w-3 text-primary" />
+                    </div>
+                    <div className="px-3 py-2 rounded-2xl rounded-bl-md text-sm leading-relaxed bg-muted opacity-80">
+                      {currentAiResponse}
+                      <span className="inline-block w-1.5 h-4 bg-foreground/30 ml-1 animate-pulse rounded-sm align-text-bottom" />
+                    </div>
+                  </div>
+                )}
+
+                <div ref={scrollEndRef} />
               </div>
             </ScrollArea>
 
@@ -386,7 +483,7 @@ export function RealtimeVoiceAssistant({ lawyerId, onTranscriptReady, onCreateDo
                   variant="default"
                   className="bg-gradient-to-r from-primary to-primary/80"
                   onClick={() => {
-                    const text = mode === 'dictation' ? getFullTranscript() : getFullAiResponse();
+                    const text = getFullAiResponse();
                     if (text) {
                       onCreateDocument(text);
                       toast.success('Navegando al editor...');
