@@ -7,6 +7,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CreditBalanceIndicator } from "@/components/credits/CreditBalanceIndicator";
 import { useCredits } from "@/hooks/useCredits";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { cn } from "@/lib/utils";
 
 interface UnifiedSidebarProps {
@@ -36,6 +37,7 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
   const collapsed = !isMobile && state === 'collapsed';
   
   const { balance, loading: creditsLoading } = useCredits(user?.id || null);
+  const { isEnabled } = useFeatureFlags();
   
   // State for collapsible sections - all open by default
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
@@ -200,15 +202,20 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
   );
 
   const renderSection = ({ key, section }: { key: string; section: MenuSection }) => {
+    // Filter items by feature flags
+    const visibleItems = section.items.filter(item => isEnabled(item.view));
+    if (visibleItems.length === 0) return null;
+
+    const filteredSection = { ...section, items: visibleItems };
     const isOpen = openSections[key] ?? section.defaultOpen ?? false;
-    const hasActiveItem = isSectionActive(section.items);
+    const hasActiveItem = isSectionActive(visibleItems);
 
     // Auto-open section if it has active item
     if (hasActiveItem && !isOpen && !collapsed) {
       setOpenSections(prev => ({ ...prev, [key]: true }));
     }
 
-    if (section.collapsible && !collapsed) {
+    if (filteredSection.collapsible && !collapsed) {
       return (
         <Collapsible 
           key={key} 
@@ -220,8 +227,8 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
             <CollapsibleTrigger asChild>
               <SidebarGroupLabel className="cursor-pointer hover:bg-accent/50 rounded-md px-2 py-1.5 flex items-center justify-between w-full text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                 <div className="flex items-center gap-2">
-                  {section.icon && <section.icon className="h-3.5 w-3.5" />}
-                  <span>{section.title}</span>
+                  {filteredSection.icon && <filteredSection.icon className="h-3.5 w-3.5" />}
+                  <span>{filteredSection.title}</span>
                 </div>
                 <ChevronDown className={cn(
                   "h-3.5 w-3.5 transition-transform duration-200",
@@ -232,7 +239,7 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
             <CollapsibleContent>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {section.items.map(renderMenuItem)}
+                  {filteredSection.items.map(renderMenuItem)}
                 </SidebarMenu>
               </SidebarGroupContent>
             </CollapsibleContent>
@@ -245,13 +252,13 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
       <SidebarGroup key={key}>
         {!collapsed && (
           <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-            {section.icon && <section.icon className="h-3.5 w-3.5" />}
-            {section.title}
+            {filteredSection.icon && <filteredSection.icon className="h-3.5 w-3.5" />}
+            {filteredSection.title}
           </SidebarGroupLabel>
         )}
         <SidebarGroupContent>
           <SidebarMenu>
-            {section.items.map(renderMenuItem)}
+            {filteredSection.items.map(renderMenuItem)}
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
