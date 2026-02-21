@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
-import { ArrowLeft, Calendar, Eye, Share2, Facebook, Twitter, Linkedin, MessageCircle } from "lucide-react";
+import { ArrowLeft, Calendar, Eye, Share2, Linkedin, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import DOMPurify from 'dompurify';
@@ -131,16 +131,6 @@ export default function BlogArticlePage({ articleId, onOpenChat, onNavigate }: B
   const shareUrl = `${window.location.origin}/#blog-articulo-${blog?.slug}`;
   const shareText = `${blog?.title} - ${blog?.excerpt || 'Artículo interesante sobre derecho'}`;
 
-  const shareOnFacebook = () => {
-    const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
-    window.open(url, '_blank', 'width=600,height=400');
-  };
-
-  const shareOnTwitter = () => {
-    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
-    window.open(url, '_blank', 'width=600,height=400');
-  };
-
   const shareOnLinkedIn = () => {
     const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
     window.open(url, '_blank', 'width=600,height=400');
@@ -215,24 +205,6 @@ export default function BlogArticlePage({ articleId, onOpenChat, onNavigate }: B
             <h3 className="text-lg font-semibold text-foreground">Compartir artículo</h3>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={shareOnFacebook}
-              className="flex items-center gap-2"
-            >
-              <Facebook className="h-4 w-4" />
-              Facebook
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={shareOnTwitter}
-              className="flex items-center gap-2"
-            >
-              <Twitter className="h-4 w-4" />
-              Twitter
-            </Button>
             <Button
               variant="outline"
               size="sm"
