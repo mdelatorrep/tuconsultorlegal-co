@@ -15,9 +15,6 @@ const corsHeaders = {
 // TEXT EXTRACTION HELPERS
 // ──────────────────────────────────────────────
 
-/**
- * Decode base64 string (strips data URI prefix if present)
- */
 function base64ToUint8Array(base64: string): Uint8Array {
   const clean = base64.replace(/^data:[^;]+;base64,/, '');
   const binaryString = atob(clean);
@@ -29,8 +26,8 @@ function base64ToUint8Array(base64: string): Uint8Array {
 }
 
 /**
- * Extract text from a PDF using multiple strategies over the raw binary stream.
- * This works best for unencrypted, uncompressed text PDFs.
+ * Extract text from PDF using regex on raw binary.
+ * Returns whatever it can; caller decides if quality is sufficient.
  */
 async function extractTextFromPDF(base64Data: string): Promise<string> {
   try {
@@ -40,22 +37,16 @@ async function extractTextFromPDF(base64Data: string): Promise<string> {
 
     let extractedText = '';
 
-    // Strategy 1: BT...ET blocks (standard PDF text objects)
+    // Strategy 1: BT...ET blocks
     const btEtMatches = raw.match(/BT\s+([\s\S]*?)\s+ET/g) || [];
     for (const block of btEtMatches) {
-      // Parentheses strings: (text)
       const parenTexts = block.match(/\(([^)\\]|\\.)*\)/g) || [];
       for (const t of parenTexts) {
         const decoded = t.slice(1, -1)
-          .replace(/\\n/g, ' ')
-          .replace(/\\r/g, ' ')
-          .replace(/\\t/g, ' ')
-          .replace(/\\\\/g, '\\')
-          .replace(/\\\(/g, '(')
-          .replace(/\\\)/g, ')');
+          .replace(/\\n/g, ' ').replace(/\\r/g, ' ').replace(/\\t/g, ' ')
+          .replace(/\\\\/g, '\\').replace(/\\\(/g, '(').replace(/\\\)/g, ')');
         extractedText += decoded + ' ';
       }
-      // TJ array strings: [(text) kern (text) ...]
       const tjArrays = block.match(/\[([^\]]*)\]/g) || [];
       for (const arr of tjArrays) {
         const inner = arr.match(/\(([^)\\]|\\.)*\)/g) || [];
@@ -68,12 +59,11 @@ async function extractTextFromPDF(base64Data: string): Promise<string> {
       }
     }
 
-    // Strategy 2: Look for plain-text stream content (some PDFs store text plainly)
+    // Strategy 2: plain-text streams
     if (extractedText.trim().length < 200) {
       const streamMatches = raw.match(/stream\r?\n([\s\S]*?)\r?\nendstream/g) || [];
       for (const s of streamMatches) {
         const inner = s.replace(/^stream\r?\n/, '').replace(/\r?\nendstream$/, '');
-        // Only keep printable ASCII+latin
         const printable = inner.replace(/[^\x20-\x7E\xA0-\xFF]/g, ' ').replace(/\s+/g, ' ').trim();
         if (printable.length > 50) {
           extractedText += printable + ' ';
@@ -81,19 +71,13 @@ async function extractTextFromPDF(base64Data: string): Promise<string> {
       }
     }
 
-    // Clean up
     extractedText = extractedText
       .replace(/[^\x20-\x7E\u00A0-\uFFFF]/g, ' ')
       .replace(/\s{3,}/g, '  ')
       .trim();
 
-    if (extractedText.length > 100) {
-      console.log(`✅ PDF extracted ${extractedText.length} chars`);
-      return extractedText;
-    }
-
-    console.warn('⚠️ PDF text extraction yielded minimal content (likely scanned/compressed PDF)');
-    return '';
+    console.log(`✅ PDF extracted ${extractedText.length} chars`);
+    return extractedText;
   } catch (error) {
     console.error('❌ Error extracting text from PDF:', error);
     return '';
@@ -101,19 +85,93 @@ async function extractTextFromPDF(base64Data: string): Promise<string> {
 }
 
 /**
- * Extract text from legacy binary .doc files (Word 97-2003, Compound File Binary Format).
- *
- * Strategy A (primary): mammoth library via esm.sh — the gold standard for .doc → text conversion.
- * Strategy B (fallback): Proper CFB stream parsing — locates the WordDocument stream in the CFB
- *   directory and extracts ONLY those bytes, avoiding FAT/DIFAT binary noise.
+ * Extract text from DOCX using proper XML namespace parsing via DOMParser.
+ */
+async function extractTextFromDOCX(base64Data: string): Promise<string> {
+  try {
+    console.log('🔍 Starting DOCX text extraction (DOMParser)...');
+    // @ts-ignore - dynamic import from esm.sh
+    const JSZip = (await import('https://esm.sh/jszip@3.10.1')).default;
+
+    const bytes = base64ToUint8Array(base64Data);
+    const zip = await JSZip.loadAsync(bytes.buffer);
+
+    const docFile = zip.file('word/document.xml');
+    if (!docFile) {
+      console.warn('⚠️ word/document.xml not found in ZIP');
+      return '';
+    }
+
+    const xmlContent: string = await docFile.async('text');
+
+    // Use DOMParser for robust namespace-aware parsing
+    const { DOMParser } = await import('https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts');
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xmlContent, 'text/xml');
+
+    let text = '';
+
+    if (doc) {
+      // Strategy 1: getElementsByTagNameNS for w:t elements
+      const WP_NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+      const tNodes = doc.getElementsByTagNameNS(WP_NS, 't');
+      
+      if (tNodes && tNodes.length > 0) {
+        for (let i = 0; i < tNodes.length; i++) {
+          text += (tNodes[i].textContent || '') + ' ';
+        }
+      }
+
+      // Strategy 2: If namespace approach yielded little, try tagName matching
+      if (text.trim().length < 100) {
+        console.log('🔄 DOCX: namespace approach yielded little, trying tag matching...');
+        const allElements = doc.getElementsByTagName('*');
+        for (let i = 0; i < allElements.length; i++) {
+          const el = allElements[i];
+          const tagName = el.tagName || el.nodeName || '';
+          if (tagName === 'w:t' || tagName.endsWith(':t')) {
+            text += (el.textContent || '') + ' ';
+          }
+        }
+      }
+    }
+
+    // Strategy 3: Regex fallback for edge cases where DOMParser fails
+    if (text.trim().length < 100) {
+      console.log('🔄 DOCX: DOMParser yielded little, trying regex fallback...');
+      // Match both <w:t> and <w:t xml:space="preserve"> variants
+      const wtMatches = xmlContent.match(/<w:t[^>]*>([^<]*)<\/w:t>/g) || [];
+      text = wtMatches.map(m => m.replace(/<[^>]+>/g, '')).join(' ');
+      
+      // Also try without namespace prefix
+      if (text.trim().length < 100) {
+        const allText = xmlContent.replace(/<[^>]+>/g, ' ')
+          .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+          .replace(/&quot;/g, '"').replace(/&apos;/g, "'");
+        text = allText;
+      }
+    }
+
+    text = text.replace(/\s{3,}/g, '  ').trim();
+    console.log(`✅ DOCX extracted ${text.length} chars`);
+    return text;
+  } catch (error) {
+    console.error('❌ Error extracting text from DOCX:', error);
+    return '';
+  }
+}
+
+/**
+ * Extract text from legacy binary .doc files.
+ * Strategy A: mammoth library. Strategy B: CFB stream parsing.
  */
 async function extractTextFromDOC(base64Data: string): Promise<string> {
   const bytes = base64ToUint8Array(base64Data);
 
-  // ── Strategy A: mammoth ────────────────────────────────────────────────────
+  // Strategy A: mammoth
   try {
     console.log('🔍 [DOC] Trying mammoth extraction...');
-    // @ts-ignore - dynamic import from esm.sh
+    // @ts-ignore
     const mammoth = await import('https://esm.sh/mammoth@1.8.0');
     const result = await mammoth.extractRawText({ arrayBuffer: bytes.buffer });
     const text = (result?.value || '').trim();
@@ -122,17 +180,11 @@ async function extractTextFromDOC(base64Data: string): Promise<string> {
       return text;
     }
     console.warn('⚠️ [DOC] mammoth returned minimal content, trying CFB fallback...');
-  } catch (mammothErr) {
+  } catch (mammothErr: any) {
     console.warn('⚠️ [DOC] mammoth failed:', mammothErr?.message ?? mammothErr);
   }
 
-  // ── Strategy B: Correct CFB stream parsing ─────────────────────────────────
-  // The DOC format is a Compound File Binary (CFB). We must:
-  //   1. Verify CFB magic
-  //   2. Parse the sector allocation table (FAT)
-  //   3. Walk the directory entries to find the "WordDocument" stream
-  //   4. Read exactly those sector bytes (no scanning the whole file)
-  //   5. Apply FIB to extract only the text portion, decoded as UTF-16LE
+  // Strategy B: CFB stream parsing (kept from original)
   try {
     console.log('🔍 [DOC] Trying CFB stream extraction...');
 
@@ -143,29 +195,24 @@ async function extractTextFromDOC(base64Data: string): Promise<string> {
     }
 
     const view = new DataView(bytes.buffer);
-
-    // CFB header fields
-    const sectorShift   = view.getUint16(0x1E, true); // log2(sector size), usually 9 → 512
-    const sectorSize    = 1 << sectorShift;            // 512 or 4096
+    const sectorShift = view.getUint16(0x1E, true);
+    const sectorSize = 1 << sectorShift;
     const numFATSectors = view.getUint32(0x2C, true);
-    const firstDirSect  = view.getUint32(0x30, true);
-    const firstMiniFAT  = view.getUint32(0x3C, true);
-    const miniSectorShift = view.getUint16(0x20, true); // log2(mini sector size), usually 6 → 64
-    const miniSectorSize  = 1 << miniSectorShift;
-    const miniStreamCutoff = view.getUint32(0x38, true); // usually 4096
+    const firstDirSect = view.getUint32(0x30, true);
+    const firstMiniFAT = view.getUint32(0x3C, true);
+    const miniSectorShift = view.getUint16(0x20, true);
+    const miniSectorSize = 1 << miniSectorShift;
+    const miniStreamCutoff = view.getUint32(0x38, true);
 
-    // Read the 109 DIFAT entries in the header
     const fatSectorList: number[] = [];
     for (let i = 0; i < 109; i++) {
       const sect = view.getUint32(0x4C + i * 4, true);
-      if (sect >= 0xFFFFFFFE) break; // FREESECT / ENDOFCHAIN
+      if (sect >= 0xFFFFFFFE) break;
       fatSectorList.push(sect);
     }
 
-    // Helper: byte offset of sector N (sector 0 starts right after the 512-byte header)
     const sectOffset = (sect: number) => (sect + 1) * sectorSize;
 
-    // Build FAT from collected sectors
     const fat = new Int32Array(numFATSectors * (sectorSize / 4));
     for (let si = 0; si < fatSectorList.length; si++) {
       const off = sectOffset(fatSectorList[si]);
@@ -174,7 +221,6 @@ async function extractTextFromDOC(base64Data: string): Promise<string> {
       }
     }
 
-    // Follow a chain of sectors and return their concatenated bytes
     const readChain = (startSect: number): Uint8Array => {
       const chunks: Uint8Array[] = [];
       let cur = startSect;
@@ -191,16 +237,13 @@ async function extractTextFromDOC(base64Data: string): Promise<string> {
       return out;
     };
 
-    // Read directory stream
     const dirBytes = readChain(firstDirSect);
-    const dirView  = new DataView(dirBytes.buffer);
+    const dirView = new DataView(dirBytes.buffer);
     const numDirEntries = dirBytes.length / 128;
 
-    // Find root and WordDocument directory entries
     let rootStartSect = -1;
-    let rootSize = 0;
     let wordDocStart = -1;
-    let wordDocSize  = 0;
+    let wordDocSize = 0;
 
     for (let i = 0; i < numDirEntries; i++) {
       const base = i * 128;
@@ -213,33 +256,27 @@ async function extractTextFromDOC(base64Data: string): Promise<string> {
       }
 
       const objectType = dirView.getUint8(base + 0x42);
-      const startSect  = dirView.getInt32(base + 0x74, true);
-      const sizeLow    = dirView.getUint32(base + 0x78, true);
+      const startSect = dirView.getInt32(base + 0x74, true);
+      const sizeLow = dirView.getUint32(base + 0x78, true);
 
       if (i === 0 && objectType === 5) {
-        // Root entry
         rootStartSect = startSect;
-        rootSize = sizeLow;
       }
 
       if (name === 'WordDocument' && objectType === 2) {
         wordDocStart = startSect;
-        wordDocSize  = sizeLow;
+        wordDocSize = sizeLow;
       }
     }
 
     if (wordDocStart < 0) {
-      console.warn('⚠️ [DOC] WordDocument stream not found in CFB directory');
+      console.warn('⚠️ [DOC] WordDocument stream not found');
       return '';
     }
 
-    // Read the WordDocument stream (may be in mini-stream if size < cutoff)
     let wordDocBytes: Uint8Array;
     if (wordDocSize < miniStreamCutoff && rootStartSect >= 0 && firstMiniFAT < 0xFFFFFFFE) {
-      // Read from mini-stream
       const miniStreamData = readChain(rootStartSect);
-
-      // Build mini-FAT
       const miniFATBytes = readChain(firstMiniFAT);
       const miniFAT = new Int32Array(miniFATBytes.buffer);
 
@@ -264,34 +301,21 @@ async function extractTextFromDOC(base64Data: string): Promise<string> {
       wordDocBytes = readChain(wordDocStart).slice(0, wordDocSize);
     }
 
-    // Parse FIB (File Information Block) to find text boundaries
-    // FIB starts at offset 0 of WordDocument stream
-    // ccpText is at FIB+0x4C (4 bytes) - character count of main document text
-    // fcMin (start of text in file) and fcMac (end) are in FIB base
-    const fibView   = new DataView(wordDocBytes.buffer);
-    const fibBase   = 32; // FIBBase is 32 bytes
-    // FIBRgW97 starts at 32, FIBRgLw97 starts at 32+28=60
-    // ccpText is at offset 0 of FIBRgLw97 = byte 60 in WordDocument stream
+    const fibView = new DataView(wordDocBytes.buffer);
     const fFlags = fibView.getUint16(0x0A, true);
-    const fComplex = (fFlags >> 4) & 1; // bit 4: complex format (fast-save)
-    const fExtChar = (fFlags >> 11) & 1; // bit 11: Unicode
-
-    // For simple (non-fast-save) documents:
-    // fcMin and fcMac are at 0x18 and 0x1C in FIBBase
-    const fcMin  = fibView.getUint32(0x18, true);
-    const fcMac  = fibView.getUint32(0x1C, true);
+    const fComplex = (fFlags >> 4) & 1;
+    const fExtChar = (fFlags >> 11) & 1;
+    const fcMin = fibView.getUint32(0x18, true);
+    const fcMac = fibView.getUint32(0x1C, true);
 
     if (!fComplex && fcMac > fcMin && fcMac <= wordDocBytes.length) {
       const textBytes = wordDocBytes.slice(fcMin, fcMac);
       let text: string;
       if (fExtChar) {
-        // Unicode UTF-16LE
         text = new TextDecoder('utf-16le').decode(textBytes);
       } else {
-        // CP1252 / Latin-1
         text = new TextDecoder('windows-1252', { fatal: false }).decode(textBytes);
       }
-      // Clean up control chars but keep newlines and Spanish characters
       text = text
         .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ')
         .replace(/\r/g, '\n')
@@ -304,7 +328,7 @@ async function extractTextFromDOC(base64Data: string): Promise<string> {
       }
     }
 
-    // Last resort inside CFB: decode all WordDocument bytes as UTF-16LE and filter
+    // Last resort: decode WordDocument bytes as UTF-16LE
     const rawUtf16 = new TextDecoder('utf-16le', { fatal: false }).decode(wordDocBytes);
     const filtered = rawUtf16
       .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ')
@@ -312,7 +336,6 @@ async function extractTextFromDOC(base64Data: string): Promise<string> {
       .replace(/\s{3,}/g, '  ')
       .trim();
 
-    // Keep only runs with >50% letter ratio to avoid lingering binary noise
     const runs = filtered.match(/\S[\s\S]{3,}\S/g) || [];
     const meaningful = runs.filter(r => {
       const letters = (r.match(/[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ]/g) || []).length;
@@ -329,47 +352,48 @@ async function extractTextFromDOC(base64Data: string): Promise<string> {
 }
 
 /**
- * Extract text from DOCX (which is a ZIP containing word/document.xml).
- * Uses JSZip available via esm.sh.
+ * For PDFs where text extraction fails, use OpenAI's vision to read the PDF as base64 image.
  */
-async function extractTextFromDOCX(base64Data: string): Promise<string> {
-  try {
-    console.log('🔍 Starting DOCX text extraction...');
-    // @ts-ignore - dynamic import from esm.sh
-    const JSZip = (await import('https://esm.sh/jszip@3.10.1')).default;
-
-    const bytes = base64ToUint8Array(base64Data);
-    const zip = await JSZip.loadAsync(bytes.buffer);
-
-    // Try word/document.xml (standard DOCX)
-    const docFile = zip.file('word/document.xml');
-    if (!docFile) {
-      console.warn('⚠️ word/document.xml not found in ZIP');
-      return '';
+async function analyzeWithVision(
+  openaiApiKey: string,
+  base64Data: string,
+  fileName: string,
+  systemPrompt: string,
+  aiModel: string,
+  reasoningEffort: 'low' | 'medium' | 'high'
+): Promise<{ success: boolean; text?: string; error?: string }> {
+  console.log('🔍 Using OpenAI file input for PDF analysis (vision fallback)...');
+  
+  const analysisInput = [
+    {
+      role: 'user' as const,
+      content: [
+        {
+          type: 'text',
+          text: `Analiza exhaustivamente este documento legal "${fileName}". Proporciona un análisis profundo y profesional. Responde ÚNICAMENTE en formato JSON con: documentType, documentCategory, detectionConfidence, summary, clauses, risks, recommendations, keyDates, parties, legalReferences, missingElements.`
+        },
+        {
+          type: 'image_url',
+          image_url: {
+            url: `data:application/pdf;base64,${base64Data.substring(0, 50000)}`,
+            detail: 'high'
+          }
+        }
+      ]
     }
+  ];
 
-    const xmlContent: string = await docFile.async('text');
+  const params = buildResponsesRequestParams(aiModel, {
+    input: analysisInput as any,
+    instructions: systemPrompt,
+    maxOutputTokens: 8000,
+    temperature: 0.2,
+    jsonMode: true,
+    store: false,
+    reasoning: { effort: reasoningEffort }
+  });
 
-    // Extract text from XML: grab content of <w:t> tags
-    const wtMatches = xmlContent.match(/<w:t[^>]*>([^<]*)<\/w:t>/g) || [];
-    let text = wtMatches
-      .map(m => m.replace(/<[^>]+>/g, ''))
-      .join(' ');
-
-    // Fallback: strip all XML tags
-    if (text.trim().length < 100) {
-      text = xmlContent.replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
-        .replace(/&apos;/g, "'");
-    }
-
-    text = text.replace(/\s{3,}/g, '  ').trim();
-    console.log(`✅ DOCX extracted ${text.length} chars`);
-    return text;
-  } catch (error) {
-    console.error('❌ Error extracting text from DOCX:', error);
-    return '';
-  }
+  return await callResponsesAPI(openaiApiKey, params);
 }
 
 // ──────────────────────────────────────────────
@@ -413,6 +437,15 @@ async function saveToolResult(supabase: any, lawyerId: string, toolType: string,
   } catch (error) {
     console.error('Error saving tool result:', error);
   }
+}
+
+/**
+ * Determine extraction quality based on character count
+ */
+function getExtractionQuality(charCount: number): 'full' | 'partial' | 'minimal' {
+  if (charCount >= 500) return 'full';
+  if (charCount >= 100) return 'partial';
+  return 'minimal';
 }
 
 // ──────────────────────────────────────────────
@@ -462,21 +495,14 @@ serve(async (req) => {
       } else if (lowerName.endsWith('.doc')) {
         extractedText = await extractTextFromDOC(fileBase64);
         extractionMethod = 'doc-binary';
-        if (extractedText.length < 100) {
-          console.warn('⚠️ .doc file: minimal content extracted from binary DOC');
-        }
       }
     }
 
-    // Fallback to plain documentContent (TXT / RTF / pasted text)
+    // Fallback to plain documentContent
     const contentToAnalyze = extractedText || documentContent || '';
+    const extractionQuality = getExtractionQuality(contentToAnalyze.trim().length);
 
-    if (!contentToAnalyze || contentToAnalyze.trim().length < 10) {
-      return new Response(
-        JSON.stringify({ error: 'Document content is required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    console.log(`📊 Extraction quality: ${extractionQuality} (${contentToAnalyze.length} chars)`);
 
     // ── Supabase & AI config ───────────────────
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -498,20 +524,93 @@ serve(async (req) => {
 
     logResponsesRequest(aiModel, 'legal-document-analysis', true);
 
+    const reasoningEffort = await getSystemConfig(supabase, 'analysis_reasoning_effort', 'medium') as 'low' | 'medium' | 'high';
+
+    // ── Route: Vision fallback for PDFs with minimal extraction ──
+    if (extractionQuality === 'minimal' && lowerName.endsWith('.pdf') && fileBase64) {
+      console.log('🔀 Routing to vision fallback for PDF with minimal text extraction');
+      
+      const visionResult = await analyzeWithVision(
+        openaiApiKey, fileBase64, fileName, systemPrompt, aiModel, reasoningEffort
+      );
+
+      if (visionResult.success && visionResult.text) {
+        let analysis;
+        try {
+          let cleanContent = (visionResult.text || '').trim();
+          if (cleanContent.startsWith('```json')) cleanContent = cleanContent.replace(/^```json\s*/i, '');
+          if (cleanContent.startsWith('```')) cleanContent = cleanContent.replace(/^```\s*/i, '');
+          if (cleanContent.endsWith('```')) cleanContent = cleanContent.replace(/\s*```$/i, '');
+          analysis = JSON.parse(cleanContent.trim());
+        } catch {
+          analysis = {
+            documentType: "Documento Legal",
+            documentCategory: "otro",
+            detectionConfidence: "baja",
+            summary: "El documento requiere revisión manual.",
+            clauses: [], risks: [], recommendations: ["Revisar documento manualmente"],
+            keyDates: [], parties: [], legalReferences: [], missingElements: []
+          };
+        }
+
+        const resultData = {
+          success: true,
+          fileName: fileName || 'Documento',
+          extractionQuality: 'partial',
+          extractionMethod: 'vision-fallback',
+          ...analysis,
+          timestamp: new Date().toISOString()
+        };
+
+        if (lawyerId) {
+          await saveToolResult(supabase, lawyerId, 'analysis',
+            { documentContent: 'PDF procesado por visión', fileName },
+            analysis,
+            { extractionMethod: 'vision-fallback', extractionQuality: 'partial' }
+          );
+        }
+
+        console.log('✅ Analysis completed via vision fallback');
+        return new Response(JSON.stringify(resultData), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      // If vision also failed, continue with minimal content below
+    }
+
+    if (!contentToAnalyze || contentToAnalyze.trim().length < 10) {
+      return new Response(
+        JSON.stringify({ error: 'Document content is required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // ── Build analysis prompt ──────────────────
     let analysisInput = '';
     const hasRealContent = contentToAnalyze.length > 100;
 
     if (hasRealContent) {
-      const truncatedContent = contentToAnalyze.substring(0, 15000);
-      analysisInput = `Analiza exhaustivamente el siguiente documento legal "${fileName}":
+      // Increased limit: 30K chars, with smart sectioning for very long docs
+      let truncatedContent: string;
+      if (contentToAnalyze.length > 30000) {
+        const firstPart = contentToAnalyze.substring(0, 15000);
+        const lastPart = contentToAnalyze.substring(contentToAnalyze.length - 15000);
+        truncatedContent = `${firstPart}\n\n[... CONTENIDO INTERMEDIO OMITIDO (${contentToAnalyze.length - 30000} caracteres) ...]\n\n${lastPart}`;
+      } else {
+        truncatedContent = contentToAnalyze;
+      }
+
+      const qualityWarning = extractionQuality === 'partial' 
+        ? '\n\nNOTA: La extracción de texto fue parcial. Algunos segmentos pueden estar incompletos.' 
+        : '';
+
+      analysisInput = `Analiza exhaustivamente el siguiente documento legal "${fileName}":${qualityWarning}
 
 CONTENIDO DEL DOCUMENTO:
 ${truncatedContent}
 
 Proporciona un análisis profundo y profesional. Responde ÚNICAMENTE en formato JSON con: documentType, documentCategory, detectionConfidence, summary, clauses, risks, recommendations, keyDates, parties, legalReferences, missingElements.`;
     } else {
-      // True fallback — no content could be extracted
       const fileTypeInference = inferDocumentTypeFromFilename(fileName);
       analysisInput = `Documento: "${fileName}" - análisis inferencial basado en nombre.
 Tipo sugerido: ${fileTypeInference.suggestedType}
@@ -519,8 +618,6 @@ Categoría: ${fileTypeInference.category}
 
 Proporciona análisis en formato JSON con detectionConfidence: "baja" indicando que es preliminar.`;
     }
-
-    const reasoningEffort = await getSystemConfig(supabase, 'analysis_reasoning_effort', 'medium') as 'low' | 'medium' | 'high';
 
     const params = buildResponsesRequestParams(aiModel, {
       input: analysisInput,
@@ -560,6 +657,8 @@ Proporciona análisis en formato JSON con detectionConfidence: "baja" indicando 
     const resultData = {
       success: true,
       fileName: fileName || 'Documento',
+      extractionQuality,
+      extractionMethod,
       ...analysis,
       timestamp: new Date().toISOString()
     };
@@ -568,17 +667,17 @@ Proporciona análisis en formato JSON con detectionConfidence: "baja" indicando 
       await saveToolResult(supabase, lawyerId, 'analysis',
         { documentContent: contentToAnalyze.substring(0, 500) + '...', fileName },
         analysis,
-        { extractionMethod, textLength: contentToAnalyze.length }
+        { extractionMethod, extractionQuality, textLength: contentToAnalyze.length }
       );
     }
 
-    console.log(`✅ Analysis completed (method: ${extractionMethod}, chars: ${contentToAnalyze.length})`);
+    console.log(`✅ Analysis completed (method: ${extractionMethod}, quality: ${extractionQuality}, chars: ${contentToAnalyze.length})`);
 
     return new Response(JSON.stringify(resultData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Error in analysis:', error);
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
