@@ -8,6 +8,8 @@ import { Separator } from '@/components/ui/separator';
 import { Edit2, Trash2, Mail, Phone, MapPin, Building, User, Briefcase, FileText, Activity, LinkIcon, Copy, Check } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import ClientCasesTab from './ClientCasesTab';
 import ClientDocumentsTab from './ClientDocumentsTab';
 import ClientPortalActivity from './ClientPortalActivity';
