@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { formatDateLocal } from '@/lib/date-utils';
 
 interface NewEventDialogProps {
   lawyerId: string;
@@ -36,8 +37,19 @@ export function NewEventDialog({ lawyerId, selectedDate, onEventCreated }: NewEv
   const [startDate, setStartDate] = useState<Date | undefined>(selectedDate || new Date());
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [allDay, setAllDay] = useState(true);
+  const [startTime, setStartTime] = useState('09:00');
+  const [endTime, setEndTime] = useState('10:00');
   const [location, setLocation] = useState('');
   const [loading, setLoading] = useState(false);
+  const [startDateOpen, setStartDateOpen] = useState(false);
+  const [endDateOpen, setEndDateOpen] = useState(false);
+
+  // Sync startDate when selectedDate prop changes
+  useEffect(() => {
+    if (selectedDate) {
+      setStartDate(selectedDate);
+    }
+  }, [selectedDate]);
 
   const handleSubmit = async () => {
     if (!title.trim()) {
@@ -53,6 +65,9 @@ export function NewEventDialog({ lawyerId, selectedDate, onEventCreated }: NewEv
     try {
       setLoading(true);
 
+      const startDateStr = formatDateLocal(startDate);
+      const endDateStr = endDate ? formatDateLocal(endDate) : startDateStr;
+
       const { error } = await supabase
         .from('legal_calendar_events')
         .insert({
@@ -60,8 +75,8 @@ export function NewEventDialog({ lawyerId, selectedDate, onEventCreated }: NewEv
           title: title.trim(),
           description: description.trim() || null,
           event_type: eventType,
-          start_date: format(startDate, 'yyyy-MM-dd'),
-          end_date: endDate ? format(endDate, 'yyyy-MM-dd') : format(startDate, 'yyyy-MM-dd'),
+          start_date: startDateStr,
+          end_date: endDateStr,
           all_day: allDay,
           location: location.trim() || null,
           is_completed: false
@@ -78,6 +93,8 @@ export function NewEventDialog({ lawyerId, selectedDate, onEventCreated }: NewEv
       setEndDate(undefined);
       setLocation('');
       setAllDay(true);
+      setStartTime('09:00');
+      setEndTime('10:00');
       
       onEventCreated?.();
     } catch (error) {
@@ -125,7 +142,7 @@ export function NewEventDialog({ lawyerId, selectedDate, onEventCreated }: NewEv
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Fecha de Inicio *</Label>
-          <Popover>
+          <Popover open={startDateOpen} onOpenChange={setStartDateOpen}>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
@@ -142,7 +159,10 @@ export function NewEventDialog({ lawyerId, selectedDate, onEventCreated }: NewEv
               <Calendar
                 mode="single"
                 selected={startDate}
-                onSelect={setStartDate}
+                onSelect={(date) => {
+                  setStartDate(date);
+                  setStartDateOpen(false);
+                }}
                 locale={es}
               />
             </PopoverContent>
@@ -151,7 +171,7 @@ export function NewEventDialog({ lawyerId, selectedDate, onEventCreated }: NewEv
 
         <div className="space-y-2">
           <Label>Fecha de Fin</Label>
-          <Popover>
+          <Popover open={endDateOpen} onOpenChange={setEndDateOpen}>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
@@ -168,7 +188,10 @@ export function NewEventDialog({ lawyerId, selectedDate, onEventCreated }: NewEv
               <Calendar
                 mode="single"
                 selected={endDate}
-                onSelect={setEndDate}
+                onSelect={(date) => {
+                  setEndDate(date);
+                  setEndDateOpen(false);
+                }}
                 locale={es}
                 disabled={(date) => startDate ? date < startDate : false}
               />
@@ -186,6 +209,30 @@ export function NewEventDialog({ lawyerId, selectedDate, onEventCreated }: NewEv
           onCheckedChange={setAllDay}
         />
       </div>
+
+      {/* Time fields when not all day */}
+      {!allDay && (
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="start-time">Hora de Inicio</Label>
+            <Input
+              id="start-time"
+              type="time"
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="end-time">Hora de Fin</Label>
+            <Input
+              id="end-time"
+              type="time"
+              value={endTime}
+              onChange={(e) => setEndTime(e.target.value)}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Location */}
       <div className="space-y-2">
@@ -209,6 +256,11 @@ export function NewEventDialog({ lawyerId, selectedDate, onEventCreated }: NewEv
           rows={3}
         />
       </div>
+
+      {/* Timezone info */}
+      <p className="text-xs text-muted-foreground">
+        🕐 Zona horaria: Colombia (GMT-5)
+      </p>
 
       {/* Submit Button */}
       <Button 

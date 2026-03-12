@@ -20,6 +20,7 @@ import DemoAgentsMockup from "./components/demo/DemoAgentsMockup";
 import { SubscriptionSuccessPage } from "./components/SubscriptionSuccessPage";
 import { SubscriptionErrorPage } from "./components/SubscriptionErrorPage";
 import { ClientPortalAccessPage } from "./components/client-portal/ClientPortalAccessPage";
+import GoogleCalendarCallback from "./pages/GoogleCalendarCallback";
 import { useAuthManager } from "@/hooks/useAuthManager";
 import { useLogRocket } from "@/hooks/useLogRocket";
 import { useUserTracking } from "@/hooks/useUserTracking";
@@ -71,6 +72,7 @@ const AppContent = () => {
           <Route path="/subscription-error" element={<SubscriptionErrorPage />} />
           <Route path="/portal/:token" element={<ClientPortalAccessPage />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/google-calendar-callback" element={<GoogleCalendarCallback />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

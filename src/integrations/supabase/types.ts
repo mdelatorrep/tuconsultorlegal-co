@@ -2722,6 +2722,53 @@ export type Database = {
           },
         ]
       }
+      lawyer_google_tokens: {
+        Row: {
+          access_token: string
+          calendar_id: string | null
+          created_at: string
+          google_email: string | null
+          id: string
+          last_synced_at: string | null
+          lawyer_id: string
+          refresh_token: string
+          token_expires_at: string
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          calendar_id?: string | null
+          created_at?: string
+          google_email?: string | null
+          id?: string
+          last_synced_at?: string | null
+          lawyer_id: string
+          refresh_token: string
+          token_expires_at: string
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          calendar_id?: string | null
+          created_at?: string
+          google_email?: string | null
+          id?: string
+          last_synced_at?: string | null
+          lawyer_id?: string
+          refresh_token?: string
+          token_expires_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lawyer_google_tokens_lawyer_id_fkey"
+            columns: ["lawyer_id"]
+            isOneToOne: true
+            referencedRelation: "lawyer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lawyer_notifications: {
         Row: {
           action_url: string | null
