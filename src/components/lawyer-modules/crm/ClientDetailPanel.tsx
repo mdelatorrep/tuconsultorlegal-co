@@ -1,13 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Edit2, Trash2, Mail, Phone, MapPin, Building, User, Briefcase, FileText, Activity } from 'lucide-react';
+import { Edit2, Trash2, Mail, Phone, MapPin, Building, User, Briefcase, FileText, Activity, LinkIcon, Copy, Check } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import ClientCasesTab from './ClientCasesTab';
 import ClientDocumentsTab from './ClientDocumentsTab';
 import ClientPortalActivity from './ClientPortalActivity';
@@ -49,6 +51,52 @@ const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').to
 
 const ClientDetailPanel: React.FC<ClientDetailPanelProps> = ({ client, lawyerId, open, onOpenChange, onEdit, onDelete }) => {
   const statusConfig = getStatusConfig(client.status);
+  const [isGeneratingLink, setIsGeneratingLink] = useState(false);
+  const [portalLinkCopied, setPortalLinkCopied] = useState(false);
+
+  const handleSharePortal = async () => {
+    setIsGeneratingLink(true);
+    try {
+      // Check if there's already an active access for this client
+      const { data: existing } = await supabase
+        .from('client_portal_access')
+        .select('access_token')
+        .eq('client_id', client.id)
+        .eq('lawyer_id', lawyerId)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      let token: string;
+      if (existing?.access_token) {
+        token = existing.access_token;
+      } else {
+        // Generate new access
+        token = crypto.randomUUID();
+        const { error } = await supabase
+          .from('client_portal_access')
+          .insert({
+            client_id: client.id,
+            lawyer_id: lawyerId,
+            email: client.email,
+            access_token: token,
+            is_active: true,
+            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          });
+        if (error) throw error;
+      }
+
+      const link = `${window.location.origin}/portal/${token}`;
+      await navigator.clipboard.writeText(link);
+      setPortalLinkCopied(true);
+      toast.success('Enlace del portal copiado al portapapeles');
+      setTimeout(() => setPortalLinkCopied(false), 3000);
+    } catch (err) {
+      console.error('Error generating portal link:', err);
+      toast.error('Error al generar enlace del portal');
+    } finally {
+      setIsGeneratingLink(false);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -185,6 +233,15 @@ const ClientDetailPanel: React.FC<ClientDetailPanelProps> = ({ client, lawyerId,
 
         {/* Actions */}
         <div className="flex gap-2 pt-4 border-t">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={handleSharePortal}
+            disabled={isGeneratingLink}
+          >
+            {portalLinkCopied ? <Check className="h-4 w-4 mr-1" /> : <LinkIcon className="h-4 w-4 mr-1" />}
+            {portalLinkCopied ? 'Copiado' : 'Compartir Portal'}
+          </Button>
           <Button variant="outline" className="flex-1" onClick={() => onEdit(client)}>
             <Edit2 className="h-4 w-4 mr-2" />
             Editar

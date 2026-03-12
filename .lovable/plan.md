@@ -1,35 +1,76 @@
 
 
-# Plan: Eliminar confusión CRM vs Portal Clientes
+# Soporte Multi-Formato via Code Interpreter de OpenAI
 
-## Problema
-El sidebar tiene dos entradas separadas bajo "Clientes": **Gestión CRM** y **Portal Clientes**. Ambas muestran clientes, casos y documentos, causando que el abogado no sepa dónde gestionar sus casos. El "Portal Clientes" en modo abogado es esencialmente una vista de administración de accesos al portal, pero se presenta como otra herramienta de gestión.
+## Descubrimiento Clave
 
-## Solución
-Absorber la funcionalidad del Portal Clientes dentro del CRM y simplificar la navegación.
+La herramienta **Code Interpreter** de OpenAI soporta nativamente estos formatos relevantes para documentos legales:
 
-### Cambios en el Sidebar (`UnifiedSidebar.tsx`)
-- Eliminar "Portal Clientes" como ítem separado del menú
-- Renombrar sección de "Clientes" a solo tener: **CRM** y **Calendario Legal**
+| Formato | MIME type |
+|---------|-----------|
+| .pdf | application/pdf |
+| .doc | application/msword |
+| .docx | application/vnd.openxmlformats-officedocument.wordprocessingml.document |
+| .txt | text/plain |
+| .xlsx | application/vnd.openxmlformats-officedocument.spreadsheetml.sheet |
+| .pptx | application/vnd.openxmlformats-officedocument.presentationml.presentation |
 
-### Integrar Portal en CRM (`CRMModule.tsx`)
-- En el tab **Clientes**, agregar un botón "Gestionar Accesos Portal" que abra un Dialog con la funcionalidad de `InviteClientDialog` y la lista de accesos activos
-- En el `ClientDetailPanel.tsx`, agregar un botón/acción "Compartir Portal" que permita generar/copiar el enlace del portal para ese cliente específico
+Ademas, los archivos enviados en el `input` del modelo se suben automaticamente al container de Code Interpreter. No se requiere subida manual previa.
 
-### Nuevo componente: `PortalAccessManager.tsx`
-- Dialog que extrae la lógica de administración de accesos de `ClientPortalPage.tsx` (modo abogado): lista de clientes con acceso, invitar cliente, revocar acceso
-- Se abre desde el tab Clientes del CRM
+## Estrategia de Procesamiento
 
-### Archivos a modificar
+```text
+PDF --> input_file (procesamiento nativo, mas rapido, sin container)
+DOCX/DOC/TXT/XLSX --> code_interpreter tool (OpenAI extrae el contenido via Python)
+```
 
-| Archivo | Cambio |
-|---|---|
-| `src/components/UnifiedSidebar.tsx` | Eliminar item "Portal Clientes" del menú |
-| `src/components/LawyerDashboardPage.tsx` | Eliminar case 'client-portal' (redirigir a CRM si llega) |
-| `src/components/lawyer-modules/CRMModule.tsx` | Agregar botón "Gestionar Accesos Portal" en tab Clientes |
-| `src/components/lawyer-modules/crm/PortalAccessManager.tsx` | **Nuevo** -- Dialog con gestión de accesos al portal (invitar, revocar, ver enlaces) |
-| `src/components/lawyer-modules/crm/ClientDetailPanel.tsx` | Agregar botón "Compartir Portal" con enlace directo al portal del cliente |
+- Para **PDF**: seguir usando `input_file` como esta ahora (funciona perfecto)
+- Para **DOCX/DOC y otros**: agregar `code_interpreter` como tool en la request, enviar el archivo como `input_file` en el input, y OpenAI usara Python para leer el contenido y analizarlo
 
-### Flujo resultante
-El abogado entra al CRM → todo está ahí: procesos, clientes, tareas, novedades. Desde Clientes puede gestionar accesos al portal y compartir enlaces. No hay segunda vista que confunda.
+## Cambios a Realizar
+
+### 1. Edge Function (`legal-document-analysis/index.ts`)
+
+- Eliminar la funcion `extractTextFromDocx` (regex fragil, ya no se necesita)
+- Para archivos no-PDF (DOCX, DOC, TXT, XLSX): enviar el archivo como `input_file` en el input + agregar `tools: [{ type: "code_interpreter", container: { type: "auto" } }]` en la request
+- Mantener la ruta actual de PDF sin cambios (ya funciona con `input_file` directo)
+- Mantener la ruta de texto plano sin cambios
+
+### 2. Frontend (`AnalyzeModule.tsx`)
+
+- Restaurar el `accept` del input de archivos para incluir `.pdf,.doc,.docx,.txt`
+- Restaurar la validacion para aceptar estos tipos de archivo
+- Mantener la codificacion base64 via `FileReader.readAsDataURL()`
+
+### 3. Formato de la Request con Code Interpreter
+
+```text
+{
+  model: "gpt-4o",
+  tools: [{ type: "code_interpreter", container: { type: "auto" } }],
+  input: [
+    {
+      role: "user",
+      content: [
+        { type: "input_file", filename: "contrato.docx", file_data: "data:application/...;base64,..." },
+        { type: "input_text", text: "Analiza este documento legal..." }
+      ]
+    }
+  ],
+  instructions: "...",
+  text: { format: { type: "json_object" } }
+}
+```
+
+## Archivos a Modificar
+
+1. `supabase/functions/legal-document-analysis/index.ts` - Agregar ruta con code_interpreter para DOCX/DOC, eliminar extractTextFromDocx
+2. `src/components/lawyer-modules/AnalyzeModule.tsx` - Restaurar aceptacion de PDF, DOC, DOCX, TXT
+
+## Resultado Esperado
+
+- Procesamiento confiable de PDF, DOC, DOCX y TXT sin extraccion manual
+- OpenAI maneja toda la complejidad de parseo via Code Interpreter (Python sandbox)
+- El regex fragil de DOCX se elimina completamente
+- Codigo mas simple: ~200 lineas en el edge function
 

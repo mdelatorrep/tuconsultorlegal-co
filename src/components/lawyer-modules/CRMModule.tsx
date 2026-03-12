@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Users, Briefcase, Clock, Brain, Zap, Loader2 } from "lucide-react";
+import { Users, Briefcase, Clock, Brain, Zap, Loader2, LinkIcon } from "lucide-react";
 import { useCredits } from "@/hooks/useCredits";
 import { ToolCostIndicator } from "@/components/credits/ToolCostIndicator";
 import { useToast } from "@/hooks/use-toast";
@@ -18,6 +18,7 @@ import LeadPipeline from "./crm/LeadPipeline";
 import CRMOnboarding from "./crm/CRMOnboarding";
 import CRMNewsFeed from "./crm/CRMNewsFeed";
 import CRMAIChat from "./crm/CRMAIChat";
+import PortalAccessManager from "./crm/PortalAccessManager";
 
 interface CRMModuleProps {
   user: any;
@@ -37,12 +38,15 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
   const [searchTerm, setSearchTerm] = useState("");
   const [stats, setStats] = useState<CRMStats>({ clients: 0, cases: 0, tasks: 0, leads: 0 });
   const [isAIChatOpen, setIsAIChatOpen] = useState(false);
+  const [isPortalManagerOpen, setIsPortalManagerOpen] = useState(false);
+  const [portalClients, setPortalClients] = useState<{ id: string; name: string; email: string }[]>([]);
   const [processViewMode, setProcessViewMode] = useState<'kanban' | 'list'>('kanban');
   const [clientsSubTab, setClientsSubTab] = useState<'clients' | 'entities' | 'leads'>('clients');
   const { toast } = useToast();
 
   useEffect(() => {
     fetchStats();
+    fetchPortalClients();
   }, []);
 
   const fetchStats = async () => {
@@ -62,6 +66,19 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
       });
     } catch (error) {
       console.error('Error fetching CRM stats:', error);
+    }
+  };
+
+  const fetchPortalClients = async () => {
+    try {
+      const { data } = await supabase
+        .from('crm_clients')
+        .select('id, name, email')
+        .eq('lawyer_id', user.id)
+        .order('name');
+      setPortalClients(data || []);
+    } catch (err) {
+      console.error('Error fetching clients for portal:', err);
     }
   };
 
@@ -172,7 +189,7 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
         {/* Tab 3: Clientes */}
         <TabsContent value="clientes">
           <div className="space-y-3">
-            <div className="flex items-center gap-2">
+           <div className="flex items-center gap-2 flex-wrap">
               <Button
                 size="sm"
                 variant={clientsSubTab === 'clients' ? 'default' : 'outline'}
@@ -194,6 +211,16 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
               >
                 Contactos Potenciales
               </Button>
+              <div className="ml-auto">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsPortalManagerOpen(true)}
+                >
+                  <LinkIcon className="h-3.5 w-3.5 mr-1" />
+                  Accesos Portal
+                </Button>
+              </div>
             </div>
             {clientsSubTab === 'clients' && <CRMClientsView {...commonProps} />}
             {clientsSubTab === 'entities' && <CRMEntitiesView {...commonProps} />}
@@ -217,6 +244,14 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
         open={isAIChatOpen}
         onOpenChange={setIsAIChatOpen}
         lawyerId={user.id}
+      />
+
+      {/* Portal Access Manager Dialog */}
+      <PortalAccessManager
+        open={isPortalManagerOpen}
+        onOpenChange={setIsPortalManagerOpen}
+        lawyerId={user.id}
+        clients={portalClients}
       />
     </div>
   );
