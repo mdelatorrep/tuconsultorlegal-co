@@ -234,13 +234,16 @@ const CaseTraceabilityModal: React.FC<CaseTraceabilityModalProps> = ({
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="meeting">Reunión</SelectItem>
-                      <SelectItem value="call">Llamada</SelectItem>
-                      <SelectItem value="email">Email</SelectItem>
-                      <SelectItem value="document">Documento</SelectItem>
-                      <SelectItem value="milestone">Hito</SelectItem>
-                      <SelectItem value="note">Nota</SelectItem>
+                     <SelectContent>
+                      <SelectItem value="auto">Auto</SelectItem>
+                      <SelectItem value="providencia">Providencia</SelectItem>
+                      <SelectItem value="traslado">Traslado</SelectItem>
+                      <SelectItem value="audiencia">Audiencia</SelectItem>
+                      <SelectItem value="notificacion">Notificación</SelectItem>
+                      <SelectItem value="memorial">Memorial / Escrito</SelectItem>
+                      <SelectItem value="reunion">Reunión</SelectItem>
+                      <SelectItem value="llamada">Llamada</SelectItem>
+                      <SelectItem value="nota">Nota Interna</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
