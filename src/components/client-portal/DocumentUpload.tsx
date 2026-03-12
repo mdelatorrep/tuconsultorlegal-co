@@ -11,7 +11,6 @@ import {
   Upload, 
   Download, 
   Eye, 
-  Clock,
   Loader2,
   CheckCircle,
   AlertCircle
@@ -21,6 +20,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { DocumentViewer } from './DocumentViewer';
 
 interface SharedDocument {
   id: string;
@@ -43,6 +43,9 @@ export function DocumentUpload({ clientId, lawyerId }: DocumentUploadProps) {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
+  
+  // Viewer state
+  const [viewerDoc, setViewerDoc] = useState<SharedDocument | null>(null);
   
   // Upload form state
   const [file, setFile] = useState<File | null>(null);
@@ -80,23 +83,19 @@ export function DocumentUpload({ clientId, lawyerId }: DocumentUploadProps) {
 
     try {
       setUploading(true);
-
-      // Upload file to storage
       const fileExt = file.name.split('.').pop();
       const fileName = `${clientId}/${Date.now()}.${fileExt}`;
       
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('client-documents')
         .upload(fileName, file);
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
       const { data: urlData } = supabase.storage
         .from('client-documents')
         .getPublicUrl(fileName);
 
-      // Save document record
       const { error: insertError } = await supabase
         .from('client_shared_documents')
         .insert({
@@ -132,10 +131,16 @@ export function DocumentUpload({ clientId, lawyerId }: DocumentUploadProps) {
         .from('client_shared_documents')
         .update({ viewed_at: new Date().toISOString() })
         .eq('id', docId);
-      
       loadDocuments();
     } catch (error) {
       console.error('Error marking as viewed:', error);
+    }
+  };
+
+  const openViewer = (doc: SharedDocument) => {
+    setViewerDoc(doc);
+    if (!doc.is_from_client && !doc.viewed_at) {
+      markAsViewed(doc.id);
     }
   };
 
@@ -152,6 +157,17 @@ export function DocumentUpload({ clientId, lawyerId }: DocumentUploadProps) {
 
   return (
     <div className="space-y-6">
+      {/* Document Viewer */}
+      {viewerDoc?.document_url && (
+        <DocumentViewer
+          open={!!viewerDoc}
+          onOpenChange={(open) => !open && setViewerDoc(null)}
+          documentUrl={viewerDoc.document_url}
+          documentName={viewerDoc.document_name}
+          documentType={viewerDoc.document_type}
+        />
+      )}
+
       {/* Upload Button */}
       <div className="flex justify-end">
         <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
@@ -239,7 +255,8 @@ export function DocumentUpload({ clientId, lawyerId }: DocumentUploadProps) {
                   {fromLawyer.map(doc => (
                     <div 
                       key={doc.id}
-                      className="p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                      className="p-3 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                      onClick={() => doc.document_url && openViewer(doc)}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
@@ -266,9 +283,9 @@ export function DocumentUpload({ clientId, lawyerId }: DocumentUploadProps) {
                               variant="ghost" 
                               size="icon"
                               className="h-8 w-8"
-                              onClick={() => {
-                                window.open(doc.document_url!, '_blank');
-                                markAsViewed(doc.id);
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openViewer(doc);
                               }}
                             >
                               <Eye className="h-4 w-4" />
@@ -307,7 +324,8 @@ export function DocumentUpload({ clientId, lawyerId }: DocumentUploadProps) {
                   {fromClient.map(doc => (
                     <div 
                       key={doc.id}
-                      className="p-3 border rounded-lg"
+                      className="p-3 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                      onClick={() => doc.document_url && openViewer(doc)}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
@@ -328,9 +346,12 @@ export function DocumentUpload({ clientId, lawyerId }: DocumentUploadProps) {
                             variant="ghost" 
                             size="icon"
                             className="h-8 w-8"
-                            onClick={() => window.open(doc.document_url!, '_blank')}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openViewer(doc);
+                            }}
                           >
-                            <Download className="h-4 w-4" />
+                            <Eye className="h-4 w-4" />
                           </Button>
                         )}
                       </div>
