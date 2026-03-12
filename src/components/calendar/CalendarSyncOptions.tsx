@@ -237,7 +237,7 @@ export function CalendarSyncOptions({ lawyerId, events, onClose, onEventsImporte
       setIsDisconnecting(true);
       
       const { error } = await supabase
-        .from('lawyer_google_tokens')
+        .from('lawyer_google_tokens' as any)
         .delete()
         .eq('lawyer_id', lawyerId);
 
