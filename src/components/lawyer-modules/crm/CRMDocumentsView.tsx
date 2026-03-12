@@ -139,7 +139,7 @@ const CRMDocumentsView: React.FC<CRMDocumentsViewProps> = ({ lawyerData, searchT
       const docData = {
         ...formData,
         lawyer_id: lawyerData.id,
-        case_id: formData.case_id || null
+        case_id: formData.case_id && formData.case_id !== 'none' ? formData.case_id : null
       };
 
       if (editingDocument) {

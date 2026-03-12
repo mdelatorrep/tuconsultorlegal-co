@@ -138,8 +138,8 @@ const CRMTasksView: React.FC<CRMTasksViewProps> = ({ lawyerData, searchTerm, onR
       const taskData = {
         ...formData,
         lawyer_id: lawyerData.id,
-        client_id: formData.client_id || null,
-        case_id: formData.case_id || null,
+        client_id: formData.client_id && formData.client_id !== 'none' ? formData.client_id : null,
+        case_id: formData.case_id && formData.case_id !== 'none' ? formData.case_id : null,
         due_date: formData.due_date || null,
         assigned_to: formData.assigned_to || null
       };

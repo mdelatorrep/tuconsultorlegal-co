@@ -83,12 +83,6 @@ const ENTITY_TYPES: Record<string, { label: string; color: string }> = {
   other: { label: "Otro", color: "bg-muted text-foreground" }
 };
 
-const CONTRACT_TYPES: Record<string, string> = {
-  retainer: "Retainer (Iguala)",
-  hourly: "Por Hora",
-  fixed: "Precio Fijo",
-  hybrid: "Híbrido"
-};
 
 export default function EntityDetailPage({ entity, lawyerData, onBack, onUpdate }: EntityDetailPageProps) {
   const [contacts, setContacts] = useState<Contact[]>([]);
