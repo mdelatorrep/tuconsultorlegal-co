@@ -318,7 +318,7 @@ export default function LeadPipeline({ searchTerm, onRefresh, lawyerData }: Prop
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-600">{coldLeads.length}</p>
-                <p className="text-xs text-muted-foreground">Leads Fríos</p>
+                <p className="text-xs text-muted-foreground">Por Evaluar</p>
               </div>
             </div>
           </CardContent>
