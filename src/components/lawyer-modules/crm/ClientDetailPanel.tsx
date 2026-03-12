@@ -233,6 +233,15 @@ const ClientDetailPanel: React.FC<ClientDetailPanelProps> = ({ client, lawyerId,
 
         {/* Actions */}
         <div className="flex gap-2 pt-4 border-t">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={handleSharePortal}
+            disabled={isGeneratingLink}
+          >
+            {portalLinkCopied ? <Check className="h-4 w-4 mr-1" /> : <LinkIcon className="h-4 w-4 mr-1" />}
+            {portalLinkCopied ? 'Copiado' : 'Compartir Portal'}
+          </Button>
           <Button variant="outline" className="flex-1" onClick={() => onEdit(client)}>
             <Edit2 className="h-4 w-4 mr-2" />
             Editar
