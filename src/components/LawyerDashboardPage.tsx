@@ -680,7 +680,9 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
       case 'case-predictor':
         return <CasePredictorModule lawyerId={user.id} />;
       case 'client-portal':
-        return <ClientPortalPage lawyerId={user.id} />;
+        // Redirect to CRM - portal is now integrated there
+        setCurrentView('crm');
+        return null;
       // lawyer-verification is now integrated into account-settings
       case 'request-agent-access':
         return (
