@@ -96,7 +96,7 @@ const CaseTraceabilityModal: React.FC<CaseTraceabilityModalProps> = ({
       });
 
       setNewActivity({
-        activity_type: 'meeting',
+        activity_type: 'auto',
         title: '',
         description: '',
         activity_date: new Date().toISOString().slice(0, 16)
