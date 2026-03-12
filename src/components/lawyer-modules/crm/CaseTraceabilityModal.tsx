@@ -115,24 +115,47 @@ const CaseTraceabilityModal: React.FC<CaseTraceabilityModalProps> = ({
 
   const getActivityIcon = (type: string) => {
     switch (type) {
-      case 'meeting': return <Calendar className="h-4 w-4" />;
-      case 'call': return <Phone className="h-4 w-4" />;
-      case 'email': return <Mail className="h-4 w-4" />;
-      case 'document': return <FileText className="h-4 w-4" />;
-      case 'milestone': return <CheckCircle className="h-4 w-4" />;
+      case 'auto': return <FileText className="h-4 w-4" />;
+      case 'providencia': return <FileText className="h-4 w-4" />;
+      case 'traslado': return <Clock className="h-4 w-4" />;
+      case 'audiencia': return <Calendar className="h-4 w-4" />;
+      case 'notificacion': return <Mail className="h-4 w-4" />;
+      case 'memorial': return <FileText className="h-4 w-4" />;
+      case 'reunion': return <Calendar className="h-4 w-4" />;
+      case 'llamada': return <Phone className="h-4 w-4" />;
+      case 'nota': return <Clock className="h-4 w-4" />;
       default: return <Clock className="h-4 w-4" />;
     }
   };
 
   const getActivityColor = (type: string) => {
     switch (type) {
-      case 'meeting': return 'bg-blue-100 text-blue-800';
-      case 'call': return 'bg-green-100 text-green-800';
-      case 'email': return 'bg-purple-100 text-purple-800';
-      case 'document': return 'bg-orange-100 text-orange-800';
-      case 'milestone': return 'bg-emerald-100 text-emerald-800';
+      case 'auto': return 'bg-blue-100 text-blue-800';
+      case 'providencia': return 'bg-purple-100 text-purple-800';
+      case 'traslado': return 'bg-amber-100 text-amber-800';
+      case 'audiencia': return 'bg-green-100 text-green-800';
+      case 'notificacion': return 'bg-orange-100 text-orange-800';
+      case 'memorial': return 'bg-indigo-100 text-indigo-800';
+      case 'reunion': return 'bg-emerald-100 text-emerald-800';
+      case 'llamada': return 'bg-teal-100 text-teal-800';
+      case 'nota': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  const getActivityLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      auto: 'Auto',
+      providencia: 'Providencia',
+      traslado: 'Traslado',
+      audiencia: 'Audiencia',
+      notificacion: 'Notificación',
+      memorial: 'Memorial',
+      reunion: 'Reunión',
+      llamada: 'Llamada',
+      nota: 'Nota',
+    };
+    return labels[type] || type;
   };
 
   return (
