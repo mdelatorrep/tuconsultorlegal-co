@@ -594,141 +594,17 @@ const CRMClientsView: React.FC<CRMClientsViewProps> = ({ lawyerData, searchTerm,
         </div>
       )}
 
-      {/* Client Detail Sheet */}
-      <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className="w-[95vw] max-w-lg max-h-[90vh] overflow-y-auto">
-          {selectedClient && (
-            <>
-              <DialogHeader>
-                <div className="flex items-start gap-4">
-                  <Avatar className="h-16 w-16">
-                    <AvatarFallback className={`${getStatusConfig(selectedClient.status).bg} ${getStatusConfig(selectedClient.status).color} text-xl font-semibold`}>
-                      {getInitials(selectedClient.name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <DialogTitle className="text-xl">{selectedClient.name}</DialogTitle>
-                    <DialogDescription className="flex items-center gap-2 mt-1">
-                      {selectedClient.client_type === 'company' ? (
-                        <Building className="h-4 w-4" />
-                      ) : (
-                        <User className="h-4 w-4" />
-                      )}
-                      {selectedClient.client_type === 'company' ? 'Empresa' : 'Persona Natural'}
-                      <span>•</span>
-                      <Badge variant={getStatusConfig(selectedClient.status).variant}>
-                        {getStatusConfig(selectedClient.status).label}
-                      </Badge>
-                    </DialogDescription>
-                  </div>
-                </div>
-              </DialogHeader>
-
-              <div className="space-y-4 py-4">
-                {/* Contact Info */}
-                <div className="space-y-3">
-                  <h4 className="text-sm font-medium text-muted-foreground">Información de Contacto</h4>
-                  <div className="grid gap-2">
-                    <a 
-                      href={`mailto:${selectedClient.email}`}
-                      className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-                    >
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Mail className="h-4 w-4 text-primary" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">{selectedClient.email}</p>
-                        <p className="text-xs text-muted-foreground">Correo electrónico</p>
-                      </div>
-                    </a>
-                    
-                    {selectedClient.phone && (
-                      <a 
-                        href={`tel:${selectedClient.phone}`}
-                        className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-                      >
-                        <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center">
-                          <Phone className="h-4 w-4 text-green-600" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">{selectedClient.phone}</p>
-                          <p className="text-xs text-muted-foreground">Teléfono</p>
-                        </div>
-                      </a>
-                    )}
-                    
-                    {selectedClient.address && (
-                      <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                        <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center">
-                          <MapPin className="h-4 w-4 text-amber-600" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">{selectedClient.address}</p>
-                          <p className="text-xs text-muted-foreground">Dirección</p>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {selectedClient.company && (
-                      <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                        <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center">
-                          <Building className="h-4 w-4 text-blue-600" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">{selectedClient.company}</p>
-                          <p className="text-xs text-muted-foreground">Empresa</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Stats */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3 rounded-lg bg-muted/50 text-center">
-                    <p className="text-2xl font-bold text-primary">{selectedClient.cases_count || 0}</p>
-                    <p className="text-xs text-muted-foreground">Casos asociados</p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-muted/50 text-center">
-                    <p className="text-sm font-medium">
-                      {format(new Date(selectedClient.created_at), "d MMM yyyy", { locale: es })}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Cliente desde</p>
-                  </div>
-                </div>
-
-                {/* Notes */}
-                {selectedClient.notes && (
-                  <>
-                    <Separator />
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-medium text-muted-foreground">Notas</h4>
-                      <p className="text-sm bg-muted/50 p-3 rounded-lg">{selectedClient.notes}</p>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-2 pt-4 border-t">
-                <Button variant="outline" className="flex-1" onClick={() => handleEditClient(selectedClient)}>
-                  <Edit2 className="h-4 w-4 mr-2" />
-                  Editar
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => handleDeleteClient(selectedClient.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Client Detail Panel */}
+      {selectedClient && (
+        <ClientDetailPanel
+          client={selectedClient}
+          lawyerId={lawyerData.id}
+          open={isDetailOpen}
+          onOpenChange={setIsDetailOpen}
+          onEdit={handleEditClient}
+          onDelete={handleDeleteClient}
+        />
+      )}
     </div>
   );
 };

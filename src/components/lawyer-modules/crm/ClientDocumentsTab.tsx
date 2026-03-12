@@ -128,8 +128,8 @@ const ClientDocumentsTab: React.FC<ClientDocumentsTabProps> = ({ clientId, lawye
         <DocumentViewer
           documentName={viewerDoc.name}
           documentUrl={viewerDoc.url}
-          isOpen={!!viewerDoc}
-          onClose={() => setViewerDoc(null)}
+          open={!!viewerDoc}
+          onOpenChange={(open) => { if (!open) setViewerDoc(null); }}
         />
       )}
     </div>
