@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Plus, Edit2, Trash2, FileText, Download, Eye, Lock, Unlock } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { DocumentViewer } from '@/components/client-portal/DocumentViewer';
 
 interface Document {
   id: string;
