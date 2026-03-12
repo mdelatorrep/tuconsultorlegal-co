@@ -435,9 +435,9 @@ export default function LeadPipeline({ searchTerm, onRefresh, lawyerData }: Prop
         <Card>
           <CardContent className="py-12 text-center">
             <UserPlus className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-lg font-medium mb-2">Sin leads activos</p>
+            <p className="text-lg font-medium mb-2">Sin contactos potenciales activos</p>
             <p className="text-muted-foreground">
-              {searchTerm ? 'No se encontraron leads con ese criterio' : 'Los leads llegarán a través de tu perfil público'}
+              {searchTerm ? 'No se encontraron contactos con ese criterio' : 'Los contactos potenciales llegarán a través de tu perfil público'}
             </p>
           </CardContent>
         </Card>
