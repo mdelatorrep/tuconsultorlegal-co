@@ -20,6 +20,7 @@ import DemoAgentsMockup from "./components/demo/DemoAgentsMockup";
 import { SubscriptionSuccessPage } from "./components/SubscriptionSuccessPage";
 import { SubscriptionErrorPage } from "./components/SubscriptionErrorPage";
 import { ClientPortalAccessPage } from "./components/client-portal/ClientPortalAccessPage";
+import GoogleCalendarCallback from "./pages/GoogleCalendarCallback";
 import { useAuthManager } from "@/hooks/useAuthManager";
 import { useLogRocket } from "@/hooks/useLogRocket";
 import { useUserTracking } from "@/hooks/useUserTracking";
