@@ -48,6 +48,7 @@ const CRMDocumentsView: React.FC<CRMDocumentsViewProps> = ({ lawyerData, searchT
   const [cases, setCases] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [viewerDoc, setViewerDoc] = useState<Document | null>(null);
   const [editingDocument, setEditingDocument] = useState<Document | null>(null);
   const [formData, setFormData] = useState({
     client_id: '',
