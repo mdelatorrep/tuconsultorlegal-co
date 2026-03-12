@@ -42,7 +42,7 @@ const CaseTraceabilityModal: React.FC<CaseTraceabilityModalProps> = ({
   const [isAddingActivity, setIsAddingActivity] = useState(false);
   const [activeTab, setActiveTab] = useState('activities');
   const [newActivity, setNewActivity] = useState({
-    activity_type: 'meeting',
+    activity_type: 'auto',
     title: '',
     description: '',
     activity_date: new Date().toISOString().slice(0, 16)
