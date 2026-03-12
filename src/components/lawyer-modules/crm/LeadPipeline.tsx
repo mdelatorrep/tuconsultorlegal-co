@@ -168,7 +168,7 @@ export default function LeadPipeline({ searchTerm, onRefresh, lawyerData }: Prop
 
       toast({
         title: "Estado actualizado",
-        description: "El lead ha sido actualizado",
+        description: "El contacto potencial ha sido actualizado",
       });
 
       fetchLeads();
