@@ -109,7 +109,7 @@ export default function LeadPipeline({ searchTerm, onRefresh, lawyerData }: Prop
       console.error('Error fetching leads:', error);
       toast({
         title: "Error",
-        description: "No se pudieron cargar los leads",
+        description: "No se pudieron cargar los contactos potenciales",
         variant: "destructive"
       });
     } finally {
