@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { 
   Download, 
   Calendar as CalendarIcon, 
@@ -8,11 +9,14 @@ import {
   Copy, 
   Check,
   Loader2,
-  ExternalLink
+  ExternalLink,
+  Unlink,
+  RefreshCw
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
+import { formatDateLocal } from '@/lib/date-utils';
 
 interface CalendarEvent {
   id: string;
@@ -30,9 +34,10 @@ interface CalendarSyncOptionsProps {
   lawyerId: string;
   events: CalendarEvent[];
   onClose?: () => void;
+  onEventsImported?: () => void;
 }
 
-// Generate iCal format content
+// Generate iCal format content (kept as fallback)
 function generateICalContent(events: CalendarEvent[], calendarName: string): string {
   const escapeText = (text: string) => {
     return text
@@ -43,11 +48,11 @@ function generateICalContent(events: CalendarEvent[], calendarName: string): str
   };
 
   const formatDateForICal = (dateString: string, allDay: boolean) => {
-    const date = new Date(dateString);
-    if (allDay) {
-      return format(date, "yyyyMMdd");
+    const parts = dateString.split('-');
+    if (allDay && parts.length === 3) {
+      return parts.join('');
     }
-    // Convert to UTC for iCal
+    const date = new Date(dateString);
     return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
   };
 
@@ -89,10 +94,8 @@ function generateICalContent(events: CalendarEvent[], calendarName: string): str
       lines.push(`LOCATION:${escapeText(event.location)}`);
     }
     
-    // Add event type as category
     lines.push(`CATEGORIES:${event.event_type.toUpperCase()}`);
     
-    // Mark completed events
     if (event.is_completed) {
       lines.push('STATUS:COMPLETED');
     } else {
@@ -107,16 +110,155 @@ function generateICalContent(events: CalendarEvent[], calendarName: string): str
   return lines.join('\r\n');
 }
 
-export function CalendarSyncOptions({ lawyerId, events, onClose }: CalendarSyncOptionsProps) {
+export function CalendarSyncOptions({ lawyerId, events, onClose, onEventsImported }: CalendarSyncOptionsProps) {
   const [isExporting, setIsExporting] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
+  const [googleConnected, setGoogleConnected] = useState(false);
+  const [googleEmail, setGoogleEmail] = useState<string | null>(null);
+  const [lastSynced, setLastSynced] = useState<string | null>(null);
+  const [checkingConnection, setCheckingConnection] = useState(true);
+
+  useEffect(() => {
+    checkGoogleConnection();
+  }, [lawyerId]);
+
+  const checkGoogleConnection = async () => {
+    try {
+      setCheckingConnection(true);
+      const { data, error } = await supabase
+        .from('lawyer_google_tokens')
+        .select('google_email, last_synced_at')
+        .eq('lawyer_id', lawyerId)
+        .maybeSingle();
+
+      if (data) {
+        setGoogleConnected(true);
+        setGoogleEmail(data.google_email);
+        setLastSynced(data.last_synced_at);
+      }
+    } catch (error) {
+      console.error('Error checking Google connection:', error);
+    } finally {
+      setCheckingConnection(false);
+    }
+  };
+
+  const handleConnectGoogle = async () => {
+    try {
+      setIsConnecting(true);
+      
+      const { data, error } = await supabase.functions.invoke('google-calendar-auth', {
+        body: {
+          action: 'get_auth_url',
+          lawyer_id: lawyerId,
+          redirect_uri: window.location.origin + '/google-calendar-callback'
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.auth_url) {
+        // Open Google OAuth in a popup
+        const popup = window.open(data.auth_url, 'google-auth', 'width=600,height=700,left=200,top=100');
+        
+        // Listen for callback
+        const handleMessage = async (event: MessageEvent) => {
+          if (event.data?.type === 'google-calendar-callback' && event.data?.code) {
+            window.removeEventListener('message', handleMessage);
+            popup?.close();
+            
+            // Exchange code for tokens
+            const { data: tokenData, error: tokenError } = await supabase.functions.invoke('google-calendar-auth', {
+              body: {
+                action: 'exchange_code',
+                code: event.data.code,
+                lawyer_id: lawyerId,
+                redirect_uri: window.location.origin + '/google-calendar-callback'
+              }
+            });
+
+            if (tokenError) throw tokenError;
+
+            setGoogleConnected(true);
+            setGoogleEmail(tokenData?.email || null);
+            toast.success('¡Google Calendar conectado exitosamente!');
+            
+            // Auto-sync after connecting
+            handleSyncEvents();
+          }
+        };
+        
+        window.addEventListener('message', handleMessage);
+        
+        // Cleanup after timeout
+        setTimeout(() => {
+          window.removeEventListener('message', handleMessage);
+          setIsConnecting(false);
+        }, 120000);
+      }
+    } catch (error) {
+      console.error('Error connecting Google Calendar:', error);
+      toast.error('Error al conectar con Google Calendar. Verifica que las credenciales estén configuradas.');
+      setIsConnecting(false);
+    }
+  };
+
+  const handleSyncEvents = async () => {
+    try {
+      setIsSyncing(true);
+      
+      const { data, error } = await supabase.functions.invoke('google-calendar-sync', {
+        body: {
+          action: 'sync_all',
+          lawyer_id: lawyerId
+        }
+      });
+
+      if (error) throw error;
+
+      const synced = data?.synced_count || 0;
+      const imported = data?.imported_count || 0;
+      
+      toast.success(`Sincronización completa: ${synced} exportados, ${imported} importados`);
+      setLastSynced(new Date().toISOString());
+      onEventsImported?.();
+    } catch (error) {
+      console.error('Error syncing:', error);
+      toast.error('Error al sincronizar con Google Calendar');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    try {
+      setIsDisconnecting(true);
+      
+      const { error } = await supabase
+        .from('lawyer_google_tokens')
+        .delete()
+        .eq('lawyer_id', lawyerId);
+
+      if (error) throw error;
+
+      setGoogleConnected(false);
+      setGoogleEmail(null);
+      setLastSynced(null);
+      toast.success('Google Calendar desconectado');
+    } catch (error) {
+      console.error('Error disconnecting:', error);
+      toast.error('Error al desconectar');
+    } finally {
+      setIsDisconnecting(false);
+    }
+  };
 
   const handleExportICS = async () => {
     setIsExporting(true);
     try {
-      const icalContent = generateICalContent(events, 'Calendario Legal - Tu Consulta Legal');
-      
-      // Create blob and download
+      const icalContent = generateICalContent(events, 'Calendario Legal - Praxis Hub');
       const blob = new Blob([icalContent], { type: 'text/calendar;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -126,196 +268,128 @@ export function CalendarSyncOptions({ lawyerId, events, onClose }: CalendarSyncO
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      
-      toast.success('Archivo iCal descargado correctamente');
+      toast.success('Archivo iCal descargado');
     } catch (error) {
-      console.error('Error exporting calendar:', error);
-      toast.error('Error al exportar el calendario');
+      console.error('Error exporting:', error);
+      toast.error('Error al exportar');
     } finally {
       setIsExporting(false);
     }
-  };
-
-  const handleExportUpcoming = async () => {
-    setIsExporting(true);
-    try {
-      const upcomingEvents = events.filter(e => new Date(e.start_date) >= new Date());
-      
-      if (upcomingEvents.length === 0) {
-        toast.error('No hay eventos próximos para exportar');
-        return;
-      }
-      
-      const icalContent = generateICalContent(upcomingEvents, 'Calendario Legal - Próximos Eventos');
-      
-      const blob = new Blob([icalContent], { type: 'text/calendar;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `calendario-legal-proximos-${format(new Date(), 'yyyy-MM-dd')}.ics`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      
-      toast.success(`${upcomingEvents.length} eventos exportados correctamente`);
-    } catch (error) {
-      console.error('Error exporting calendar:', error);
-      toast.error('Error al exportar el calendario');
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  const copyGoogleCalendarInstructions = () => {
-    const instructions = `Para importar a Google Calendar:
-1. Descarga el archivo .ics
-2. Ve a calendar.google.com
-3. Haz clic en el ícono de engranaje → Configuración
-4. En el menú lateral, haz clic en "Importar y exportar"
-5. Selecciona "Importar" y elige el archivo .ics descargado
-6. Selecciona el calendario donde quieres importar los eventos
-7. Haz clic en "Importar"`;
-    
-    navigator.clipboard.writeText(instructions);
-    setCopied(true);
-    toast.success('Instrucciones copiadas al portapapeles');
-    setTimeout(() => setCopied(false), 3000);
   };
 
   return (
     <div className="space-y-4">
-      {/* Export Options */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="border-2 hover:border-primary/50 transition-colors cursor-pointer" onClick={handleExportICS}>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Download className="h-5 w-5 text-primary" />
-              Exportar Todos
-            </CardTitle>
-            <CardDescription>
-              Descarga todos tus eventos en formato iCal
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button 
-              className="w-full" 
-              disabled={isExporting || events.length === 0}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleExportICS();
-              }}
-            >
-              {isExporting ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Download className="h-4 w-4 mr-2" />
-              )}
-              Descargar .ics ({events.length} eventos)
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="border-2 hover:border-primary/50 transition-colors cursor-pointer" onClick={handleExportUpcoming}>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <CalendarIcon className="h-5 w-5 text-primary" />
-              Solo Próximos
-            </CardTitle>
-            <CardDescription>
-              Exporta solo los eventos futuros
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button 
-              variant="outline"
-              className="w-full" 
-              disabled={isExporting}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleExportUpcoming();
-              }}
-            >
-              {isExporting ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <CalendarIcon className="h-4 w-4 mr-2" />
-              )}
-              Exportar Próximos
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Instructions */}
-      <Card className="bg-muted/50">
+      {/* Google Calendar Connection */}
+      <Card className={`border-2 ${googleConnected ? 'border-green-500/50 bg-green-50/30 dark:bg-green-950/10' : 'border-primary/30'}`}>
         <CardHeader className="pb-2">
           <CardTitle className="text-lg flex items-center gap-2">
-            <Link className="h-5 w-5" />
-            Cómo importar a tu calendario
+            <img 
+              src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg" 
+              alt="Google Calendar" 
+              className="h-5 w-5"
+            />
+            Google Calendar
+            {googleConnected && (
+              <Badge variant="outline" className="text-green-600 border-green-600 ml-2">
+                <Check className="h-3 w-3 mr-1" />
+                Conectado
+              </Badge>
+            )}
           </CardTitle>
+          <CardDescription>
+            {googleConnected 
+              ? `Sincronizado con ${googleEmail || 'tu cuenta de Google'}`
+              : 'Conecta tu Google Calendar para sincronización automática en tiempo real'
+            }
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Google Calendar */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <img 
-                src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg" 
-                alt="Google Calendar" 
-                className="h-5 w-5"
-              />
-              <h4 className="font-semibold">Google Calendar</h4>
+        <CardContent className="space-y-3">
+          {checkingConnection ? (
+            <div className="flex items-center justify-center p-4">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
-            <ol className="text-sm text-muted-foreground list-decimal list-inside space-y-1">
-              <li>Descarga el archivo .ics</li>
-              <li>Ve a <a href="https://calendar.google.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">calendar.google.com</a></li>
-              <li>Configuración → Importar y exportar → Importar</li>
-              <li>Selecciona el archivo .ics y el calendario destino</li>
-            </ol>
+          ) : googleConnected ? (
+            <>
+              {lastSynced && (
+                <p className="text-xs text-muted-foreground">
+                  Última sincronización: {format(new Date(lastSynced), "d MMM yyyy HH:mm")}
+                </p>
+              )}
+              <div className="flex gap-2">
+                <Button 
+                  className="flex-1" 
+                  onClick={handleSyncEvents}
+                  disabled={isSyncing}
+                >
+                  {isSyncing ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                  )}
+                  Sincronizar Ahora
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={handleDisconnect}
+                  disabled={isDisconnecting}
+                  className="text-destructive hover:text-destructive"
+                >
+                  {isDisconnecting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Unlink className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </>
+          ) : (
             <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={copyGoogleCalendarInstructions}
-              className="text-xs"
+              className="w-full" 
+              onClick={handleConnectGoogle}
+              disabled={isConnecting}
             >
-              {copied ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
-              Copiar instrucciones
+              {isConnecting ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Link className="h-4 w-4 mr-2" />
+              )}
+              Conectar Google Calendar
             </Button>
-          </div>
-
-          {/* Apple Calendar */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="text-lg">🍎</span>
-              <h4 className="font-semibold">Apple Calendar (macOS/iOS)</h4>
-            </div>
-            <ol className="text-sm text-muted-foreground list-decimal list-inside space-y-1">
-              <li>Descarga el archivo .ics</li>
-              <li><strong>macOS:</strong> Haz doble clic en el archivo para abrirlo en Calendario</li>
-              <li><strong>iOS:</strong> Abre el archivo desde Archivos o correo</li>
-              <li>Confirma la importación cuando se te solicite</li>
-            </ol>
-          </div>
-
-          {/* Outlook */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="text-lg">📧</span>
-              <h4 className="font-semibold">Microsoft Outlook</h4>
-            </div>
-            <ol className="text-sm text-muted-foreground list-decimal list-inside space-y-1">
-              <li>Descarga el archivo .ics</li>
-              <li>Abre Outlook y ve a Archivo → Abrir y exportar → Importar/Exportar</li>
-              <li>Selecciona "Importar un archivo iCalendar (.ics)"</li>
-              <li>Elige el archivo descargado</li>
-            </ol>
-          </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Note */}
+      {/* Fallback: Export iCal */}
+      <Card className="border">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2 text-muted-foreground">
+            <Download className="h-4 w-4" />
+            Exportar como archivo iCal (alternativa)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Button 
+            variant="outline"
+            size="sm"
+            className="w-full" 
+            disabled={isExporting || events.length === 0}
+            onClick={handleExportICS}
+          >
+            {isExporting ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4 mr-2" />
+            )}
+            Descargar .ics ({events.length} eventos)
+          </Button>
+          <p className="text-xs text-muted-foreground mt-2">
+            Importa manualmente en Google Calendar, Apple Calendar u Outlook
+          </p>
+        </CardContent>
+      </Card>
+
       <p className="text-xs text-muted-foreground text-center">
-        💡 Para mantener tu calendario sincronizado, exporta e importa regularmente tus eventos.
+        🕐 Todos los eventos se sincronizan en zona horaria Colombia (GMT-5)
       </p>
     </div>
   );
