@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { FileText, Upload, Eye, Loader2, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import DocumentViewer from '@/components/client-portal/DocumentViewer';
+import { DocumentViewer } from '@/components/client-portal/DocumentViewer';
 
 interface DocItem {
   id: string;
