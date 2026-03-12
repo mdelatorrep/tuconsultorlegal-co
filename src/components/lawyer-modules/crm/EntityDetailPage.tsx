@@ -257,7 +257,7 @@ export default function EntityDetailPage({ entity, lawyerData, onBack, onUpdate 
         <Card className="bg-gradient-to-br from-muted to-accent">
           <CardContent className="p-4 text-center">
             <TrendingUp className="h-6 w-6 text-primary mx-auto mb-1" />
-            <p className={`text-2xl font-bold ${healthColor}`}>{entity.health_score || 0}</p>
+            <p className={`text-2xl font-bold ${getHealthColor(entity.health_score)}`}>{entity.health_score || 0}</p>
             <p className="text-xs text-muted-foreground">Salud</p>
           </CardContent>
         </Card>
