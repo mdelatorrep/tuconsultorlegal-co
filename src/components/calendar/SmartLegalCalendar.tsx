@@ -19,13 +19,14 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { format, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, isWeekend, addDays } from 'date-fns';
+import { format, isWeekend } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { DeadlineCalculator } from './DeadlineCalculator';
 import { AutoDocketing } from './AutoDocketing';
 import { NewEventDialog } from './NewEventDialog';
 import { CalendarSyncOptions } from './CalendarSyncOptions';
+import { parseDateLocal, isDateStringMatchingDay } from '@/lib/date-utils';
 
 interface CalendarEvent {
   id: string;
@@ -100,15 +101,15 @@ export function SmartLegalCalendar({ lawyerId }: SmartLegalCalendarProps) {
   };
 
   const getEventsForDate = (date: Date) => {
-    return events.filter(event => isSameDay(new Date(event.start_date), date));
+    return events.filter(event => isDateStringMatchingDay(event.start_date, date));
   };
 
   const getHolidayForDate = (date: Date) => {
-    return holidays.find(h => isSameDay(new Date(h.fecha), date));
+    return holidays.find(h => isDateStringMatchingDay(h.fecha, date));
   };
 
   const isHoliday = (date: Date) => {
-    return holidays.some(h => isSameDay(new Date(h.fecha), date));
+    return holidays.some(h => isDateStringMatchingDay(h.fecha, date));
   };
 
   const isBusinessDay = (date: Date) => {
@@ -146,8 +147,12 @@ export function SmartLegalCalendar({ lawyerId }: SmartLegalCalendarProps) {
   };
 
   const upcomingDeadlines = events
-    .filter(e => !e.is_completed && e.event_type === 'deadline' && new Date(e.start_date) >= new Date())
-    .sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime())
+    .filter(e => {
+      if (e.is_completed || e.event_type !== 'deadline') return false;
+      const eventDate = parseDateLocal(e.start_date);
+      return eventDate >= new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+    })
+    .sort((a, b) => parseDateLocal(a.start_date).getTime() - parseDateLocal(b.start_date).getTime())
     .slice(0, 5);
 
   const selectedDateEvents = getEventsForDate(selectedDate);
@@ -166,17 +171,18 @@ export function SmartLegalCalendar({ lawyerId }: SmartLegalCalendarProps) {
             <DialogTrigger asChild>
               <Button variant="outline">
                 <Share2 className="h-4 w-4 mr-2" />
-                Sincronizar
+                Google Calendar
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Sincronizar con Google/Apple Calendar</DialogTitle>
+                <DialogTitle>Sincronizar con Google Calendar</DialogTitle>
               </DialogHeader>
               <CalendarSyncOptions 
                 lawyerId={lawyerId}
                 events={events}
                 onClose={() => setShowSyncOptions(false)}
+                onEventsImported={loadEvents}
               />
             </DialogContent>
           </Dialog>
@@ -348,23 +354,26 @@ export function SmartLegalCalendar({ lawyerId }: SmartLegalCalendarProps) {
                 </p>
               ) : (
                 <div className="space-y-3">
-                    {upcomingDeadlines.map(event => (
-                      <div 
-                        key={event.id}
-                        className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer"
-                        onClick={() => setSelectedDate(new Date(event.start_date))}
-                      >
-                        <div className="p-2 rounded-lg bg-yellow-500/10 text-yellow-600">
-                        <Clock className="h-4 w-4" />
-                      </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">{event.title}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {format(new Date(event.start_date), "d 'de' MMM", { locale: es })}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                    {upcomingDeadlines.map(event => {
+                      const eventDate = parseDateLocal(event.start_date);
+                      return (
+                        <div 
+                          key={event.id}
+                          className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer"
+                          onClick={() => setSelectedDate(eventDate)}
+                        >
+                          <div className="p-2 rounded-lg bg-yellow-500/10 text-yellow-600">
+                            <Clock className="h-4 w-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm truncate">{event.title}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {format(eventDate, "d 'de' MMM", { locale: es })}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
                 </div>
               )}
             </CardContent>
@@ -380,7 +389,7 @@ export function SmartLegalCalendar({ lawyerId }: SmartLegalCalendarProps) {
                 <div className="text-center p-3 bg-muted/50 rounded-lg">
                   <p className="text-2xl font-bold">
                     {events.filter(e => {
-                      const eventDate = new Date(e.start_date);
+                      const eventDate = parseDateLocal(e.start_date);
                       const now = new Date();
                       return eventDate.getMonth() === now.getMonth() &&
                              eventDate.getFullYear() === now.getFullYear();
@@ -403,7 +412,7 @@ export function SmartLegalCalendar({ lawyerId }: SmartLegalCalendarProps) {
                 <div className="text-center p-3 bg-muted/50 rounded-lg">
                   <p className="text-2xl font-bold text-red-500">
                     {holidays.filter(h => {
-                      const hDate = new Date(h.fecha);
+                      const hDate = parseDateLocal(h.fecha);
                       const now = new Date();
                       return hDate.getMonth() === now.getMonth() && 
                              hDate.getFullYear() === now.getFullYear();
