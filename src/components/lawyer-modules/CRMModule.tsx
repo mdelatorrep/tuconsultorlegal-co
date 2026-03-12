@@ -187,7 +187,7 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
           { icon: Users, value: stats.clients, label: 'Clientes' },
           { icon: Briefcase, value: stats.cases, label: 'Casos' },
           { icon: Clock, value: stats.tasks, label: 'Tareas' },
-          { icon: Zap, value: stats.leads, label: 'Leads' },
+          { icon: Zap, value: stats.leads, label: 'Contactos Pot.' },
         ].map(({ icon: Icon, value, label }) => (
           <Card key={label} className="p-3">
             <div className="flex items-center gap-3">
