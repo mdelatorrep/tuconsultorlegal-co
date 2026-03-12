@@ -189,7 +189,7 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
         {/* Tab 3: Clientes */}
         <TabsContent value="clientes">
           <div className="space-y-3">
-            <div className="flex items-center gap-2">
+           <div className="flex items-center gap-2 flex-wrap">
               <Button
                 size="sm"
                 variant={clientsSubTab === 'clients' ? 'default' : 'outline'}
@@ -211,6 +211,16 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
               >
                 Contactos Potenciales
               </Button>
+              <div className="ml-auto">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsPortalManagerOpen(true)}
+                >
+                  <LinkIcon className="h-3.5 w-3.5 mr-1" />
+                  Accesos Portal
+                </Button>
+              </div>
             </div>
             {clientsSubTab === 'clients' && <CRMClientsView {...commonProps} />}
             {clientsSubTab === 'entities' && <CRMEntitiesView {...commonProps} />}
