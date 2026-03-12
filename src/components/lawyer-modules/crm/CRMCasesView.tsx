@@ -561,7 +561,7 @@ const CRMCasesView: React.FC<CRMCasesViewProps> = ({ lawyerData, searchTerm, onR
                 Nuevo Proceso
               </Button>
             </DialogTrigger>
-            <CaseFormDialog />
+            {caseFormContent}
           </Dialog>
         </div>
       </div>
