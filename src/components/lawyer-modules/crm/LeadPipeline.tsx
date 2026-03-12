@@ -366,10 +366,10 @@ export default function LeadPipeline({ searchTerm, onRefresh, lawyerData }: Prop
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-yellow-700">
               <TrendingUp className="h-5 w-5" />
-              Leads Tibios - Nutrir
+              En Seguimiento
             </CardTitle>
             <CardDescription>
-              Potencial medio. Requieren seguimiento y contenido de valor.
+              Requieren seguimiento y acercamiento personalizado.
             </CardDescription>
           </CardHeader>
           <CardContent>
