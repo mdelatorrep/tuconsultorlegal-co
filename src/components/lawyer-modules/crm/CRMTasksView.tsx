@@ -391,7 +391,7 @@ const CRMTasksView: React.FC<CRMTasksViewProps> = ({ lawyerData, searchTerm, onR
                     <SelectValue placeholder="Selecciona un caso" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Sin caso específico</SelectItem>
+                    <SelectItem value="none">Sin caso específico</SelectItem>
                     {filteredCasesForClient.map((case_) => (
                       <SelectItem key={case_.id} value={case_.id}>
                         {case_.title}
