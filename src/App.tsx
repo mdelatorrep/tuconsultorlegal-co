@@ -72,6 +72,7 @@ const AppContent = () => {
           <Route path="/subscription-error" element={<SubscriptionErrorPage />} />
           <Route path="/portal/:token" element={<ClientPortalAccessPage />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/google-calendar-callback" element={<GoogleCalendarCallback />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
