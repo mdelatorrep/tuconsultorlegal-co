@@ -401,10 +401,10 @@ export default function LeadPipeline({ searchTerm, onRefresh, lawyerData }: Prop
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-gray-600">
               <Clock className="h-5 w-5" />
-              Leads Fríos - Largo Plazo
+              Por Evaluar - Largo Plazo
             </CardTitle>
             <CardDescription>
-              Bajo interés actual. Mantener en ciclo de nurture automático.
+              Bajo interés actual. Mantener en seguimiento periódico.
             </CardDescription>
           </CardHeader>
           <CardContent>
