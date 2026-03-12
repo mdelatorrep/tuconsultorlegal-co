@@ -142,9 +142,9 @@ export default function CasePipelineView({ lawyerData, onCaseClick }: Props) {
       {/* Kanban Board */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2">
             <Briefcase className="h-5 w-5" />
-            Pipeline de Casos
+            Pipeline de Procesos
           </CardTitle>
         </CardHeader>
         <CardContent>
