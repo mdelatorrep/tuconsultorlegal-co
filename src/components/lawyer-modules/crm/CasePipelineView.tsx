@@ -6,15 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
 import { 
-  Briefcase, 
-  DollarSign, 
-  User, 
-  Calendar,
-  MoreHorizontal,
-  Plus,
-  TrendingUp,
-  AlertTriangle,
-  Loader2
+  Briefcase, DollarSign, User, Calendar, MoreHorizontal,
+  Plus, TrendingUp, AlertTriangle, Loader2
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -38,6 +31,11 @@ interface Case {
   next_action_date: string | null;
   status: string;
   case_type: string;
+  demandante?: string;
+  demandado?: string;
+  clase_proceso?: string;
+  juzgado?: string;
+  asignado_a?: string;
 }
 
 const PIPELINE_STAGES = [
@@ -54,52 +52,41 @@ export default function CasePipelineView({ lawyerData, onCaseClick }: Props) {
   const [cases, setCases] = useState<Case[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchCases();
-  }, [lawyerData.id]);
+  useEffect(() => { fetchCases(); }, [lawyerData.id]);
 
   const fetchCases = async () => {
     try {
-      // Fetch cases with client info
-      const { data: casesData, error: casesError } = await supabase
+      const { data: casesData, error } = await supabase
         .from('crm_cases')
         .select(`
           id, title, case_number, client_id, pipeline_stage, 
           expected_value, probability, health_score, priority, 
-          next_action_date, status, case_type
+          next_action_date, status, case_type, demandante, demandado,
+          clase_proceso, juzgado, asignado_a
         `)
         .eq('lawyer_id', lawyerData.id)
         .eq('status', 'active')
         .order('expected_value', { ascending: false });
 
-      if (casesError) throw casesError;
+      if (error) throw error;
 
-      // Fetch client names
       const clientIds = [...new Set((casesData || []).map(c => c.client_id))];
       const { data: clientsData } = await supabase
-        .from('crm_clients')
-        .select('id, name')
-        .in('id', clientIds);
+        .from('crm_clients').select('id, name').in('id', clientIds);
 
       const clientMap = new Map(clientsData?.map(c => [c.id, c.name]) || []);
 
-      const enrichedCases = (casesData || []).map(c => ({
+      setCases((casesData || []).map(c => ({
         ...c,
         pipeline_stage: c.pipeline_stage || 'inicial',
         expected_value: Number(c.expected_value) || 0,
         probability: c.probability || 50,
         health_score: c.health_score || 100,
         client_name: clientMap.get(c.client_id) || 'Cliente'
-      }));
-
-      setCases(enrichedCases);
+      })));
     } catch (error) {
       console.error('Error fetching pipeline cases:', error);
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar los casos",
-        variant: "destructive"
-      });
+      toast({ title: "Error", description: "No se pudieron cargar los casos", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -107,44 +94,24 @@ export default function CasePipelineView({ lawyerData, onCaseClick }: Props) {
 
   const handleDragEnd = async (result: DropResult) => {
     if (!result.destination) return;
-
     const { draggableId, destination } = result;
     const newStage = destination.droppableId;
 
-    // Optimistic update
-    setCases(prev => prev.map(c => 
-      c.id === draggableId ? { ...c, pipeline_stage: newStage } : c
-    ));
+    setCases(prev => prev.map(c => c.id === draggableId ? { ...c, pipeline_stage: newStage } : c));
 
     try {
-      const { error } = await supabase
-        .from('crm_cases')
-        .update({ pipeline_stage: newStage })
-        .eq('id', draggableId);
-
+      const { error } = await supabase.from('crm_cases').update({ pipeline_stage: newStage }).eq('id', draggableId);
       if (error) throw error;
-
-      toast({
-        title: "Caso actualizado",
-        description: `Movido a ${PIPELINE_STAGES.find(s => s.id === newStage)?.label}`,
-      });
+      toast({ title: "Caso actualizado", description: `Movido a ${PIPELINE_STAGES.find(s => s.id === newStage)?.label}` });
     } catch (error) {
       console.error('Error updating case stage:', error);
-      fetchCases(); // Revert on error
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar el caso",
-        variant: "destructive"
-      });
+      fetchCases();
+      toast({ title: "Error", description: "No se pudo actualizar el caso", variant: "destructive" });
     }
   };
 
-  const getCasesByStage = (stageId: string) => 
-    cases.filter(c => c.pipeline_stage === stageId);
-
-  const getStageValue = (stageId: string) => 
-    getCasesByStage(stageId).reduce((sum, c) => sum + c.expected_value, 0);
-
+  const getCasesByStage = (stageId: string) => cases.filter(c => c.pipeline_stage === stageId);
+  const getStageValue = (stageId: string) => getCasesByStage(stageId).reduce((sum, c) => sum + c.expected_value, 0);
   const formatCurrency = (value: number) => {
     if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
     if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`;
@@ -166,63 +133,10 @@ export default function CasePipelineView({ lawyerData, onCaseClick }: Props) {
     <div className="space-y-6">
       {/* Pipeline Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-emerald-100 rounded-lg">
-                <DollarSign className="h-6 w-6 text-emerald-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-emerald-600">{formatCurrency(totalPipelineValue)}</p>
-                <p className="text-xs text-muted-foreground">Valor Total Pipeline</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <TrendingUp className="h-6 w-6 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-blue-600">{formatCurrency(weightedValue)}</p>
-                <p className="text-xs text-muted-foreground">Valor Ponderado</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Briefcase className="h-6 w-6 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-purple-600">{cases.length}</p>
-                <p className="text-xs text-muted-foreground">Casos Activos</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <AlertTriangle className="h-6 w-6 text-orange-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-orange-600">
-                  {cases.filter(c => c.health_score < 50).length}
-                </p>
-                <p className="text-xs text-muted-foreground">Casos en Riesgo</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><div className="p-2 bg-emerald-100 rounded-lg"><DollarSign className="h-6 w-6 text-emerald-600" /></div><div><p className="text-2xl font-bold text-emerald-600">{formatCurrency(totalPipelineValue)}</p><p className="text-xs text-muted-foreground">Valor Total Pipeline</p></div></div></CardContent></Card>
+        <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><div className="p-2 bg-blue-100 rounded-lg"><TrendingUp className="h-6 w-6 text-blue-600" /></div><div><p className="text-2xl font-bold text-blue-600">{formatCurrency(weightedValue)}</p><p className="text-xs text-muted-foreground">Valor Ponderado</p></div></div></CardContent></Card>
+        <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><div className="p-2 bg-purple-100 rounded-lg"><Briefcase className="h-6 w-6 text-purple-600" /></div><div><p className="text-2xl font-bold text-purple-600">{cases.length}</p><p className="text-xs text-muted-foreground">Casos Activos</p></div></div></CardContent></Card>
+        <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><div className="p-2 bg-orange-100 rounded-lg"><AlertTriangle className="h-6 w-6 text-orange-600" /></div><div><p className="text-2xl font-bold text-orange-600">{cases.filter(c => c.health_score < 50).length}</p><p className="text-xs text-muted-foreground">Casos en Riesgo</p></div></div></CardContent></Card>
       </div>
 
       {/* Kanban Board */}
@@ -239,7 +153,6 @@ export default function CasePipelineView({ lawyerData, onCaseClick }: Props) {
               {PIPELINE_STAGES.map((stage) => (
                 <div key={stage.id} className="flex-shrink-0 w-72">
                   <div className={`rounded-lg border-2 ${stage.color} p-3`}>
-                    {/* Stage Header */}
                     <div className="flex items-center justify-between mb-3">
                       <div>
                         <h3 className="font-semibold text-sm">{stage.label}</h3>
@@ -247,12 +160,8 @@ export default function CasePipelineView({ lawyerData, onCaseClick }: Props) {
                           {getCasesByStage(stage.id).length} casos • {formatCurrency(getStageValue(stage.id))}
                         </p>
                       </div>
-                      <Button variant="ghost" size="icon" className="h-7 w-7">
-                        <Plus className="h-4 w-4" />
-                      </Button>
                     </div>
 
-                    {/* Droppable Area */}
                     <Droppable droppableId={stage.id}>
                       {(provided, snapshot) => (
                         <div
@@ -263,11 +172,7 @@ export default function CasePipelineView({ lawyerData, onCaseClick }: Props) {
                           }`}
                         >
                           {getCasesByStage(stage.id).map((caseItem, index) => (
-                            <Draggable 
-                              key={caseItem.id} 
-                              draggableId={caseItem.id} 
-                              index={index}
-                            >
+                            <Draggable key={caseItem.id} draggableId={caseItem.id} index={index}>
                               {(provided, snapshot) => (
                                 <div
                                   ref={provided.innerRef}
@@ -278,18 +183,21 @@ export default function CasePipelineView({ lawyerData, onCaseClick }: Props) {
                                     snapshot.isDragging ? 'shadow-lg ring-2 ring-primary' : ''
                                   } ${caseItem.health_score < 50 ? 'border-orange-300' : ''}`}
                                 >
-                                  {/* Case Card Content */}
                                   <div className="space-y-2">
                                     <div className="flex items-start justify-between">
                                       <div className="flex-1 min-w-0">
-                                        <p className="font-medium text-sm truncate">{caseItem.title}</p>
+                                        <p className="font-medium text-sm truncate">
+                                          {caseItem.clase_proceso || caseItem.case_type}
+                                        </p>
+                                        {(caseItem.demandante || caseItem.demandado) && (
+                                          <p className="text-xs text-muted-foreground truncate">
+                                            {caseItem.demandante || '?'} vs {caseItem.demandado || '?'}
+                                          </p>
+                                        )}
                                         {caseItem.case_number && (
-                                          <p className="text-xs text-muted-foreground">#{caseItem.case_number}</p>
+                                          <p className="text-[10px] font-mono text-muted-foreground">{caseItem.case_number}</p>
                                         )}
                                       </div>
-                                      <Button variant="ghost" size="icon" className="h-6 w-6 -mr-1 -mt-1">
-                                        <MoreHorizontal className="h-3 w-3" />
-                                      </Button>
                                     </div>
 
                                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -297,16 +205,23 @@ export default function CasePipelineView({ lawyerData, onCaseClick }: Props) {
                                       <span className="truncate">{caseItem.client_name}</span>
                                     </div>
 
+                                    {caseItem.asignado_a && (
+                                      <p className="text-[10px] text-muted-foreground">
+                                        Asignado: {caseItem.asignado_a}
+                                      </p>
+                                    )}
+
                                     <div className="flex items-center justify-between">
                                       <Badge variant="outline" className="text-xs">
-                                        {caseItem.case_type}
+                                        {caseItem.clase_proceso || caseItem.case_type}
                                       </Badge>
-                                      <span className="text-xs font-semibold text-emerald-600">
-                                        {formatCurrency(caseItem.expected_value)}
-                                      </span>
+                                      {caseItem.expected_value > 0 && (
+                                        <span className="text-xs font-semibold text-emerald-600">
+                                          {formatCurrency(caseItem.expected_value)}
+                                        </span>
+                                      )}
                                     </div>
 
-                                    {/* Health & Probability Indicator */}
                                     <div className="flex items-center gap-2">
                                       <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                                         <div 
@@ -317,9 +232,7 @@ export default function CasePipelineView({ lawyerData, onCaseClick }: Props) {
                                           style={{ width: `${caseItem.health_score}%` }}
                                         />
                                       </div>
-                                      <span className="text-xs text-muted-foreground">
-                                        {caseItem.probability}%
-                                      </span>
+                                      <span className="text-xs text-muted-foreground">{caseItem.probability}%</span>
                                     </div>
 
                                     {caseItem.next_action_date && (
