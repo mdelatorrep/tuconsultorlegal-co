@@ -128,15 +128,15 @@ export function CalendarSyncOptions({ lawyerId, events, onClose, onEventsImporte
     try {
       setCheckingConnection(true);
       const { data, error } = await supabase
-        .from('lawyer_google_tokens')
+        .from('lawyer_google_tokens' as any)
         .select('google_email, last_synced_at')
         .eq('lawyer_id', lawyerId)
         .maybeSingle();
 
       if (data) {
         setGoogleConnected(true);
-        setGoogleEmail(data.google_email);
-        setLastSynced(data.last_synced_at);
+        setGoogleEmail((data as any).google_email);
+        setLastSynced((data as any).last_synced_at);
       }
     } catch (error) {
       console.error('Error checking Google connection:', error);
