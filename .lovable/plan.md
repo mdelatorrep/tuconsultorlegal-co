@@ -1,49 +1,76 @@
 
 
-# Plan: CRM Client Management & Client Portal Activity Visibility
+# Soporte Multi-Formato via Code Interpreter de OpenAI
 
-## Problem
+## Descubrimiento Clave
 
-1. **Client detail view is too basic** -- clicking a client in CRM only shows contact info. No way to see their cases, documents, or appointments.
-2. **Client portal activity is invisible to lawyers** -- when a client uploads a document (`client_shared_documents` table), schedules an appointment (`client_appointments` table), or views a shared document, the lawyer has zero visibility of this in the CRM.
-3. **Two separate document systems** -- CRM uses `crm_documents`, portal uses `client_shared_documents`. They never cross-reference.
+La herramienta **Code Interpreter** de OpenAI soporta nativamente estos formatos relevantes para documentos legales:
 
-## Solution
+| Formato | MIME type |
+|---------|-----------|
+| .pdf | application/pdf |
+| .doc | application/msword |
+| .docx | application/vnd.openxmlformats-officedocument.wordprocessingml.document |
+| .txt | text/plain |
+| .xlsx | application/vnd.openxmlformats-officedocument.spreadsheetml.sheet |
+| .pptx | application/vnd.openxmlformats-officedocument.presentationml.presentation |
 
-### 1. Enhanced Client Detail Panel
-Replace the simple Dialog with a full detail view that includes tabs:
-- **Resumen**: contact info + stats (current content, improved)
-- **Casos**: list of `crm_cases` for this client, clickable
-- **Documentos**: merged view of `crm_documents` + `client_shared_documents` for this client
-- **Actividad del Portal**: feed showing client portal actions (docs uploaded, docs viewed, appointments scheduled)
+Ademas, los archivos enviados en el `input` del modelo se suben automaticamente al container de Code Interpreter. No se requiere subida manual previa.
 
-### 2. Client Portal Activity Feed (new component)
-A component `ClientPortalActivity` that queries:
-- `client_shared_documents` where `is_from_client = true` (client uploads)
-- `client_shared_documents` where `viewed_at IS NOT NULL` (client viewed lawyer docs)
-- `client_appointments` for this client
-- Merges into a chronological feed with icons and timestamps
+## Estrategia de Procesamiento
 
-### 3. Shared Documents visibility in CRM
-In the Documents section of client detail, show both:
-- Lawyer's `crm_documents` for this client
-- Portal `client_shared_documents` (with badge indicating source: "Portal" vs "CRM")
-- Allow lawyer to share documents TO the client (insert into `client_shared_documents` with `is_from_client = false`)
+```text
+PDF --> input_file (procesamiento nativo, mas rapido, sin container)
+DOCX/DOC/TXT/XLSX --> code_interpreter tool (OpenAI extrae el contenido via Python)
+```
 
-## Files to modify/create
+- Para **PDF**: seguir usando `input_file` como esta ahora (funciona perfecto)
+- Para **DOCX/DOC y otros**: agregar `code_interpreter` como tool en la request, enviar el archivo como `input_file` en el input, y OpenAI usara Python para leer el contenido y analizarlo
 
-| File | Changes |
-|---|---|
-| `src/components/lawyer-modules/crm/ClientDetailPanel.tsx` | **New** -- full client detail with tabs (Resumen, Casos, Documentos, Actividad Portal) |
-| `src/components/lawyer-modules/crm/ClientPortalActivity.tsx` | **New** -- activity feed component querying portal tables |
-| `src/components/lawyer-modules/crm/ClientDocumentsTab.tsx` | **New** -- merged document view (CRM + portal docs), share-to-client action |
-| `src/components/lawyer-modules/crm/ClientCasesTab.tsx` | **New** -- cases list for a specific client |
-| `src/components/lawyer-modules/crm/CRMClientsView.tsx` | Replace simple Dialog detail with `ClientDetailPanel`, pass lawyerId |
+## Cambios a Realizar
 
-## Key details
+### 1. Edge Function (`legal-document-analysis/index.ts`)
 
-- No DB changes needed -- all tables (`client_shared_documents`, `client_appointments`, `crm_cases`, `crm_documents`) already exist with `client_id` and `lawyer_id` columns
-- The "Share document to client" action inserts into `client_shared_documents` with `is_from_client = false`
-- Activity feed sorts all events by date descending, showing upload/view/appointment events with distinct icons
-- Client detail opens as a larger Dialog (or replaces current view) to accommodate tabs
+- Eliminar la funcion `extractTextFromDocx` (regex fragil, ya no se necesita)
+- Para archivos no-PDF (DOCX, DOC, TXT, XLSX): enviar el archivo como `input_file` en el input + agregar `tools: [{ type: "code_interpreter", container: { type: "auto" } }]` en la request
+- Mantener la ruta actual de PDF sin cambios (ya funciona con `input_file` directo)
+- Mantener la ruta de texto plano sin cambios
+
+### 2. Frontend (`AnalyzeModule.tsx`)
+
+- Restaurar el `accept` del input de archivos para incluir `.pdf,.doc,.docx,.txt`
+- Restaurar la validacion para aceptar estos tipos de archivo
+- Mantener la codificacion base64 via `FileReader.readAsDataURL()`
+
+### 3. Formato de la Request con Code Interpreter
+
+```text
+{
+  model: "gpt-4o",
+  tools: [{ type: "code_interpreter", container: { type: "auto" } }],
+  input: [
+    {
+      role: "user",
+      content: [
+        { type: "input_file", filename: "contrato.docx", file_data: "data:application/...;base64,..." },
+        { type: "input_text", text: "Analiza este documento legal..." }
+      ]
+    }
+  ],
+  instructions: "...",
+  text: { format: { type: "json_object" } }
+}
+```
+
+## Archivos a Modificar
+
+1. `supabase/functions/legal-document-analysis/index.ts` - Agregar ruta con code_interpreter para DOCX/DOC, eliminar extractTextFromDocx
+2. `src/components/lawyer-modules/AnalyzeModule.tsx` - Restaurar aceptacion de PDF, DOC, DOCX, TXT
+
+## Resultado Esperado
+
+- Procesamiento confiable de PDF, DOC, DOCX y TXT sin extraccion manual
+- OpenAI maneja toda la complejidad de parseo via Code Interpreter (Python sandbox)
+- El regex fragil de DOCX se elimina completamente
+- Codigo mas simple: ~200 lineas en el edge function
 
