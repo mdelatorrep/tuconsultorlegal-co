@@ -15,6 +15,7 @@ import CRMDocumentsView from "./crm/CRMDocumentsView";
 import CRMEntitiesView from "./crm/CRMEntitiesView";
 import CasePipelineView from "./crm/CasePipelineView";
 import LeadPipeline from "./crm/LeadPipeline";
+import CRMOnboarding from "./crm/CRMOnboarding";
 
 interface CRMModuleProps {
   user: any;
@@ -126,11 +127,11 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
   const sections: SectionConfig[] = [
     { id: 'pipeline', label: 'Pipeline de Casos', icon: Kanban, count: stats.cases, defaultOpen: true },
     { id: 'clients', label: 'Clientes', icon: Users, count: stats.clients, defaultOpen: true },
-    { id: 'leads', label: 'Leads', icon: Zap, count: stats.leads, defaultOpen: false },
+    { id: 'leads', label: 'Contactos Potenciales', icon: Zap, count: stats.leads, defaultOpen: false },
     { id: 'tasks', label: 'Tareas Pendientes', icon: Clock, count: stats.tasks, defaultOpen: true },
     { id: 'cases', label: 'Casos', icon: Briefcase, count: stats.cases, defaultOpen: false },
     { id: 'documents', label: 'Documentos', icon: FileText, count: 0, defaultOpen: false },
-    { id: 'entities', label: 'Entidades B2B', icon: Building2, count: 0, defaultOpen: false },
+    { id: 'entities', label: 'Empresas y Entidades', icon: Building2, count: 0, defaultOpen: false },
   ];
 
   const renderSectionContent = (sectionId: string) => {
@@ -154,8 +155,22 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
     }
   };
 
+  const isEmptyCRM = stats.clients === 0 && stats.cases === 0 && stats.leads === 0;
+
+  const handleOpenSection = (sectionId: string) => {
+    setOpenSections(prev => ({ ...prev, [sectionId]: true }));
+  };
+
   return (
     <div className="space-y-4">
+      {/* Onboarding for first-time users */}
+      {isEmptyCRM && (
+        <CRMOnboarding
+          onNavigateToProfile={() => onViewChange('profile')}
+          onOpenClients={() => handleOpenSection('clients')}
+          onOpenCases={() => handleOpenSection('cases')}
+        />
+      )}
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex-1 max-w-md">
@@ -187,7 +202,7 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
           { icon: Users, value: stats.clients, label: 'Clientes' },
           { icon: Briefcase, value: stats.cases, label: 'Casos' },
           { icon: Clock, value: stats.tasks, label: 'Tareas' },
-          { icon: Zap, value: stats.leads, label: 'Leads' },
+          { icon: Zap, value: stats.leads, label: 'Contactos Pot.' },
         ].map(({ icon: Icon, value, label }) => (
           <Card key={label} className="p-3">
             <div className="flex items-center gap-3">

@@ -83,12 +83,6 @@ const ENTITY_TYPES: Record<string, { label: string; color: string }> = {
   other: { label: "Otro", color: "bg-muted text-foreground" }
 };
 
-const CONTRACT_TYPES: Record<string, string> = {
-  retainer: "Retainer (Iguala)",
-  hourly: "Por Hora",
-  fixed: "Precio Fijo",
-  hybrid: "Híbrido"
-};
 
 export default function EntityDetailPage({ entity, lawyerData, onBack, onUpdate }: EntityDetailPageProps) {
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -257,7 +251,7 @@ export default function EntityDetailPage({ entity, lawyerData, onBack, onUpdate 
         <Card className="bg-gradient-to-br from-muted to-accent">
           <CardContent className="p-4 text-center">
             <TrendingUp className="h-6 w-6 text-primary mx-auto mb-1" />
-            <p className={`text-2xl font-bold ${healthColor}`}>{entity.health_score || 0}</p>
+            <p className={`text-2xl font-bold ${getHealthColor(entity.health_score)}`}>{entity.health_score || 0}</p>
             <p className="text-xs text-muted-foreground">Salud</p>
           </CardContent>
         </Card>
@@ -280,7 +274,7 @@ export default function EntityDetailPage({ entity, lawyerData, onBack, onUpdate 
           <TabsTrigger value="cases">
             Casos ({cases.length})
           </TabsTrigger>
-          <TabsTrigger value="contract">Contrato</TabsTrigger>
+          
         </TabsList>
 
         {/* Overview Tab */}
@@ -486,63 +480,7 @@ export default function EntityDetailPage({ entity, lawyerData, onBack, onUpdate 
           )}
         </TabsContent>
 
-        {/* Contract Tab */}
-        <TabsContent value="contract">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">Contrato Marco</CardTitle>
-                {contractStatus && (
-                  <Badge className={contractStatus.color}>{contractStatus.label}</Badge>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {entity.contract_type ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Tipo de Contrato</p>
-                      <p className="font-medium">{CONTRACT_TYPES[entity.contract_type] || entity.contract_type}</p>
-                    </div>
-                    {entity.contract_value && (
-                      <div>
-                        <p className="text-sm text-muted-foreground">Valor del Contrato</p>
-                        <p className="font-medium text-lg text-emerald-600">
-                          {formatCurrency(entity.contract_value)}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                  <div className="space-y-4">
-                    {entity.contract_start && (
-                      <div>
-                        <p className="text-sm text-muted-foreground">Fecha de Inicio</p>
-                        <p className="font-medium">
-                          {format(new Date(entity.contract_start), "dd 'de' MMMM, yyyy", { locale: es })}
-                        </p>
-                      </div>
-                    )}
-                    {entity.contract_end && (
-                      <div>
-                        <p className="text-sm text-muted-foreground">Fecha de Fin</p>
-                        <p className="font-medium">
-                          {format(new Date(entity.contract_end), "dd 'de' MMMM, yyyy", { locale: es })}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p>No hay contrato marco definido</p>
-                  <Button size="sm" variant="link">Agregar contrato</Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+        
       </Tabs>
 
       {/* Add Contact Dialog */}

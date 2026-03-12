@@ -413,28 +413,6 @@ const CRMCasesView: React.FC<CRMCasesViewProps> = ({ lawyerData, searchTerm, onR
                 />
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="billing_rate">Tarifa por Hora (COP)</Label>
-                <Input
-                  id="billing_rate"
-                  type="number"
-                  value={formData.billing_rate}
-                  onChange={(e) => setFormData({ ...formData, billing_rate: e.target.value })}
-                  placeholder="100000"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="estimated_hours">Horas Estimadas</Label>
-                <Input
-                  id="estimated_hours"
-                  type="number"
-                  value={formData.estimated_hours}
-                  onChange={(e) => setFormData({ ...formData, estimated_hours: e.target.value })}
-                  placeholder="40"
-                />
-              </div>
-              
               <div className="col-span-2 space-y-2">
                 <Label htmlFor="description">Descripción</Label>
                 <Textarea
@@ -497,19 +475,7 @@ const CRMCasesView: React.FC<CRMCasesViewProps> = ({ lawyerData, searchTerm, onR
                       <p><strong>Tipo:</strong> {case_.case_type}</p>
                       {case_.case_number && (
                         <p><strong>Número:</strong> {case_.case_number}</p>
-                      )}
-                      {case_.billing_rate && (
-                        <div className="flex items-center gap-2">
-                          <DollarSign className="h-3 w-3" />
-                          <span>${case_.billing_rate.toLocaleString()}/hora</span>
-                        </div>
-                      )}
-                      {case_.estimated_hours && (
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-3 w-3" />
-                          <span>{case_.estimated_hours}h estimadas | {case_.actual_hours}h trabajadas</span>
-                        </div>
-                      )}
+                       )}
                       {case_.start_date && (
                         <div className="flex items-center gap-2">
                           <Calendar className="h-3 w-3" />

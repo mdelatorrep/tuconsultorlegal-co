@@ -51,12 +51,12 @@ interface Lead {
 }
 
 const NURTURE_STAGES = [
-  { id: 'new', label: 'Nuevo', description: 'Sin contactar' },
-  { id: 'first_contact', label: 'Primer Contacto', description: 'Email/llamada inicial' },
-  { id: 'follow_up', label: 'Seguimiento', description: 'En proceso de nurture' },
+  { id: 'new', label: 'Nuevo Contacto', description: 'Sin contactar' },
+  { id: 'first_contact', label: 'Contactado', description: 'Primer acercamiento realizado' },
+  { id: 'follow_up', label: 'En Evaluación', description: 'Evaluando necesidades jurídicas' },
   { id: 'meeting_scheduled', label: 'Reunión Agendada', description: 'Cita programada' },
   { id: 'proposal_sent', label: 'Propuesta Enviada', description: 'Esperando respuesta' },
-  { id: 'negotiation', label: 'Negociación', description: 'Definiendo términos' }
+  { id: 'negotiation', label: 'En Negociación', description: 'Definiendo términos del servicio' }
 ];
 
 const getScoreColor = (score: number) => {
@@ -66,9 +66,9 @@ const getScoreColor = (score: number) => {
 };
 
 const getScoreLabel = (score: number) => {
-  if (score >= 70) return 'Caliente';
-  if (score >= 40) return 'Tibio';
-  return 'Frío';
+  if (score >= 70) return 'Alta probabilidad';
+  if (score >= 40) return 'En seguimiento';
+  return 'Por evaluar';
 };
 
 export default function LeadPipeline({ searchTerm, onRefresh, lawyerData }: Props) {
@@ -109,7 +109,7 @@ export default function LeadPipeline({ searchTerm, onRefresh, lawyerData }: Prop
       console.error('Error fetching leads:', error);
       toast({
         title: "Error",
-        description: "No se pudieron cargar los leads",
+        description: "No se pudieron cargar los contactos potenciales",
         variant: "destructive"
       });
     } finally {
@@ -168,7 +168,7 @@ export default function LeadPipeline({ searchTerm, onRefresh, lawyerData }: Prop
 
       toast({
         title: "Estado actualizado",
-        description: "El lead ha sido actualizado",
+        description: "El contacto potencial ha sido actualizado",
       });
 
       fetchLeads();
@@ -226,7 +226,7 @@ export default function LeadPipeline({ searchTerm, onRefresh, lawyerData }: Prop
       await updateLeadStatus(selectedLead.id, 'converted');
 
       toast({
-        title: "¡Lead convertido!",
+        title: "¡Contacto convertido!",
         description: "Se creó el cliente y el caso exitosamente",
       });
 
@@ -237,7 +237,7 @@ export default function LeadPipeline({ searchTerm, onRefresh, lawyerData }: Prop
       console.error('Error converting lead:', error);
       toast({
         title: "Error",
-        description: "No se pudo convertir el lead",
+        description: "No se pudo convertir el contacto",
         variant: "destructive"
       });
     } finally {
@@ -290,7 +290,7 @@ export default function LeadPipeline({ searchTerm, onRefresh, lawyerData }: Prop
               </div>
               <div>
                 <p className="text-2xl font-bold text-green-600">{hotLeads.length}</p>
-                <p className="text-xs text-muted-foreground">Leads Calientes</p>
+                <p className="text-xs text-muted-foreground">Alta Probabilidad</p>
               </div>
             </div>
           </CardContent>
@@ -304,7 +304,7 @@ export default function LeadPipeline({ searchTerm, onRefresh, lawyerData }: Prop
               </div>
               <div>
                 <p className="text-2xl font-bold text-yellow-600">{warmLeads.length}</p>
-                <p className="text-xs text-muted-foreground">Leads Tibios</p>
+                <p className="text-xs text-muted-foreground">En Seguimiento</p>
               </div>
             </div>
           </CardContent>
@@ -318,7 +318,7 @@ export default function LeadPipeline({ searchTerm, onRefresh, lawyerData }: Prop
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-600">{coldLeads.length}</p>
-                <p className="text-xs text-muted-foreground">Leads Fríos</p>
+                <p className="text-xs text-muted-foreground">Por Evaluar</p>
               </div>
             </div>
           </CardContent>
@@ -331,10 +331,10 @@ export default function LeadPipeline({ searchTerm, onRefresh, lawyerData }: Prop
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-green-700">
               <Zap className="h-5 w-5" />
-              Leads Calientes - ¡Actúa Ya!
+              Alta Probabilidad - ¡Actúa Ya!
             </CardTitle>
             <CardDescription>
-              Alta probabilidad de conversión. Contacta en las próximas 24 horas.
+              Contactos con alta probabilidad de conversión. Responde en las próximas 24 horas.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -366,10 +366,10 @@ export default function LeadPipeline({ searchTerm, onRefresh, lawyerData }: Prop
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-yellow-700">
               <TrendingUp className="h-5 w-5" />
-              Leads Tibios - Nutrir
+              En Seguimiento
             </CardTitle>
             <CardDescription>
-              Potencial medio. Requieren seguimiento y contenido de valor.
+              Requieren seguimiento y acercamiento personalizado.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -401,10 +401,10 @@ export default function LeadPipeline({ searchTerm, onRefresh, lawyerData }: Prop
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-gray-600">
               <Clock className="h-5 w-5" />
-              Leads Fríos - Largo Plazo
+              Por Evaluar - Largo Plazo
             </CardTitle>
             <CardDescription>
-              Bajo interés actual. Mantener en ciclo de nurture automático.
+              Bajo interés actual. Mantener en seguimiento periódico.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -435,9 +435,9 @@ export default function LeadPipeline({ searchTerm, onRefresh, lawyerData }: Prop
         <Card>
           <CardContent className="py-12 text-center">
             <UserPlus className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-lg font-medium mb-2">Sin leads activos</p>
+            <p className="text-lg font-medium mb-2">Sin contactos potenciales activos</p>
             <p className="text-muted-foreground">
-              {searchTerm ? 'No se encontraron leads con ese criterio' : 'Los leads llegarán a través de tu perfil público'}
+              {searchTerm ? 'No se encontraron contactos con ese criterio' : 'Los contactos potenciales llegarán a través de tu perfil público'}
             </p>
           </CardContent>
         </Card>
@@ -447,7 +447,7 @@ export default function LeadPipeline({ searchTerm, onRefresh, lawyerData }: Prop
       <Dialog open={showConvertDialog} onOpenChange={setShowConvertDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Convertir Lead a Cliente</DialogTitle>
+            <DialogTitle>Convertir Contacto a Cliente</DialogTitle>
             <DialogDescription>
               Se creará un nuevo cliente y caso para {selectedLead?.name}
             </DialogDescription>

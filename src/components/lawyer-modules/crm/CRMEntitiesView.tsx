@@ -289,7 +289,7 @@ export default function CRMEntitiesView({ searchTerm = "", onRefresh, lawyerData
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
             <Building2 className="h-6 w-6 text-blue-600" />
-            Entidades B2B
+            Empresas y Entidades
           </h2>
           <p className="text-muted-foreground">
             Gestiona organizaciones, empresas y sus contactos
@@ -535,7 +535,7 @@ export default function CRMEntitiesView({ searchTerm = "", onRefresh, lawyerData
           <DialogHeader>
             <DialogTitle>Nueva Entidad</DialogTitle>
             <DialogDescription>
-              Agrega una organización o empresa como cliente B2B
+              Agrega una organización o empresa
             </DialogDescription>
           </DialogHeader>
           <EntityForm 

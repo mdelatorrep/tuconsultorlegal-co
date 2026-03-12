@@ -138,8 +138,8 @@ const CRMTasksView: React.FC<CRMTasksViewProps> = ({ lawyerData, searchTerm, onR
       const taskData = {
         ...formData,
         lawyer_id: lawyerData.id,
-        client_id: formData.client_id || null,
-        case_id: formData.case_id || null,
+        client_id: formData.client_id && formData.client_id !== 'none' ? formData.client_id : null,
+        case_id: formData.case_id && formData.case_id !== 'none' ? formData.case_id : null,
         due_date: formData.due_date || null,
         assigned_to: formData.assigned_to || null
       };
@@ -371,7 +371,7 @@ const CRMTasksView: React.FC<CRMTasksViewProps> = ({ lawyerData, searchTerm, onR
                     <SelectValue placeholder="Selecciona un cliente" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Sin cliente específico</SelectItem>
+                    <SelectItem value="none">Sin cliente específico</SelectItem>
                     {clients.map((client) => (
                       <SelectItem key={client.id} value={client.id}>
                         {client.name} ({client.email})
@@ -391,7 +391,7 @@ const CRMTasksView: React.FC<CRMTasksViewProps> = ({ lawyerData, searchTerm, onR
                     <SelectValue placeholder="Selecciona un caso" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Sin caso específico</SelectItem>
+                    <SelectItem value="none">Sin caso específico</SelectItem>
                     {filteredCasesForClient.map((case_) => (
                       <SelectItem key={case_.id} value={case_.id}>
                         {case_.title}

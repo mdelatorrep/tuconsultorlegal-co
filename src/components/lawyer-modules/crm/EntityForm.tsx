@@ -286,58 +286,7 @@ export default function EntityForm({ entity, onSubmit, onCancel }: EntityFormPro
         </div>
       </div>
 
-      {/* Contract Information */}
-      <div className="space-y-4">
-        <h3 className="font-semibold text-lg">Contrato Marco (Opcional)</h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="contract_type">Tipo de Contrato</Label>
-            <Select value={formData.contract_type} onValueChange={(v) => handleChange("contract_type", v)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="retainer">Retainer (Iguala)</SelectItem>
-                <SelectItem value="hourly">Por Hora</SelectItem>
-                <SelectItem value="fixed">Precio Fijo</SelectItem>
-                <SelectItem value="hybrid">Híbrido</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="contract_value">Valor del Contrato (COP)</Label>
-            <Input
-              id="contract_value"
-              type="number"
-              value={formData.contract_value}
-              onChange={(e) => handleChange("contract_value", e.target.value)}
-              placeholder="10000000"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="contract_start">Fecha de Inicio</Label>
-            <Input
-              id="contract_start"
-              type="date"
-              value={formData.contract_start}
-              onChange={(e) => handleChange("contract_start", e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="contract_end">Fecha de Fin</Label>
-            <Input
-              id="contract_end"
-              type="date"
-              value={formData.contract_end}
-              onChange={(e) => handleChange("contract_end", e.target.value)}
-            />
-          </div>
-        </div>
-      </div>
+      
 
       {/* Notes */}
       <div className="space-y-2">

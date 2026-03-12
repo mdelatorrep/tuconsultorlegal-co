@@ -139,7 +139,7 @@ const CRMDocumentsView: React.FC<CRMDocumentsViewProps> = ({ lawyerData, searchT
       const docData = {
         ...formData,
         lawyer_id: lawyerData.id,
-        case_id: formData.case_id || null
+        case_id: formData.case_id && formData.case_id !== 'none' ? formData.case_id : null
       };
 
       if (editingDocument) {
@@ -319,7 +319,7 @@ const CRMDocumentsView: React.FC<CRMDocumentsViewProps> = ({ lawyerData, searchT
                     <SelectValue placeholder="Selecciona un caso" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Sin caso específico</SelectItem>
+                    <SelectItem value="none">Sin caso específico</SelectItem>
                     {filteredCasesForClient.map((case_) => (
                       <SelectItem key={case_.id} value={case_.id}>
                         {case_.title}
