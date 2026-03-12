@@ -488,7 +488,7 @@ const CRMDocumentsView: React.FC<CRMDocumentsViewProps> = ({ lawyerData, searchT
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => window.open(doc.file_url, '_blank')}
+                        onClick={() => setViewerDoc(doc)}
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
