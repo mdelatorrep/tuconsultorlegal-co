@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Edit2, Trash2, Mail, Phone, MapPin, Building, User, Briefcase, FileText, Activity } from 'lucide-react';
+import { Edit2, Trash2, Mail, Phone, MapPin, Building, User, Briefcase, FileText, Activity, LinkIcon, Copy, Check } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import ClientCasesTab from './ClientCasesTab';

@@ -245,6 +245,14 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
         onOpenChange={setIsAIChatOpen}
         lawyerId={user.id}
       />
+
+      {/* Portal Access Manager Dialog */}
+      <PortalAccessManager
+        open={isPortalManagerOpen}
+        onOpenChange={setIsPortalManagerOpen}
+        lawyerId={user.id}
+        clients={portalClients}
+      />
     </div>
   );
 }
