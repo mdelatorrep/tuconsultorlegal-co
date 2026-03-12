@@ -280,7 +280,7 @@ export default function EntityDetailPage({ entity, lawyerData, onBack, onUpdate 
           <TabsTrigger value="cases">
             Casos ({cases.length})
           </TabsTrigger>
-          <TabsTrigger value="contract">Contrato</TabsTrigger>
+          
         </TabsList>
 
         {/* Overview Tab */}
