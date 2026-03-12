@@ -413,28 +413,6 @@ const CRMCasesView: React.FC<CRMCasesViewProps> = ({ lawyerData, searchTerm, onR
                 />
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="billing_rate">Tarifa por Hora (COP)</Label>
-                <Input
-                  id="billing_rate"
-                  type="number"
-                  value={formData.billing_rate}
-                  onChange={(e) => setFormData({ ...formData, billing_rate: e.target.value })}
-                  placeholder="100000"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="estimated_hours">Horas Estimadas</Label>
-                <Input
-                  id="estimated_hours"
-                  type="number"
-                  value={formData.estimated_hours}
-                  onChange={(e) => setFormData({ ...formData, estimated_hours: e.target.value })}
-                  placeholder="40"
-                />
-              </div>
-              
               <div className="col-span-2 space-y-2">
                 <Label htmlFor="description">Descripción</Label>
                 <Textarea
