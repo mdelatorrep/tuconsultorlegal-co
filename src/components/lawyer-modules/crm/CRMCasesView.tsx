@@ -178,10 +178,10 @@ const CRMCasesView: React.FC<CRMCasesViewProps> = ({ lawyerData, searchTerm, onR
       (case_.demandado && case_.demandado.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (case_.juzgado && case_.juzgado.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    const matchesJuzgado = !filterJuzgado || case_.juzgado === filterJuzgado;
-    const matchesAsignado = !filterAsignado || case_.asignado_a === filterAsignado;
-    const matchesClase = !filterClase || (case_.clase_proceso || case_.case_type) === filterClase;
-    const matchesStatus = !filterStatus || case_.status === filterStatus;
+    const matchesJuzgado = !filterJuzgado || filterJuzgado === 'all' || case_.juzgado === filterJuzgado;
+    const matchesAsignado = !filterAsignado || filterAsignado === 'all' || case_.asignado_a === filterAsignado;
+    const matchesClase = !filterClase || filterClase === 'all' || (case_.clase_proceso || case_.case_type) === filterClase;
+    const matchesStatus = !filterStatus || filterStatus === 'all' || case_.status === filterStatus;
 
     return matchesSearch && matchesJuzgado && matchesAsignado && matchesClase && matchesStatus;
   });
