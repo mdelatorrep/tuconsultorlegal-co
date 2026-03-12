@@ -51,12 +51,12 @@ interface Lead {
 }
 
 const NURTURE_STAGES = [
-  { id: 'new', label: 'Nuevo', description: 'Sin contactar' },
-  { id: 'first_contact', label: 'Primer Contacto', description: 'Email/llamada inicial' },
-  { id: 'follow_up', label: 'Seguimiento', description: 'En proceso de nurture' },
+  { id: 'new', label: 'Nuevo Contacto', description: 'Sin contactar' },
+  { id: 'first_contact', label: 'Contactado', description: 'Primer acercamiento realizado' },
+  { id: 'follow_up', label: 'En Evaluación', description: 'Evaluando necesidades jurídicas' },
   { id: 'meeting_scheduled', label: 'Reunión Agendada', description: 'Cita programada' },
   { id: 'proposal_sent', label: 'Propuesta Enviada', description: 'Esperando respuesta' },
-  { id: 'negotiation', label: 'Negociación', description: 'Definiendo términos' }
+  { id: 'negotiation', label: 'En Negociación', description: 'Definiendo términos del servicio' }
 ];
 
 const getScoreColor = (score: number) => {
