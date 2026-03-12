@@ -126,11 +126,11 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
   const sections: SectionConfig[] = [
     { id: 'pipeline', label: 'Pipeline de Casos', icon: Kanban, count: stats.cases, defaultOpen: true },
     { id: 'clients', label: 'Clientes', icon: Users, count: stats.clients, defaultOpen: true },
-    { id: 'leads', label: 'Leads', icon: Zap, count: stats.leads, defaultOpen: false },
+    { id: 'leads', label: 'Contactos Potenciales', icon: Zap, count: stats.leads, defaultOpen: false },
     { id: 'tasks', label: 'Tareas Pendientes', icon: Clock, count: stats.tasks, defaultOpen: true },
     { id: 'cases', label: 'Casos', icon: Briefcase, count: stats.cases, defaultOpen: false },
     { id: 'documents', label: 'Documentos', icon: FileText, count: 0, defaultOpen: false },
-    { id: 'entities', label: 'Entidades B2B', icon: Building2, count: 0, defaultOpen: false },
+    { id: 'entities', label: 'Empresas y Entidades', icon: Building2, count: 0, defaultOpen: false },
   ];
 
   const renderSectionContent = (sectionId: string) => {
