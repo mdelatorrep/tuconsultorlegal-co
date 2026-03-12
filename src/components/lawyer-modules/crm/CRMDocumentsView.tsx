@@ -514,6 +514,17 @@ const CRMDocumentsView: React.FC<CRMDocumentsViewProps> = ({ lawyerData, searchT
           ))
         )}
       </div>
+
+      {/* Document Viewer */}
+      {viewerDoc?.file_url && (
+        <DocumentViewer
+          open={!!viewerDoc}
+          onOpenChange={(open) => !open && setViewerDoc(null)}
+          documentUrl={viewerDoc.file_url}
+          documentName={viewerDoc.name}
+          documentType={viewerDoc.document_type}
+        />
+      )}
     </div>
   );
 };
