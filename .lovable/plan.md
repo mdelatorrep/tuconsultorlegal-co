@@ -1,76 +1,67 @@
 
 
-# Soporte Multi-Formato via Code Interpreter de OpenAI
+# Plan: Correcciones CRM - 9 Hallazgos
 
-## Descubrimiento Clave
+## Diagnóstico
 
-La herramienta **Code Interpreter** de OpenAI soporta nativamente estos formatos relevantes para documentos legales:
+### 1. "Lead" no es claro para el abogado
+- En `CRMModule.tsx` linea 129: `label: 'Leads'` y en `LeadPipeline.tsx` usa terminología de marketing (nurture, score, pipeline)
+- **Solución**: Renombrar "Leads" a "Contactos Potenciales" en toda la UI. Cambiar etapas del pipeline a lenguaje jurídico: "Nuevo Contacto", "Contactado", "En Evaluación", "Reunión Agendada", "Propuesta Enviada", "En Negociación"
 
-| Formato | MIME type |
-|---------|-----------|
-| .pdf | application/pdf |
-| .doc | application/msword |
-| .docx | application/vnd.openxmlformats-officedocument.wordprocessingml.document |
-| .txt | text/plain |
-| .xlsx | application/vnd.openxmlformats-officedocument.spreadsheetml.sheet |
-| .pptx | application/vnd.openxmlformats-officedocument.presentationml.presentation |
+### 2. Nuevas tareas falla (pantalla blanca)
+- **Causa raíz encontrada**: En `CRMTasksView.tsx` lineas 374 y 394, hay `<SelectItem value="">` (valor vacío). Radix UI Select no soporta strings vacíos como value, lo que causa un crash en el render.
+- **Solución**: Cambiar `value=""` por `value="none"` y manejar la conversión a `null` al guardar.
 
-Ademas, los archivos enviados en el `input` del modelo se suben automaticamente al container de Code Interpreter. No se requiere subida manual previa.
+### 3. Eliminar campos de tarifas
+- En `CRMClientsView.tsx` el formulario de clientes no tiene tarifas visible, pero en `EntityForm.tsx` lineas 289-340 hay campos de "Contrato Marco" con `contract_value`, `contract_type`, `contract_start`, `contract_end`.
+- **Solución**: Eliminar la sección completa de "Contrato Marco" del `EntityForm.tsx` y los campos de tarifa de `EntityDetailPage.tsx`.
 
-## Estrategia de Procesamiento
+### 4. Documentos falla (pantalla blanca)
+- **Misma causa raíz**: `CRMDocumentsView.tsx` linea 322 tiene `<SelectItem value="">`.
+- **Solución**: Igual que punto 2, cambiar a `value="none"`.
 
-```text
-PDF --> input_file (procesamiento nativo, mas rapido, sin container)
-DOCX/DOC/TXT/XLSX --> code_interpreter tool (OpenAI extrae el contenido via Python)
-```
+### 5. OneDrive de la Rama Judicial
+- La Rama Judicial usa Microsoft 365 (OneDrive/SharePoint) para compartir expedientes digitales. Los juzgados comparten carpetas vía enlaces OneDrive con usuarios externos.
+- **Hallazgo**: No hay API pública de la Rama Judicial. Los juzgados comparten vía links de OneDrive/SharePoint con cuentas institucionales `@cendoj.ramajudicial.gov.co`.
+- **Solución factible**: Agregar un campo en el formulario de Casos para "Enlace Expediente Digital" donde el abogado pegue el link de OneDrive compartido por el juzgado. No es viable una integración directa con OneDrive de la Rama (no exponen API, es acceso por invitación). Podemos agregar un botón "Abrir Expediente" que abre el link en nueva pestaña.
 
-- Para **PDF**: seguir usando `input_file` como esta ahora (funciona perfecto)
-- Para **DOCX/DOC y otros**: agregar `code_interpreter` como tool en la request, enviar el archivo como `input_file` en el input, y OpenAI usara Python para leer el contenido y analizarlo
+### 6. Eliminar "B2B" de Empresas
+- En `CRMModule.tsx` linea 133: `label: 'Entidades B2B'`
+- **Solución**: Cambiar a "Empresas y Entidades"
 
-## Cambios a Realizar
+### 7. Tipos de contrato no claros en Empresas
+- En `EntityForm.tsx` lineas 300-305: "Retainer (Iguala)", "Por Hora", "Precio Fijo", "Híbrido"
+- **Solución**: Reemplazar con tipos de contrato comunes en Colombia/LATAM: "Contrato de Prestación de Servicios", "Mandato o Poder", "Contrato de Asesoría", "Iguala Mensual", "Honorarios por Caso", "Contrato Llave en Mano". Ya que el punto 3 elimina tarifas, esta sección se elimina junto con el contrato marco.
 
-### 1. Edge Function (`legal-document-analysis/index.ts`)
+### 8. El abogado no sabía del portal público
+- Existe `LawyerPublicProfileEditor.tsx` y `LawyerPublicProfilePage.tsx` donde el abogado puede crear su perfil y recibir contactos.
+- **Solución**: Agregar una tarjeta prominente de onboarding en el CRM cuando no hay clientes ni leads, explicando: "Activa tu Perfil Público para que clientes potenciales te encuentren y te contacten directamente". Link directo al editor de perfil público.
 
-- Eliminar la funcion `extractTextFromDocx` (regex fragil, ya no se necesita)
-- Para archivos no-PDF (DOCX, DOC, TXT, XLSX): enviar el archivo como `input_file` en el input + agregar `tools: [{ type: "code_interpreter", container: { type: "auto" } }]` en la request
-- Mantener la ruta actual de PDF sin cambios (ya funciona con `input_file` directo)
-- Mantener la ruta de texto plano sin cambios
+### 9. No hay journey de primera vez del CRM
+- **Solución**: Crear un componente `CRMOnboarding` que se muestre cuando el abogado tiene 0 clientes, 0 casos y 0 leads. Incluirá pasos guiados:
+  1. "Activa tu Perfil Público" - para recibir contactos
+  2. "Agrega tu primer cliente" - botón directo
+  3. "Crea tu primer caso" - asociado al cliente
+  4. "Gestiona tareas" - seguimiento
 
-### 2. Frontend (`AnalyzeModule.tsx`)
+---
 
-- Restaurar el `accept` del input de archivos para incluir `.pdf,.doc,.docx,.txt`
-- Restaurar la validacion para aceptar estos tipos de archivo
-- Mantener la codificacion base64 via `FileReader.readAsDataURL()`
+## Archivos a modificar
 
-### 3. Formato de la Request con Code Interpreter
+| Archivo | Cambios |
+|---------|---------|
+| `CRMModule.tsx` | Renombrar "Leads" a "Contactos Potenciales", "Entidades B2B" a "Empresas y Entidades". Mostrar onboarding cuando stats=0 |
+| `CRMTasksView.tsx` | Corregir `SelectItem value=""` → `value="none"` (2 instancias) |
+| `CRMDocumentsView.tsx` | Corregir `SelectItem value=""` → `value="none"` (1 instancia) |
+| `LeadPipeline.tsx` | Renombrar labels de "Lead" a "Contacto Potencial", etapas a lenguaje jurídico |
+| `EntityForm.tsx` | Eliminar sección "Contrato Marco" completa. Actualizar tipos de contrato a LATAM |
+| `EntityDetailPage.tsx` | Eliminar referencias a tarifas y contratos |
+| `CRMEntitiesView.tsx` | Eliminar "B2B" de labels |
+| `CRMCasesView.tsx` | Agregar campo "Enlace Expediente Digital" en formulario de casos |
+| Nuevo: `CRMOnboarding.tsx` | Componente de onboarding con journey guiado y link a perfil público |
 
-```text
-{
-  model: "gpt-4o",
-  tools: [{ type: "code_interpreter", container: { type: "auto" } }],
-  input: [
-    {
-      role: "user",
-      content: [
-        { type: "input_file", filename: "contrato.docx", file_data: "data:application/...;base64,..." },
-        { type: "input_text", text: "Analiza este documento legal..." }
-      ]
-    }
-  ],
-  instructions: "...",
-  text: { format: { type: "json_object" } }
-}
-```
-
-## Archivos a Modificar
-
-1. `supabase/functions/legal-document-analysis/index.ts` - Agregar ruta con code_interpreter para DOCX/DOC, eliminar extractTextFromDocx
-2. `src/components/lawyer-modules/AnalyzeModule.tsx` - Restaurar aceptacion de PDF, DOC, DOCX, TXT
-
-## Resultado Esperado
-
-- Procesamiento confiable de PDF, DOC, DOCX y TXT sin extraccion manual
-- OpenAI maneja toda la complejidad de parseo via Code Interpreter (Python sandbox)
-- El regex fragil de DOCX se elimina completamente
-- Codigo mas simple: ~200 lineas en el edge function
+## Alcance estimado
+- 9 archivos modificados, 1 nuevo
+- No requiere migraciones de base de datos (los campos de contrato se ocultan del UI pero se mantienen en DB)
+- Sin dependencias nuevas
 
