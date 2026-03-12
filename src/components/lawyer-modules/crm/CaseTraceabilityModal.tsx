@@ -324,7 +324,7 @@ const CaseTraceabilityModal: React.FC<CaseTraceabilityModalProps> = ({
                       </p>
                     )}
                     <Badge variant="outline" className="text-xs">
-                      {activity.activity_type}
+                      {getActivityLabel(activity.activity_type)}
                     </Badge>
                   </div>
                 </div>

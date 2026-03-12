@@ -496,9 +496,10 @@ const CRMCasesView: React.FC<CRMCasesViewProps> = ({ lawyerData, searchTerm, onR
                       variant="outline"
                       size="sm"
                       onClick={() => handleViewTraceability(case_)}
-                      title="Ver trazabilidad"
+                      title="Ver actividades y agregar nuevas"
                     >
-                      <History className="h-4 w-4" />
+                      <Plus className="h-4 w-4 mr-1" />
+                      Actividad
                     </Button>
                     <Button
                       variant="outline"
