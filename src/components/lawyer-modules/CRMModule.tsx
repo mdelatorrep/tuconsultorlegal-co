@@ -15,6 +15,7 @@ import CRMDocumentsView from "./crm/CRMDocumentsView";
 import CRMEntitiesView from "./crm/CRMEntitiesView";
 import CasePipelineView from "./crm/CasePipelineView";
 import LeadPipeline from "./crm/LeadPipeline";
+import CRMOnboarding from "./crm/CRMOnboarding";
 
 interface CRMModuleProps {
   user: any;
