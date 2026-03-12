@@ -1,76 +1,83 @@
 
 
-# Soporte Multi-Formato via Code Interpreter de OpenAI
+# Plan: Reestructuración del CRM Legal
 
-## Descubrimiento Clave
+## Problema
+1. **Demasiadas secciones colapsables confusas** -- pipeline, clientes, leads, tareas, casos, documentos, entidades = 7 secciones donde el abogado se pierde
+2. **Conceptos duplicados** -- "Pipeline de Casos" y "Casos" son lo mismo; "Clientes" y "Entidades" se solapan
+3. **IA sin valor real** -- "Segmentación IA" no aporta; el abogado necesita consultar/analizar su CRM con IA
+4. **Sin feed de novedades** -- las actividades del portal del cliente y del sistema están enterradas
 
-La herramienta **Code Interpreter** de OpenAI soporta nativamente estos formatos relevantes para documentos legales:
+## Solución: CRM con Tabs principales
 
-| Formato | MIME type |
-|---------|-----------|
-| .pdf | application/pdf |
-| .doc | application/msword |
-| .docx | application/vnd.openxmlformats-officedocument.wordprocessingml.document |
-| .txt | text/plain |
-| .xlsx | application/vnd.openxmlformats-officedocument.spreadsheetml.sheet |
-| .pptx | application/vnd.openxmlformats-officedocument.presentationml.presentation |
-
-Ademas, los archivos enviados en el `input` del modelo se suben automaticamente al container de Code Interpreter. No se requiere subida manual previa.
-
-## Estrategia de Procesamiento
+Reemplazar las 7 secciones colapsables por **5 tabs claros**:
 
 ```text
-PDF --> input_file (procesamiento nativo, mas rapido, sin container)
-DOCX/DOC/TXT/XLSX --> code_interpreter tool (OpenAI extrae el contenido via Python)
+┌─────────────────────────────────────────────────────┐
+│ [Stats bar]  [Buscar...]  [🤖 Consultar IA]        │
+├─────────────────────────────────────────────────────┤
+│ Novedades │ Procesos │ Clientes │ Tareas │ Más ▾   │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│  (contenido del tab activo)                         │
+│                                                     │
+└─────────────────────────────────────────────────────┘
 ```
 
-- Para **PDF**: seguir usando `input_file` como esta ahora (funciona perfecto)
-- Para **DOCX/DOC y otros**: agregar `code_interpreter` como tool en la request, enviar el archivo como `input_file` en el input, y OpenAI usara Python para leer el contenido y analizarlo
+### Tab 1: Novedades (default)
+- Feed cronológico unificado con actividades recientes:
+  - Documentos subidos por clientes desde el portal
+  - Documentos vistos por clientes
+  - Citas agendadas por clientes
+  - Cambios de estado en procesos
+  - Tareas próximas a vencer
+- Queries: `client_shared_documents`, `client_appointments`, `crm_tasks` (due_date próximo)
 
-## Cambios a Realizar
+### Tab 2: Procesos (unifica "Pipeline" + "Casos")
+- Vista dual: Kanban pipeline (actual `CasePipelineView`) + Lista/tabla (`CRMCasesView`)
+- Toggle entre vistas con botones
+- Terminología unificada: siempre "Procesos"
 
-### 1. Edge Function (`legal-document-analysis/index.ts`)
+### Tab 3: Clientes (unifica "Clientes" + "Entidades" + "Leads")
+- Sub-tabs internos: Clientes | Empresas | Contactos Potenciales
+- Reutiliza `CRMClientsView`, `CRMEntitiesView`, `LeadPipeline` existentes
 
-- Eliminar la funcion `extractTextFromDocx` (regex fragil, ya no se necesita)
-- Para archivos no-PDF (DOCX, DOC, TXT, XLSX): enviar el archivo como `input_file` en el input + agregar `tools: [{ type: "code_interpreter", container: { type: "auto" } }]` en la request
-- Mantener la ruta actual de PDF sin cambios (ya funciona con `input_file` directo)
-- Mantener la ruta de texto plano sin cambios
+### Tab 4: Tareas
+- Contenido actual de `CRMTasksView` + `CRMDocumentsView` (sub-tabs: Tareas | Documentos)
 
-### 2. Frontend (`AnalyzeModule.tsx`)
+### Tab 5: Más (dropdown o sub-tabs)
+- Documentos (si no va en Tareas)
+- Cualquier funcionalidad futura
 
-- Restaurar el `accept` del input de archivos para incluir `.pdf,.doc,.docx,.txt`
-- Restaurar la validacion para aceptar estos tipos de archivo
-- Mantener la codificacion base64 via `FileReader.readAsDataURL()`
+### IA Conversacional del CRM
+Reemplazar "Segmentación IA" por un **diálogo de consulta IA**:
+- Botón "Consultar IA" abre un panel/dialog de chat
+- El abogado pregunta en lenguaje natural sobre su CRM: "¿Cuántos procesos tengo en juzgados de Bogotá?", "¿Qué clientes no tienen procesos activos?", "Resume mis tareas pendientes por prioridad"
+- Edge function `crm-ai-assistant` que recibe la pregunta, consulta datos del CRM del abogado, y responde con análisis
+- Usa el modelo configurado en `system_config` vía la arquitectura centralizada existente
 
-### 3. Formato de la Request con Code Interpreter
+## Archivos a crear/modificar
 
-```text
-{
-  model: "gpt-4o",
-  tools: [{ type: "code_interpreter", container: { type: "auto" } }],
-  input: [
-    {
-      role: "user",
-      content: [
-        { type: "input_file", filename: "contrato.docx", file_data: "data:application/...;base64,..." },
-        { type: "input_text", text: "Analiza este documento legal..." }
-      ]
-    }
-  ],
-  instructions: "...",
-  text: { format: { type: "json_object" } }
-}
-```
+| Archivo | Cambio |
+|---|---|
+| `src/components/lawyer-modules/CRMModule.tsx` | **Reescribir** -- reemplazar collapsibles por Tabs de Radix. Stats + search + AI button en toolbar. 5 tabs |
+| `src/components/lawyer-modules/crm/CRMNewsFeed.tsx` | **Nuevo** -- feed de novedades unificado (portal activity + system events) |
+| `src/components/lawyer-modules/crm/CRMAIChat.tsx` | **Nuevo** -- diálogo de chat IA para consultar el CRM |
+| `supabase/functions/crm-ai-assistant/index.ts` | **Nuevo** -- edge function que recibe pregunta, consulta datos CRM del abogado, genera respuesta con IA |
+| `src/components/lawyer-modules/crm/CasePipelineView.tsx` | Renombrar labels a "Procesos" |
+| `src/components/lawyer-modules/crm/CRMCasesView.tsx` | Renombrar labels a "Procesos" |
 
-## Archivos a Modificar
+## Edge Function: `crm-ai-assistant`
+- Recibe: `{ lawyerId, question }`
+- Consulta `crm_cases`, `crm_clients`, `crm_tasks`, `crm_leads`, `crm_entities` del abogado
+- Construye contexto JSON con resumen de datos
+- Envía a Lovable AI Gateway con prompt de sistema: "Eres un asistente de CRM legal. Analiza los datos y responde la pregunta del abogado."
+- Retorna respuesta en texto
+- Costo: usa `crm_ai` credit tool type existente
 
-1. `supabase/functions/legal-document-analysis/index.ts` - Agregar ruta con code_interpreter para DOCX/DOC, eliminar extractTextFromDocx
-2. `src/components/lawyer-modules/AnalyzeModule.tsx` - Restaurar aceptacion de PDF, DOC, DOCX, TXT
-
-## Resultado Esperado
-
-- Procesamiento confiable de PDF, DOC, DOCX y TXT sin extraccion manual
-- OpenAI maneja toda la complejidad de parseo via Code Interpreter (Python sandbox)
-- El regex fragil de DOCX se elimina completamente
-- Codigo mas simple: ~200 lineas en el edge function
+## Detalles técnicos
+- Tabs con `@radix-ui/react-tabs` (ya instalado)
+- No se eliminan componentes existentes, solo se reorganizan dentro de tabs
+- El feed de novedades reutiliza la lógica de `ClientPortalActivity` pero a nivel global (todos los clientes del abogado)
+- No requiere cambios de esquema DB
 
