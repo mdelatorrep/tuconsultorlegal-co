@@ -475,19 +475,7 @@ const CRMCasesView: React.FC<CRMCasesViewProps> = ({ lawyerData, searchTerm, onR
                       <p><strong>Tipo:</strong> {case_.case_type}</p>
                       {case_.case_number && (
                         <p><strong>Número:</strong> {case_.case_number}</p>
-                      )}
-                      {case_.billing_rate && (
-                        <div className="flex items-center gap-2">
-                          <DollarSign className="h-3 w-3" />
-                          <span>${case_.billing_rate.toLocaleString()}/hora</span>
-                        </div>
-                      )}
-                      {case_.estimated_hours && (
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-3 w-3" />
-                          <span>{case_.estimated_hours}h estimadas | {case_.actual_hours}h trabajadas</span>
-                        </div>
-                      )}
+                       )}
                       {case_.start_date && (
                         <div className="flex items-center gap-2">
                           <Calendar className="h-3 w-3" />

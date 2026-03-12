@@ -155,8 +155,22 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
     }
   };
 
+  const isEmptyCRM = stats.clients === 0 && stats.cases === 0 && stats.leads === 0;
+
+  const handleOpenSection = (sectionId: string) => {
+    setOpenSections(prev => ({ ...prev, [sectionId]: true }));
+  };
+
   return (
     <div className="space-y-4">
+      {/* Onboarding for first-time users */}
+      {isEmptyCRM && (
+        <CRMOnboarding
+          onNavigateToProfile={() => onViewChange('profile')}
+          onOpenClients={() => handleOpenSection('clients')}
+          onOpenCases={() => handleOpenSection('cases')}
+        />
+      )}
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex-1 max-w-md">
