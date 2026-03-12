@@ -331,10 +331,10 @@ export default function LeadPipeline({ searchTerm, onRefresh, lawyerData }: Prop
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-green-700">
               <Zap className="h-5 w-5" />
-              Leads Calientes - ¡Actúa Ya!
+              Alta Probabilidad - ¡Actúa Ya!
             </CardTitle>
             <CardDescription>
-              Alta probabilidad de conversión. Contacta en las próximas 24 horas.
+              Contactos con alta probabilidad de conversión. Responde en las próximas 24 horas.
             </CardDescription>
           </CardHeader>
           <CardContent>
