@@ -237,7 +237,7 @@ export default function LeadPipeline({ searchTerm, onRefresh, lawyerData }: Prop
       console.error('Error converting lead:', error);
       toast({
         title: "Error",
-        description: "No se pudo convertir el lead",
+        description: "No se pudo convertir el contacto",
         variant: "destructive"
       });
     } finally {
