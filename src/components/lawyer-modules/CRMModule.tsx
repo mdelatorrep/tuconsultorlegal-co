@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Users, Briefcase, Clock, Brain, Zap, Loader2 } from "lucide-react";
+import { Users, Briefcase, Clock, Brain, Zap, Loader2, LinkIcon } from "lucide-react";
 import { useCredits } from "@/hooks/useCredits";
 import { ToolCostIndicator } from "@/components/credits/ToolCostIndicator";
 import { useToast } from "@/hooks/use-toast";
@@ -18,6 +18,7 @@ import LeadPipeline from "./crm/LeadPipeline";
 import CRMOnboarding from "./crm/CRMOnboarding";
 import CRMNewsFeed from "./crm/CRMNewsFeed";
 import CRMAIChat from "./crm/CRMAIChat";
+import PortalAccessManager from "./crm/PortalAccessManager";
 
 interface CRMModuleProps {
   user: any;
