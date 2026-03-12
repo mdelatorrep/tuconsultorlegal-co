@@ -1135,20 +1135,28 @@ export type Database = {
       crm_cases: {
         Row: {
           actual_hours: number | null
+          asignado_a: string | null
           billing_rate: number | null
           case_number: string | null
           case_type: string
+          clase_proceso: string | null
           client_id: string
           created_at: string
+          demandado: string | null
+          demandante: string | null
           description: string | null
           end_date: string | null
+          enlace_expediente: string | null
+          enlace_hoja_ruta: string | null
           entity_id: string | null
           estimated_hours: number | null
           expected_value: number | null
           health_score: number | null
           id: string
+          juzgado: string | null
           lawyer_id: string
           next_action_date: string | null
+          nota_pendiente: string | null
           pipeline_stage: string | null
           primary_contact_id: string | null
           priority: string
@@ -1161,20 +1169,28 @@ export type Database = {
         }
         Insert: {
           actual_hours?: number | null
+          asignado_a?: string | null
           billing_rate?: number | null
           case_number?: string | null
           case_type: string
+          clase_proceso?: string | null
           client_id: string
           created_at?: string
+          demandado?: string | null
+          demandante?: string | null
           description?: string | null
           end_date?: string | null
+          enlace_expediente?: string | null
+          enlace_hoja_ruta?: string | null
           entity_id?: string | null
           estimated_hours?: number | null
           expected_value?: number | null
           health_score?: number | null
           id?: string
+          juzgado?: string | null
           lawyer_id: string
           next_action_date?: string | null
+          nota_pendiente?: string | null
           pipeline_stage?: string | null
           primary_contact_id?: string | null
           priority?: string
@@ -1187,20 +1203,28 @@ export type Database = {
         }
         Update: {
           actual_hours?: number | null
+          asignado_a?: string | null
           billing_rate?: number | null
           case_number?: string | null
           case_type?: string
+          clase_proceso?: string | null
           client_id?: string
           created_at?: string
+          demandado?: string | null
+          demandante?: string | null
           description?: string | null
           end_date?: string | null
+          enlace_expediente?: string | null
+          enlace_hoja_ruta?: string | null
           entity_id?: string | null
           estimated_hours?: number | null
           expected_value?: number | null
           health_score?: number | null
           id?: string
+          juzgado?: string | null
           lawyer_id?: string
           next_action_date?: string | null
+          nota_pendiente?: string | null
           pipeline_stage?: string | null
           primary_contact_id?: string | null
           priority?: string
