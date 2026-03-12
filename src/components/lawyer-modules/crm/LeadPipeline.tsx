@@ -66,9 +66,9 @@ const getScoreColor = (score: number) => {
 };
 
 const getScoreLabel = (score: number) => {
-  if (score >= 70) return 'Caliente';
-  if (score >= 40) return 'Tibio';
-  return 'Frío';
+  if (score >= 70) return 'Alta probabilidad';
+  if (score >= 40) return 'En seguimiento';
+  return 'Por evaluar';
 };
 
 export default function LeadPipeline({ searchTerm, onRefresh, lawyerData }: Props) {
