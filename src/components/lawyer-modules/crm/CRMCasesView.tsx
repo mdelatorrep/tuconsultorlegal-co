@@ -337,7 +337,7 @@ const CRMCasesView: React.FC<CRMCasesViewProps> = ({ lawyerData, searchTerm, onR
     );
   }
 
-  const CaseFormDialog = () => (
+  const caseFormContent = (
     <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
       <DialogHeader>
         <DialogTitle>{editingCase ? 'Editar Proceso' : 'Nuevo Proceso'}</DialogTitle>
@@ -561,7 +561,7 @@ const CRMCasesView: React.FC<CRMCasesViewProps> = ({ lawyerData, searchTerm, onR
                 Nuevo Proceso
               </Button>
             </DialogTrigger>
-            <CaseFormDialog />
+            {caseFormContent}
           </Dialog>
         </div>
       </div>
