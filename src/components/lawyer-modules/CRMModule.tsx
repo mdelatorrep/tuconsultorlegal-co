@@ -46,6 +46,7 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
 
   useEffect(() => {
     fetchStats();
+    fetchPortalClients();
   }, []);
 
   const fetchStats = async () => {
