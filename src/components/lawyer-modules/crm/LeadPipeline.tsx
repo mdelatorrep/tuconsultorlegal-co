@@ -226,7 +226,7 @@ export default function LeadPipeline({ searchTerm, onRefresh, lawyerData }: Prop
       await updateLeadStatus(selectedLead.id, 'converted');
 
       toast({
-        title: "¡Lead convertido!",
+        title: "¡Contacto convertido!",
         description: "Se creó el cliente y el caso exitosamente",
       });
 
