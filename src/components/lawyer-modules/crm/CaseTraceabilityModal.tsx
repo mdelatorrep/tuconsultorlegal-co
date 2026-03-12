@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Calendar, Clock, User, FileText, Phone, Mail, CheckCircle, Brain } from 'lucide-react';
+import { Plus, Calendar, Clock, User, FileText, Phone, Mail, CheckCircle, Brain, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import CaseAIToolsTab from './CaseAIToolsTab';
@@ -68,11 +68,7 @@ const CaseTraceabilityModal: React.FC<CaseTraceabilityModalProps> = ({
       setActivities(data || []);
     } catch (error) {
       console.error('Error fetching activities:', error);
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar las actividades del caso",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "No se pudieron cargar las actividades del caso", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -82,34 +78,16 @@ const CaseTraceabilityModal: React.FC<CaseTraceabilityModalProps> = ({
     try {
       const { error } = await supabase
         .from('crm_case_activities')
-        .insert([{
-          case_id: caseData.id,
-          lawyer_id: lawyerData.id,
-          ...newActivity
-        }]);
+        .insert([{ case_id: caseData.id, lawyer_id: lawyerData.id, ...newActivity }]);
 
       if (error) throw error;
-
-      toast({
-        title: "Actividad agregada",
-        description: "La actividad se ha registrado correctamente",
-      });
-
-      setNewActivity({
-        activity_type: 'auto',
-        title: '',
-        description: '',
-        activity_date: new Date().toISOString().slice(0, 16)
-      });
+      toast({ title: "Actividad agregada", description: "La actividad se ha registrado correctamente" });
+      setNewActivity({ activity_type: 'auto', title: '', description: '', activity_date: new Date().toISOString().slice(0, 16) });
       setIsAddingActivity(false);
       fetchActivities();
     } catch (error) {
       console.error('Error adding activity:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo agregar la actividad",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "No se pudo agregar la actividad", variant: "destructive" });
     }
   };
 
@@ -145,15 +123,9 @@ const CaseTraceabilityModal: React.FC<CaseTraceabilityModalProps> = ({
 
   const getActivityLabel = (type: string) => {
     const labels: Record<string, string> = {
-      auto: 'Auto',
-      providencia: 'Providencia',
-      traslado: 'Traslado',
-      audiencia: 'Audiencia',
-      notificacion: 'Notificación',
-      memorial: 'Memorial',
-      reunion: 'Reunión',
-      llamada: 'Llamada',
-      nota: 'Nota',
+      auto: 'Auto', providencia: 'Providencia', traslado: 'Traslado',
+      audiencia: 'Audiencia', notificacion: 'Notificación', memorial: 'Memorial',
+      reunion: 'Reunión', llamada: 'Llamada', nota: 'Nota',
     };
     return labels[type] || type;
   };
@@ -164,44 +136,77 @@ const CaseTraceabilityModal: React.FC<CaseTraceabilityModalProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
-            Trazabilidad del Caso: {caseData?.title}
+            {caseData?.clase_proceso || caseData?.case_type}: {caseData?.demandante && caseData?.demandado 
+              ? `${caseData.demandante} vs ${caseData.demandado}` 
+              : caseData?.title}
           </DialogTitle>
           <DialogDescription>
-            Historial completo de actividades y eventos relacionados con este caso
+            Historial de actuaciones procesales
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Case Summary */}
+          {/* Case Summary - Datos procesales */}
           <div className="bg-muted/50 p-4 rounded-lg">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+              {caseData?.case_number && (
+                <div>
+                  <span className="font-medium text-xs text-muted-foreground">Radicado</span>
+                  <p className="font-mono text-xs">{caseData.case_number}</p>
+                </div>
+              )}
+              {caseData?.juzgado && (
+                <div>
+                  <span className="font-medium text-xs text-muted-foreground">Juzgado</span>
+                  <p className="text-xs">{caseData.juzgado}</p>
+                </div>
+              )}
               <div>
-                <span className="font-medium">Cliente:</span>
-                <p className="text-muted-foreground">{caseData?.client?.name}</p>
+                <span className="font-medium text-xs text-muted-foreground">Cliente</span>
+                <p className="text-xs">{caseData?.client?.name || '—'}</p>
               </div>
-              <div>
-                <span className="font-medium">Estado:</span>
-                <p className="text-muted-foreground">{caseData?.status}</p>
-              </div>
-              <div>
-                <span className="font-medium">Prioridad:</span>
-                <p className="text-muted-foreground">{caseData?.priority}</p>
-              </div>
-              <div>
-                <span className="font-medium">Creado:</span>
-                <p className="text-muted-foreground">
-                  {caseData?.created_at ? format(new Date(caseData.created_at), 'dd/MM/yyyy') : 'N/A'}
-                </p>
-              </div>
+              {caseData?.demandante && (
+                <div>
+                  <span className="font-medium text-xs text-muted-foreground">Demandante</span>
+                  <p className="text-xs">{caseData.demandante}</p>
+                </div>
+              )}
+              {caseData?.demandado && (
+                <div>
+                  <span className="font-medium text-xs text-muted-foreground">Demandado</span>
+                  <p className="text-xs">{caseData.demandado}</p>
+                </div>
+              )}
+              {caseData?.asignado_a && (
+                <div>
+                  <span className="font-medium text-xs text-muted-foreground">Asignado</span>
+                  <p className="text-xs">{caseData.asignado_a}</p>
+                </div>
+              )}
+            </div>
+            {/* Quick links */}
+            <div className="flex gap-2 mt-3">
+              {caseData?.enlace_expediente && (
+                <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => window.open(caseData.enlace_expediente, '_blank')}>
+                  <ExternalLink className="h-3 w-3 mr-1" />
+                  Expediente Digital
+                </Button>
+              )}
+              {caseData?.enlace_hoja_ruta && (
+                <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => window.open(caseData.enlace_hoja_ruta, '_blank')}>
+                  <ExternalLink className="h-3 w-3 mr-1" />
+                  Hoja de Ruta
+                </Button>
+              )}
             </div>
           </div>
 
-          {/* Tabs for Activities and AI Tools */}
+          {/* Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="activities" className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
-                Actividades ({activities.length})
+                Actuaciones ({activities.length})
               </TabsTrigger>
               <TabsTrigger value="ai_tools" className="flex items-center gap-2">
                 <Brain className="h-4 w-4" />
@@ -210,127 +215,106 @@ const CaseTraceabilityModal: React.FC<CaseTraceabilityModalProps> = ({
             </TabsList>
 
             <TabsContent value="activities" className="space-y-4">
-              {/* Add Activity Button */}
               <div className="flex justify-end">
-                <Button 
-                  onClick={() => setIsAddingActivity(true)}
-                  size="sm"
-                >
+                <Button onClick={() => setIsAddingActivity(true)} size="sm">
                   <Plus className="h-4 w-4 mr-2" />
-                  Agregar Actividad
+                  Agregar Actuación
                 </Button>
               </div>
 
-          {/* Add Activity Form */}
-          {isAddingActivity && (
-            <div className="border rounded-lg p-4 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Tipo de Actividad</Label>
-                  <Select
-                    value={newActivity.activity_type}
-                    onValueChange={(value) => setNewActivity({ ...newActivity, activity_type: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                     <SelectContent>
-                      <SelectItem value="auto">Auto</SelectItem>
-                      <SelectItem value="providencia">Providencia</SelectItem>
-                      <SelectItem value="traslado">Traslado</SelectItem>
-                      <SelectItem value="audiencia">Audiencia</SelectItem>
-                      <SelectItem value="notificacion">Notificación</SelectItem>
-                      <SelectItem value="memorial">Memorial / Escrito</SelectItem>
-                      <SelectItem value="reunion">Reunión</SelectItem>
-                      <SelectItem value="llamada">Llamada</SelectItem>
-                      <SelectItem value="nota">Nota Interna</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Fecha y Hora</Label>
-                  <Input
-                    type="datetime-local"
-                    value={newActivity.activity_date}
-                    onChange={(e) => setNewActivity({ ...newActivity, activity_date: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Título</Label>
-                <Input
-                  value={newActivity.title}
-                  onChange={(e) => setNewActivity({ ...newActivity, title: e.target.value })}
-                  placeholder="Título de la actividad"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Descripción</Label>
-                <Textarea
-                  value={newActivity.description}
-                  onChange={(e) => setNewActivity({ ...newActivity, description: e.target.value })}
-                  placeholder="Descripción detallada de la actividad"
-                  rows={3}
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button onClick={handleAddActivity}>
-                  Agregar Actividad
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setIsAddingActivity(false)}
-                >
-                  Cancelar
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Activities Timeline */}
-          <div className="max-h-96 overflow-y-auto space-y-3">
-            {isLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              </div>
-            ) : activities.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No hay actividades registradas para este caso</p>
-                <Button 
-                  variant="outline" 
-                  className="mt-4" 
-                  onClick={() => setIsAddingActivity(true)}
-                >
-                  Agregar primera actividad
-                </Button>
-              </div>
-            ) : (
-              activities.map((activity, index) => (
-                <div key={activity.id} className="flex gap-4 p-4 border rounded-lg">
-                  <div className={`p-2 rounded-full ${getActivityColor(activity.activity_type)}`}>
-                    {getActivityIcon(activity.activity_type)}
+              {isAddingActivity && (
+                <div className="border rounded-lg p-4 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Tipo de Actuación</Label>
+                      <Select
+                        value={newActivity.activity_type}
+                        onValueChange={(value) => setNewActivity({ ...newActivity, activity_type: value })}
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="auto">Auto</SelectItem>
+                          <SelectItem value="providencia">Providencia</SelectItem>
+                          <SelectItem value="traslado">Traslado</SelectItem>
+                          <SelectItem value="audiencia">Audiencia</SelectItem>
+                          <SelectItem value="notificacion">Notificación</SelectItem>
+                          <SelectItem value="memorial">Memorial / Escrito</SelectItem>
+                          <SelectItem value="reunion">Reunión</SelectItem>
+                          <SelectItem value="llamada">Llamada</SelectItem>
+                          <SelectItem value="nota">Nota Interna</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Fecha y Hora</Label>
+                      <Input
+                        type="datetime-local"
+                        value={newActivity.activity_date}
+                        onChange={(e) => setNewActivity({ ...newActivity, activity_date: e.target.value })}
+                      />
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium">{activity.title}</h4>
-                      <div className="text-sm text-muted-foreground">
-                        {format(new Date(activity.activity_date), 'dd/MM/yyyy HH:mm', { locale: es })}
+                  <div className="space-y-2">
+                    <Label>Título</Label>
+                    <Input
+                      value={newActivity.title}
+                      onChange={(e) => setNewActivity({ ...newActivity, title: e.target.value })}
+                      placeholder="Título de la actuación"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Descripción</Label>
+                    <Textarea
+                      value={newActivity.description}
+                      onChange={(e) => setNewActivity({ ...newActivity, description: e.target.value })}
+                      placeholder="Descripción detallada"
+                      rows={3}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button onClick={handleAddActivity}>Agregar</Button>
+                    <Button variant="outline" onClick={() => setIsAddingActivity(false)}>Cancelar</Button>
+                  </div>
+                </div>
+              )}
+
+              <div className="max-h-96 overflow-y-auto space-y-3">
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  </div>
+                ) : activities.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No hay actuaciones registradas</p>
+                    <Button variant="outline" className="mt-4" onClick={() => setIsAddingActivity(true)}>
+                      Agregar primera actuación
+                    </Button>
+                  </div>
+                ) : (
+                  activities.map((activity) => (
+                    <div key={activity.id} className="flex gap-4 p-4 border rounded-lg">
+                      <div className={`p-2 rounded-full ${getActivityColor(activity.activity_type)}`}>
+                        {getActivityIcon(activity.activity_type)}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-medium">{activity.title}</h4>
+                          <div className="text-sm text-muted-foreground">
+                            {format(new Date(activity.activity_date), 'dd/MM/yyyy HH:mm', { locale: es })}
+                          </div>
+                        </div>
+                        {activity.description && (
+                          <p className="text-sm text-muted-foreground mb-2">{activity.description}</p>
+                        )}
+                        <Badge variant="outline" className="text-xs">
+                          {getActivityLabel(activity.activity_type)}
+                        </Badge>
                       </div>
                     </div>
-                    {activity.description && (
-                      <p className="text-sm text-muted-foreground mb-2">
-                        {activity.description}
-                      </p>
-                    )}
-                    <Badge variant="outline" className="text-xs">
-                      {getActivityLabel(activity.activity_type)}
-                    </Badge>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+                  ))
+                )}
+              </div>
             </TabsContent>
 
             <TabsContent value="ai_tools">
@@ -344,9 +328,7 @@ const CaseTraceabilityModal: React.FC<CaseTraceabilityModalProps> = ({
         </div>
 
         <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={onClose}>
-            Cerrar
-          </Button>
+          <Button variant="outline" onClick={onClose}>Cerrar</Button>
         </div>
       </DialogContent>
     </Dialog>
