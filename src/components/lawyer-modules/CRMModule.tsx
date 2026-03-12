@@ -69,6 +69,19 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
     }
   };
 
+  const fetchPortalClients = async () => {
+    try {
+      const { data } = await supabase
+        .from('crm_clients')
+        .select('id, name, email')
+        .eq('lawyer_id', user.id)
+        .order('name');
+      setPortalClients(data || []);
+    } catch (err) {
+      console.error('Error fetching clients for portal:', err);
+    }
+  };
+
   const commonProps = {
     searchTerm,
     onRefresh: fetchStats,
