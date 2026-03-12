@@ -1,76 +1,87 @@
 
 
-# Soporte Multi-Formato via Code Interpreter de OpenAI
+# Insights del Control de Procesos Real vs Nuestro CRM
 
-## Descubrimiento Clave
+## Hallazgos Clave del Excel
 
-La herramienta **Code Interpreter** de OpenAI soporta nativamente estos formatos relevantes para documentos legales:
+El abogado gestiona **~160+ procesos** organizados por juzgado. Su Excel tiene estas columnas críticas que **no existen en nuestro CRM**:
 
-| Formato | MIME type |
-|---------|-----------|
-| .pdf | application/pdf |
-| .doc | application/msword |
-| .docx | application/vnd.openxmlformats-officedocument.wordprocessingml.document |
-| .txt | text/plain |
-| .xlsx | application/vnd.openxmlformats-officedocument.spreadsheetml.sheet |
-| .pptx | application/vnd.openxmlformats-officedocument.presentationml.presentation |
+| Campo del Excel | ¿Existe en nuestro CRM? | Impacto |
+|---|---|---|
+| **Radicado** (número 23 dígitos) | Parcial — `case_number` con placeholder genérico | Alto |
+| **Juzgado de Conocimiento** | No existe | Crítico |
+| **Clase de Proceso** (Pertenencia, Ejecutivo, etc.) | `case_type` como texto libre | Alto |
+| **Demandante** | No existe | Crítico |
+| **Demandado** | No existe | Crítico |
+| **Cliente** (diferente al demandante) | Solo `client_id` | Medio |
+| **Tarea Pendiente** (nota rápida en la fila) | No existe en la tarjeta | Alto |
+| **Asignado A** (MIGUEL, DIANA, LADY) | No existe | Alto |
+| **Enlace Hoja de Ruta** (Google Sheet por caso) | No existe | Medio |
+| **Expediente Digital** (OneDrive del juzgado) | Ya se agregó parcialmente | Bajo |
+| **Agrupación por Juzgado** | No existe — solo lista plana | Alto |
+| **Vista tipo tabla/spreadsheet** | No existe — solo tarjetas | Crítico |
 
-Ademas, los archivos enviados en el `input` del modelo se suben automaticamente al container de Code Interpreter. No se requiere subida manual previa.
+## Problemas Principales
 
-## Estrategia de Procesamiento
+1. **El formulario de caso no habla el idioma del abogado**: Pide "Título del Caso" y "Tipo" como texto libre, cuando el abogado piensa en Radicado + Juzgado + Clase de Proceso + Demandante vs Demandado.
 
-```text
-PDF --> input_file (procesamiento nativo, mas rapido, sin container)
-DOCX/DOC/TXT/XLSX --> code_interpreter tool (OpenAI extrae el contenido via Python)
-```
+2. **No hay campos para las partes procesales**: Demandante y Demandado son datos fundamentales que el abogado consulta constantemente. Nuestro CRM solo tiene "Cliente".
 
-- Para **PDF**: seguir usando `input_file` como esta ahora (funciona perfecto)
-- Para **DOCX/DOC y otros**: agregar `code_interpreter` como tool en la request, enviar el archivo como `input_file` en el input, y OpenAI usara Python para leer el contenido y analizarlo
+3. **No hay asignación de equipo**: El despacho tiene al menos 3 personas (Miguel, Diana, Lady Patricia). No pueden saber quién lleva cada caso.
 
-## Cambios a Realizar
+4. **La "Tarea Pendiente" no es una tarea formal**: Es una nota rápida/urgente pegada al caso (ej: "URGENTE/PENDIENTE CUMPLIR CON REQUERIMIENTOS", "OJO PREGUNTAR POR EL TRÁMITE"). Nuestro sistema de tareas es demasiado formal para esto.
 
-### 1. Edge Function (`legal-document-analysis/index.ts`)
+5. **160+ casos no se pueden ver en tarjetas**: Necesitan una vista de tabla tipo spreadsheet para escanear rápidamente, filtrar por juzgado o asignado.
 
-- Eliminar la funcion `extractTextFromDocx` (regex fragil, ya no se necesita)
-- Para archivos no-PDF (DOCX, DOC, TXT, XLSX): enviar el archivo como `input_file` en el input + agregar `tools: [{ type: "code_interpreter", container: { type: "auto" } }]` en la request
-- Mantener la ruta actual de PDF sin cambios (ya funciona con `input_file` directo)
-- Mantener la ruta de texto plano sin cambios
+6. **Los tipos de proceso son específicos**: Pertenencia, Ejecutivo, Reivindicatorio, Responsabilidad Civil Extracontractual, Servidumbre Petrolera, Unión Marital de Hecho, Sucesión, Nulidad y Restablecimiento, Ordinario Laboral, etc.
 
-### 2. Frontend (`AnalyzeModule.tsx`)
+## Plan de Implementación
 
-- Restaurar el `accept` del input de archivos para incluir `.pdf,.doc,.docx,.txt`
-- Restaurar la validacion para aceptar estos tipos de archivo
-- Mantener la codificacion base64 via `FileReader.readAsDataURL()`
+### 1. Reestructurar el formulario de Casos
+**Archivo**: `CRMCasesView.tsx`
 
-### 3. Formato de la Request con Code Interpreter
+- Reemplazar campo "Título del Caso" por campos estructurados:
+  - **Radicado** (input con placeholder de formato: `500064089001-2024-00096-00`)
+  - **Juzgado** (input con texto libre, ya que hay decenas de juzgados)
+  - **Clase de Proceso** (Select con tipos colombianos: Pertenencia, Ejecutivo, Ejecutivo Singular, Ejecutivo Laboral, Ejecutivo de Alimentos, Reivindicatorio, Responsabilidad Civil Extracontractual, Ordinario Laboral, Sucesión, Unión Marital de Hecho, Nulidad y Restablecimiento del Derecho, Reparación Directa, Divisorio, Simulación, Servidumbre Petrolera, Pertenencia, Designación de Apoyo, Acción Popular, Acción de Tutela, Acción de Cumplimiento, Acción Contractual, Otro)
+  - **Demandante** (input texto)
+  - **Demandado** (input texto)
+  - **Nota Rápida / Tarea Pendiente** (textarea corto, visible en la tarjeta del caso)
+  - **Asignado A** (input texto — nombre del miembro del equipo)
+  - **Enlace Hoja de Ruta** (URL, opcional)
+  - **Enlace Expediente Digital** (URL, opcional)
+- El "Título" se auto-genera como: `{Clase de Proceso} - {Demandante} vs {Demandado}`
+- Mantener: Cliente, Estado, Prioridad, Fechas
 
-```text
-{
-  model: "gpt-4o",
-  tools: [{ type: "code_interpreter", container: { type: "auto" } }],
-  input: [
-    {
-      role: "user",
-      content: [
-        { type: "input_file", filename: "contrato.docx", file_data: "data:application/...;base64,..." },
-        { type: "input_text", text: "Analiza este documento legal..." }
-      ]
-    }
-  ],
-  instructions: "...",
-  text: { format: { type: "json_object" } }
-}
-```
+### 2. Agregar vista de tabla
+**Archivo**: `CRMCasesView.tsx`
+
+- Agregar toggle entre vista de tarjetas y vista de tabla
+- La tabla muestra: Radicado, Juzgado, Clase, Demandante, Demandado, Cliente, Asignado, Nota Pendiente, Estado
+- Filtros por: Juzgado, Asignado A, Clase de Proceso, Estado
+- Ordenable por columnas
+- Esto replica la experiencia del Excel que ya conocen
+
+### 3. Nota rápida visible en tarjeta
+**Archivo**: `CRMCasesView.tsx`
+
+- En la vista de tarjetas, mostrar la "Nota Pendiente" con estilo destacado (fondo amarillo/warning si contiene "URGENTE" o "OJO")
+- Editable inline sin abrir modal
+
+### 4. Actualizar interface y formData
+- Agregar campos: `juzgado`, `clase_proceso`, `demandante`, `demandado`, `asignado_a`, `nota_pendiente`, `enlace_hoja_ruta`, `enlace_expediente`
+- Estos campos se guardarán en las columnas existentes de la DB o como metadata JSON si no existen las columnas
 
 ## Archivos a Modificar
 
-1. `supabase/functions/legal-document-analysis/index.ts` - Agregar ruta con code_interpreter para DOCX/DOC, eliminar extractTextFromDocx
-2. `src/components/lawyer-modules/AnalyzeModule.tsx` - Restaurar aceptacion de PDF, DOC, DOCX, TXT
+| Archivo | Cambios |
+|---|---|
+| `CRMCasesView.tsx` | Reestructurar formulario completo, agregar vista tabla, filtros, nota rápida |
+| `CasePipelineView.tsx` | Mostrar radicado y demandante/demandado en las tarjetas del pipeline |
+| `CaseTraceabilityModal.tsx` | Mostrar datos procesales en el encabezado |
 
-## Resultado Esperado
-
-- Procesamiento confiable de PDF, DOC, DOCX y TXT sin extraccion manual
-- OpenAI maneja toda la complejidad de parseo via Code Interpreter (Python sandbox)
-- El regex fragil de DOCX se elimina completamente
-- Codigo mas simple: ~200 lineas en el edge function
+## Alcance
+- 3 archivos modificados
+- Se requiere verificar schema de `crm_cases` en Supabase para agregar columnas si es necesario
+- Sin dependencias nuevas
 
