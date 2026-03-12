@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Plus, Edit2, Trash2, FileText, Download, Eye, Lock, Unlock } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { DocumentViewer } from '@/components/client-portal/DocumentViewer';
 
 interface Document {
   id: string;
@@ -47,6 +48,7 @@ const CRMDocumentsView: React.FC<CRMDocumentsViewProps> = ({ lawyerData, searchT
   const [cases, setCases] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [viewerDoc, setViewerDoc] = useState<Document | null>(null);
   const [editingDocument, setEditingDocument] = useState<Document | null>(null);
   const [formData, setFormData] = useState({
     client_id: '',
@@ -486,7 +488,7 @@ const CRMDocumentsView: React.FC<CRMDocumentsViewProps> = ({ lawyerData, searchT
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => window.open(doc.file_url, '_blank')}
+                        onClick={() => setViewerDoc(doc)}
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
@@ -512,6 +514,17 @@ const CRMDocumentsView: React.FC<CRMDocumentsViewProps> = ({ lawyerData, searchT
           ))
         )}
       </div>
+
+      {/* Document Viewer */}
+      {viewerDoc?.file_url && (
+        <DocumentViewer
+          open={!!viewerDoc}
+          onOpenChange={(open) => !open && setViewerDoc(null)}
+          documentUrl={viewerDoc.file_url}
+          documentName={viewerDoc.name}
+          documentType={viewerDoc.document_type}
+        />
+      )}
     </div>
   );
 };
