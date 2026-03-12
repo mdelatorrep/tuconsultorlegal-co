@@ -447,7 +447,7 @@ export default function LeadPipeline({ searchTerm, onRefresh, lawyerData }: Prop
       <Dialog open={showConvertDialog} onOpenChange={setShowConvertDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Convertir Lead a Cliente</DialogTitle>
+            <DialogTitle>Convertir Contacto a Cliente</DialogTitle>
             <DialogDescription>
               Se creará un nuevo cliente y caso para {selectedLead?.name}
             </DialogDescription>
