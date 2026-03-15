@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
 <h2>1. RESPONSABLE DEL TRATAMIENTO</h2>
 <p>El responsable del tratamiento de tus datos personales es:</p>
 <ul>
-<li><strong>Razón Social:</strong> TU CONSULTOR LEGAL S.A.S.</li>
+<li><strong>Razón Social:</strong> PRAXIS SERVICES CO S.A.S.</li>
 <li><strong>NIT:</strong> [Número de NIT de la empresa]</li>
 <li><strong>Domicilio:</strong> Envigado, Antioquia, Colombia.</li>
 <li><strong>Correo electrónico:</strong> contacto@praxis-hub.co</li>
