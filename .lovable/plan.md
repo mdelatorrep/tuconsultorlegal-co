@@ -1,76 +1,80 @@
 
 
-# Soporte Multi-Formato via Code Interpreter de OpenAI
+# Plan: Sistema de UTM Tracking para Lanzamiento de Plataforma
 
-## Descubrimiento Clave
+## Objetivo
+Crear un sistema completo de generación, captura y análisis de UTMs desde el admin portal, enfocado en atribuir correctamente los registros de abogados a las campañas de marketing.
 
-La herramienta **Code Interpreter** de OpenAI soporta nativamente estos formatos relevantes para documentos legales:
-
-| Formato | MIME type |
-|---------|-----------|
-| .pdf | application/pdf |
-| .doc | application/msword |
-| .docx | application/vnd.openxmlformats-officedocument.wordprocessingml.document |
-| .txt | text/plain |
-| .xlsx | application/vnd.openxmlformats-officedocument.spreadsheetml.sheet |
-| .pptx | application/vnd.openxmlformats-officedocument.presentationml.presentation |
-
-Ademas, los archivos enviados en el `input` del modelo se suben automaticamente al container de Code Interpreter. No se requiere subida manual previa.
-
-## Estrategia de Procesamiento
+## Flujo completo
 
 ```text
-PDF --> input_file (procesamiento nativo, mas rapido, sin container)
-DOCX/DOC/TXT/XLSX --> code_interpreter tool (OpenAI extrae el contenido via Python)
+Admin genera UTM → URL con params → Abogado llega a /auth-abogados?utm_source=...
+→ Frontend captura UTMs al cargar → Se guardan en sessionStorage
+→ Al hacer signUp, UTMs se adjuntan como metadata del usuario
+→ Se registran en tabla utm_tracking_events
+→ Admin ve dashboard con métricas de atribución por campaña
 ```
 
-- Para **PDF**: seguir usando `input_file` como esta ahora (funciona perfecto)
-- Para **DOCX/DOC y otros**: agregar `code_interpreter` como tool en la request, enviar el archivo como `input_file` en el input, y OpenAI usara Python para leer el contenido y analizarlo
+## Componentes
 
-## Cambios a Realizar
+### 1. Tabla `utm_campaigns` (campañas creadas desde admin)
+- `id`, `name`, `platform` (google, facebook, linkedin, instagram, tiktok, email, whatsapp, referral, other)
+- `utm_source`, `utm_medium`, `utm_campaign`, `utm_term`, `utm_content`
+- `generated_url`, `short_description`, `is_active`, `created_by`, `created_at`
+- RLS: solo lectura para service role (se accede vía edge functions desde admin)
 
-### 1. Edge Function (`legal-document-analysis/index.ts`)
+### 2. Tabla `utm_tracking_events` (eventos capturados)
+- `id`, `session_id`, `utm_source`, `utm_medium`, `utm_campaign`, `utm_term`, `utm_content`
+- `landing_page`, `referrer`, `user_agent`, `ip_address`
+- `lawyer_id` (nullable, se llena al registrarse)
+- `event_type` (visit, signup, login)
+- `created_at`
+- RLS: insert para anon (tracking), select para service role
 
-- Eliminar la funcion `extractTextFromDocx` (regex fragil, ya no se necesita)
-- Para archivos no-PDF (DOCX, DOC, TXT, XLSX): enviar el archivo como `input_file` en el input + agregar `tools: [{ type: "code_interpreter", container: { type: "auto" } }]` en la request
-- Mantener la ruta actual de PDF sin cambios (ya funciona con `input_file` directo)
-- Mantener la ruta de texto plano sin cambios
+### 3. Frontend: Captura automática de UTMs
+- **Archivo**: `src/hooks/useUTMTracking.ts`
+- Al cargar cualquier página con `?utm_source=...`, parsear y guardar en `sessionStorage`
+- Llamar edge function para registrar evento "visit"
+- Integrar en `LawyerLogin.tsx` y `LawyerAuthPage.tsx`
 
-### 2. Frontend (`AnalyzeModule.tsx`)
+### 4. Frontend: UTMs en signup
+- **Modificar**: `src/hooks/useLawyerAuth.ts`
+- Al hacer `signUp`, incluir UTMs del sessionStorage en `options.data` (metadata del usuario)
+- Después del signup, registrar evento "signup" con `lawyer_id`
 
-- Restaurar el `accept` del input de archivos para incluir `.pdf,.doc,.docx,.txt`
-- Restaurar la validacion para aceptar estos tipos de archivo
-- Mantener la codificacion base64 via `FileReader.readAsDataURL()`
+### 5. Admin: Generador de UTMs
+- **Nuevo componente**: `src/components/admin/UTMCampaignManager.tsx`
+- Formulario para crear campañas: nombre, plataforma, parámetros UTM
+- Generación automática de URL completa (`/auth-abogados?utm_source=...&utm_medium=...`)
+- Botón copiar URL
+- Lista de campañas activas con métricas inline (visitas, registros, conversión)
 
-### 3. Formato de la Request con Code Interpreter
+### 6. Admin: Dashboard de Atribución
+- Integrado en el mismo componente como tabs: "Campañas" | "Análisis"
+- Métricas: visitas por campaña, registros, tasa de conversión, top plataformas
+- Gráfico de barras simple por plataforma
+- Tabla con desglose por campaña
 
-```text
-{
-  model: "gpt-4o",
-  tools: [{ type: "code_interpreter", container: { type: "auto" } }],
-  input: [
-    {
-      role: "user",
-      content: [
-        { type: "input_file", filename: "contrato.docx", file_data: "data:application/...;base64,..." },
-        { type: "input_text", text: "Analiza este documento legal..." }
-      ]
-    }
-  ],
-  instructions: "...",
-  text: { format: { type: "json_object" } }
-}
-```
+### 7. Edge Function: `utm-track-event`
+- Recibe: `{ sessionId, utmParams, eventType, lawyerId?, landingPage, referrer }`
+- Inserta en `utm_tracking_events`
+- No requiere JWT (visitantes anónimos)
 
-## Archivos a Modificar
+### 8. Sidebar Admin
+- Agregar "UTM & Campañas" en sección "Inteligencia de Negocio" con icono `Link`
+- Registrar vista `utm-campaigns` en `AdminPage.tsx`
 
-1. `supabase/functions/legal-document-analysis/index.ts` - Agregar ruta con code_interpreter para DOCX/DOC, eliminar extractTextFromDocx
-2. `src/components/lawyer-modules/AnalyzeModule.tsx` - Restaurar aceptacion de PDF, DOC, DOCX, TXT
+## Archivos a crear/modificar
 
-## Resultado Esperado
-
-- Procesamiento confiable de PDF, DOC, DOCX y TXT sin extraccion manual
-- OpenAI maneja toda la complejidad de parseo via Code Interpreter (Python sandbox)
-- El regex fragil de DOCX se elimina completamente
-- Codigo mas simple: ~200 lineas en el edge function
+| Archivo | Cambio |
+|---|---|
+| **Migration SQL** | Crear tablas `utm_campaigns` y `utm_tracking_events` con RLS |
+| `src/hooks/useUTMTracking.ts` | **Nuevo** -- captura y persistencia de UTMs |
+| `src/components/admin/UTMCampaignManager.tsx` | **Nuevo** -- generador + dashboard de UTMs |
+| `supabase/functions/utm-track-event/index.ts` | **Nuevo** -- edge function para registrar eventos |
+| `src/hooks/useLawyerAuth.ts` | Adjuntar UTMs al metadata en signUp |
+| `src/components/LawyerAuthPage.tsx` | Integrar `useUTMTracking` |
+| `src/components/admin/AdminSidebar.tsx` | Agregar entrada "UTM & Campañas" |
+| `src/components/AdminPage.tsx` | Agregar case para vista utm-campaigns |
+| `supabase/config.toml` | Registrar `utm-track-event` |
 
