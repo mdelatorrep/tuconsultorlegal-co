@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { AuthStorage } from '@/utils/authStorage';
 import { useLogRocket } from '@/hooks/useLogRocket';
 import { User, Session } from '@supabase/supabase-js';
+import { getStoredUTMs } from '@/hooks/useUTMTracking';
 
 interface LawyerUser {
   id: string;
