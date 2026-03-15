@@ -63,7 +63,7 @@ export default function UserTypeSelector({ onSelectType, onBack }: UserTypeSelec
           
           <div className="space-y-4">
             <h1 className="text-4xl md:text-5xl font-bold text-primary mb-4">
-              Accede a Tu Consultor Legal
+              Accede a Praxis Hub
             </h1>
             <p className="text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
               Elige tu perfil para acceder a servicios legales personalizados y herramientas especializadas

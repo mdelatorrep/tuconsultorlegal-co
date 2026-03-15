@@ -83,7 +83,7 @@ export const LogRocketConfig: React.FC<LogRocketConfigProps> = ({ onConfigSave }
           <h1 className="text-3xl font-bold">Configuración LogRocket</h1>
         </div>
         <p className="text-muted-foreground">
-          Configura el monitoreo de experiencia de usuario para Tu Consultor Legal
+          Configura el monitoreo de experiencia de usuario para Praxis Hub
         </p>
       </div>
 

@@ -753,11 +753,11 @@ function AdminPage() {
       const { data, error: emailError } = await supabase.functions.invoke('send-email', {
         body: {
           to: selectedMessageForReply.email,
-          subject: `Re: Consulta desde Tu Consultor Legal`,
-          html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <div style="background: linear-gradient(135deg, #0372E8, #0056b3); padding: 20px; text-align: center;">
-                <h1 style="color: white; margin: 0;">Tu Consultor Legal</h1>
+           subject: `Re: Consulta desde Praxis Hub`,
+           html: `
+             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+               <div style="background: linear-gradient(135deg, #3d5a6c, #2a3f4d); padding: 20px; text-align: center;">
+                 <h1 style="color: white; margin: 0;">Praxis Hub</h1>
               </div>
               <div style="padding: 30px; background: #f9f9f9;">
                 <p style="color: #333;">Hola <strong>${selectedMessageForReply.name}</strong>,</p>

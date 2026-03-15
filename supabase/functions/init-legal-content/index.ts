@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
 
 <p>¡Bienvenido a <strong>Praxis Hub</strong>! Antes de utilizar nuestros servicios, te pedimos que leas detenidamente los siguientes Términos y Condiciones (en adelante, "T&C"). Al acceder y utilizar nuestra plataforma, aceptas y te comprometes a cumplir con lo aquí estipulado. Si no estás de acuerdo con estos T&C, por favor, no utilices nuestros servicios.</p>
 
-<p>Este sitio web es operado por <strong>TU CONSULTOR LEGAL S.A.S.</strong>, una sociedad legalmente constituida en Colombia.</p>
+<p>Este sitio web es operado por <strong>PRAXIS SERVICES CO S.A.S.</strong>, una sociedad legalmente constituida en Colombia.</p>
 
 <h2>1. DEFINICIONES</h2>
 <ul>
@@ -59,12 +59,12 @@ Deno.serve(async (req) => {
 <p><strong>PRAXIS HUB</strong></p>
 <p>Fecha de última actualización: 5 de julio de 2025</p>
 
-<p>En <strong>TU CONSULTOR LEGAL S.A.S.</strong>, sociedad legalmente constituida en Colombia e identificada con NIT [Número de NIT de la empresa], estamos comprometidos con la protección de tu privacidad y la seguridad de tu información. Esta Política de Privacidad describe cómo recopilamos, usamos, almacenamos, compartimos y protegemos tus datos personales, en cumplimiento estricto de la Ley Estatutaria 1581 de 2012, el Decreto 1377 de 2013 y demás normas concordantes en Colombia.</p>
+<p>En <strong>PRAXIS SERVICES CO S.A.S.</strong>, sociedad legalmente constituida en Colombia e identificada con NIT [Número de NIT de la empresa], estamos comprometidos con la protección de tu privacidad y la seguridad de tu información. Esta Política de Privacidad describe cómo recopilamos, usamos, almacenamos, compartimos y protegemos tus datos personales, en cumplimiento estricto de la Ley Estatutaria 1581 de 2012, el Decreto 1377 de 2013 y demás normas concordantes en Colombia.</p>
 
 <h2>1. RESPONSABLE DEL TRATAMIENTO</h2>
 <p>El responsable del tratamiento de tus datos personales es:</p>
 <ul>
-<li><strong>Razón Social:</strong> TU CONSULTOR LEGAL S.A.S.</li>
+<li><strong>Razón Social:</strong> PRAXIS SERVICES CO S.A.S.</li>
 <li><strong>NIT:</strong> [Número de NIT de la empresa]</li>
 <li><strong>Domicilio:</strong> Envigado, Antioquia, Colombia.</li>
 <li><strong>Correo electrónico:</strong> contacto@praxis-hub.co</li>
@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
 <h2>DERECHOS DE PROPIEDAD INTELECTUAL</h2>
 
 <h3>De la Plataforma:</h3>
-<p>Todo el contenido del sitio web, incluyendo el diseño, textos, gráficos, logos, íconos, el software, y el Asistente de IA "Lexi", son propiedad exclusiva de <strong>TU CONSULTOR LEGAL S.A.S.</strong> o de sus licenciantes y están protegidos por las leyes de propiedad intelectual de Colombia.</p>
+<p>Todo el contenido del sitio web, incluyendo el diseño, textos, gráficos, logos, íconos, el software, y el Asistente de IA "Lexi", son propiedad exclusiva de <strong>PRAXIS SERVICES CO S.A.S.</strong> o de sus licenciantes y están protegidos por las leyes de propiedad intelectual de Colombia.</p>
 
 <h3>De los Documentos Finales:</h3>
 <p>Una vez el Usuario ha pagado por un Servicio y el documento ha sido entregado tras la Revisión Humana, el Usuario adquiere una licencia de uso personal y no exclusiva sobre dicho documento final para los fines para los que fue creado. No está permitida su reventa o distribución masiva.</p>
