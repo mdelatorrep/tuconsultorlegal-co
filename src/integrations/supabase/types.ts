@@ -4441,6 +4441,126 @@ export type Database = {
         }
         Relationships: []
       }
+      utm_campaigns: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          generated_url: string
+          id: string
+          is_active: boolean
+          name: string
+          platform: string
+          short_description: string | null
+          updated_at: string
+          utm_campaign: string
+          utm_content: string | null
+          utm_medium: string
+          utm_source: string
+          utm_term: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          generated_url: string
+          id?: string
+          is_active?: boolean
+          name: string
+          platform?: string
+          short_description?: string | null
+          updated_at?: string
+          utm_campaign: string
+          utm_content?: string | null
+          utm_medium: string
+          utm_source: string
+          utm_term?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          generated_url?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          platform?: string
+          short_description?: string | null
+          updated_at?: string
+          utm_campaign?: string
+          utm_content?: string | null
+          utm_medium?: string
+          utm_source?: string
+          utm_term?: string | null
+        }
+        Relationships: []
+      }
+      utm_tracking_events: {
+        Row: {
+          campaign_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          ip_address: string | null
+          landing_page: string | null
+          lawyer_id: string | null
+          referrer: string | null
+          session_id: string | null
+          user_agent: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          landing_page?: string | null
+          lawyer_id?: string | null
+          referrer?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          landing_page?: string | null
+          lawyer_id?: string | null
+          referrer?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "utm_tracking_events_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "utm_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "utm_tracking_events_lawyer_id_fkey"
+            columns: ["lawyer_id"]
+            isOneToOne: false
+            referencedRelation: "lawyer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       venue_spaces: {
         Row: {
           amenities: Json | null
