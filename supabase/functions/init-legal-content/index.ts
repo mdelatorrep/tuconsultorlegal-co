@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
 <p><strong>PRAXIS HUB</strong></p>
 <p>Fecha de última actualización: 5 de julio de 2025</p>
 
-<p>En <strong>TU CONSULTOR LEGAL S.A.S.</strong>, sociedad legalmente constituida en Colombia e identificada con NIT [Número de NIT de la empresa], estamos comprometidos con la protección de tu privacidad y la seguridad de tu información. Esta Política de Privacidad describe cómo recopilamos, usamos, almacenamos, compartimos y protegemos tus datos personales, en cumplimiento estricto de la Ley Estatutaria 1581 de 2012, el Decreto 1377 de 2013 y demás normas concordantes en Colombia.</p>
+<p>En <strong>PRAXIS SERVICES CO S.A.S.</strong>, sociedad legalmente constituida en Colombia e identificada con NIT [Número de NIT de la empresa], estamos comprometidos con la protección de tu privacidad y la seguridad de tu información. Esta Política de Privacidad describe cómo recopilamos, usamos, almacenamos, compartimos y protegemos tus datos personales, en cumplimiento estricto de la Ley Estatutaria 1581 de 2012, el Decreto 1377 de 2013 y demás normas concordantes en Colombia.</p>
 
 <h2>1. RESPONSABLE DEL TRATAMIENTO</h2>
 <p>El responsable del tratamiento de tus datos personales es:</p>
