@@ -5,9 +5,11 @@ import { Shield, CheckCircle } from 'lucide-react';
 import LawyerLogin from './LawyerLogin';
 import Header from './Header';
 import { useToast } from '@/hooks/use-toast';
+import { useUTMTracking } from '@/hooks/useUTMTracking';
 
 export default function LawyerAuthPage() {
   const { toast } = useToast();
+  useUTMTracking();
 
   // Detectar confirmación de email al cargar (cuando viene de /auth-abogados#access_token=...)
   useEffect(() => {

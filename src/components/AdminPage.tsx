@@ -40,6 +40,7 @@ import { StrategicDecisions } from "./admin/StrategicDecisions";
 import LawyerVerificationAdmin from "./admin/LawyerVerificationAdmin";
 import { AdminSpecializedAgents } from "./admin/AdminSpecializedAgents";
 import FeatureFlagsManager from "./admin/FeatureFlagsManager";
+import { UTMCampaignManager } from "./admin/UTMCampaignManager";
 import {
   Copy, Users, Bot, BarChart3, Clock, CheckCircle, Lock, Unlock, Trash2, Check, X, Plus, RefreshCw, 
   Loader2, MessageCircle, BookOpen, Settings, Zap, Mail, Phone, Bell, LogOut, UserCheck, 
@@ -1004,6 +1005,9 @@ function AdminPage() {
       
       case 'strategic':
         return <StrategicDecisions onNavigate={setCurrentView} />;
+      
+      case 'utm-campaigns':
+        return <UTMCampaignManager />;
       
       case 'verifications':
         return <LawyerVerificationAdmin adminId={user?.id || ''} />;

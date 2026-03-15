@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { AuthStorage } from '@/utils/authStorage';
 import { useLogRocket } from '@/hooks/useLogRocket';
 import { User, Session } from '@supabase/supabase-js';
+import { getStoredUTMs } from '@/hooks/useUTMTracking';
 
 interface LawyerUser {
   id: string;
@@ -235,7 +236,8 @@ export const useLawyerAuth = () => {
             is_lawyer: true,
             can_create_agents: false,
             can_create_blogs: false,
-            can_use_ai_tools: false
+            can_use_ai_tools: false,
+            ...getStoredUTMs(),
           }
         }
       });
