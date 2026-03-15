@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
 <h2>DERECHOS DE PROPIEDAD INTELECTUAL</h2>
 
 <h3>De la Plataforma:</h3>
-<p>Todo el contenido del sitio web, incluyendo el diseño, textos, gráficos, logos, íconos, el software, y el Asistente de IA "Lexi", son propiedad exclusiva de <strong>TU CONSULTOR LEGAL S.A.S.</strong> o de sus licenciantes y están protegidos por las leyes de propiedad intelectual de Colombia.</p>
+<p>Todo el contenido del sitio web, incluyendo el diseño, textos, gráficos, logos, íconos, el software, y el Asistente de IA "Lexi", son propiedad exclusiva de <strong>PRAXIS SERVICES CO S.A.S.</strong> o de sus licenciantes y están protegidos por las leyes de propiedad intelectual de Colombia.</p>
 
 <h3>De los Documentos Finales:</h3>
 <p>Una vez el Usuario ha pagado por un Servicio y el documento ha sido entregado tras la Revisión Humana, el Usuario adquiere una licencia de uso personal y no exclusiva sobre dicho documento final para los fines para los que fue creado. No está permitida su reventa o distribución masiva.</p>
