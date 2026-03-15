@@ -593,7 +593,7 @@ export default function LawyerPublicProfilePage() {
         </div>
       </main>
       
-      <Footer onNavigate={() => {}} />
+      <Footer />
     </div>
   );
 }
