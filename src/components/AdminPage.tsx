@@ -1006,6 +1006,9 @@ function AdminPage() {
       case 'strategic':
         return <StrategicDecisions onNavigate={setCurrentView} />;
       
+      case 'utm-campaigns':
+        return <UTMCampaignManager />;
+      
       case 'verifications':
         return <LawyerVerificationAdmin adminId={user?.id || ''} />;
       
