@@ -142,6 +142,8 @@ export default function LawyerAuthPage() {
           </div>
         </div>
       </section>
+
+      <Footer />
     </div>
   );
 }
