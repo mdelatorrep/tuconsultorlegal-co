@@ -9,6 +9,7 @@ import { useUTMTracking } from '@/hooks/useUTMTracking';
 
 export default function LawyerAuthPage() {
   const { toast } = useToast();
+  useUTMTracking();
 
   // Detectar confirmación de email al cargar (cuando viene de /auth-abogados#access_token=...)
   useEffect(() => {

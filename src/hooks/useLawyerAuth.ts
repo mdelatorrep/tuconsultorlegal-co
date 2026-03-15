@@ -236,7 +236,8 @@ export const useLawyerAuth = () => {
             is_lawyer: true,
             can_create_agents: false,
             can_create_blogs: false,
-            can_use_ai_tools: false
+            can_use_ai_tools: false,
+            ...getStoredUTMs(),
           }
         }
       });

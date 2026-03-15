@@ -191,3 +191,6 @@ verify_jwt = false
 
 [functions.crm-ai-assistant]
 verify_jwt = false
+
+[functions.utm-track-event]
+verify_jwt = false

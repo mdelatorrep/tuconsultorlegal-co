@@ -41,6 +41,7 @@ export const AdminSidebar = ({
         { id: 'revenue', label: 'Revenue & Finanzas', icon: DollarSign, count: 0 },
         { id: 'retention', label: 'Retención & Engagement', icon: Heart, count: 0 },
         { id: 'strategic', label: 'Decisiones Estratégicas', icon: Target, count: 0 },
+        { id: 'utm-campaigns', label: 'UTM & Campañas', icon: Link, count: 0 },
       ]
     },
     {
