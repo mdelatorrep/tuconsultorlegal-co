@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
 
 <p>¡Bienvenido a <strong>Praxis Hub</strong>! Antes de utilizar nuestros servicios, te pedimos que leas detenidamente los siguientes Términos y Condiciones (en adelante, "T&C"). Al acceder y utilizar nuestra plataforma, aceptas y te comprometes a cumplir con lo aquí estipulado. Si no estás de acuerdo con estos T&C, por favor, no utilices nuestros servicios.</p>
 
-<p>Este sitio web es operado por <strong>TU CONSULTOR LEGAL S.A.S.</strong>, una sociedad legalmente constituida en Colombia.</p>
+<p>Este sitio web es operado por <strong>PRAXIS SERVICES CO S.A.S.</strong>, una sociedad legalmente constituida en Colombia.</p>
 
 <h2>1. DEFINICIONES</h2>
 <ul>
