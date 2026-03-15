@@ -2,12 +2,16 @@ import logoIcon from "@/assets/favicon.png";
 import { Linkedin } from "lucide-react";
 
 interface FooterProps {
-  onNavigate: (page: string) => void;
+  onNavigate?: (page: string) => void;
 }
 
 export default function Footer({ onNavigate }: FooterProps) {
-  const handleNavClick = (pageId: string) => {
-    onNavigate(pageId);
+  const navigate = (pageId: string) => {
+    if (onNavigate) {
+      onNavigate(pageId);
+    } else {
+      window.location.href = `/#${pageId}`;
+    }
   };
 
   return (
@@ -33,28 +37,31 @@ export default function Footer({ onNavigate }: FooterProps) {
             </h3>
             <ul className="space-y-3">
               <li>
-                <button
-                  onClick={() => handleNavClick("lawyer-landing")}
+                <a
+                  href="/#lawyer-landing"
+                  onClick={(e) => { e.preventDefault(); navigate("lawyer-landing"); }}
                   className="text-background/60 hover:text-background transition-colors font-light"
                 >
                   Para Abogados
-                </button>
+                </a>
               </li>
               <li>
-                <button
-                  onClick={() => handleNavClick("personas")}
+                <a
+                  href="/#personas"
+                  onClick={(e) => { e.preventDefault(); navigate("personas"); }}
                   className="text-background/60 hover:text-background transition-colors font-light"
                 >
                   Para Ciudadanos
-                </button>
+                </a>
               </li>
               <li>
-                <button
-                  onClick={() => handleNavClick("blog")}
+                <a
+                  href="/#blog"
+                  onClick={(e) => { e.preventDefault(); navigate("blog"); }}
                   className="text-background/60 hover:text-background transition-colors font-light"
                 >
                   Recursos
-                </button>
+                </a>
               </li>
             </ul>
           </div>
@@ -66,28 +73,31 @@ export default function Footer({ onNavigate }: FooterProps) {
             </h3>
             <ul className="space-y-3">
               <li>
-                <button
-                  onClick={() => handleNavClick("terminos")}
+                <a
+                  href="/#terminos"
+                  onClick={(e) => { e.preventDefault(); navigate("terminos"); }}
                   className="text-background/60 hover:text-background transition-colors font-light"
                 >
                   Términos de uso
-                </button>
+                </a>
               </li>
               <li>
-                <button
-                  onClick={() => handleNavClick("privacidad")}
+                <a
+                  href="/#privacidad"
+                  onClick={(e) => { e.preventDefault(); navigate("privacidad"); }}
                   className="text-background/60 hover:text-background transition-colors font-light"
                 >
                   Privacidad
-                </button>
+                </a>
               </li>
               <li>
-                <button
-                  onClick={() => handleNavClick("contacto")}
+                <a
+                  href="/#contacto"
+                  onClick={(e) => { e.preventDefault(); navigate("contacto"); }}
                   className="text-background/60 hover:text-background transition-colors font-light"
                 >
                   Contacto
-                </button>
+                </a>
               </li>
             </ul>
           </div>

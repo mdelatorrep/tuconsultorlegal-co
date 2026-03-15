@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Shield, CheckCircle } from 'lucide-react';
 import LawyerLogin from './LawyerLogin';
 import Header from './Header';
+import Footer from './Footer';
 import { useToast } from '@/hooks/use-toast';
 import { useUTMTracking } from '@/hooks/useUTMTracking';
 
@@ -141,6 +142,8 @@ export default function LawyerAuthPage() {
           </div>
         </div>
       </section>
+
+      <Footer />
     </div>
   );
 }
