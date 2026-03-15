@@ -243,7 +243,7 @@ export default function LawyerPublicProfilePage() {
             </CardHeader>
           </Card>
         </div>
-        <Footer onNavigate={() => {}} />
+        <Footer />
       </div>
     );
   }
