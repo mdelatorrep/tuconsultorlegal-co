@@ -135,6 +135,31 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
       const success = await loginWithEmailAndPassword(email, password);
       
       if (success) {
+        // Process pending referral code on first login after email confirmation
+        const savedRefCode = localStorage.getItem('referral_code');
+        if (savedRefCode) {
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+              await supabase.functions.invoke('referral-process', {
+                body: { 
+                  action: 'apply_code',
+                  referralCode: savedRefCode,
+                  lawyerId: user.id 
+                }
+              });
+              localStorage.removeItem('referral_code');
+              console.log('Referral code applied on login:', savedRefCode);
+              toast({
+                title: "¡Código de referido aplicado!",
+                description: "Has recibido créditos de bienvenida por tu código de referido.",
+                duration: 6000,
+              });
+            }
+          } catch (refError) {
+            console.error('Error applying referral code on login:', refError);
+          }
+        }
         toast({
           title: "¡Bienvenido!",
           description: "Has iniciado sesión exitosamente.",
