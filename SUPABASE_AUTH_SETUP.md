@@ -73,7 +73,7 @@ Puedes personalizar las plantillas de email en **Authentication > Email Template
 ```html
 <h2>Confirma tu cuenta de abogado</h2>
 <p>Hola,</p>
-<p>¡Gracias por registrarte en Tu Consultor Legal!</p>
+<p>¡Gracias por registrarte en Praxis Hub!</p>
 <p>Haz clic en el siguiente enlace para confirmar tu cuenta:</p>
 <p><a href="{{ .ConfirmationURL }}">Confirmar Email</a></p>
 ```
