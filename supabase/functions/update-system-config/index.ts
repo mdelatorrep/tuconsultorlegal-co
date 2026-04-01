@@ -186,11 +186,16 @@ serve(async (req) => {
     console.log(`Admin ${adminProfile.email} updating config: ${configKey} = ${configValue}`);
 
     // Upsert the system configuration (insert if not exists, update if exists)
+    // Handle both primitive values and JSON objects (like feature flags)
+    const serializedValue = typeof configValue === 'object' 
+      ? JSON.stringify(configValue) 
+      : String(configValue);
+
     const { data: updatedConfig, error: updateError } = await supabaseAdmin
       .from('system_config')
       .upsert({
         config_key: configKey,
-        config_value: String(configValue), // Ensure it's a string
+        config_value: serializedValue,
         description: description || null,
         updated_at: new Date().toISOString()
       }, {
@@ -208,7 +213,7 @@ serve(async (req) => {
     const costSyncResult = await recalculateAffectedToolCosts(
       supabaseAdmin, 
       configKey, 
-      String(configValue)
+      serializedValue
     );
 
     if (costSyncResult.updated > 0) {
