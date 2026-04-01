@@ -44,19 +44,35 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
     const hash = window.location.hash;
     const url = new URL(window.location.href);
     
-    // Check for referral code in URL (format: #abogados?ref=CODE)
+    // Check for referral code in URL - support both formats:
+    // 1. Hash format: /#abogados?ref=CODE
+    // 2. Query format: /auth-abogados?ref=CODE
+    let refCode: string | null = null;
+    
+    // Try hash params first
     const hashParts = hash.split('?');
     if (hashParts.length > 1) {
       const params = new URLSearchParams(hashParts[1]);
-      const refCode = params.get('ref');
-      if (refCode) {
-        localStorage.setItem('referral_code', refCode);
-        console.log('Referral code saved:', refCode);
-        toast({
-          title: "¡Código de referido detectado!",
-          description: `Código ${refCode} aplicado. Completa tu registro para recibir tus créditos de bienvenida.`,
-          duration: 6000,
-        });
+      refCode = params.get('ref');
+    }
+    
+    // Fallback to query params
+    if (!refCode) {
+      refCode = url.searchParams.get('ref');
+    }
+    
+    if (refCode) {
+      localStorage.setItem('referral_code', refCode);
+      console.log('Referral code saved:', refCode);
+      toast({
+        title: "¡Código de referido detectado!",
+        description: `Código ${refCode} aplicado. Completa tu registro para recibir tus créditos de bienvenida.`,
+        duration: 6000,
+      });
+      // Clean ref param from URL without reload
+      if (url.searchParams.has('ref')) {
+        url.searchParams.delete('ref');
+        window.history.replaceState({}, document.title, url.toString());
       }
     }
     
@@ -135,6 +151,31 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
       const success = await loginWithEmailAndPassword(email, password);
       
       if (success) {
+        // Process pending referral code on first login after email confirmation
+        const savedRefCode = localStorage.getItem('referral_code');
+        if (savedRefCode) {
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+              await supabase.functions.invoke('referral-process', {
+                body: { 
+                  action: 'apply_code',
+                  referralCode: savedRefCode,
+                  lawyerId: user.id 
+                }
+              });
+              localStorage.removeItem('referral_code');
+              console.log('Referral code applied on login:', savedRefCode);
+              toast({
+                title: "¡Código de referido aplicado!",
+                description: "Has recibido créditos de bienvenida por tu código de referido.",
+                duration: 6000,
+              });
+            }
+          } catch (refError) {
+            console.error('Error applying referral code on login:', refError);
+          }
+        }
         toast({
           title: "¡Bienvenido!",
           description: "Has iniciado sesión exitosamente.",
@@ -246,9 +287,9 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
             try {
               await supabase.functions.invoke('referral-process', {
                 body: { 
-                  action: 'apply',
+                  action: 'apply_code',
                   referralCode: savedRefCode,
-                  newLawyerId: user.id 
+                  lawyerId: user.id 
                 }
               });
               localStorage.removeItem('referral_code');
