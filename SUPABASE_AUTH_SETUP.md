@@ -45,16 +45,16 @@ Este documento detalla la configuración necesaria para habilitar todas las func
 
    **Site URL:**
    ```
-   https://tuconsultorlegal.co
-   ```
+    https://praxis-hub.co
+    ```
 
-   **Redirect URLs (añadir todas estas):**
-   ```
-   https://tuconsultorlegal.co/#abogados
-   https://tuconsultorlegal.co/
-   http://localhost:5173/#abogados
-   http://localhost:5173/
-   ```
+    **Redirect URLs (añadir todas estas):**
+    ```
+    https://praxis-hub.co/#abogados
+    https://praxis-hub.co/
+    http://localhost:5173/#abogados
+    http://localhost:5173/
+    ```
 
 ### Paso 3: Verificar Configuración SMTP
 
@@ -73,7 +73,7 @@ Puedes personalizar las plantillas de email en **Authentication > Email Template
 ```html
 <h2>Confirma tu cuenta de abogado</h2>
 <p>Hola,</p>
-<p>¡Gracias por registrarte en Tu Consultor Legal!</p>
+<p>¡Gracias por registrarte en Praxis Hub!</p>
 <p>Haz clic en el siguiente enlace para confirmar tu cuenta:</p>
 <p><a href="{{ .ConfirmationURL }}">Confirmar Email</a></p>
 ```
@@ -82,7 +82,7 @@ Puedes personalizar las plantillas de email en **Authentication > Email Template
 ```html
 <h2>Restablecer contraseña</h2>
 <p>Hola,</p>
-<p>Has solicitado restablecer tu contraseña en Tu Consultor Legal.</p>
+<p>Has solicitado restablecer tu contraseña en Praxis Hub.</p>
 <p>Haz clic en el siguiente enlace para continuar:</p>
 <p><a href="{{ .ConfirmationURL }}">Restablecer Contraseña</a></p>
 <p>Si no solicitaste este cambio, ignora este email.</p>

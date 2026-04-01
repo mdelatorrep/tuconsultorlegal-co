@@ -469,9 +469,9 @@ Estas variables están disponibles en **todas** las plantillas:
 | `document_type` | Tipo de documento | "Contrato de Arrendamiento" |
 | `token` | Token único del documento | "ABC123DEF456" |
 | `price` | Precio del documento | "50000" |
-| `tracking_url` | URL de seguimiento | "https://tuconsultorlegal.co/#documento?code=..." |
-| `site_url` | URL del sitio | "https://tuconsultorlegal.co" |
-| `dashboard_url` | URL del dashboard | "https://tuconsultorlegal.co/#abogados" |
+| `tracking_url` | URL de seguimiento | "https://praxis-hub.co/#documento?code=..." |
+| `site_url` | URL del sitio | "https://praxis-hub.co" |
+| `dashboard_url` | URL del dashboard | "https://praxis-hub.co/#abogados" |
 | `current_year` | Año actual | "2025" |
 | `sla_deadline` | Fecha límite SLA | "lunes, 13 de enero de 2025" |
 | `payment_date` | Fecha de pago | "13 de enero de 2025" |
@@ -493,8 +493,8 @@ Estas variables están disponibles en **todas** las plantillas:
 ## 📞 Contacto
 
 Para soporte técnico relacionado con el sistema de notificaciones:
-- Email: soporte@tuconsultorlegal.co
-- Documentación: [docs.tuconsultorlegal.co](https://docs.tuconsultorlegal.co)
+- Email: contacto@praxis-hub.co
+- Documentación: [praxis-hub.co](https://praxis-hub.co)
 
 ---
 

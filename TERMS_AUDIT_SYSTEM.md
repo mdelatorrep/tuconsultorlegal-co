@@ -235,8 +235,8 @@ ORDER BY accepted_at DESC;
 ## 📞 Soporte
 
 Para consultas sobre el sistema de auditoría:
-- 📧 Email: legal@tuconsultorlegal.co
-- 🔧 Técnico: dev@tuconsultorlegal.co
+- 📧 Email: contacto@praxis-hub.co
+- 🔧 Técnico: contacto@praxis-hub.co
 - 📝 Documentación: Este archivo
 
 ## 🔄 Historial de Cambios
