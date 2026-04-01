@@ -140,7 +140,7 @@ serve(async (req) => {
             specialization: agent.specialization,
             target_audience: agent.target_audience,
             legal_advisor: 'true',
-            created_by_system: 'tuconsultorlegal'
+            created_by_system: 'praxis-hub'
           }
         })
       });
