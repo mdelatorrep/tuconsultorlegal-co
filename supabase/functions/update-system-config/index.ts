@@ -213,7 +213,7 @@ serve(async (req) => {
     const costSyncResult = await recalculateAffectedToolCosts(
       supabaseAdmin, 
       configKey, 
-      String(configValue)
+      serializedValue
     );
 
     if (costSyncResult.updated > 0) {
