@@ -45,16 +45,16 @@ Este documento detalla la configuración necesaria para habilitar todas las func
 
    **Site URL:**
    ```
-   https://tuconsultorlegal.co
-   ```
+    https://praxis-hub.co
+    ```
 
-   **Redirect URLs (añadir todas estas):**
-   ```
-   https://tuconsultorlegal.co/#abogados
-   https://tuconsultorlegal.co/
-   http://localhost:5173/#abogados
-   http://localhost:5173/
-   ```
+    **Redirect URLs (añadir todas estas):**
+    ```
+    https://praxis-hub.co/#abogados
+    https://praxis-hub.co/
+    http://localhost:5173/#abogados
+    http://localhost:5173/
+    ```
 
 ### Paso 3: Verificar Configuración SMTP
 
