@@ -271,9 +271,9 @@ export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
             try {
               await supabase.functions.invoke('referral-process', {
                 body: { 
-                  action: 'apply',
+                  action: 'apply_code',
                   referralCode: savedRefCode,
-                  newLawyerId: user.id 
+                  lawyerId: user.id 
                 }
               });
               localStorage.removeItem('referral_code');
