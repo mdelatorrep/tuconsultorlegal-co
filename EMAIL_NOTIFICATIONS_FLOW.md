@@ -493,8 +493,8 @@ Estas variables están disponibles en **todas** las plantillas:
 ## 📞 Contacto
 
 Para soporte técnico relacionado con el sistema de notificaciones:
-- Email: soporte@tuconsultorlegal.co
-- Documentación: [docs.tuconsultorlegal.co](https://docs.tuconsultorlegal.co)
+- Email: contacto@praxis-hub.co
+- Documentación: [praxis-hub.co](https://praxis-hub.co)
 
 ---
 
