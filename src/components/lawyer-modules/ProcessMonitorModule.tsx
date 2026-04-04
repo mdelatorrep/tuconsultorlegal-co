@@ -244,12 +244,6 @@ export function ProcessMonitorModule({ lawyerId }: ProcessMonitorModuleProps) {
     try {
       setSyncing(true);
       
-      // Consume credits
-      const creditResult = await consumeCredits('process_monitor', { action: 'sync', processId });
-      if (!creditResult.success) {
-        return;
-      }
-      
       const { data, error } = await supabase.functions.invoke('rama-judicial-monitor', {
         body: { 
           action: 'sync',
