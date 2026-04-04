@@ -119,8 +119,22 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout,
       if (error) throw error;
       if (!data.success) throw new Error(data.error || 'Error en la generación');
 
-      // Convert markdown content to basic HTML for the editor
+      // Extract clean content - handle cases where model nests JSON or adds reasoning
       let content = data.content || '';
+      
+      // If content contains a nested JSON with "content" field, extract it
+      const nestedJsonMatch = content.match(/\{[\s\S]*"content"\s*:\s*"([\s\S]*?)"\s*[,}]/);
+      if (nestedJsonMatch && content.includes('**Razonamiento**') || content.includes('**Documento Legal**')) {
+        try {
+          const nestedJson = JSON.parse(content.substring(content.indexOf('{')));
+          if (nestedJson.content) content = nestedJson.content;
+        } catch {
+          // If nested parse fails, strip reasoning prefix
+          const docStart = content.indexOf('**CONTRATO') || content.indexOf('**ACCIÓN') || content.indexOf('**DERECHO') || content.indexOf('**PODER') || content.indexOf('**DEMANDA') || content.indexOf('**CARTA') || content.indexOf('**CLÁUSULA');
+          if (docStart > 0) content = content.substring(docStart);
+        }
+      }
+      
       content = markdownToHtml(content);
 
       setEditorContent(content);
