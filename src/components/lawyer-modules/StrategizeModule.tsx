@@ -278,16 +278,24 @@ export default function StrategizeModule({ user, currentView, onViewChange, onLo
             <div key={index} className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Análisis del Caso</CardTitle>
-                  <CardDescription>
-                    {analysis.caseDescription.length > 150 
-                      ? `${analysis.caseDescription.substring(0, 150)}...` 
-                      : analysis.caseDescription
-                    }
-                  </CardDescription>
-                  <Badge variant="outline">
-                    {new Date(analysis.timestamp).toLocaleDateString()}
-                  </Badge>
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <CardTitle>Análisis del Caso</CardTitle>
+                      <CardDescription>
+                        {analysis.caseDescription.length > 150 
+                          ? `${analysis.caseDescription.substring(0, 150)}...` 
+                          : analysis.caseDescription
+                        }
+                      </CardDescription>
+                      <Badge variant="outline" className="mt-2">
+                        {new Date(analysis.timestamp).toLocaleDateString()}
+                      </Badge>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => exportStrategyToPdf(analysis)}>
+                      <Download className="h-4 w-4 mr-2" />
+                      PDF
+                    </Button>
+                  </div>
                 </CardHeader>
               </Card>
 

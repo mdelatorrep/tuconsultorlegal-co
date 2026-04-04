@@ -458,6 +458,7 @@ export function CasePredictorModule({ lawyerId }: CasePredictorModuleProps) {
                 </Card>
               </TabsContent>
             </Tabs>
+            </>
           ) : (
             <Card className="h-full flex items-center justify-center min-h-[400px]">
               <div className="text-center p-8">
