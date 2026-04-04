@@ -758,9 +758,9 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
           />
         );
       case 'suin':
-        return <SuinJuriscolModule lawyerId={user.id} />;
+        return <SuinJuriscolModule />;
       case 'process-consultation':
-        return <ProcessQueryModule lawyerId={user.id} />;
+        return <ProcessQueryModule />;
       case 'voice':
         return <VoiceAssistant lawyerId={user.id} />;
       case 'predict':
