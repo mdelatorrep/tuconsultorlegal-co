@@ -68,7 +68,7 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout,
   const [isDrafting, setIsDrafting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
-  const [showCopilot, setShowCopilot] = useState(true);
+  const [showCopilot, setShowCopilot] = useState(false);
   const [hasGeneratedContent, setHasGeneratedContent] = useState(false);
   const quillRef = useRef<any>(null);
   const { toast } = useToast();
