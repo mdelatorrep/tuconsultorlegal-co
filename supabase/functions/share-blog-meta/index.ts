@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
     const publishedAt = blog.published_at || ''
     const tags = blog.tags?.join(', ') || 'derecho, legal, Colombia'
 
-    const userAgent = req.headers.get('user-agent') || ''
+    console.log(`[share-blog-meta] Blog found: "${blog.title}", isCrawler=${isCrawler(userAgent)}`)
 
     // For crawlers: return HTML with OG meta tags
     // For users: redirect to the actual blog page
