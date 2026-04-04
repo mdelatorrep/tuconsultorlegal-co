@@ -62,7 +62,11 @@ serve(async (req) => {
       'copilot_max_tokens_autocomplete'
     ]);
 
-    const model = configs['copilot_ai_model'];
+    // Ensure model has provider prefix for Lovable AI gateway
+    let model = configs['copilot_ai_model'];
+    if (!model.includes('/')) {
+      model = `openai/${model}`;
+    }
     const maxTokensSuggest = parseInt(configs['copilot_max_tokens_suggest']);
     const maxTokensAutocomplete = parseInt(configs['copilot_max_tokens_autocomplete']);
 
