@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Sparkles } from "lucide-react";
 import logoIcon from "@/assets/favicon.png";
 
 interface DashboardWelcomeProps {
