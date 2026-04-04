@@ -1017,10 +1017,10 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start" className="w-52">
                           <DropdownMenuItem onClick={() => setCurrentView('predict')} className="cursor-pointer">
-                            <Brain className="w-4 h-4 mr-2" /> Predictor
+                            <Brain className="w-4 h-4 mr-2" /> Análisis de Riesgos
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => setCurrentView('strategize')} className="cursor-pointer">
-                            <Bot className="w-4 h-4 mr-2" /> Agentes Especializados
+                            <Bot className="w-4 h-4 mr-2" /> Asistentes Legales
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => setCurrentView('training')} className="cursor-pointer">
                             <GraduationCap className="w-4 h-4 mr-2" /> Capacitación
