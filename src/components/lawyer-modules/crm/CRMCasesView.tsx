@@ -62,7 +62,7 @@ interface Case {
   demandado?: string;
   asignado_a?: string;
   nota_pendiente?: string;
-  enlace_hoja_ruta?: string;
+  
   enlace_expediente?: string;
   client?: {
     name: string;
