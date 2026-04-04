@@ -72,7 +72,7 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
     {
       key: "principal",
       section: {
-        title: "Panel Principal",
+        title: "Inicio",
         items: [
           { title: "Inicio", icon: Home, view: "dashboard" }
         ]
@@ -86,10 +86,10 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
         collapsible: true,
         defaultOpen: true,
         items: [
-          { title: "Investigación Legal", icon: Search, view: "research" },
-          { title: "SUIN-Juriscol", icon: Database, view: "suin-juriscol" },
-          { title: "Consulta Procesos", icon: Gavel, view: "process-query" },
-          { title: "Monitor Procesos", icon: Radar, view: "process-monitor" },
+          { title: "Consulta Jurídica", icon: Search, view: "research" },
+          { title: "Normativa (SUIN)", icon: Database, view: "suin-juriscol" },
+          { title: "Buscar Procesos", icon: Gavel, view: "process-query" },
+          { title: "Seguimiento Procesos", icon: Radar, view: "process-monitor" },
         ]
       }
     },
@@ -100,9 +100,9 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
         icon: FileText,
         collapsible: true,
         items: [
-          { title: "Análisis", icon: Eye, view: "analyze" },
-          { title: "Redacción con Copilot", icon: PenTool, view: "draft" },
-          { title: "Asistente de Voz", icon: Mic, view: "voice-assistant" },
+          { title: "Analizar Documento", icon: Eye, view: "analyze" },
+          { title: "Redacción Asistida", icon: PenTool, view: "draft" },
+          { title: "Dictado por Voz", icon: Mic, view: "voice-assistant" },
         ]
       }
     },
@@ -113,35 +113,35 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
         icon: Briefcase,
         collapsible: true,
         items: [
-          { title: "Clientes y Procesos", icon: Users, view: "crm" },
-          { title: "Calendario Legal", icon: Calendar, view: "legal-calendar" },
+          { title: "Clientes y Casos", icon: Users, view: "crm" },
+          { title: "Agenda", icon: Calendar, view: "legal-calendar" },
         ]
       }
     },
     {
       key: "herramientas-ia",
       section: {
-        title: "Herramientas IA",
+        title: "Asistentes IA",
         icon: Brain,
         collapsible: true,
         items: [
-          { title: "Agentes Especializados", icon: Sparkles, view: "specialized-agents" },
-          { title: "Estrategia Legal", icon: Target, view: "strategize" },
-          { title: "Predictor de Casos", icon: TrendingUp, view: "case-predictor" },
+          { title: "Asistentes Legales", icon: Sparkles, view: "specialized-agents" },
+          { title: "Planeación de Caso", icon: Target, view: "strategize" },
+          { title: "Análisis de Riesgos", icon: TrendingUp, view: "case-predictor" },
         ]
       }
     },
     {
       key: "gestion-ia",
       section: {
-        title: "Gestión IA",
+        title: "Administrar Asistentes",
         icon: Bot,
         collapsible: true,
         items: user?.canCreateAgents 
           ? [
-              { title: "Crear Agente", icon: Bot, view: "agent-creator" },
-              { title: "Gestionar Agentes", icon: Settings, view: "agent-manager" },
-              { title: "Métricas", icon: BarChart3, view: "stats" }
+              { title: "Crear Asistente", icon: Bot, view: "agent-creator" },
+              { title: "Mis Asistentes", icon: Settings, view: "agent-manager" },
+              { title: "Estadísticas", icon: BarChart3, view: "stats" }
             ]
           : [
               { title: "Solicitar Acceso", icon: Mail, view: "request-agent-access" }
@@ -151,21 +151,21 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
     {
       key: "desarrollo",
       section: {
-        title: "Desarrollo",
+        title: "Aprendizaje",
         icon: GraduationCap,
         items: [
-          { title: "Formación IA", icon: Brain, view: "training" }
+          { title: "Capacitación", icon: Brain, view: "training" }
         ]
       }
     },
     {
       key: "contenido",
       section: {
-        title: "Contenido",
+        title: "Publicaciones",
         icon: BookOpen,
         items: user?.canCreateBlogs
           ? [
-              { title: "Gestión Blog", icon: BookOpen, view: "blog-manager" }
+              { title: "Gestionar Blog", icon: BookOpen, view: "blog-manager" }
             ]
           : [
               { title: "Solicitar Acceso", icon: Mail, view: "request-blog-access" }
@@ -178,7 +178,7 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
         title: "Mi Cuenta",
         items: [
           { title: "Mis Créditos", icon: Coins, view: "credits" },
-          { title: "Logros y Ranking", icon: Trophy, view: "gamification" },
+          { title: "Logros y Puntos", icon: Trophy, view: "gamification" },
           { title: "Perfil Público", icon: User, view: "public-profile" },
           { title: "Configuración", icon: Settings, view: "account-settings" }
         ]
