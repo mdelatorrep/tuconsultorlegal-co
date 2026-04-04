@@ -44,7 +44,7 @@ const STEPS = [
     icon: CheckCircle,
     title: "Gestiona tareas y seguimiento",
     description: "Organiza tu trabajo con tareas, fechas límite y recordatorios automáticos.",
-    actionLabel: "Ver Tareas",
+    actionLabel: "Crear Tarea",
     key: "tasks" as const,
   },
 ];
