@@ -232,17 +232,25 @@ serve(async (req) => {
     const reasoningEffort = await getSystemConfig(supabase, 'analysis_reasoning_effort', 'medium') as 'low' | 'medium' | 'high';
     const isReasoningModel = /^(o[1-4]|gpt-5)/.test(aiModel);
     
-    // Check if web search is enabled for analysis
-    const webSearchEnabled = await getSystemConfig(supabase, 'analysis_web_search', 'true');
-    const useWebSearch = webSearchEnabled === 'true' || webSearchEnabled === true as any;
-
-    // Build tools array — web_search_preview is added when enabled
+    // Check if web search is enabled for analysis and load KB URLs
     const tools: any[] = [];
-    if (useWebSearch) {
-      tools.push({ type: 'web_search_preview' });
+    let kbPromptSection = '';
+    if (supportsWebSearch(aiModel)) {
+      const webSearchConfig = await loadWebSearchConfigAndBuildTool(supabase, 'analysis');
+      if (webSearchConfig) {
+        tools.push(webSearchConfig.tool);
+        kbPromptSection = buildKnowledgeBasePromptSection(webSearchConfig.knowledgeBaseUrls);
+      }
+    } else {
+      // Fallback: check legacy config flag
+      const webSearchEnabled = await getSystemConfig(supabase, 'analysis_web_search', 'true');
+      if (webSearchEnabled === 'true') {
+        tools.push({ type: 'web_search_preview' });
+      }
     }
+    const useWebSearch = tools.length > 0;
 
-    const analysisPrompt = `${ANALYSIS_JSON_PROMPT}\n\nDocumento a analizar: "${fileName}"`;
+    const analysisPrompt = `${ANALYSIS_JSON_PROMPT}${kbPromptSection}\n\nDocumento a analizar: "${fileName}"`;
 
     // ── Route: Binary file (PDF, DOCX, DOC) with base64 ──
     if (fileBase64 && isBinaryFormat(lowerName)) {
