@@ -263,8 +263,6 @@ export default function DocumentEditorWithCopilot({
     }
     setIsAnalyzing(true);
     try {
-      const result = await consumeCredits('copilot', { action: 'analyze' });
-      if (!result.success) return;
       const { data, error } = await supabase.functions.invoke('legal-copilot', {
         body: { action: 'analyze_inline', text: content, context: `Tipo de documento: ${documentType}`, language: 'es' }
       });
