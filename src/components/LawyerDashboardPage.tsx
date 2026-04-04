@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Save, CheckCircle, Bot, Settings, Brain, BookOpen, Search, Eye, PenTool, Target, Crown, Users, SpellCheck, AlertCircle, Clock, FileImage, Send, Database, Radar, Mic, TrendingUp, UserCircle, Calendar, Mail } from "lucide-react";
+import { FileText, Save, CheckCircle, Bot, Settings, Brain, BookOpen, Search, Eye, PenTool, Target, Crown, Users, SpellCheck, AlertCircle, Clock, FileImage, Send, Database, Radar, Mic, TrendingUp, UserCircle, Calendar, Mail, ChevronDown, Scale, FileSearch, BarChart3, GraduationCap } from "lucide-react";
 
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
