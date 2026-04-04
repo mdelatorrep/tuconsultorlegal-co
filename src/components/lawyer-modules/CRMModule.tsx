@@ -43,7 +43,7 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
   const [isAIChatOpen, setIsAIChatOpen] = useState(false);
   const [isPortalManagerOpen, setIsPortalManagerOpen] = useState(false);
   const [portalClients, setPortalClients] = useState<{ id: string; name: string; email: string }[]>([]);
-  const [processViewMode, setProcessViewMode] = useState<'kanban' | 'list'>('kanban');
+  
   const [clientsSubTab, setClientsSubTab] = useState<'clients' | 'entities' | 'leads'>('clients');
   const [activeTab, setActiveTab] = useState("novedades");
   const [autoOpenClients, setAutoOpenClients] = useState(false);
