@@ -81,11 +81,26 @@ export function useUTMTracking() {
     const utmData: UTMParams = {};
     let hasUTM = false;
 
+    // 1. Capturar UTMs estándar
     for (const key of UTM_PARAMS) {
       const value = params.get(key);
       if (value) {
         utmData[key] = value;
         hasUTM = true;
+      }
+    }
+
+    // 2. Si no hay UTMs estándar, detectar parámetros propietarios de plataformas
+    if (!utmData.utm_source) {
+      for (const platform of PLATFORM_DETECTION) {
+        if (params.get(platform.param)) {
+          utmData.utm_source = platform.source;
+          utmData.utm_medium = platform.medium;
+          utmData.utm_campaign = 'auto_detected';
+          utmData.utm_content = `${platform.param}:${params.get(platform.param)?.substring(0, 36)}`;
+          hasUTM = true;
+          break;
+        }
       }
     }
 
@@ -96,9 +111,12 @@ export function useUTMTracking() {
       // Track visit event
       trackEvent('visit');
 
-      // Clean UTM params from URL without reload
+      // Clean tracking params from URL without reload
       const url = new URL(window.location.href);
       UTM_PARAMS.forEach((key) => url.searchParams.delete(key));
+      PLATFORM_DETECTION.forEach((p) => url.searchParams.delete(p.param));
+      // LinkedIn also adds li_ed
+      url.searchParams.delete('li_ed');
       window.history.replaceState({}, '', url.toString());
     }
   }, []);
