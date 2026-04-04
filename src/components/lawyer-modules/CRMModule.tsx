@@ -267,7 +267,7 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
                 </Button>
               </div>
             </div>
-            {clientsSubTab === 'clients' && <CRMClientsView {...commonProps} />}
+            {clientsSubTab === 'clients' && <CRMClientsView {...commonProps} autoOpenCreate={autoOpenClients} onAutoOpenHandled={() => setAutoOpenClients(false)} />}
             {clientsSubTab === 'entities' && <CRMEntitiesView {...commonProps} />}
             {clientsSubTab === 'leads' && <LeadPipeline {...commonProps} />}
           </div>
