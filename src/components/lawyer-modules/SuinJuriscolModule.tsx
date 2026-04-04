@@ -534,9 +534,15 @@ export default function SuinJuriscolModule({ user, currentView, onViewChange, on
                         <MessageCircle className="h-5 w-5 text-emerald-600" />
                         Conversación de Búsqueda
                       </CardTitle>
-                      <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">
-                        {currentResult.results.length} fuentes
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">
+                          {currentResult.results.length} fuentes
+                        </Badge>
+                        <Button variant="outline" size="sm" onClick={() => exportSuinSearchToPdf(currentResult.query, currentResult.summary, currentResult.results)}>
+                          <Download className="h-4 w-4 mr-2" />
+                          PDF
+                        </Button>
+                      </div>
                     </div>
                     <CardDescription className="flex items-center gap-2 mt-1">
                       <Clock className="h-3 w-3" />
