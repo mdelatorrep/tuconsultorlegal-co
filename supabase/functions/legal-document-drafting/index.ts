@@ -102,19 +102,18 @@ Instrucciones específicas:
 - Marca con [ESPECIFICAR] los campos que requieren personalización
 - Incluye cláusulas de protección estándar
 
-FORMATO DEL CONTENIDO (MUY IMPORTANTE):
-- El campo "content" debe contener texto plano con markdown simple
-- NO uses etiquetas HTML (<p>, <br>, etc.)
-- Usa saltos de línea reales (\\n\\n) para separar párrafos
-- Usa ** para títulos importantes (ej: **CONTRATO DE ARRENDAMIENTO**)
-- Usa "Cláusula 1." para numerar cláusulas
-- NO incluyas razonamiento ni explicaciones en el contenido, solo el documento legal
+REGLAS CRÍTICAS DE FORMATO:
+1. Responde ÚNICAMENTE con un objeto JSON válido. NADA de texto antes ni después del JSON.
+2. NO incluyas razonamiento, explicaciones, preámbulos ni notas. Solo el JSON.
+3. El campo "content" debe contener DIRECTAMENTE el texto del documento legal, NO otro JSON anidado.
+4. Usa markdown simple en "content": ** para negritas, \\n\\n para párrafos, "Cláusula 1." para numerar.
+5. NO uses etiquetas HTML en "content".
 
-Responde en formato JSON:
+Estructura JSON requerida:
 {
-  "content": "Contenido del documento en texto plano con markdown simple",
-  "sections": ["Lista", "de", "secciones", "incluidas"],
-  "documentType": "Nombre completo del tipo de documento"
+  "content": "**TÍTULO DEL DOCUMENTO**\\n\\nTexto del documento aquí...",
+  "sections": ["Sección 1", "Sección 2"],
+  "documentType": "Nombre del tipo de documento"
 }`;
 
     const input = `Genera un borrador de: ${documentType}
