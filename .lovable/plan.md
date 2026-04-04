@@ -1,97 +1,81 @@
 
-Objetivo: convertir el módulo de Redacción en un “workspace” realmente usable, donde el editor pueda crecer, el Copilot permanezca cerca sin estorbar, y el usuario pueda redimensionar de forma evidente y estable.
 
-1. Diagnóstico confirmado
-- El problema principal no es funcional sino de layout.
-- El editor está limitado por dos restricciones acumuladas:
-  - `DraftModule.tsx` usa una altura fija `calc(100vh - 180px)`.
-  - `src/index.css` fuerza `.ql-editor { max-height: 500px; }`, lo que impide que el editor aproveche el alto disponible.
-- El divisor de paneles es demasiado delgado (`w-px`), por eso “no se puede agrandar” en la práctica aunque técnicamente exista resize.
-- El Copilot ocupa demasiado espacio vertical con chips + acciones rápidas + input, reduciendo el área real del chat.
-- No hay adaptación móvil/tablet: el split horizontal se mantiene incluso cuando ya no cabe bien.
+## Plan: Sistema de Reporte de Problemas para Abogados + Gestión Admin
 
-2. Cambios a implementar
-- Hacer que el estudio de redacción use layout flexible real:
-  - Reemplazar alturas fijas por una estructura con `flex`, `min-h-0`, `h-full`.
-  - Permitir que el editor y el chat llenen el alto disponible del contenedor padre.
-- Liberar ReactQuill para que crezca:
-  - Quitar el `max-height: 500px` global o sobrescribirlo específicamente en el módulo de redacción.
-  - Hacer que `.ql-container` y `.ql-editor` ocupen el alto del panel.
-- Mejorar el resize:
-  - Engrosar visualmente y funcionalmente el `ResizableHandle`.
-  - Hacerlo más visible al hover y con zona de agarre más amplia.
-  - Ajustar límites para que el abogado pueda dar mucho más espacio al editor cuando lo necesite.
-- Reorganizar el workspace:
-  - Header compacto arriba.
-  - Editor dominante a la izquierda.
-  - Copilot a la derecha, pero colapsable.
-  - En pantallas medianas/pequeñas, pasar a modo apilado o drawer en vez de split forzado.
-- Simplificar visualmente el Copilot:
-  - Reducir peso vertical de chips y acciones rápidas.
-  - Mantener el input siempre visible abajo.
-  - Dar más altura al área de mensajes.
-- Hacer persistente la preferencia de tamaño/visibilidad:
-  - Recordar ancho del Copilot y si quedó abierto/cerrado.
+### Concepto de UX
 
-3. Diseño propuesto
-```text
-[ Header compacto: tipo | título | guardar | PDF | Copilot ]
+La mejor forma no intrusiva de implementar esto es un **botón flotante discreto** (estilo "feedback widget") en el dashboard del abogado, que abra un formulario simple tipo drawer/modal. No va en el sidebar para no agregar ruido visual permanente. El botón usa un icono sutil (como un bug o bandera) y se posiciona en la esquina inferior izquierda, opuesto al QuickActionsBar que ya está en la inferior derecha.
 
-[ Editor principal ==================== | Copilot ===== ]
-[ toolbar quill                                      ]
-[ documento                                          ]
-[ documento                                          ]
-[ documento                                          ]
-[ documento                                          ]
+Desde el admin, se agrega una nueva sección "Reportes de Problemas" en la categoría "Comunicación" del sidebar.
+
+### Flujo del Abogado
+
+1. Ve un botón flotante discreto con icono de bandera/bug + tooltip "Reportar problema"
+2. Al hacer clic, abre un dialog compacto con:
+   - **Categoría** (select): Error en herramienta, Problema de rendimiento, Datos incorrectos, Sugerencia, Otro
+   - **Herramienta afectada** (select opcional): lista de módulos (Consulta Jurídica, Redacción Asistida, etc.)
+   - **Descripción** (textarea, requerido)
+   - **Captura de pantalla** (upload opcional, usando el bucket existente)
+3. Se envía y el abogado ve confirmación con un número de ticket
+4. Puede ver sus reportes previos desde Configuración (cuenta) con estado actual
+
+### Flujo del Admin
+
+1. Nueva sección "Reportes" en AdminSidebar bajo "Comunicación"
+2. Vista con tabla de reportes: fecha, abogado, categoría, herramienta, estado, prioridad
+3. Puede cambiar estado (nuevo, en revisión, resuelto, cerrado) y agregar notas internas
+4. Badge con conteo de reportes nuevos sin revisar
+
+### Cambios a implementar
+
+**1. Base de datos** - Nueva tabla `bug_reports`
+```sql
+CREATE TABLE public.bug_reports (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  lawyer_id UUID REFERENCES public.lawyer_profiles(id) ON DELETE CASCADE NOT NULL,
+  category TEXT NOT NULL, -- 'bug', 'performance', 'data', 'suggestion', 'other'
+  affected_tool TEXT, -- módulo afectado
+  description TEXT NOT NULL,
+  screenshot_url TEXT,
+  status TEXT NOT NULL DEFAULT 'new', -- 'new', 'in_review', 'resolved', 'closed'
+  priority TEXT DEFAULT 'normal', -- 'low', 'normal', 'high', 'urgent'
+  admin_notes TEXT,
+  resolved_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
 ```
+Con RLS: abogados ven solo los suyos (SELECT, INSERT), admins ven todos (SELECT, UPDATE).
 
-Responsive:
-```text
-Desktop:
-[ Editor | Copilot resizable ]
+**2. Componente del abogado** - `src/components/lawyer-modules/BugReportButton.tsx`
+- Botón flotante discreto en esquina inferior izquierda
+- Dialog con formulario de reporte
+- Solo visible cuando el usuario tiene sesión activa
+- Se renderiza en `LawyerDashboardPage.tsx`
 
-Tablet:
-[ Editor grande ]
-[ Copilot colapsable / apilado ]
+**3. Componente admin** - `src/components/admin/BugReportsManager.tsx`
+- Tabla con filtros por estado, categoría y prioridad
+- Acciones: cambiar estado, agregar notas, marcar prioridad
+- Contador de reportes nuevos
 
-Mobile:
-[ Editor ]
-[ Botón "Abrir asistente" -> panel inferior o modal ]
-```
+**4. Integración en AdminSidebar**
+- Nuevo item "Reportes" con icono `Bug` bajo "Comunicación"
+- Badge con conteo de reportes nuevos
 
-4. Archivos a tocar
-- `src/components/lawyer-modules/DraftModule.tsx`
-  - Rehacer el layout del estudio.
-  - Ajustar paneles, tamaños mínimos/máximos y comportamiento responsive.
-  - Persistir tamaño del Copilot.
-- `src/components/lawyer-modules/draft/DraftCopilotPanel.tsx`
-  - Reducir densidad visual.
-  - Dar prioridad al chat y al input.
-  - Mejorar distribución vertical interna.
-- `src/components/ui/resizable.tsx`
-  - Agrandar el handle y hacerlo más visible/usables.
-- `src/index.css`
-  - Eliminar o sobrescribir la restricción global de altura de Quill para este módulo.
+**5. Integración en AdminPage**
+- Renderizar `BugReportsManager` cuando `currentView === 'bug-reports'`
 
-5. Detalles técnicos
-- Usar `useIsMobile()` para cambiar entre split horizontal y layout apilado.
-- En el editor, asegurar:
-  - contenedor padre con `min-h-0`
-  - `.quill`, `.ql-container`, `.ql-editor` con `h-full`
-- En vez de depender de `100vh`, dejar que el módulo herede el alto del shell del dashboard.
-- Revisar que el split use `autoSaveId` o estado persistido para recordar ancho del Copilot.
-- Mantener el Copilot oculto antes de generar, pero cuando aparezca debe abrirse en un layout útil desde el primer momento.
+**6. Integración en LawyerDashboardPage**
+- Agregar `BugReportButton` como componente flotante
 
-6. Resultado esperado
-- El editor podrá ocupar casi toda la pantalla cuando el abogado lo necesite.
-- El Copilot seguirá cerca, pero sin bloquear la redacción.
-- El divisor será fácil de usar.
-- El chat se sentirá como chat real, no como una tarjeta comprimida.
-- La experiencia será usable en desktop, tablet y mobile.
+### Archivos a crear/modificar
 
-7. Validación al implementar
-- Verificar que el editor pueda crecer más allá de 500px.
-- Verificar que el divisor se pueda arrastrar fácilmente.
-- Verificar que el Copilot no robe demasiado alto al área de mensajes.
-- Verificar el flujo completo: generar borrador → editar → pedir ajuste al Copilot → insertar texto.
-- Verificar en desktop y mobile/tablet que no haya recortes ni áreas muertas.
+| Archivo | Acción |
+|---------|--------|
+| `supabase/migrations/...bug_reports.sql` | Crear tabla + RLS |
+| `src/components/lawyer-modules/BugReportButton.tsx` | Crear - widget flotante + formulario |
+| `src/components/admin/BugReportsManager.tsx` | Crear - gestión admin |
+| `src/components/LawyerDashboardPage.tsx` | Modificar - agregar BugReportButton |
+| `src/components/AdminPage.tsx` | Modificar - agregar vista bug-reports |
+| `src/components/admin/AdminSidebar.tsx` | Modificar - agregar item Reportes |
+
