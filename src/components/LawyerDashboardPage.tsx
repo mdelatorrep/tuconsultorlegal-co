@@ -953,7 +953,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
             onLogout={logout}
           />
 
-          <main className="flex-1 min-w-0 overflow-auto">
+          <main className="flex-1 min-w-0 flex flex-col h-screen overflow-hidden">
             <header className="h-12 md:h-14 border-b bg-background/95 backdrop-blur sticky top-0 z-40">
               <div className="flex h-full items-center justify-between px-3 md:px-4">
                 <div className="flex items-center gap-2 md:gap-4">
