@@ -49,7 +49,7 @@ const STEPS = [
   },
 ];
 
-export default function CRMOnboarding({ onNavigateToProfile, onOpenClients, onOpenCases, completedSteps }: CRMOnboardingProps) {
+export default function CRMOnboarding({ onNavigateToProfile, onOpenClients, onOpenCases, onOpenTasks, completedSteps }: CRMOnboardingProps) {
   const completedCount = Object.values(completedSteps).filter(Boolean).length;
   const progressPercent = (completedCount / STEPS.length) * 100;
 
@@ -58,6 +58,7 @@ export default function CRMOnboarding({ onNavigateToProfile, onOpenClients, onOp
       case "profile": onNavigateToProfile(); break;
       case "clients": onOpenClients(); break;
       case "cases": onOpenCases(); break;
+      case "tasks": onOpenTasks(); break;
     }
   };
 
