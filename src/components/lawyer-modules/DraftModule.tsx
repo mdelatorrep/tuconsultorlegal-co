@@ -243,15 +243,17 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout,
                   onChange={(e) => setTitle(e.target.value)}
                   className="flex-1 min-w-[200px]"
                 />
-                <Button
-                  variant={showCopilot ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setShowCopilot(!showCopilot)}
-                  className="shrink-0"
-                >
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  {showCopilot ? "Ocultar Copilot" : "Copilot"}
-                </Button>
+                {hasGeneratedContent && (
+                  <Button
+                    variant={showCopilot ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setShowCopilot(!showCopilot)}
+                    className="shrink-0"
+                  >
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    {showCopilot ? "Ocultar Copilot" : "Copilot"}
+                  </Button>
+                )}
               </div>
 
               {/* Description + Generate (shown when no content yet) */}
