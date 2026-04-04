@@ -119,14 +119,18 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout,
       if (error) throw error;
       if (!data.success) throw new Error(data.error || 'Error en la generación');
 
-      await consumeCredits('draft', { documentType });
-
       // Convert markdown content to basic HTML for the editor
       let content = data.content || '';
       content = markdownToHtml(content);
 
       setEditorContent(content);
       setHasGeneratedContent(true);
+      setShowCopilot(true);
+
+      // Consume credits after content is displayed
+      await consumeCredits('draft', { documentType }).catch(err => 
+        console.warn("Error consuming credits (content already displayed):", err)
+      );
 
       // Auto-set title if empty
       if (!title.trim()) {
