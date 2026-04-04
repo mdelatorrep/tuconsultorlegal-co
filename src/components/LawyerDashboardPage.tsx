@@ -803,7 +803,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
               onViewChange={(view) => setCurrentView(view as ViewType)}
               onLogout={logout}
             />
-            <main className="flex-1 min-w-0 overflow-auto">
+            <main className="flex-1 min-w-0 flex flex-col h-screen overflow-hidden">
               <header className="h-12 md:h-14 border-b bg-background/95 backdrop-blur sticky top-0 z-40">
                 <div className="flex h-full items-center justify-between px-3 md:px-4">
                   <div className="flex items-center gap-2 md:gap-4">
@@ -906,7 +906,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                   </div>
                 </div>
               </header>
-              <div className="p-4">
+              <div className="flex-1 overflow-auto p-4">
                 {renderModuleContent()}
               </div>
             </main>
@@ -953,7 +953,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
             onLogout={logout}
           />
 
-          <main className="flex-1 min-w-0 overflow-auto">
+          <main className="flex-1 min-w-0 flex flex-col h-screen overflow-hidden">
             <header className="h-12 md:h-14 border-b bg-background/95 backdrop-blur sticky top-0 z-40">
               <div className="flex h-full items-center justify-between px-3 md:px-4">
                 <div className="flex items-center gap-2 md:gap-4">
@@ -1058,7 +1058,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
               </div>
             </header>
 
-            <div className="container mx-auto px-3 md:px-4 lg:px-6 py-3 md:py-4 lg:py-6">
+            <div className="flex-1 overflow-auto container mx-auto px-3 md:px-4 lg:px-6 py-3 md:py-4 lg:py-6">
               {currentView === 'credits' ? (
                 <CreditsDashboard lawyerId={user.id} />
               ) : currentView === 'gamification' ? (
