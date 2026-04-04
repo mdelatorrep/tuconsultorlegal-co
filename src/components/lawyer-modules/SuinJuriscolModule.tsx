@@ -10,8 +10,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   BookOpen, Search, Loader2, Sparkles, FileText, Scale, 
   ExternalLink, ChevronDown, ChevronRight, Calendar, Clock,
-  Database, Globe, AlertCircle, CheckCircle2, History, MessageCircle, Send, Coins
+  Database, Globe, AlertCircle, CheckCircle2, History, MessageCircle, Send, Coins, Download
 } from "lucide-react";
+import { exportSuinSearchToPdf } from "@/utils/aiResultPdfExporter";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useCredits } from "@/hooks/useCredits";
