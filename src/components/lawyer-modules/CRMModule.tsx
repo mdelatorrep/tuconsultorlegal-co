@@ -206,29 +206,7 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
 
         {/* Tab 2: Procesos */}
         <TabsContent value="procesos">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant={processViewMode === 'kanban' ? 'default' : 'outline'}
-                onClick={() => setProcessViewMode('kanban')}
-              >
-                Kanban
-              </Button>
-              <Button
-                size="sm"
-                variant={processViewMode === 'list' ? 'default' : 'outline'}
-                onClick={() => setProcessViewMode('list')}
-              >
-                Lista
-              </Button>
-            </div>
-            {processViewMode === 'kanban' ? (
-              <CasePipelineView lawyerData={user} />
-            ) : (
-              <CRMCasesView {...commonProps} autoOpenCreate={autoOpenCases} onAutoOpenHandled={() => setAutoOpenCases(false)} />
-            )}
-          </div>
+          <CRMCasesView {...commonProps} autoOpenCreate={autoOpenCases} onAutoOpenHandled={() => setAutoOpenCases(false)} />
         </TabsContent>
 
         {/* Tab 3: Clientes */}
