@@ -109,9 +109,14 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
     }
   };
 
+  const refreshAfterAction = () => {
+    fetchStats();
+    fetchOnboardingStatus();
+  };
+
   const commonProps = {
     searchTerm,
-    onRefresh: fetchStats,
+    onRefresh: refreshAfterAction,
     lawyerData: user,
   };
 
