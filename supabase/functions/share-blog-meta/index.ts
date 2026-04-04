@@ -6,24 +6,8 @@ const corsHeaders = {
 }
 
 const SITE_URL = 'https://praxis-hub.co'
+const SUPABASE_URL = 'https://tkaezookvtpulfpaffes.supabase.co'
 const DEFAULT_OG_IMAGE = 'https://praxis-hub.co/og-image.png'
-
-const CRAWLER_USER_AGENTS = [
-  'linkedinbot',
-  'whatsapp',
-  'facebookexternalhit',
-  'twitterbot',
-  'telegrambot',
-  'slackbot',
-  'discordbot',
-  'googlebot',
-  'bingbot',
-]
-
-function isCrawler(userAgent: string): boolean {
-  const ua = userAgent.toLowerCase()
-  return CRAWLER_USER_AGENTS.some(bot => ua.includes(bot))
-}
 
 function escapeHtml(text: string): string {
   return text
@@ -43,7 +27,7 @@ Deno.serve(async (req) => {
     const url = new URL(req.url)
     const slug = url.searchParams.get('slug')
     const userAgent = req.headers.get('user-agent') || ''
-    console.log(`[share-blog-meta] slug=${slug}, userAgent=${userAgent.substring(0, 80)}`)
+    console.log(`[share-blog-meta] slug=${slug}, ua=${userAgent.substring(0, 100)}`)
 
     if (!slug) {
       return new Response('Missing slug parameter', { status: 400, headers: corsHeaders })
@@ -62,16 +46,19 @@ Deno.serve(async (req) => {
       .single()
 
     if (error || !blog) {
-      // Redirect to main site if blog not found
+      console.log(`[share-blog-meta] Blog not found for slug: ${slug}`)
       return new Response(null, {
         status: 302,
         headers: { ...corsHeaders, 'Location': SITE_URL }
       })
     }
 
-    const canonicalUrl = `${SITE_URL}/#blog-articulo-${blog.slug}`
+    // The share URL is this edge function itself — crawlers will hit this URL
+    const shareUrl = `${SUPABASE_URL}/functions/v1/share-blog-meta?slug=${encodeURIComponent(blog.slug)}`
+    const blogUrl = `${SITE_URL}/#blog-articulo-${blog.slug}`
     const title = escapeHtml(blog.title)
     const description = escapeHtml(blog.excerpt || blog.content?.substring(0, 160) || 'Artículo legal en Praxis Hub')
+    
     // Ensure OG image is large enough for LinkedIn (min 1200x627)
     let image = blog.featured_image || DEFAULT_OG_IMAGE
     if (image.includes('unsplash.com') && image.includes('w=')) {
@@ -80,17 +67,10 @@ Deno.serve(async (req) => {
     const publishedAt = blog.published_at || ''
     const tags = blog.tags?.join(', ') || 'derecho, legal, Colombia'
 
-    console.log(`[share-blog-meta] Blog found: "${blog.title}", isCrawler=${isCrawler(userAgent)}`)
+    console.log(`[share-blog-meta] Serving OG HTML for: "${blog.title}", image: ${image.substring(0, 80)}`)
 
-    // For crawlers: return HTML with OG meta tags
-    // For users: redirect to the actual blog page
-    if (!isCrawler(userAgent)) {
-      return new Response(null, {
-        status: 302,
-        headers: { ...corsHeaders, 'Location': canonicalUrl }
-      })
-    }
-
+    // Always return HTML with OG tags + a JS redirect for real users
+    // This way crawlers get the meta tags AND real users get redirected
     const html = `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -105,7 +85,7 @@ Deno.serve(async (req) => {
   <meta property="og:image" content="${escapeHtml(image)}" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-  <meta property="og:url" content="${escapeHtml(canonicalUrl)}" />
+  <meta property="og:url" content="${escapeHtml(shareUrl)}" />
   <meta property="og:site_name" content="Praxis Hub" />
   <meta property="og:locale" content="es_CO" />
   ${publishedAt ? `<meta property="article:published_time" content="${escapeHtml(publishedAt)}" />` : ''}
@@ -120,12 +100,16 @@ Deno.serve(async (req) => {
   <!-- LinkedIn specific -->
   <meta name="author" content="Praxis Hub" />
 
-  <link rel="canonical" href="${escapeHtml(canonicalUrl)}" />
+  <link rel="canonical" href="${escapeHtml(shareUrl)}" />
+
+  <!-- Redirect real users to the blog page (crawlers don't execute JS) -->
+  <meta http-equiv="refresh" content="0;url=${escapeHtml(blogUrl)}" />
+  <script>window.location.replace("${blogUrl}");</script>
 </head>
 <body>
   <h1>${title}</h1>
   <p>${description}</p>
-  <a href="${escapeHtml(canonicalUrl)}">Leer artículo completo en Praxis Hub</a>
+  <p><a href="${escapeHtml(blogUrl)}">Leer artículo completo en Praxis Hub</a></p>
 </body>
 </html>`
 
@@ -134,7 +118,7 @@ Deno.serve(async (req) => {
       headers: {
         ...corsHeaders,
         'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'public, max-age=3600',
+        'Cache-Control': 'public, max-age=3600, s-maxage=3600',
       }
     })
   } catch (error) {
