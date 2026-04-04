@@ -135,7 +135,6 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
           }}
           onOpenCases={() => {
             setActiveTab('procesos');
-            setProcessViewMode('list');
             setAutoOpenCases(true);
           }}
           onOpenTasks={() => {
