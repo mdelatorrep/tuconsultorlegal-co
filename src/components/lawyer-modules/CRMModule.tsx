@@ -123,8 +123,20 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
       {!allOnboardingComplete && (
         <CRMOnboarding
           onNavigateToProfile={() => onViewChange('public-profile')}
-          onOpenClients={() => setActiveTab('clientes')}
-          onOpenCases={() => setActiveTab('procesos')}
+          onOpenClients={() => {
+            setActiveTab('clientes');
+            setClientsSubTab('clients');
+            setAutoOpenClients(true);
+          }}
+          onOpenCases={() => {
+            setActiveTab('procesos');
+            setProcessViewMode('list');
+            setAutoOpenCases(true);
+          }}
+          onOpenTasks={() => {
+            setActiveTab('tareas');
+            setAutoOpenTasks(true);
+          }}
           completedSteps={onboardingSteps}
         />
       )}
