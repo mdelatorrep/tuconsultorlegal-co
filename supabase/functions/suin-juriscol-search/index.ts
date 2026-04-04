@@ -6,6 +6,7 @@ import {
   extractOutputText,
   extractWebSearchCitations,
   loadWebSearchConfigAndBuildTool,
+  buildKnowledgeBasePromptSection,
   supportsWebSearch,
 } from "../_shared/openai-responses-utils.ts";
 
