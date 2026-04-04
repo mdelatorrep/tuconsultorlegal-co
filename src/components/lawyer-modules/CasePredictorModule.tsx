@@ -27,6 +27,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useCredits } from '@/hooks/useCredits';
 import { ToolCostIndicator } from '@/components/credits/ToolCostIndicator';
+import { QuickPromptSuggestions } from '@/components/ui/QuickPromptSuggestions';
 
 interface PredictionResult {
   successProbability: number;
@@ -250,8 +251,19 @@ export function CasePredictorModule({ lawyerId }: CasePredictorModuleProps) {
                 value={caseDescription}
                 onChange={e => setCaseDescription(e.target.value)}
                 placeholder="Describe los hechos relevantes, pretensiones, pruebas disponibles y cualquier otro detalle importante del caso..."
-                className="min-h-[200px]"
+                className="min-h-[150px]"
               />
+              {!caseDescription.trim() && !loading && (
+                <QuickPromptSuggestions
+                  suggestions={[
+                    "Demanda laboral por despido sin justa causa. Trabajador con 5 años, salario mínimo, sin liquidación.",
+                    "Proceso ejecutivo por pagaré vencido. Deuda de $80M. Deudor sin bienes a nombre propio.",
+                    "Acción de nulidad contra resolución de la Supersociedades. Multa por $150M por incumplimiento contable.",
+                  ]}
+                  onSelect={(s) => setCaseDescription(s)}
+                  disabled={loading}
+                />
+              )}
             </div>
 
             <Button 
