@@ -1,51 +1,26 @@
 
 
-# Rediseño del Header y Dashboard del Portal de Abogados
+# Ajustes al Dashboard: Progreso Diario compacto + Tooltips en herramientas
 
-## Problema
-Actualmente hay **dos headers** cuando el abogado está autenticado: el Header público (Praxis Hub, Para Abogados, Para Ciudadanos, Explorar) y el header interno del dashboard (Inicio, Investigación, Documentos, CRM, Análisis). Esto desperdicia ~100px verticales y confunde la navegación. Además, el dashboard tiene demasiado espacio muerto entre secciones.
+## Cambios
 
-## Solución
+### 1. Compactar DailyProgress (`src/components/credits/DailyProgress.tsx`)
+El componente actual ocupa demasiado espacio vertical con secciones separadas para balance, barra de progreso, lista de tareas, alerta de pendientes y botón CTA. Se rediseñará como una barra horizontal compacta:
 
-### 1. Header unificado para abogados autenticados
-Cuando el usuario está en el portal de abogados (`currentPage === 'abogados'`), **ocultar el Header público** y usar solo el header interno del dashboard. Esto ya ocurre parcialmente porque `LawyerDashboardPage` tiene su propio layout con sidebar, pero el `Header` de `Index.tsx` sigue renderizándose encima.
+- **Layout horizontal**: Una sola fila con balance, barra de progreso inline, streak y botón CTA.
+- **Eliminar lista de tareas expandida**: Las misiones individuales se muestran solo como conteo (ej: "1/2 misiones") junto a la barra de progreso.
+- **Eliminar bloques de alerta**: Los CTAs de "misión pendiente" y "recompensas disponibles" se comprimen a badges inline.
+- **Resultado**: De ~300px de altura a ~60px.
 
-**Archivo: `src/pages/Index.tsx`**
-- Condicionar el render de `<Header>` para que NO se muestre cuando `currentPage === 'abogados'` y el usuario esté autenticado como abogado.
-
-### 2. Header interno del dashboard con menús desplegables
-Reemplazar los botones planos (Investigación, Documentos, CRM, Análisis) por **menús desplegables** agrupados por categoría usando `DropdownMenu`:
-
-- **Investigación** → Investigación Legal, SUIN-Juriscol, Consulta Procesos, Monitor Procesos
-- **Documentos** → Redacción, Análisis, Voz
-- **CRM** → Clientes y Procesos, Calendario
-- **IA** → Predictor, Agentes Especializados, Capacitación
-
-**Archivo: `src/components/LawyerDashboardPage.tsx`** (ambas secciones de header, líneas ~798-838 y ~888-930)
-- Reemplazar los `<Button>` individuales por `<DropdownMenu>` con `<DropdownMenuTrigger>` y `<DropdownMenuContent>` que listen las sub-herramientas.
-- Cada item del dropdown navega a su vista correspondiente con `setCurrentView()`.
-- Indicar visualmente el menú activo cuando cualquiera de sus sub-vistas esté seleccionada.
-
-### 3. Dashboard más compacto
-**Archivo: `src/components/LawyerDashboardPage.tsx`** (líneas ~986-1050)
-- Reducir spacing de `space-y-4 md:space-y-6 lg:space-y-8` a `space-y-3 md:space-y-4`.
-- Combinar Welcome + DailyProgress en una sola fila más compacta con `gap-3` en lugar de `gap-4`.
-
-### 4. Eliminar redundancia del sidebar en dashboard
-Dado que el header ahora tiene navegación completa con dropdowns, el sidebar se mantiene pero el header se convierte en el punto de acceso principal.
-
----
-
-## Estructura del Header resultante (desktop)
-
-```text
-[☰] [Logo] [Inicio] [Investigación ▾] [Documentos ▾] [CRM ▾] [IA ▾]     [🔔] [⚡ Tasks]
-```
+### 2. Tooltips en QuickToolsGrid (`src/components/dashboard/QuickToolsGrid.tsx`)
+- Agregar `title` attribute a cada card de herramienta con el nombre completo.
+- Mejor aún: usar el componente `Tooltip` de shadcn para mostrar el nombre completo al hacer hover.
+- Eliminar `truncate` del texto o mantenerlo con el tooltip como respaldo.
 
 ## Archivos a modificar
 
 | Archivo | Cambio |
 |---------|--------|
-| `src/pages/Index.tsx` | Ocultar Header público cuando está en portal abogados |
-| `src/components/LawyerDashboardPage.tsx` | Menús desplegables en header, reducir spacing dashboard |
+| `src/components/credits/DailyProgress.tsx` | Rediseño a barra compacta horizontal |
+| `src/components/dashboard/QuickToolsGrid.tsx` | Agregar Tooltip a cada herramienta |
 
