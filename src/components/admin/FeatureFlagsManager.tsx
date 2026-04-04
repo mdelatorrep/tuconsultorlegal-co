@@ -22,38 +22,38 @@ interface FeatureFlag {
 }
 
 const FEATURE_DEFINITIONS: Omit<FeatureFlag, 'enabled'>[] = [
-  // Panel Principal
-  { key: 'dashboard', label: 'Dashboard', section: 'Panel Principal', icon: Home },
+  // Inicio
+  { key: 'dashboard', label: 'Inicio', section: 'Inicio', icon: Home },
   // Investigación
-  { key: 'research', label: 'Investigación Legal', section: 'Investigación', icon: Search },
-  { key: 'suin-juriscol', label: 'SUIN-Juriscol', section: 'Investigación', icon: Database },
-  { key: 'process-query', label: 'Consulta Procesos', section: 'Investigación', icon: Gavel },
-  { key: 'process-monitor', label: 'Monitor Procesos', section: 'Investigación', icon: Radar },
+  { key: 'research', label: 'Consulta Jurídica', section: 'Investigación', icon: Search },
+  { key: 'suin-juriscol', label: 'Normativa (SUIN)', section: 'Investigación', icon: Database },
+  { key: 'process-query', label: 'Buscar Procesos', section: 'Investigación', icon: Gavel },
+  { key: 'process-monitor', label: 'Seguimiento Procesos', section: 'Investigación', icon: Radar },
   // Documentos
-  { key: 'analyze', label: 'Análisis', section: 'Documentos', icon: Eye },
-  { key: 'draft', label: 'Redacción con Copilot', section: 'Documentos', icon: PenTool },
-  { key: 'voice-assistant', label: 'Asistente de Voz', section: 'Documentos', icon: Mic },
+  { key: 'analyze', label: 'Analizar Documento', section: 'Documentos', icon: Eye },
+  { key: 'draft', label: 'Redacción Asistida', section: 'Documentos', icon: PenTool },
+  { key: 'voice-assistant', label: 'Dictado por Voz', section: 'Documentos', icon: Mic },
   // Clientes
-  { key: 'crm', label: 'Gestión CRM', section: 'Clientes', icon: Users },
+  { key: 'crm', label: 'Clientes y Casos', section: 'Clientes', icon: Users },
   { key: 'client-portal', label: 'Portal Clientes', section: 'Clientes', icon: UserCircle },
-  { key: 'legal-calendar', label: 'Calendario Legal', section: 'Clientes', icon: Calendar },
-  // Herramientas IA
-  { key: 'specialized-agents', label: 'Agentes Especializados', section: 'Herramientas IA', icon: Sparkles },
-  { key: 'strategize', label: 'Estrategia Legal', section: 'Herramientas IA', icon: Target },
-  { key: 'case-predictor', label: 'Predictor de Casos', section: 'Herramientas IA', icon: TrendingUp },
-  // Gestión IA
-  { key: 'agent-creator', label: 'Crear Agente', section: 'Gestión IA', icon: Bot },
-  { key: 'agent-manager', label: 'Gestionar Agentes', section: 'Gestión IA', icon: Settings },
-  { key: 'stats', label: 'Métricas', section: 'Gestión IA', icon: BarChart3 },
-  { key: 'request-agent-access', label: 'Solicitar Acceso (Agentes)', section: 'Gestión IA', icon: Mail },
-  // Desarrollo
-  { key: 'training', label: 'Formación IA', section: 'Desarrollo', icon: Brain },
-  // Contenido
-  { key: 'blog-manager', label: 'Gestión Blog', section: 'Contenido', icon: BookOpen },
-  { key: 'request-blog-access', label: 'Solicitar Acceso (Blog)', section: 'Contenido', icon: Mail },
+  { key: 'legal-calendar', label: 'Agenda', section: 'Clientes', icon: Calendar },
+  // Asistentes IA
+  { key: 'specialized-agents', label: 'Asistentes Legales', section: 'Asistentes IA', icon: Sparkles },
+  { key: 'strategize', label: 'Planeación de Caso', section: 'Asistentes IA', icon: Target },
+  { key: 'case-predictor', label: 'Análisis de Riesgos', section: 'Asistentes IA', icon: TrendingUp },
+  // Administrar Asistentes
+  { key: 'agent-creator', label: 'Crear Asistente', section: 'Administrar Asistentes', icon: Bot },
+  { key: 'agent-manager', label: 'Mis Asistentes', section: 'Administrar Asistentes', icon: Settings },
+  { key: 'stats', label: 'Estadísticas', section: 'Administrar Asistentes', icon: BarChart3 },
+  { key: 'request-agent-access', label: 'Solicitar Acceso (Asistentes)', section: 'Administrar Asistentes', icon: Mail },
+  // Aprendizaje
+  { key: 'training', label: 'Capacitación', section: 'Aprendizaje', icon: Brain },
+  // Publicaciones
+  { key: 'blog-manager', label: 'Gestionar Blog', section: 'Publicaciones', icon: BookOpen },
+  { key: 'request-blog-access', label: 'Solicitar Acceso (Blog)', section: 'Publicaciones', icon: Mail },
   // Mi Cuenta
   { key: 'credits', label: 'Mis Créditos', section: 'Mi Cuenta', icon: Coins },
-  { key: 'gamification', label: 'Logros y Ranking', section: 'Mi Cuenta', icon: Trophy },
+  { key: 'gamification', label: 'Logros y Puntos', section: 'Mi Cuenta', icon: Trophy },
   { key: 'public-profile', label: 'Perfil Público', section: 'Mi Cuenta', icon: User },
   { key: 'lawyer-verification', label: 'Verificación Abogado', section: 'Mi Cuenta', icon: Trophy },
   { key: 'account-settings', label: 'Configuración', section: 'Mi Cuenta', icon: Settings },
