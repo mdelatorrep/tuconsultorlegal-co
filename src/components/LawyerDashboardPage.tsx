@@ -108,7 +108,7 @@ const quillFormats = [
   'list', 'bullet', 'align', 'color', 'background'
 ];
 
-type ViewType = 'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager' | 'research' | 'analyze' | 'draft' | 'strategize' | 'crm' | 'public-profile' | 'suin-juriscol' | 'process-query' | 'credits' | 'gamification' | 'process-monitor' | 'legal-calendar' | 'voice-assistant' | 'case-predictor' | 'client-portal' | 'request-agent-access' | 'request-blog-access' | 'specialized-agents' | 'account-settings';
+type ViewType = 'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager' | 'research' | 'analyze' | 'draft' | 'strategize' | 'crm' | 'public-profile' | 'suin-juriscol' | 'suin' | 'process-query' | 'process-consultation' | 'credits' | 'gamification' | 'process-monitor' | 'legal-calendar' | 'voice-assistant' | 'voice' | 'case-predictor' | 'predict' | 'client-portal' | 'request-agent-access' | 'request-blog-access' | 'specialized-agents' | 'account-settings';
 
 export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageProps) {
   const [documents, setDocuments] = useState<DocumentToken[]>([]);
