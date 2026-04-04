@@ -73,7 +73,7 @@ export default function LawyerOnboardingCoachmarks({
       <div className="fixed inset-0 bg-black/60 z-40" onClick={onSkip} />
       
       {/* Centered Coachmark Card */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 p-4">
         <Card className="border-primary shadow-2xl max-w-md w-full animate-in fade-in-0 zoom-in-95 duration-300">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
