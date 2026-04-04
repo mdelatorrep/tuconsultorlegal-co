@@ -62,7 +62,7 @@ interface Case {
   demandado?: string;
   asignado_a?: string;
   nota_pendiente?: string;
-  enlace_hoja_ruta?: string;
+  
   enlace_expediente?: string;
   client?: {
     name: string;
@@ -107,7 +107,6 @@ const CRMCasesView: React.FC<CRMCasesViewProps> = ({ lawyerData, searchTerm, onR
     demandado: '',
     asignado_a: '',
     nota_pendiente: '',
-    enlace_hoja_ruta: '',
     enlace_expediente: '',
   });
   const { toast } = useToast();
@@ -218,7 +217,7 @@ const CRMCasesView: React.FC<CRMCasesViewProps> = ({ lawyerData, searchTerm, onR
         demandado: formData.demandado || null,
         asignado_a: formData.asignado_a || null,
         nota_pendiente: formData.nota_pendiente || null,
-        enlace_hoja_ruta: formData.enlace_hoja_ruta || null,
+        
         enlace_expediente: formData.enlace_expediente || null,
       };
 
@@ -260,7 +259,7 @@ const CRMCasesView: React.FC<CRMCasesViewProps> = ({ lawyerData, searchTerm, onR
       demandado: case_.demandado || '',
       asignado_a: case_.asignado_a || '',
       nota_pendiente: case_.nota_pendiente || '',
-      enlace_hoja_ruta: case_.enlace_hoja_ruta || '',
+      
       enlace_expediente: case_.enlace_expediente || '',
     });
     setIsDialogOpen(true);
@@ -285,7 +284,7 @@ const CRMCasesView: React.FC<CRMCasesViewProps> = ({ lawyerData, searchTerm, onR
       client_id: '', case_number: '', description: '', case_type: '',
       status: 'active', priority: 'medium', start_date: '', end_date: '',
       juzgado: '', clase_proceso: '', demandante: '', demandado: '',
-      asignado_a: '', nota_pendiente: '', enlace_hoja_ruta: '', enlace_expediente: '',
+      asignado_a: '', nota_pendiente: '', enlace_expediente: '',
     });
   };
 
@@ -562,45 +561,6 @@ const CRMCasesView: React.FC<CRMCasesViewProps> = ({ lawyerData, searchTerm, onR
             )}
           </div>
 
-          {/* Hoja de Ruta */}
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-1.5">
-              <Label className="text-sm">Hoja de Ruta (Google Docs, OneDrive, etc.)</Label>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="max-w-xs text-xs">
-                    <p>Enlace a tu documento de seguimiento del proceso (hoja de cálculo, documento de texto, etc.)</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  value={formData.enlace_hoja_ruta}
-                  onChange={(e) => setFormData({ ...formData, enlace_hoja_ruta: e.target.value })}
-                  placeholder="Pega aquí el enlace de tu hoja de ruta"
-                  className="pl-9 flex-1"
-                />
-              </div>
-              {formData.enlace_hoja_ruta && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="shrink-0 gap-1.5"
-                  onClick={() => window.open(formData.enlace_hoja_ruta, '_blank')}
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  Abrir
-                </Button>
-              )}
-            </div>
-          </div>
         </div>
 
         {/* Descripción */}

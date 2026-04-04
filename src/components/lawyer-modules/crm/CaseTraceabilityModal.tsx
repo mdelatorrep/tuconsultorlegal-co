@@ -192,12 +192,6 @@ const CaseTraceabilityModal: React.FC<CaseTraceabilityModalProps> = ({
                   Expediente Digital
                 </Button>
               )}
-              {caseData?.enlace_hoja_ruta && (
-                <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => window.open(caseData.enlace_hoja_ruta, '_blank')}>
-                  <ExternalLink className="h-3 w-3 mr-1" />
-                  Hoja de Ruta
-                </Button>
-              )}
             </div>
           </div>
 
