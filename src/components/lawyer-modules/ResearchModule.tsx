@@ -12,6 +12,7 @@ import { useCredits } from "@/hooks/useCredits";
 import { ToolCostIndicator } from "@/components/credits/ToolCostIndicator";
 import { CaseSelectorDropdown } from "./CaseSelectorDropdown";
 import { useCaseActivityLogger } from "@/hooks/useCaseActivityLogger";
+import { QuickPromptSuggestions } from "@/components/ui/QuickPromptSuggestions";
 
 // Parse markdown links and render them as clickable links
 function renderMarkdownLinks(text: string): React.ReactNode[] {
