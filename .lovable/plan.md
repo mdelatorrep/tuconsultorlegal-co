@@ -1,69 +1,75 @@
 
 
-# Auditoría UI: Reducir bloques hero y optimizar espacio en módulos
+# Rediseño completo del módulo de Redacción
 
-## Problema
+## Problemas identificados
 
-El módulo de **Investigación Legal** tiene un hero gigante (~50% de la pantalla) con título grande, descripción, y 3 stat cards decorativas antes de que el usuario llegue al input de trabajo. Otros módulos como **Estrategia** tienen cards con gradientes excesivos, sombras `shadow-2xl`, y tamaños de texto/botones sobredimensionados. Todo esto empuja el contenido funcional debajo del fold.
+1. **Flujo confuso**: El usuario debe llenar un formulario, generar un borrador, y luego se abre un Dialog separado con el editor + copilot. No es intuitivo.
+2. **El resultado muestra markdown/HTML crudo**: `DraftResultDisplay` usa `dangerouslySetInnerHTML` pero el contenido viene como markdown plano, mostrando asteriscos y pipes sin formatear.
+3. **Copilot sin input visible**: El chat del copilot dentro del Dialog no tiene campo de texto visible/prominente (está al fondo del panel lateral).
+4. **Editor es un Textarea plano**: El contenido se edita en un `<Textarea>` sin formato, mientras que "Mis Documentos" usa ReactQuill.
+5. **Dos sistemas de copilot duplicados**: Existe `src/components/copilot/` (LegalCopilot, CopilotChat) y el copilot integrado en `DocumentEditorWithCopilot.tsx`, causando confusión.
 
-## Módulos afectados y diagnóstico
+## Diseño propuesto
 
-| Módulo | Problema |
-|--------|----------|
-| **ResearchModule** | Hero de ~300px con icono grande, título `text-3xl`, descripción `text-lg`, + 3 stat cards. El input real queda fuera de vista. |
-| **StrategizeModule** | Card con gradiente púrpura, `shadow-2xl`, título `text-2xl`, textarea de 7 rows, botón `h-14`. Decorativo en exceso. |
-| **SuinJuriscolModule** | Ya es compacto, no requiere cambios significativos. |
-| **AnalyzeModule** | Ya es compacto (upload directo). Sin cambios. |
-| **DraftModule** | Ya es compacto con tabs. Sin cambios. |
-| **CasePredictorModule** | Header simple + grid. Aceptable. |
-| **ProcessQueryModule** | Por revisar en detalle, pero estructura similar a SUIN. |
-
-## Cambios propuestos
-
-### 1. ResearchModule.tsx — Eliminar hero, compactar header
-
-- **Eliminar** el bloque hero completo (líneas 553-602): el gradiente, el icono grande de 10x10, el título `text-3xl`, la descripción `text-lg`, y las 3 stat cards decorativas (investigaciones completadas, tiempo promedio, precisión IA).
-- **Eliminar** la decoración excesiva de la card de búsqueda: quitar `border-0 shadow-2xl bg-gradient-to-br`, el icono con gradiente de 6x6, el título `text-2xl` con clip-text.
-- **Reemplazar** con un `CardHeader` simple: icono pequeño + título `text-base` + descripción corta en una línea.
-- El textarea y los controles quedan inmediatamente visibles al abrir el módulo.
-
-### 2. StrategizeModule.tsx — Simplificar card de input
-
-- **Eliminar** `border-0 shadow-2xl bg-gradient-to-br from-white via-white to-purple-500/5` y el overlay de gradiente absoluto.
-- **Simplificar** el header: quitar gradiente púrpura del icono y del título `text-2xl`. Usar icono estándar + título `text-base`.
-- **Reducir** textarea de `rows={7}` a `rows={4}`.
-- **Reducir** botón de `h-14 text-lg` a tamaño estándar.
-- **Eliminar** colores hardcodeados (`purple-500`, `purple-600`, `purple-700`) y usar tokens del sistema (`primary`).
-
-### 3. Patrón general a aplicar
-
-Todos los módulos con cards de input deberían seguir este patrón compacto:
+Reemplazar el flujo actual de 3 pasos (formulario -> resultado -> dialog editor) por una experiencia unificada de **estudio de redacción** en una sola vista:
 
 ```text
-┌─────────────────────────────────────┐
-│ 🔍 Título del módulo    [Costo: 3] │
-│ Descripción breve en una línea      │
-├─────────────────────────────────────┤
-│ [textarea / input / upload]         │
-│ [filtros en fila si aplica]         │
-│ [Botón de acción]                   │
-└─────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────┐
+│  Estudio de Redacción                              [Mis Documentos]    │
+├────────────────────────────────────────────┬─────────────────────────────┤
+│                                            │  Copilot Legal             │
+│  [Tipo documento ▾]  [Título...]           │  ─────────────────────     │
+│  ─────────────────────────────             │  Bienvenida contextual     │
+│  ┌──────────────────────────┐              │                            │
+│  │                          │              │  [mensajes del chat]       │
+│  │   ReactQuill Editor      │              │                            │
+│  │   (rich text, formateado)│              │  ─── Acciones rápidas ──   │
+│  │                          │              │  [Cláusulas] [Riesgos]     │
+│  │                          │              │  [Mejorar]   [Marco legal] │
+│  │                          │              │  ─────────────────────     │
+│  │                          │              │  [Input del chat......] 📤 │
+│  └──────────────────────────┘              │                            │
+│  ─────────────────────────────             ├─────────────────────────────┤
+│  [Generar con IA ✨ 5cr]  [Guardar]  [PDF] │  [Ocultar Copilot]         │
+└────────────────────────────────────────────┴─────────────────────────────┘
 ```
 
-No hero sections. No stat cards decorativas. No gradientes ni sombras excesivas. El input funcional debe estar visible sin scroll.
+## Cambios técnicos
 
-## Archivos a modificar
+### 1. Reescribir `DraftModule.tsx`
+- Eliminar el formulario separado + Dialog. Todo en una sola vista.
+- Layout de 2 columnas: editor (2/3) + copilot (1/3), toggle para ocultar copilot.
+- Tabs solo para "Redactar" y "Mis Documentos" (se mantiene).
 
-| Archivo | Cambio |
-|---------|--------|
-| `ResearchModule.tsx` | Eliminar hero + stat cards + decoración de card de búsqueda |
-| `StrategizeModule.tsx` | Simplificar card, reducir textarea, normalizar colores |
+### 2. Reemplazar Textarea por ReactQuill en el editor principal
+- Usar ReactQuill con toolbar completo (consistente con MyDocuments y el editor de agentes).
+- El contenido generado por IA se inserta como HTML formateado en el editor.
 
-## Sin cambios necesarios
+### 3. Unificar el Copilot
+- Integrar `CopilotChat` de `src/components/copilot/` directamente en la vista (no en un Dialog).
+- El copilot tiene: chat con input visible, acciones rápidas contextuales, detección de placeholders.
+- Botón "Insertar en documento" que inserta HTML formateado en el editor ReactQuill.
 
-- `AnalyzeModule.tsx` — ya compacto
-- `DraftModule.tsx` — ya compacto con tabs
-- `SuinJuriscolModule.tsx` — ya compacto
-- `CasePredictorModule.tsx` — header simple aceptable
-- `ProcessQueryModule.tsx` / `ProcessMonitorModule.tsx` — estructura funcional directa
+### 4. Flujo de generación con IA
+- El botón "Generar con IA" toma el tipo de documento + descripción del usuario y genera contenido.
+- El resultado se inserta directamente en el editor ReactQuill (no en un componente de preview separado).
+- Si el editor ya tiene contenido, preguntar si reemplazar o agregar al final.
+
+### 5. Eliminar `DraftResultDisplay.tsx`
+- Ya no se necesita un componente de preview separado. El editor ES el preview.
+
+### 6. Eliminar `DocumentEditorWithCopilot.tsx`
+- Su funcionalidad se fusiona en el nuevo `DraftModule.tsx`.
+
+### 7. Renderizado del Copilot
+- Los mensajes del asistente se renderizan con `MarkdownRenderer` (ya existe y soporta tablas, negritas, etc.) en lugar de `whitespace-pre-wrap` que muestra markdown crudo.
+
+### Archivos a modificar/crear
+- **Reescribir**: `src/components/lawyer-modules/DraftModule.tsx` - nueva experiencia unificada
+- **Eliminar**: `src/components/lawyer-modules/draft/DraftResultDisplay.tsx`
+- **Eliminar**: `src/components/lawyer-modules/draft/DocumentEditorWithCopilot.tsx`
+- **Mantener**: `src/components/lawyer-modules/draft/MyDocuments.tsx`, `pdfUtils.ts`
+- **Reutilizar**: `src/components/copilot/CopilotChat.tsx` (o integrar su lógica)
+- **Reutilizar**: `src/components/ui/MarkdownRenderer.tsx` para mensajes del chat
 
