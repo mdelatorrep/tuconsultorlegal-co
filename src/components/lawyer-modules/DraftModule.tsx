@@ -300,25 +300,12 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout,
                       </>
                     )}
                   </Button>
-                </div>
-              )}
-
-              {/* Compact re-generate bar when content exists */}
-              {hasGeneratedContent && (
-                <div className="px-4 py-2 border-b bg-muted/20 flex items-center gap-2">
-                  <Badge variant="outline" className="text-xs shrink-0">
-                    {DOCUMENT_TYPES.find(t => t.value === documentType)?.label || "Documento"}
-                  </Badge>
-                  <div className="flex-1" />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setHasGeneratedContent(false)}
-                    className="text-xs"
-                  >
-                    <Sparkles className="h-3 w-3 mr-1" />
-                    Regenerar
-                  </Button>
+                  {!hasEnoughCredits('draft') && (
+                    <p className="text-sm text-destructive flex items-center gap-1">
+                      <Coins className="h-4 w-4" />
+                      Necesitas {getToolCost('draft')} créditos para generar. Créditos insuficientes.
+                    </p>
+                  )}
                 </div>
               )}
 
