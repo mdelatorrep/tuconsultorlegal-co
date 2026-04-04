@@ -1112,9 +1112,9 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                   </Card>
                 </div>
               ) : (
-                <div className="max-w-7xl mx-auto space-y-4 md:space-y-6 lg:space-y-8">
+                <div className="max-w-7xl mx-auto space-y-3 md:space-y-4">
                   {/* Header with Welcome + Daily Progress */}
-                  <div className="grid gap-4 lg:grid-cols-3">
+                  <div className="grid gap-3 lg:grid-cols-3">
                     <div className="lg:col-span-2" data-tour="dashboard-welcome">
                       <DashboardWelcome 
                         userName={user?.name || 'Usuario'} 
