@@ -90,7 +90,7 @@ Contexto adicional: ${context || 'ninguno'}`;
             { role: 'system', content: systemPrompt },
             { role: 'user', content: `Analiza este fragmento y proporciona una sugerencia breve:\n\n"${text}"` }
           ],
-          max_tokens: maxTokensSuggest,
+          max_completion_tokens: maxTokensSuggest,
         }),
       });
 
@@ -125,7 +125,7 @@ Tipo de documento: ${documentType || 'contrato'}`;
             { role: 'system', content: systemPrompt },
             { role: 'user', content: `Completa este texto legal:\n\n"${text}"` }
           ],
-          max_tokens: maxTokensAutocomplete,
+          max_completion_tokens: maxTokensAutocomplete,
         }),
       });
 
@@ -225,7 +225,7 @@ Tipo de documento: ${documentType || 'contrato'}`;
             { role: 'system', content: systemPrompt },
             { role: 'user', content: text }
           ],
-          max_tokens: 1000,
+          max_completion_tokens: 1000,
         }),
       });
 
