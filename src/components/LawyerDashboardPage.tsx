@@ -963,16 +963,16 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start" className="w-52">
                           <DropdownMenuItem onClick={() => setCurrentView('research')} className="cursor-pointer">
-                            <Search className="w-4 h-4 mr-2" /> Investigación Legal
+                            <Search className="w-4 h-4 mr-2" /> Consulta Jurídica
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => setCurrentView('suin')} className="cursor-pointer">
-                            <Scale className="w-4 h-4 mr-2" /> SUIN-Juriscol
+                            <Scale className="w-4 h-4 mr-2" /> Normativa (SUIN)
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => setCurrentView('process-consultation')} className="cursor-pointer">
-                            <FileSearch className="w-4 h-4 mr-2" /> Consulta Procesos
+                            <FileSearch className="w-4 h-4 mr-2" /> Buscar Procesos
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => setCurrentView('process-monitor')} className="cursor-pointer">
-                            <Eye className="w-4 h-4 mr-2" /> Monitor Procesos
+                            <Eye className="w-4 h-4 mr-2" /> Seguimiento Procesos
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
