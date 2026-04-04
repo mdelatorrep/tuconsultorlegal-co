@@ -211,20 +211,20 @@ export default function LawyerLandingPage({
   }];
 
   const allTools = [
-    { name: "Investigación Legal", icon: Search, category: "Investigación" },
-    { name: "SUIN-Juriscol", icon: Database, category: "Investigación" },
-    { name: "Consulta Procesos", icon: Gavel, category: "Investigación" },
-    { name: "Monitor de Procesos", icon: Eye, category: "Investigación" },
-    { name: "Análisis Documental", icon: Eye, category: "Análisis" },
-    { name: "Predictor de Casos", icon: BarChart3, category: "Análisis" },
-    { name: "Redacción", icon: PenTool, category: "Redacción" },
-    { name: "Copilot Legal", icon: Sparkles, category: "Redacción" },
-    { name: "Estrategia Legal", icon: Target, category: "Estrategia" },
-    { name: "Calendario Legal", icon: Calendar, category: "Gestión" },
-    { name: "CRM Clientes", icon: Users, category: "Gestión" },
+    { name: "Consulta Jurídica", icon: Search, category: "Investigación" },
+    { name: "Normativa (SUIN)", icon: Database, category: "Investigación" },
+    { name: "Buscar Procesos", icon: Gavel, category: "Investigación" },
+    { name: "Seguimiento Procesos", icon: Eye, category: "Investigación" },
+    { name: "Analizar Documento", icon: Eye, category: "Análisis" },
+    { name: "Análisis de Riesgos", icon: BarChart3, category: "Análisis" },
+    { name: "Redacción Asistida", icon: PenTool, category: "Redacción" },
+    { name: "Asistente de Redacción", icon: Sparkles, category: "Redacción" },
+    { name: "Planeación de Caso", icon: Target, category: "Estrategia" },
+    { name: "Agenda", icon: Calendar, category: "Gestión" },
+    { name: "Clientes y Casos", icon: Users, category: "Gestión" },
     { name: "Portal Clientes", icon: Shield, category: "Gestión" },
-    { name: "Asistente de Voz", icon: Mic, category: "Asistencia" },
-    { name: "Agentes Especializados", icon: Bot, category: "Asistencia" },
+    { name: "Dictado por Voz", icon: Mic, category: "Asistencia" },
+    { name: "Asistentes Legales", icon: Bot, category: "Asistencia" },
   ];
 
   const testimonials = [{
