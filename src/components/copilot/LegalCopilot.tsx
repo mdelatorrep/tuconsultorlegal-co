@@ -154,8 +154,8 @@ export function LegalCopilot({
   const acceptAutocomplete = async () => {
     if (!autocompleteSuggestion) return;
     
-    const creditResult = await consumeCredits('legal_copilot_autocomplete', { action: 'autocomplete' });
-    if (!creditResult.success) return;
+    // Autocomplete acceptance is free - credit already consumed on generation
+    
     
     const textarea = textareaRef.current;
     if (textarea) {
@@ -213,9 +213,6 @@ export function LegalCopilot({
 
     setIsAnalyzing(true);
     try {
-      const creditResult = await consumeCredits('legal_copilot', { action: 'analyze_inline' });
-      if (!creditResult.success) return;
-
       const { data, error } = await supabase.functions.invoke('legal-copilot', {
         body: {
           action: 'analyze_inline',
@@ -226,6 +223,9 @@ export function LegalCopilot({
       });
 
       if (error) throw error;
+
+      // Consume credits only after successful API response
+      await consumeCredits('legal_copilot', { action: 'analyze_inline' });
 
       setInlineSuggestions(data.suggestions || []);
       

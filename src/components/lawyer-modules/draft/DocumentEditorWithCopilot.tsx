@@ -263,12 +263,12 @@ export default function DocumentEditorWithCopilot({
     }
     setIsAnalyzing(true);
     try {
-      const result = await consumeCredits('copilot', { action: 'analyze' });
-      if (!result.success) return;
       const { data, error } = await supabase.functions.invoke('legal-copilot', {
         body: { action: 'analyze_inline', text: content, context: `Tipo de documento: ${documentType}`, language: 'es' }
       });
       if (error) throw error;
+      // Consume credits only after successful API response
+      await consumeCredits('copilot', { action: 'analyze' });
       if (data?.suggestions && Array.isArray(data.suggestions)) {
         const formattedSuggestions: InlineSuggestion[] = data.suggestions.map((s: any, idx: number) => ({
           id: `sug-${idx}`,
@@ -306,8 +306,6 @@ export default function DocumentEditorWithCopilot({
     setChatMessages(prev => [...prev, { role: 'user', content: userMessage, insertable: false }]);
     setIsChatLoading(true);
     try {
-      const result = await consumeCredits('copilot', { action: 'chat' });
-      if (!result.success) { setIsChatLoading(false); return; }
       const { data, error } = await supabase.functions.invoke('legal-copilot', {
         body: {
           action: 'suggest',
@@ -317,6 +315,8 @@ export default function DocumentEditorWithCopilot({
         }
       });
       if (error) throw error;
+      // Consume credits only after successful API response
+      await consumeCredits('copilot', { action: 'chat' });
       const response = data?.suggestion || data?.response || 'No pude generar una respuesta. Por favor, intenta reformular tu pregunta.';
       // Determine if the response contains legal text that can be inserted
       const isInsertable = response.length > 80 && !response.startsWith('Lo siento') && !response.startsWith('No pude');
@@ -349,12 +349,12 @@ export default function DocumentEditorWithCopilot({
     if (!selectedText || !hasEnoughCredits('copilot')) return;
     setIsChatLoading(true);
     try {
-      const result = await consumeCredits('copilot', { action: 'improve' });
-      if (!result.success) return;
       const { data, error } = await supabase.functions.invoke('legal-copilot', {
         body: { action: 'improve', text: selectedText, context: `Tipo de documento: ${documentType}. Mejora este texto manteniendo el significado legal pero haciéndolo más claro y profesional en estilo jurídico colombiano.`, language: 'es' }
       });
       if (error) throw error;
+      // Consume credits only after successful API response
+      await consumeCredits('copilot', { action: 'improve' });
       if (data?.improved) {
         const newContent = content.replace(selectedText, data.improved);
         setContent(newContent);

@@ -543,17 +543,6 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
       setIsCheckingSpelling(true);
       setSpellCheckResults(null);
 
-      // Consume credits before API call
-      const creditResult = await consumeCredits('spell_check', { contentLength: editedContent.length });
-      if (!creditResult.success) {
-        toast({ 
-          title: "Error de créditos", 
-          description: creditResult.error || "No se pudieron consumir los créditos", 
-          variant: "destructive" 
-        });
-        return;
-      }
-
       const { data, error } = await supabase.functions.invoke('spell-check-document', {
         body: { content: editedContent }
       });
@@ -562,6 +551,9 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
         toast({ title: "Error", description: error?.message || data?.error, variant: "destructive" });
         return;
       }
+
+      // Consume credits only after successful API response
+      await consumeCredits('spell_check', { contentLength: editedContent.length });
 
       setSpellCheckResults(data);
       

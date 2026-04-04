@@ -279,18 +279,13 @@ export default function SuinJuriscolModule({ user, currentView, onViewChange, on
       return;
     }
 
-    // Check and consume credits before proceeding
+    // Check credits availability before proceeding (consume after success)
     if (!hasEnoughCredits('suin_juriscol')) {
       toast({
         title: "Créditos insuficientes",
         description: `Necesitas ${getToolCost('suin_juriscol')} créditos para consultar SUIN-Juriscol.`,
         variant: "destructive",
       });
-      return;
-    }
-
-    const creditResult = await consumeCredits('suin_juriscol', { query, category });
-    if (!creditResult.success) {
       return;
     }
 
@@ -316,6 +311,9 @@ export default function SuinJuriscolModule({ user, currentView, onViewChange, on
       if (!data.success) {
         throw new Error(data.error || 'Error en la búsqueda');
       }
+
+      // Consume credits only after successful API response
+      await consumeCredits('suin_juriscol', { query, category });
 
       const result: SearchResult = {
         id: data.result_id || crypto.randomUUID(),
@@ -365,18 +363,13 @@ export default function SuinJuriscolModule({ user, currentView, onViewChange, on
   const handleSendFollowUp = async () => {
     if (!followUpQuery.trim() || !currentResult) return;
 
-    // Check and consume credits for follow-up
+    // Check credits availability (consume after success)
     if (!hasEnoughCredits('suin_juriscol_followup')) {
       toast({
         title: "Créditos insuficientes",
         description: `Necesitas ${getToolCost('suin_juriscol_followup')} créditos para enviar un mensaje de seguimiento.`,
         variant: "destructive",
       });
-      return;
-    }
-
-    const creditResult = await consumeCredits('suin_juriscol_followup', { query: followUpQuery, isFollowUp: true });
-    if (!creditResult.success) {
       return;
     }
 
@@ -410,6 +403,9 @@ export default function SuinJuriscolModule({ user, currentView, onViewChange, on
       if (!data.success) {
         throw new Error(data.error || 'Error en la consulta');
       }
+
+      // Consume credits only after successful API response
+      await consumeCredits('suin_juriscol_followup', { query: followUpQuery, isFollowUp: true });
 
       const assistantMessage: ChatMessage = {
         role: 'assistant',

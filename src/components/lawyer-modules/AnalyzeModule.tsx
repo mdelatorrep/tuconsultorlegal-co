@@ -106,9 +106,7 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
       return;
     }
 
-    const creditResult = await consumeCredits('analysis', { fileName: file.name });
-    if (!creditResult.success) return;
-
+    setAnalysisStatus('analyzing');
     setAnalysisStatus('analyzing');
     try {
       let fileContent = '';
@@ -159,6 +157,9 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
         toast.error(`Error en el análisis: ${data?.error || 'Error desconocido'}`);
         throw new Error(data?.error || 'Error en el análisis del documento');
       }
+
+      // Consume credits only after successful API response
+      await consumeCredits('analysis', { fileName: file.name });
 
       const result = normalizeAnalysisOutput(data, {
         fileName: file.name,

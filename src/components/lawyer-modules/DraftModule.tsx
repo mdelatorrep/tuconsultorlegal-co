@@ -74,18 +74,13 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout,
       return;
     }
 
-    // Check and consume credits before proceeding
+    // Check credits availability before proceeding (consume after success)
     if (!hasEnoughCredits('draft')) {
       toast({
         title: "Créditos insuficientes",
         description: `Necesitas ${getToolCost('draft')} créditos para generar documentos.`,
         variant: "destructive",
       });
-      return;
-    }
-
-    const creditResult = await consumeCredits('draft', { documentType });
-    if (!creditResult.success) {
       return;
     }
 
@@ -100,6 +95,9 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout,
 
       if (error) throw error;
       if (!data.success) throw new Error(data.error || 'Error en la generación');
+
+      // Consume credits only after successful API response
+      await consumeCredits('draft', { documentType });
 
       const draftResult: DraftResult = {
         prompt: prompt,

@@ -244,12 +244,6 @@ export function ProcessMonitorModule({ lawyerId }: ProcessMonitorModuleProps) {
     try {
       setSyncing(true);
       
-      // Consume credits
-      const creditResult = await consumeCredits('process_monitor', { action: 'sync', processId });
-      if (!creditResult.success) {
-        return;
-      }
-      
       const { data, error } = await supabase.functions.invoke('rama-judicial-monitor', {
         body: { 
           action: 'sync',
@@ -258,6 +252,9 @@ export function ProcessMonitorModule({ lawyerId }: ProcessMonitorModuleProps) {
       });
 
       if (error) throw error;
+
+      // Consume credits only after successful API response
+      await consumeCredits('process_monitor', { action: 'sync', processId });
       
       toast.success('Proceso sincronizado');
       loadActuations(processId);
@@ -283,12 +280,6 @@ export function ProcessMonitorModule({ lawyerId }: ProcessMonitorModuleProps) {
     try {
       setSyncing(true);
       
-      // Consume credits for all processes
-      const creditResult = await consumeCredits('process_monitor', { action: 'sync-all', processCount });
-      if (!creditResult.success) {
-        return;
-      }
-      
       const { data, error } = await supabase.functions.invoke('rama-judicial-monitor', {
         body: { 
           action: 'sync-all',
@@ -297,6 +288,9 @@ export function ProcessMonitorModule({ lawyerId }: ProcessMonitorModuleProps) {
       });
 
       if (error) throw error;
+
+      // Consume credits only after successful API response
+      await consumeCredits('process_monitor', { action: 'sync-all', processCount });
       
       toast.success('Todos los procesos sincronizados');
       loadProcesses();

@@ -63,12 +63,6 @@ export function DeadlineCalculator({ lawyerId, onEventCreated }: DeadlineCalcula
     try {
       setCalculating(true);
       
-      // Consume credits
-      const creditResult = await consumeCredits('calendar_deadline', { termType, days: daysToAdd });
-      if (!creditResult.success) {
-        return;
-      }
-      
       const { data, error } = await supabase.functions.invoke('calculate-legal-deadlines', {
         body: {
           action: 'calculate',
@@ -80,6 +74,9 @@ export function DeadlineCalculator({ lawyerId, onEventCreated }: DeadlineCalcula
       });
 
       if (error) throw error;
+
+      // Consume credits only after successful API response
+      await consumeCredits('calendar_deadline', { termType, days: daysToAdd });
       
       setCalculatedDate(new Date(data.deadline));
       setEventTitle(selectedTerm?.label || `Vencimiento ${daysToAdd} días hábiles`);

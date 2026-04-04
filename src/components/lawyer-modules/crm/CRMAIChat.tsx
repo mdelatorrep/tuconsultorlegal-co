@@ -58,17 +58,14 @@ export default function CRMAIChat({ open, onOpenChange, lawyerId }: Props) {
     setIsLoading(true);
 
     try {
-      const creditResult = await consumeCredits('crm_ai');
-      if (!creditResult.success) {
-        setIsLoading(false);
-        return;
-      }
-
       const { data, error } = await supabase.functions.invoke('crm-ai-assistant', {
         body: { lawyerId, question: question.trim() },
       });
 
       if (error) throw error;
+
+      // Consume credits only after successful API response
+      await consumeCredits('crm_ai');
 
       const assistantMsg: Message = {
         role: 'assistant',

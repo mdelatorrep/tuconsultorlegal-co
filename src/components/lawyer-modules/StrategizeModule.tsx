@@ -107,18 +107,13 @@ export default function StrategizeModule({ user, currentView, onViewChange, onLo
       return;
     }
 
-    // Check and consume credits before proceeding
+    // Check credits availability before proceeding (consume after success)
     if (!hasEnoughCredits('strategy')) {
       toast({
         title: "Créditos insuficientes",
         description: `Necesitas ${getToolCost('strategy')} créditos para el análisis estratégico.`,
         variant: "destructive",
       });
-      return;
-    }
-
-    const creditResult = await consumeCredits('strategy', { caseDescription: caseDescription.substring(0, 100) });
-    if (!creditResult.success) {
       return;
     }
 
@@ -136,6 +131,9 @@ export default function StrategizeModule({ user, currentView, onViewChange, onLo
       if (!data.success) {
         throw new Error(data.error || 'Error en el análisis estratégico');
       }
+
+      // Consume credits only after successful API response
+      await consumeCredits('strategy', { caseDescription: caseDescription.substring(0, 100) });
 
       const safeArray = <T,>(v: any): T[] => (Array.isArray(v) ? v : []);
       const safeString = (v: any, fallback: string) => (typeof v === 'string' ? v : fallback);
