@@ -86,6 +86,20 @@ serve(async (req) => {
 
     console.log(`[ProcessQuery] Using model: ${model}`);
 
+    // Load web search config with KB URLs
+    let webSearchTool: any = null;
+    let kbPromptSection = '';
+    if (supportsWebSearch(model)) {
+      const webSearchConfig = await loadWebSearchConfigAndBuildTool(supabase, 'process_query');
+      if (webSearchConfig) {
+        webSearchTool = webSearchConfig.tool;
+        kbPromptSection = buildKnowledgeBasePromptSection(webSearchConfig.knowledgeBaseUrls);
+      } else {
+        // Fallback if config not set but model supports it
+        webSearchTool = { type: 'web_search_preview' as const };
+      }
+    }
+
     // Build the user message based on query type
     let userMessage: string;
     
