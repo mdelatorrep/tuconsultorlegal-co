@@ -194,3 +194,6 @@ verify_jwt = false
 
 [functions.utm-track-event]
 verify_jwt = false
+
+[functions.share-blog-meta]
+verify_jwt = false
