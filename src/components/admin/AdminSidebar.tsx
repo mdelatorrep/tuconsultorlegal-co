@@ -9,7 +9,7 @@ import {
   Activity, Users, Bot, BarChart3, BookOpen, MessageCircle, 
   Settings, Mail, Tag, CreditCard, Database, FileText, 
   FileCheck, Zap, Shield, DollarSign, UserCheck, Server, ScrollText,
-  TrendingUp, Brain, Heart, Target, Scale, ShieldCheck, Sparkles, Link
+  TrendingUp, Brain, Heart, Target, Scale, ShieldCheck, Sparkles, Link, Bug
 } from "lucide-react";
 
 interface AdminSidebarProps {
