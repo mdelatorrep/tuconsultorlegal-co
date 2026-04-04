@@ -113,7 +113,7 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
         icon: Briefcase,
         collapsible: true,
         items: [
-          { title: "Gestión CRM", icon: Users, view: "crm" },
+          { title: "Clientes y Procesos", icon: Users, view: "crm" },
           { title: "Calendario Legal", icon: Calendar, view: "legal-calendar" },
         ]
       }
