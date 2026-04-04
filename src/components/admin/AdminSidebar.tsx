@@ -85,6 +85,7 @@ export const AdminSidebar = ({
       items: [
         { id: 'messages', label: 'Mensajes Usuarios', icon: MessageCircle, count: unreadMessagesCount },
         { id: 'custom-requests', label: 'Docs Personalizados', icon: FileCheck, count: 0 },
+        { id: 'bug-reports', label: 'Reportes Problemas', icon: Bug, count: pendingBugReportsCount },
         { id: 'email-config', label: 'Config Email', icon: Mail, count: 0 },
       ]
     },
