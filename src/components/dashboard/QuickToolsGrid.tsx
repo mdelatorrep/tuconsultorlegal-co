@@ -5,6 +5,7 @@ import { Search, Eye, PenTool, Target, Users, Database, Gavel, Radar, Calendar, 
 import { LucideIcon } from "lucide-react";
 import { useCredits } from "@/hooks/useCredits";
 import { useLawyerAuth } from "@/hooks/useLawyerAuth";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 
 interface Tool {
   title: string;
