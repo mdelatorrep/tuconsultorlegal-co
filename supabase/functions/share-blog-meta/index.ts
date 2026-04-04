@@ -10,14 +10,14 @@ const SUPABASE_URL = 'https://tkaezookvtpulfpaffes.supabase.co'
 const DEFAULT_OG_IMAGE = 'https://praxis-hub.co/og-image.png'
 
 function htmlResponse(html: string, status = 200) {
-  const headers = new Headers(corsHeaders)
-  headers.set('content-type', 'text/html; charset=utf-8')
-  headers.set('cache-control', 'public, max-age=3600, s-maxage=3600')
-  headers.set('x-content-type-options', 'nosniff')
-
-  return new Response(new Blob([html], { type: 'text/html; charset=utf-8' }), {
+  return new Response(html, {
     status,
-    headers
+    headers: {
+      ...corsHeaders,
+      'content-type': 'text/html; charset=utf-8',
+      'cache-control': 'public, max-age=3600, s-maxage=3600',
+      'x-content-type-options': 'nosniff',
+    }
   })
 }
 
