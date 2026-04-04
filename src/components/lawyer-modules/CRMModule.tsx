@@ -112,16 +112,17 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
     lawyerData: user,
   };
 
-  const isEmptyCRM = stats.clients === 0 && stats.cases === 0 && stats.leads === 0;
+  const allOnboardingComplete = Object.values(onboardingSteps).every(Boolean);
 
   return (
     <div className="space-y-4">
-      {/* Onboarding for first-time users */}
-      {isEmptyCRM && (
+      {/* Onboarding for users who haven't completed all steps */}
+      {!allOnboardingComplete && (
         <CRMOnboarding
           onNavigateToProfile={() => onViewChange('public-profile')}
           onOpenClients={() => setActiveTab('clientes')}
           onOpenCases={() => setActiveTab('procesos')}
+          completedSteps={onboardingSteps}
         />
       )}
 
