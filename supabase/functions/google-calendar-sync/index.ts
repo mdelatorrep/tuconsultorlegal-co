@@ -222,17 +222,20 @@ serve(async (req) => {
 
     // Create single event in Google Calendar
     if (action === 'create_event' && event_data) {
+      const startDatePart = extractDatePart(event_data.start_date);
+      const endDatePart = extractDatePart(event_data.end_date || event_data.start_date);
+
       const googleEvent = {
         summary: event_data.title,
         description: event_data.description || undefined,
         location: event_data.location || undefined,
         colorId: mapEventTypeToColor(event_data.event_type || 'other'),
         start: event_data.all_day
-          ? { date: event_data.start_date }
-          : { dateTime: `${event_data.start_date}T${event_data.start_time || '09:00'}:00`, timeZone: 'America/Bogota' },
+          ? { date: startDatePart }
+          : { dateTime: `${startDatePart}T${event_data.start_time || '09:00'}:00`, timeZone: 'America/Bogota' },
         end: event_data.all_day
-          ? { date: event_data.end_date || event_data.start_date }
-          : { dateTime: `${event_data.end_date || event_data.start_date}T${event_data.end_time || '10:00'}:00`, timeZone: 'America/Bogota' },
+          ? { date: endDatePart }
+          : { dateTime: `${endDatePart}T${event_data.end_time || '10:00'}:00`, timeZone: 'America/Bogota' },
       };
 
       const res = await fetch(`${CALENDAR_API}/calendars/primary/events`, {
