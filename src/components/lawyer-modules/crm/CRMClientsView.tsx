@@ -47,9 +47,11 @@ interface CRMClientsViewProps {
   lawyerData: any;
   searchTerm: string;
   onRefresh: () => void;
+  autoOpenCreate?: boolean;
+  onAutoOpenHandled?: () => void;
 }
 
-const CRMClientsView: React.FC<CRMClientsViewProps> = ({ lawyerData, searchTerm, onRefresh }) => {
+const CRMClientsView: React.FC<CRMClientsViewProps> = ({ lawyerData, searchTerm, onRefresh, autoOpenCreate, onAutoOpenHandled }) => {
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);

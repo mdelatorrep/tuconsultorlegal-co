@@ -39,9 +39,11 @@ interface CRMTasksViewProps {
   lawyerData: any;
   searchTerm: string;
   onRefresh: () => void;
+  autoOpenCreate?: boolean;
+  onAutoOpenHandled?: () => void;
 }
 
-const CRMTasksView: React.FC<CRMTasksViewProps> = ({ lawyerData, searchTerm, onRefresh }) => {
+const CRMTasksView: React.FC<CRMTasksViewProps> = ({ lawyerData, searchTerm, onRefresh, autoOpenCreate, onAutoOpenHandled }) => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [clients, setClients] = useState<any[]>([]);
   const [cases, setCases] = useState<any[]>([]);
