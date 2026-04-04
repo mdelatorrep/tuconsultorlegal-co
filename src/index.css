@@ -349,10 +349,6 @@ html {
     flex-direction: column;
     height: 100%;
   }
-    padding: 15px;
-    line-height: 1.8;
-    color: hsl(var(--foreground));
-  }
 
   .ql-editor p {
     margin-bottom: 1em;
