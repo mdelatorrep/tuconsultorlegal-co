@@ -280,10 +280,9 @@ export default function DraftCopilotPanel({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Quick Actions */}
-      <div className="px-3 py-2 border-t bg-muted/30 shrink-0">
-        <p className="text-xs text-muted-foreground mb-1.5 font-medium">Acciones rápidas:</p>
-        <div className="grid grid-cols-2 gap-1">
+      {/* Quick Actions - single row scrollable */}
+      <div className="px-3 py-1.5 border-t bg-muted/30 shrink-0">
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
           {quickActions.map((action) => {
             const Icon = action.icon;
             return (
@@ -291,13 +290,13 @@ export default function DraftCopilotPanel({
                 key={action.label}
                 variant="outline"
                 size="sm"
-                className="h-8 text-xs justify-start gap-1.5 truncate"
+                className="h-7 text-xs gap-1 shrink-0 whitespace-nowrap"
                 onClick={() => sendChatMessage(action.prompt)}
                 disabled={isChatLoading}
                 title={action.prompt}
               >
-                <Icon className="h-3 w-3 shrink-0" />
-                <span className="truncate">{action.label}</span>
+                <Icon className="h-3 w-3" />
+                {action.label}
               </Button>
             );
           })}
