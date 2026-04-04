@@ -158,6 +158,9 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
         throw new Error(data?.error || 'Error en el análisis del documento');
       }
 
+      // Consume credits only after successful API response
+      await consumeCredits('analysis', { fileName: file.name });
+
       const result = normalizeAnalysisOutput(data, {
         fileName: file.name,
         timestamp: new Date(data.timestamp || Date.now()),
