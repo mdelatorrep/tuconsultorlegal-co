@@ -384,6 +384,13 @@ export default function AdminBlogManager({ onBack, authHeaders }: AdminBlogManag
                       <span className="text-sm">{blog.views_count || 0}</span>
                     </TableCell>
                     <TableCell>
+                      {blog.status === 'published' ? (
+                        <BlogShareButtons blog={blog} size="sm" showLabels={false} />
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Solo publicados</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
                       <div className="flex items-center gap-2">
                         {blog.status === 'en_revision' && (
                           <>

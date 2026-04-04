@@ -172,38 +172,9 @@ export default function BlogArticlePage({ articleId, onOpenChat, onNavigate }: B
         {/* Social Share Section */}
         <div className="mt-12 p-6 bg-muted/50 rounded-lg border">
           <div className="flex items-center gap-3 mb-4">
-            <Share2 className="h-5 w-5 text-primary" />
             <h3 className="text-lg font-semibold text-foreground">Compartir artículo</h3>
           </div>
-          <div className="flex flex-wrap gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={shareOnLinkedIn}
-              className="flex items-center gap-2"
-            >
-              <Linkedin className="h-4 w-4" />
-              LinkedIn
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={shareOnWhatsApp}
-              className="flex items-center gap-2"
-            >
-              <MessageCircle className="h-4 w-4" />
-              WhatsApp
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={copyToClipboard}
-              className="flex items-center gap-2"
-            >
-              <Share2 className="h-4 w-4" />
-              Copiar enlace
-            </Button>
-          </div>
+          <BlogShareButtons blog={blog} showLabels={true} />
         </div>
 
         <div className="mt-16 bg-success/10 border-l-4 border-success p-8 rounded-r-lg">
