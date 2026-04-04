@@ -906,7 +906,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                   </div>
                 </div>
               </header>
-              <div className="p-4">
+              <div className="flex-1 overflow-auto p-4">
                 {renderModuleContent()}
               </div>
             </main>
