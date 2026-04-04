@@ -74,7 +74,7 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
       section: {
         title: "Panel Principal",
         items: [
-          { title: "Dashboard", icon: Home, view: "dashboard" }
+          { title: "Inicio", icon: Home, view: "dashboard" }
         ]
       }
     },
