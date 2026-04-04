@@ -74,6 +74,9 @@ export function DeadlineCalculator({ lawyerId, onEventCreated }: DeadlineCalcula
       });
 
       if (error) throw error;
+
+      // Consume credits only after successful API response
+      await consumeCredits('calendar_deadline', { termType, days: daysToAdd });
       
       setCalculatedDate(new Date(data.deadline));
       setEventTitle(selectedTerm?.label || `Vencimiento ${daysToAdd} días hábiles`);

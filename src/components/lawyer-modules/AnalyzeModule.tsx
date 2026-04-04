@@ -106,9 +106,7 @@ export default function AnalyzeModule({ user, currentView, onViewChange, onLogou
       return;
     }
 
-    const creditResult = await consumeCredits('analysis', { fileName: file.name });
-    if (!creditResult.success) return;
-
+    setAnalysisStatus('analyzing');
     setAnalysisStatus('analyzing');
     try {
       let fileContent = '';
