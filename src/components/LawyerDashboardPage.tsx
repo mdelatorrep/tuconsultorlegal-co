@@ -1377,6 +1377,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
           badgeName={celebration?.badgeName}
           onComplete={() => setCelebration(null)}
         />
+        <BugReportButton lawyerId={user.id} />
       </SidebarProvider>
     </>
   );
