@@ -306,8 +306,6 @@ export default function DocumentEditorWithCopilot({
     setChatMessages(prev => [...prev, { role: 'user', content: userMessage, insertable: false }]);
     setIsChatLoading(true);
     try {
-      const result = await consumeCredits('copilot', { action: 'chat' });
-      if (!result.success) { setIsChatLoading(false); return; }
       const { data, error } = await supabase.functions.invoke('legal-copilot', {
         body: {
           action: 'suggest',
