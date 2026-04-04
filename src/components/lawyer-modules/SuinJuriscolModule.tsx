@@ -363,18 +363,13 @@ export default function SuinJuriscolModule({ user, currentView, onViewChange, on
   const handleSendFollowUp = async () => {
     if (!followUpQuery.trim() || !currentResult) return;
 
-    // Check and consume credits for follow-up
+    // Check credits availability (consume after success)
     if (!hasEnoughCredits('suin_juriscol_followup')) {
       toast({
         title: "Créditos insuficientes",
         description: `Necesitas ${getToolCost('suin_juriscol_followup')} créditos para enviar un mensaje de seguimiento.`,
         variant: "destructive",
       });
-      return;
-    }
-
-    const creditResult = await consumeCredits('suin_juriscol_followup', { query: followUpQuery, isFollowUp: true });
-    if (!creditResult.success) {
       return;
     }
 
