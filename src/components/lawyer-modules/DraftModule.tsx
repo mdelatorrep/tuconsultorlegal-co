@@ -1,19 +1,23 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PenTool, FileText, Copy, Loader2, Sparkles, Target, TrendingUp, Clock, FolderOpen, Coins, Wand2, MessageSquare } from "lucide-react";
+import {
+  PenTool, Loader2, Sparkles, FolderOpen, Coins,
+  Save, Download, MessageSquare, X
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import DocumentEditorWithCopilot from "./draft/DocumentEditorWithCopilot";
 import MyDocuments from "./draft/MyDocuments";
-import DraftResultDisplay from "./draft/DraftResultDisplay";
+import DraftCopilotPanel from "./draft/DraftCopilotPanel";
+import { generatePDF } from "./draft/pdfUtils";
 import { useCredits } from "@/hooks/useCredits";
-import { ToolCostIndicator } from "@/components/credits/ToolCostIndicator";
 import { QuickPromptSuggestions } from "@/components/ui/QuickPromptSuggestions";
+import { cn } from "@/lib/utils";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
 
 interface DraftModuleProps {
   user: any;
@@ -24,14 +28,6 @@ interface DraftModuleProps {
   onTranscriptUsed?: () => void;
 }
 
-interface DraftResult {
-  prompt: string;
-  documentType: string;
-  content: string;
-  sections: string[];
-  timestamp: string;
-}
-
 const DOCUMENT_TYPES = [
   { value: "contrato_colaboracion", label: "Contrato de Colaboración Empresarial" },
   { value: "contrato_prestacion", label: "Contrato de Prestación de Servicios" },
@@ -39,103 +35,114 @@ const DOCUMENT_TYPES = [
   { value: "carta_desistimiento", label: "Carta de Desistimiento" },
   { value: "clausula_confidencialidad", label: "Cláusula de Confidencialidad" },
   { value: "poder_especial", label: "Poder Especial" },
+  { value: "demanda_civil", label: "Demanda Civil" },
+  { value: "contestacion_demanda", label: "Contestación de Demanda" },
+  { value: "accion_tutela", label: "Acción de Tutela" },
+  { value: "derecho_peticion", label: "Derecho de Petición" },
   { value: "documento_personalizado", label: "Documento Personalizado" }
 ];
 
+const quillModules = {
+  toolbar: [
+    [{ header: [1, 2, 3, false] }],
+    ["bold", "italic", "underline", "strike"],
+    [{ list: "ordered" }, { list: "bullet" }],
+    [{ indent: "-1" }, { indent: "+1" }],
+    [{ align: [] }],
+    ["link"],
+    ["clean"],
+  ],
+};
+
+const quillFormats = [
+  "header", "bold", "italic", "underline", "strike",
+  "list", "bullet", "indent", "align", "link",
+];
+
 export default function DraftModule({ user, currentView, onViewChange, onLogout, initialTranscript, onTranscriptUsed }: DraftModuleProps) {
-  const [prompt, setPrompt] = useState(initialTranscript || "");
+  const [activeTab, setActiveTab] = useState("studio");
   const [documentType, setDocumentType] = useState("");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState(initialTranscript || "");
+  const [editorContent, setEditorContent] = useState("");
   const [isDrafting, setIsDrafting] = useState(false);
-  const [drafts, setDrafts] = useState<DraftResult[]>([]);
-  const [editorOpen, setEditorOpen] = useState(false);
-  const [currentDraft, setCurrentDraft] = useState<DraftResult | null>(null);
-  const [activeTab, setActiveTab] = useState("generate");
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [showCopilot, setShowCopilot] = useState(true);
+  const [hasGeneratedContent, setHasGeneratedContent] = useState(false);
+  const quillRef = useRef<any>(null);
   const { toast } = useToast();
   const { consumeCredits, hasEnoughCredits, getToolCost } = useCredits(user?.id);
 
-  // Handle initial transcript from voice assistant
   useEffect(() => {
     if (initialTranscript && initialTranscript.length > 0) {
-      setPrompt(initialTranscript);
+      setDescription(initialTranscript);
       onTranscriptUsed?.();
       toast({
         title: "📝 Transcripción cargada",
-        description: "Tu dictado de voz ha sido cargado. Selecciona el tipo de documento y genera.",
+        description: "Tu dictado ha sido cargado en la descripción.",
       });
     }
-  }, [initialTranscript, onTranscriptUsed, toast]);
+  }, [initialTranscript]);
 
-  const handleGenerateDraft = async () => {
-    if (!prompt.trim() || !documentType) {
+  const handleGenerate = async () => {
+    if (!description.trim() || !documentType) {
       toast({
         title: "Información requerida",
-        description: "Por favor completa el tipo de documento y la descripción.",
+        description: "Selecciona el tipo de documento y escribe una descripción.",
         variant: "destructive",
       });
       return;
     }
-
-    // Check credits availability before proceeding (consume after success)
     if (!hasEnoughCredits('draft')) {
       toast({
         title: "Créditos insuficientes",
-        description: `Necesitas ${getToolCost('draft')} créditos para generar documentos.`,
+        description: `Necesitas ${getToolCost('draft')} créditos.`,
         variant: "destructive",
       });
       return;
+    }
+
+    // If editor already has content, confirm replacement
+    if (editorContent && editorContent.replace(/<[^>]*>/g, '').trim().length > 20) {
+      const confirmed = window.confirm("El editor ya tiene contenido. ¿Deseas reemplazarlo con el nuevo borrador?");
+      if (!confirmed) return;
     }
 
     setIsDrafting(true);
     try {
+      const docLabel = DOCUMENT_TYPES.find(t => t.value === documentType)?.label || documentType;
       const { data, error } = await supabase.functions.invoke('legal-document-drafting', {
-        body: { 
-          prompt, 
-          documentType: DOCUMENT_TYPES.find(t => t.value === documentType)?.label || documentType
-        }
+        body: { prompt: description, documentType: docLabel }
       });
 
       if (error) throw error;
       if (!data.success) throw new Error(data.error || 'Error en la generación');
 
-      // Consume credits only after successful API response
       await consumeCredits('draft', { documentType });
 
-      const draftResult: DraftResult = {
-        prompt: prompt,
-        documentType: DOCUMENT_TYPES.find(t => t.value === documentType)?.label || documentType,
-        content: data.content || data.generatedText || 'Documento generado con IA',
-        sections: data.sections || ['Encabezado', 'Cuerpo del documento', 'Firma'],
-        timestamp: data.timestamp || new Date().toISOString()
-      };
+      // Convert markdown content to basic HTML for the editor
+      let content = data.content || '';
+      content = markdownToHtml(content);
 
-      const { error: dbError } = await supabase
-        .from('legal_tools_results')
-        .insert({
-          lawyer_id: user.id,
-          tool_type: 'draft',
-          input_data: { 
-            prompt: draftResult.prompt,
-            documentType: draftResult.documentType
-          },
-          output_data: {
-            content: draftResult.content,
-            sections: draftResult.sections
-          },
-          metadata: { timestamp: draftResult.timestamp }
-        });
+      setEditorContent(content);
+      setHasGeneratedContent(true);
 
-      if (dbError) console.error('Error saving to database:', dbError);
+      // Auto-set title if empty
+      if (!title.trim()) {
+        setTitle(docLabel);
+      }
 
-      setDrafts(prev => [draftResult, ...prev]);
-      setCurrentDraft(draftResult);
-      setEditorOpen(true);
-      setPrompt("");
-      setDocumentType("");
-      
-      toast({
-        title: "Borrador generado",
-        description: "Ahora puedes editar y guardar tu documento.",
+      // Save to legal_tools_results
+      await supabase.from('legal_tools_results').insert({
+        lawyer_id: user.id,
+        tool_type: 'draft',
+        input_data: { prompt: description, documentType: docLabel },
+        output_data: { content: data.content, sections: data.sections },
+        metadata: { timestamp: new Date().toISOString() }
       });
+
+      toast({ title: "✅ Borrador generado", description: "El documento se ha cargado en el editor." });
     } catch (error) {
       console.error("Error generando borrador:", error);
       toast({
@@ -148,166 +155,260 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout,
     }
   };
 
-  const copyToClipboard = (content: string) => {
-    navigator.clipboard.writeText(content);
-    toast({
-      title: "Copiado al portapapeles",
-      description: "El contenido ha sido copiado exitosamente.",
-    });
+  const handleSave = async () => {
+    if (!title.trim()) {
+      toast({ title: "Título requerido", description: "Ingresa un título para el documento.", variant: "destructive" });
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const docLabel = DOCUMENT_TYPES.find(t => t.value === documentType)?.label || documentType || "Documento Legal";
+      await supabase.from("lawyer_documents").insert({
+        lawyer_id: user.id,
+        title: title.trim(),
+        document_type: docLabel,
+        content: editorContent,
+        markdown_content: editorContent,
+      });
+      toast({ title: "✅ Documento guardado", description: "Puedes encontrarlo en Mis Documentos." });
+      setActiveTab("documents");
+    } catch {
+      toast({ title: "Error al guardar", description: "No se pudo guardar el documento.", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleEditDraft = (draft: DraftResult) => {
-    setCurrentDraft(draft);
-    setEditorOpen(true);
+  const handleDownload = async () => {
+    if (!editorContent.trim()) {
+      toast({ title: "Sin contenido", description: "Genera o escribe un documento primero.", variant: "destructive" });
+      return;
+    }
+    setIsDownloading(true);
+    try {
+      await generatePDF(editorContent, title.trim() || "Documento Legal");
+      toast({ title: "PDF descargado" });
+    } catch {
+      toast({ title: "Error al generar PDF", variant: "destructive" });
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const handleInsertFromCopilot = (text: string) => {
+    // Convert plain text to simple HTML paragraphs and append
+    const htmlText = text.split('\n').filter(Boolean).map(line => `<p>${line}</p>`).join('');
+    setEditorContent(prev => prev + htmlText);
   };
 
   return (
-    <>
-      <div className="space-y-4 lg:space-y-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="generate" className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4" />
-              Generar
-            </TabsTrigger>
-            <TabsTrigger value="documents" className="flex items-center gap-2">
-              <FolderOpen className="h-4 w-4" />
-              Mis Documentos
-            </TabsTrigger>
-          </TabsList>
+    <div className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="studio" className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4" />
+            Redactar
+          </TabsTrigger>
+          <TabsTrigger value="documents" className="flex items-center gap-2">
+            <FolderOpen className="h-4 w-4" />
+            Mis Documentos
+          </TabsTrigger>
+        </TabsList>
 
-          <TabsContent value="generate" className="space-y-4">
-            {/* Draft Interface */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <FileText className="h-5 w-5" />
-                        Nuevo Borrador
-                      </CardTitle>
-                      <CardDescription>
-                        Describe el documento que necesitas y la IA generará un borrador estructurado
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <label className="text-sm font-medium mb-2 block">Tipo de Documento</label>
-                        <Select value={documentType} onValueChange={setDocumentType}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecciona el tipo de documento" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {DOCUMENT_TYPES.map((type) => (
-                              <SelectItem key={type.value} value={type.value}>
-                                {type.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <div>
-                        <label className="text-sm font-medium mb-2 block">Descripción del Documento</label>
-                        <Textarea
-                          placeholder="Ej: Contrato de colaboración empresarial entre una empresa de software y un influencer"
-                          value={prompt}
-                          onChange={(e) => setPrompt(e.target.value)}
-                          rows={4}
-                          className="resize-none"
-                        />
-                        {!prompt.trim() && !isDrafting && (
-                          <div className="mt-2">
-                            <QuickPromptSuggestions
-                              suggestions={[
-                                "Contrato de prestación de servicios profesionales con cláusula de confidencialidad",
-                                "Derecho de petición ante EPS por negación de tratamiento médico",
-                                "Poder especial para representación en proceso ejecutivo",
-                                "Acción de tutela por vulneración del derecho al trabajo",
-                                "Contrato de arrendamiento comercial con opción de compra",
-                              ]}
-                              onSelect={(s) => setPrompt(s)}
-                              disabled={isDrafting}
-                            />
-                          </div>
-                        )}
-                      </div>
-                      
-                      <Button
-                        onClick={handleGenerateDraft}
-                        disabled={isDrafting || !hasEnoughCredits('draft')}
-                        className="w-full h-12"
-                      >
-                        {isDrafting ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Generando borrador...
-                          </>
-                        ) : (
-                          <>
-                            <PenTool className="h-4 w-4 mr-2" />
-                            <span>Generar Borrador</span>
-                            <span className="ml-3 flex items-center gap-1 bg-white/20 px-2 py-0.5 rounded-lg text-sm">
-                              <Coins className="h-4 w-4" />
-                              {getToolCost('draft')}
-                            </span>
-                          </>
-                        )}
-                      </Button>
-                    </CardContent>
-                  </Card>
+        <TabsContent value="studio" className="mt-4">
+          <div className={cn("flex gap-0 rounded-lg border bg-background overflow-hidden", "h-[calc(100vh-220px)]")}>
+            {/* Main Editor Area */}
+            <div className={cn("flex flex-col transition-all duration-300", showCopilot ? "w-2/3" : "w-full")}>
+              {/* Top Bar: Document config */}
+              <div className="flex items-center gap-3 px-4 py-3 border-b bg-muted/30 flex-wrap">
+                <Select value={documentType} onValueChange={setDocumentType}>
+                  <SelectTrigger className="w-[260px]">
+                    <SelectValue placeholder="Tipo de documento" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DOCUMENT_TYPES.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Input
+                  placeholder="Título del documento..."
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="flex-1 min-w-[200px]"
+                />
+                <Button
+                  variant={showCopilot ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setShowCopilot(!showCopilot)}
+                  className="shrink-0"
+                >
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  {showCopilot ? "Ocultar Copilot" : "Copilot"}
+                </Button>
+              </div>
 
-                  {/* Drafts List */}
-                  {drafts.length > 0 && (
-                    <div className="space-y-6">
-                      <h3 className="text-xl font-semibold">Borradores Generados</h3>
-                      {drafts.map((draft, index) => (
-                        <DraftResultDisplay
-                          key={index}
-                          content={draft.content}
-                          documentType={draft.documentType}
-                          prompt={draft.prompt}
-                          timestamp={draft.timestamp}
-                          onEdit={() => handleEditDraft(draft)}
-                          onCopy={copyToClipboard}
-                        />
-                      ))}
-                    </div>
-                  )}
-
-                  {drafts.length === 0 && (
-                    <Card>
-                      <CardContent className="p-8 text-center">
-                        <PenTool className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                        <p className="text-muted-foreground">
-                          Genera tu primer borrador de documento legal
-                        </p>
-                      </CardContent>
-                    </Card>
-                  )}
-                </TabsContent>
-
-                <TabsContent value="documents">
-                  <MyDocuments 
-                    lawyerId={user.id} 
-                    canCreateAgents={user.can_create_agents || false}
+              {/* Description + Generate (shown when no content yet) */}
+              {!hasGeneratedContent && (
+                <div className="px-4 py-4 border-b space-y-3 bg-background">
+                  <label className="text-sm font-medium">Describe el documento que necesitas</label>
+                  <textarea
+                    placeholder="Ej: Contrato de prestación de servicios profesionales entre una empresa de software y un consultor independiente, con cláusula de confidencialidad y no competencia..."
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    rows={3}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   />
-                </TabsContent>
-              </Tabs>
+                  {!description.trim() && !isDrafting && (
+                    <QuickPromptSuggestions
+                      suggestions={[
+                        "Contrato de prestación de servicios con cláusula de confidencialidad",
+                        "Derecho de petición ante EPS por negación de tratamiento médico",
+                        "Poder especial para representación en proceso ejecutivo",
+                        "Acción de tutela por vulneración del derecho al trabajo",
+                      ]}
+                      onSelect={(s) => setDescription(s)}
+                      disabled={isDrafting}
+                    />
+                  )}
+                  <Button
+                    onClick={handleGenerate}
+                    disabled={isDrafting || !hasEnoughCredits('draft') || !documentType || !description.trim()}
+                    className="w-full h-11"
+                  >
+                    {isDrafting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Generando borrador...
+                      </>
+                    ) : (
+                      <>
+                        <PenTool className="h-4 w-4 mr-2" />
+                        Generar con IA
+                        <span className="ml-3 flex items-center gap-1 bg-white/20 px-2 py-0.5 rounded-lg text-sm">
+                          <Coins className="h-4 w-4" />
+                          {getToolCost('draft')}
+                        </span>
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+
+              {/* Compact re-generate bar when content exists */}
+              {hasGeneratedContent && (
+                <div className="px-4 py-2 border-b bg-muted/20 flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs shrink-0">
+                    {DOCUMENT_TYPES.find(t => t.value === documentType)?.label || "Documento"}
+                  </Badge>
+                  <div className="flex-1" />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setHasGeneratedContent(false)}
+                    className="text-xs"
+                  >
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    Regenerar
+                  </Button>
+                </div>
+              )}
+
+              {/* Rich Text Editor */}
+              <div className="flex-1 overflow-hidden">
+                <ReactQuill
+                  ref={quillRef}
+                  theme="snow"
+                  value={editorContent}
+                  onChange={setEditorContent}
+                  modules={quillModules}
+                  formats={quillFormats}
+                  placeholder="El borrador generado aparecerá aquí. También puedes escribir directamente..."
+                  className="h-full [&_.ql-container]:border-0 [&_.ql-toolbar]:border-x-0 [&_.ql-editor]:min-h-full [&_.ql-editor]:font-serif [&_.ql-editor]:text-base [&_.ql-editor]:leading-relaxed [&_.ql-editor]:px-8 [&_.ql-editor]:py-6"
+                />
+              </div>
+
+              {/* Footer Actions */}
+              <div className="flex items-center gap-2 px-4 py-3 border-t bg-muted/30">
+                <Button onClick={handleSave} disabled={isSaving || !editorContent.trim()} className="flex-1">
+                  {isSaving ? (
+                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Guardando...</>
+                  ) : (
+                    <><Save className="h-4 w-4 mr-2" />Guardar Documento</>
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleDownload}
+                  disabled={isDownloading || !editorContent.trim()}
+                >
+                  {isDownloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+                  Descargar PDF
+                </Button>
+              </div>
             </div>
 
-      {currentDraft && (
-        <DocumentEditorWithCopilot
-          open={editorOpen}
-          onClose={() => {
-            setEditorOpen(false);
-            setCurrentDraft(null);
-          }}
-          initialContent={currentDraft.content}
-          documentType={currentDraft.documentType}
-          lawyerId={user.id}
-          canCreateAgents={user.can_create_agents || false}
-          onSaved={() => setActiveTab("documents")}
-        />
-      )}
-    </>
+            {/* Copilot Panel */}
+            {showCopilot && (
+              <DraftCopilotPanel
+                documentContent={editorContent}
+                documentType={DOCUMENT_TYPES.find(t => t.value === documentType)?.label || documentType || "Documento Legal"}
+                lawyerId={user.id}
+                onInsertText={handleInsertFromCopilot}
+              />
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="documents">
+          <MyDocuments
+            lawyerId={user.id}
+            canCreateAgents={user.can_create_agents || false}
+          />
+        </TabsContent>
+      </Tabs>
+    </div>
   );
+}
+
+/** Simple markdown-to-HTML converter for AI output */
+function markdownToHtml(md: string): string {
+  let html = md;
+  // Bold
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  // Headers
+  html = html.replace(/^#### (.+)$/gm, '<h4>$1</h4>');
+  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+  // Horizontal rules
+  html = html.replace(/^---$/gm, '<hr>');
+  // Convert remaining plain text lines to paragraphs
+  const lines = html.split('\n');
+  const result: string[] = [];
+  let inList = false;
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      if (inList) { result.push('</ul>'); inList = false; }
+      continue;
+    }
+    if (trimmed.startsWith('<h') || trimmed.startsWith('<hr')) {
+      if (inList) { result.push('</ul>'); inList = false; }
+      result.push(trimmed);
+    } else if (trimmed.match(/^[-*] /)) {
+      if (!inList) { result.push('<ul>'); inList = true; }
+      result.push(`<li>${trimmed.replace(/^[-*] /, '')}</li>`);
+    } else if (trimmed.match(/^\d+\. /)) {
+      // Numbered list item as paragraph for simplicity
+      result.push(`<p>${trimmed}</p>`);
+    } else {
+      if (inList) { result.push('</ul>'); inList = false; }
+      result.push(`<p>${trimmed}</p>`);
+    }
+  }
+  if (inList) result.push('</ul>');
+  return result.join('\n');
 }
