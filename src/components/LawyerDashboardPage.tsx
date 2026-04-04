@@ -7,11 +7,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Save, CheckCircle, Bot, Settings, Brain, BookOpen, Search, Eye, PenTool, Target, Crown, Users, SpellCheck, AlertCircle, Clock, FileImage, Send, Database, Radar, Mic, TrendingUp, UserCircle, Calendar, Mail } from "lucide-react";
+import { FileText, Save, CheckCircle, Bot, Settings, Brain, BookOpen, Search, Eye, PenTool, Target, Crown, Users, SpellCheck, AlertCircle, Clock, FileImage, Send, Database, Radar, Mic, TrendingUp, UserCircle, Calendar, Mail, ChevronDown, Scale, FileSearch, BarChart3, GraduationCap } from "lucide-react";
 
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 // Module imports
@@ -108,7 +109,7 @@ const quillFormats = [
   'list', 'bullet', 'align', 'color', 'background'
 ];
 
-type ViewType = 'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager' | 'research' | 'analyze' | 'draft' | 'strategize' | 'crm' | 'public-profile' | 'suin-juriscol' | 'process-query' | 'credits' | 'gamification' | 'process-monitor' | 'legal-calendar' | 'voice-assistant' | 'case-predictor' | 'client-portal' | 'request-agent-access' | 'request-blog-access' | 'specialized-agents' | 'account-settings';
+type ViewType = 'dashboard' | 'stats' | 'agent-creator' | 'agent-manager' | 'training' | 'blog-manager' | 'research' | 'analyze' | 'draft' | 'strategize' | 'crm' | 'public-profile' | 'suin-juriscol' | 'suin' | 'process-query' | 'process-consultation' | 'credits' | 'gamification' | 'process-monitor' | 'legal-calendar' | 'voice-assistant' | 'voice' | 'case-predictor' | 'predict' | 'client-portal' | 'request-agent-access' | 'request-blog-access' | 'specialized-agents' | 'account-settings';
 
 export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageProps) {
   const [documents, setDocuments] = useState<DocumentToken[]>([]);
@@ -756,6 +757,14 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
             }}
           />
         );
+      case 'suin':
+        return <SuinJuriscolModule user={user} currentView={currentView} onViewChange={(v) => setCurrentView(v as ViewType)} onLogout={logout} />;
+      case 'process-consultation':
+        return <ProcessQueryModule user={user} currentView={currentView} onViewChange={(v) => setCurrentView(v as ViewType)} onLogout={logout} />;
+      case 'voice':
+        return <VoiceAssistant lawyerId={user.id} />;
+      case 'predict':
+        return <CasePredictorModule lawyerId={user.id} />;
       default:
         return null;
     }
@@ -765,7 +774,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const viewsWithSidebar = ['dashboard', 'public-profile', 'stats', 'credits', 'gamification', 'request-agent-access', 'request-blog-access', 'account-settings'];
   
   // Views that modules render their own sidebar (need to be wrapped)
-  const moduleViews = ['agent-creator', 'agent-manager', 'training', 'blog-manager', 'research', 'analyze', 'draft', 'strategize', 'crm', 'suin-juriscol', 'process-query', 'process-monitor', 'legal-calendar', 'voice-assistant', 'case-predictor', 'client-portal', 'specialized-agents', 'account-settings'];
+  const moduleViews = ['agent-creator', 'agent-manager', 'training', 'blog-manager', 'research', 'analyze', 'draft', 'strategize', 'crm', 'suin-juriscol', 'suin', 'process-query', 'process-consultation', 'process-monitor', 'legal-calendar', 'voice-assistant', 'voice', 'case-predictor', 'predict', 'client-portal', 'specialized-agents', 'account-settings'];
 
   // If it's a module view, wrap it with our SidebarProvider
   if (moduleViews.includes(currentView)) {
@@ -803,18 +812,78 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                       ← Inicio
                     </Button>
                     <div className="hidden md:flex items-center gap-1">
-                      <Button variant={currentView === 'research' ? 'secondary' : 'ghost'} size="sm" className="h-8 text-xs" onClick={() => setCurrentView('research')}>
-                        Investigación
-                      </Button>
-                      <Button variant={currentView === 'draft' ? 'secondary' : 'ghost'} size="sm" className="h-8 text-xs" onClick={() => setCurrentView('draft')}>
-                        Documentos
-                      </Button>
-                      <Button variant={currentView === 'crm' ? 'secondary' : 'ghost'} size="sm" className="h-8 text-xs" onClick={() => setCurrentView('crm')}>
-                        CRM
-                      </Button>
-                      <Button variant={currentView === 'analyze' ? 'secondary' : 'ghost'} size="sm" className="h-8 text-xs" onClick={() => setCurrentView('analyze')}>
-                        Análisis
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant={['research', 'suin', 'process-consultation', 'process-monitor'].includes(currentView) ? 'secondary' : 'ghost'} size="sm" className="h-8 text-xs">
+                            Investigación <ChevronDown className="ml-1 h-3 w-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-52">
+                          <DropdownMenuItem onClick={() => setCurrentView('research')} className="cursor-pointer">
+                            <Search className="w-4 h-4 mr-2" /> Investigación Legal
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setCurrentView('suin')} className="cursor-pointer">
+                            <Scale className="w-4 h-4 mr-2" /> SUIN-Juriscol
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setCurrentView('process-consultation')} className="cursor-pointer">
+                            <FileSearch className="w-4 h-4 mr-2" /> Consulta Procesos
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setCurrentView('process-monitor')} className="cursor-pointer">
+                            <Eye className="w-4 h-4 mr-2" /> Monitor Procesos
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant={['draft', 'analyze', 'voice'].includes(currentView) ? 'secondary' : 'ghost'} size="sm" className="h-8 text-xs">
+                            Documentos <ChevronDown className="ml-1 h-3 w-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-48">
+                          <DropdownMenuItem onClick={() => setCurrentView('draft')} className="cursor-pointer">
+                            <FileText className="w-4 h-4 mr-2" /> Redacción
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setCurrentView('analyze')} className="cursor-pointer">
+                            <BarChart3 className="w-4 h-4 mr-2" /> Análisis
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setCurrentView('voice')} className="cursor-pointer">
+                            <Mic className="w-4 h-4 mr-2" /> Voz
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant={['crm', 'legal-calendar'].includes(currentView) ? 'secondary' : 'ghost'} size="sm" className="h-8 text-xs">
+                            CRM <ChevronDown className="ml-1 h-3 w-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-48">
+                          <DropdownMenuItem onClick={() => setCurrentView('crm')} className="cursor-pointer">
+                            <Users className="w-4 h-4 mr-2" /> Clientes y Procesos
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setCurrentView('legal-calendar')} className="cursor-pointer">
+                            <Calendar className="w-4 h-4 mr-2" /> Calendario
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant={['strategize', 'training', 'predict'].includes(currentView) ? 'secondary' : 'ghost'} size="sm" className="h-8 text-xs">
+                            IA <ChevronDown className="ml-1 h-3 w-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-52">
+                          <DropdownMenuItem onClick={() => setCurrentView('predict')} className="cursor-pointer">
+                            <Brain className="w-4 h-4 mr-2" /> Predictor
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setCurrentView('strategize')} className="cursor-pointer">
+                            <Bot className="w-4 h-4 mr-2" /> Agentes Especializados
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setCurrentView('training')} className="cursor-pointer">
+                            <GraduationCap className="w-4 h-4 mr-2" /> Capacitación
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -889,24 +958,84 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
               <div className="flex h-full items-center justify-between px-3 md:px-4">
                 <div className="flex items-center gap-2 md:gap-4">
                   <SidebarTrigger />
-                  <div className="hidden md:flex items-center gap-1">
-                    <Button variant={currentView === 'dashboard' ? 'secondary' : 'ghost'} size="sm" className="h-8 text-xs" onClick={() => setCurrentView('dashboard')}>
-                      Inicio
-                    </Button>
-                    <Button variant={currentView === 'research' ? 'secondary' : 'ghost'} size="sm" className="h-8 text-xs" onClick={() => setCurrentView('research')}>
-                      Investigación
-                    </Button>
-                    <Button variant={currentView === 'draft' ? 'secondary' : 'ghost'} size="sm" className="h-8 text-xs" onClick={() => setCurrentView('draft')}>
-                      Documentos
-                    </Button>
-                    <Button variant={currentView === 'crm' ? 'secondary' : 'ghost'} size="sm" className="h-8 text-xs" onClick={() => setCurrentView('crm')}>
-                      CRM
-                    </Button>
-                    <Button variant={currentView === 'analyze' ? 'secondary' : 'ghost'} size="sm" className="h-8 text-xs" onClick={() => setCurrentView('analyze')}>
-                      Análisis
-                    </Button>
-                  </div>
-                  <h1 className="font-semibold truncate text-sm md:hidden">Dashboard Legal</h1>
+                    <div className="hidden md:flex items-center gap-1">
+                      <Button variant={currentView === 'dashboard' ? 'secondary' : 'ghost'} size="sm" className="h-8 text-xs" onClick={() => setCurrentView('dashboard')}>
+                        Inicio
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant={['research', 'suin', 'process-consultation', 'process-monitor'].includes(currentView) ? 'secondary' : 'ghost'} size="sm" className="h-8 text-xs">
+                            Investigación <ChevronDown className="ml-1 h-3 w-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-52">
+                          <DropdownMenuItem onClick={() => setCurrentView('research')} className="cursor-pointer">
+                            <Search className="w-4 h-4 mr-2" /> Investigación Legal
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setCurrentView('suin')} className="cursor-pointer">
+                            <Scale className="w-4 h-4 mr-2" /> SUIN-Juriscol
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setCurrentView('process-consultation')} className="cursor-pointer">
+                            <FileSearch className="w-4 h-4 mr-2" /> Consulta Procesos
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setCurrentView('process-monitor')} className="cursor-pointer">
+                            <Eye className="w-4 h-4 mr-2" /> Monitor Procesos
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant={['draft', 'analyze', 'voice'].includes(currentView) ? 'secondary' : 'ghost'} size="sm" className="h-8 text-xs">
+                            Documentos <ChevronDown className="ml-1 h-3 w-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-48">
+                          <DropdownMenuItem onClick={() => setCurrentView('draft')} className="cursor-pointer">
+                            <FileText className="w-4 h-4 mr-2" /> Redacción
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setCurrentView('analyze')} className="cursor-pointer">
+                            <BarChart3 className="w-4 h-4 mr-2" /> Análisis
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setCurrentView('voice')} className="cursor-pointer">
+                            <Mic className="w-4 h-4 mr-2" /> Voz
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant={['crm', 'legal-calendar'].includes(currentView) ? 'secondary' : 'ghost'} size="sm" className="h-8 text-xs">
+                            CRM <ChevronDown className="ml-1 h-3 w-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-48">
+                          <DropdownMenuItem onClick={() => setCurrentView('crm')} className="cursor-pointer">
+                            <Users className="w-4 h-4 mr-2" /> Clientes y Procesos
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setCurrentView('legal-calendar')} className="cursor-pointer">
+                            <Calendar className="w-4 h-4 mr-2" /> Calendario
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant={['strategize', 'training', 'predict'].includes(currentView) ? 'secondary' : 'ghost'} size="sm" className="h-8 text-xs">
+                            IA <ChevronDown className="ml-1 h-3 w-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-52">
+                          <DropdownMenuItem onClick={() => setCurrentView('predict')} className="cursor-pointer">
+                            <Brain className="w-4 h-4 mr-2" /> Predictor
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setCurrentView('strategize')} className="cursor-pointer">
+                            <Bot className="w-4 h-4 mr-2" /> Agentes Especializados
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setCurrentView('training')} className="cursor-pointer">
+                            <GraduationCap className="w-4 h-4 mr-2" /> Capacitación
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                    <h1 className="font-semibold truncate text-sm md:hidden">Dashboard Legal</h1>
                 </div>
                 <div className="flex items-center gap-2">
                   <PendingTasksIndicator 
@@ -983,9 +1112,9 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                   </Card>
                 </div>
               ) : (
-                <div className="max-w-7xl mx-auto space-y-4 md:space-y-6 lg:space-y-8">
+                <div className="max-w-7xl mx-auto space-y-3 md:space-y-4">
                   {/* Header with Welcome + Daily Progress */}
-                  <div className="grid gap-4 lg:grid-cols-3">
+                  <div className="grid gap-3 lg:grid-cols-3">
                     <div className="lg:col-span-2" data-tour="dashboard-welcome">
                       <DashboardWelcome 
                         userName={user?.name || 'Usuario'} 

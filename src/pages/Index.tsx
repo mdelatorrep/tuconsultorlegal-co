@@ -364,17 +364,19 @@ export default function Index() {
       {currentPage === 'abogados' && <PWAInstallPrompt />}
       
       <div className="min-h-screen bg-background">
-        <Header
-          currentPage={currentPage}
-          onNavigate={handleNavigate}
-          onOpenChat={handleOpenChat}
-        />
+        {currentPage !== 'abogados' && (
+          <Header
+            currentPage={currentPage}
+            onNavigate={handleNavigate}
+            onOpenChat={handleOpenChat}
+          />
+        )}
         
         <main className="page-enter page-enter-active">
           {renderCurrentPage()}
         </main>
 
-        <Footer onNavigate={handleNavigate} />
+        {currentPage !== 'abogados' && <Footer onNavigate={handleNavigate} />}
 
         {shouldShowChatWidget && (
           <ChatWidget
