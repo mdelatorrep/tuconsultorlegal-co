@@ -130,16 +130,9 @@ serve(async (req) => {
     const searchGuidance = webSearchTool ? `
 INSTRUCCIONES DE BÚSQUEDA WEB:
 - DEBES realizar búsqueda web para encontrar información actualizada
-- PRIORIZA buscar en estos sitios oficiales colombianos:
-  * suin-juriscol.gov.co - Sistema Único de Información Normativa (FUENTE PRINCIPAL)
-  * corteconstitucional.gov.co - Jurisprudencia constitucional
-  * cortesuprema.gov.co - Jurisprudencia de la Corte Suprema
-  * consejodeestado.gov.co - Jurisprudencia contencioso administrativa
-  * funcionpublica.gov.co - Normas de función pública
-  * secretariasenado.gov.co - Legislación colombiana
 - Incluye URLs específicas de las fuentes consultadas en tu respuesta
 - Cita números de ley, decreto, sentencia y artículos específicos
-` : '';
+${kbPromptSection}` : '';
 
     if (isFollowUp && truncatedContext) {
       userMessage = `Contexto de la conversación anterior:
