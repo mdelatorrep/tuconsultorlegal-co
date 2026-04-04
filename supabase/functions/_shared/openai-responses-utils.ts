@@ -765,16 +765,24 @@ export async function callResponsesAPIWithPolling(
 // ============= Web Search Configuration Helper =============
 
 /**
+ * Result of loading web search config: tool + knowledge base URLs for prompt injection
+ */
+export interface WebSearchConfigResult {
+  tool: WebSearchToolWithDomains;
+  knowledgeBaseUrls: Array<{ url: string; description: string | null; category: string }>;
+}
+
+/**
  * Load web search configuration from system_config and build tool with domains from knowledge_base_urls
  * 
  * @param supabase - Supabase client with service role
  * @param functionKey - Function identifier (e.g., 'analysis', 'strategy', 'drafting', 'research')
- * @returns WebSearchToolWithDomains if enabled, null otherwise
+ * @returns WebSearchConfigResult if enabled, null otherwise
  */
 export async function loadWebSearchConfigAndBuildTool(
   supabase: any,
   functionKey: string
-): Promise<WebSearchToolWithDomains | null> {
+): Promise<WebSearchConfigResult | null> {
   try {
     // Read enabled flag from system_config
     const { data: enabledConfig } = await supabase
@@ -807,13 +815,14 @@ export async function loadWebSearchConfigAndBuildTool(
     // Load verified URLs from knowledge_base_urls filtered by categories
     let urlsQuery = supabase
       .from('knowledge_base_urls')
-      .select('url')
-      .eq('verification_status', 'verified')
+      .select('url, description, category')
       .eq('is_active', true);
     
     if (categories.length > 0) {
       urlsQuery = urlsQuery.in('category', categories);
     }
+    
+    urlsQuery = urlsQuery.order('priority', { ascending: false });
     
     const { data: urls, error: urlsError } = await urlsQuery;
     
@@ -821,15 +830,19 @@ export async function loadWebSearchConfigAndBuildTool(
       console.error(`[WebSearch] Error loading URLs for ${functionKey}:`, urlsError);
     }
     
-    const domains = (urls || []).map((u: { url: string }) => u.url);
+    const knowledgeBaseUrls = (urls || []).map((u: { url: string; description: string | null; category: string }) => ({
+      url: u.url,
+      description: u.description,
+      category: u.category
+    }));
     
     console.log(`[WebSearch] Enabled for function: ${functionKey}`);
     console.log(`  - Categories: ${categories.length > 0 ? categories.join(', ') : 'all'}`);
-    console.log(`  - Verified domains: ${domains.length}`);
+    console.log(`  - Knowledge base URLs: ${knowledgeBaseUrls.length}`);
     
-    // Build web search tool with Colombian geolocation
-    return buildWebSearchTool({
-      allowedDomains: domains.length > 0 ? domains : undefined,
+    // Build web search tool
+    const tool = buildWebSearchTool({
+      allowedDomains: knowledgeBaseUrls.length > 0 ? knowledgeBaseUrls.map((u: { url: string }) => u.url) : undefined,
       userLocation: { 
         type: 'approximate', 
         country: 'CO', 
@@ -838,8 +851,43 @@ export async function loadWebSearchConfigAndBuildTool(
       searchContextSize: 'medium'
     });
     
+    return {
+      tool,
+      knowledgeBaseUrls
+    };
+    
   } catch (error) {
     console.error(`[WebSearch] Error loading config for ${functionKey}:`, error);
     return null;
   }
+}
+
+/**
+ * Build a prompt section that lists knowledge base URLs for the AI to prioritize during web search.
+ * This injects the URLs directly into the prompt since OpenAI's API doesn't support domain filtering.
+ * 
+ * @param knowledgeBaseUrls - URLs from knowledge_base_urls table
+ * @returns Formatted string to append to prompt/instructions, or empty string if no URLs
+ */
+export function buildKnowledgeBasePromptSection(
+  knowledgeBaseUrls: Array<{ url: string; description: string | null; category: string }>
+): string {
+  if (!knowledgeBaseUrls || knowledgeBaseUrls.length === 0) {
+    return '';
+  }
+
+  const urlList = knowledgeBaseUrls.map(u => {
+    const desc = u.description ? ` - ${u.description}` : '';
+    return `  * ${u.url}${desc}`;
+  }).join('\n');
+
+  return `
+FUENTES PRIORITARIAS DE BÚSQUEDA WEB (Base de Conocimiento):
+Cuando realices búsqueda web, DEBES priorizar las siguientes fuentes oficiales colombianas:
+${urlList}
+
+- Siempre cita las fuentes específicas consultadas con URLs completas
+- Prioriza estas fuentes sobre cualquier otra fuente no oficial
+- Si encuentras información relevante en estas fuentes, inclúyela en tu respuesta
+`;
 }
