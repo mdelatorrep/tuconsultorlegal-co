@@ -10,7 +10,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Edit2, Trash2, Calendar, FileText, Download, LayoutGrid, List, ExternalLink, AlertTriangle, User } from 'lucide-react';
+import { Plus, Edit2, Trash2, Calendar, FileText, Download, LayoutGrid, List, ExternalLink, AlertTriangle, User, HelpCircle, CloudCog, FolderOpen } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import CaseTraceabilityModal from './CaseTraceabilityModal';
