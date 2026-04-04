@@ -878,7 +878,24 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
               <div className="flex h-full items-center justify-between px-3 md:px-4">
                 <div className="flex items-center gap-2 md:gap-4">
                   <SidebarTrigger />
-                  <h1 className="font-semibold truncate text-sm md:text-base lg:text-lg">Dashboard Legal</h1>
+                  <div className="hidden md:flex items-center gap-1">
+                    <Button variant={currentView === 'dashboard' ? 'secondary' : 'ghost'} size="sm" className="h-8 text-xs" onClick={() => setCurrentView('dashboard')}>
+                      Inicio
+                    </Button>
+                    <Button variant={currentView === 'research' ? 'secondary' : 'ghost'} size="sm" className="h-8 text-xs" onClick={() => setCurrentView('research')}>
+                      Investigación
+                    </Button>
+                    <Button variant={currentView === 'draft' ? 'secondary' : 'ghost'} size="sm" className="h-8 text-xs" onClick={() => setCurrentView('draft')}>
+                      Documentos
+                    </Button>
+                    <Button variant={currentView === 'crm' ? 'secondary' : 'ghost'} size="sm" className="h-8 text-xs" onClick={() => setCurrentView('crm')}>
+                      CRM
+                    </Button>
+                    <Button variant={currentView === 'analyze' ? 'secondary' : 'ghost'} size="sm" className="h-8 text-xs" onClick={() => setCurrentView('analyze')}>
+                      Análisis
+                    </Button>
+                  </div>
+                  <h1 className="font-semibold truncate text-sm md:hidden">Dashboard Legal</h1>
                 </div>
                 <div className="flex items-center gap-2">
                   <PendingTasksIndicator 
@@ -897,9 +914,6 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                       else if (url.includes('process')) setCurrentView('process-monitor');
                     }}
                   />
-                  <Badge className="bg-primary text-primary-foreground text-xs">
-                    Portal Abogados
-                  </Badge>
                 </div>
               </div>
             </header>
