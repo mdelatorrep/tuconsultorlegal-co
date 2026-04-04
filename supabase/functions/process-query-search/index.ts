@@ -163,7 +163,8 @@ ${queryDetails}
 ${processType ? `Tipo de proceso de interés: ${processType}` : ''}
 
 Busca información relevante en fuentes oficiales de la Rama Judicial de Colombia.
-Incluye siempre el link directo al portal oficial de consulta: https://consultaprocesos.ramajudicial.gov.co/procesos/Index`;
+Incluye siempre el link directo al portal oficial de consulta: https://consultaprocesos.ramajudicial.gov.co/procesos/Index
+${kbPromptSection}`;
     }
 
     console.log('Calling AI with web search for process query...');
@@ -173,7 +174,7 @@ Incluye siempre el link directo al portal oficial de consulta: https://consultap
       input: userMessage,
       instructions: systemPrompt,
       maxOutputTokens: 4000,
-      webSearch: { type: 'web_search_preview' }
+      webSearch: webSearchTool || undefined
     });
 
     console.log('Request params built successfully');
