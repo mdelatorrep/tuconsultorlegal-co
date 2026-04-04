@@ -444,7 +444,7 @@ export default function StrategizeModule({ user, currentView, onViewChange, onLo
                         <Collapsible key={index}>
                           <Card className="hover:shadow-lg transition-shadow">
                             <CollapsibleTrigger asChild>
-                              <CardHeader className="cursor-pointer hover:bg-purple-50/50 transition-colors">
+                              <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
                                 <div className="flex items-center justify-between gap-4">
                                   <div className="flex-1 min-w-0">
                                     <CardDescription className="mb-2 flex items-center gap-2">
