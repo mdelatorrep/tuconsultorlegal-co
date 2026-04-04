@@ -15,6 +15,7 @@ import { generatePDF } from "./draft/pdfUtils";
 import { useCredits } from "@/hooks/useCredits";
 import { QuickPromptSuggestions } from "@/components/ui/QuickPromptSuggestions";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import {
