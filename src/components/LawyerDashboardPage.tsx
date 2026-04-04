@@ -757,6 +757,14 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
             }}
           />
         );
+      case 'suin':
+        return <SuinJuriscolModule lawyerId={user.id} />;
+      case 'process-consultation':
+        return <ProcessQueryModule lawyerId={user.id} />;
+      case 'voice':
+        return <VoiceAssistant lawyerId={user.id} />;
+      case 'predict':
+        return <CasePredictorModule lawyerId={user.id} />;
       default:
         return null;
     }
@@ -766,7 +774,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
   const viewsWithSidebar = ['dashboard', 'public-profile', 'stats', 'credits', 'gamification', 'request-agent-access', 'request-blog-access', 'account-settings'];
   
   // Views that modules render their own sidebar (need to be wrapped)
-  const moduleViews = ['agent-creator', 'agent-manager', 'training', 'blog-manager', 'research', 'analyze', 'draft', 'strategize', 'crm', 'suin-juriscol', 'process-query', 'process-monitor', 'legal-calendar', 'voice-assistant', 'case-predictor', 'client-portal', 'specialized-agents', 'account-settings'];
+  const moduleViews = ['agent-creator', 'agent-manager', 'training', 'blog-manager', 'research', 'analyze', 'draft', 'strategize', 'crm', 'suin-juriscol', 'suin', 'process-query', 'process-consultation', 'process-monitor', 'legal-calendar', 'voice-assistant', 'voice', 'case-predictor', 'predict', 'client-portal', 'specialized-agents', 'account-settings'];
 
   // If it's a module view, wrap it with our SidebarProvider
   if (moduleViews.includes(currentView)) {
