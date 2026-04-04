@@ -68,7 +68,7 @@ export function NewEventDialog({ lawyerId, selectedDate, onEventCreated }: NewEv
       const startDateStr = formatDateLocal(startDate);
       const endDateStr = endDate ? formatDateLocal(endDate) : startDateStr;
 
-      const { error } = await supabase
+      const { data: insertedEvent, error } = await supabase
         .from('legal_calendar_events')
         .insert({
           lawyer_id: lawyerId,
@@ -80,9 +80,49 @@ export function NewEventDialog({ lawyerId, selectedDate, onEventCreated }: NewEv
           all_day: allDay,
           location: location.trim() || null,
           is_completed: false
-        });
+        })
+        .select('id')
+        .single();
 
       if (error) throw error;
+
+      // Auto-sync to Google Calendar if connected
+      try {
+        const { data: tokenData } = await supabase
+          .from('lawyer_google_tokens')
+          .select('id')
+          .eq('lawyer_id', lawyerId)
+          .maybeSingle();
+
+        if (tokenData) {
+          const { data: syncResult, error: syncError } = await supabase.functions.invoke('google-calendar-sync', {
+            body: {
+              action: 'create_event',
+              lawyer_id: lawyerId,
+              event_data: {
+                title: title.trim(),
+                description: description.trim() || null,
+                event_type: eventType,
+                start_date: startDateStr,
+                end_date: endDateStr,
+                all_day: allDay,
+                start_time: allDay ? undefined : startTime,
+                end_time: allDay ? undefined : endTime,
+                location: location.trim() || null,
+              }
+            }
+          });
+
+          if (!syncError && syncResult?.google_event_id && insertedEvent?.id) {
+            await supabase
+              .from('legal_calendar_events')
+              .update({ external_calendar_id: syncResult.google_event_id })
+              .eq('id', insertedEvent.id);
+          }
+        }
+      } catch (syncErr) {
+        console.warn('Google Calendar sync skipped:', syncErr);
+      }
 
       toast.success('Evento creado exitosamente');
       

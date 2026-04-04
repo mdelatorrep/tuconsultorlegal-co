@@ -94,19 +94,58 @@ const CaseQuickActions: React.FC<CaseQuickActionsProps> = ({
 
     try {
       setIsLoading(true);
-      const { error } = await supabase
+      const startDateISO = new Date(eventForm.start_date).toISOString();
+
+      const { data: insertedEvent, error } = await supabase
         .from('legal_calendar_events')
         .insert({
           lawyer_id: lawyerId,
           case_id: caseId,
           title: eventForm.title,
           event_type: eventForm.event_type,
-          start_date: new Date(eventForm.start_date).toISOString(),
+          start_date: startDateISO,
           description: eventForm.description || null,
           is_auto_generated: false
-        });
+        })
+        .select('id')
+        .single();
 
       if (error) throw error;
+
+      // Auto-sync to Google Calendar if connected
+      try {
+        const { data: tokenData } = await supabase
+          .from('lawyer_google_tokens')
+          .select('id')
+          .eq('lawyer_id', lawyerId)
+          .maybeSingle();
+
+        if (tokenData) {
+          const startDateStr = startDateISO.split('T')[0];
+          const { data: syncResult } = await supabase.functions.invoke('google-calendar-sync', {
+            body: {
+              action: 'create_event',
+              lawyer_id: lawyerId,
+              event_data: {
+                title: eventForm.title,
+                description: eventForm.description || null,
+                event_type: eventForm.event_type,
+                start_date: startDateStr,
+                all_day: true,
+              }
+            }
+          });
+
+          if (syncResult?.google_event_id && insertedEvent?.id) {
+            await supabase
+              .from('legal_calendar_events')
+              .update({ external_calendar_id: syncResult.google_event_id })
+              .eq('id', insertedEvent.id);
+          }
+        }
+      } catch (syncErr) {
+        console.warn('Google Calendar sync skipped:', syncErr);
+      }
       
       toast.success('Evento agregado al calendario');
       setShowEventDialog(false);

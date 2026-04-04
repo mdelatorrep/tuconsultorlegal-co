@@ -70,6 +70,13 @@ function mapEventTypeToColor(eventType: string): string {
   return colors[eventType] || '8';
 }
 
+// Extract YYYY-MM-DD from a timestamp or date string
+function extractDatePart(dateStr: string): string {
+  if (!dateStr) return new Date().toISOString().split('T')[0];
+  // Handle ISO timestamps like "2026-04-17T00:00:00+00:00" or "2026-04-17 00:00:00+00"
+  return dateStr.split('T')[0].split(' ')[0];
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -110,17 +117,20 @@ serve(async (req) => {
       for (const event of (localEvents || [])) {
         if (event.external_calendar_id) continue; // Already synced
 
+        const startDatePart = extractDatePart(event.start_date);
+        const endDatePart = extractDatePart(event.end_date || event.start_date);
+
         const googleEvent = {
           summary: event.title,
           description: event.description || undefined,
           location: event.location || undefined,
           colorId: mapEventTypeToColor(event.event_type),
           start: event.all_day
-            ? { date: event.start_date }
-            : { dateTime: `${event.start_date}T09:00:00`, timeZone: 'America/Bogota' },
+            ? { date: startDatePart }
+            : { dateTime: `${startDatePart}T09:00:00`, timeZone: 'America/Bogota' },
           end: event.all_day
-            ? { date: event.end_date || event.start_date }
-            : { dateTime: `${event.end_date || event.start_date}T10:00:00`, timeZone: 'America/Bogota' },
+            ? { date: endDatePart }
+            : { dateTime: `${endDatePart}T10:00:00`, timeZone: 'America/Bogota' },
         };
 
         const createRes = await fetch(`${CALENDAR_API}/calendars/primary/events`, {
@@ -212,17 +222,20 @@ serve(async (req) => {
 
     // Create single event in Google Calendar
     if (action === 'create_event' && event_data) {
+      const startDatePart = extractDatePart(event_data.start_date);
+      const endDatePart = extractDatePart(event_data.end_date || event_data.start_date);
+
       const googleEvent = {
         summary: event_data.title,
         description: event_data.description || undefined,
         location: event_data.location || undefined,
         colorId: mapEventTypeToColor(event_data.event_type || 'other'),
         start: event_data.all_day
-          ? { date: event_data.start_date }
-          : { dateTime: `${event_data.start_date}T${event_data.start_time || '09:00'}:00`, timeZone: 'America/Bogota' },
+          ? { date: startDatePart }
+          : { dateTime: `${startDatePart}T${event_data.start_time || '09:00'}:00`, timeZone: 'America/Bogota' },
         end: event_data.all_day
-          ? { date: event_data.end_date || event_data.start_date }
-          : { dateTime: `${event_data.end_date || event_data.start_date}T${event_data.end_time || '10:00'}:00`, timeZone: 'America/Bogota' },
+          ? { date: endDatePart }
+          : { dateTime: `${endDatePart}T${event_data.end_time || '10:00'}:00`, timeZone: 'America/Bogota' },
       };
 
       const res = await fetch(`${CALENDAR_API}/calendars/primary/events`, {
