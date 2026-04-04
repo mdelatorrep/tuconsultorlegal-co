@@ -418,6 +418,18 @@ export default function StrategizeModule({ user, currentView, onViewChange, onLo
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Download PDF Button */}
+              <div className="flex justify-center pt-2">
+                <Button 
+                  onClick={() => exportStrategyToPdf(analysis)} 
+                  className="gap-2"
+                  variant="default"
+                >
+                  <Download className="h-4 w-4" />
+                  Descargar PDF
+                </Button>
+              </div>
             </div>
           ))}
         </div>

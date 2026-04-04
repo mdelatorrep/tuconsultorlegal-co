@@ -655,6 +655,18 @@ export default function SuinJuriscolModule({ user, currentView, onViewChange, on
                         </CollapsibleContent>
                       </Collapsible>
                     )}
+
+                    {/* Download PDF Button */}
+                    <div className="flex justify-center pt-4 border-t">
+                      <Button 
+                        onClick={() => exportSuinSearchToPdf(currentResult.query, currentResult.summary, currentResult.results)} 
+                        className="gap-2"
+                        variant="default"
+                      >
+                        <Download className="h-4 w-4" />
+                        Descargar PDF
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               )}

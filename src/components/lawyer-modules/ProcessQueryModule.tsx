@@ -672,6 +672,18 @@ export default function ProcessQueryModule({
             </CardHeader>
             <CardContent>
               <MarkdownRenderer content={aiAnalysis} />
+              
+              {/* Download PDF Button */}
+              <div className="flex justify-center pt-4 border-t mt-4">
+                <Button 
+                  onClick={() => exportProcessQueryToPdf(lastSearchedRadicado, aiAnalysis, processes)} 
+                  className="gap-2"
+                  variant="default"
+                >
+                  <Download className="h-4 w-4" />
+                  Descargar PDF
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}

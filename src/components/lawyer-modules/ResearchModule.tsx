@@ -805,6 +805,18 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
                           <strong>Nota de verificación:</strong> {result.verificationNotes}
                         </div>
                       )}
+
+                      {/* Download PDF Button */}
+                      <div className="flex justify-center pt-4 border-t">
+                        <Button 
+                          onClick={() => exportResearchToPdf(result)} 
+                          className="gap-2"
+                          variant="default"
+                        >
+                          <Download className="h-4 w-4" />
+                          Descargar PDF
+                        </Button>
+                      </div>
                     </CardContent>
                   </CollapsibleContent>
                 </Card>

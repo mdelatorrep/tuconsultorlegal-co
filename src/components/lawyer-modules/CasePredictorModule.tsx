@@ -452,6 +452,17 @@ export function CasePredictorModule({ lawyerId }: CasePredictorModuleProps) {
                 </Card>
               </TabsContent>
             </Tabs>
+            {/* Download PDF Button */}
+            <div className="flex justify-center pt-4">
+              <Button 
+                onClick={() => exportPredictionToPdf(prediction, caseType, caseDescription)} 
+                className="gap-2"
+                variant="default"
+              >
+                <Download className="h-4 w-4" />
+                Descargar PDF
+              </Button>
+            </div>
             </>
           ) : (
             <Card className="h-full flex items-center justify-center min-h-[400px]">
