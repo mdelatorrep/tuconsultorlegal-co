@@ -577,9 +577,9 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
               placeholder="Ejemplo: Analiza la línea jurisprudencial más reciente de la Corte Suprema sobre terminación anticipada de contratos..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              rows={5}
+              rows={4}
               disabled={isSearching}
-              className="resize-none border-primary/20 focus:border-primary/40 rounded-xl bg-background text-base min-h-[120px]"
+              className="resize-none"
             />
           </div>
           
