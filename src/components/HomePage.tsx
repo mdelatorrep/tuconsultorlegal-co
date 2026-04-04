@@ -137,7 +137,7 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
               <Button 
                 size="lg" 
                 variant="outline"
-                className="border-background/30 text-background hover:bg-background/10 px-8 py-6 text-base font-medium rounded-md transition-all duration-300"
+                className="border-background/30 text-success-dark hover:bg-background/10 px-8 py-6 text-base font-medium rounded-md transition-all duration-300"
                 onClick={() => onNavigate('lawyer-landing')}
               >
                 Conoce las herramientas
