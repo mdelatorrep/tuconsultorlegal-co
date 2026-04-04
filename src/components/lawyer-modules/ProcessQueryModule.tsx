@@ -33,8 +33,10 @@ import {
   CheckCheck,
   Zap,
   Bell,
-  Star
+  Star,
+  Download
 } from "lucide-react";
+import { exportProcessQueryToPdf } from "@/utils/aiResultPdfExporter";
 
 interface ProcessQueryModuleProps {
   user: any;
