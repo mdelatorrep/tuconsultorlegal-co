@@ -32,8 +32,8 @@ export default function LawyerLandingPage({
 
   useSEO({
     title: "Portal para Abogados | Praxis Hub",
-    description: "Entorno profesional integrado para abogados. Investigación jurídica, análisis documental, redacción, CRM clientes y más. Eleva tu práctica legal.",
-    keywords: "software abogados Colombia, herramientas abogados, investigación jurídica, CRM abogados, análisis contratos, redacción legal, procesos judiciales, SUIN Juriscol",
+    description: "Entorno profesional integrado para abogados. Consulta jurídica, análisis documental, redacción asistida, gestión de clientes y casos, y más. Eleva tu práctica legal.",
+    keywords: "software abogados Colombia, herramientas abogados, consulta jurídica, gestión clientes abogados, análisis contratos, redacción legal, procesos judiciales, normativa SUIN",
     canonical: "https://praxis-hub.co/#abogados",
     structuredData: {
       "@context": "https://schema.org",
@@ -49,12 +49,12 @@ export default function LawyerLandingPage({
         "description": "Prueba gratuita disponible"
       },
       "featureList": [
-        "Investigación Legal",
+        "Consulta Jurídica",
         "Análisis Documental",
-        "Redacción + Copilot Legal",
-        "CRM + Portal Clientes",
-        "Monitoreo Procesos Judiciales",
-        "SUIN-Juriscol Integrado"
+        "Redacción Asistida",
+        "Clientes y Casos",
+        "Seguimiento de Procesos Judiciales",
+        "Normativa SUIN integrada"
       ]
     }
   });
