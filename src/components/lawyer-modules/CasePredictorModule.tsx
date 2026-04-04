@@ -302,6 +302,13 @@ export function CasePredictorModule({ lawyerId }: CasePredictorModuleProps) {
         {/* Results */}
         <div className="space-y-4">
           {prediction ? (
+            <>
+            <div className="flex justify-end">
+              <Button variant="outline" size="sm" onClick={() => exportPredictionToPdf(prediction, caseType, caseDescription)}>
+                <Download className="h-4 w-4 mr-2" />
+                Descargar PDF
+              </Button>
+            </div>
             <Tabs defaultValue="summary">
               <TabsList className="grid grid-cols-4 w-full">
                 <TabsTrigger value="summary">Resumen</TabsTrigger>
