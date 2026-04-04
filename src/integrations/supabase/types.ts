@@ -431,6 +431,59 @@ export type Database = {
           },
         ]
       }
+      bug_reports: {
+        Row: {
+          admin_notes: string | null
+          affected_tool: string | null
+          category: string
+          created_at: string
+          description: string
+          id: string
+          lawyer_id: string
+          priority: string
+          resolved_at: string | null
+          screenshot_url: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          affected_tool?: string | null
+          category: string
+          created_at?: string
+          description: string
+          id?: string
+          lawyer_id: string
+          priority?: string
+          resolved_at?: string | null
+          screenshot_url?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          affected_tool?: string | null
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          lawyer_id?: string
+          priority?: string
+          resolved_at?: string | null
+          screenshot_url?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bug_reports_lawyer_id_fkey"
+            columns: ["lawyer_id"]
+            isOneToOne: false
+            referencedRelation: "lawyer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       case_predictions: {
         Row: {
           ai_analysis: string | null
