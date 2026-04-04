@@ -29,6 +29,53 @@ function renderInline(text: string): React.ReactNode[] {
   });
 }
 
+function isTableRow(line: string): boolean {
+  return line.trim().startsWith('|') && line.trim().endsWith('|');
+}
+
+function isSeparatorRow(line: string): boolean {
+  return /^\|[\s\-:|]+\|$/.test(line.trim());
+}
+
+function parseTableCells(line: string): string[] {
+  return line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim());
+}
+
+function renderTable(tableLines: string[], startKey: number): React.ReactNode {
+  const headerCells = parseTableCells(tableLines[0]);
+  const dataRows = tableLines.slice(2); // skip header + separator
+
+  return (
+    <div key={startKey} className="my-3 overflow-x-auto rounded-lg border border-border">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="bg-muted/60">
+            {headerCells.map((cell, ci) => (
+              <th key={ci} className="px-3 py-2 text-left font-semibold text-foreground border-b border-border whitespace-nowrap">
+                {renderInline(cell)}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {dataRows.map((row, ri) => {
+            const cells = parseTableCells(row);
+            return (
+              <tr key={ri} className={ri % 2 === 0 ? 'bg-background' : 'bg-muted/30'}>
+                {headerCells.map((_, ci) => (
+                  <td key={ci} className="px-3 py-2 text-foreground border-b border-border/50">
+                    {renderInline(cells[ci] || '')}
+                  </td>
+                ))}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export function MarkdownRenderer({ content, className = "" }: MarkdownRendererProps) {
   const lines = content.split('\n');
 
@@ -37,6 +84,19 @@ export function MarkdownRenderer({ content, className = "" }: MarkdownRendererPr
 
   while (i < lines.length) {
     const line = lines[i];
+
+    // Table detection
+    if (isTableRow(line) && i + 1 < lines.length && isSeparatorRow(lines[i + 1])) {
+      const tableLines: string[] = [line, lines[i + 1]];
+      let j = i + 2;
+      while (j < lines.length && isTableRow(lines[j])) {
+        tableLines.push(lines[j]);
+        j++;
+      }
+      elements.push(renderTable(tableLines, i));
+      i = j;
+      continue;
+    }
 
     // H1
     if (line.startsWith('# ')) {
