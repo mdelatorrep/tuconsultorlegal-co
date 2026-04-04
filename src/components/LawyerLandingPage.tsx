@@ -240,7 +240,7 @@ export default function LawyerLandingPage({
   }, {
     name: "Dra. Ana Martínez",
     role: "Directora Legal, TechCorp",
-    content: "El CRM integrado y la automatización han mejorado nuestra eficiencia operativa significativamente.",
+    content: "La gestión integrada de clientes y la automatización han mejorado nuestra eficiencia operativa significativamente.",
     rating: 5
   }];
 
