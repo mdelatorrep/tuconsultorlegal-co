@@ -13,7 +13,7 @@ import CRMCasesView from "./crm/CRMCasesView";
 import CRMTasksView from "./crm/CRMTasksView";
 import CRMDocumentsView from "./crm/CRMDocumentsView";
 import CRMEntitiesView from "./crm/CRMEntitiesView";
-import CasePipelineView from "./crm/CasePipelineView";
+
 import LeadPipeline from "./crm/LeadPipeline";
 import CRMOnboarding, { type OnboardingStepStatus } from "./crm/CRMOnboarding";
 import CRMNewsFeed from "./crm/CRMNewsFeed";
