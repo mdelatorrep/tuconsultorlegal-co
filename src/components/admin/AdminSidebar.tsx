@@ -9,7 +9,7 @@ import {
   Activity, Users, Bot, BarChart3, BookOpen, MessageCircle, 
   Settings, Mail, Tag, CreditCard, Database, FileText, 
   FileCheck, Zap, Shield, DollarSign, UserCheck, Server, ScrollText,
-  TrendingUp, Brain, Heart, Target, Scale, ShieldCheck, Sparkles, Link
+  TrendingUp, Brain, Heart, Target, Scale, ShieldCheck, Sparkles, Link, Bug
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -18,6 +18,7 @@ interface AdminSidebarProps {
   unreadMessagesCount: number;
   pendingAgentsCount: number;
   pendingBlogsCount: number;
+  pendingBugReportsCount?: number;
   userEmail?: string;
 }
 
@@ -27,6 +28,7 @@ export const AdminSidebar = ({
   unreadMessagesCount,
   pendingAgentsCount,
   pendingBlogsCount,
+  pendingBugReportsCount = 0,
   userEmail
 }: AdminSidebarProps) => {
   const { state, setOpenMobile } = useSidebar();
@@ -83,6 +85,7 @@ export const AdminSidebar = ({
       items: [
         { id: 'messages', label: 'Mensajes Usuarios', icon: MessageCircle, count: unreadMessagesCount },
         { id: 'custom-requests', label: 'Docs Personalizados', icon: FileCheck, count: 0 },
+        { id: 'bug-reports', label: 'Reportes Problemas', icon: Bug, count: pendingBugReportsCount },
         { id: 'email-config', label: 'Config Email', icon: Mail, count: 0 },
       ]
     },

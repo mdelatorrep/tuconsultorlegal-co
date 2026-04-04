@@ -41,6 +41,7 @@ import LawyerVerificationAdmin from "./admin/LawyerVerificationAdmin";
 import { AdminSpecializedAgents } from "./admin/AdminSpecializedAgents";
 import FeatureFlagsManager from "./admin/FeatureFlagsManager";
 import { UTMCampaignManager } from "./admin/UTMCampaignManager";
+import { BugReportsManager } from "./admin/BugReportsManager";
 import {
   Copy, Users, Bot, BarChart3, Clock, CheckCircle, Lock, Unlock, Trash2, Check, X, Plus, RefreshCw, 
   Loader2, MessageCircle, BookOpen, Settings, Zap, Mail, Phone, Bell, LogOut, UserCheck, 
@@ -185,6 +186,7 @@ function AdminPage() {
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [pendingAgentsCount, setPendingAgentsCount] = useState(0);
   const [pendingBlogsCount, setPendingBlogsCount] = useState(0);
+  const [pendingBugReportsCount, setPendingBugReportsCount] = useState(0);
   
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -244,7 +246,8 @@ function AdminPage() {
         
         loadContactMessages(),
         loadBlogPosts(),
-        loadCategories()
+        loadCategories(),
+        loadBugReportsCount()
       ]);
     } catch (error) {
       console.error('Error loading admin data:', error);
@@ -856,6 +859,18 @@ function AdminPage() {
       setPendingBlogsCount(pending);
     } catch (error) {
       console.error('Error loading blog posts:', error);
+    }
+  };
+
+  const loadBugReportsCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('bug_reports')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'new');
+      if (!error) setPendingBugReportsCount(count || 0);
+    } catch (error) {
+      console.error('Error loading bug reports count:', error);
     }
   };
 
@@ -1601,6 +1616,9 @@ function AdminPage() {
       
       case 'credits':
         return <CreditsAdminManager authHeaders={getAuthHeaders()} />;
+
+      case 'bug-reports':
+        return <BugReportsManager />;
         
       default:
         return (
@@ -1620,6 +1638,7 @@ function AdminPage() {
           unreadMessagesCount={unreadMessagesCount}
           pendingAgentsCount={pendingAgentsCount}
           pendingBlogsCount={pendingBlogsCount}
+          pendingBugReportsCount={pendingBugReportsCount}
           userEmail={user?.email}
         />
         
