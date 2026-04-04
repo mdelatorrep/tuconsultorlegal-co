@@ -984,13 +984,13 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start" className="w-48">
                           <DropdownMenuItem onClick={() => setCurrentView('draft')} className="cursor-pointer">
-                            <FileText className="w-4 h-4 mr-2" /> Redacción
+                            <FileText className="w-4 h-4 mr-2" /> Redacción Asistida
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => setCurrentView('analyze')} className="cursor-pointer">
-                            <BarChart3 className="w-4 h-4 mr-2" /> Análisis
+                            <BarChart3 className="w-4 h-4 mr-2" /> Analizar Documento
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => setCurrentView('voice')} className="cursor-pointer">
-                            <Mic className="w-4 h-4 mr-2" /> Voz
+                            <Mic className="w-4 h-4 mr-2" /> Dictado por Voz
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
