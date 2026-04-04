@@ -506,20 +506,50 @@ const CRMCasesView: React.FC<CRMCasesViewProps> = ({ lawyerData, searchTerm, onR
         {/* Enlaces */}
         <div className="space-y-2">
           <Label>Enlace Hoja de Ruta</Label>
-          <Input
-            value={formData.enlace_hoja_ruta}
-            onChange={(e) => setFormData({ ...formData, enlace_hoja_ruta: e.target.value })}
-            placeholder="https://docs.google.com/..."
-          />
+          <div className="flex gap-2">
+            <Input
+              value={formData.enlace_hoja_ruta}
+              onChange={(e) => setFormData({ ...formData, enlace_hoja_ruta: e.target.value })}
+              placeholder="https://docs.google.com/..."
+              className="flex-1"
+            />
+            {formData.enlace_hoja_ruta && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shrink-0"
+                onClick={() => window.open(formData.enlace_hoja_ruta, '_blank')}
+              >
+                <ExternalLink className="h-4 w-4 mr-1" />
+                Abrir
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="space-y-2">
           <Label>Enlace Expediente Digital</Label>
-          <Input
-            value={formData.enlace_expediente}
-            onChange={(e) => setFormData({ ...formData, enlace_expediente: e.target.value })}
-            placeholder="https://onedrive.live.com/..."
-          />
+          <div className="flex gap-2">
+            <Input
+              value={formData.enlace_expediente}
+              onChange={(e) => setFormData({ ...formData, enlace_expediente: e.target.value })}
+              placeholder="https://onedrive.live.com/..."
+              className="flex-1"
+            />
+            {formData.enlace_expediente && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shrink-0"
+                onClick={() => window.open(formData.enlace_expediente, '_blank')}
+              >
+                <ExternalLink className="h-4 w-4 mr-1" />
+                Abrir
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Descripción */}
