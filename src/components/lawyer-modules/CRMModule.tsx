@@ -46,6 +46,9 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
   const [processViewMode, setProcessViewMode] = useState<'kanban' | 'list'>('kanban');
   const [clientsSubTab, setClientsSubTab] = useState<'clients' | 'entities' | 'leads'>('clients');
   const [activeTab, setActiveTab] = useState("novedades");
+  const [autoOpenClients, setAutoOpenClients] = useState(false);
+  const [autoOpenCases, setAutoOpenCases] = useState(false);
+  const [autoOpenTasks, setAutoOpenTasks] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
