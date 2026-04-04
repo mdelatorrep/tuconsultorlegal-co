@@ -171,15 +171,10 @@ export default function DraftCopilotPanel({
 
   return (
     <div className="flex flex-col h-full border-l bg-background">
-      {/* Header */}
-      <div className="px-4 py-3 border-b bg-primary/5 shrink-0">
-        <h3 className="font-semibold flex items-center gap-2 text-sm">
-          <Sparkles className="h-4 w-4 text-primary" />
-          Copilot Legal
-        </h3>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Tu asistente de redacción legal con IA
-        </p>
+      {/* Header - compact */}
+      <div className="px-3 py-2 border-b bg-primary/5 shrink-0 flex items-center gap-2">
+        <Sparkles className="h-4 w-4 text-primary shrink-0" />
+        <h3 className="font-semibold text-sm">Copilot Legal</h3>
       </div>
 
       {/* Placeholder chips */}
