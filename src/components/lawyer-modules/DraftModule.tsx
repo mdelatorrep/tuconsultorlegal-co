@@ -13,6 +13,7 @@ import MyDocuments from "./draft/MyDocuments";
 import DraftResultDisplay from "./draft/DraftResultDisplay";
 import { useCredits } from "@/hooks/useCredits";
 import { ToolCostIndicator } from "@/components/credits/ToolCostIndicator";
+import { QuickPromptSuggestions } from "@/components/ui/QuickPromptSuggestions";
 
 interface DraftModuleProps {
   user: any;

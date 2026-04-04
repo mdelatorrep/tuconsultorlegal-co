@@ -27,6 +27,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useCredits } from '@/hooks/useCredits';
 import { ToolCostIndicator } from '@/components/credits/ToolCostIndicator';
+import { QuickPromptSuggestions } from '@/components/ui/QuickPromptSuggestions';
 
 interface PredictionResult {
   successProbability: number;
