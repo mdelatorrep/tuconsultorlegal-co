@@ -64,6 +64,9 @@ export default function CRMAIChat({ open, onOpenChange, lawyerId }: Props) {
 
       if (error) throw error;
 
+      // Consume credits only after successful API response
+      await consumeCredits('crm_ai');
+
       const assistantMsg: Message = {
         role: 'assistant',
         content: data?.answer || 'No pude generar una respuesta. Intenta de nuevo.',

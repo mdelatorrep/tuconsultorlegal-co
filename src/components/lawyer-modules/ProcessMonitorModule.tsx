@@ -288,6 +288,9 @@ export function ProcessMonitorModule({ lawyerId }: ProcessMonitorModuleProps) {
       });
 
       if (error) throw error;
+
+      // Consume credits only after successful API response
+      await consumeCredits('process_monitor', { action: 'sync-all', processCount });
       
       toast.success('Todos los procesos sincronizados');
       loadProcesses();

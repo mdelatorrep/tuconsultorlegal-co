@@ -221,6 +221,9 @@ export function LawyerAccountSettings({ user }: LawyerAccountSettingsProps) {
 
       if (response.error) throw response.error;
 
+      // Consume credits only after successful API response
+      await consumeCredits('lawyer_verification', { action: 'verify' });
+
       setVerificationResult(response.data);
       
       if (response.data.status === 'verified') {
