@@ -15,7 +15,7 @@ import CRMDocumentsView from "./crm/CRMDocumentsView";
 import CRMEntitiesView from "./crm/CRMEntitiesView";
 import CasePipelineView from "./crm/CasePipelineView";
 import LeadPipeline from "./crm/LeadPipeline";
-import CRMOnboarding from "./crm/CRMOnboarding";
+import CRMOnboarding, { type OnboardingStepStatus } from "./crm/CRMOnboarding";
 import CRMNewsFeed from "./crm/CRMNewsFeed";
 import CRMAIChat from "./crm/CRMAIChat";
 import PortalAccessManager from "./crm/PortalAccessManager";
@@ -37,6 +37,9 @@ interface CRMStats {
 export default function CRMModule({ user, currentView, onViewChange, onLogout }: CRMModuleProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [stats, setStats] = useState<CRMStats>({ clients: 0, cases: 0, tasks: 0, leads: 0 });
+  const [onboardingSteps, setOnboardingSteps] = useState<OnboardingStepStatus>({
+    profile: false, clients: false, cases: false, tasks: false,
+  });
   const [isAIChatOpen, setIsAIChatOpen] = useState(false);
   const [isPortalManagerOpen, setIsPortalManagerOpen] = useState(false);
   const [portalClients, setPortalClients] = useState<{ id: string; name: string; email: string }[]>([]);
@@ -48,7 +51,27 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
   useEffect(() => {
     fetchStats();
     fetchPortalClients();
+    fetchOnboardingStatus();
   }, []);
+
+  const fetchOnboardingStatus = async () => {
+    try {
+      const [profileResult, clientsResult, casesResult, tasksResult] = await Promise.all([
+        supabase.from('lawyer_public_profiles').select('id').eq('lawyer_id', user.id).eq('is_published', true).maybeSingle(),
+        supabase.from('crm_clients').select('id').eq('lawyer_id', user.id).limit(1),
+        supabase.from('crm_cases').select('id').eq('lawyer_id', user.id).limit(1),
+        supabase.from('crm_tasks').select('id').eq('lawyer_id', user.id).limit(1),
+      ]);
+      setOnboardingSteps({
+        profile: !!profileResult.data,
+        clients: (clientsResult.data?.length || 0) > 0,
+        cases: (casesResult.data?.length || 0) > 0,
+        tasks: (tasksResult.data?.length || 0) > 0,
+      });
+    } catch (error) {
+      console.error('Error fetching onboarding status:', error);
+    }
+  };
 
   const fetchStats = async () => {
     try {
@@ -89,16 +112,17 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
     lawyerData: user,
   };
 
-  const isEmptyCRM = stats.clients === 0 && stats.cases === 0 && stats.leads === 0;
+  const allOnboardingComplete = Object.values(onboardingSteps).every(Boolean);
 
   return (
     <div className="space-y-4">
-      {/* Onboarding for first-time users */}
-      {isEmptyCRM && (
+      {/* Onboarding for users who haven't completed all steps */}
+      {!allOnboardingComplete && (
         <CRMOnboarding
           onNavigateToProfile={() => onViewChange('public-profile')}
           onOpenClients={() => setActiveTab('clientes')}
           onOpenCases={() => setActiveTab('procesos')}
+          completedSteps={onboardingSteps}
         />
       )}
 
