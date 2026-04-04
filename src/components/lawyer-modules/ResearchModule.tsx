@@ -550,77 +550,26 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
   }
 
   return (
-    <div className="space-y-4 lg:space-y-8">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden rounded-2xl lg:rounded-3xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20 p-4 lg:p-8">
-        <div className="relative z-10">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="p-4 bg-gradient-to-br from-primary to-primary/80 rounded-2xl shadow-2xl">
-              <Sparkles className="h-10 w-10 text-primary-foreground" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
-                Centro de Investigación Legal
-              </h1>
-              <p className="text-lg text-muted-foreground mt-2">
-                Acceso instantáneo a jurisprudencia, doctrina y normativa colombiana con análisis IA
-              </p>
-            </div>
-          </div>
-          
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4 mt-6 lg:mt-8">
-            <div className="bg-background/50 backdrop-blur-sm rounded-xl p-4 border border-border/50">
-              <div className="flex items-center gap-3">
-                <Target className="h-8 w-8 text-primary" />
-                <div>
-                  <p className="text-2xl font-bold text-primary">{results.filter(r => r.status === 'completed').length}</p>
-                  <p className="text-sm text-muted-foreground">Investigaciones completadas</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-background/50 backdrop-blur-sm rounded-xl p-4 border border-border/50">
-              <div className="flex items-center gap-3">
-                <Clock className="h-8 w-8 text-blue-600" />
-                <div>
-                  <p className="text-2xl font-bold text-blue-600">~30s</p>
-                  <p className="text-sm text-muted-foreground">Tiempo promedio</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-background/50 backdrop-blur-sm rounded-xl p-4 border border-border/50">
-              <div className="flex items-center gap-3">
-                <CheckCircle2 className="h-8 w-8 text-emerald-600" />
-                <div>
-                  <p className="text-2xl font-bold text-emerald-600">95%</p>
-                  <p className="text-sm text-muted-foreground">Precisión IA</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
+    <div className="space-y-4">
       {/* Search Interface */}
-      <Card className="border-0 shadow-2xl bg-gradient-to-br from-background via-background to-primary/5 overflow-hidden relative">
-        <CardHeader className="relative z-10 pb-6">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-gradient-to-br from-primary to-primary/80 rounded-xl shadow-lg">
-              <BookOpen className="h-6 w-6 text-primary-foreground" />
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <BookOpen className="h-5 w-5 text-primary" />
             </div>
-            <div>
-              <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                Nueva Consulta de Investigación
-              </CardTitle>
-              <CardDescription className="text-base mt-2">
-                Realiza consultas avanzadas sobre legislación, jurisprudencia o normativa colombiana
+            <div className="flex-1">
+              <CardTitle className="text-base font-semibold">Nueva Consulta de Investigación</CardTitle>
+              <CardDescription className="text-sm">
+                Consulta legislación, jurisprudencia o normativa colombiana
               </CardDescription>
             </div>
+            <ToolCostIndicator toolType="research" lawyerId={user.id} />
           </div>
         </CardHeader>
-        <CardContent className="relative z-10 space-y-6">
-          <div className="space-y-3">
-            <label htmlFor="research-query" className="text-sm font-semibold text-primary">
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <label htmlFor="research-query" className="text-sm font-medium text-foreground">
               Descripción de la consulta jurídica
             </label>
             <Textarea
