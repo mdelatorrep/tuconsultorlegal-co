@@ -42,6 +42,8 @@ Deno.serve(async (req) => {
   try {
     const url = new URL(req.url)
     const slug = url.searchParams.get('slug')
+    const userAgent = req.headers.get('user-agent') || ''
+    console.log(`[share-blog-meta] slug=${slug}, userAgent=${userAgent.substring(0, 80)}`)
 
     if (!slug) {
       return new Response('Missing slug parameter', { status: 400, headers: corsHeaders })
