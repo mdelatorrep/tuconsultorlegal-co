@@ -168,10 +168,6 @@ export default function AnalysisResultsDisplay({ result, onExport }: AnalysisRes
                   </CardDescription>
                 </div>
               </div>
-              <Button variant="outline" size="sm" onClick={onExport}>
-                <Download className="w-4 h-4 mr-2" />
-                Exportar
-              </Button>
             </div>
             
             {/* Badges */}
