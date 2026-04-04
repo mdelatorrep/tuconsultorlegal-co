@@ -58,8 +58,8 @@ serve(async (req) => {
 
     const model = configs['copilot_ai_model'];
     const reasoningEffort = (configs['copilot_reasoning_effort'] || 'low') as 'low' | 'medium' | 'high';
-    const maxTokensSuggest = parseInt(configs['copilot_max_tokens_suggest']) || 500;
-    const maxTokensAutocomplete = parseInt(configs['copilot_max_tokens_autocomplete']) || 300;
+    const maxTokensSuggest = Math.max(parseInt(configs['copilot_max_tokens_suggest']) || 500, 500);
+    const maxTokensAutocomplete = Math.max(parseInt(configs['copilot_max_tokens_autocomplete']) || 300, 300);
 
     logResponsesRequest(model, 'legal-copilot', true);
 
