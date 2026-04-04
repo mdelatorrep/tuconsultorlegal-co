@@ -213,9 +213,6 @@ export function LegalCopilot({
 
     setIsAnalyzing(true);
     try {
-      const creditResult = await consumeCredits('legal_copilot', { action: 'analyze_inline' });
-      if (!creditResult.success) return;
-
       const { data, error } = await supabase.functions.invoke('legal-copilot', {
         body: {
           action: 'analyze_inline',
