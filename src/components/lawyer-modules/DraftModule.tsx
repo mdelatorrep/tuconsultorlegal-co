@@ -310,11 +310,11 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout,
             </div>
           )}
 
-          {/* Editor Studio - full workspace after generation */}
+          {/* Editor Studio - flexible workspace */}
           {hasGeneratedContent && (
-            <div className="rounded-lg border bg-background overflow-hidden" style={{ height: 'calc(100vh - 180px)' }}>
+            <div className="flex flex-col rounded-lg border bg-background overflow-hidden" style={{ height: 'calc(100vh - 160px)', minHeight: '500px' }}>
               {/* Compact toolbar header */}
-              <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/30">
+              <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/30 shrink-0">
                 <Select value={documentType} onValueChange={setDocumentType}>
                   <SelectTrigger className="w-[200px] h-8 text-xs">
                     <SelectValue placeholder="Tipo" />
@@ -336,11 +336,11 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout,
                 <div className="flex items-center gap-1.5 ml-auto shrink-0">
                   <Button onClick={handleSave} disabled={isSaving || !editorContent.trim()} size="sm" className="h-8 text-xs gap-1.5">
                     {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                    Guardar
+                    <span className="hidden sm:inline">Guardar</span>
                   </Button>
                   <Button variant="outline" onClick={handleDownload} disabled={isDownloading || !editorContent.trim()} size="sm" className="h-8 text-xs gap-1.5">
                     {isDownloading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-                    PDF
+                    <span className="hidden sm:inline">PDF</span>
                   </Button>
                   <Button
                     variant={showCopilot ? "default" : "outline"}
@@ -354,10 +354,42 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout,
                 </div>
               </div>
 
-              {/* Resizable Editor + Copilot */}
-              <ResizablePanelGroup direction="horizontal" className="flex-1" style={{ height: 'calc(100% - 41px)' }}>
-                <ResizablePanel defaultSize={showCopilot ? 60 : 100} minSize={40}>
-                  <div className="h-full overflow-hidden">
+              {/* Desktop: Resizable horizontal split */}
+              {!isMobile ? (
+                <ResizablePanelGroup direction="horizontal" autoSaveId="draft-studio-panels" className="flex-1 min-h-0">
+                  <ResizablePanel defaultSize={showCopilot ? 62 : 100} minSize={35}>
+                    <div className="h-full flex flex-col draft-studio-editor">
+                      <ReactQuill
+                        ref={quillRef}
+                        theme="snow"
+                        value={editorContent}
+                        onChange={setEditorContent}
+                        modules={quillModules}
+                        formats={quillFormats}
+                        placeholder="El borrador generado aparecerá aquí..."
+                        className="flex-1 min-h-0 flex flex-col [&_.ql-container]:border-0 [&_.ql-container]:flex-1 [&_.ql-container]:min-h-0 [&_.ql-container]:flex [&_.ql-container]:flex-col [&_.ql-toolbar]:border-x-0 [&_.ql-toolbar]:border-t-0 [&_.ql-toolbar]:shrink-0 [&_.ql-editor]:flex-1 [&_.ql-editor]:min-h-0 [&_.ql-editor]:overflow-y-auto [&_.ql-editor]:font-serif [&_.ql-editor]:text-base [&_.ql-editor]:leading-relaxed [&_.ql-editor]:px-8 [&_.ql-editor]:py-6"
+                      />
+                    </div>
+                  </ResizablePanel>
+
+                  {showCopilot && (
+                    <>
+                      <ResizableHandle withHandle />
+                      <ResizablePanel defaultSize={38} minSize={25} maxSize={55}>
+                        <DraftCopilotPanel
+                          documentContent={editorContent}
+                          documentType={DOCUMENT_TYPES.find(t => t.value === documentType)?.label || documentType || "Documento Legal"}
+                          lawyerId={user.id}
+                          onInsertText={handleInsertFromCopilot}
+                        />
+                      </ResizablePanel>
+                    </>
+                  )}
+                </ResizablePanelGroup>
+              ) : (
+                /* Mobile: stacked layout */
+                <div className="flex-1 min-h-0 flex flex-col">
+                  <div className={cn("flex-1 min-h-0 draft-studio-editor", showCopilot && "hidden")}>
                     <ReactQuill
                       ref={quillRef}
                       theme="snow"
@@ -366,25 +398,21 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout,
                       modules={quillModules}
                       formats={quillFormats}
                       placeholder="El borrador generado aparecerá aquí..."
-                      className="h-full [&_.ql-container]:border-0 [&_.ql-toolbar]:border-x-0 [&_.ql-toolbar]:border-t-0 [&_.ql-editor]:min-h-full [&_.ql-editor]:font-serif [&_.ql-editor]:text-base [&_.ql-editor]:leading-relaxed [&_.ql-editor]:px-8 [&_.ql-editor]:py-6"
+                      className="h-full flex flex-col [&_.ql-container]:border-0 [&_.ql-container]:flex-1 [&_.ql-container]:min-h-0 [&_.ql-container]:flex [&_.ql-container]:flex-col [&_.ql-toolbar]:border-x-0 [&_.ql-toolbar]:border-t-0 [&_.ql-toolbar]:shrink-0 [&_.ql-editor]:flex-1 [&_.ql-editor]:min-h-0 [&_.ql-editor]:overflow-y-auto [&_.ql-editor]:font-serif [&_.ql-editor]:text-base [&_.ql-editor]:leading-relaxed [&_.ql-editor]:px-4 [&_.ql-editor]:py-4"
                     />
                   </div>
-                </ResizablePanel>
-
-                {showCopilot && (
-                  <>
-                    <ResizableHandle withHandle />
-                    <ResizablePanel defaultSize={40} minSize={28} maxSize={55}>
+                  {showCopilot && (
+                    <div className="flex-1 min-h-0">
                       <DraftCopilotPanel
                         documentContent={editorContent}
                         documentType={DOCUMENT_TYPES.find(t => t.value === documentType)?.label || documentType || "Documento Legal"}
                         lawyerId={user.id}
                         onInsertText={handleInsertFromCopilot}
                       />
-                    </ResizablePanel>
-                  </>
-                )}
-              </ResizablePanelGroup>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
