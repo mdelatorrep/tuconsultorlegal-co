@@ -70,6 +70,13 @@ function mapEventTypeToColor(eventType: string): string {
   return colors[eventType] || '8';
 }
 
+// Extract YYYY-MM-DD from a timestamp or date string
+function extractDatePart(dateStr: string): string {
+  if (!dateStr) return new Date().toISOString().split('T')[0];
+  // Handle ISO timestamps like "2026-04-17T00:00:00+00:00" or "2026-04-17 00:00:00+00"
+  return dateStr.split('T')[0].split(' ')[0];
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
