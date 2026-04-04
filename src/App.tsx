@@ -57,6 +57,7 @@ const AppContent = () => {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/blog/:slug" element={<Index />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/auth-abogados" element={<LawyerAuthPage />} />
           <Route path="/perfil/:slug" element={<LawyerPublicProfilePage />} />

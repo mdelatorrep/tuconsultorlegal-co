@@ -61,7 +61,12 @@ export default function Index() {
       );
     };
 
-    const resolvePageFromHash = () => {
+    const resolvePageFromLocation = () => {
+      const blogPathMatch = window.location.pathname.match(/^\/blog\/([^/]+)\/?$/);
+      if (blogPathMatch?.[1]) {
+        return `blog-articulo-${decodeURIComponent(blogPathMatch[1])}`;
+      }
+
       const rawHash = window.location.hash || "";
       if (isAuthCallbackHash(rawHash)) {
         // Decide which auth UI to show without losing the hash (tokens live in the hash)
@@ -76,7 +81,7 @@ export default function Index() {
     };
 
     const handlePopState = () => {
-      setCurrentPage(resolvePageFromHash());
+      setCurrentPage(resolvePageFromLocation());
     };
 
     // Check URL parameters for special views
@@ -114,7 +119,7 @@ export default function Index() {
     }
 
     // Set initial page from URL
-    setCurrentPage(resolvePageFromHash());
+    setCurrentPage(resolvePageFromLocation());
 
     // Listen for browser back/forward
     window.addEventListener("popstate", handlePopState);
@@ -146,6 +151,14 @@ export default function Index() {
       window.history.pushState(null, "", `#abogados`);
       return;
     }
+
+    if (page.startsWith("blog-articulo-")) {
+      setCurrentPage(page);
+      const slug = page.replace("blog-articulo-", "");
+      window.history.pushState(null, "", `/blog/${encodeURIComponent(slug)}`);
+      window.scrollTo(0, 0);
+      return;
+    }
     
     setCurrentPage(page);
     if (page === "personas" || page === "empresas") {
@@ -160,7 +173,7 @@ export default function Index() {
     if (data?.certificationCode) {
       setCertificationCode(data.certificationCode);
     }
-    window.history.pushState(null, "", `#${page}`);
+    window.history.pushState(null, "", page === "home" ? "/" : `/#${page}`);
     window.scrollTo(0, 0);
   };
 
