@@ -432,18 +432,13 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
       return;
     }
 
-    // Check and consume credits before proceeding
+    // Check credits availability before proceeding (consume after success)
     if (!hasEnoughCredits('research')) {
       toast({
         title: "Créditos insuficientes",
         description: `Necesitas ${getToolCost('research')} créditos para usar esta herramienta.`,
         variant: "destructive",
       });
-      return;
-    }
-
-    const creditResult = await consumeCredits('research', { query });
-    if (!creditResult.success) {
       return;
     }
 

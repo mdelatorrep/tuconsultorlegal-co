@@ -279,18 +279,13 @@ export default function SuinJuriscolModule({ user, currentView, onViewChange, on
       return;
     }
 
-    // Check and consume credits before proceeding
+    // Check credits availability before proceeding (consume after success)
     if (!hasEnoughCredits('suin_juriscol')) {
       toast({
         title: "Créditos insuficientes",
         description: `Necesitas ${getToolCost('suin_juriscol')} créditos para consultar SUIN-Juriscol.`,
         variant: "destructive",
       });
-      return;
-    }
-
-    const creditResult = await consumeCredits('suin_juriscol', { query, category });
-    if (!creditResult.success) {
       return;
     }
 

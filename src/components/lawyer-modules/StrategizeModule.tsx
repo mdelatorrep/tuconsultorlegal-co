@@ -107,18 +107,13 @@ export default function StrategizeModule({ user, currentView, onViewChange, onLo
       return;
     }
 
-    // Check and consume credits before proceeding
+    // Check credits availability before proceeding (consume after success)
     if (!hasEnoughCredits('strategy')) {
       toast({
         title: "Créditos insuficientes",
         description: `Necesitas ${getToolCost('strategy')} créditos para el análisis estratégico.`,
         variant: "destructive",
       });
-      return;
-    }
-
-    const creditResult = await consumeCredits('strategy', { caseDescription: caseDescription.substring(0, 100) });
-    if (!creditResult.success) {
       return;
     }
 

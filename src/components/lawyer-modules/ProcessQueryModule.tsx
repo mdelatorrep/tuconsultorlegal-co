@@ -165,14 +165,9 @@ export default function ProcessQueryModule({
       return;
     }
 
-    // Check and consume credits before proceeding
+    // Check credits availability before proceeding (consume after success)
     if (!hasEnoughCredits('process_query')) {
       toast.error(`Necesitas ${getToolCost('process_query')} créditos para consultar procesos.`);
-      return;
-    }
-
-    const creditResult = await consumeCredits('process_query', { queryType: 'radicado', queryValue: radicado });
-    if (!creditResult.success) {
       return;
     }
 
