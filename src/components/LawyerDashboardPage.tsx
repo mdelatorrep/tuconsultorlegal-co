@@ -758,9 +758,9 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
           />
         );
       case 'suin':
-        return <SuinJuriscolModule />;
+        return <SuinJuriscolModule user={user} currentView={currentView} onViewChange={(v) => setCurrentView(v as ViewType)} onLogout={logout} />;
       case 'process-consultation':
-        return <ProcessQueryModule />;
+        return <ProcessQueryModule user={user} currentView={currentView} onViewChange={(v) => setCurrentView(v as ViewType)} onLogout={logout} />;
       case 'voice':
         return <VoiceAssistant lawyerId={user.id} />;
       case 'predict':
