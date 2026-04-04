@@ -275,7 +275,7 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
 
         {/* Tab 4: Tareas */}
         <TabsContent value="tareas">
-          <CRMTasksView {...commonProps} />
+          <CRMTasksView {...commonProps} autoOpenCreate={autoOpenTasks} onAutoOpenHandled={() => setAutoOpenTasks(false)} />
         </TabsContent>
 
         {/* Tab 5: Más */}
