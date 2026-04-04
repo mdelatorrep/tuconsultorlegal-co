@@ -3,7 +3,10 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3';
 import { 
   buildResponsesRequestParams, 
   callResponsesAPI, 
-  extractOutputText
+  extractOutputText,
+  loadWebSearchConfigAndBuildTool,
+  buildKnowledgeBasePromptSection,
+  supportsWebSearch
 } from "../_shared/openai-responses-utils.ts";
 
 const corsHeaders = {
