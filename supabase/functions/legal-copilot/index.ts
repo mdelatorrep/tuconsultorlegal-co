@@ -101,7 +101,11 @@ Contexto adicional: ${context || 'ninguno'}`;
       }
 
       const data = await response.json();
-      const suggestion = data.choices?.[0]?.message?.content || '';
+      console.log('[LegalCopilot] Response structure:', JSON.stringify(Object.keys(data)));
+      console.log('[LegalCopilot] First choice:', JSON.stringify(data.choices?.[0]?.message || data.output?.[0] || 'no choices'));
+      const suggestion = data.choices?.[0]?.message?.content 
+        || data.output?.filter((o: any) => o.type === 'message')?.[0]?.content?.[0]?.text
+        || '';
 
       return new Response(JSON.stringify({ suggestion }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
