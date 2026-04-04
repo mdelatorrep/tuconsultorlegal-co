@@ -32,8 +32,8 @@ export default function LawyerLandingPage({
 
   useSEO({
     title: "Portal para Abogados | Praxis Hub",
-    description: "Entorno profesional integrado para abogados. Investigación jurídica, análisis documental, redacción, CRM clientes y más. Eleva tu práctica legal.",
-    keywords: "software abogados Colombia, herramientas abogados, investigación jurídica, CRM abogados, análisis contratos, redacción legal, procesos judiciales, SUIN Juriscol",
+    description: "Entorno profesional integrado para abogados. Consulta jurídica, análisis documental, redacción asistida, gestión de clientes y casos, y más. Eleva tu práctica legal.",
+    keywords: "software abogados Colombia, herramientas abogados, consulta jurídica, gestión clientes abogados, análisis contratos, redacción legal, procesos judiciales, normativa SUIN",
     canonical: "https://praxis-hub.co/#abogados",
     structuredData: {
       "@context": "https://schema.org",
@@ -49,12 +49,12 @@ export default function LawyerLandingPage({
         "description": "Prueba gratuita disponible"
       },
       "featureList": [
-        "Investigación Legal",
+        "Consulta Jurídica",
         "Análisis Documental",
-        "Redacción + Copilot Legal",
-        "CRM + Portal Clientes",
-        "Monitoreo Procesos Judiciales",
-        "SUIN-Juriscol Integrado"
+        "Redacción Asistida",
+        "Clientes y Casos",
+        "Seguimiento de Procesos Judiciales",
+        "Normativa SUIN integrada"
       ]
     }
   });
@@ -121,74 +121,74 @@ export default function LawyerLandingPage({
   };
 
   const features = [{
-    title: "Investigación Legal",
+    title: "Consulta Jurídica",
     description: "Análisis avanzado de jurisprudencia y normativa con herramientas especializadas",
     icon: Search,
     color: "from-brand-primary to-brand-accent",
     demo: "Buscar precedentes sobre contratos de arrendamiento",
     component: DemoResearchMockup
   }, {
-    title: "SUIN-Juriscol",
+    title: "Normativa (SUIN)",
     description: "Búsqueda avanzada en el Sistema Único de Información Normativa colombiano",
     icon: Database,
     color: "from-brand-accent to-brand-primary",
     demo: "Consultar leyes, decretos y resoluciones vigentes",
     component: DemoSuinJuriscolMockup
   }, {
-    title: "Procesos Judiciales",
-    description: "Consulta y monitoreo de procesos con alertas automáticas",
+    title: "Seguimiento de Procesos",
+    description: "Consulta y seguimiento de procesos con alertas automáticas",
     icon: Gavel,
     color: "from-brand-primary to-brand-dark",
-    demo: "Monitorear actuaciones y recibir notificaciones",
+    demo: "Seguir actuaciones y recibir notificaciones",
     component: DemoProcessMonitorMockup
   }, {
-    title: "Análisis Documental",
+    title: "Analizar Documento",
     description: "Revisión automática de documentos con detección de riesgos",
     icon: Eye,
     color: "from-brand-accent to-brand-dark",
     demo: "Analizar contratos para identificar cláusulas problemáticas",
     component: DemoAnalysisMockup
   }, {
-    title: "Redacción + Copilot",
+    title: "Redacción Asistida",
     description: "Generación de documentos con asistencia en tiempo real",
     icon: PenTool,
     color: "from-brand-primary to-brand-accent",
     demo: "Redactar demandas con sugerencias inteligentes",
     component: DemoDraftingMockup
   }, {
-    title: "Estrategia + Predicción",
-    description: "Análisis predictivo y planificación estratégica de casos",
+    title: "Planeación + Análisis de Riesgos",
+    description: "Análisis de riesgos y planificación estratégica de casos",
     icon: Target,
     color: "from-brand-dark to-brand-primary",
-    demo: "Predecir probabilidad de éxito del caso",
+    demo: "Evaluar probabilidad de éxito del caso",
     component: DemoStrategyMockup
   }, {
-    title: "CRM + Portal Clientes",
+    title: "Clientes y Casos",
     description: "Gestión de clientes con portal de acceso seguro",
     icon: Users,
     color: "from-brand-accent to-brand-primary",
     demo: "Gestionar clientes y compartir documentos",
     component: DemoCRMMockup
   }, {
-    title: "Calendario Legal",
+    title: "Agenda",
     description: "Gestión de términos y audiencias con cálculo automático",
     icon: Calendar,
     color: "from-brand-primary to-brand-dark",
     demo: "Calcular vencimientos con días hábiles",
     component: DemoCalendarMockup
   }, {
-    title: "Asistente de Voz",
+    title: "Dictado por Voz",
     description: "Dicta documentos y transcribe audiencias",
     icon: Mic,
     color: "from-brand-dark to-brand-accent",
     demo: "Transcribir audiencias automáticamente",
     component: DemoVoiceAssistantMockup
   }, {
-    title: "Agentes Especializados",
+    title: "Asistentes Legales",
     description: "Crea asistentes especializados para tu práctica",
     icon: Bot,
     color: "from-brand-accent to-brand-dark",
-    demo: "Crear agentes especializados para cada área",
+    demo: "Crear asistentes especializados para cada área",
     component: DemoAgentsMockup
   }];
 
@@ -211,20 +211,20 @@ export default function LawyerLandingPage({
   }];
 
   const allTools = [
-    { name: "Investigación Legal", icon: Search, category: "Investigación" },
-    { name: "SUIN-Juriscol", icon: Database, category: "Investigación" },
-    { name: "Consulta Procesos", icon: Gavel, category: "Investigación" },
-    { name: "Monitor de Procesos", icon: Eye, category: "Investigación" },
-    { name: "Análisis Documental", icon: Eye, category: "Análisis" },
-    { name: "Predictor de Casos", icon: BarChart3, category: "Análisis" },
-    { name: "Redacción", icon: PenTool, category: "Redacción" },
-    { name: "Copilot Legal", icon: Sparkles, category: "Redacción" },
-    { name: "Estrategia Legal", icon: Target, category: "Estrategia" },
-    { name: "Calendario Legal", icon: Calendar, category: "Gestión" },
-    { name: "CRM Clientes", icon: Users, category: "Gestión" },
+    { name: "Consulta Jurídica", icon: Search, category: "Investigación" },
+    { name: "Normativa (SUIN)", icon: Database, category: "Investigación" },
+    { name: "Buscar Procesos", icon: Gavel, category: "Investigación" },
+    { name: "Seguimiento Procesos", icon: Eye, category: "Investigación" },
+    { name: "Analizar Documento", icon: Eye, category: "Análisis" },
+    { name: "Análisis de Riesgos", icon: BarChart3, category: "Análisis" },
+    { name: "Redacción Asistida", icon: PenTool, category: "Redacción" },
+    { name: "Asistente de Redacción", icon: Sparkles, category: "Redacción" },
+    { name: "Planeación de Caso", icon: Target, category: "Estrategia" },
+    { name: "Agenda", icon: Calendar, category: "Gestión" },
+    { name: "Clientes y Casos", icon: Users, category: "Gestión" },
     { name: "Portal Clientes", icon: Shield, category: "Gestión" },
-    { name: "Asistente de Voz", icon: Mic, category: "Asistencia" },
-    { name: "Agentes Especializados", icon: Bot, category: "Asistencia" },
+    { name: "Dictado por Voz", icon: Mic, category: "Asistencia" },
+    { name: "Asistentes Legales", icon: Bot, category: "Asistencia" },
   ];
 
   const testimonials = [{
@@ -240,7 +240,7 @@ export default function LawyerLandingPage({
   }, {
     name: "Dra. Ana Martínez",
     role: "Directora Legal, TechCorp",
-    content: "El CRM integrado y la automatización han mejorado nuestra eficiencia operativa significativamente.",
+    content: "La gestión integrada de clientes y la automatización han mejorado nuestra eficiencia operativa significativamente.",
     rating: 5
   }];
 

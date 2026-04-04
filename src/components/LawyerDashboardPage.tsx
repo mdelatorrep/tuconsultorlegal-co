@@ -813,16 +813,16 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start" className="w-52">
                           <DropdownMenuItem onClick={() => setCurrentView('research')} className="cursor-pointer">
-                            <Search className="w-4 h-4 mr-2" /> Investigación Legal
+                            <Search className="w-4 h-4 mr-2" /> Consulta Jurídica
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => setCurrentView('suin')} className="cursor-pointer">
-                            <Scale className="w-4 h-4 mr-2" /> SUIN-Juriscol
+                            <Scale className="w-4 h-4 mr-2" /> Normativa (SUIN)
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => setCurrentView('process-consultation')} className="cursor-pointer">
-                            <FileSearch className="w-4 h-4 mr-2" /> Consulta Procesos
+                            <FileSearch className="w-4 h-4 mr-2" /> Buscar Procesos
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => setCurrentView('process-monitor')} className="cursor-pointer">
-                            <Eye className="w-4 h-4 mr-2" /> Monitor Procesos
+                            <Eye className="w-4 h-4 mr-2" /> Seguimiento Procesos
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -834,28 +834,28 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start" className="w-48">
                           <DropdownMenuItem onClick={() => setCurrentView('draft')} className="cursor-pointer">
-                            <FileText className="w-4 h-4 mr-2" /> Redacción
+                            <FileText className="w-4 h-4 mr-2" /> Redacción Asistida
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => setCurrentView('analyze')} className="cursor-pointer">
-                            <BarChart3 className="w-4 h-4 mr-2" /> Análisis
+                            <BarChart3 className="w-4 h-4 mr-2" /> Analizar Documento
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => setCurrentView('voice')} className="cursor-pointer">
-                            <Mic className="w-4 h-4 mr-2" /> Voz
+                            <Mic className="w-4 h-4 mr-2" /> Dictado por Voz
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant={['crm', 'legal-calendar'].includes(currentView) ? 'secondary' : 'ghost'} size="sm" className="h-8 text-xs">
-                            CRM <ChevronDown className="ml-1 h-3 w-3" />
+                            Clientes <ChevronDown className="ml-1 h-3 w-3" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start" className="w-48">
                           <DropdownMenuItem onClick={() => setCurrentView('crm')} className="cursor-pointer">
-                            <Users className="w-4 h-4 mr-2" /> Clientes y Procesos
+                            <Users className="w-4 h-4 mr-2" /> Clientes y Casos
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => setCurrentView('legal-calendar')} className="cursor-pointer">
-                            <Calendar className="w-4 h-4 mr-2" /> Calendario
+                            <Calendar className="w-4 h-4 mr-2" /> Agenda
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -867,10 +867,10 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start" className="w-52">
                           <DropdownMenuItem onClick={() => setCurrentView('predict')} className="cursor-pointer">
-                            <Brain className="w-4 h-4 mr-2" /> Predictor
+                            <Brain className="w-4 h-4 mr-2" /> Análisis de Riesgos
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => setCurrentView('strategize')} className="cursor-pointer">
-                            <Bot className="w-4 h-4 mr-2" /> Agentes Especializados
+                            <Bot className="w-4 h-4 mr-2" /> Asistentes Legales
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => setCurrentView('training')} className="cursor-pointer">
                             <GraduationCap className="w-4 h-4 mr-2" /> Capacitación
@@ -963,16 +963,16 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start" className="w-52">
                           <DropdownMenuItem onClick={() => setCurrentView('research')} className="cursor-pointer">
-                            <Search className="w-4 h-4 mr-2" /> Investigación Legal
+                            <Search className="w-4 h-4 mr-2" /> Consulta Jurídica
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => setCurrentView('suin')} className="cursor-pointer">
-                            <Scale className="w-4 h-4 mr-2" /> SUIN-Juriscol
+                            <Scale className="w-4 h-4 mr-2" /> Normativa (SUIN)
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => setCurrentView('process-consultation')} className="cursor-pointer">
-                            <FileSearch className="w-4 h-4 mr-2" /> Consulta Procesos
+                            <FileSearch className="w-4 h-4 mr-2" /> Buscar Procesos
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => setCurrentView('process-monitor')} className="cursor-pointer">
-                            <Eye className="w-4 h-4 mr-2" /> Monitor Procesos
+                            <Eye className="w-4 h-4 mr-2" /> Seguimiento Procesos
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -984,28 +984,28 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start" className="w-48">
                           <DropdownMenuItem onClick={() => setCurrentView('draft')} className="cursor-pointer">
-                            <FileText className="w-4 h-4 mr-2" /> Redacción
+                            <FileText className="w-4 h-4 mr-2" /> Redacción Asistida
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => setCurrentView('analyze')} className="cursor-pointer">
-                            <BarChart3 className="w-4 h-4 mr-2" /> Análisis
+                            <BarChart3 className="w-4 h-4 mr-2" /> Analizar Documento
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => setCurrentView('voice')} className="cursor-pointer">
-                            <Mic className="w-4 h-4 mr-2" /> Voz
+                            <Mic className="w-4 h-4 mr-2" /> Dictado por Voz
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant={['crm', 'legal-calendar'].includes(currentView) ? 'secondary' : 'ghost'} size="sm" className="h-8 text-xs">
-                            CRM <ChevronDown className="ml-1 h-3 w-3" />
+                            Clientes <ChevronDown className="ml-1 h-3 w-3" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start" className="w-48">
                           <DropdownMenuItem onClick={() => setCurrentView('crm')} className="cursor-pointer">
-                            <Users className="w-4 h-4 mr-2" /> Clientes y Procesos
+                            <Users className="w-4 h-4 mr-2" /> Clientes y Casos
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => setCurrentView('legal-calendar')} className="cursor-pointer">
-                            <Calendar className="w-4 h-4 mr-2" /> Calendario
+                            <Calendar className="w-4 h-4 mr-2" /> Agenda
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -1017,10 +1017,10 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start" className="w-52">
                           <DropdownMenuItem onClick={() => setCurrentView('predict')} className="cursor-pointer">
-                            <Brain className="w-4 h-4 mr-2" /> Predictor
+                            <Brain className="w-4 h-4 mr-2" /> Análisis de Riesgos
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => setCurrentView('strategize')} className="cursor-pointer">
-                            <Bot className="w-4 h-4 mr-2" /> Agentes Especializados
+                            <Bot className="w-4 h-4 mr-2" /> Asistentes Legales
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => setCurrentView('training')} className="cursor-pointer">
                             <GraduationCap className="w-4 h-4 mr-2" /> Capacitación
