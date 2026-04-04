@@ -65,7 +65,8 @@ import {
   QuickToolsGrid,
   CasesOverview,
   UpcomingActions,
-  SmartSearch
+  SmartSearch,
+  RecentActivityFeed
 } from "./dashboard";
 
 interface DocumentToken {
@@ -1120,6 +1121,12 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                   <QuickToolsGrid 
                     onViewChange={(view) => setCurrentView(view as ViewType)} 
                     newLeadsCount={newLeadsCount} 
+                  />
+
+                  {/* Recent Activity Feed */}
+                  <RecentActivityFeed 
+                    lawyerId={user.id}
+                    onNavigate={(view) => setCurrentView(view as ViewType)}
                   />
 
                   {/* Smart Search Bar */}

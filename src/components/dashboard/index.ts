@@ -7,3 +7,4 @@ export { QuickToolsGrid } from "./QuickToolsGrid";
 export { CasesOverview } from "./CasesOverview";
 export { UpcomingActions } from "./UpcomingActions";
 export { SmartSearch } from "./SmartSearch";
+export { RecentActivityFeed } from "./RecentActivityFeed";
