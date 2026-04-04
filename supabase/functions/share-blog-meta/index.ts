@@ -72,7 +72,11 @@ Deno.serve(async (req) => {
     const canonicalUrl = `${SITE_URL}/#blog-articulo-${blog.slug}`
     const title = escapeHtml(blog.title)
     const description = escapeHtml(blog.excerpt || blog.content?.substring(0, 160) || 'Artículo legal en Praxis Hub')
-    const image = blog.featured_image || DEFAULT_OG_IMAGE
+    // Ensure OG image is large enough for LinkedIn (min 1200x627)
+    let image = blog.featured_image || DEFAULT_OG_IMAGE
+    if (image.includes('unsplash.com') && image.includes('w=')) {
+      image = image.replace(/w=\d+/, 'w=1200').replace(/h=\d+/, 'h=630')
+    }
     const publishedAt = blog.published_at || ''
     const tags = blog.tags?.join(', ') || 'derecho, legal, Colombia'
 
