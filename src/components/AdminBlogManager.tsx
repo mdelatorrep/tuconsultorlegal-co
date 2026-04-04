@@ -346,6 +346,7 @@ export default function AdminBlogManager({ onBack, authHeaders }: AdminBlogManag
                   <TableHead>Estado</TableHead>
                   <TableHead>Fecha</TableHead>
                   <TableHead>Vistas</TableHead>
+                  <TableHead>Compartir</TableHead>
                   <TableHead>Acciones</TableHead>
                 </TableRow>
               </TableHeader>
