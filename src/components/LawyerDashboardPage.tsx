@@ -1175,16 +1175,18 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                     onViewCRM={() => setCurrentView('crm')} 
                   />
 
-                  {/* Pending Documents */}
-                  <PendingDocumentsList
-                    documents={documents}
-                    selectedDocumentId={selectedDocument?.id}
-                    onDocumentClick={handleDocumentClick}
-                    getStatusVariant={getStatusVariant}
-                    getStatusText={getStatusText}
-                    getSlaStatusVariant={getSlaStatusVariant}
-                    getSlaStatusText={getSlaStatusText}
-                  />
+                  {/* Pending Documents - only for users with agent creation enabled */}
+                  {user.canCreateAgents && (
+                    <PendingDocumentsList
+                      documents={documents}
+                      selectedDocumentId={selectedDocument?.id}
+                      onDocumentClick={handleDocumentClick}
+                      getStatusVariant={getStatusVariant}
+                      getStatusText={getStatusText}
+                      getSlaStatusVariant={getSlaStatusVariant}
+                      getSlaStatusText={getSlaStatusText}
+                    />
+                  )}
 
                   {/* Document Review Panel */}
                   {selectedDocument && (
