@@ -15,7 +15,7 @@ function htmlResponse(html: string, status = 200) {
   headers.set('cache-control', 'public, max-age=3600, s-maxage=3600')
   headers.set('x-content-type-options', 'nosniff')
 
-  return new Response(html, {
+  return new Response(new Blob([html], { type: 'text/html; charset=utf-8' }), {
     status,
     headers
   })
