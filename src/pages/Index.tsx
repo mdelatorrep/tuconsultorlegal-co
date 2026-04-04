@@ -361,7 +361,7 @@ export default function Index() {
   return (
     <LogRocketProvider>
       <OfflineIndicator />
-      {showLawyerDashboard && <PWAInstallPrompt />}
+      {currentPage === 'abogados' && <PWAInstallPrompt />}
       
       <div className="min-h-screen bg-background">
         <Header
