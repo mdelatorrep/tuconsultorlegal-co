@@ -562,45 +562,6 @@ const CRMCasesView: React.FC<CRMCasesViewProps> = ({ lawyerData, searchTerm, onR
             )}
           </div>
 
-          {/* Hoja de Ruta */}
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-1.5">
-              <Label className="text-sm">Hoja de Ruta (Google Docs, OneDrive, etc.)</Label>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="max-w-xs text-xs">
-                    <p>Enlace a tu documento de seguimiento del proceso (hoja de cálculo, documento de texto, etc.)</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  value={formData.enlace_hoja_ruta}
-                  onChange={(e) => setFormData({ ...formData, enlace_hoja_ruta: e.target.value })}
-                  placeholder="Pega aquí el enlace de tu hoja de ruta"
-                  className="pl-9 flex-1"
-                />
-              </div>
-              {formData.enlace_hoja_ruta && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="shrink-0 gap-1.5"
-                  onClick={() => window.open(formData.enlace_hoja_ruta, '_blank')}
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  Abrir
-                </Button>
-              )}
-            </div>
-          </div>
         </div>
 
         {/* Descripción */}
