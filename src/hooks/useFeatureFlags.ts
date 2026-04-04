@@ -14,8 +14,15 @@ export const useFeatureFlags = () => {
         .single();
 
       if (!error && data) {
-        const val = typeof data.config_value === 'string' ? JSON.parse(data.config_value) : data.config_value;
-        setFlags(val);
+        const raw = data.config_value;
+        try {
+          const val = typeof raw === 'string' ? JSON.parse(raw) : raw;
+          if (val && typeof val === 'object' && !Array.isArray(val)) {
+            setFlags(val);
+          }
+        } catch {
+          console.warn('Invalid feature_flags_sidebar value, using defaults');
+        }
       }
       setLoading(false);
     };

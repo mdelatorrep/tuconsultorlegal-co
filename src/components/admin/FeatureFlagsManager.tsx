@@ -78,9 +78,25 @@ export default function FeatureFlagsManager() {
       console.error('Error fetching feature flags:', error);
       toast({ title: 'Error', description: 'No se pudieron cargar los feature flags', variant: 'destructive' });
     } else if (data) {
-      const val = typeof data.config_value === 'string' ? JSON.parse(data.config_value) : data.config_value;
-      setFlags(val);
-      setOriginalFlags(val);
+      try {
+        const raw = data.config_value;
+        const val = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        if (val && typeof val === 'object' && !Array.isArray(val)) {
+          setFlags(val);
+          setOriginalFlags(val);
+        } else {
+          // Initialize with all enabled if data is corrupt
+          const defaults: Record<string, boolean> = {};
+          FEATURE_DEFINITIONS.forEach(f => { defaults[f.key] = true; });
+          setFlags(defaults);
+          setOriginalFlags(defaults);
+        }
+      } catch {
+        const defaults: Record<string, boolean> = {};
+        FEATURE_DEFINITIONS.forEach(f => { defaults[f.key] = true; });
+        setFlags(defaults);
+        setOriginalFlags(defaults);
+      }
     }
     setLoading(false);
   };
