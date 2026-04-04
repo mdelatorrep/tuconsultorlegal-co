@@ -404,6 +404,9 @@ export default function SuinJuriscolModule({ user, currentView, onViewChange, on
         throw new Error(data.error || 'Error en la consulta');
       }
 
+      // Consume credits only after successful API response
+      await consumeCredits('suin_juriscol_followup', { query: followUpQuery, isFollowUp: true });
+
       const assistantMessage: ChatMessage = {
         role: 'assistant',
         content: data.summary || 'No encontré información adicional.',
