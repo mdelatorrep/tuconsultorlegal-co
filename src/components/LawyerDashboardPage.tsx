@@ -1366,10 +1366,6 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
           onOpenChange={setShowChangeEmailDialog}
         />
         
-        <QuickActionsBar 
-          onNavigate={(view) => setCurrentView(view as ViewType)}
-          onLogout={logout}
-        />
         
         {/* Gamification Celebration Overlay */}
         <GamificationCelebration
