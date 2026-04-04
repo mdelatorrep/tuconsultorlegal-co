@@ -117,17 +117,20 @@ serve(async (req) => {
       for (const event of (localEvents || [])) {
         if (event.external_calendar_id) continue; // Already synced
 
+        const startDatePart = extractDatePart(event.start_date);
+        const endDatePart = extractDatePart(event.end_date || event.start_date);
+
         const googleEvent = {
           summary: event.title,
           description: event.description || undefined,
           location: event.location || undefined,
           colorId: mapEventTypeToColor(event.event_type),
           start: event.all_day
-            ? { date: event.start_date }
-            : { dateTime: `${event.start_date}T09:00:00`, timeZone: 'America/Bogota' },
+            ? { date: startDatePart }
+            : { dateTime: `${startDatePart}T09:00:00`, timeZone: 'America/Bogota' },
           end: event.all_day
-            ? { date: event.end_date || event.start_date }
-            : { dateTime: `${event.end_date || event.start_date}T10:00:00`, timeZone: 'America/Bogota' },
+            ? { date: endDatePart }
+            : { dateTime: `${endDatePart}T10:00:00`, timeZone: 'America/Bogota' },
         };
 
         const createRes = await fetch(`${CALENDAR_API}/calendars/primary/events`, {
