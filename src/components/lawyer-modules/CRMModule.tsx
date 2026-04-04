@@ -37,6 +37,9 @@ interface CRMStats {
 export default function CRMModule({ user, currentView, onViewChange, onLogout }: CRMModuleProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [stats, setStats] = useState<CRMStats>({ clients: 0, cases: 0, tasks: 0, leads: 0 });
+  const [onboardingSteps, setOnboardingSteps] = useState<OnboardingStepStatus>({
+    profile: false, clients: false, cases: false, tasks: false,
+  });
   const [isAIChatOpen, setIsAIChatOpen] = useState(false);
   const [isPortalManagerOpen, setIsPortalManagerOpen] = useState(false);
   const [portalClients, setPortalClients] = useState<{ id: string; name: string; email: string }[]>([]);
@@ -48,7 +51,27 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
   useEffect(() => {
     fetchStats();
     fetchPortalClients();
+    fetchOnboardingStatus();
   }, []);
+
+  const fetchOnboardingStatus = async () => {
+    try {
+      const [profileResult, clientsResult, casesResult, tasksResult] = await Promise.all([
+        supabase.from('lawyer_public_profiles').select('id').eq('lawyer_id', user.id).eq('is_published', true).maybeSingle(),
+        supabase.from('crm_clients').select('id').eq('lawyer_id', user.id).limit(1),
+        supabase.from('crm_cases').select('id').eq('lawyer_id', user.id).limit(1),
+        supabase.from('crm_tasks').select('id').eq('lawyer_id', user.id).limit(1),
+      ]);
+      setOnboardingSteps({
+        profile: !!profileResult.data,
+        clients: (clientsResult.data?.length || 0) > 0,
+        cases: (casesResult.data?.length || 0) > 0,
+        tasks: (tasksResult.data?.length || 0) > 0,
+      });
+    } catch (error) {
+      console.error('Error fetching onboarding status:', error);
+    }
+  };
 
   const fetchStats = async () => {
     try {
