@@ -1,59 +1,72 @@
 
 
-# Plan: Compartir Blogs en Redes Sociales desde el Admin Portal
+# Plan: Mejoras de Usabilidad basadas en Pruebas de Usuario
 
 ## Resumen
-Agregar botones de compartir en redes sociales (LinkedIn y WhatsApp) para cada blog publicado en el panel de administración, con URLs pre-construidas y mejores prácticas de OG meta tags para maximizar la visibilidad del contenido compartido.
+8 ajustes concretos para mejorar la conversión y experiencia del usuario nuevo en la plataforma.
 
-## Contexto
-- Los blogs ya tienen compartir en LinkedIn y WhatsApp en `BlogArticlePage.tsx` (vista pública)
-- El admin NO tiene botones de compartir en `AdminBlogManager.tsx`
-- La app usa hash-based routing: `/#blog-articulo-{slug}`
-- Solo LinkedIn es red social activa (marca profesional)
-- Ya existe `useSEO.ts` que actualiza OG tags dinámicamente
+---
 
-## Problema con Hash Routing y OG Tags
-Los crawlers de redes sociales (LinkedIn, WhatsApp) NO ejecutan JavaScript, por lo que no leen meta tags dinámicos actualizados por React. Con hash routing (`/#blog-articulo-slug`), los crawlers solo ven los meta tags estáticos del `index.html`. Esto significa que al compartir un blog, se mostrará el título/imagen genérico de Praxis Hub.
+## Cambios
 
-**Solución**: Crear un edge function que actúe como proxy para generar HTML con OG tags correctos cuando un crawler accede a la URL de compartir.
+### 0. Propuesta de valor clara en HomePage + CTA directo
+**Archivo:** `src/components/HomePage.tsx`
+- Agregar un subtítulo concreto debajo del hero que liste 3-4 beneficios tangibles (ej: "Gestiona casos, investiga jurisprudencia, redacta documentos con IA")
+- Agregar un segundo CTA directo: "Crear Cuenta Gratis" que lleve a `/auth-abogados`
+- Hacer el CTA principal más descriptivo: "Conoce las herramientas" en vez de "Explorar Praxis Hub"
 
-## Cambios a implementar
+### 1. Registro por defecto en /auth-abogados
+**Archivo:** `src/components/LawyerLogin.tsx` (linea 24)
+- Cambiar `useState<ViewMode>('login')` a `useState<ViewMode>('register')`
 
-### 1. Edge Function: `share-blog-meta` (nuevo)
-- Endpoint: `GET /functions/v1/share-blog-meta?slug={slug}`
-- Consulta el blog por slug en `blog_posts`
-- Retorna HTML mínimo con OG meta tags correctos (og:title, og:description, og:image, og:url, twitter:card) y un redirect JavaScript al blog real
-- User agents de crawlers (LinkedInBot, WhatsApp, facebookexternalhit) reciben HTML con meta tags
-- Usuarios normales son redirigidos a `https://praxis-hub.co/#blog-articulo-{slug}`
+### 2. Rediseñar onboarding coachmarks
+**Archivo:** `src/components/LawyerOnboardingCoachmarks.tsx`
+- Reducir los pasos de 6 a 4, enfocándose en: (1) Herramientas IA principales, (2) CRM para gestionar clientes, (3) Misiones diarias para ganar créditos, (4) Sidebar para explorar todo
+- Usar descripciones orientadas a beneficio, no a ubicación del botón
+- Posicionar el card del coachmark centrado en la pantalla (actualmente flota sin posición fija)
 
-### 2. Componente: `BlogShareButtons.tsx` (nuevo)
-- Componente reutilizable con botones de compartir
-- Redes: LinkedIn, WhatsApp, Copiar enlace
-- Genera URLs de compartir usando la URL del edge function como share URL (para que los crawlers lean los OG tags)
-- Incluye tooltip con preview del texto que se compartirá
-- Acepta props: `blog` (title, slug, excerpt, featured_image)
+### 3. Clarificar rol de Lexi
+**Archivo:** `src/components/dashboard/DashboardWelcome.tsx`
+- Agregar una sección breve bajo el welcome: "Lexi, tu asistente IA, te ayuda a investigar, redactar y analizar documentos legales. Encuéntrala en cada herramienta."
+- Alternativamente, agregar un chip/badge con tooltip en las herramientas que usan Lexi
 
-### 3. Actualizar `AdminBlogManager.tsx`
-- Importar `BlogShareButtons`
-- Agregar columna "Compartir" en la tabla de blogs
-- Mostrar botones de compartir solo para blogs con status `published`
-- Agregar ícono Share2 de lucide-react
+### 4. Fix modales sin scroll
+**Archivo:** `src/components/ui/alert-dialog.tsx` y/o `src/components/ui/dialog.tsx`
+- Agregar `max-h-[85vh] overflow-y-auto` al `AlertDialogContent` y `DialogContent` para permitir scroll cuando el contenido excede la pantalla
 
-### 4. Actualizar `BlogArticlePage.tsx`
-- Reemplazar las funciones de compartir inline por el componente `BlogShareButtons`
-- Usar la misma URL del edge function para compartir
+### 5. Sidebar con scroll visible
+**Archivo:** `src/components/UnifiedSidebar.tsx` (linea 297)
+- El `overflow-y-auto` ya existe en el contenedor del menu, pero falta height constraint. Cambiar el div wrapper a usar `flex-1 min-h-0 overflow-y-auto` para que el contenedor calcule correctamente el espacio disponible y muestre scrollbar
 
-## Mejores prácticas aplicadas
-- **LinkedIn**: URL de compartir con OG tags server-side (og:title, og:description, og:image, og:type=article)
-- **WhatsApp**: Incluir texto + URL en el mensaje pre-armado
-- **OG Image**: Usar `featured_image` del blog o fallback a imagen genérica de Praxis Hub
-- **URL canónica**: Apuntar al blog real en praxis-hub.co
+### 6. QuickToolsGrid con feature flags y posición superior
+**Archivo:** `src/components/dashboard/QuickToolsGrid.tsx`
+- Importar y usar `useFeatureFlags` para filtrar tools por `isEnabled(tool.view)`
+- Remover tools deshabilitadas del grid
 
-## Archivos modificados/creados
+**Archivo:** `src/components/LawyerDashboardPage.tsx` (linea ~960-1040)
+- Mover `QuickToolsGrid` arriba en el dashboard, justo después del Welcome+DailyProgress, antes de SmartSearch
+
+### 7. Fix botones CRMOnboarding
+**Archivo:** `src/components/lawyer-modules/CRMModule.tsx` (lineas 96-101)
+- Cambiar `onViewChange('profile')` a `onViewChange('public-profile')` (el view correcto)
+- Implementar `onOpenClients` para cambiar al tab "clientes" del CRM
+- Implementar `onOpenCases` para cambiar al tab "procesos" del CRM
+- Esto requiere hacer el tab activo del CRM controlable via state, pasando un setter desde el Tabs component
+
+---
+
+## Archivos modificados
 | Archivo | Cambio |
 |---------|--------|
-| `supabase/functions/share-blog-meta/index.ts` | **Nuevo** - OG meta proxy |
-| `src/components/BlogShareButtons.tsx` | **Nuevo** - Componente reutilizable |
-| `src/components/AdminBlogManager.tsx` | Agregar columna de compartir |
-| `src/components/BlogArticlePage.tsx` | Usar BlogShareButtons |
+| `src/components/HomePage.tsx` | CTAs claros y propuesta de valor concreta |
+| `src/components/LawyerLogin.tsx` | Default a registro |
+| `src/components/LawyerOnboardingCoachmarks.tsx` | Rediseño de pasos |
+| `src/components/dashboard/DashboardWelcome.tsx` | Explicar Lexi |
+| `src/components/ui/alert-dialog.tsx` | Scroll en modales |
+| `src/components/ui/dialog.tsx` | Scroll en modales |
+| `src/components/UnifiedSidebar.tsx` | Fix scroll sidebar |
+| `src/components/dashboard/QuickToolsGrid.tsx` | Feature flags filter |
+| `src/components/LawyerDashboardPage.tsx` | Reordenar dashboard, QuickTools arriba |
+| `src/components/lawyer-modules/CRMModule.tsx` | Fix onboarding buttons |
+| `src/components/lawyer-modules/crm/CRMOnboarding.tsx` | Sin cambios directos |
 
