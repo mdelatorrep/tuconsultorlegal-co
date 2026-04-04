@@ -128,36 +128,6 @@ export default function BlogArticlePage({ articleId, onOpenChat, onNavigate }: B
     });
   };
 
-  // Generate correct URL for hash-based routing
-  const shareUrl = `${window.location.origin}/#blog-articulo-${blog?.slug}`;
-  const shareText = `${blog?.title} - ${blog?.excerpt || 'Artículo interesante sobre derecho'}`;
-
-  const shareOnLinkedIn = () => {
-    const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
-    window.open(url, '_blank', 'width=600,height=400');
-  };
-
-  const shareOnWhatsApp = () => {
-    const url = `https://wa.me/?text=${encodeURIComponent(`${shareText} ${shareUrl}`)}`;
-    window.open(url, '_blank', 'width=600,height=400');
-  };
-
-  const copyToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      toast({
-        title: "¡Enlace copiado!",
-        description: "El enlace del artículo se ha copiado al portapapeles.",
-      });
-    } catch (err) {
-      console.error('Error copying to clipboard:', err);
-      toast({
-        title: "Error",
-        description: "No se pudo copiar el enlace al portapapeles.",
-        variant: "destructive",
-      });
-    }
-  };
 
   return (
     <div className="container mx-auto px-6 py-20">
