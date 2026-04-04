@@ -218,7 +218,7 @@ const CRMCasesView: React.FC<CRMCasesViewProps> = ({ lawyerData, searchTerm, onR
         demandado: formData.demandado || null,
         asignado_a: formData.asignado_a || null,
         nota_pendiente: formData.nota_pendiente || null,
-        enlace_hoja_ruta: formData.enlace_hoja_ruta || null,
+        
         enlace_expediente: formData.enlace_expediente || null,
       };
 
