@@ -656,16 +656,22 @@ export default function ProcessQueryModule({
         {aiAnalysis && !isSearching && (
           <Card className="border-border">
             <CardHeader className="pb-3">
-              <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <Brain className="h-4 w-4 text-primary" />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <Brain className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base">Análisis Legal del Proceso</CardTitle>
+                    <p className="text-xs text-muted-foreground">
+                      Análisis contextual generado por IA · Verifique siempre en el portal oficial
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <CardTitle className="text-base">Análisis Legal del Proceso</CardTitle>
-                  <p className="text-xs text-muted-foreground">
-                    Análisis contextual generado por IA · Verifique siempre en el portal oficial
-                  </p>
-                </div>
+                <Button variant="outline" size="sm" onClick={() => exportProcessQueryToPdf(lastSearchedRadicado, aiAnalysis, processes)}>
+                  <Download className="h-4 w-4 mr-2" />
+                  PDF
+                </Button>
               </div>
             </CardHeader>
             <CardContent>
