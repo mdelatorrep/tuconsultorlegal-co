@@ -77,6 +77,7 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout,
   const quillRef = useRef<any>(null);
   const { toast } = useToast();
   const { consumeCredits, hasEnoughCredits, getToolCost } = useCredits(user?.id);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (initialTranscript && initialTranscript.length > 0) {
