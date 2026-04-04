@@ -580,6 +580,22 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
               className="resize-none"
             />
           </div>
+
+          {/* Quick prompt suggestions */}
+          {!query.trim() && !isSearching && (
+            <QuickPromptSuggestions
+              suggestions={[
+                "Jurisprudencia reciente sobre despido sin justa causa",
+                "Requisitos para la acción de tutela en salud",
+                "Responsabilidad civil extracontractual del Estado",
+                "Prescripción de la acción penal en delitos financieros",
+                "Régimen de inhabilidades para contratar con el Estado",
+                "Derechos del consumidor en compras digitales",
+              ]}
+              onSelect={(s) => setQuery(s)}
+              disabled={isSearching}
+            />
+          )}
           
           {isSearching && (
             <div className="space-y-3">

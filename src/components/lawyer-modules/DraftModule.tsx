@@ -213,6 +213,21 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout,
                           rows={4}
                           className="resize-none"
                         />
+                        {!prompt.trim() && !isDrafting && (
+                          <div className="mt-2">
+                            <QuickPromptSuggestions
+                              suggestions={[
+                                "Contrato de prestación de servicios profesionales con cláusula de confidencialidad",
+                                "Derecho de petición ante EPS por negación de tratamiento médico",
+                                "Poder especial para representación en proceso ejecutivo",
+                                "Acción de tutela por vulneración del derecho al trabajo",
+                                "Contrato de arrendamiento comercial con opción de compra",
+                              ]}
+                              onSelect={(s) => setPrompt(s)}
+                              disabled={isDrafting}
+                            />
+                          </div>
+                        )}
                       </div>
                       
                       <Button

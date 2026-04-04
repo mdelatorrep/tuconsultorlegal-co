@@ -229,8 +229,20 @@ export default function StrategizeModule({ user, currentView, onViewChange, onLo
                   value={caseDescription}
                   onChange={(e) => setCaseDescription(e.target.value)}
                   rows={4}
-                  className="resize-none"
+                className="resize-none"
                 />
+                {!caseDescription.trim() && !isAnalyzing && (
+                  <QuickPromptSuggestions
+                    suggestions={[
+                      "Trabajador despedido durante incapacidad médica. Empleador alega bajo rendimiento. 3 años de antigüedad.",
+                      "Sociedad comercial incumple contrato de distribución exclusiva. Pérdidas por $200M. Cláusula penal pactada.",
+                      "Vecino construye sobre servidumbre de paso. Escritura registrada hace 15 años. Mediación fallida.",
+                      "Empresa multada por DIAN por diferencias en declaración de renta. Sanción de $50M. Plazo para recurrir vence en 5 días.",
+                    ]}
+                    onSelect={(s) => setCaseDescription(s)}
+                    disabled={isAnalyzing}
+                  />
+                )}
                 <p className="text-xs text-muted-foreground">
                   💡 Incluye precedentes, evidencias y objetivos del cliente para mayor precisión
                 </p>
