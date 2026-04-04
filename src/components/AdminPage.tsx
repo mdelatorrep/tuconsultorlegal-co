@@ -186,6 +186,7 @@ function AdminPage() {
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [pendingAgentsCount, setPendingAgentsCount] = useState(0);
   const [pendingBlogsCount, setPendingBlogsCount] = useState(0);
+  const [pendingBugReportsCount, setPendingBugReportsCount] = useState(0);
   
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
