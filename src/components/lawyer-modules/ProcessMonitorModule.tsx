@@ -252,6 +252,9 @@ export function ProcessMonitorModule({ lawyerId }: ProcessMonitorModuleProps) {
       });
 
       if (error) throw error;
+
+      // Consume credits only after successful API response
+      await consumeCredits('process_monitor', { action: 'sync', processId });
       
       toast.success('Proceso sincronizado');
       loadActuations(processId);
