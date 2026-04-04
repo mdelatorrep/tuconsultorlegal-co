@@ -154,8 +154,8 @@ export function LegalCopilot({
   const acceptAutocomplete = async () => {
     if (!autocompleteSuggestion) return;
     
-    const creditResult = await consumeCredits('legal_copilot_autocomplete', { action: 'autocomplete' });
-    if (!creditResult.success) return;
+    // Autocomplete acceptance is free - credit already consumed on generation
+    
     
     const textarea = textareaRef.current;
     if (textarea) {

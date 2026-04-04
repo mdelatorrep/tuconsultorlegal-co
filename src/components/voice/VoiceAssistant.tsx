@@ -49,6 +49,7 @@ export function VoiceAssistant({ lawyerId, onTranscriptReady, onCreateDocument, 
   const handleToggleRecording = async () => {
     if (isRecording) {
       await stopRecording();
+      // Voice transcription credits consumed after recording stops successfully
       if (lawyerId && hasEnoughCredits('voice_transcription')) {
         await consumeCredits('voice_transcription', { action: 'transcription' });
       }

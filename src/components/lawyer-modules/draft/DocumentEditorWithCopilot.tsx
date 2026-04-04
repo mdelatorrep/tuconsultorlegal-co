@@ -353,6 +353,8 @@ export default function DocumentEditorWithCopilot({
         body: { action: 'improve', text: selectedText, context: `Tipo de documento: ${documentType}. Mejora este texto manteniendo el significado legal pero haciéndolo más claro y profesional en estilo jurídico colombiano.`, language: 'es' }
       });
       if (error) throw error;
+      // Consume credits only after successful API response
+      await consumeCredits('copilot', { action: 'improve' });
       if (data?.improved) {
         const newContent = content.replace(selectedText, data.improved);
         setContent(newContent);
