@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Search, Eye, PenTool, Target, Users, Database, Gavel, Radar, Calendar, Wand2, Mic, TrendingUp, ShieldCheck, Coins } from "lucide-react";
 import { LucideIcon } from "lucide-react";
 import { useCredits } from "@/hooks/useCredits";
@@ -49,7 +50,6 @@ export function QuickToolsGrid({ onViewChange, newLeadsCount = 0 }: QuickToolsGr
         <h2 className="text-lg md:text-xl font-semibold">Herramientas Rápidas</h2>
       </div>
       
-      {/* CTA sutil para comprar créditos cuando no hay */}
       {!hasCredits && (
         <Card className="border-dashed border-amber-500/50 bg-amber-500/5">
           <CardContent className="p-3 flex items-center justify-between gap-3">
@@ -69,32 +69,39 @@ export function QuickToolsGrid({ onViewChange, newLeadsCount = 0 }: QuickToolsGr
         </Card>
       )}
       
-      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-2 md:gap-3">
-        {filteredTools.map((tool) => (
-          <Card
-            key={tool.view}
-            className="group cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg border-0 relative"
-            onClick={() => onViewChange(tool.view)}
-          >
-            {/* CRM notification badge */}
-            {tool.view === "crm" && newLeadsCount > 0 && (
-              <div className="absolute -top-2 -right-2 z-10">
-                <Badge className="bg-destructive text-destructive-foreground px-1.5 py-0.5 text-xs font-bold animate-pulse shadow-lg">
-                  {newLeadsCount}
-                </Badge>
-              </div>
-            )}
-            <CardContent className="p-3 text-center">
-              <div
-                className={`w-10 h-10 md:w-12 md:h-12 rounded-lg bg-gradient-to-r ${tool.gradient} flex items-center justify-center mx-auto mb-1.5 group-hover:scale-110 transition-transform duration-300`}
-              >
-                <tool.icon className="h-5 w-5 md:h-6 md:w-6 text-white" />
-              </div>
-              <h3 className="font-medium text-xs md:text-sm truncate">{tool.title}</h3>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <TooltipProvider delayDuration={300}>
+        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-2 md:gap-3">
+          {filteredTools.map((tool) => (
+            <Tooltip key={tool.view}>
+              <TooltipTrigger asChild>
+                <Card
+                  className="group cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg border-0 relative"
+                  onClick={() => onViewChange(tool.view)}
+                >
+                  {tool.view === "crm" && newLeadsCount > 0 && (
+                    <div className="absolute -top-2 -right-2 z-10">
+                      <Badge className="bg-destructive text-destructive-foreground px-1.5 py-0.5 text-xs font-bold animate-pulse shadow-lg">
+                        {newLeadsCount}
+                      </Badge>
+                    </div>
+                  )}
+                  <CardContent className="p-3 text-center">
+                    <div
+                      className={`w-10 h-10 md:w-12 md:h-12 rounded-lg bg-gradient-to-r ${tool.gradient} flex items-center justify-center mx-auto mb-1.5 group-hover:scale-110 transition-transform duration-300`}
+                    >
+                      <tool.icon className="h-5 w-5 md:h-6 md:w-6 text-white" />
+                    </div>
+                    <h3 className="font-medium text-xs md:text-sm truncate">{tool.title}</h3>
+                  </CardContent>
+                </Card>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{tool.title}</p>
+              </TooltipContent>
+            </Tooltip>
+          ))}
+        </div>
+      </TooltipProvider>
     </div>
   );
 }
