@@ -147,11 +147,11 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout,
       });
 
       toast({ title: "✅ Borrador generado", description: "El documento se ha cargado en el editor." });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generando borrador:", error);
       toast({
         title: "Error en la generación",
-        description: "Hubo un problema al generar el borrador.",
+        description: error?.message || "Hubo un problema al generar el borrador.",
         variant: "destructive",
       });
     } finally {
