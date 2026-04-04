@@ -211,12 +211,6 @@ export function LawyerAccountSettings({ user }: LawyerAccountSettingsProps) {
     setVerificationResult(null);
 
     try {
-      const creditResult = await consumeCredits('lawyer_verification', { action: 'verify' });
-      if (!creditResult.success) {
-        setIsVerifying(false);
-        return;
-      }
-      
       const response = await supabase.functions.invoke('verifik-lawyer-verification', {
         body: {
           documentType: formData.document_type,
