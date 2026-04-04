@@ -226,7 +226,7 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
             {processViewMode === 'kanban' ? (
               <CasePipelineView lawyerData={user} />
             ) : (
-              <CRMCasesView {...commonProps} />
+              <CRMCasesView {...commonProps} autoOpenCreate={autoOpenCases} onAutoOpenHandled={() => setAutoOpenCases(false)} />
             )}
           </div>
         </TabsContent>
