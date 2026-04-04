@@ -552,6 +552,9 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
         return;
       }
 
+      // Consume credits only after successful API response
+      await consumeCredits('spell_check', { contentLength: editedContent.length });
+
       setSpellCheckResults(data);
       
       if (data.errors?.length > 0) {

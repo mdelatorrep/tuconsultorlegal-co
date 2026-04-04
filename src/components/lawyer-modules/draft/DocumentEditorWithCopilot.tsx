@@ -349,8 +349,6 @@ export default function DocumentEditorWithCopilot({
     if (!selectedText || !hasEnoughCredits('copilot')) return;
     setIsChatLoading(true);
     try {
-      const result = await consumeCredits('copilot', { action: 'improve' });
-      if (!result.success) return;
       const { data, error } = await supabase.functions.invoke('legal-copilot', {
         body: { action: 'improve', text: selectedText, context: `Tipo de documento: ${documentType}. Mejora este texto manteniendo el significado legal pero haciéndolo más claro y profesional en estilo jurídico colombiano.`, language: 'es' }
       });
