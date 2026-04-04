@@ -142,8 +142,12 @@ export default function DraftCopilotPanel({
       const response = data?.suggestion || data?.response || 'No pude generar una respuesta.';
       const isInsertable = response.length > 80 && !response.startsWith('Lo siento') && !response.startsWith('No pude');
       setChatMessages(prev => [...prev, { role: 'assistant', content: response, insertable: isInsertable }]);
-    } catch {
-      setChatMessages(prev => [...prev, { role: 'assistant', content: 'Hubo un error al procesar tu solicitud. Intenta de nuevo.', insertable: false }]);
+    } catch (err: any) {
+      console.error('[Copilot] Error:', err);
+      const errorMsg = err?.message?.includes('créditos') 
+        ? err.message 
+        : 'Hubo un error al procesar tu solicitud. Intenta de nuevo.';
+      setChatMessages(prev => [...prev, { role: 'assistant', content: `⚠️ ${errorMsg}`, insertable: false }]);
     } finally {
       setIsChatLoading(false);
     }
