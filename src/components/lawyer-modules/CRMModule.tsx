@@ -42,6 +42,7 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
   const [portalClients, setPortalClients] = useState<{ id: string; name: string; email: string }[]>([]);
   const [processViewMode, setProcessViewMode] = useState<'kanban' | 'list'>('kanban');
   const [clientsSubTab, setClientsSubTab] = useState<'clients' | 'entities' | 'leads'>('clients');
+  const [activeTab, setActiveTab] = useState("novedades");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -95,9 +96,9 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
       {/* Onboarding for first-time users */}
       {isEmptyCRM && (
         <CRMOnboarding
-          onNavigateToProfile={() => onViewChange('profile')}
-          onOpenClients={() => {}}
-          onOpenCases={() => {}}
+          onNavigateToProfile={() => onViewChange('public-profile')}
+          onOpenClients={() => setActiveTab('clientes')}
+          onOpenCases={() => setActiveTab('procesos')}
         />
       )}
 
@@ -145,7 +146,7 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
       </div>
 
       {/* Main Tabs */}
-      <Tabs defaultValue="novedades" className="w-full">
+      <Tabs defaultValue="novedades" className="w-full" value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="w-full justify-start overflow-x-auto">
           <TabsTrigger value="novedades">Novedades</TabsTrigger>
           <TabsTrigger value="procesos">Procesos</TabsTrigger>

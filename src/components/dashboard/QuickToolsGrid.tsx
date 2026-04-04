@@ -5,6 +5,7 @@ import { Search, Eye, PenTool, Target, Users, Database, Gavel, Radar, Calendar, 
 import { LucideIcon } from "lucide-react";
 import { useCredits } from "@/hooks/useCredits";
 import { useLawyerAuth } from "@/hooks/useLawyerAuth";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 
 interface Tool {
   title: string;
@@ -37,8 +38,10 @@ const tools: Tool[] = [
 export function QuickToolsGrid({ onViewChange, newLeadsCount = 0 }: QuickToolsGridProps) {
   const { user } = useLawyerAuth();
   const { balance } = useCredits(user?.id || null);
+  const { isEnabled } = useFeatureFlags();
   
   const hasCredits = (balance?.current_balance || 0) > 0;
+  const filteredTools = tools.filter(tool => isEnabled(tool.view));
 
   return (
     <div className="space-y-4">
@@ -67,7 +70,7 @@ export function QuickToolsGrid({ onViewChange, newLeadsCount = 0 }: QuickToolsGr
       )}
       
       <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-2 md:gap-3">
-        {tools.map((tool) => (
+        {filteredTools.map((tool) => (
           <Card
             key={tool.view}
             className="group cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg border-0 relative"

@@ -972,11 +972,16 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                     </div>
                   </div>
 
+                  {/* Quick Tools - top position */}
+                  <QuickToolsGrid 
+                    onViewChange={(view) => setCurrentView(view as ViewType)} 
+                    newLeadsCount={newLeadsCount} 
+                  />
+
                   {/* Smart Search Bar */}
                   <SmartSearch 
                     lawyerId={user.id} 
                     onNavigate={(type, id) => {
-                      // Navigate to CRM with the appropriate tab
                       setCurrentView('crm');
                     }}
                   />
@@ -1139,11 +1144,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                     </Card>
                   )}
 
-                  {/* Quick Tools - siempre visible */}
-                  <QuickToolsGrid 
-                    onViewChange={(view) => setCurrentView(view as ViewType)} 
-                    newLeadsCount={newLeadsCount} 
-                  />
+                  {/* Quick Tools moved to top of dashboard */}
 
                   {/* Professional Development */}
                   <Card 

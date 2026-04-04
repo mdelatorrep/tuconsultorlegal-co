@@ -104,19 +104,43 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
               para ofrecer servicios legales de alta calidad, confiables y más accesibles.
             </motion.p>
 
-            {/* CTA */}
+            {/* Value Props */}
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+              transition={{ duration: 0.8, delay: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
+              className="flex flex-wrap justify-center gap-3 mb-10"
+            >
+              {["Investigación con IA", "Redacción de documentos", "Gestión de casos y clientes", "Consulta de procesos judiciales"].map((item) => (
+                <span key={item} className="inline-flex items-center gap-1.5 text-sm text-background/80 bg-background/10 px-3 py-1.5 rounded-full">
+                  <Check className="w-3.5 h-3.5" />
+                  {item}
+                </span>
+              ))}
+            </motion.div>
+
+            {/* CTAs */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+              className="flex flex-col sm:flex-row items-center justify-center gap-4"
             >
               <Button 
                 size="lg" 
-                className="bg-background text-foreground hover:bg-background/90 px-8 py-6 text-base font-medium rounded-md transition-all duration-300"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 px-8 py-6 text-base font-medium rounded-md transition-all duration-300"
+                onClick={() => onNavigate('auth-abogados')}
+              >
+                Crear Cuenta Gratis
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+              <Button 
+                size="lg" 
+                variant="outline"
+                className="border-background/30 text-background hover:bg-background/10 px-8 py-6 text-base font-medium rounded-md transition-all duration-300"
                 onClick={() => onNavigate('lawyer-landing')}
               >
-                Explorar Praxis Hub
-                <ArrowRight className="w-4 h-4 ml-2" />
+                Conoce las herramientas
               </Button>
             </motion.div>
           </div>
