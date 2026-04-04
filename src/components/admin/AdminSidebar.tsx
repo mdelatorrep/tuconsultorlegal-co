@@ -18,6 +18,7 @@ interface AdminSidebarProps {
   unreadMessagesCount: number;
   pendingAgentsCount: number;
   pendingBlogsCount: number;
+  pendingBugReportsCount?: number;
   userEmail?: string;
 }
 
