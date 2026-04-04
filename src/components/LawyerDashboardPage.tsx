@@ -804,18 +804,78 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                       ← Inicio
                     </Button>
                     <div className="hidden md:flex items-center gap-1">
-                      <Button variant={currentView === 'research' ? 'secondary' : 'ghost'} size="sm" className="h-8 text-xs" onClick={() => setCurrentView('research')}>
-                        Investigación
-                      </Button>
-                      <Button variant={currentView === 'draft' ? 'secondary' : 'ghost'} size="sm" className="h-8 text-xs" onClick={() => setCurrentView('draft')}>
-                        Documentos
-                      </Button>
-                      <Button variant={currentView === 'crm' ? 'secondary' : 'ghost'} size="sm" className="h-8 text-xs" onClick={() => setCurrentView('crm')}>
-                        CRM
-                      </Button>
-                      <Button variant={currentView === 'analyze' ? 'secondary' : 'ghost'} size="sm" className="h-8 text-xs" onClick={() => setCurrentView('analyze')}>
-                        Análisis
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant={['research', 'suin', 'process-consultation', 'process-monitor'].includes(currentView) ? 'secondary' : 'ghost'} size="sm" className="h-8 text-xs">
+                            Investigación <ChevronDown className="ml-1 h-3 w-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-52">
+                          <DropdownMenuItem onClick={() => setCurrentView('research')} className="cursor-pointer">
+                            <Search className="w-4 h-4 mr-2" /> Investigación Legal
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setCurrentView('suin')} className="cursor-pointer">
+                            <Scale className="w-4 h-4 mr-2" /> SUIN-Juriscol
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setCurrentView('process-consultation')} className="cursor-pointer">
+                            <FileSearch className="w-4 h-4 mr-2" /> Consulta Procesos
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setCurrentView('process-monitor')} className="cursor-pointer">
+                            <Eye className="w-4 h-4 mr-2" /> Monitor Procesos
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant={['draft', 'analyze', 'voice'].includes(currentView) ? 'secondary' : 'ghost'} size="sm" className="h-8 text-xs">
+                            Documentos <ChevronDown className="ml-1 h-3 w-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-48">
+                          <DropdownMenuItem onClick={() => setCurrentView('draft')} className="cursor-pointer">
+                            <FileText className="w-4 h-4 mr-2" /> Redacción
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setCurrentView('analyze')} className="cursor-pointer">
+                            <BarChart3 className="w-4 h-4 mr-2" /> Análisis
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setCurrentView('voice')} className="cursor-pointer">
+                            <Mic className="w-4 h-4 mr-2" /> Voz
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant={['crm', 'legal-calendar'].includes(currentView) ? 'secondary' : 'ghost'} size="sm" className="h-8 text-xs">
+                            CRM <ChevronDown className="ml-1 h-3 w-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-48">
+                          <DropdownMenuItem onClick={() => setCurrentView('crm')} className="cursor-pointer">
+                            <Users className="w-4 h-4 mr-2" /> Clientes y Procesos
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setCurrentView('legal-calendar')} className="cursor-pointer">
+                            <Calendar className="w-4 h-4 mr-2" /> Calendario
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant={['strategize', 'training', 'predict'].includes(currentView) ? 'secondary' : 'ghost'} size="sm" className="h-8 text-xs">
+                            IA <ChevronDown className="ml-1 h-3 w-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-52">
+                          <DropdownMenuItem onClick={() => setCurrentView('predict')} className="cursor-pointer">
+                            <Brain className="w-4 h-4 mr-2" /> Predictor
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setCurrentView('strategize')} className="cursor-pointer">
+                            <Bot className="w-4 h-4 mr-2" /> Agentes Especializados
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setCurrentView('training')} className="cursor-pointer">
+                            <GraduationCap className="w-4 h-4 mr-2" /> Capacitación
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
