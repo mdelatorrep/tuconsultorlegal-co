@@ -312,6 +312,9 @@ export default function SuinJuriscolModule({ user, currentView, onViewChange, on
         throw new Error(data.error || 'Error en la búsqueda');
       }
 
+      // Consume credits only after successful API response
+      await consumeCredits('suin_juriscol', { query, category });
+
       const result: SearchResult = {
         id: data.result_id || crypto.randomUUID(),
         query: query,

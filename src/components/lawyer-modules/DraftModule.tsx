@@ -96,6 +96,9 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout,
       if (error) throw error;
       if (!data.success) throw new Error(data.error || 'Error en la generación');
 
+      // Consume credits only after successful API response
+      await consumeCredits('draft', { documentType });
+
       const draftResult: DraftResult = {
         prompt: prompt,
         documentType: DOCUMENT_TYPES.find(t => t.value === documentType)?.label || documentType,

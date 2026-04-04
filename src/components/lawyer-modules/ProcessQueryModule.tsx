@@ -196,6 +196,9 @@ export default function ProcessQueryModule({
         throw new Error(response.error.message || 'Error en la consulta');
       }
 
+      // Consume credits only after successful API response
+      await consumeCredits('process_query', { queryType: 'radicado', queryValue: radicado });
+
       const { processes: resultProcesses, aiAnalysis: analysis, processCount, firecrawlJobStatus } = response.data;
 
       setProcesses(resultProcesses || []);

@@ -463,6 +463,9 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
         throw new Error(data.error || 'Error en la investigación');
       }
 
+      // Consume credits only after successful API response
+      await consumeCredits('research', { query: searchQuery });
+
       // Check if async mode
       if (data.async && data.taskId) {
         console.log(`🔄 Async task started: ${data.taskId}`);

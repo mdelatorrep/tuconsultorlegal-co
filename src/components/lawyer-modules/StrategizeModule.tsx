@@ -132,6 +132,9 @@ export default function StrategizeModule({ user, currentView, onViewChange, onLo
         throw new Error(data.error || 'Error en el análisis estratégico');
       }
 
+      // Consume credits only after successful API response
+      await consumeCredits('strategy', { caseDescription: caseDescription.substring(0, 100) });
+
       const safeArray = <T,>(v: any): T[] => (Array.isArray(v) ? v : []);
       const safeString = (v: any, fallback: string) => (typeof v === 'string' ? v : fallback);
 
