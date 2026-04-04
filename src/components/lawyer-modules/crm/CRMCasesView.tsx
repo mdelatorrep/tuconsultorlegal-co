@@ -260,7 +260,7 @@ const CRMCasesView: React.FC<CRMCasesViewProps> = ({ lawyerData, searchTerm, onR
       demandado: case_.demandado || '',
       asignado_a: case_.asignado_a || '',
       nota_pendiente: case_.nota_pendiente || '',
-      enlace_hoja_ruta: case_.enlace_hoja_ruta || '',
+      
       enlace_expediente: case_.enlace_expediente || '',
     });
     setIsDialogOpen(true);
