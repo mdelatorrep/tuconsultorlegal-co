@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Search, BookOpen, FileText, Loader2, Sparkles, Target, TrendingUp, Clock, CheckCircle2, AlertCircle, ChevronDown, ChevronRight, Calendar, Archive, Filter, Coins, Briefcase, ExternalLink } from "lucide-react";
+import { Search, BookOpen, FileText, Loader2, Sparkles, AlertCircle, ChevronDown, ChevronRight, Calendar, Archive, Filter, Coins, Briefcase, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useCredits } from "@/hooks/useCredits";
