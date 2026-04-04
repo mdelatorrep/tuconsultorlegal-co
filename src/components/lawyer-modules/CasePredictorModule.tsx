@@ -19,8 +19,10 @@ import {
   History,
   Target,
   Shield,
-  Coins
+  Coins,
+  Download
 } from 'lucide-react';
+import { exportPredictionToPdf } from '@/utils/aiResultPdfExporter';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -300,6 +302,13 @@ export function CasePredictorModule({ lawyerId }: CasePredictorModuleProps) {
         {/* Results */}
         <div className="space-y-4">
           {prediction ? (
+            <>
+            <div className="flex justify-end">
+              <Button variant="outline" size="sm" onClick={() => exportPredictionToPdf(prediction, caseType, caseDescription)}>
+                <Download className="h-4 w-4 mr-2" />
+                Descargar PDF
+              </Button>
+            </div>
             <Tabs defaultValue="summary">
               <TabsList className="grid grid-cols-4 w-full">
                 <TabsTrigger value="summary">Resumen</TabsTrigger>
@@ -449,6 +458,7 @@ export function CasePredictorModule({ lawyerId }: CasePredictorModuleProps) {
                 </Card>
               </TabsContent>
             </Tabs>
+            </>
           ) : (
             <Card className="h-full flex items-center justify-center min-h-[400px]">
               <div className="text-center p-8">

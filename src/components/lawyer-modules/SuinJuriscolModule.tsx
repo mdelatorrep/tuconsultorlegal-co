@@ -10,8 +10,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   BookOpen, Search, Loader2, Sparkles, FileText, Scale, 
   ExternalLink, ChevronDown, ChevronRight, Calendar, Clock,
-  Database, Globe, AlertCircle, CheckCircle2, History, MessageCircle, Send, Coins
+  Database, Globe, AlertCircle, CheckCircle2, History, MessageCircle, Send, Coins, Download
 } from "lucide-react";
+import { exportSuinSearchToPdf } from "@/utils/aiResultPdfExporter";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useCredits } from "@/hooks/useCredits";
@@ -533,9 +534,15 @@ export default function SuinJuriscolModule({ user, currentView, onViewChange, on
                         <MessageCircle className="h-5 w-5 text-emerald-600" />
                         Conversación de Búsqueda
                       </CardTitle>
-                      <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">
-                        {currentResult.results.length} fuentes
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">
+                          {currentResult.results.length} fuentes
+                        </Badge>
+                        <Button variant="outline" size="sm" onClick={() => exportSuinSearchToPdf(currentResult.query, currentResult.summary, currentResult.results)}>
+                          <Download className="h-4 w-4 mr-2" />
+                          PDF
+                        </Button>
+                      </div>
                     </div>
                     <CardDescription className="flex items-center gap-2 mt-1">
                       <Clock className="h-3 w-3" />

@@ -5,7 +5,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Search, BookOpen, FileText, Loader2, Sparkles, Target, TrendingUp, Clock, CheckCircle2, AlertCircle, ChevronDown, ChevronRight, Calendar, Archive, Filter, Coins, Briefcase, ExternalLink } from "lucide-react";
+import { Search, BookOpen, FileText, Loader2, Sparkles, Target, TrendingUp, Clock, CheckCircle2, AlertCircle, ChevronDown, ChevronRight, Calendar, Archive, Filter, Coins, Briefcase, ExternalLink, Download } from "lucide-react";
+import { exportResearchToPdf } from "@/utils/aiResultPdfExporter";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useCredits } from "@/hooks/useCredits";
@@ -692,6 +693,11 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
                             </div>
                           </div>
                         </div>
+                        {result.status === 'completed' && (
+                          <Button variant="outline" size="icon" className="h-8 w-8 flex-shrink-0" onClick={(e) => { e.stopPropagation(); exportResearchToPdf(result); }} title="Descargar PDF">
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </CardHeader>
                   </CollapsibleTrigger>
