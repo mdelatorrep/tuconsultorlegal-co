@@ -46,6 +46,9 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
   const [processViewMode, setProcessViewMode] = useState<'kanban' | 'list'>('kanban');
   const [clientsSubTab, setClientsSubTab] = useState<'clients' | 'entities' | 'leads'>('clients');
   const [activeTab, setActiveTab] = useState("novedades");
+  const [autoOpenClients, setAutoOpenClients] = useState(false);
+  const [autoOpenCases, setAutoOpenCases] = useState(false);
+  const [autoOpenTasks, setAutoOpenTasks] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -106,9 +109,14 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
     }
   };
 
+  const refreshAfterAction = () => {
+    fetchStats();
+    fetchOnboardingStatus();
+  };
+
   const commonProps = {
     searchTerm,
-    onRefresh: fetchStats,
+    onRefresh: refreshAfterAction,
     lawyerData: user,
   };
 
@@ -120,8 +128,20 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
       {!allOnboardingComplete && (
         <CRMOnboarding
           onNavigateToProfile={() => onViewChange('public-profile')}
-          onOpenClients={() => setActiveTab('clientes')}
-          onOpenCases={() => setActiveTab('procesos')}
+          onOpenClients={() => {
+            setActiveTab('clientes');
+            setClientsSubTab('clients');
+            setAutoOpenClients(true);
+          }}
+          onOpenCases={() => {
+            setActiveTab('procesos');
+            setProcessViewMode('list');
+            setAutoOpenCases(true);
+          }}
+          onOpenTasks={() => {
+            setActiveTab('tareas');
+            setAutoOpenTasks(true);
+          }}
           completedSteps={onboardingSteps}
         />
       )}
@@ -206,7 +226,7 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
             {processViewMode === 'kanban' ? (
               <CasePipelineView lawyerData={user} />
             ) : (
-              <CRMCasesView {...commonProps} />
+              <CRMCasesView {...commonProps} autoOpenCreate={autoOpenCases} onAutoOpenHandled={() => setAutoOpenCases(false)} />
             )}
           </div>
         </TabsContent>
@@ -247,7 +267,7 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
                 </Button>
               </div>
             </div>
-            {clientsSubTab === 'clients' && <CRMClientsView {...commonProps} />}
+            {clientsSubTab === 'clients' && <CRMClientsView {...commonProps} autoOpenCreate={autoOpenClients} onAutoOpenHandled={() => setAutoOpenClients(false)} />}
             {clientsSubTab === 'entities' && <CRMEntitiesView {...commonProps} />}
             {clientsSubTab === 'leads' && <LeadPipeline {...commonProps} />}
           </div>
@@ -255,7 +275,7 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
 
         {/* Tab 4: Tareas */}
         <TabsContent value="tareas">
-          <CRMTasksView {...commonProps} />
+          <CRMTasksView {...commonProps} autoOpenCreate={autoOpenTasks} onAutoOpenHandled={() => setAutoOpenTasks(false)} />
         </TabsContent>
 
         {/* Tab 5: Más */}

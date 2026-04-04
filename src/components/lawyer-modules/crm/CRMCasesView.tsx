@@ -73,9 +73,11 @@ interface CRMCasesViewProps {
   lawyerData: any;
   searchTerm: string;
   onRefresh: () => void;
+  autoOpenCreate?: boolean;
+  onAutoOpenHandled?: () => void;
 }
 
-const CRMCasesView: React.FC<CRMCasesViewProps> = ({ lawyerData, searchTerm, onRefresh }) => {
+const CRMCasesView: React.FC<CRMCasesViewProps> = ({ lawyerData, searchTerm, onRefresh, autoOpenCreate, onAutoOpenHandled }) => {
   const [cases, setCases] = useState<Case[]>([]);
   const [clients, setClients] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -115,6 +117,15 @@ const CRMCasesView: React.FC<CRMCasesViewProps> = ({ lawyerData, searchTerm, onR
       fetchClients();
     }
   }, [lawyerData?.id]);
+
+  useEffect(() => {
+    if (autoOpenCreate) {
+      resetForm();
+      setEditingCase(null);
+      setIsDialogOpen(true);
+      onAutoOpenHandled?.();
+    }
+  }, [autoOpenCreate]);
 
   const fetchCases = async () => {
     try {

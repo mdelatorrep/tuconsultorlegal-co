@@ -14,6 +14,7 @@ interface CRMOnboardingProps {
   onNavigateToProfile: () => void;
   onOpenClients: () => void;
   onOpenCases: () => void;
+  onOpenTasks: () => void;
   completedSteps: OnboardingStepStatus;
 }
 
@@ -43,12 +44,12 @@ const STEPS = [
     icon: CheckCircle,
     title: "Gestiona tareas y seguimiento",
     description: "Organiza tu trabajo con tareas, fechas límite y recordatorios automáticos.",
-    actionLabel: "Ver Tareas",
+    actionLabel: "Crear Tarea",
     key: "tasks" as const,
   },
 ];
 
-export default function CRMOnboarding({ onNavigateToProfile, onOpenClients, onOpenCases, completedSteps }: CRMOnboardingProps) {
+export default function CRMOnboarding({ onNavigateToProfile, onOpenClients, onOpenCases, onOpenTasks, completedSteps }: CRMOnboardingProps) {
   const completedCount = Object.values(completedSteps).filter(Boolean).length;
   const progressPercent = (completedCount / STEPS.length) * 100;
 
@@ -57,6 +58,7 @@ export default function CRMOnboarding({ onNavigateToProfile, onOpenClients, onOp
       case "profile": onNavigateToProfile(); break;
       case "clients": onOpenClients(); break;
       case "cases": onOpenCases(); break;
+      case "tasks": onOpenTasks(); break;
     }
   };
 
