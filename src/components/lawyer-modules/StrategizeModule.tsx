@@ -407,27 +407,13 @@ export default function StrategizeModule({ user, currentView, onViewChange, onLo
       )}
 
                 {analyses.length === 0 && !isAnalyzing && (
-                  <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-gray-50 to-gray-100 overflow-hidden">
-                    <CardContent className="p-12 text-center">
-                      <div className="space-y-6">
-                        <div className="relative">
-                          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-purple-400/10 rounded-full blur-2xl"></div>
-                          <div className="relative p-6 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl shadow-2xl mx-auto w-fit">
-                            <Brain className="h-16 w-16 text-white" />
-                          </div>
-                        </div>
-                        <div>
-                          <h3 className="text-2xl font-bold text-gray-900 mb-2">¡Desarrolla tu estrategia legal!</h3>
-                          <p className="text-lg text-muted-foreground max-w-md mx-auto">
-                            Obtén análisis estratégicos completos con argumentos, precedentes y tácticas para maximizar tus posibilidades de éxito
-                          </p>
-                        </div>
-                        <div className="bg-gradient-to-r from-purple-500/10 to-purple-400/5 rounded-xl p-4 max-w-lg mx-auto">
-                          <p className="text-sm text-purple-700 font-medium">
-                            🎯 Análisis de viabilidad, argumentos jurídicos y estrategias de negociación
-                          </p>
-                        </div>
-                      </div>
+                  <Card>
+                    <CardContent className="p-8 text-center">
+                      <Brain className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                      <h3 className="text-lg font-semibold mb-1">¡Desarrolla tu estrategia legal!</h3>
+                      <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                        Obtén análisis estratégicos con argumentos, precedentes y tácticas
+                      </p>
                     </CardContent>
                   </Card>
                 )}
