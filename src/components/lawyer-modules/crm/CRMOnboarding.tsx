@@ -14,6 +14,7 @@ interface CRMOnboardingProps {
   onNavigateToProfile: () => void;
   onOpenClients: () => void;
   onOpenCases: () => void;
+  onOpenTasks: () => void;
   completedSteps: OnboardingStepStatus;
 }
 
