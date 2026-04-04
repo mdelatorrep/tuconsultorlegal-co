@@ -28,7 +28,7 @@ interface BlogPost {
 export default function BlogArticlePage({ articleId, onOpenChat, onNavigate }: BlogArticlePageProps) {
   const [blog, setBlog] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
+  
 
   useEffect(() => {
     loadBlogArticle();
