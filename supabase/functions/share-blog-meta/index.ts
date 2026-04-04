@@ -9,6 +9,18 @@ const SITE_URL = 'https://praxis-hub.co'
 const SUPABASE_URL = 'https://tkaezookvtpulfpaffes.supabase.co'
 const DEFAULT_OG_IMAGE = 'https://praxis-hub.co/og-image.png'
 
+function htmlResponse(html: string, status = 200) {
+  return new Response(html, {
+    status,
+    headers: {
+      ...corsHeaders,
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+      'X-Content-Type-Options': 'nosniff',
+    }
+  })
+}
+
 function escapeHtml(text: string): string {
   return text
     .replace(/&/g, '&amp;')
@@ -30,7 +42,7 @@ Deno.serve(async (req) => {
     console.log(`[share-blog-meta] slug=${slug}, ua=${userAgent.substring(0, 100)}`)
 
     if (!slug) {
-      return new Response('Missing slug parameter', { status: 400, headers: corsHeaders })
+      return htmlResponse('<!DOCTYPE html><html lang="es"><head><meta charset="utf-8" /><title>Praxis Hub</title></head><body>Missing slug parameter</body></html>', 400)
     }
 
     const supabase = createClient(
@@ -47,10 +59,18 @@ Deno.serve(async (req) => {
 
     if (error || !blog) {
       console.log(`[share-blog-meta] Blog not found for slug: ${slug}`)
-      return new Response(null, {
-        status: 302,
-        headers: { ...corsHeaders, 'Location': SITE_URL }
-      })
+      return htmlResponse(`<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Praxis Hub</title>
+  <meta http-equiv="refresh" content="0;url=${SITE_URL}" />
+</head>
+<body>
+  <p>Redirigiendo a Praxis Hub…</p>
+  <p><a href="${SITE_URL}">Ir a Praxis Hub</a></p>
+</body>
+</html>`, 404)
     }
 
     // The share URL is this edge function itself — crawlers will hit this URL
@@ -113,16 +133,9 @@ Deno.serve(async (req) => {
 </body>
 </html>`
 
-    return new Response(html, {
-      status: 200,
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'public, max-age=3600, s-maxage=3600',
-      }
-    })
+    return htmlResponse(html)
   } catch (error) {
     console.error('Error in share-blog-meta:', error)
-    return new Response('Internal server error', { status: 500, headers: corsHeaders })
+    return htmlResponse('<!DOCTYPE html><html lang="es"><head><meta charset="utf-8" /><title>Error</title></head><body>Internal server error</body></html>', 500)
   }
 })
