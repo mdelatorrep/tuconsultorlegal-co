@@ -28,6 +28,7 @@ export const AdminSidebar = ({
   unreadMessagesCount,
   pendingAgentsCount,
   pendingBlogsCount,
+  pendingBugReportsCount = 0,
   userEmail
 }: AdminSidebarProps) => {
   const { state, setOpenMobile } = useSidebar();
