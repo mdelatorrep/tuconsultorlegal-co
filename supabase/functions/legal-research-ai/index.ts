@@ -4,6 +4,7 @@ import {
   buildResponsesRequestParams, 
   logResponsesRequest,
   loadWebSearchConfigAndBuildTool,
+  buildKnowledgeBasePromptSection,
   supportsWebSearch
 } from "../_shared/openai-responses-utils.ts";
 
@@ -83,8 +84,13 @@ serve(async (req) => {
 
     // Load web search configuration
     let webSearchTool = null;
+    let kbPromptSection = '';
     if (supportsWebSearch(researchModel)) {
-      webSearchTool = await loadWebSearchConfigAndBuildTool(supabase, 'research');
+      const webSearchConfig = await loadWebSearchConfigAndBuildTool(supabase, 'research');
+      if (webSearchConfig) {
+        webSearchTool = webSearchConfig.tool;
+        kbPromptSection = buildKnowledgeBasePromptSection(webSearchConfig.knowledgeBaseUrls);
+      }
     }
 
     const jsonFormat = `{
@@ -103,7 +109,7 @@ Instrucciones específicas para esta investigación:
 - Identifica la normativa aplicable (leyes, decretos, resoluciones)
 - Cita fuentes específicas con números de sentencia/ley cuando sea posible
 - Proporciona un análisis estructurado y fundamentado
-
+${kbPromptSection}
 Responde en formato JSON con esta estructura:
 ${jsonFormat}`;
 

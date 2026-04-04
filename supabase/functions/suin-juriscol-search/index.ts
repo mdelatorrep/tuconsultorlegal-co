@@ -6,6 +6,7 @@ import {
   extractOutputText,
   extractWebSearchCitations,
   loadWebSearchConfigAndBuildTool,
+  buildKnowledgeBasePromptSection,
   supportsWebSearch,
 } from "../_shared/openai-responses-utils.ts";
 
@@ -108,9 +109,14 @@ serve(async (req) => {
     console.log(`[SUIN] Model ${model} supports web search: ${modelSupportsWebSearch}`);
 
     let webSearchTool = null;
+    let kbPromptSection = '';
     if (modelSupportsWebSearch) {
       // Load web search configuration with verified domains from knowledge_base_urls
-      webSearchTool = await loadWebSearchConfigAndBuildTool(supabase, 'suin_juriscol');
+      const webSearchConfig = await loadWebSearchConfigAndBuildTool(supabase, 'suin_juriscol');
+      if (webSearchConfig) {
+        webSearchTool = webSearchConfig.tool;
+        kbPromptSection = buildKnowledgeBasePromptSection(webSearchConfig.knowledgeBaseUrls);
+      }
       console.log(`[SUIN] Web search tool loaded: ${webSearchTool ? 'YES' : 'NO (disabled in config)'}`);
     } else {
       console.warn(`[SUIN] ⚠️ WARNING: Model ${model} does NOT support web search. ` +
@@ -124,16 +130,9 @@ serve(async (req) => {
     const searchGuidance = webSearchTool ? `
 INSTRUCCIONES DE BÚSQUEDA WEB:
 - DEBES realizar búsqueda web para encontrar información actualizada
-- PRIORIZA buscar en estos sitios oficiales colombianos:
-  * suin-juriscol.gov.co - Sistema Único de Información Normativa (FUENTE PRINCIPAL)
-  * corteconstitucional.gov.co - Jurisprudencia constitucional
-  * cortesuprema.gov.co - Jurisprudencia de la Corte Suprema
-  * consejodeestado.gov.co - Jurisprudencia contencioso administrativa
-  * funcionpublica.gov.co - Normas de función pública
-  * secretariasenado.gov.co - Legislación colombiana
 - Incluye URLs específicas de las fuentes consultadas en tu respuesta
 - Cita números de ley, decreto, sentencia y artículos específicos
-` : '';
+${kbPromptSection}` : '';
 
     if (isFollowUp && truncatedContext) {
       userMessage = `Contexto de la conversación anterior:

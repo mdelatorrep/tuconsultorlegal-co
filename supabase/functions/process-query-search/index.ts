@@ -3,7 +3,10 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3';
 import { 
   buildResponsesRequestParams, 
   callResponsesAPI, 
-  extractOutputText
+  extractOutputText,
+  loadWebSearchConfigAndBuildTool,
+  buildKnowledgeBasePromptSection,
+  supportsWebSearch
 } from "../_shared/openai-responses-utils.ts";
 
 const corsHeaders = {
@@ -83,6 +86,20 @@ serve(async (req) => {
 
     console.log(`[ProcessQuery] Using model: ${model}`);
 
+    // Load web search config with KB URLs
+    let webSearchTool: any = null;
+    let kbPromptSection = '';
+    if (supportsWebSearch(model)) {
+      const webSearchConfig = await loadWebSearchConfigAndBuildTool(supabase, 'process_query');
+      if (webSearchConfig) {
+        webSearchTool = webSearchConfig.tool;
+        kbPromptSection = buildKnowledgeBasePromptSection(webSearchConfig.knowledgeBaseUrls);
+      } else {
+        // Fallback if config not set but model supports it
+        webSearchTool = { type: 'web_search_preview' as const };
+      }
+    }
+
     // Build the user message based on query type
     let userMessage: string;
     
@@ -146,7 +163,8 @@ ${queryDetails}
 ${processType ? `Tipo de proceso de interés: ${processType}` : ''}
 
 Busca información relevante en fuentes oficiales de la Rama Judicial de Colombia.
-Incluye siempre el link directo al portal oficial de consulta: https://consultaprocesos.ramajudicial.gov.co/procesos/Index`;
+Incluye siempre el link directo al portal oficial de consulta: https://consultaprocesos.ramajudicial.gov.co/procesos/Index
+${kbPromptSection}`;
     }
 
     console.log('Calling AI with web search for process query...');
@@ -156,7 +174,7 @@ Incluye siempre el link directo al portal oficial de consulta: https://consultap
       input: userMessage,
       instructions: systemPrompt,
       maxOutputTokens: 4000,
-      webSearch: { type: 'web_search_preview' }
+      webSearch: webSearchTool || undefined
     });
 
     console.log('Request params built successfully');
