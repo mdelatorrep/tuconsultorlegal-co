@@ -1189,7 +1189,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                   )}
 
                   {/* Document Review Panel */}
-                  {selectedDocument && (
+                  {user.canCreateAgents && selectedDocument && (
                     <Card className="border-primary/50 shadow-lg">
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
