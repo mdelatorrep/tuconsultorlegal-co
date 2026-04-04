@@ -1,8 +1,6 @@
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sparkles } from "lucide-react";
-import logoIcon from "@/assets/favicon.png";
 
 interface DashboardWelcomeProps {
   userName: string;
@@ -11,39 +9,28 @@ interface DashboardWelcomeProps {
 
 export function DashboardWelcome({ userName, onViewCredits }: DashboardWelcomeProps) {
   return (
-    <Card className="h-full bg-gradient-to-br from-primary/5 to-transparent border-primary/20">
-      <CardContent className="p-4 md:p-6">
-        <div className="flex flex-col space-y-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground truncate">
-              Bienvenido, {userName}
-            </h1>
-            <p className="text-muted-foreground mt-1 text-sm md:text-base">
-              Tu entorno profesional integrado en Praxis Hub
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Badge variant="outline" className="flex items-center gap-2 text-xs md:text-sm w-fit">
-              <img src={logoIcon} alt="Praxis Hub" className="h-3 w-3 md:h-4 md:w-4" />
-              Praxis Hub
-            </Badge>
-            <Button 
-              variant="default" 
-              size="sm"
-              onClick={onViewCredits}
-              className="bg-brand-primary hover:bg-brand-primary/90"
-            >
-              Mis Créditos
-            </Button>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 mt-3 p-2.5 rounded-lg bg-primary/5 border border-primary/10">
-          <Sparkles className="h-4 w-4 text-primary shrink-0" />
-          <p className="text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">Lexi</span>, tu asistente IA, te ayuda a investigar, redactar y analizar documentos legales. Encuéntrala en cada herramienta.
+    <div className="flex items-center justify-between gap-4 py-2">
+      <div className="flex items-center gap-3 min-w-0">
+        <div className="min-w-0">
+          <h1 className="text-lg md:text-xl font-bold text-foreground truncate">
+            Bienvenido, {userName}
+          </h1>
+          <p className="text-muted-foreground text-xs flex items-center gap-1.5">
+            <Sparkles className="h-3 w-3 text-primary shrink-0" />
+            <span><span className="font-medium text-foreground">Lexi</span> te asiste en cada herramienta</span>
           </p>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        <Button 
+          variant="default" 
+          size="sm"
+          onClick={onViewCredits}
+          className="bg-brand-primary hover:bg-brand-primary/90 text-xs h-8"
+        >
+          Mis Créditos
+        </Button>
+      </div>
+    </div>
   );
 }
