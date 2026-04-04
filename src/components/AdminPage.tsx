@@ -1638,6 +1638,7 @@ function AdminPage() {
           unreadMessagesCount={unreadMessagesCount}
           pendingAgentsCount={pendingAgentsCount}
           pendingBlogsCount={pendingBlogsCount}
+          pendingBugReportsCount={pendingBugReportsCount}
           userEmail={user?.email}
         />
         
