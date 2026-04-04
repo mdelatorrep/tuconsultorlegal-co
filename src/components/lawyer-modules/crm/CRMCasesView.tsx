@@ -10,7 +10,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Edit2, Trash2, Calendar, FileText, Download, LayoutGrid, List, ExternalLink, AlertTriangle, User } from 'lucide-react';
+import { Plus, Edit2, Trash2, Calendar, FileText, Download, LayoutGrid, List, ExternalLink, AlertTriangle, User, HelpCircle, CloudCog, FolderOpen } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import CaseTraceabilityModal from './CaseTraceabilityModal';
@@ -504,51 +505,101 @@ const CRMCasesView: React.FC<CRMCasesViewProps> = ({ lawyerData, searchTerm, onR
         </div>
 
         {/* Enlaces */}
-        <div className="space-y-2">
-          <Label>Enlace Hoja de Ruta</Label>
-          <div className="flex gap-2">
-            <Input
-              value={formData.enlace_hoja_ruta}
-              onChange={(e) => setFormData({ ...formData, enlace_hoja_ruta: e.target.value })}
-              placeholder="https://docs.google.com/..."
-              className="flex-1"
-            />
-            {formData.enlace_hoja_ruta && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="shrink-0"
-                onClick={() => window.open(formData.enlace_hoja_ruta, '_blank')}
-              >
-                <ExternalLink className="h-4 w-4 mr-1" />
-                Abrir
-              </Button>
+        <div className="col-span-2 space-y-4 rounded-lg border border-border/60 bg-muted/30 p-4">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <FolderOpen className="h-4 w-4 text-primary" />
+            Enlaces del Proceso
+          </div>
+
+          {/* Expediente Digital */}
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-1.5">
+              <Label className="text-sm">Expediente Digital (OneDrive Rama Judicial)</Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-xs text-xs">
+                    <p className="font-medium mb-1">¿Cómo obtener el enlace?</p>
+                    <ol className="list-decimal pl-3 space-y-0.5">
+                      <li>El juzgado comparte la carpeta del expediente por correo o notificación</li>
+                      <li>Abre el correo del juzgado y copia el enlace de OneDrive</li>
+                      <li>Pégalo aquí para acceder rápidamente</li>
+                    </ol>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <CloudCog className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={formData.enlace_expediente}
+                  onChange={(e) => setFormData({ ...formData, enlace_expediente: e.target.value })}
+                  placeholder="Pega aquí el enlace de OneDrive del juzgado"
+                  className="pl-9 flex-1"
+                />
+              </div>
+              {formData.enlace_expediente && (
+                <Button
+                  type="button"
+                  variant="default"
+                  size="sm"
+                  className="shrink-0 gap-1.5"
+                  onClick={() => window.open(formData.enlace_expediente, '_blank')}
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Abrir Expediente
+                </Button>
+              )}
+            </div>
+            {formData.enlace_expediente && !formData.enlace_expediente.includes('onedrive') && !formData.enlace_expediente.includes('sharepoint') && !formData.enlace_expediente.includes('1drv.ms') && (
+              <p className="text-xs text-amber-600 flex items-center gap-1">
+                <AlertTriangle className="h-3 w-3" />
+                Este enlace no parece ser de OneDrive. Verifica que sea el correcto.
+              </p>
             )}
           </div>
-        </div>
 
-        <div className="space-y-2">
-          <Label>Enlace Expediente Digital</Label>
-          <div className="flex gap-2">
-            <Input
-              value={formData.enlace_expediente}
-              onChange={(e) => setFormData({ ...formData, enlace_expediente: e.target.value })}
-              placeholder="https://onedrive.live.com/..."
-              className="flex-1"
-            />
-            {formData.enlace_expediente && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="shrink-0"
-                onClick={() => window.open(formData.enlace_expediente, '_blank')}
-              >
-                <ExternalLink className="h-4 w-4 mr-1" />
-                Abrir
-              </Button>
-            )}
+          {/* Hoja de Ruta */}
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-1.5">
+              <Label className="text-sm">Hoja de Ruta (Google Docs, OneDrive, etc.)</Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-xs text-xs">
+                    <p>Enlace a tu documento de seguimiento del proceso (hoja de cálculo, documento de texto, etc.)</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={formData.enlace_hoja_ruta}
+                  onChange={(e) => setFormData({ ...formData, enlace_hoja_ruta: e.target.value })}
+                  placeholder="Pega aquí el enlace de tu hoja de ruta"
+                  className="pl-9 flex-1"
+                />
+              </div>
+              {formData.enlace_hoja_ruta && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0 gap-1.5"
+                  onClick={() => window.open(formData.enlace_hoja_ruta, '_blank')}
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Abrir
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 
