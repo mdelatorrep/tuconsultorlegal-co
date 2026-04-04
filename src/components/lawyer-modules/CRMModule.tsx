@@ -42,6 +42,7 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
   const [portalClients, setPortalClients] = useState<{ id: string; name: string; email: string }[]>([]);
   const [processViewMode, setProcessViewMode] = useState<'kanban' | 'list'>('kanban');
   const [clientsSubTab, setClientsSubTab] = useState<'clients' | 'entities' | 'leads'>('clients');
+  const [activeTab, setActiveTab] = useState("novedades");
   const { toast } = useToast();
 
   useEffect(() => {
