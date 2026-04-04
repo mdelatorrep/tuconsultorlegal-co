@@ -327,6 +327,28 @@ html {
     min-height: 300px;
     max-height: 500px;
     overflow-y: auto;
+  }
+
+  /* Draft studio: let editor fill available space */
+  .draft-studio-editor .ql-container {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .draft-studio-editor .ql-editor {
+    max-height: none;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .draft-studio-editor .quill,
+  .draft-studio-editor > .quill {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
     padding: 15px;
     line-height: 1.8;
     color: hsl(var(--foreground));
