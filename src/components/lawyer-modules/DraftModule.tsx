@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   PenTool, Loader2, Sparkles, FolderOpen, Coins,
-  Save, Download, MessageSquare, X
+  Save, Download, MessageSquare, PanelRightClose, PanelRightOpen
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,6 +17,11 @@ import { QuickPromptSuggestions } from "@/components/ui/QuickPromptSuggestions";
 import { cn } from "@/lib/utils";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from "@/components/ui/resizable";
 
 interface DraftModuleProps {
   user: any;
@@ -47,7 +51,6 @@ const quillModules = {
     [{ header: [1, 2, 3, false] }],
     ["bold", "italic", "underline", "strike"],
     [{ list: "ordered" }, { list: "bullet" }],
-    [{ indent: "-1" }, { indent: "+1" }],
     [{ align: [] }],
     ["link"],
     ["clean"],
@@ -103,7 +106,6 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout,
       return;
     }
 
-    // If editor already has content, confirm replacement
     if (editorContent && editorContent.replace(/<[^>]*>/g, '').trim().length > 20) {
       const confirmed = window.confirm("El editor ya tiene contenido. ¿Deseas reemplazarlo con el nuevo borrador?");
       if (!confirmed) return;
@@ -119,17 +121,13 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout,
       if (error) throw error;
       if (!data.success) throw new Error(data.error || 'Error en la generación');
 
-      // Extract clean content - handle cases where model nests JSON or adds reasoning
       let content = data.content || '';
-      
-      // If content contains a nested JSON with "content" field, extract it
       const nestedJsonMatch = content.match(/\{[\s\S]*"content"\s*:\s*"([\s\S]*?)"\s*[,}]/);
       if (nestedJsonMatch && content.includes('**Razonamiento**') || content.includes('**Documento Legal**')) {
         try {
           const nestedJson = JSON.parse(content.substring(content.indexOf('{')));
           if (nestedJson.content) content = nestedJson.content;
         } catch {
-          // If nested parse fails, strip reasoning prefix
           const docStart = content.indexOf('**CONTRATO') || content.indexOf('**ACCIÓN') || content.indexOf('**DERECHO') || content.indexOf('**PODER') || content.indexOf('**DEMANDA') || content.indexOf('**CARTA') || content.indexOf('**CLÁUSULA');
           if (docStart > 0) content = content.substring(docStart);
         }
@@ -141,17 +139,14 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout,
       setHasGeneratedContent(true);
       setShowCopilot(true);
 
-      // Consume credits after content is displayed
       await consumeCredits('draft', { documentType }).catch(err => 
         console.warn("Error consuming credits (content already displayed):", err)
       );
 
-      // Auto-set title if empty
       if (!title.trim()) {
         setTitle(docLabel);
       }
 
-      // Save to legal_tools_results
       await supabase.from('legal_tools_results').insert({
         lawyer_id: user.id,
         tool_type: 'draft',
@@ -214,15 +209,14 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout,
   };
 
   const handleInsertFromCopilot = (text: string) => {
-    // Convert plain text to simple HTML paragraphs and append
     const htmlText = text.split('\n').filter(Boolean).map(line => `<p>${line}</p>`).join('');
     setEditorContent(prev => prev + htmlText);
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full max-w-md grid-cols-2">
+        <TabsList className="grid w-full max-w-xs grid-cols-2">
           <TabsTrigger value="studio" className="flex items-center gap-2">
             <Sparkles className="h-4 w-4" />
             Redactar
@@ -233,52 +227,39 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout,
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="studio" className="mt-4">
-          <div className={cn("flex gap-0 rounded-lg border bg-background overflow-hidden", "h-[calc(100vh-220px)]")}>
-            {/* Main Editor Area */}
-            <div className={cn("flex flex-col transition-all duration-300", showCopilot ? "w-2/3" : "w-full")}>
-              {/* Top Bar: Document config */}
-              <div className="flex items-center gap-3 px-4 py-3 border-b bg-muted/30 flex-wrap">
-                <Select value={documentType} onValueChange={setDocumentType}>
-                  <SelectTrigger className="w-[260px]">
-                    <SelectValue placeholder="Tipo de documento" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {DOCUMENT_TYPES.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Input
-                  placeholder="Título del documento..."
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="flex-1 min-w-[200px]"
-                />
-                {hasGeneratedContent && (
-                  <Button
-                    variant={showCopilot ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setShowCopilot(!showCopilot)}
-                    className="shrink-0"
-                  >
-                    <MessageSquare className="h-4 w-4 mr-2" />
-                    {showCopilot ? "Ocultar Copilot" : "Copilot"}
-                  </Button>
-                )}
-              </div>
+        <TabsContent value="studio" className="mt-3">
+          {/* Generation form - shown before content is generated */}
+          {!hasGeneratedContent && (
+            <div className="max-w-2xl mx-auto space-y-4 mb-4">
+              <div className="rounded-lg border bg-background p-5 space-y-4">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Select value={documentType} onValueChange={setDocumentType}>
+                    <SelectTrigger className="sm:w-[280px]">
+                      <SelectValue placeholder="Tipo de documento" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DOCUMENT_TYPES.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    placeholder="Título del documento (opcional)"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="flex-1"
+                  />
+                </div>
 
-              {/* Description + Generate (shown when no content yet) */}
-              {!hasGeneratedContent && (
-                <div className="px-4 py-4 border-b space-y-3 bg-background">
-                  <label className="text-sm font-medium">Describe el documento que necesitas</label>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">¿Qué documento necesitas?</label>
                   <textarea
                     placeholder="Ej: Contrato de prestación de servicios profesionales entre una empresa de software y un consultor independiente, con cláusula de confidencialidad y no competencia..."
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    rows={3}
+                    rows={4}
                     className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   />
                   {!description.trim() && !isDrafting && (
@@ -293,80 +274,133 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout,
                       disabled={isDrafting}
                     />
                   )}
-                  <Button
-                    onClick={handleGenerate}
-                    disabled={isDrafting || !hasEnoughCredits('draft') || !documentType || !description.trim()}
-                    className="w-full h-11"
-                  >
-                    {isDrafting ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Generando borrador...
-                      </>
-                    ) : (
-                      <>
-                        <PenTool className="h-4 w-4 mr-2" />
-                        Generar con IA
-                        <span className="ml-3 flex items-center gap-1 bg-white/20 px-2 py-0.5 rounded-lg text-sm">
-                          <Coins className="h-4 w-4" />
-                          {getToolCost('draft')}
-                        </span>
-                      </>
-                    )}
-                  </Button>
-                  {!hasEnoughCredits('draft') && (
-                    <p className="text-sm text-destructive flex items-center gap-1">
-                      <Coins className="h-4 w-4" />
-                      Necesitas {getToolCost('draft')} créditos para generar. Créditos insuficientes.
-                    </p>
-                  )}
                 </div>
-              )}
 
-              {/* Rich Text Editor */}
-              <div className="flex-1 overflow-hidden">
-                <ReactQuill
-                  ref={quillRef}
-                  theme="snow"
-                  value={editorContent}
-                  onChange={setEditorContent}
-                  modules={quillModules}
-                  formats={quillFormats}
-                  placeholder="El borrador generado aparecerá aquí. También puedes escribir directamente..."
-                  className="h-full [&_.ql-container]:border-0 [&_.ql-toolbar]:border-x-0 [&_.ql-editor]:min-h-full [&_.ql-editor]:font-serif [&_.ql-editor]:text-base [&_.ql-editor]:leading-relaxed [&_.ql-editor]:px-8 [&_.ql-editor]:py-6"
-                />
-              </div>
-
-              {/* Footer Actions */}
-              <div className="flex items-center gap-2 px-4 py-3 border-t bg-muted/30">
-                <Button onClick={handleSave} disabled={isSaving || !editorContent.trim()} className="flex-1">
-                  {isSaving ? (
-                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Guardando...</>
+                <Button
+                  onClick={handleGenerate}
+                  disabled={isDrafting || !hasEnoughCredits('draft') || !documentType || !description.trim()}
+                  className="w-full h-11"
+                  size="lg"
+                >
+                  {isDrafting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Generando borrador...
+                    </>
                   ) : (
-                    <><Save className="h-4 w-4 mr-2" />Guardar Documento</>
+                    <>
+                      <PenTool className="h-4 w-4 mr-2" />
+                      Generar con IA
+                      <span className="ml-3 flex items-center gap-1 bg-white/20 px-2 py-0.5 rounded-lg text-sm">
+                        <Coins className="h-4 w-4" />
+                        {getToolCost('draft')}
+                      </span>
+                    </>
                   )}
                 </Button>
-                <Button
-                  variant="outline"
-                  onClick={handleDownload}
-                  disabled={isDownloading || !editorContent.trim()}
-                >
-                  {isDownloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
-                  Descargar PDF
-                </Button>
+                {!hasEnoughCredits('draft') && (
+                  <p className="text-sm text-destructive flex items-center gap-1">
+                    <Coins className="h-4 w-4" />
+                    Necesitas {getToolCost('draft')} créditos para generar. Créditos insuficientes.
+                  </p>
+                )}
               </div>
             </div>
+          )}
 
-            {/* Copilot Panel */}
-            {showCopilot && (
-              <DraftCopilotPanel
-                documentContent={editorContent}
-                documentType={DOCUMENT_TYPES.find(t => t.value === documentType)?.label || documentType || "Documento Legal"}
-                lawyerId={user.id}
-                onInsertText={handleInsertFromCopilot}
+          {/* Editor Studio - full workspace after generation */}
+          {hasGeneratedContent && (
+            <div className="rounded-lg border bg-background overflow-hidden" style={{ height: 'calc(100vh - 180px)' }}>
+              {/* Compact toolbar header */}
+              <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/30">
+                <Select value={documentType} onValueChange={setDocumentType}>
+                  <SelectTrigger className="w-[200px] h-8 text-xs">
+                    <SelectValue placeholder="Tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DOCUMENT_TYPES.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Input
+                  placeholder="Título del documento"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="flex-1 h-8 text-sm"
+                />
+                <div className="flex items-center gap-1.5 ml-auto shrink-0">
+                  <Button onClick={handleSave} disabled={isSaving || !editorContent.trim()} size="sm" className="h-8 text-xs gap-1.5">
+                    {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                    Guardar
+                  </Button>
+                  <Button variant="outline" onClick={handleDownload} disabled={isDownloading || !editorContent.trim()} size="sm" className="h-8 text-xs gap-1.5">
+                    {isDownloading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                    PDF
+                  </Button>
+                  <Button
+                    variant={showCopilot ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setShowCopilot(!showCopilot)}
+                    className="h-8 text-xs gap-1.5"
+                  >
+                    {showCopilot ? <PanelRightClose className="h-3.5 w-3.5" /> : <PanelRightOpen className="h-3.5 w-3.5" />}
+                    <span className="hidden sm:inline">Copilot</span>
+                  </Button>
+                </div>
+              </div>
+
+              {/* Resizable Editor + Copilot */}
+              <ResizablePanelGroup direction="horizontal" className="flex-1" style={{ height: 'calc(100% - 41px)' }}>
+                <ResizablePanel defaultSize={showCopilot ? 60 : 100} minSize={40}>
+                  <div className="h-full overflow-hidden">
+                    <ReactQuill
+                      ref={quillRef}
+                      theme="snow"
+                      value={editorContent}
+                      onChange={setEditorContent}
+                      modules={quillModules}
+                      formats={quillFormats}
+                      placeholder="El borrador generado aparecerá aquí..."
+                      className="h-full [&_.ql-container]:border-0 [&_.ql-toolbar]:border-x-0 [&_.ql-toolbar]:border-t-0 [&_.ql-editor]:min-h-full [&_.ql-editor]:font-serif [&_.ql-editor]:text-base [&_.ql-editor]:leading-relaxed [&_.ql-editor]:px-8 [&_.ql-editor]:py-6"
+                    />
+                  </div>
+                </ResizablePanel>
+
+                {showCopilot && (
+                  <>
+                    <ResizableHandle withHandle />
+                    <ResizablePanel defaultSize={40} minSize={28} maxSize={55}>
+                      <DraftCopilotPanel
+                        documentContent={editorContent}
+                        documentType={DOCUMENT_TYPES.find(t => t.value === documentType)?.label || documentType || "Documento Legal"}
+                        lawyerId={user.id}
+                        onInsertText={handleInsertFromCopilot}
+                      />
+                    </ResizablePanel>
+                  </>
+                )}
+              </ResizablePanelGroup>
+            </div>
+          )}
+
+          {/* Show editor even without generated content for manual writing */}
+          {!hasGeneratedContent && (
+            <div className="rounded-lg border bg-background overflow-hidden" style={{ height: '400px' }}>
+              <ReactQuill
+                ref={quillRef}
+                theme="snow"
+                value={editorContent}
+                onChange={setEditorContent}
+                modules={quillModules}
+                formats={quillFormats}
+                placeholder="También puedes escribir directamente aquí sin generar con IA..."
+                className="h-full [&_.ql-container]:border-0 [&_.ql-toolbar]:border-x-0 [&_.ql-toolbar]:border-t-0 [&_.ql-editor]:min-h-full [&_.ql-editor]:font-serif [&_.ql-editor]:text-base [&_.ql-editor]:leading-relaxed [&_.ql-editor]:px-8 [&_.ql-editor]:py-6"
               />
-            )}
-          </div>
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="documents">
@@ -383,16 +417,12 @@ export default function DraftModule({ user, currentView, onViewChange, onLogout,
 /** Simple markdown-to-HTML converter for AI output */
 function markdownToHtml(md: string): string {
   let html = md;
-  // Bold
   html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  // Headers
   html = html.replace(/^#### (.+)$/gm, '<h4>$1</h4>');
   html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
   html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
   html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
-  // Horizontal rules
   html = html.replace(/^---$/gm, '<hr>');
-  // Convert remaining plain text lines to paragraphs
   const lines = html.split('\n');
   const result: string[] = [];
   let inList = false;
@@ -409,7 +439,6 @@ function markdownToHtml(md: string): string {
       if (!inList) { result.push('<ul>'); inList = true; }
       result.push(`<li>${trimmed.replace(/^[-*] /, '')}</li>`);
     } else if (trimmed.match(/^\d+\. /)) {
-      // Numbered list item as paragraph for simplicity
       result.push(`<p>${trimmed}</p>`);
     } else {
       if (inList) { result.push('</ul>'); inList = false; }
