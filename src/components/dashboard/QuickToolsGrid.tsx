@@ -38,8 +38,10 @@ const tools: Tool[] = [
 export function QuickToolsGrid({ onViewChange, newLeadsCount = 0 }: QuickToolsGridProps) {
   const { user } = useLawyerAuth();
   const { balance } = useCredits(user?.id || null);
+  const { isEnabled } = useFeatureFlags();
   
   const hasCredits = (balance?.current_balance || 0) > 0;
+  const filteredTools = tools.filter(tool => isEnabled(tool.view));
 
   return (
     <div className="space-y-4">
