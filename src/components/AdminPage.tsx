@@ -861,6 +861,18 @@ function AdminPage() {
     }
   };
 
+  const loadBugReportsCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('bug_reports')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'new');
+      if (!error) setPendingBugReportsCount(count || 0);
+    } catch (error) {
+      console.error('Error loading bug reports count:', error);
+    }
+  };
+
   const loadCategories = async () => {
     try {
       const { data, error } = await supabase
