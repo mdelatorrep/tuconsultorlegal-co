@@ -432,11 +432,11 @@ export default function StrategizeModule({ user, currentView, onViewChange, onLo
                     </Card>
                   ) : (
                     <div className="space-y-4">
-                      <div className="p-4 bg-purple-50 border border-purple-200 rounded-xl">
-                        <h3 className="text-lg font-bold text-purple-900">
+                      <div className="p-4 bg-muted/50 border rounded-xl">
+                        <h3 className="text-lg font-bold">
                           Historial de Estrategias
                         </h3>
-                        <p className="text-purple-700 text-sm">
+                        <p className="text-muted-foreground text-sm">
                           {analyses.length} análisis estratégico{analyses.length !== 1 ? 's' : ''} completado{analyses.length !== 1 ? 's' : ''}
                         </p>
                       </div>
