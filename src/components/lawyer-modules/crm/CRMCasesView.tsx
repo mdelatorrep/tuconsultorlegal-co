@@ -107,7 +107,7 @@ const CRMCasesView: React.FC<CRMCasesViewProps> = ({ lawyerData, searchTerm, onR
     demandado: '',
     asignado_a: '',
     nota_pendiente: '',
-    enlace_hoja_ruta: '',
+    enlace_expediente: '',
     enlace_expediente: '',
   });
   const { toast } = useToast();
