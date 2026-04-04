@@ -111,6 +111,9 @@ export function CasePredictorModule({ lawyerId }: CasePredictorModuleProps) {
 
       if (error) throw error;
 
+      // Consume credits only after successful API response
+      await consumeCredits('case_predictor', { caseType, jurisdiction });
+
       setPrediction(data);
       
       // Save to history
