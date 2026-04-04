@@ -12,6 +12,7 @@ import { FileText, Save, CheckCircle, Bot, Settings, Brain, BookOpen, Search, Ey
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 // Module imports
