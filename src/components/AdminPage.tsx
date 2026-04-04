@@ -41,6 +41,7 @@ import LawyerVerificationAdmin from "./admin/LawyerVerificationAdmin";
 import { AdminSpecializedAgents } from "./admin/AdminSpecializedAgents";
 import FeatureFlagsManager from "./admin/FeatureFlagsManager";
 import { UTMCampaignManager } from "./admin/UTMCampaignManager";
+import { BugReportsManager } from "./admin/BugReportsManager";
 import {
   Copy, Users, Bot, BarChart3, Clock, CheckCircle, Lock, Unlock, Trash2, Check, X, Plus, RefreshCw, 
   Loader2, MessageCircle, BookOpen, Settings, Zap, Mail, Phone, Bell, LogOut, UserCheck, 
