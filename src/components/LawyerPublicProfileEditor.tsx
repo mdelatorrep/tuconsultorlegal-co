@@ -808,7 +808,7 @@ export default function LawyerPublicProfileEditor({ lawyerId, lawyerName }: Prop
           onClick={handleSave} 
           disabled={saving}
           size="lg"
-          className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-500"
+          className="bg-primary hover:bg-primary/90"
         >
           {saving ? (
             <>
