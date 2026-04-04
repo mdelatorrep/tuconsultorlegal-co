@@ -47,6 +47,7 @@ import { NextBestAction } from "./credits/NextBestAction";
 import { DailyProgress } from "./credits/DailyProgress";
 import { GamificationDashboard } from "./gamification/GamificationDashboard";
 import { GamificationCelebration } from "./gamification/GamificationCelebration";
+import BugReportButton from "./lawyer-modules/BugReportButton";
 
 import { useCredits } from "@/hooks/useCredits";
 import { ToolCostIndicator } from "@/components/credits/ToolCostIndicator";
