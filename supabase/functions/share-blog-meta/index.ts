@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
 
     // The share URL is this edge function itself — crawlers will hit this URL
     const shareUrl = `${SUPABASE_URL}/functions/v1/share-blog-meta?slug=${encodeURIComponent(blog.slug)}`
-    const blogUrl = `${SITE_URL}/#blog-articulo-${blog.slug}`
+    const blogUrl = `${SITE_URL}/blog/${encodeURIComponent(blog.slug)}`
     const title = escapeHtml(blog.title)
     const description = escapeHtml(blog.excerpt || blog.content?.substring(0, 160) || 'Artículo legal en Praxis Hub')
     
@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
   <meta property="og:image:secure_url" content="${escapeHtml(image)}" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-  <meta property="og:url" content="${escapeHtml(shareUrl)}" />
+  <meta property="og:url" content="${escapeHtml(blogUrl)}" />
   <meta property="og:site_name" content="Praxis Hub" />
   <meta property="og:locale" content="es_CO" />
   ${publishedAt ? `<meta property="article:published_time" content="${escapeHtml(publishedAt)}" />` : ''}
@@ -124,7 +124,7 @@ Deno.serve(async (req) => {
   <!-- LinkedIn specific -->
   <meta name="author" content="Praxis Hub" />
 
-  <link rel="canonical" href="${escapeHtml(shareUrl)}" />
+  <link rel="canonical" href="${escapeHtml(blogUrl)}" />
 </head>
 <body>
   <h1>${title}</h1>
