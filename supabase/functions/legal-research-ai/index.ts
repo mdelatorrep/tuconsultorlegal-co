@@ -84,8 +84,13 @@ serve(async (req) => {
 
     // Load web search configuration
     let webSearchTool = null;
+    let kbPromptSection = '';
     if (supportsWebSearch(researchModel)) {
-      webSearchTool = await loadWebSearchConfigAndBuildTool(supabase, 'research');
+      const webSearchConfig = await loadWebSearchConfigAndBuildTool(supabase, 'research');
+      if (webSearchConfig) {
+        webSearchTool = webSearchConfig.tool;
+        kbPromptSection = buildKnowledgeBasePromptSection(webSearchConfig.knowledgeBaseUrls);
+      }
     }
 
     const jsonFormat = `{
