@@ -145,7 +145,7 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
       </div>
 
       {/* Main Tabs */}
-      <Tabs defaultValue="novedades" className="w-full">
+      <Tabs defaultValue="novedades" className="w-full" value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="w-full justify-start overflow-x-auto">
           <TabsTrigger value="novedades">Novedades</TabsTrigger>
           <TabsTrigger value="procesos">Procesos</TabsTrigger>
