@@ -285,7 +285,7 @@ const CRMCasesView: React.FC<CRMCasesViewProps> = ({ lawyerData, searchTerm, onR
       client_id: '', case_number: '', description: '', case_type: '',
       status: 'active', priority: 'medium', start_date: '', end_date: '',
       juzgado: '', clase_proceso: '', demandante: '', demandado: '',
-      asignado_a: '', nota_pendiente: '', enlace_hoja_ruta: '', enlace_expediente: '',
+      asignado_a: '', nota_pendiente: '', enlace_expediente: '',
     });
   };
 
