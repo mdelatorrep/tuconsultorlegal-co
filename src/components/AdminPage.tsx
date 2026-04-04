@@ -1602,6 +1602,9 @@ function AdminPage() {
       
       case 'credits':
         return <CreditsAdminManager authHeaders={getAuthHeaders()} />;
+
+      case 'bug-reports':
+        return <BugReportsManager />;
         
       default:
         return (
