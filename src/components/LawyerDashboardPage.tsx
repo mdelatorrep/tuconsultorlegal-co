@@ -1058,7 +1058,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
               </div>
             </header>
 
-            <div className="container mx-auto px-3 md:px-4 lg:px-6 py-3 md:py-4 lg:py-6">
+            <div className="flex-1 overflow-auto container mx-auto px-3 md:px-4 lg:px-6 py-3 md:py-4 lg:py-6">
               {currentView === 'credits' ? (
                 <CreditsDashboard lawyerId={user.id} />
               ) : currentView === 'gamification' ? (
