@@ -65,7 +65,8 @@ import {
   QuickToolsGrid,
   CasesOverview,
   UpcomingActions,
-  SmartSearch
+  SmartSearch,
+  RecentActivityFeed
 } from "./dashboard";
 
 interface DocumentToken {
