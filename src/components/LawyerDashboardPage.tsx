@@ -1113,18 +1113,8 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                 </div>
               ) : (
                 <div className="max-w-7xl mx-auto space-y-3 md:space-y-4">
-                  {/* Header with Welcome + Daily Progress */}
-                  <div className="grid gap-3 lg:grid-cols-3">
-                    <div className="lg:col-span-2" data-tour="dashboard-welcome">
-                      <DashboardWelcome 
-                        userName={user?.name || 'Usuario'} 
-                        onViewCredits={() => setCurrentView('credits')} 
-                      />
-                    </div>
-                    <div className="lg:col-span-1">
-                      <DailyProgress lawyerId={user.id} onViewCredits={() => setCurrentView('credits')} />
-                    </div>
-                  </div>
+                  {/* Daily Progress */}
+                  <DailyProgress lawyerId={user.id} onViewCredits={() => setCurrentView('credits')} />
 
                   {/* Quick Tools - top position */}
                   <QuickToolsGrid 
