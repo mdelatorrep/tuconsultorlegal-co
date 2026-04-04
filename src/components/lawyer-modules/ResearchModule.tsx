@@ -694,9 +694,7 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
                           </div>
                         </div>
                         {result.status === 'completed' && (
-                          <Button variant="outline" size="icon" className="h-8 w-8 flex-shrink-0" onClick={(e) => { e.stopPropagation(); exportResearchToPdf(result); }} title="Descargar PDF">
-                            <Download className="h-4 w-4" />
-                          </Button>
+                          <Badge variant="secondary" className="flex-shrink-0 text-xs">Completado</Badge>
                         )}
                       </div>
                     </CardHeader>
