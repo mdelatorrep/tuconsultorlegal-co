@@ -1144,11 +1144,7 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                     </Card>
                   )}
 
-                  {/* Quick Tools - siempre visible */}
-                  <QuickToolsGrid 
-                    onViewChange={(view) => setCurrentView(view as ViewType)} 
-                    newLeadsCount={newLeadsCount} 
-                  />
+                  {/* Quick Tools moved to top of dashboard */}
 
                   {/* Professional Development */}
                   <Card 

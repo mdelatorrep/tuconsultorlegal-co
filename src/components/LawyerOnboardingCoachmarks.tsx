@@ -1,17 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { X, ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, CheckCircle, Search, Users, Trophy, LayoutDashboard } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-
-interface CoachmarkStep {
-  id: string;
-  title: string;
-  description: string;
-  target: string;
-  position: 'top' | 'bottom' | 'left' | 'right';
-  highlight?: boolean;
-}
 
 interface LawyerOnboardingCoachmarksProps {
   isVisible: boolean;
@@ -19,52 +10,31 @@ interface LawyerOnboardingCoachmarksProps {
   onSkip: () => void;
 }
 
-const COACHMARK_STEPS: CoachmarkStep[] = [
-  {
-    id: 'welcome',
-    title: '¡Bienvenido al Portal de Abogados!',
-    description: 'Te guiaremos por las principales funcionalidades disponibles en tu dashboard profesional.',
-    target: 'dashboard-welcome',
-    position: 'bottom'
-  },
-  {
-    id: 'sidebar-navigation',
-    title: 'Navegación del Portal',
-    description: 'Desde este menú lateral puedes acceder a todas las herramientas legales y funcionalidades del portal.',
-    target: 'lawyer-sidebar',
-    position: 'right',
-    highlight: true
-  },
+const COACHMARK_STEPS = [
   {
     id: 'ai-tools',
-    title: 'Herramientas de IA Legal',
-    description: 'Accede a investigación, análisis, redacción y estrategia legal con inteligencia artificial avanzada.',
-    target: 'ai-tools-section',
-    position: 'right',
-    highlight: true
+    title: '🔍 Herramientas de IA Legal',
+    description: 'Investiga jurisprudencia, redacta documentos y analiza contratos con inteligencia artificial. Todo desde las Herramientas Rápidas en tu dashboard.',
+    icon: Search,
   },
   {
-    id: 'agent-management',
-    title: 'Gestión de Agentes IA',
-    description: 'Crea y administra agentes especializados de IA para automatizar tareas legales específicas.',
-    target: 'agent-management-section',
-    position: 'right'
+    id: 'crm',
+    title: '👥 Gestión de Clientes y Casos',
+    description: 'Organiza tus clientes, lleva el seguimiento de cada caso y nunca pierdas un plazo importante con el CRM integrado.',
+    icon: Users,
   },
   {
-    id: 'documents-panel',
-    title: 'Panel de Documentos',
-    description: 'Aquí puedes revisar, editar y aprobar documentos solicitados por clientes.',
-    target: 'documents-panel',
-    position: 'top',
-    highlight: true
+    id: 'missions',
+    title: '🎯 Misiones Diarias = Créditos Gratis',
+    description: 'Completa misiones diarias para ganar créditos que puedes usar en todas las herramientas de IA. Revisa tu progreso en "Mis Créditos".',
+    icon: Trophy,
   },
   {
-    id: 'stats-access',
-    title: 'Métricas y Estadísticas',
-    description: 'Consulta estadísticas detalladas de tu desempeño y productividad legal.',
-    target: 'stats-section',
-    position: 'right'
-  }
+    id: 'sidebar',
+    title: '📋 Explora Todo desde el Menú',
+    description: 'En el menú lateral encontrarás todas las funcionalidades: calendario, monitor de procesos, asistente de voz, verificación y más.',
+    icon: LayoutDashboard,
+  },
 ];
 
 export default function LawyerOnboardingCoachmarks({ 
@@ -73,30 +43,9 @@ export default function LawyerOnboardingCoachmarks({
   onSkip 
 }: LawyerOnboardingCoachmarksProps) {
   const [currentStep, setCurrentStep] = useState(0);
-  const [highlightedElement, setHighlightedElement] = useState<string | null>(null);
 
   const currentStepData = COACHMARK_STEPS[currentStep];
   const isLastStep = currentStep === COACHMARK_STEPS.length - 1;
-
-  useEffect(() => {
-    if (isVisible && currentStepData?.highlight) {
-      setHighlightedElement(currentStepData.target);
-      
-      // Add highlight class to target element
-      const element = document.querySelector(`[data-tour="${currentStepData.target}"]`);
-      if (element) {
-        element.classList.add('tour-highlight');
-      }
-      
-      return () => {
-        // Cleanup highlight
-        const element = document.querySelector(`[data-tour="${currentStepData.target}"]`);
-        if (element) {
-          element.classList.remove('tour-highlight');
-        }
-      };
-    }
-  }, [currentStep, isVisible, currentStepData]);
 
   const handleNext = () => {
     if (isLastStep) {
@@ -112,22 +61,20 @@ export default function LawyerOnboardingCoachmarks({
     }
   };
 
-  const handleSkip = () => {
-    onSkip();
-  };
-
   if (!isVisible || !currentStepData) {
     return null;
   }
 
+  const Icon = currentStepData.icon;
+
   return (
     <>
       {/* Overlay */}
-      <div className="fixed inset-0 bg-black/50 z-40" />
+      <div className="fixed inset-0 bg-black/60 z-40" onClick={onSkip} />
       
-      {/* Coachmark Card */}
-      <div className="fixed z-50 max-w-sm">
-        <Card className="border-primary shadow-lg">
+      {/* Centered Coachmark Card */}
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <Card className="border-primary shadow-2xl max-w-md w-full animate-in fade-in-0 zoom-in-95 duration-300">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <Badge variant="outline" className="text-xs">
@@ -136,19 +83,36 @@ export default function LawyerOnboardingCoachmarks({
               <Button 
                 variant="ghost" 
                 size="sm" 
-                onClick={handleSkip}
+                onClick={onSkip}
                 className="h-8 w-8 p-0"
               >
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            <CardTitle className="text-lg">{currentStepData.title}</CardTitle>
+            <div className="flex items-center gap-3 mt-2">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Icon className="h-5 w-5 text-primary" />
+              </div>
+              <CardTitle className="text-lg">{currentStepData.title}</CardTitle>
+            </div>
           </CardHeader>
           
           <CardContent className="pt-0">
-            <CardDescription className="text-base mb-4">
+            <CardDescription className="text-base mb-6 leading-relaxed">
               {currentStepData.description}
             </CardDescription>
+
+            {/* Progress dots */}
+            <div className="flex justify-center gap-1.5 mb-4">
+              {COACHMARK_STEPS.map((_, i) => (
+                <div
+                  key={i}
+                  className={`h-1.5 rounded-full transition-all ${
+                    i === currentStep ? 'w-6 bg-primary' : 'w-1.5 bg-muted-foreground/30'
+                  }`}
+                />
+              ))}
+            </div>
             
             <div className="flex items-center justify-between">
               <Button 
@@ -170,7 +134,7 @@ export default function LawyerOnboardingCoachmarks({
                 {isLastStep ? (
                   <>
                     <CheckCircle className="h-4 w-4" />
-                    Finalizar
+                    ¡Empezar!
                   </>
                 ) : (
                   <>
@@ -186,38 +150,16 @@ export default function LawyerOnboardingCoachmarks({
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  onClick={handleSkip}
+                  onClick={onSkip}
                   className="w-full text-muted-foreground"
                 >
-                  Saltar tutorial
+                  Ya conozco la plataforma, saltar
                 </Button>
               </div>
             )}
           </CardContent>
         </Card>
       </div>
-      
-      <style dangerouslySetInnerHTML={{
-        __html: `
-          .tour-highlight {
-            position: relative;
-            z-index: 45;
-            border: 2px solid hsl(var(--primary)) !important;
-            border-radius: 8px;
-            box-shadow: 0 0 0 4px hsl(var(--primary) / 0.2);
-            animation: pulse 2s infinite;
-          }
-          
-          @keyframes pulse {
-            0%, 100% {
-              box-shadow: 0 0 0 4px hsl(var(--primary) / 0.2);
-            }
-            50% {
-              box-shadow: 0 0 0 8px hsl(var(--primary) / 0.1);
-            }
-          }
-        `
-      }} />
     </>
   );
 }

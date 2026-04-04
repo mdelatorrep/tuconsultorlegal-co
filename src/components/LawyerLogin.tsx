@@ -21,7 +21,7 @@ interface LawyerLoginProps {
 type ViewMode = 'login' | 'register' | 'forgot-password' | 'change-password' | 'select-plan';
 
 export default function LawyerLogin({ onLoginSuccess }: LawyerLoginProps) {
-  const [viewMode, setViewMode] = useState<ViewMode>('login');
+  const [viewMode, setViewMode] = useState<ViewMode>('register');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');

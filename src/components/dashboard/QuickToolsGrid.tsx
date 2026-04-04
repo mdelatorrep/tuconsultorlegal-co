@@ -70,7 +70,7 @@ export function QuickToolsGrid({ onViewChange, newLeadsCount = 0 }: QuickToolsGr
       )}
       
       <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-2 md:gap-3">
-        {tools.map((tool) => (
+        {filteredTools.map((tool) => (
           <Card
             key={tool.view}
             className="group cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg border-0 relative"

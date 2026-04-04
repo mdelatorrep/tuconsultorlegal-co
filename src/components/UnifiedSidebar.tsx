@@ -294,7 +294,7 @@ export default function UnifiedSidebar({ user, currentView, onViewChange, onLogo
         )}
 
         {/* Menu Sections */}
-        <div className="flex-1 overflow-y-auto py-2">
+        <div className="flex-1 min-h-0 overflow-y-auto py-2">
           {menuStructure.map(renderSection)}
         </div>
 

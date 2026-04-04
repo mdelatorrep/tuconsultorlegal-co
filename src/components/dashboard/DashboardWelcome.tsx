@@ -37,6 +37,12 @@ export function DashboardWelcome({ userName, onViewCredits }: DashboardWelcomePr
             </Button>
           </div>
         </div>
+        <div className="flex items-center gap-2 mt-3 p-2.5 rounded-lg bg-primary/5 border border-primary/10">
+          <Sparkles className="h-4 w-4 text-primary shrink-0" />
+          <p className="text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">Lexi</span>, tu asistente IA, te ayuda a investigar, redactar y analizar documentos legales. Encuéntrala en cada herramienta.
+          </p>
+        </div>
       </CardContent>
     </Card>
   );

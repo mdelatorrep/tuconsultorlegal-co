@@ -96,9 +96,9 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
       {/* Onboarding for first-time users */}
       {isEmptyCRM && (
         <CRMOnboarding
-          onNavigateToProfile={() => onViewChange('profile')}
-          onOpenClients={() => {}}
-          onOpenCases={() => {}}
+          onNavigateToProfile={() => onViewChange('public-profile')}
+          onOpenClients={() => setActiveTab('clientes')}
+          onOpenCases={() => setActiveTab('procesos')}
         />
       )}
 
