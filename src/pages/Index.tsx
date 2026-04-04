@@ -376,7 +376,7 @@ export default function Index() {
           {renderCurrentPage()}
         </main>
 
-        {currentPage !== 'abogados' && <Footer onNavigate={handleNavigate} />}
+        <Footer onNavigate={handleNavigate} />
 
         {shouldShowChatWidget && (
           <ChatWidget
