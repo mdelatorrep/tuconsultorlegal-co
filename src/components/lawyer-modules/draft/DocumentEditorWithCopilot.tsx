@@ -267,6 +267,8 @@ export default function DocumentEditorWithCopilot({
         body: { action: 'analyze_inline', text: content, context: `Tipo de documento: ${documentType}`, language: 'es' }
       });
       if (error) throw error;
+      // Consume credits only after successful API response
+      await consumeCredits('copilot', { action: 'analyze' });
       if (data?.suggestions && Array.isArray(data.suggestions)) {
         const formattedSuggestions: InlineSuggestion[] = data.suggestions.map((s: any, idx: number) => ({
           id: `sug-${idx}`,
