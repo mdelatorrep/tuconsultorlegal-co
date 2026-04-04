@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from '@/integrations/supabase/client';
 import { AlertTriangle, FileText, Upload, CheckCircle, AlertCircle, FileSignature, MessageSquare, CheckSquare, BarChart, Download, Loader2, Sparkles, History, Trash2, ChevronDown, Coins, Briefcase, Info } from 'lucide-react';
 import AnalysisResultsDisplay from './analysis/AnalysisResultsDisplay';
+import { exportAnalysisToPdf } from '@/utils/aiResultPdfExporter';
 import { toast } from "sonner";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useCredits } from "@/hooks/useCredits";
