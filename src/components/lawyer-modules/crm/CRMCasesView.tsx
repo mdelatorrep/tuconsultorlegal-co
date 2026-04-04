@@ -118,6 +118,15 @@ const CRMCasesView: React.FC<CRMCasesViewProps> = ({ lawyerData, searchTerm, onR
     }
   }, [lawyerData?.id]);
 
+  useEffect(() => {
+    if (autoOpenCreate) {
+      resetForm();
+      setEditingCase(null);
+      setIsDialogOpen(true);
+      onAutoOpenHandled?.();
+    }
+  }, [autoOpenCreate]);
+
   const fetchCases = async () => {
     try {
       setIsLoading(true);

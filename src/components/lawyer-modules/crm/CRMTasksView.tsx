@@ -71,6 +71,15 @@ const CRMTasksView: React.FC<CRMTasksViewProps> = ({ lawyerData, searchTerm, onR
     }
   }, [lawyerData?.id]);
 
+  useEffect(() => {
+    if (autoOpenCreate) {
+      resetForm();
+      setEditingTask(null);
+      setIsDialogOpen(true);
+      onAutoOpenHandled?.();
+    }
+  }, [autoOpenCreate]);
+
   const fetchTasks = async () => {
     try {
       setIsLoading(true);
