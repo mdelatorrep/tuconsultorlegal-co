@@ -668,10 +668,6 @@ export default function ProcessQueryModule({
                     </p>
                   </div>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => exportProcessQueryToPdf(lastSearchedRadicado, aiAnalysis, processes)}>
-                  <Download className="h-4 w-4 mr-2" />
-                  PDF
-                </Button>
               </div>
             </CardHeader>
             <CardContent>
