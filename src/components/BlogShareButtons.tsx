@@ -15,10 +15,11 @@ interface BlogShareButtonsProps {
   showLabels?: boolean;
 }
 
-const SUPABASE_URL = "https://tkaezookvtpulfpaffes.supabase.co";
+const SITE_URL = "https://praxis-hub.co";
 
 function getShareUrl(slug: string): string {
-  return `${SUPABASE_URL}/functions/v1/share-blog-meta?slug=${encodeURIComponent(slug)}`;
+  const normalizedSlug = slug.trim().replace(/^\/+|\/+$/g, "");
+  return `${SITE_URL}/blog/${encodeURIComponent(normalizedSlug)}`;
 }
 
 export default function BlogShareButtons({ blog, size = "sm", variant = "outline", showLabels = true }: BlogShareButtonsProps) {
