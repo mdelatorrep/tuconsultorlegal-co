@@ -109,9 +109,14 @@ serve(async (req) => {
     console.log(`[SUIN] Model ${model} supports web search: ${modelSupportsWebSearch}`);
 
     let webSearchTool = null;
+    let kbPromptSection = '';
     if (modelSupportsWebSearch) {
       // Load web search configuration with verified domains from knowledge_base_urls
-      webSearchTool = await loadWebSearchConfigAndBuildTool(supabase, 'suin_juriscol');
+      const webSearchConfig = await loadWebSearchConfigAndBuildTool(supabase, 'suin_juriscol');
+      if (webSearchConfig) {
+        webSearchTool = webSearchConfig.tool;
+        kbPromptSection = buildKnowledgeBasePromptSection(webSearchConfig.knowledgeBaseUrls);
+      }
       console.log(`[SUIN] Web search tool loaded: ${webSearchTool ? 'YES' : 'NO (disabled in config)'}`);
     } else {
       console.warn(`[SUIN] ⚠️ WARNING: Model ${model} does NOT support web search. ` +
