@@ -3,7 +3,7 @@ import { Button } from "./ui/button";
 import { ArrowLeft, Calendar, Eye } from "lucide-react";
 import BlogShareButtons from "./BlogShareButtons";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+
 import DOMPurify from 'dompurify';
 
 interface BlogArticlePageProps {
