@@ -1123,6 +1123,12 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                     newLeadsCount={newLeadsCount} 
                   />
 
+                  {/* Recent Activity Feed */}
+                  <RecentActivityFeed 
+                    lawyerId={user.id}
+                    onNavigate={(view) => setCurrentView(view as ViewType)}
+                  />
+
                   {/* Smart Search Bar */}
                   <SmartSearch 
                     lawyerId={user.id} 
