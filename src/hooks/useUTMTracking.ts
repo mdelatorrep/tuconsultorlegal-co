@@ -5,6 +5,16 @@ const UTM_PARAMS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm
 const UTM_STORAGE_KEY = 'praxis_utm_params';
 const UTM_SESSION_KEY = 'praxis_utm_session';
 
+// Parámetros propietarios de plataformas de ads
+const PLATFORM_DETECTION: { param: string; source: string; medium: string }[] = [
+  { param: 'li_fat_id', source: 'linkedin', medium: 'paid_social' },
+  { param: 'fbclid', source: 'facebook', medium: 'paid_social' },
+  { param: 'gclid', source: 'google', medium: 'cpc' },
+  { param: 'ttclid', source: 'tiktok', medium: 'paid_social' },
+  { param: 'twclid', source: 'twitter', medium: 'paid_social' },
+  { param: 'msclkid', source: 'bing', medium: 'cpc' },
+];
+
 export interface UTMParams {
   utm_source?: string;
   utm_medium?: string;
