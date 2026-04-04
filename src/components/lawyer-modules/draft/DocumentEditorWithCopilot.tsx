@@ -315,6 +315,8 @@ export default function DocumentEditorWithCopilot({
         }
       });
       if (error) throw error;
+      // Consume credits only after successful API response
+      await consumeCredits('copilot', { action: 'chat' });
       const response = data?.suggestion || data?.response || 'No pude generar una respuesta. Por favor, intenta reformular tu pregunta.';
       // Determine if the response contains legal text that can be inserted
       const isInsertable = response.length > 80 && !response.startsWith('Lo siento') && !response.startsWith('No pude');
