@@ -847,15 +847,15 @@ export default function LawyerDashboardPage({ onOpenChat }: LawyerDashboardPageP
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant={['crm', 'legal-calendar'].includes(currentView) ? 'secondary' : 'ghost'} size="sm" className="h-8 text-xs">
-                            CRM <ChevronDown className="ml-1 h-3 w-3" />
+                            Clientes <ChevronDown className="ml-1 h-3 w-3" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start" className="w-48">
                           <DropdownMenuItem onClick={() => setCurrentView('crm')} className="cursor-pointer">
-                            <Users className="w-4 h-4 mr-2" /> Clientes y Procesos
+                            <Users className="w-4 h-4 mr-2" /> Clientes y Casos
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => setCurrentView('legal-calendar')} className="cursor-pointer">
-                            <Calendar className="w-4 h-4 mr-2" /> Calendario
+                            <Calendar className="w-4 h-4 mr-2" /> Agenda
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
