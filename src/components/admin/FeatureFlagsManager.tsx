@@ -55,6 +55,7 @@ const FEATURE_DEFINITIONS: Omit<FeatureFlag, 'enabled'>[] = [
   { key: 'credits', label: 'Mis Créditos', section: 'Mi Cuenta', icon: Coins },
   { key: 'gamification', label: 'Logros y Ranking', section: 'Mi Cuenta', icon: Trophy },
   { key: 'public-profile', label: 'Perfil Público', section: 'Mi Cuenta', icon: User },
+  { key: 'lawyer-verification', label: 'Verificación Abogado', section: 'Mi Cuenta', icon: Trophy },
   { key: 'account-settings', label: 'Configuración', section: 'Mi Cuenta', icon: Settings },
 ];
 
