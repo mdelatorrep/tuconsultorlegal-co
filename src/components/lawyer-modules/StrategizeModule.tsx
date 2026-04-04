@@ -291,10 +291,7 @@ export default function StrategizeModule({ user, currentView, onViewChange, onLo
                         {new Date(analysis.timestamp).toLocaleDateString()}
                       </Badge>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => exportStrategyToPdf(analysis)}>
-                      <Download className="h-4 w-4 mr-2" />
-                      PDF
-                    </Button>
+                    <Badge variant="secondary" className="text-xs">Completado</Badge>
                   </div>
                 </CardHeader>
               </Card>
@@ -421,6 +418,18 @@ export default function StrategizeModule({ user, currentView, onViewChange, onLo
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Download PDF Button */}
+              <div className="flex justify-center pt-2">
+                <Button 
+                  onClick={() => exportStrategyToPdf(analysis)} 
+                  className="gap-2"
+                  variant="default"
+                >
+                  <Download className="h-4 w-4" />
+                  Descargar PDF
+                </Button>
+              </div>
             </div>
           ))}
         </div>

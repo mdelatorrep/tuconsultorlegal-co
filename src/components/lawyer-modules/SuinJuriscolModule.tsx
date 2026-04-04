@@ -538,10 +538,6 @@ export default function SuinJuriscolModule({ user, currentView, onViewChange, on
                         <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">
                           {currentResult.results.length} fuentes
                         </Badge>
-                        <Button variant="outline" size="sm" onClick={() => exportSuinSearchToPdf(currentResult.query, currentResult.summary, currentResult.results)}>
-                          <Download className="h-4 w-4 mr-2" />
-                          PDF
-                        </Button>
                       </div>
                     </div>
                     <CardDescription className="flex items-center gap-2 mt-1">
@@ -659,6 +655,18 @@ export default function SuinJuriscolModule({ user, currentView, onViewChange, on
                         </CollapsibleContent>
                       </Collapsible>
                     )}
+
+                    {/* Download PDF Button */}
+                    <div className="flex justify-center pt-4 border-t">
+                      <Button 
+                        onClick={() => exportSuinSearchToPdf(currentResult.query, currentResult.summary, currentResult.results)} 
+                        className="gap-2"
+                        variant="default"
+                      >
+                        <Download className="h-4 w-4" />
+                        Descargar PDF
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               )}

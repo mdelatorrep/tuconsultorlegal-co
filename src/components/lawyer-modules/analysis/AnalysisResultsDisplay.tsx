@@ -168,10 +168,6 @@ export default function AnalysisResultsDisplay({ result, onExport }: AnalysisRes
                   </CardDescription>
                 </div>
               </div>
-              <Button variant="outline" size="sm" onClick={onExport}>
-                <Download className="w-4 h-4 mr-2" />
-                Exportar
-              </Button>
             </div>
             
             {/* Badges */}
@@ -835,6 +831,18 @@ export default function AnalysisResultsDisplay({ result, onExport }: AnalysisRes
           </Collapsible>
         </Card>
       )}
+
+      {/* Download PDF Button */}
+      <div className="flex justify-center pt-4 border-t">
+        <Button 
+          onClick={onExport} 
+          className="gap-2"
+          variant="default"
+        >
+          <Download className="h-4 w-4" />
+          Descargar PDF
+        </Button>
+      </div>
     </div>
   );
 }

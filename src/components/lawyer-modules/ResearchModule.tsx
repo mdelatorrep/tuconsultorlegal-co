@@ -694,9 +694,7 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
                           </div>
                         </div>
                         {result.status === 'completed' && (
-                          <Button variant="outline" size="icon" className="h-8 w-8 flex-shrink-0" onClick={(e) => { e.stopPropagation(); exportResearchToPdf(result); }} title="Descargar PDF">
-                            <Download className="h-4 w-4" />
-                          </Button>
+                          <Badge variant="secondary" className="flex-shrink-0 text-xs">Completado</Badge>
                         )}
                       </div>
                     </CardHeader>
@@ -807,6 +805,18 @@ export default function ResearchModule({ user, currentView, onViewChange, onLogo
                           <strong>Nota de verificación:</strong> {result.verificationNotes}
                         </div>
                       )}
+
+                      {/* Download PDF Button */}
+                      <div className="flex justify-center pt-4 border-t">
+                        <Button 
+                          onClick={() => exportResearchToPdf(result)} 
+                          className="gap-2"
+                          variant="default"
+                        >
+                          <Download className="h-4 w-4" />
+                          Descargar PDF
+                        </Button>
+                      </div>
                     </CardContent>
                   </CollapsibleContent>
                 </Card>
