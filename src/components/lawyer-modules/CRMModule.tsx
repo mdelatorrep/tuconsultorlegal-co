@@ -13,7 +13,7 @@ import CRMCasesView from "./crm/CRMCasesView";
 import CRMTasksView from "./crm/CRMTasksView";
 import CRMDocumentsView from "./crm/CRMDocumentsView";
 import CRMEntitiesView from "./crm/CRMEntitiesView";
-import CasePipelineView from "./crm/CasePipelineView";
+
 import LeadPipeline from "./crm/LeadPipeline";
 import CRMOnboarding, { type OnboardingStepStatus } from "./crm/CRMOnboarding";
 import CRMNewsFeed from "./crm/CRMNewsFeed";
@@ -43,7 +43,7 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
   const [isAIChatOpen, setIsAIChatOpen] = useState(false);
   const [isPortalManagerOpen, setIsPortalManagerOpen] = useState(false);
   const [portalClients, setPortalClients] = useState<{ id: string; name: string; email: string }[]>([]);
-  const [processViewMode, setProcessViewMode] = useState<'kanban' | 'list'>('kanban');
+  
   const [clientsSubTab, setClientsSubTab] = useState<'clients' | 'entities' | 'leads'>('clients');
   const [activeTab, setActiveTab] = useState("novedades");
   const [autoOpenClients, setAutoOpenClients] = useState(false);
@@ -135,7 +135,6 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
           }}
           onOpenCases={() => {
             setActiveTab('procesos');
-            setProcessViewMode('list');
             setAutoOpenCases(true);
           }}
           onOpenTasks={() => {
@@ -206,29 +205,7 @@ export default function CRMModule({ user, currentView, onViewChange, onLogout }:
 
         {/* Tab 2: Procesos */}
         <TabsContent value="procesos">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant={processViewMode === 'kanban' ? 'default' : 'outline'}
-                onClick={() => setProcessViewMode('kanban')}
-              >
-                Kanban
-              </Button>
-              <Button
-                size="sm"
-                variant={processViewMode === 'list' ? 'default' : 'outline'}
-                onClick={() => setProcessViewMode('list')}
-              >
-                Lista
-              </Button>
-            </div>
-            {processViewMode === 'kanban' ? (
-              <CasePipelineView lawyerData={user} />
-            ) : (
-              <CRMCasesView {...commonProps} autoOpenCreate={autoOpenCases} onAutoOpenHandled={() => setAutoOpenCases(false)} />
-            )}
-          </div>
+          <CRMCasesView {...commonProps} autoOpenCreate={autoOpenCases} onAutoOpenHandled={() => setAutoOpenCases(false)} />
         </TabsContent>
 
         {/* Tab 3: Clientes */}
