@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
-import { ArrowLeft, Calendar, Eye, Share2, Linkedin, MessageCircle } from "lucide-react";
+import { ArrowLeft, Calendar, Eye } from "lucide-react";
+import BlogShareButtons from "./BlogShareButtons";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+
 import DOMPurify from 'dompurify';
 
 interface BlogArticlePageProps {
@@ -27,7 +28,7 @@ interface BlogPost {
 export default function BlogArticlePage({ articleId, onOpenChat, onNavigate }: BlogArticlePageProps) {
   const [blog, setBlog] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
+  
 
   useEffect(() => {
     loadBlogArticle();
@@ -127,36 +128,6 @@ export default function BlogArticlePage({ articleId, onOpenChat, onNavigate }: B
     });
   };
 
-  // Generate correct URL for hash-based routing
-  const shareUrl = `${window.location.origin}/#blog-articulo-${blog?.slug}`;
-  const shareText = `${blog?.title} - ${blog?.excerpt || 'Artículo interesante sobre derecho'}`;
-
-  const shareOnLinkedIn = () => {
-    const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
-    window.open(url, '_blank', 'width=600,height=400');
-  };
-
-  const shareOnWhatsApp = () => {
-    const url = `https://wa.me/?text=${encodeURIComponent(`${shareText} ${shareUrl}`)}`;
-    window.open(url, '_blank', 'width=600,height=400');
-  };
-
-  const copyToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      toast({
-        title: "¡Enlace copiado!",
-        description: "El enlace del artículo se ha copiado al portapapeles.",
-      });
-    } catch (err) {
-      console.error('Error copying to clipboard:', err);
-      toast({
-        title: "Error",
-        description: "No se pudo copiar el enlace al portapapeles.",
-        variant: "destructive",
-      });
-    }
-  };
 
   return (
     <div className="container mx-auto px-6 py-20">
@@ -201,38 +172,9 @@ export default function BlogArticlePage({ articleId, onOpenChat, onNavigate }: B
         {/* Social Share Section */}
         <div className="mt-12 p-6 bg-muted/50 rounded-lg border">
           <div className="flex items-center gap-3 mb-4">
-            <Share2 className="h-5 w-5 text-primary" />
             <h3 className="text-lg font-semibold text-foreground">Compartir artículo</h3>
           </div>
-          <div className="flex flex-wrap gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={shareOnLinkedIn}
-              className="flex items-center gap-2"
-            >
-              <Linkedin className="h-4 w-4" />
-              LinkedIn
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={shareOnWhatsApp}
-              className="flex items-center gap-2"
-            >
-              <MessageCircle className="h-4 w-4" />
-              WhatsApp
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={copyToClipboard}
-              className="flex items-center gap-2"
-            >
-              <Share2 className="h-4 w-4" />
-              Copiar enlace
-            </Button>
-          </div>
+          <BlogShareButtons blog={blog} showLabels={true} />
         </div>
 
         <div className="mt-16 bg-success/10 border-l-4 border-success p-8 rounded-r-lg">

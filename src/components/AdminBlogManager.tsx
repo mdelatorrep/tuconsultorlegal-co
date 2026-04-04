@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Eye, Check, X, Edit3, Trash2, Calendar, User, FileText } from "lucide-react";
+import { ArrowLeft, Eye, Check, X, Edit3, Trash2, Calendar, User, FileText, Share2 } from "lucide-react";
+import BlogShareButtons from "./BlogShareButtons";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -345,6 +346,7 @@ export default function AdminBlogManager({ onBack, authHeaders }: AdminBlogManag
                   <TableHead>Estado</TableHead>
                   <TableHead>Fecha</TableHead>
                   <TableHead>Vistas</TableHead>
+                  <TableHead>Compartir</TableHead>
                   <TableHead>Acciones</TableHead>
                 </TableRow>
               </TableHeader>
@@ -380,6 +382,13 @@ export default function AdminBlogManager({ onBack, authHeaders }: AdminBlogManag
                     </TableCell>
                     <TableCell>
                       <span className="text-sm">{blog.views_count || 0}</span>
+                    </TableCell>
+                    <TableCell>
+                      {blog.status === 'published' ? (
+                        <BlogShareButtons blog={blog} size="sm" showLabels={false} />
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Solo publicados</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
