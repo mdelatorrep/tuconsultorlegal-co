@@ -99,12 +99,6 @@ export function CasePredictorModule({ lawyerId }: CasePredictorModuleProps) {
     try {
       setLoading(true);
       
-      // Consume credits first
-      const creditResult = await consumeCredits('case_predictor', { caseType, jurisdiction });
-      if (!creditResult.success) {
-        return;
-      }
-      
       const { data, error } = await supabase.functions.invoke('case-outcome-predictor', {
         body: {
           caseType,
