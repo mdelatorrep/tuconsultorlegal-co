@@ -144,6 +144,7 @@ export function UTMCampaignManager() {
     }
     setCreating(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
       const { error } = await supabase.from('utm_campaigns').insert({
         name: form.name,
         platform: form.platform,
@@ -154,6 +155,7 @@ export function UTMCampaignManager() {
         utm_content: form.utm_content || null,
         generated_url: generatedUrl,
         short_description: form.short_description || null,
+        created_by: user?.id || null,
       });
 
       if (error) throw error;
