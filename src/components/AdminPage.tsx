@@ -246,7 +246,8 @@ function AdminPage() {
         
         loadContactMessages(),
         loadBlogPosts(),
-        loadCategories()
+        loadCategories(),
+        loadBugReportsCount()
       ]);
     } catch (error) {
       console.error('Error loading admin data:', error);
