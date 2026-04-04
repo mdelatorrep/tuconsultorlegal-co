@@ -224,6 +224,9 @@ export function LegalCopilot({
 
       if (error) throw error;
 
+      // Consume credits only after successful API response
+      await consumeCredits('legal_copilot', { action: 'analyze_inline' });
+
       setInlineSuggestions(data.suggestions || []);
       
       if (data.suggestions?.length > 0) {
