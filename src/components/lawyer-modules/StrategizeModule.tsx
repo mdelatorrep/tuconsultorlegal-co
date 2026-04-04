@@ -208,61 +208,55 @@ export default function StrategizeModule({ user, currentView, onViewChange, onLo
 
         <TabsContent value="strategize" className="space-y-4">
           {/* Analysis Interface */}
-                <Card className="border-0 shadow-2xl bg-gradient-to-br from-white via-white to-purple-500/5 overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-purple-500/10 opacity-50"></div>
-                  <CardHeader className="relative pb-6">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg">
-                        <Target className="h-6 w-6 text-white" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent">
-                          Análisis Estratégico de Caso
-                        </CardTitle>
-                        <CardDescription className="text-base mt-2">
-                          Describe los hechos del caso para obtener un análisis estratégico integral con argumentos y tácticas
-                        </CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="relative space-y-6">
-                    <div className="space-y-3">
-                      <label className="text-sm font-semibold text-purple-700">Descripción detallada del caso</label>
-                      <Textarea
-                        placeholder="Proporciona un análisis detallado incluyendo: hechos relevantes, partes involucradas, problema jurídico central, pretensiones, marco normativo aplicable, y cualquier circunstancia especial que pueda influir en la estrategia legal..."
-                        value={caseDescription}
-                        onChange={(e) => setCaseDescription(e.target.value)}
-                        rows={7}
-                        className="resize-none border-purple-200 focus:border-purple-400 rounded-xl bg-white/80 backdrop-blur-sm text-base"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        💡 Incluye información sobre precedentes, evidencias disponibles y objetivos del cliente para un análisis más preciso
-                      </p>
-                    </div>
-                    
-                    <Button
-                      onClick={handleStrategicAnalysis}
-                      disabled={isAnalyzing || !hasEnoughCredits('strategy')}
-                      className="w-full h-14 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-500 shadow-xl hover:shadow-2xl transition-all duration-300 text-lg font-semibold"
-                    >
-                      {isAnalyzing ? (
-                        <>
-                          <Loader2 className="h-5 w-5 mr-3 animate-spin" />
-                          <span className="animate-pulse">Desarrollando estrategia...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="h-5 w-5 mr-3" />
-                          <span>Generar Estrategia</span>
-                          <span className="ml-3 flex items-center gap-1 bg-white/20 px-2 py-0.5 rounded-lg text-sm">
-                            <Coins className="h-4 w-4" />
-                            {getToolCost('strategy')}
-                          </span>
-                        </>
-                      )}
-                    </Button>
-                  </CardContent>
-                </Card>
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <Target className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <CardTitle className="text-base font-semibold">Análisis Estratégico de Caso</CardTitle>
+                  <CardDescription className="text-sm">
+                    Describe los hechos del caso para obtener argumentos, tácticas y precedentes
+                  </CardDescription>
+                </div>
+                <ToolCostIndicator toolType="strategy" lawyerId={user.id} />
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Descripción detallada del caso</label>
+                <Textarea
+                  placeholder="Incluye hechos relevantes, partes involucradas, problema jurídico central, pretensiones y marco normativo aplicable..."
+                  value={caseDescription}
+                  onChange={(e) => setCaseDescription(e.target.value)}
+                  rows={4}
+                  className="resize-none"
+                />
+                <p className="text-xs text-muted-foreground">
+                  💡 Incluye precedentes, evidencias y objetivos del cliente para mayor precisión
+                </p>
+              </div>
+              
+              <Button
+                onClick={handleStrategicAnalysis}
+                disabled={isAnalyzing || !hasEnoughCredits('strategy')}
+                className="w-full"
+              >
+                {isAnalyzing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Desarrollando estrategia...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Generar Estrategia
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
 
       {/* Analysis Results */}
       {analyses.length > 0 && (
