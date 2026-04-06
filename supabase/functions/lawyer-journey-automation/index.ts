@@ -122,7 +122,7 @@ serve(async (req) => {
     // Fetch all active lawyers
     const { data: lawyers, error: lawyersError } = await supabase
       .from('lawyer_profiles')
-      .select('id, full_name, email, phone, specialty, created_at, is_active')
+      .select('id, full_name, email, phone_number, specialization, created_at, is_active')
       .eq('is_active', true);
 
     if (lawyersError) throw lawyersError;
