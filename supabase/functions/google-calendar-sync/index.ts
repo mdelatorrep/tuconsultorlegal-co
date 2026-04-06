@@ -72,7 +72,11 @@ function mapEventTypeToColor(eventType: string): string {
 
 // Extract YYYY-MM-DD from a timestamp or date string
 function extractDatePart(dateStr: string): string {
-  if (!dateStr) return new Date().toISOString().split('T')[0];
+  if (!dateStr) {
+    // Use Colombian timezone (GMT-5) for fallback date
+    const colNow = new Date(Date.now() + (-5 * 60 * 60 * 1000));
+    return colNow.toISOString().split('T')[0];
+  }
   // Handle ISO timestamps like "2026-04-17T00:00:00+00:00" or "2026-04-17 00:00:00+00"
   return dateStr.split('T')[0].split(' ')[0];
 }

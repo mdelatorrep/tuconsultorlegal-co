@@ -121,7 +121,9 @@ serve(async (req) => {
         while (daysAdded < days) {
           current.setDate(current.getDate() + 1);
           const dayOfWeek = current.getDay();
-          const dateStr = current.toISOString().split('T')[0];
+          // Use Colombian timezone for holiday comparison
+          const colCurrent = new Date(current.getTime() + (-5 * 60 * 60 * 1000));
+          const dateStr = colCurrent.toISOString().split('T')[0];
 
           // Skip weekends (0 = Sunday, 6 = Saturday) and holidays
           if (dayOfWeek !== 0 && dayOfWeek !== 6 && !holidaySet.has(dateStr)) {

@@ -212,7 +212,7 @@ async function syncAudienciasToCalendar(
         .select('id')
         .eq('lawyer_id', process.lawyer_id)
         .eq('monitored_process_id', process.id)
-        .eq('start_date', eventDate.toISOString().split('T')[0])
+        .eq('start_date', new Date(eventDate.getTime() + (-5 * 60 * 60 * 1000)).toISOString().split('T')[0])
         .ilike('title', `%${process.radicado.slice(-10)}%`)
         .limit(1);
 

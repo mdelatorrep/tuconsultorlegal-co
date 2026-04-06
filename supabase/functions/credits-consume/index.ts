@@ -92,7 +92,9 @@ async function updateGamificationProgress(supabase: any, lawyerId: string, toolT
     for (const task of matchingTasks) {
       const criteria = parseCriteria(task.completion_criteria) || {};
       const minUses = criteria?.min_uses || 1;
-      const today = new Date().toISOString().split('T')[0];
+      // Use Colombian timezone (GMT-5) for date comparison
+      const colNow = new Date(Date.now() + (-5 * 60 * 60 * 1000));
+      const today = colNow.toISOString().split('T')[0];
 
       const appliesToAllTools = criteria?.all_tools === true;
       const currentCount = appliesToAllTools ? totalToolUses : usesOfThisTool;

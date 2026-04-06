@@ -128,18 +128,17 @@ serve(async (req) => {
     const newBalance = (credits?.current_balance || 0) + creditReward;
     const newTotalEarned = (credits?.total_earned || 0) + creditReward;
 
-    // Calculate streak
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
+    // Calculate streak using Colombian timezone (GMT-5)
+    const colNow = new Date(Date.now() + (-5 * 60 * 60 * 1000));
+    const todayStr = colNow.toISOString().split('T')[0];
     const lastActivity = credits?.last_activity_date;
     let newStreak = credits?.current_streak || 0;
     let newLongestStreak = credits?.longest_streak || 0;
 
     if (lastActivity !== todayStr) {
-      // Check if last activity was yesterday
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      // Check if last activity was yesterday (Colombia time)
+      const colYesterday = new Date(colNow.getTime() - 24 * 60 * 60 * 1000);
+      const yesterdayStr = colYesterday.toISOString().split('T')[0];
 
       if (lastActivity === yesterdayStr) {
         newStreak += 1;
