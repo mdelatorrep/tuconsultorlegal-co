@@ -229,11 +229,8 @@ export default function UserAuthPage({ onBack, onAuthSuccess }: UserAuthPageProp
           </CardHeader>
 
           <CardContent>
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-2 bg-muted/30">
-                <TabsTrigger value="login" className="text-sm font-medium">Iniciar Sesión</TabsTrigger>
-                <TabsTrigger value="signup" className="text-sm font-medium">Crear Cuenta</TabsTrigger>
-              </TabsList>
+            <Tabs value={activeTab}>
+              {/* Registro de usuarios deshabilitado - solo login */}
 
               <TabsContent value="login" className="space-y-4 mt-6">
                 {showEmailConfirmedMessage && (
