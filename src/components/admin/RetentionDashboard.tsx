@@ -303,6 +303,15 @@ export const RetentionDashboard = ({ onNavigate }: RetentionDashboardProps) => {
                     <p className="text-sm font-medium text-amber-600">{lawyer.days_inactive} días</p>
                     <p className="text-xs text-muted-foreground">sin actividad</p>
                   </div>
+                  {lawyer.journeyStatus === 'active' ? (
+                    <Badge className="text-xs bg-emerald-100 text-emerald-700 whitespace-nowrap">
+                      <Zap className="w-3 h-3 mr-1" />Journey activo
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-xs text-muted-foreground whitespace-nowrap">
+                      Sin acción
+                    </Badge>
+                  )}
                   <Button variant="ghost" size="sm" onClick={() => onNavigate?.('lawyers')}>
                     <ExternalLink className="w-4 h-4" />
                   </Button>
