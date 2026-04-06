@@ -5,13 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { 
-  Heart, Users, TrendingDown, TrendingUp, Activity,
-  AlertTriangle, Mail, Clock, Calendar, UserMinus,
-  UserCheck, RefreshCw, ChevronRight, ExternalLink
+  Heart, Users, TrendingUp, Activity,
+  AlertTriangle, Mail, Calendar, UserMinus,
+  UserCheck, RefreshCw, ExternalLink
 } from "lucide-react";
 import { toast } from "sonner";
-import { format, subDays, differenceInDays } from "date-fns";
+import { format, differenceInDays } from "date-fns";
 import { es } from "date-fns/locale";
+import { getColombiaPeriodRange } from "@/lib/date-utils";
+
+const TOOL_USAGE_TYPES = ['usage', 'consumption'];
 
 interface LawyerEngagement {
   id: string;
@@ -56,44 +59,36 @@ export const RetentionDashboard = ({ onNavigate }: RetentionDashboardProps) => {
     setIsLoading(true);
     try {
       const now = new Date();
-      const thirtyDaysAgo = subDays(now, 30);
-      const fourteenDaysAgo = subDays(now, 14);
+      const range90 = getColombiaPeriodRange(90);
+      const range30 = getColombiaPeriodRange(30);
 
-      // Fetch lawyers with activity data
-      const { data: lawyerProfiles } = await supabase
-        .from('lawyer_profiles')
-        .select('id, full_name, email, is_active, created_at');
+      const [lawyerRes, txRes] = await Promise.all([
+        supabase.from('lawyer_profiles').select('id, full_name, email, is_active, created_at'),
+        supabase.from('credit_transactions').select('lawyer_id, created_at, transaction_type')
+          .in('transaction_type', TOOL_USAGE_TYPES)
+          .gte('created_at', range90.start).lt('created_at', range90.end),
+      ]);
 
-      // Fetch credit transactions as activity indicator
-      const { data: transactions } = await supabase
-        .from('credit_transactions')
-        .select('lawyer_id, created_at')
-        .gte('created_at', subDays(now, 90).toISOString());
+      const lawyerProfiles = lawyerRes.data || [];
+      const transactions = txRes.data || [];
+      const thirtyDayStart = new Date(range30.start);
 
-      // Calculate engagement for each lawyer
-      const lawyerEngagements: LawyerEngagement[] = (lawyerProfiles || []).map(lawyer => {
-        const lawyerTxs = transactions?.filter(t => t.lawyer_id === lawyer.id) || [];
-        const lastActivity = lawyerTxs.length > 0 
-          ? lawyerTxs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0].created_at 
+      const lawyerEngagements: LawyerEngagement[] = lawyerProfiles.map(lawyer => {
+        const lawyerTxs = transactions.filter(t => t.lawyer_id === lawyer.id);
+        const lastActivity = lawyerTxs.length > 0
+          ? lawyerTxs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0].created_at
           : null;
 
-        const daysInactive = lastActivity 
+        const daysInactive = lastActivity
           ? differenceInDays(now, new Date(lastActivity))
           : differenceInDays(now, new Date(lawyer.created_at));
 
-        // Calculate engagement score (0-100)
-        const recentTxs = lawyerTxs.filter(t => 
-          new Date(t.created_at) >= thirtyDaysAgo
-        ).length;
+        const recentTxs = lawyerTxs.filter(t => new Date(t.created_at) >= thirtyDayStart).length;
         const engagementScore = Math.min(100, recentTxs * 10 + (daysInactive < 7 ? 30 : 0));
 
-        // Determine status
         let status: 'active' | 'at_risk' | 'churned' = 'active';
-        if (daysInactive > 30) {
-          status = 'churned';
-        } else if (daysInactive > 14) {
-          status = 'at_risk';
-        }
+        if (daysInactive > 30) status = 'churned';
+        else if (daysInactive > 14) status = 'at_risk';
 
         return {
           id: lawyer.id,
@@ -107,7 +102,6 @@ export const RetentionDashboard = ({ onNavigate }: RetentionDashboardProps) => {
         };
       });
 
-      // Sort by engagement (at_risk first, then by days inactive)
       lawyerEngagements.sort((a, b) => {
         if (a.status === 'at_risk' && b.status !== 'at_risk') return -1;
         if (b.status === 'at_risk' && a.status !== 'at_risk') return 1;
@@ -116,43 +110,33 @@ export const RetentionDashboard = ({ onNavigate }: RetentionDashboardProps) => {
 
       setLawyers(lawyerEngagements);
 
-      // Calculate metrics
       const active = lawyerEngagements.filter(l => l.status === 'active').length;
       const atRisk = lawyerEngagements.filter(l => l.status === 'at_risk').length;
       const churned = lawyerEngagements.filter(l => l.status === 'churned').length;
-      const avgEngagement = lawyerEngagements.length > 0 
+      const avgEngagement = lawyerEngagements.length > 0
         ? lawyerEngagements.reduce((sum, l) => sum + l.engagement_score, 0) / lawyerEngagements.length
         : 0;
       const retentionRate = lawyerEngagements.length > 0
         ? ((active + atRisk) / lawyerEngagements.length) * 100
         : 0;
 
-      setMetrics({
-        totalActive: active,
-        atRisk,
-        churned,
-        avgEngagement,
-        retentionRate
-      });
+      setMetrics({ totalActive: active, atRisk, churned, avgEngagement, retentionRate });
 
-      // Generate cohort data (last 6 months)
+      // Cohort data (last 6 months)
       const cohortData: CohortData[] = [];
       for (let i = 5; i >= 0; i--) {
         const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
         const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
-        
-        const registered = lawyerProfiles?.filter(l => {
+        const registered = lawyerProfiles.filter(l => {
           const created = new Date(l.created_at);
           return created >= monthStart && created <= monthEnd;
-        }).length || 0;
-
+        }).length;
         const retained = lawyerEngagements.filter(l => {
-          const lawyer = lawyerProfiles?.find(p => p.id === l.id);
+          const lawyer = lawyerProfiles.find(p => p.id === l.id);
           if (!lawyer) return false;
           const created = new Date(lawyer.created_at);
           return created >= monthStart && created <= monthEnd && l.status !== 'churned';
         }).length;
-
         cohortData.push({
           month: format(monthStart, 'MMM yyyy', { locale: es }),
           registered,
@@ -160,7 +144,6 @@ export const RetentionDashboard = ({ onNavigate }: RetentionDashboardProps) => {
           retentionRate: registered > 0 ? (retained / registered) * 100 : 0
         });
       }
-
       setCohorts(cohortData);
 
     } catch (error) {
@@ -172,14 +155,10 @@ export const RetentionDashboard = ({ onNavigate }: RetentionDashboardProps) => {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'active':
-        return <Badge className="bg-emerald-100 text-emerald-700">Activo</Badge>;
-      case 'at_risk':
-        return <Badge className="bg-amber-100 text-amber-700">En Riesgo</Badge>;
-      case 'churned':
-        return <Badge className="bg-red-100 text-red-700">Inactivo</Badge>;
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
+      case 'active': return <Badge className="bg-emerald-100 text-emerald-700">Activo</Badge>;
+      case 'at_risk': return <Badge className="bg-amber-100 text-amber-700">En Riesgo</Badge>;
+      case 'churned': return <Badge className="bg-red-100 text-red-700">Inactivo</Badge>;
+      default: return <Badge variant="secondary">{status}</Badge>;
     }
   };
 
@@ -187,17 +166,13 @@ export const RetentionDashboard = ({ onNavigate }: RetentionDashboardProps) => {
     setSendingEmails(true);
     try {
       const atRiskLawyers = lawyers.filter(l => l.status === 'at_risk');
-
       if (atRiskLawyers.length === 0) {
         toast.info("No hay usuarios en riesgo para enviar emails");
         setSendingEmails(false);
         return;
       }
-
       let successCount = 0;
       let errorCount = 0;
-
-      // Send emails individually using the existing send-email function
       for (const lawyer of atRiskLawyers) {
         try {
           const { error } = await supabase.functions.invoke('send-email', {
@@ -205,44 +180,19 @@ export const RetentionDashboard = ({ onNavigate }: RetentionDashboardProps) => {
               to: lawyer.email,
               recipient_type: 'lawyer',
               template_key: 'lawyer_reengagement',
-              variables: {
-                lawyer_name: lawyer.full_name,
-                days_inactive: String(lawyer.days_inactive)
-              }
+              variables: { lawyer_name: lawyer.full_name, days_inactive: String(lawyer.days_inactive) }
             }
           });
-
-          if (error) {
-            console.error(`Error sending to ${lawyer.email}:`, error);
-            errorCount++;
-          } else {
-            successCount++;
-          }
-        } catch (err) {
-          console.error(`Error sending to ${lawyer.email}:`, err);
-          errorCount++;
-        }
+          if (error) { errorCount++; } else { successCount++; }
+        } catch { errorCount++; }
       }
-
-      if (successCount > 0) {
-        toast.success(`Se enviaron ${successCount} emails de re-engagement`);
-      }
-      if (errorCount > 0) {
-        toast.warning(`${errorCount} emails no pudieron enviarse`);
-      }
+      if (successCount > 0) toast.success(`Se enviaron ${successCount} emails de re-engagement`);
+      if (errorCount > 0) toast.warning(`${errorCount} emails no pudieron enviarse`);
     } catch (error) {
       console.error('Error sending emails:', error);
       toast.error("Error al enviar emails de re-engagement");
     } finally {
       setSendingEmails(false);
-    }
-  };
-
-  const handleViewLawyerDetails = (lawyerId: string) => {
-    if (onNavigate) {
-      onNavigate(`lawyers?id=${lawyerId}`);
-    } else {
-      toast.info("Navegación a detalles del abogado");
     }
   };
 
@@ -258,83 +208,27 @@ export const RetentionDashboard = ({ onNavigate }: RetentionDashboardProps) => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
             <Heart className="w-6 h-6" />
             Retención & Engagement
           </h2>
-          <p className="text-muted-foreground">
-            Análisis de actividad y retención de abogados
-          </p>
+          <p className="text-muted-foreground">Análisis de actividad y retención de abogados</p>
         </div>
         <Button variant="outline" onClick={loadRetentionData}>
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Actualizar
+          <RefreshCw className="w-4 h-4 mr-2" />Actualizar
         </Button>
       </div>
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Activos</p>
-                <p className="text-3xl font-bold text-emerald-600">{metrics.totalActive}</p>
-              </div>
-              <UserCheck className="w-8 h-8 text-emerald-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">En Riesgo</p>
-                <p className="text-3xl font-bold text-amber-600">{metrics.atRisk}</p>
-              </div>
-              <AlertTriangle className="w-8 h-8 text-amber-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Inactivos</p>
-                <p className="text-3xl font-bold text-red-600">{metrics.churned}</p>
-              </div>
-              <UserMinus className="w-8 h-8 text-red-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Engagement Promedio</p>
-                <p className="text-3xl font-bold">{metrics.avgEngagement.toFixed(0)}</p>
-              </div>
-              <Activity className="w-8 h-8 text-blue-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Tasa Retención</p>
-                <p className="text-3xl font-bold">{metrics.retentionRate.toFixed(0)}%</p>
-              </div>
-              <TrendingUp className="w-8 h-8 text-indigo-500" />
-            </div>
-          </CardContent>
-        </Card>
+        <Card><CardContent className="p-6"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">Activos</p><p className="text-3xl font-bold text-emerald-600">{metrics.totalActive}</p></div><UserCheck className="w-8 h-8 text-emerald-500" /></div></CardContent></Card>
+        <Card><CardContent className="p-6"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">En Riesgo</p><p className="text-3xl font-bold text-amber-600">{metrics.atRisk}</p></div><AlertTriangle className="w-8 h-8 text-amber-500" /></div></CardContent></Card>
+        <Card><CardContent className="p-6"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">Inactivos</p><p className="text-3xl font-bold text-red-600">{metrics.churned}</p></div><UserMinus className="w-8 h-8 text-red-500" /></div></CardContent></Card>
+        <Card><CardContent className="p-6"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">Engagement Promedio</p><p className="text-3xl font-bold">{metrics.avgEngagement.toFixed(0)}</p></div><Activity className="w-8 h-8 text-blue-500" /></div></CardContent></Card>
+        <Card><CardContent className="p-6"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">Tasa Retención</p><p className="text-3xl font-bold">{metrics.retentionRate.toFixed(0)}%</p></div><TrendingUp className="w-8 h-8 text-indigo-500" /></div></CardContent></Card>
       </div>
 
-      {/* At Risk Alert */}
       {atRiskLawyers.length > 0 && (
         <Card className="border-l-4 border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/20">
           <CardContent className="p-4">
@@ -343,22 +237,11 @@ export const RetentionDashboard = ({ onNavigate }: RetentionDashboardProps) => {
                 <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />
                 <div>
                   <p className="font-medium">{atRiskLawyers.length} abogados en riesgo de churn</p>
-                  <p className="text-sm text-muted-foreground">
-                    No han usado la plataforma en 14+ días. Considera enviar emails de re-engagement.
-                  </p>
+                  <p className="text-sm text-muted-foreground">No han usado la plataforma en 14+ días.</p>
                 </div>
               </div>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={handleSendReengagementEmails}
-                disabled={sendingEmails}
-              >
-                {sendingEmails ? (
-                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Mail className="w-4 h-4 mr-2" />
-                )}
+              <Button variant="outline" size="sm" onClick={handleSendReengagementEmails} disabled={sendingEmails}>
+                {sendingEmails ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Mail className="w-4 h-4 mr-2" />}
                 {sendingEmails ? "Enviando..." : "Enviar Emails"}
               </Button>
             </div>
@@ -367,17 +250,11 @@ export const RetentionDashboard = ({ onNavigate }: RetentionDashboardProps) => {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Cohort Analysis */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="w-5 h-5" />
-              Análisis de Cohortes
-            </CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2"><Calendar className="w-5 h-5" />Análisis de Cohortes</CardTitle></CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {cohorts.map((cohort, index) => (
+              {cohorts.map((cohort) => (
                 <div key={cohort.month} className="flex items-center gap-4">
                   <div className="w-24 text-sm font-medium">{cohort.month}</div>
                   <div className="flex-1 space-y-1">
@@ -393,14 +270,8 @@ export const RetentionDashboard = ({ onNavigate }: RetentionDashboardProps) => {
           </CardContent>
         </Card>
 
-        {/* Lawyers at Risk */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5" />
-              Usuarios en Riesgo
-            </CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2"><AlertTriangle className="w-5 h-5" />Usuarios en Riesgo</CardTitle></CardHeader>
           <CardContent>
             <div className="space-y-3 max-h-[400px] overflow-y-auto">
               {atRiskLawyers.slice(0, 10).map((lawyer) => (
@@ -410,16 +281,10 @@ export const RetentionDashboard = ({ onNavigate }: RetentionDashboardProps) => {
                     <p className="text-xs text-muted-foreground truncate">{lawyer.email}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-medium text-amber-600">
-                      {lawyer.days_inactive} días
-                    </p>
+                    <p className="text-sm font-medium text-amber-600">{lawyer.days_inactive} días</p>
                     <p className="text-xs text-muted-foreground">sin actividad</p>
                   </div>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => handleViewLawyerDetails(lawyer.id)}
-                  >
+                  <Button variant="ghost" size="sm" onClick={() => onNavigate?.(`lawyers?id=${lawyer.id}`)}>
                     <ExternalLink className="w-4 h-4" />
                   </Button>
                 </div>
@@ -435,14 +300,8 @@ export const RetentionDashboard = ({ onNavigate }: RetentionDashboardProps) => {
         </Card>
       </div>
 
-      {/* All Lawyers Table */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5" />
-            Engagement por Abogado
-          </CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle className="flex items-center gap-2"><Users className="w-5 h-5" />Engagement por Abogado</CardTitle></CardHeader>
         <CardContent>
           <div className="space-y-2 max-h-[400px] overflow-y-auto">
             {lawyers.slice(0, 20).map((lawyer) => (
@@ -451,20 +310,17 @@ export const RetentionDashboard = ({ onNavigate }: RetentionDashboardProps) => {
                   <p className="font-medium text-sm truncate">{lawyer.full_name}</p>
                   <p className="text-xs text-muted-foreground truncate">{lawyer.email}</p>
                 </div>
-                <div className="w-24 text-center">
-                  {getStatusBadge(lawyer.status)}
-                </div>
+                <div className="w-24 text-center">{getStatusBadge(lawyer.status)}</div>
                 <div className="w-24 text-center">
                   <p className="text-sm font-medium">{lawyer.total_actions}</p>
                   <p className="text-xs text-muted-foreground">acciones</p>
                 </div>
                 <div className="w-32">
                   <div className="flex justify-between text-xs mb-1">
-                    <span>Engagement</span>
-                    <span>{lawyer.engagement_score}</span>
+                    <span>Engagement</span><span>{lawyer.engagement_score}</span>
                   </div>
-                  <Progress 
-                    value={lawyer.engagement_score} 
+                  <Progress
+                    value={lawyer.engagement_score}
                     className={`h-2 ${
                       lawyer.engagement_score > 60 ? '[&>div]:bg-emerald-500' :
                       lawyer.engagement_score > 30 ? '[&>div]:bg-amber-500' :
@@ -474,9 +330,9 @@ export const RetentionDashboard = ({ onNavigate }: RetentionDashboardProps) => {
                 </div>
                 <div className="w-20 text-right">
                   <p className="text-xs text-muted-foreground">
-                    {lawyer.last_activity 
+                    {lawyer.last_activity
                       ? format(new Date(lawyer.last_activity), 'dd/MM', { locale: es })
-                      : 'Nunca'}
+                      : 'Sin actividad'}
                   </p>
                 </div>
               </div>

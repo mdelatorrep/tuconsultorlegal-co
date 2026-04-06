@@ -5,11 +5,12 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   TrendingUp, TrendingDown, DollarSign, Users, CreditCard, 
-  Activity, AlertTriangle, Target, Coins, FileText, Bot,
-  ArrowUpRight, ArrowDownRight, Percent, Calendar, Clock
+  Activity, AlertTriangle, Target, Coins, FileText,
+  ArrowUpRight, ArrowDownRight, Percent, Clock
 } from "lucide-react";
-import { format, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns";
+import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { getColombiaPeriodRange } from "@/lib/date-utils";
 
 interface MetricCard {
   title: string;
@@ -27,6 +28,8 @@ interface BusinessAlert {
   description: string;
   action?: string;
 }
+
+const TOOL_USAGE_TYPES = ['usage', 'consumption'];
 
 export const BusinessMetricsDashboard = () => {
   const [metrics, setMetrics] = useState({
@@ -49,7 +52,6 @@ export const BusinessMetricsDashboard = () => {
   });
   const [alerts, setAlerts] = useState<BusinessAlert[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [topLawyers, setTopLawyers] = useState<any[]>([]);
 
   useEffect(() => {
     loadBusinessMetrics();
@@ -58,65 +60,59 @@ export const BusinessMetricsDashboard = () => {
   const loadBusinessMetrics = async () => {
     setIsLoading(true);
     try {
-      const now = new Date();
-      const thirtyDaysAgo = subDays(now, 30);
-      const sixtyDaysAgo = subDays(now, 60);
-      const currentMonthStart = startOfMonth(now);
-      const lastMonthStart = startOfMonth(subMonths(now, 1));
-      const lastMonthEnd = endOfMonth(subMonths(now, 1));
+      const range30 = getColombiaPeriodRange(30);
 
-      // Fetch lawyers
-      const { data: lawyers } = await supabase
-        .from('lawyer_profiles')
-        .select('id, is_active, is_verified, created_at');
+      // Fetch all data in parallel
+      const [lawyersRes, usersRes, documentsRes, subscriptionsRes, creditTxsRes, prevCreditTxsRes, packageRes] = await Promise.all([
+        supabase.from('lawyer_profiles').select('id, is_active, is_verified, created_at'),
+        supabase.from('user_profiles').select('id, created_at'),
+        supabase.from('document_tokens').select('id, status, price, created_at, legal_agent_id'),
+        supabase.from('lawyer_subscriptions').select('id, status, plan_id, created_at').eq('status', 'active'),
+        supabase.from('credit_transactions').select('amount, transaction_type, created_at, lawyer_id')
+          .gte('created_at', range30.start).lt('created_at', range30.end),
+        supabase.from('credit_transactions').select('amount, transaction_type, created_at, lawyer_id')
+          .gte('created_at', range30.prevStart).lt('created_at', range30.prevEnd),
+        supabase.from('credit_packages').select('credits, price_cop').eq('is_active', true),
+      ]);
 
-      // Fetch users
-      const { data: users } = await supabase
-        .from('user_profiles')
-        .select('id, created_at');
+      const lawyers = lawyersRes.data || [];
+      const documents = documentsRes.data || [];
+      const creditTxs = creditTxsRes.data || [];
+      const prevCreditTxs = prevCreditTxsRes.data || [];
+      const packages = packageRes.data || [];
 
-      // Fetch documents with payments
-      const { data: documents } = await supabase
-        .from('document_tokens')
-        .select('id, status, price, created_at, legal_agent_id');
+      // Lawyer metrics
+      const totalLawyers = lawyers.length;
+      const activeLawyers = lawyers.filter(l => l.is_active).length;
+      const verifiedLawyers = lawyers.filter(l => l.is_verified).length;
 
-      // Fetch subscriptions
-      const { data: subscriptions } = await supabase
-        .from('lawyer_subscriptions')
-        .select('id, status, plan_id, created_at')
-        .eq('status', 'active');
+      // Document metrics
+      const totalDocuments = documents.length;
+      const paidDocuments = documents.filter(d => d.status === 'pagado' || d.status === 'descargado').length;
+      const freeDocuments = documents.filter(d => d.price === 0).length;
 
-      // Fetch credit transactions
-      const { data: creditTxs } = await supabase
-        .from('credit_transactions')
-        .select('amount, transaction_type, created_at')
-        .gte('created_at', thirtyDaysAgo.toISOString());
-
-      // Calculate metrics
-      const totalLawyers = lawyers?.length || 0;
-      const activeLawyers = lawyers?.filter(l => l.is_active)?.length || 0;
-      const inactiveLawyers = totalLawyers - activeLawyers;
-      const verifiedLawyers = lawyers?.filter(l => l.is_verified)?.length || 0;
-
-      const totalDocuments = documents?.length || 0;
-      const paidDocuments = documents?.filter(d => d.status === 'pagado' || d.status === 'descargado')?.length || 0;
-      const freeDocuments = documents?.filter(d => d.price === 0)?.length || 0;
-
-      // Revenue from documents (last 30 days)
-      const recentDocs = documents?.filter(d => 
-        new Date(d.created_at) >= thirtyDaysAgo && 
+      // Revenue from documents (current 30-day period)
+      const recentPaidDocs = documents.filter(d =>
+        new Date(d.created_at) >= new Date(range30.start) &&
+        new Date(d.created_at) < new Date(range30.end) &&
         (d.status === 'pagado' || d.status === 'descargado')
-      ) || [];
-      const documentsRevenue = recentDocs.reduce((sum, d) => sum + (d.price || 0), 0);
+      );
+      const documentsRevenue = recentPaidDocs.reduce((sum, d) => sum + (d.price || 0), 0);
 
-      // Credits purchased (last 30 days)
-      const creditsPurchased = creditTxs?.filter(t => t.transaction_type === 'purchase') || [];
-      const creditsRevenue = creditsPurchased.reduce((sum, t) => sum + Math.abs(t.amount) * 1000, 0); // Estimate
+      // Credits revenue: use actual package prices
+      const avgPricePerCredit = packages.length > 0
+        ? packages.reduce((sum, p) => sum + (p.price_cop / p.credits), 0) / packages.length
+        : 1000;
+      const creditsPurchased = creditTxs.filter(t => t.transaction_type === 'purchase');
+      const creditsRevenue = creditsPurchased.reduce((sum, t) => sum + Math.abs(t.amount) * avgPricePerCredit, 0);
 
       const totalRevenue = documentsRevenue + creditsRevenue;
 
-      // MRR from active subscriptions (estimate based on plan)
-      const mrr = (subscriptions?.length || 0) * 99000; // Average plan price
+      // MRR from active subscriptions (use count * average plan price from packages)
+      const avgPlanPrice = packages.length > 0
+        ? packages.reduce((sum, p) => sum + p.price_cop, 0) / packages.length
+        : 99000;
+      const mrr = (subscriptionsRes.data?.length || 0) * avgPlanPrice;
 
       // Conversion rate (paid docs / total docs)
       const conversionRate = totalDocuments > 0 ? (paidDocuments / totalDocuments) * 100 : 0;
@@ -124,24 +120,29 @@ export const BusinessMetricsDashboard = () => {
       // Average ticket
       const avgTicket = paidDocuments > 0 ? documentsRevenue / paidDocuments : 0;
 
-      // Churn rate (estimate based on inactive lawyers)
-      const churnRate = totalLawyers > 0 ? (inactiveLawyers / totalLawyers) * 100 : 0;
+      // Churn rate based on ACTIVITY (not is_active flag)
+      // Active = had at least 1 tool usage in current period
+      const activeLawyerIds = new Set(
+        creditTxs
+          .filter(t => TOOL_USAGE_TYPES.includes(t.transaction_type))
+          .map(t => t.lawyer_id)
+      );
+      const activityBasedActive = activeLawyerIds.size;
+      const churnRate = totalLawyers > 0 ? ((totalLawyers - activityBasedActive) / totalLawyers) * 100 : 0;
 
-      // Revenue growth (this month vs last month)
-      const thisMonthDocs = documents?.filter(d => 
-        new Date(d.created_at) >= currentMonthStart && 
-        (d.status === 'pagado' || d.status === 'descargado')
-      ) || [];
-      const lastMonthDocs = documents?.filter(d => {
+      // Revenue growth (current 30d vs previous 30d)
+      const prevPaidDocs = documents.filter(d => {
         const date = new Date(d.created_at);
-        return date >= lastMonthStart && date <= lastMonthEnd && 
-               (d.status === 'pagado' || d.status === 'descargado');
-      }) || [];
-      
-      const thisMonthRevenue = thisMonthDocs.reduce((sum, d) => sum + (d.price || 0), 0);
-      const lastMonthRevenue = lastMonthDocs.reduce((sum, d) => sum + (d.price || 0), 0);
-      const revenueGrowth = lastMonthRevenue > 0 
-        ? ((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100 
+        return date >= new Date(range30.prevStart) && date < new Date(range30.prevEnd) &&
+          (d.status === 'pagado' || d.status === 'descargado');
+      });
+      const prevDocRevenue = prevPaidDocs.reduce((sum, d) => sum + (d.price || 0), 0);
+      const prevCreditsPurchased = prevCreditTxs.filter(t => t.transaction_type === 'purchase');
+      const prevCreditsRevenue = prevCreditsPurchased.reduce((sum, t) => sum + Math.abs(t.amount) * avgPricePerCredit, 0);
+      const prevTotalRevenue = prevDocRevenue + prevCreditsRevenue;
+
+      const revenueGrowth = prevTotalRevenue > 0
+        ? ((totalRevenue - prevTotalRevenue) / prevTotalRevenue) * 100
         : 0;
 
       setMetrics({
@@ -151,9 +152,9 @@ export const BusinessMetricsDashboard = () => {
         creditsRevenue,
         totalLawyers,
         activeLawyers,
-        inactiveLawyers,
+        inactiveLawyers: totalLawyers - activeLawyers,
         verifiedLawyers,
-        totalUsers: users?.length || 0,
+        totalUsers: usersRes.data?.length || 0,
         totalDocuments,
         paidDocuments,
         freeDocuments,
@@ -165,7 +166,8 @@ export const BusinessMetricsDashboard = () => {
 
       // Generate business alerts
       const newAlerts: BusinessAlert[] = [];
-      
+      const inactiveLawyers = totalLawyers - activeLawyers;
+
       if (inactiveLawyers > 5) {
         newAlerts.push({
           type: 'warning',
@@ -175,11 +177,11 @@ export const BusinessMetricsDashboard = () => {
         });
       }
 
-      if (churnRate > 10) {
+      if (churnRate > 70) {
         newAlerts.push({
           type: 'danger',
           title: `Churn rate alto: ${churnRate.toFixed(1)}%`,
-          description: 'El churn está por encima del 10%. Revisa la experiencia de usuario.',
+          description: 'La mayoría de abogados no usaron herramientas en los últimos 30 días.',
           action: 'Ver análisis de retención'
         });
       }
@@ -188,7 +190,7 @@ export const BusinessMetricsDashboard = () => {
         newAlerts.push({
           type: 'warning',
           title: `Revenue bajó ${Math.abs(revenueGrowth).toFixed(1)}%`,
-          description: 'Los ingresos de este mes son menores al mes anterior',
+          description: 'Los ingresos de este período son menores al anterior',
           action: 'Ver detalles de ingresos'
         });
       }
@@ -212,20 +214,6 @@ export const BusinessMetricsDashboard = () => {
 
       setAlerts(newAlerts);
 
-      // Top lawyers by documents
-      const lawyerDocs = documents?.reduce((acc, doc) => {
-        if (doc.legal_agent_id) {
-          acc[doc.legal_agent_id] = (acc[doc.legal_agent_id] || 0) + 1;
-        }
-        return acc;
-      }, {} as Record<string, number>) || {};
-
-      const topLawyersList = Object.entries(lawyerDocs)
-        .sort(([,a], [,b]) => b - a)
-        .slice(0, 5);
-
-      setTopLawyers(topLawyersList);
-
     } catch (error) {
       console.error('Error loading business metrics:', error);
     } finally {
@@ -246,8 +234,8 @@ export const BusinessMetricsDashboard = () => {
     {
       title: "MRR (Ingresos Recurrentes)",
       value: formatCurrency(metrics.mrr),
-      change: 12,
-      changeLabel: "vs mes anterior",
+      change: metrics.revenueGrowth,
+      changeLabel: "vs período anterior",
       icon: DollarSign,
       color: "text-emerald-600",
       bgColor: "bg-emerald-50 dark:bg-emerald-950/20"
