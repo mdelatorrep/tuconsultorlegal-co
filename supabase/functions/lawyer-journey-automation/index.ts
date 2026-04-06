@@ -59,7 +59,7 @@ const JOURNEY_STEPS: JourneyStep[] = [
     notificationPriority: 'normal',
     condition: (lawyer: any, transactions: any[]) => {
       const consumptions = transactions.filter(t => t.transaction_type === 'consumption');
-      const profileIncomplete = !lawyer.phone || !lawyer.specialty;
+      const profileIncomplete = !lawyer.phone_number || !lawyer.specialization;
       return profileIncomplete || consumptions.length === 0;
     },
   },
