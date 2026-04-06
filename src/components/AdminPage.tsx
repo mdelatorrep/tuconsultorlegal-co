@@ -1023,6 +1023,9 @@ function AdminPage() {
       case 'journey':
         return <LawyerJourneyDashboard />;
       
+      case 'aarrr-funnel':
+        return <AARRRFunnelDashboard />;
+      
       case 'strategic':
         return <StrategicDecisions onNavigate={setCurrentView} />;
       
