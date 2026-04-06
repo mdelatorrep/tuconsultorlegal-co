@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { subDays } from "date-fns";
 import { toast } from "sonner";
+import { getColombiaPeriodRange } from "@/lib/date-utils";
 import {
   Collapsible,
   CollapsibleContent,
