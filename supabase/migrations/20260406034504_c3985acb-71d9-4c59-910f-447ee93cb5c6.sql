@@ -1,0 +1,1 @@
+UPDATE email_configuration SET smtp_from_email = 'contacto@praxis-hub.co', smtp_from_name = 'Praxis Hub' WHERE id = '33da1a56-2383-4f4a-bb5a-35292c2c8edd';
