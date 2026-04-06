@@ -193,7 +193,7 @@ export default function UserAuthPage({ onBack, onAuthSuccess }: UserAuthPageProp
           toast.success('¡Cuenta creada! Revisa tu email para confirmar tu cuenta antes de iniciar sesión.', {
             duration: 6000
           });
-          setActiveTab('login');
+          // Registration disabled
         } else {
           // Auto-confirmed (confirmation disabled in Supabase) - allow immediate access
           toast.success('¡Cuenta creada exitosamente! Puedes comenzar a usar la plataforma.');
