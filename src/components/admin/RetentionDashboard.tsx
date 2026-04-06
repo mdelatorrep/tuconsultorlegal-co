@@ -104,6 +104,9 @@ export const RetentionDashboard = ({ onNavigate }: RetentionDashboardProps) => {
         if (daysInactive > 30) status = 'churned';
         else if (daysInactive > 14) status = 'at_risk';
 
+        const lastJourneyAction = journeyMap.get(lawyer.id) || null;
+        const journeyActive = lastJourneyAction && differenceInDays(now, new Date(lastJourneyAction)) < 30;
+
         return {
           id: lawyer.id,
           full_name: lawyer.full_name,
@@ -112,7 +115,9 @@ export const RetentionDashboard = ({ onNavigate }: RetentionDashboardProps) => {
           days_inactive: daysInactive,
           engagement_score: engagementScore,
           status,
-          total_actions: lawyerTxs.length
+          total_actions: lawyerTxs.length,
+          journeyStatus: journeyActive ? 'active' as const : 'none' as const,
+          lastJourneyAction: lastJourneyAction || undefined,
         };
       });
 
