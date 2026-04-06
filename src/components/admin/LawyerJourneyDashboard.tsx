@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   Zap, Users, Gift, Mail, TrendingUp, RefreshCw, 
-  Play, Clock, CheckCircle, AlertTriangle
+  Play, Repeat
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -16,15 +16,19 @@ interface StepMetrics {
   emoji: string;
   total: number;
   credits: number;
+  isRecurring: boolean;
   lawyers: { full_name: string; email: string; sent_at: string }[];
 }
 
-const STEP_CONFIG: Record<string, { label: string; emoji: string; credits: number }> = {
-  day_1: { label: 'Día 1 - Tip de Uso', emoji: '🚀', credits: 5 },
-  day_3: { label: 'Día 3 - Nudge IA', emoji: '🤖', credits: 0 },
-  day_7: { label: 'Día 7 - Perfil', emoji: '👤', credits: 3 },
-  day_14: { label: 'Día 14 - Re-engagement', emoji: '⚠️', credits: 10 },
-  day_30: { label: 'Día 30 - Última Oportunidad', emoji: '💎', credits: 15 },
+const STEP_CONFIG: Record<string, { label: string; emoji: string; credits: number; isRecurring: boolean }> = {
+  day_1: { label: 'Día 1 - Tip de Uso', emoji: '🚀', credits: 5, isRecurring: false },
+  day_3: { label: 'Día 3 - Nudge IA', emoji: '🤖', credits: 0, isRecurring: false },
+  day_7: { label: 'Día 7 - Perfil', emoji: '👤', credits: 3, isRecurring: false },
+  day_14: { label: 'Día 14 - Re-engagement', emoji: '⚠️', credits: 10, isRecurring: false },
+  day_30: { label: 'Día 30 - Última Oportunidad', emoji: '💎', credits: 15, isRecurring: false },
+  reengagement_at_risk: { label: 'En Riesgo (7-14d inactivo)', emoji: '⚠️', credits: 5, isRecurring: true },
+  reengagement_critical: { label: 'Crítico (15-29d inactivo)', emoji: '🚨', credits: 10, isRecurring: true },
+  reengagement_churned: { label: 'Churned (30d+ inactivo)', emoji: '💀', credits: 15, isRecurring: true },
 };
 
 export const LawyerJourneyDashboard = () => {
@@ -42,19 +46,16 @@ export const LawyerJourneyDashboard = () => {
   const loadJourneyData = async () => {
     setIsLoading(true);
     try {
-      // Get total lawyers
       const { count } = await supabase
         .from('lawyer_profiles')
         .select('id', { count: 'exact', head: true })
         .eq('is_active', true);
       setTotalLawyers(count || 0);
 
-      // Get journey tracking data
       const { data: tracking } = await supabase
         .from('lawyer_journey_tracking' as any)
-        .select('journey_step, lawyer_id, sent_at, action_taken, metadata') as any;
+        .select('journey_step, lawyer_id, sent_at, action_taken, metadata, is_recurring') as any;
 
-      // Get lawyer names for tracking
       const lawyerIds = Array.from(new Set((tracking || []).map((t: any) => String(t.lawyer_id)))) as string[];
       const { data: lawyerProfiles } = await supabase
         .from('lawyer_profiles')
@@ -63,33 +64,31 @@ export const LawyerJourneyDashboard = () => {
 
       const lawyerMap = new Map((lawyerProfiles || []).map(l => [l.id, l]));
 
-      // Get journey bonus credits
       const { data: bonusTxs } = await supabase
         .from('credit_transactions')
         .select('amount')
         .eq('transaction_type', 'journey_bonus');
 
-      const totalCredits = (bonusTxs || []).reduce((sum, t) => sum + t.amount, 0);
-      setTotalCreditsGranted(totalCredits);
+      setTotalCreditsGranted((bonusTxs || []).reduce((sum, t) => sum + t.amount, 0));
       setTotalEmailsSent((tracking || []).length);
 
-      // Build step metrics
       const metrics: StepMetrics[] = Object.entries(STEP_CONFIG).map(([step, config]) => {
-        const stepRecords = (tracking || []).filter(t => t.journey_step === step);
+        const stepRecords = (tracking || []).filter((t: any) => t.journey_step === step);
         return {
           step,
           label: config.label,
           emoji: config.emoji,
           total: stepRecords.length,
           credits: config.credits * stepRecords.length,
-          lawyers: stepRecords.map(r => {
+          isRecurring: config.isRecurring,
+          lawyers: stepRecords.map((r: any) => {
             const lawyer = lawyerMap.get(r.lawyer_id);
             return {
               full_name: lawyer?.full_name || 'Desconocido',
               email: lawyer?.email || '',
               sent_at: r.sent_at
             };
-          }).sort((a, b) => new Date(b.sent_at).getTime() - new Date(a.sent_at).getTime())
+          }).sort((a: any, b: any) => new Date(b.sent_at).getTime() - new Date(a.sent_at).getTime())
         };
       });
 
@@ -132,7 +131,10 @@ export const LawyerJourneyDashboard = () => {
     );
   }
 
-  const maxStepTotal = Math.max(...stepMetrics.map(s => s.total), 1);
+  const onboardingMetrics = stepMetrics.filter(s => !s.isRecurring);
+  const reengagementMetrics = stepMetrics.filter(s => s.isRecurring);
+  const maxOnboardingTotal = Math.max(...onboardingMetrics.map(s => s.total), 1);
+  const maxReengagementTotal = Math.max(...reengagementMetrics.map(s => s.total), 1);
 
   return (
     <div className="space-y-6">
@@ -144,7 +146,7 @@ export const LawyerJourneyDashboard = () => {
             Journey Automatizado de Abogados
           </h2>
           <p className="text-muted-foreground">
-            Lifecycle automation con touchpoints secuenciales, créditos bonus y notificaciones
+            Lifecycle automation con onboarding + re-engagement recurrente basado en inactividad real
           </p>
         </div>
         <div className="flex gap-2">
@@ -205,7 +207,7 @@ export const LawyerJourneyDashboard = () => {
                 <p className="text-sm text-muted-foreground">Tasa de Avance</p>
                 <p className="text-3xl font-bold">
                   {totalLawyers > 0 
-                    ? Math.round((stepMetrics[0]?.total || 0) / totalLawyers * 100) 
+                    ? Math.round((onboardingMetrics[0]?.total || 0) / totalLawyers * 100) 
                     : 0}%
                 </p>
               </div>
@@ -215,24 +217,19 @@ export const LawyerJourneyDashboard = () => {
         </Card>
       </div>
 
-      {/* Journey Funnel */}
+      {/* Onboarding Funnel */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="w-5 h-5" />
-            Funnel del Journey
+            Funnel de Onboarding
+            <Badge variant="secondary" className="ml-2 text-xs">Una vez</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {stepMetrics.map((step, index) => {
-              const percentage = totalLawyers > 0 
-                ? (step.total / totalLawyers) * 100 
-                : 0;
-              const funnelWidth = maxStepTotal > 0 
-                ? Math.max(10, (step.total / maxStepTotal) * 100) 
-                : 10;
-
+            {onboardingMetrics.map((step) => {
+              const percentage = totalLawyers > 0 ? (step.total / totalLawyers) * 100 : 0;
               return (
                 <div key={step.step} className="flex items-center gap-4">
                   <div className="w-8 text-2xl text-center">{step.emoji}</div>
@@ -241,9 +238,7 @@ export const LawyerJourneyDashboard = () => {
                     <p className="text-xs text-muted-foreground">
                       {step.total} abogados
                       {STEP_CONFIG[step.step].credits > 0 && (
-                        <span className="text-emerald-600 ml-1">
-                          (+{STEP_CONFIG[step.step].credits} créditos c/u)
-                        </span>
+                        <span className="text-emerald-600 ml-1">(+{STEP_CONFIG[step.step].credits} créditos c/u)</span>
                       )}
                     </p>
                   </div>
@@ -255,9 +250,52 @@ export const LawyerJourneyDashboard = () => {
                     <Progress value={percentage} className="h-3" />
                   </div>
                   {step.credits > 0 && (
-                    <Badge variant="secondary" className="text-xs">
-                      {step.credits} créditos
-                    </Badge>
+                    <Badge variant="secondary" className="text-xs">{step.credits} créditos</Badge>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Re-engagement Funnel */}
+      <Card className="border-l-4 border-l-amber-500">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Repeat className="w-5 h-5" />
+            Re-engagement Recurrente
+            <Badge className="ml-2 text-xs bg-amber-100 text-amber-700">Basado en inactividad real</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {reengagementMetrics.map((step) => {
+              const percentage = totalLawyers > 0 ? (step.total / totalLawyers) * 100 : 0;
+              const config = STEP_CONFIG[step.step];
+              return (
+                <div key={step.step} className="flex items-center gap-4">
+                  <div className="w-8 text-2xl text-center">{step.emoji}</div>
+                  <div className="w-48">
+                    <p className="text-sm font-medium">{step.label}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {step.total} ejecuciones
+                      {config.credits > 0 && (
+                        <span className="text-emerald-600 ml-1">(+{config.credits} créditos c/u)</span>
+                      )}
+                    </p>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex justify-between text-xs mb-1">
+                      <span>{step.total} ejecuciones</span>
+                      <Badge variant="outline" className="text-xs">
+                        <Repeat className="w-3 h-3 mr-1" />Recurrente
+                      </Badge>
+                    </div>
+                    <Progress value={Math.min(100, percentage)} className="h-3" />
+                  </div>
+                  {step.credits > 0 && (
+                    <Badge variant="secondary" className="text-xs">{step.credits} créditos</Badge>
                   )}
                 </div>
               );
@@ -269,11 +307,16 @@ export const LawyerJourneyDashboard = () => {
       {/* Step Details */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {stepMetrics.map(step => (
-          <Card key={step.step}>
+          <Card key={step.step} className={step.isRecurring ? 'border-l-2 border-l-amber-400' : ''}>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <span>{step.emoji}</span>
                 {step.label}
+                {step.isRecurring && (
+                  <Badge className="text-xs bg-amber-100 text-amber-700">
+                    <Repeat className="w-3 h-3 mr-1" />Recurrente
+                  </Badge>
+                )}
                 <Badge variant="outline" className="ml-auto">{step.total}</Badge>
               </CardTitle>
             </CardHeader>
@@ -281,7 +324,7 @@ export const LawyerJourneyDashboard = () => {
               <div className="space-y-2 max-h-[200px] overflow-y-auto">
                 {step.lawyers.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-4">
-                    Ningún abogado ha llegado a este paso aún
+                    {step.isRecurring ? 'Sin ejecuciones aún' : 'Ningún abogado ha llegado a este paso aún'}
                   </p>
                 ) : (
                   step.lawyers.slice(0, 8).map((lawyer, i) => (

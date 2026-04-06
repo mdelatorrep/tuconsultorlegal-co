@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { 
   Heart, Users, TrendingUp, Activity,
   AlertTriangle, Mail, Calendar, UserMinus,
-  UserCheck, RefreshCw, ExternalLink
+  UserCheck, RefreshCw, ExternalLink, Zap
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, differenceInDays } from "date-fns";
@@ -25,6 +25,8 @@ interface LawyerEngagement {
   engagement_score: number;
   status: 'active' | 'at_risk' | 'churned';
   total_actions: number;
+  journeyStatus?: 'active' | 'none';
+  lastJourneyAction?: string;
 }
 
 interface CohortData {
@@ -62,16 +64,28 @@ export const RetentionDashboard = ({ onNavigate }: RetentionDashboardProps) => {
       const range90 = getColombiaPeriodRange(90);
       const range30 = getColombiaPeriodRange(30);
 
-      const [lawyerRes, txRes] = await Promise.all([
+      const [lawyerRes, txRes, journeyRes] = await Promise.all([
         supabase.from('lawyer_profiles').select('id, full_name, email, is_active, created_at'),
         supabase.from('credit_transactions').select('lawyer_id, created_at, transaction_type')
           .in('transaction_type', TOOL_USAGE_TYPES)
           .gte('created_at', range90.start).lt('created_at', range90.end),
+        supabase.from('lawyer_journey_tracking' as any)
+          .select('lawyer_id, journey_step, sent_at')
+          .in('journey_step', ['reengagement_at_risk', 'reengagement_critical', 'reengagement_churned']) as any,
       ]);
 
       const lawyerProfiles = lawyerRes.data || [];
       const transactions = txRes.data || [];
       const thirtyDayStart = new Date(range30.start);
+      // Build journey tracking map: lawyerId -> last action date
+      const journeyTracking = journeyRes.data || [];
+      const journeyMap = new Map<string, string>();
+      for (const jt of journeyTracking) {
+        const existing = journeyMap.get(jt.lawyer_id);
+        if (!existing || new Date(jt.sent_at) > new Date(existing)) {
+          journeyMap.set(jt.lawyer_id, jt.sent_at);
+        }
+      }
 
       const lawyerEngagements: LawyerEngagement[] = lawyerProfiles.map(lawyer => {
         const lawyerTxs = transactions.filter(t => t.lawyer_id === lawyer.id);
@@ -90,6 +104,9 @@ export const RetentionDashboard = ({ onNavigate }: RetentionDashboardProps) => {
         if (daysInactive > 30) status = 'churned';
         else if (daysInactive > 14) status = 'at_risk';
 
+        const lastJourneyAction = journeyMap.get(lawyer.id) || null;
+        const journeyActive = lastJourneyAction && differenceInDays(now, new Date(lastJourneyAction)) < 30;
+
         return {
           id: lawyer.id,
           full_name: lawyer.full_name,
@@ -98,7 +115,9 @@ export const RetentionDashboard = ({ onNavigate }: RetentionDashboardProps) => {
           days_inactive: daysInactive,
           engagement_score: engagementScore,
           status,
-          total_actions: lawyerTxs.length
+          total_actions: lawyerTxs.length,
+          journeyStatus: journeyActive ? 'active' as const : 'none' as const,
+          lastJourneyAction: lastJourneyAction || undefined,
         };
       });
 
@@ -284,6 +303,15 @@ export const RetentionDashboard = ({ onNavigate }: RetentionDashboardProps) => {
                     <p className="text-sm font-medium text-amber-600">{lawyer.days_inactive} días</p>
                     <p className="text-xs text-muted-foreground">sin actividad</p>
                   </div>
+                  {lawyer.journeyStatus === 'active' ? (
+                    <Badge className="text-xs bg-emerald-100 text-emerald-700 whitespace-nowrap">
+                      <Zap className="w-3 h-3 mr-1" />Journey activo
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-xs text-muted-foreground whitespace-nowrap">
+                      Sin acción
+                    </Badge>
+                  )}
                   <Button variant="ghost" size="sm" onClick={() => onNavigate?.('lawyers')}>
                     <ExternalLink className="w-4 h-4" />
                   </Button>
