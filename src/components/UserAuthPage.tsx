@@ -166,7 +166,7 @@ export default function UserAuthPage({ onBack, onAuthSuccess }: UserAuthPageProp
       if (error) {
         if (error.message.includes('User already registered')) {
           toast.error('Este email ya está registrado. Intenta iniciar sesión.');
-          setActiveTab('login');
+          // Registration disabled
         } else {
           toast.error(error.message);
         }
