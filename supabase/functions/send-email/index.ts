@@ -153,19 +153,23 @@ serve(async (req) => {
       console.log('SMTP connection established, sending email...');
 
       // Limpiar espacios en blanco al final de cada línea para evitar "=20" en quoted-printable
-      // y normalizar saltos de línea para cumplir con RFC 822
       const cleanedHtml = finalHtml
         .split('\n')
         .map(line => line.trimEnd())
-        .join('\n')
-        .replace(/(?<!\r)\n/g, '\r\n');
+        .join('\n');
 
-      // Enviar email
+      // Construir dirección From RFC 5322 compliant
+      const fromAddress = config.smtp_from_name 
+        ? `"${config.smtp_from_name.replace(/"/g, '\\"')}" <${config.smtp_from_email}>`
+        : config.smtp_from_email;
+
+      console.log(`Using From address: ${fromAddress}`);
+
+      // Enviar email - sin content:'auto' para evitar problemas con headers RFC 5322
       await client.send({
-        from: `${config.smtp_from_name} <${config.smtp_from_email}>`,
+        from: fromAddress,
         to: to,
         subject: finalSubject,
-        content: 'auto',
         html: cleanedHtml,
       });
 

@@ -189,7 +189,8 @@ serve(async (req) => {
           body: {
             to: lawyer.email,
             subject: `🎉 ¡Recibiste ${amount} créditos en Praxis Hub!`,
-            html: emailHtml
+            html: emailHtml,
+            recipient_type: 'lawyer'
           }
         });
         console.log(`[CREDITS-ADMIN] Motivational email sent to ${lawyer.email}`);
