@@ -1,0 +1,1 @@
+UPDATE auth.users SET email = 'contacto@praxis-hub.co', updated_at = now() WHERE id = '8a5d1d7f-3900-43cd-91cd-63bc5ce064c9';
