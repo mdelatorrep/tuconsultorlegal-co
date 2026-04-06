@@ -2827,6 +2827,7 @@ export type Database = {
           action_taken: string
           created_at: string
           id: string
+          is_recurring: boolean
           journey_step: string
           lawyer_id: string
           metadata: Json | null
@@ -2836,6 +2837,7 @@ export type Database = {
           action_taken?: string
           created_at?: string
           id?: string
+          is_recurring?: boolean
           journey_step: string
           lawyer_id: string
           metadata?: Json | null
@@ -2845,6 +2847,7 @@ export type Database = {
           action_taken?: string
           created_at?: string
           id?: string
+          is_recurring?: boolean
           journey_step?: string
           lawyer_id?: string
           metadata?: Json | null

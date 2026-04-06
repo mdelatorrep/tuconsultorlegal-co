@@ -1,0 +1,1 @@
+ALTER TABLE public.lawyer_journey_tracking ADD COLUMN IF NOT EXISTS is_recurring BOOLEAN NOT NULL DEFAULT false;
