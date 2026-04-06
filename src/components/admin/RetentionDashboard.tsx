@@ -64,11 +64,14 @@ export const RetentionDashboard = ({ onNavigate }: RetentionDashboardProps) => {
       const range90 = getColombiaPeriodRange(90);
       const range30 = getColombiaPeriodRange(30);
 
-      const [lawyerRes, txRes] = await Promise.all([
+      const [lawyerRes, txRes, journeyRes] = await Promise.all([
         supabase.from('lawyer_profiles').select('id, full_name, email, is_active, created_at'),
         supabase.from('credit_transactions').select('lawyer_id, created_at, transaction_type')
           .in('transaction_type', TOOL_USAGE_TYPES)
           .gte('created_at', range90.start).lt('created_at', range90.end),
+        supabase.from('lawyer_journey_tracking' as any)
+          .select('lawyer_id, journey_step, sent_at')
+          .in('journey_step', ['reengagement_at_risk', 'reengagement_critical', 'reengagement_churned']) as any,
       ]);
 
       const lawyerProfiles = lawyerRes.data || [];
