@@ -50,7 +50,7 @@ export default function UserAuthPage({ onBack, onAuthSuccess }: UserAuthPageProp
     if (hash.includes('access_token=') && hash.includes('type=signup')) {
       console.log('Email confirmation detected for user');
       setShowEmailConfirmedMessage(true);
-      setActiveTab('login');
+      // Registration disabled - user already on login tab
       
       // Mostrar toast de confirmación
       toast.success('¡Email confirmado exitosamente! Tu cuenta ha sido activada. Ahora puedes iniciar sesión.', {
