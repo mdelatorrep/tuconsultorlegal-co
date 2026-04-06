@@ -1018,6 +1018,9 @@ function AdminPage() {
       case 'retention':
         return <RetentionDashboard onNavigate={setCurrentView} />;
       
+      case 'journey':
+        return <LawyerJourneyDashboard />;
+      
       case 'strategic':
         return <StrategicDecisions onNavigate={setCurrentView} />;
       

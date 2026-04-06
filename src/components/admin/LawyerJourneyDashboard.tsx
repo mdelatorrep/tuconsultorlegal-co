@@ -51,8 +51,8 @@ export const LawyerJourneyDashboard = () => {
 
       // Get journey tracking data
       const { data: tracking } = await supabase
-        .from('lawyer_journey_tracking')
-        .select('journey_step, lawyer_id, sent_at, action_taken, metadata');
+        .from('lawyer_journey_tracking' as any)
+        .select('journey_step, lawyer_id, sent_at, action_taken, metadata') as any;
 
       // Get lawyer names for tracking
       const lawyerIds = [...new Set((tracking || []).map(t => t.lawyer_id))];
