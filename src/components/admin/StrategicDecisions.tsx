@@ -167,7 +167,7 @@ export const StrategicDecisions = ({ onNavigate }: StrategicDecisionsProps) => {
 
       // Analyze credits usage
       const creditPurchases = creditTxs.filter(t => t.transaction_type === 'purchase').length;
-      const creditConsumptions = creditTxs.filter(t => t.transaction_type === 'consumption').length;
+      const creditConsumptions = creditTxs.filter(t => t.transaction_type === 'usage' || t.transaction_type === 'consumption').length;
 
       if (creditConsumptions === 0 && creditPurchases === 0) {
         generatedInsights.push({
