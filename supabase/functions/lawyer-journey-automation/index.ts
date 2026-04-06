@@ -308,16 +308,18 @@ serve(async (req) => {
 
           // Grant bonus credits
           if (step.bonusCredits > 0) {
-            const { data: credits } = await supabase
+            const { data: credits, error: creditsReadErr } = await supabase
               .from('lawyer_credits')
               .select('current_balance, total_earned')
               .eq('lawyer_id', lawyer.id)
               .single();
 
-            if (credits) {
+            if (creditsReadErr) {
+              console.error(`[journey-automation] Credits read error for ${lawyer.email}:`, creditsReadErr.message);
+            } else if (credits) {
               const newBalance = credits.current_balance + step.bonusCredits;
               
-              await supabase
+              const { error: updateErr } = await supabase
                 .from('lawyer_credits')
                 .update({
                   current_balance: newBalance,
@@ -325,17 +327,25 @@ serve(async (req) => {
                 })
                 .eq('lawyer_id', lawyer.id);
 
-              await supabase
-                .from('credit_transactions')
-                .insert({
-                  lawyer_id: lawyer.id,
-                  transaction_type: 'journey_bonus',
-                  amount: step.bonusCredits,
-                  balance_after: newBalance,
-                  description: `Journey ${step.step}: ${step.bonusCredits} créditos bonus${step.recurring ? ' (recurrente)' : ''}`
-                });
+              if (updateErr) {
+                console.error(`[journey-automation] Credits update error for ${lawyer.email}:`, updateErr.message);
+              } else {
+                const { error: txErr } = await supabase
+                  .from('credit_transactions')
+                  .insert({
+                    lawyer_id: lawyer.id,
+                    transaction_type: 'journey_bonus',
+                    amount: step.bonusCredits,
+                    balance_after: newBalance,
+                    description: `Journey ${step.step}: ${step.bonusCredits} créditos bonus${step.recurring ? ' (recurrente)' : ''}`
+                  });
 
-              summary.credits_granted += step.bonusCredits;
+                if (txErr) {
+                  console.error(`[journey-automation] Transaction insert error:`, txErr.message);
+                } else {
+                  summary.credits_granted += step.bonusCredits;
+                }
+              }
             }
           }
 
@@ -348,7 +358,9 @@ serve(async (req) => {
             p_priority: step.notificationPriority
           });
 
-          if (!notifError) {
+          if (notifError) {
+            console.error(`[journey-automation] Notification error for ${lawyer.email}:`, notifError.message);
+          } else {
             summary.notifications_created++;
           }
 
@@ -367,7 +379,7 @@ serve(async (req) => {
           }
 
           // Record tracking
-          await supabase
+          const { error: trackingErr } = await supabase
             .from('lawyer_journey_tracking')
             .insert({
               lawyer_id: lawyer.id,
@@ -382,6 +394,10 @@ serve(async (req) => {
                 is_recurring: step.recurring
               }
             });
+
+          if (trackingErr) {
+            console.error(`[journey-automation] Tracking insert error for ${lawyer.email}:`, trackingErr.message);
+          }
 
         } catch (stepError) {
           console.error(`[journey-automation] Error on ${step.step} for ${lawyer.email}:`, stepError);
