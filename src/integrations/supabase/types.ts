@@ -2822,6 +2822,44 @@ export type Database = {
           },
         ]
       }
+      lawyer_journey_tracking: {
+        Row: {
+          action_taken: string
+          created_at: string
+          id: string
+          journey_step: string
+          lawyer_id: string
+          metadata: Json | null
+          sent_at: string
+        }
+        Insert: {
+          action_taken?: string
+          created_at?: string
+          id?: string
+          journey_step: string
+          lawyer_id: string
+          metadata?: Json | null
+          sent_at?: string
+        }
+        Update: {
+          action_taken?: string
+          created_at?: string
+          id?: string
+          journey_step?: string
+          lawyer_id?: string
+          metadata?: Json | null
+          sent_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lawyer_journey_tracking_lawyer_id_fkey"
+            columns: ["lawyer_id"]
+            isOneToOne: false
+            referencedRelation: "lawyer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lawyer_notifications: {
         Row: {
           action_url: string | null

@@ -38,6 +38,7 @@ import { ProcessMonitorAdmin } from "./admin/ProcessMonitorAdmin";
 import { LeadsAnalytics } from "./admin/LeadsAnalytics";
 import { StrategicDecisions } from "./admin/StrategicDecisions";
 import LawyerVerificationAdmin from "./admin/LawyerVerificationAdmin";
+import { LawyerJourneyDashboard } from "./admin/LawyerJourneyDashboard";
 import { AdminSpecializedAgents } from "./admin/AdminSpecializedAgents";
 import FeatureFlagsManager from "./admin/FeatureFlagsManager";
 import { UTMCampaignManager } from "./admin/UTMCampaignManager";
@@ -1017,6 +1018,9 @@ function AdminPage() {
       
       case 'retention':
         return <RetentionDashboard onNavigate={setCurrentView} />;
+      
+      case 'journey':
+        return <LawyerJourneyDashboard />;
       
       case 'strategic':
         return <StrategicDecisions onNavigate={setCurrentView} />;
