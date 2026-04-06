@@ -77,6 +77,15 @@ export const RetentionDashboard = ({ onNavigate }: RetentionDashboardProps) => {
       const lawyerProfiles = lawyerRes.data || [];
       const transactions = txRes.data || [];
       const thirtyDayStart = new Date(range30.start);
+      // Build journey tracking map: lawyerId -> last action date
+      const journeyTracking = journeyRes.data || [];
+      const journeyMap = new Map<string, string>();
+      for (const jt of journeyTracking) {
+        const existing = journeyMap.get(jt.lawyer_id);
+        if (!existing || new Date(jt.sent_at) > new Date(existing)) {
+          journeyMap.set(jt.lawyer_id, jt.sent_at);
+        }
+      }
 
       const lawyerEngagements: LawyerEngagement[] = lawyerProfiles.map(lawyer => {
         const lawyerTxs = transactions.filter(t => t.lawyer_id === lawyer.id);
