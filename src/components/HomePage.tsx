@@ -129,7 +129,7 @@ export default function HomePage({ onOpenChat, onNavigate }: HomePageProps) {
               <Button 
                 size="lg" 
                 className="bg-primary text-primary-foreground hover:bg-primary/90 px-8 py-6 text-base font-medium rounded-md transition-all duration-300"
-                onClick={() => onNavigate('auth')}
+                onClick={() => onNavigate('auth-abogados')}
               >
                 Crear Cuenta Gratis
                 <ArrowRight className="w-4 h-4 ml-2" />
