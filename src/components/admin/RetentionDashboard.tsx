@@ -284,7 +284,7 @@ export const RetentionDashboard = ({ onNavigate }: RetentionDashboardProps) => {
                     <p className="text-sm font-medium text-amber-600">{lawyer.days_inactive} días</p>
                     <p className="text-xs text-muted-foreground">sin actividad</p>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => onNavigate?.(`lawyers?id=${lawyer.id}`)}>
+                  <Button variant="ghost" size="sm" onClick={() => onNavigate?.('lawyers')}>
                     <ExternalLink className="w-4 h-4" />
                   </Button>
                 </div>
