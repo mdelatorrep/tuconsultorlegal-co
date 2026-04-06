@@ -1,0 +1,1 @@
+UPDATE admin_accounts SET email = 'contacto@praxis-hub.co', updated_at = now() WHERE id = '549e8a6b-4622-4d44-9c1b-db766ecb83a3';
