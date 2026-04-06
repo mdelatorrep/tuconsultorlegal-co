@@ -1,49 +1,67 @@
 
 
-## Plan: Funnel AARRR con Filtros Temporales y Estadisticas de Metricas
+## Plan: Integrar Retención con Journey Automatizado (Re-engagement Recurrente)
 
-### Resumen
-Crear un nuevo componente `AARRRFunnelDashboard` dentro de Inteligencia de Negocio que muestre el funnel AARRR (Acquisition, Activation, Revenue, Retention, Referral) con filtros de periodo (diario, semanal, mensual, trimestral) y estadisticas detalladas por cada etapa.
+### Problema actual
+El journey solo tiene pasos basados en **fecha de registro** (day_1 a day_30) y cada paso se ejecuta una sola vez. Si un abogado activo deja de usar la plataforma después de sus primeros 30 días, no recibe ninguna acción automatizada, aunque el dashboard de retención lo marque como "en riesgo" o "churned".
 
-### Componente: `AARRRFunnelDashboard.tsx`
+### Solución
+Agregar **3 pasos recurrentes basados en inactividad real** al journey automatizado. A diferencia de los pasos de onboarding (que se ejecutan una vez), estos se pueden repetir cada N días usando un cooldown.
 
-**Filtros temporales** (tabs o select):
-- Hoy / Ultimos 7 dias / Ultimos 30 dias / Ultimos 90 dias / Custom range
+### Nuevos pasos del journey
 
-**Funnel visual AARRR** con barras horizontales proporcionales mostrando:
-1. **Acquisition**: Nuevos registros (lawyer_profiles created_at en periodo), leads generados (crm_leads)
-2. **Activation**: Abogados que usaron al menos 1 herramienta IA (credit_transactions type=consumption), completaron perfil (phone_number/specialization no null)
-3. **Revenue**: Documentos pagados (document_tokens status pagado/descargado), creditos comprados (credit_transactions type=purchase), valor total
-4. **Retention**: Abogados activos vs at_risk vs churned (basado en ultima actividad), tasa de retencion por periodo
-5. **Referral**: Referidos generados (lawyer_referrals), codigos usados
+| Paso | Trigger | Créditos | Cooldown | Prioridad |
+|------|---------|----------|----------|-----------|
+| `reengagement_at_risk` | 7-14 días sin uso de herramientas | 5 | 30 días | normal |
+| `reengagement_critical` | 15-29 días sin uso | 10 | 45 días | high |
+| `reengagement_churned` | 30+ días sin uso | 15 | 60 días | urgent |
 
-**Estadisticas por periodo** (cards comparativas):
-- Cada metrica AARRR muestra valor actual vs periodo anterior con % cambio
-- Tabla de tendencia con sparklines o mini-graficos
-- Desglose diario/semanal segun filtro seleccionado
+### Cambios necesarios
 
-**Datos consultados** (todas tablas existentes, sin migracion):
-- `lawyer_profiles` (registros, perfil completo)
-- `credit_transactions` (consumo, compras)
-- `document_tokens` (docs pagados)
-- `crm_leads` (leads)
-- `lawyer_referrals` (referidos)
+**1. Migración de base de datos**
+- Agregar columna `is_recurring` (boolean, default false) a `lawyer_journey_tracking` para distinguir pasos recurrentes de one-time.
+- Agregar 3 templates de email en `email_templates` para los nuevos pasos.
 
-### Cambios
+**2. Edge Function `lawyer-journey-automation/index.ts`**
+- Agregar interfaz extendida con campos `recurring: boolean` y `cooldownDays: number`.
+- Agregar los 3 nuevos pasos recurrentes al array `JOURNEY_STEPS`.
+- Para pasos recurrentes: en lugar de verificar si el paso ya existe en tracking, verificar si la última ejecución fue hace más de `cooldownDays` días.
+- La condición de cada paso calcula `daysSinceLastUsage` (basado en transacciones de tipo `usage`/`consumption`) en vez de `daysSinceRegistration`.
+- Crear alerta al admin cuando un abogado entra en estado `critical` o `churned`.
 
-| Archivo | Accion |
-|---------|--------|
-| `src/components/admin/AARRRFunnelDashboard.tsx` | Crear componente completo |
-| `src/components/admin/AdminSidebar.tsx` | Agregar item "Funnel AARRR" en seccion BI |
-| `src/components/AdminPage.tsx` | Agregar case 'aarrr-funnel' en renderCurrentView + import |
+**3. Dashboard de Journey `LawyerJourneyDashboard.tsx`**
+- Agregar los 3 nuevos pasos al `STEP_CONFIG` para que aparezcan en el funnel.
+- Mostrar badge "Recurrente" en pasos que se repiten.
+- Separar visualmente la sección de onboarding vs re-engagement en el funnel.
 
-### Diseno del componente
+**4. Dashboard de Retención `RetentionDashboard.tsx`**
+- Agregar indicador visual que muestre si un abogado en riesgo ya recibió una acción automatizada del journey (cruzando con `lawyer_journey_tracking`).
+- Agregar badge "Journey activo" / "Sin acción" junto a cada usuario en riesgo.
 
-- Header con selector de periodo (Tabs: Hoy / 7d / 30d / 90d)
-- Funnel visual: 5 barras horizontales con degradado, mostrando conversion entre etapas
-- Grid de KPI cards debajo: cada etapa AARRR con valor, cambio %, icono
-- Seccion de estadisticas detalladas expandibles por etapa
-- Comparativa periodo actual vs anterior (badge verde/rojo con %)
+### Flujo integrado
 
-No requiere migracion de base de datos - usa tablas existentes.
+```text
+Abogado deja de usar herramientas
+        │
+        ▼
+  7 días inactivo ──► reengagement_at_risk
+  (email + 5 créditos + notificación)
+        │
+        ▼ (sigue inactivo)
+  15 días inactivo ──► reengagement_critical  
+  (email + 10 créditos + alerta admin)
+        │
+        ▼ (sigue inactivo)
+  30 días inactivo ──► reengagement_churned
+  (email + 15 créditos + última oportunidad)
+        │
+        ▼ (cooldown cumplido, sigue inactivo)
+  Se repite el ciclo
+```
+
+### Archivos a modificar/crear
+1. **Migración SQL**: agregar `is_recurring` + insertar email templates
+2. **`supabase/functions/lawyer-journey-automation/index.ts`**: agregar pasos recurrentes con lógica de cooldown e inactividad real
+3. **`src/components/admin/LawyerJourneyDashboard.tsx`**: agregar nuevos pasos al dashboard con sección separada
+4. **`src/components/admin/RetentionDashboard.tsx`**: cruzar datos con journey tracking para mostrar estado de acciones automatizadas
 
