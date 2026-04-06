@@ -8,8 +8,9 @@ import {
   TrendingUp, TrendingDown, Coins, Activity, BarChart3,
   Zap, AlertCircle, CheckCircle
 } from "lucide-react";
-import { format, subDays } from "date-fns";
-import { es } from "date-fns/locale";
+import { getColombiaPeriodRange } from "@/lib/date-utils";
+
+const TOOL_USAGE_TYPES = ['usage', 'consumption'];
 
 interface ToolUsage {
   tool_type: string;
@@ -62,7 +63,6 @@ export const AIToolsAnalytics = () => {
     'copilot': 'Legal Copilot',
   };
 
-  // Map description keywords to tool types
   const descriptionToToolType: Record<string, string> = {
     'Redacción Legal': 'redaccion_legal',
     'Investigación Legal': 'investigacion_legal',
@@ -83,71 +83,53 @@ export const AIToolsAnalytics = () => {
   const loadToolAnalytics = async () => {
     setIsLoading(true);
     try {
-      const now = new Date();
-      const sevenDaysAgo = subDays(now, 7);
-      const thirtyDaysAgo = subDays(now, 30);
+      const range7 = getColombiaPeriodRange(7);
+      const range30 = getColombiaPeriodRange(30);
 
-      // Fetch tool costs configuration
-      const { data: costs } = await supabase
-        .from('credit_tool_costs')
-        .select('*')
-        .eq('is_active', true);
+      // Fetch tool costs and transactions in parallel
+      const [costsRes, txRes] = await Promise.all([
+        supabase.from('credit_tool_costs').select('*').eq('is_active', true),
+        supabase.from('credit_transactions').select('*')
+          .in('transaction_type', TOOL_USAGE_TYPES)
+          .gte('created_at', range30.start).lt('created_at', range30.end),
+      ]);
 
-      if (costs) {
-        setToolCosts(costs);
-      }
-
-      // Fetch credit transactions (which represent tool usage)
-      // Using 'usage' transaction_type which is what the app actually uses
-      const { data: transactions } = await supabase
-        .from('credit_transactions')
-        .select('*')
-        .eq('transaction_type', 'usage')
-        .gte('created_at', thirtyDaysAgo.toISOString());
+      if (costsRes.data) setToolCosts(costsRes.data);
+      const transactions = txRes.data || [];
 
       // Calculate usage by tool type
       const usageByTool: Record<string, { uses_7d: number; uses_30d: number; credits: number }> = {};
-
-      // Initialize all known tools
       Object.keys(toolNames).forEach(tool => {
         usageByTool[tool] = { uses_7d: 0, uses_30d: 0, credits: 0 };
       });
 
-      // Helper function to extract tool type from description
       const getToolTypeFromDescription = (description: string | null): string => {
         if (!description) return 'unknown';
         for (const [keyword, toolType] of Object.entries(descriptionToToolType)) {
-          if (description.includes(keyword)) {
-            return toolType;
-          }
+          if (description.includes(keyword)) return toolType;
         }
         return 'unknown';
       };
 
-      // Count transactions
-      transactions?.forEach(tx => {
+      const sevenDayStart = new Date(range7.start);
+
+      transactions.forEach(tx => {
         const toolType = getToolTypeFromDescription(tx.description);
         if (!usageByTool[toolType]) {
           usageByTool[toolType] = { uses_7d: 0, uses_30d: 0, credits: 0 };
         }
-
-        const txDate = new Date(tx.created_at);
         usageByTool[toolType].uses_30d++;
         usageByTool[toolType].credits += Math.abs(tx.amount);
-
-        if (txDate >= sevenDaysAgo) {
+        if (new Date(tx.created_at) >= sevenDayStart) {
           usageByTool[toolType].uses_7d++;
         }
       });
 
-      // Calculate totals
       const total_7d = Object.values(usageByTool).reduce((sum, t) => sum + t.uses_7d, 0);
       const total_30d = Object.values(usageByTool).reduce((sum, t) => sum + t.uses_30d, 0);
       const total_credits = Object.values(usageByTool).reduce((sum, t) => sum + t.credits, 0);
-
       setTotalUsage({ uses_7d: total_7d, uses_30d: total_30d, credits: total_credits });
 
-      // Convert to array with percentages and trends
       const toolUsageArray: ToolUsage[] = Object.entries(usageByTool)
         .map(([tool_type, data]) => ({
           tool_type,
@@ -162,12 +144,7 @@ export const AIToolsAnalytics = () => {
         .sort((a, b) => b.uses_30d - a.uses_30d);
 
       setToolUsages(toolUsageArray);
-
-      // Find unused tools
-      const unused = toolUsageArray
-        .filter(t => t.uses_30d === 0)
-        .map(t => t.tool_name);
-      setUnusedTools(unused);
+      setUnusedTools(toolUsageArray.filter(t => t.uses_30d === 0).map(t => t.tool_name));
 
     } catch (error) {
       console.error('Error loading tool analytics:', error);
@@ -186,7 +163,6 @@ export const AIToolsAnalytics = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h2 className="text-2xl font-bold flex items-center gap-2">
           <Brain className="w-6 h-6" />
@@ -197,7 +173,6 @@ export const AIToolsAnalytics = () => {
         </p>
       </div>
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-6">
@@ -245,7 +220,6 @@ export const AIToolsAnalytics = () => {
         </Card>
       </div>
 
-      {/* Unused Tools Alert */}
       {unusedTools.length > 0 && (
         <Card className="border-l-4 border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/20">
           <CardContent className="p-4">
@@ -253,9 +227,7 @@ export const AIToolsAnalytics = () => {
               <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
               <div>
                 <p className="font-medium">Herramientas sin uso en los últimos 30 días</p>
-                <p className="text-sm text-muted-foreground">
-                  {unusedTools.join(', ')}
-                </p>
+                <p className="text-sm text-muted-foreground">{unusedTools.join(', ')}</p>
                 <p className="text-xs text-muted-foreground mt-1">
                   Considera promocionar estas herramientas o revisar si son necesarias.
                 </p>
@@ -265,14 +237,11 @@ export const AIToolsAnalytics = () => {
         </Card>
       )}
 
-      {/* Tools Usage Table */}
       <Card>
-        <CardHeader>
-          <CardTitle>Uso por Herramienta</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle>Uso por Herramienta</CardTitle></CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {toolUsages.map((tool, index) => {
+            {toolUsages.map((tool) => {
               const Icon = tool.icon;
               const isGrowing = tool.trend > 0;
               return (
@@ -286,7 +255,6 @@ export const AIToolsAnalytics = () => {
                       <p className="text-xs text-muted-foreground">{tool.tool_type}</p>
                     </div>
                   </div>
-
                   <div className="flex-1 grid grid-cols-4 gap-4 text-center">
                     <div>
                       <p className="text-lg font-bold">{tool.uses_7d}</p>
@@ -311,7 +279,6 @@ export const AIToolsAnalytics = () => {
                       </span>
                     </div>
                   </div>
-
                   <div className="w-32">
                     <Progress value={tool.percentage} className="h-2" />
                     <p className="text-xs text-muted-foreground text-center mt-1">
@@ -325,7 +292,6 @@ export const AIToolsAnalytics = () => {
         </CardContent>
       </Card>
 
-      {/* Tool Costs Configuration */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
