@@ -43,6 +43,7 @@ import { AdminSpecializedAgents } from "./admin/AdminSpecializedAgents";
 import FeatureFlagsManager from "./admin/FeatureFlagsManager";
 import { UTMCampaignManager } from "./admin/UTMCampaignManager";
 import { BugReportsManager } from "./admin/BugReportsManager";
+import { AARRRFunnelDashboard } from "./admin/AARRRFunnelDashboard";
 import {
   Copy, Users, Bot, BarChart3, Clock, CheckCircle, Lock, Unlock, Trash2, Check, X, Plus, RefreshCw, 
   Loader2, MessageCircle, BookOpen, Settings, Zap, Mail, Phone, Bell, LogOut, UserCheck, 
@@ -1021,6 +1022,9 @@ function AdminPage() {
       
       case 'journey':
         return <LawyerJourneyDashboard />;
+      
+      case 'aarrr-funnel':
+        return <AARRRFunnelDashboard />;
       
       case 'strategic':
         return <StrategicDecisions onNavigate={setCurrentView} />;

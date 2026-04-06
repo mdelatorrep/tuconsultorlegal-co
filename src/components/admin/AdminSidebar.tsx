@@ -45,6 +45,7 @@ export const AdminSidebar = ({
         { id: 'journey', label: 'Journey Automatizado', icon: Zap, count: 0 },
         { id: 'strategic', label: 'Decisiones Estratégicas', icon: Target, count: 0 },
         { id: 'utm-campaigns', label: 'UTM & Campañas', icon: Link, count: 0 },
+        { id: 'aarrr-funnel', label: 'Funnel AARRR', icon: Activity, count: 0 },
       ]
     },
     {
