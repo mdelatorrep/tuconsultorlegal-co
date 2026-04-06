@@ -22,7 +22,7 @@ interface UserAuthPageProps {
 export default function UserAuthPage({ onBack, onAuthSuccess }: UserAuthPageProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [activeTab, setActiveTab] = useState('login');
+  const [activeTab] = useState('login');
   const [showEmailConfirmedMessage, setShowEmailConfirmedMessage] = useState(false);
   const { logRegistrationTerms } = useTermsAudit();
   
