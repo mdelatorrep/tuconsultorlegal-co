@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { todayColombia } from "../_shared/colombia-tz.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -61,13 +62,15 @@ serve(async (req) => {
     let totalXpEarned = progress.total_xp_earned || 0;
     let gamificationRewards: any[] = [];
 
-    const today = new Date().toISOString().split('T')[0];
+    // Use Colombian timezone for date comparisons
+    const today = todayColombia();
 
     // Update streak
     if (lastTrainingDate !== today) {
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      // Calculate yesterday in Colombia timezone
+      const colNow = new Date(Date.now() + (-5 * 60 * 60 * 1000));
+      const colYesterday = new Date(colNow.getTime() - 24 * 60 * 60 * 1000);
+      const yesterdayStr = colYesterday.toISOString().split('T')[0];
       
       if (lastTrainingDate === yesterdayStr) {
         trainingStreak += 1;
@@ -84,11 +87,9 @@ serve(async (req) => {
         const totalModules = 5;
         updatedPercentage = Math.round((updatedModules.length / totalModules) * 100);
         
-        // Award XP for completing module
         const moduleXP = 25;
         totalXpEarned += moduleXP;
 
-        // Trigger gamification rewards
         if (updatedModules.length === 1) {
           gamificationRewards.push({ task_key: 'complete_first_module', xp: 15 });
         }

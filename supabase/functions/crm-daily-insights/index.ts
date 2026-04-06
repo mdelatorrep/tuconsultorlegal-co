@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { nowColombia, todayColombia, startOfTodayColombia } from "../_shared/colombia-tz.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -21,15 +22,15 @@ serve(async (req) => {
       );
     }
 
-    console.log(`[CRM-DAILY-INSIGHTS] Calculating metrics for lawyer: ${lawyerId}`);
+    console.log(`[CRM-DAILY-INSIGHTS] Calculating metrics for lawyer: ${lawyerId} (Colombia GMT-5)`);
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Fetch all data in parallel
-    const today = new Date();
-    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    // Use Colombian timezone for date calculations
+    const colombiaNow = nowColombia();
+    const startOfMonth = new Date(Date.UTC(colombiaNow.getUTCFullYear(), colombiaNow.getUTCMonth(), 1, 5, 0, 0)); // 1st of month 00:00 COT = 05:00 UTC
 
     const [casesResult, leadsResult, clientsResult, tasksResult] = await Promise.all([
       supabase.from('crm_cases').select('*').eq('lawyer_id', lawyerId),
@@ -47,16 +48,14 @@ serve(async (req) => {
     const activeCases = cases.filter(c => c.status === 'active');
     const pipelineValue = activeCases.reduce((sum, c) => sum + (Number(c.expected_value) || 0), 0);
     
-    // Leads metrics
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    // Leads metrics - 7 days ago in Colombia
+    const sevenDaysAgo = new Date(colombiaNow.getTime() - 7 * 24 * 60 * 60 * 1000);
     const leadsNew = leads.filter(l => l.status === 'new' && new Date(l.created_at) >= sevenDaysAgo).length;
     const leadsConverted = leads.filter(l => l.status === 'converted' && new Date(l.updated_at) >= startOfMonth).length;
     
     // Client metrics
     const activeClients = clients.filter(c => c.status === 'active').length;
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const thirtyDaysAgo = new Date(colombiaNow.getTime() - 30 * 24 * 60 * 60 * 1000);
     const clientsAtRisk = clients.filter(c => {
       const lastContact = c.last_contact_date ? new Date(c.last_contact_date) : null;
       const healthScore = c.health_score || 100;
@@ -65,10 +64,9 @@ serve(async (req) => {
       return healthScore < 40;
     }).length;
 
-    // Task metrics
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const tasksOverdue = tasks.filter(t => t.due_date && new Date(t.due_date) < todayStart).length;
+    // Task metrics - use Colombia start of today
+    const todayStartUtc = startOfTodayColombia();
+    const tasksOverdue = tasks.filter(t => t.due_date && new Date(t.due_date) < todayStartUtc).length;
     const tasksPending = tasks.length;
 
     // Case metrics
@@ -103,15 +101,15 @@ serve(async (req) => {
       cases_lost: casesLost,
       tasks_pending: tasksPending,
       tasks_overdue: tasksOverdue,
-      revenue_collected: 0, // Would need billing integration
-      revenue_pending: pipelineValue * 0.3, // Estimate
+      revenue_collected: 0,
+      revenue_pending: pipelineValue * 0.3,
       avg_client_health: Math.round(avgClientHealth * 100) / 100,
       avg_case_health: Math.round(avgCaseHealth * 100) / 100,
       win_rate: winRate
     };
 
-    // Upsert daily metrics
-    const metricDate = today.toISOString().split('T')[0];
+    // Upsert daily metrics using Colombia date
+    const metricDate = todayColombia();
     const { error: upsertError } = await supabase
       .from('crm_daily_metrics')
       .upsert({
