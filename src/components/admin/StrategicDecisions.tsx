@@ -93,14 +93,13 @@ export const StrategicDecisions = ({ onNavigate }: StrategicDecisionsProps) => {
   const generateInsights = async () => {
     setIsLoading(true);
     try {
-      const now = new Date();
-      const thirtyDaysAgo = subDays(now, 30);
+      const range30 = getColombiaPeriodRange(30);
 
       // Fetch various data points in parallel
       const [lawyersResult, documentsResult, creditTxsResult, leadsResult, agentsResult] = await Promise.all([
         supabase.from('lawyer_profiles').select('id, is_active, created_at'),
         supabase.from('document_tokens').select('id, status, price, created_at'),
-        supabase.from('credit_transactions').select('*').gte('created_at', thirtyDaysAgo.toISOString()),
+        supabase.from('credit_transactions').select('*').gte('created_at', range30.start).lt('created_at', range30.end),
         supabase.from('crm_leads').select('id, status, created_at'),
         supabase.from('legal_agents').select('id, status, created_at')
       ]);

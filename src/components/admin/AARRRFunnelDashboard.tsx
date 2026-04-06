@@ -67,8 +67,8 @@ export function AARRRFunnelDashboard() {
     queryKey: ["aarrr-activation", period],
     queryFn: async () => {
       const [used, prevUsed, profile, prevProfile] = await Promise.all([
-        supabase.from("credit_transactions").select("lawyer_id", { count: "exact", head: false }).eq("transaction_type", "consumption").gte("created_at", range.start).lt("created_at", range.end),
-        supabase.from("credit_transactions").select("lawyer_id", { count: "exact", head: false }).eq("transaction_type", "consumption").gte("created_at", range.prevStart).lt("created_at", range.prevEnd),
+        supabase.from("credit_transactions").select("lawyer_id", { count: "exact", head: false }).in("transaction_type", ["usage", "consumption"]).gte("created_at", range.start).lt("created_at", range.end),
+        supabase.from("credit_transactions").select("lawyer_id", { count: "exact", head: false }).in("transaction_type", ["usage", "consumption"]).gte("created_at", range.prevStart).lt("created_at", range.prevEnd),
         supabase.from("lawyer_profiles").select("id", { count: "exact", head: true }).not("phone_number", "is", null).not("specialization", "is", null).gte("created_at", range.start).lt("created_at", range.end),
         supabase.from("lawyer_profiles").select("id", { count: "exact", head: true }).not("phone_number", "is", null).not("specialization", "is", null).gte("created_at", range.prevStart).lt("created_at", range.prevEnd),
       ]);
