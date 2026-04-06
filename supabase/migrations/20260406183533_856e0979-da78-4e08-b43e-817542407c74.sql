@@ -1,0 +1,2 @@
+ALTER TABLE public.lawyer_journey_tracking DROP CONSTRAINT lawyer_journey_tracking_journey_step_check;
+ALTER TABLE public.lawyer_journey_tracking ADD CONSTRAINT lawyer_journey_tracking_journey_step_check CHECK (journey_step = ANY (ARRAY['day_1','day_3','day_7','day_14','day_30','reengagement_at_risk','reengagement_critical','reengagement_churned']));
