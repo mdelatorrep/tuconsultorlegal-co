@@ -25,6 +25,8 @@ interface LawyerEngagement {
   engagement_score: number;
   status: 'active' | 'at_risk' | 'churned';
   total_actions: number;
+  journeyStatus?: 'active' | 'none';
+  lastJourneyAction?: string;
 }
 
 interface CohortData {
