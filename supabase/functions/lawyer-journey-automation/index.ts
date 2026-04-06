@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
+import { nowColombia, todayColombia, currentYearColombia } from "../_shared/colombia-tz.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -30,7 +31,7 @@ const JOURNEY_STEPS: JourneyStep[] = [
     notificationTitle: '🚀 Tip: Usa tu primera herramienta IA',
     notificationMessage: 'Te hemos otorgado 5 créditos de activación. Explora el análisis legal IA para empezar.',
     notificationPriority: 'normal',
-    condition: () => true, // Always send
+    condition: () => true,
   },
   {
     step: 'day_3',
@@ -79,7 +80,7 @@ const JOURNEY_STEPS: JourneyStep[] = [
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       )[0];
       const daysSinceLastActivity = Math.floor(
-        (Date.now() - new Date(lastTx.created_at).getTime()) / (1000 * 60 * 60 * 24)
+        (nowColombia().getTime() - new Date(lastTx.created_at).getTime()) / (1000 * 60 * 60 * 24)
       );
       return daysSinceLastActivity > 14;
     },
@@ -100,7 +101,7 @@ const JOURNEY_STEPS: JourneyStep[] = [
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       )[0];
       const daysSinceLastActivity = Math.floor(
-        (Date.now() - new Date(lastTx.created_at).getTime()) / (1000 * 60 * 60 * 24)
+        (nowColombia().getTime() - new Date(lastTx.created_at).getTime()) / (1000 * 60 * 60 * 24)
       );
       return daysSinceLastActivity > 30;
     },
@@ -117,9 +118,8 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    console.log('[journey-automation] Starting journey automation run...');
+    console.log('[journey-automation] Starting journey automation run (Colombia GMT-5)...');
 
-    // Fetch all active lawyers
     const { data: lawyers, error: lawyersError } = await supabase
       .from('lawyer_profiles')
       .select('id, full_name, email, phone_number, specialization, created_at, is_active')
@@ -127,7 +127,6 @@ serve(async (req) => {
 
     if (lawyersError) throw lawyersError;
 
-    // Fetch existing journey tracking records
     const { data: existingTracking } = await supabase
       .from('lawyer_journey_tracking')
       .select('lawyer_id, journey_step');
@@ -136,7 +135,6 @@ serve(async (req) => {
       (existingTracking || []).map(t => `${t.lawyer_id}:${t.journey_step}`)
     );
 
-    // Fetch all credit transactions (last 90 days)
     const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
     const { data: allTransactions } = await supabase
       .from('credit_transactions')
@@ -144,28 +142,23 @@ serve(async (req) => {
       .gte('created_at', ninetyDaysAgo);
 
     const summary = { emails_sent: 0, credits_granted: 0, notifications_created: 0, errors: 0 };
+    const colombiaNow = nowColombia();
 
     for (const lawyer of (lawyers || [])) {
       const daysSinceRegistration = Math.floor(
-        (Date.now() - new Date(lawyer.created_at).getTime()) / (1000 * 60 * 60 * 24)
+        (colombiaNow.getTime() - new Date(lawyer.created_at).getTime()) / (1000 * 60 * 60 * 24)
       );
 
       const lawyerTransactions = (allTransactions || []).filter(t => t.lawyer_id === lawyer.id);
 
       for (const step of JOURNEY_STEPS) {
-        // Check if already sent
         if (trackingSet.has(`${lawyer.id}:${step.step}`)) continue;
-
-        // Check if within the day range for this step
         if (daysSinceRegistration < step.daysMin || daysSinceRegistration > step.daysMax) continue;
-
-        // Check condition
         if (!step.condition(lawyer, lawyerTransactions)) continue;
 
         console.log(`[journey-automation] Processing ${step.step} for ${lawyer.email}`);
 
         try {
-          // 1. Send email
           const { data: template } = await supabase
             .from('email_templates')
             .select('subject, html_body')
@@ -176,7 +169,7 @@ serve(async (req) => {
           if (template) {
             const baseUrl = 'https://praxis-hub.co';
             const dashboardUrl = baseUrl + '/#abogados';
-            const currentYear = new Date().getFullYear().toString();
+            const currentYear = currentYearColombia().toString();
 
             let emailSubject = template.subject
               .replace(/\{\{lawyer_name\}\}/g, lawyer.full_name)
@@ -211,9 +204,7 @@ serve(async (req) => {
             }
           }
 
-          // 2. Grant bonus credits if any
           if (step.bonusCredits > 0) {
-            // Get current balance
             const { data: credits } = await supabase
               .from('lawyer_credits')
               .select('current_balance, total_earned')
@@ -245,7 +236,6 @@ serve(async (req) => {
             }
           }
 
-          // 3. Create in-app notification
           const { error: notifError } = await supabase.rpc('create_lawyer_notification', {
             p_lawyer_id: lawyer.id,
             p_notification_type: step.notificationType,
@@ -258,7 +248,6 @@ serve(async (req) => {
             summary.notifications_created++;
           }
 
-          // 4. Record in tracking table
           await supabase
             .from('lawyer_journey_tracking')
             .insert({
@@ -281,7 +270,6 @@ serve(async (req) => {
 
     console.log('[journey-automation] Run complete:', summary);
 
-    // Notify admin about the run
     const { data: adminProfile } = await supabase
       .from('admin_profiles')
       .select('email')

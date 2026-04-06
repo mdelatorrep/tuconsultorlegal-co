@@ -1,10 +1,13 @@
 /**
- * Business Hours SLA Calculator for Colombian Working Hours
+ * Business Hours SLA Calculator for Colombian Working Hours (GMT-5)
  * 
  * - Working hours: 8:00 AM - 6:00 PM (10 hours per day)
  * - Working days: Monday to Friday
  * - Excludes Colombian holidays from colombian_holidays table
+ * - All calculations use Colombian timezone (UTC-5)
  */
+
+import { toColombiaTime, getColombiaHour, getColombiaDay, formatDateColombia } from './colombia-tz.ts';
 
 export interface BusinessHoursConfig {
   workDayStartHour: number; // 8
@@ -19,53 +22,59 @@ const DEFAULT_CONFIG: BusinessHoursConfig = {
 };
 
 /**
- * Check if a date is a weekend (Saturday or Sunday)
+ * Check if a date is a weekend (Saturday or Sunday) in Colombian timezone
  */
 function isWeekend(date: Date): boolean {
-  const day = date.getDay();
-  return day === 0 || day === 6; // Sunday = 0, Saturday = 6
+  const day = getColombiaDay(date);
+  return day === 0 || day === 6;
 }
 
 /**
- * Check if a date is a Colombian holiday
+ * Check if a date is a Colombian holiday (comparing in Colombian timezone)
  */
 function isHoliday(date: Date, holidays: string[]): boolean {
-  const dateStr = date.toISOString().split('T')[0];
+  const dateStr = formatDateColombia(date);
   return holidays.includes(dateStr);
 }
 
 /**
- * Check if current time is within working hours
+ * Check if current time is within working hours (Colombian timezone)
  */
 function isWithinWorkingHours(date: Date, config: BusinessHoursConfig): boolean {
-  const hour = date.getHours();
+  const hour = getColombiaHour(date);
   return hour >= config.workDayStartHour && hour < config.workDayEndHour;
 }
 
 /**
- * Get the next working day start time
+ * Get the next working day start time (in UTC, but representing Colombia 8AM)
  */
 function getNextWorkDayStart(date: Date, holidays: string[], config: BusinessHoursConfig): Date {
-  const result = new Date(date);
-  result.setHours(config.workDayStartHour, 0, 0, 0);
-  
-  // Move to next day
-  result.setDate(result.getDate() + 1);
+  // Convert to Colombia time to manipulate days
+  const colDate = toColombiaTime(date);
+  // Move to next day at work start hour in Colombia
+  const nextDay = new Date(Date.UTC(
+    colDate.getUTCFullYear(),
+    colDate.getUTCMonth(),
+    colDate.getUTCDate() + 1,
+    config.workDayStartHour + 5, 0, 0, 0 // +5 to convert Colombia hour to UTC
+  ));
   
   // Skip weekends and holidays
+  let result = nextDay;
   while (isWeekend(result) || isHoliday(result, holidays)) {
-    result.setDate(result.getDate() + 1);
+    result = new Date(result.getTime() + 24 * 60 * 60 * 1000);
   }
   
   return result;
 }
 
 /**
- * Calculate remaining working hours in current day
+ * Calculate remaining working hours in current day (Colombian timezone)
  */
 function getRemainingHoursToday(date: Date, config: BusinessHoursConfig): number {
-  const hour = date.getHours();
-  const minutes = date.getMinutes();
+  const colDate = toColombiaTime(date);
+  const hour = colDate.getUTCHours();
+  const minutes = colDate.getUTCMinutes();
   
   if (hour < config.workDayStartHour) {
     return config.workHoursPerDay;
@@ -80,13 +89,7 @@ function getRemainingHoursToday(date: Date, config: BusinessHoursConfig): number
 }
 
 /**
- * Calculate SLA deadline based on business hours
- * 
- * @param startDate - When the SLA timer starts
- * @param slaHours - Number of business hours for SLA
- * @param holidays - Array of holiday dates in 'YYYY-MM-DD' format
- * @param config - Business hours configuration
- * @returns Deadline date
+ * Calculate SLA deadline based on business hours (Colombian timezone)
  */
 export function calculateBusinessHoursDeadline(
   startDate: Date,
@@ -101,19 +104,23 @@ export function calculateBusinessHoursDeadline(
   if (isWeekend(currentDate) || isHoliday(currentDate, holidays)) {
     currentDate = getNextWorkDayStart(currentDate, holidays, config);
   } else if (!isWithinWorkingHours(currentDate, config)) {
-    const hour = currentDate.getHours();
+    const hour = getColombiaHour(currentDate);
     if (hour < config.workDayStartHour) {
-      // Before work starts, set to work start time
-      currentDate.setHours(config.workDayStartHour, 0, 0, 0);
+      // Before work starts, set to work start time in Colombia (= startHour + 5 in UTC)
+      const colDate = toColombiaTime(currentDate);
+      currentDate = new Date(Date.UTC(
+        colDate.getUTCFullYear(),
+        colDate.getUTCMonth(),
+        colDate.getUTCDate(),
+        config.workDayStartHour + 5, 0, 0, 0
+      ));
     } else {
-      // After work ends, move to next working day
       currentDate = getNextWorkDayStart(currentDate, holidays, config);
     }
   }
   
   // Calculate deadline by adding business hours
   while (remainingHours > 0) {
-    // Skip non-working days
     if (isWeekend(currentDate) || isHoliday(currentDate, holidays)) {
       currentDate = getNextWorkDayStart(currentDate, holidays, config);
       continue;
@@ -122,11 +129,9 @@ export function calculateBusinessHoursDeadline(
     const hoursAvailableToday = getRemainingHoursToday(currentDate, config);
     
     if (remainingHours <= hoursAvailableToday) {
-      // SLA completes today
       currentDate.setTime(currentDate.getTime() + remainingHours * 60 * 60 * 1000);
       remainingHours = 0;
     } else {
-      // Use up today's hours and continue to next day
       remainingHours -= hoursAvailableToday;
       currentDate = getNextWorkDayStart(currentDate, holidays, config);
     }
@@ -195,7 +200,7 @@ export async function calculateSLADeadline(
   ]);
   
   console.log(`📅 Calculating SLA: ${slaHours} business hours from ${startDate.toISOString()}`);
-  console.log(`⏰ Working hours: ${config.workDayStartHour}:00 - ${config.workDayEndHour}:00`);
+  console.log(`⏰ Working hours: ${config.workDayStartHour}:00 - ${config.workDayEndHour}:00 (Colombia GMT-5)`);
   console.log(`🎉 Holidays loaded: ${holidays.length}`);
   
   const deadline = calculateBusinessHoursDeadline(startDate, slaHours, holidays, config);

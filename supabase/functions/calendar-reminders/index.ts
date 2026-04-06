@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { currentYearColombia } from "../_shared/colombia-tz.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -38,8 +39,8 @@ serve(async (req) => {
 
     for (const hours of reminderHours) {
       // Find events starting within this reminder window
-      const windowStart = new Date(now.getTime() + (hours * 60 - 30) * 60 * 1000); // hours - 30min
-      const windowEnd = new Date(now.getTime() + (hours * 60 + 30) * 60 * 1000);   // hours + 30min
+      const windowStart = new Date(now.getTime() + (hours * 60 - 30) * 60 * 1000);
+      const windowEnd = new Date(now.getTime() + (hours * 60 + 30) * 60 * 1000);
 
       const { data: events, error } = await supabase
         .from('legal_calendar_events')
@@ -61,7 +62,6 @@ serve(async (req) => {
         const lawyerId = event.lawyer_id;
 
         // Check if we already sent a reminder for this event+window
-        const reminderKey = `cal_reminder_${event.id}_${hours}h`;
         const { data: existingNotif } = await supabase
           .from('lawyer_notifications')
           .select('id')
@@ -102,8 +102,10 @@ serve(async (req) => {
         const eventTypeLabel = eventTypeLabels[event.event_type] || event.event_type;
 
         const title = `⏰ ${eventTypeLabel} ${timeLabel}`;
+        // Format date in Colombian locale with explicit timezone
         const message = `${event.title} - ${new Date(event.start_date).toLocaleDateString('es-CO', {
-          weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit'
+          weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit',
+          timeZone: 'America/Bogota'
         })}`;
 
         // 1. In-app notification
@@ -124,7 +126,6 @@ serve(async (req) => {
         // 2. Email notification
         if (emailEnabled) {
           try {
-            // Get lawyer name
             const { data: lawyer } = await supabase
               .from('lawyer_profiles')
               .select('full_name, email')
@@ -148,11 +149,12 @@ serve(async (req) => {
                     event_date: new Date(event.start_date).toLocaleDateString('es-CO', {
                       weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
                       hour: '2-digit', minute: '2-digit',
+                      timeZone: 'America/Bogota'
                     }),
                     event_type: eventTypeLabel,
                     event_description: event.description || '',
                     action_url: 'https://praxis-hub.co/#abogados?view=calendario',
-                    current_year: new Date().getFullYear().toString(),
+                    current_year: currentYearColombia().toString(),
                   },
                   recipient_type: 'lawyer',
                 }),
