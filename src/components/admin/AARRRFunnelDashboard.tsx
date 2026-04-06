@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { getColombiaPeriodRange } from "@/lib/date-utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,17 +24,8 @@ const PERIODS: { value: Period; label: string }[] = [
 ];
 
 function getDateRange(period: Period) {
-  const now = new Date();
   const days = period === "1d" ? 1 : period === "7d" ? 7 : period === "30d" ? 30 : 90;
-  const start = new Date(now.getTime() - days * 86400000);
-  const prevStart = new Date(start.getTime() - days * 86400000);
-  return {
-    start: start.toISOString(),
-    end: now.toISOString(),
-    prevStart: prevStart.toISOString(),
-    prevEnd: start.toISOString(),
-    days,
-  };
+  return getColombiaPeriodRange(days);
 }
 
 function pctChange(current: number, previous: number) {
@@ -56,10 +48,10 @@ export function AARRRFunnelDashboard() {
     queryKey: ["aarrr-acquisition", period],
     queryFn: async () => {
       const [reg, prevReg, leads, prevLeads] = await Promise.all([
-        supabase.from("lawyer_profiles").select("id", { count: "exact", head: true }).gte("created_at", range.start).lte("created_at", range.end),
-        supabase.from("lawyer_profiles").select("id", { count: "exact", head: true }).gte("created_at", range.prevStart).lte("created_at", range.prevEnd),
-        supabase.from("crm_leads").select("id", { count: "exact", head: true }).gte("created_at", range.start).lte("created_at", range.end),
-        supabase.from("crm_leads").select("id", { count: "exact", head: true }).gte("created_at", range.prevStart).lte("created_at", range.prevEnd),
+        supabase.from("lawyer_profiles").select("id", { count: "exact", head: true }).gte("created_at", range.start).lt("created_at", range.end),
+        supabase.from("lawyer_profiles").select("id", { count: "exact", head: true }).gte("created_at", range.prevStart).lt("created_at", range.prevEnd),
+        supabase.from("crm_leads").select("id", { count: "exact", head: true }).gte("created_at", range.start).lt("created_at", range.end),
+        supabase.from("crm_leads").select("id", { count: "exact", head: true }).gte("created_at", range.prevStart).lt("created_at", range.prevEnd),
       ]);
       return {
         registrations: reg.count ?? 0,
@@ -75,10 +67,10 @@ export function AARRRFunnelDashboard() {
     queryKey: ["aarrr-activation", period],
     queryFn: async () => {
       const [used, prevUsed, profile, prevProfile] = await Promise.all([
-        supabase.from("credit_transactions").select("lawyer_id", { count: "exact", head: false }).eq("transaction_type", "consumption").gte("created_at", range.start).lte("created_at", range.end),
-        supabase.from("credit_transactions").select("lawyer_id", { count: "exact", head: false }).eq("transaction_type", "consumption").gte("created_at", range.prevStart).lte("created_at", range.prevEnd),
-        supabase.from("lawyer_profiles").select("id", { count: "exact", head: true }).not("phone_number", "is", null).not("specialization", "is", null).gte("created_at", range.start).lte("created_at", range.end),
-        supabase.from("lawyer_profiles").select("id", { count: "exact", head: true }).not("phone_number", "is", null).not("specialization", "is", null).gte("created_at", range.prevStart).lte("created_at", range.prevEnd),
+        supabase.from("credit_transactions").select("lawyer_id", { count: "exact", head: false }).eq("transaction_type", "consumption").gte("created_at", range.start).lt("created_at", range.end),
+        supabase.from("credit_transactions").select("lawyer_id", { count: "exact", head: false }).eq("transaction_type", "consumption").gte("created_at", range.prevStart).lt("created_at", range.prevEnd),
+        supabase.from("lawyer_profiles").select("id", { count: "exact", head: true }).not("phone_number", "is", null).not("specialization", "is", null).gte("created_at", range.start).lt("created_at", range.end),
+        supabase.from("lawyer_profiles").select("id", { count: "exact", head: true }).not("phone_number", "is", null).not("specialization", "is", null).gte("created_at", range.prevStart).lt("created_at", range.prevEnd),
       ]);
       const uniqueUsers = new Set((used.data ?? []).map((r: any) => r.lawyer_id)).size;
       const prevUniqueUsers = new Set((prevUsed.data ?? []).map((r: any) => r.lawyer_id)).size;
@@ -96,10 +88,10 @@ export function AARRRFunnelDashboard() {
     queryKey: ["aarrr-revenue", period],
     queryFn: async () => {
       const [docs, prevDocs, purchases, prevPurchases] = await Promise.all([
-        supabase.from("document_tokens").select("id", { count: "exact", head: true }).in("status", ["pagado", "descargado"]).gte("created_at", range.start).lte("created_at", range.end),
-        supabase.from("document_tokens").select("id", { count: "exact", head: true }).in("status", ["pagado", "descargado"]).gte("created_at", range.prevStart).lte("created_at", range.prevEnd),
-        supabase.from("credit_transactions").select("amount").eq("transaction_type", "purchase").gte("created_at", range.start).lte("created_at", range.end),
-        supabase.from("credit_transactions").select("amount").eq("transaction_type", "purchase").gte("created_at", range.prevStart).lte("created_at", range.prevEnd),
+        supabase.from("document_tokens").select("id", { count: "exact", head: true }).in("status", ["pagado", "descargado"]).gte("created_at", range.start).lt("created_at", range.end),
+        supabase.from("document_tokens").select("id", { count: "exact", head: true }).in("status", ["pagado", "descargado"]).gte("created_at", range.prevStart).lt("created_at", range.prevEnd),
+        supabase.from("credit_transactions").select("amount").eq("transaction_type", "purchase").gte("created_at", range.start).lt("created_at", range.end),
+        supabase.from("credit_transactions").select("amount").eq("transaction_type", "purchase").gte("created_at", range.prevStart).lt("created_at", range.prevEnd),
       ]);
       const purchaseTotal = (purchases.data ?? []).reduce((s: number, r: any) => s + (r.amount || 0), 0);
       const prevPurchaseTotal = (prevPurchases.data ?? []).reduce((s: number, r: any) => s + (r.amount || 0), 0);
@@ -117,8 +109,8 @@ export function AARRRFunnelDashboard() {
     queryKey: ["aarrr-retention", period],
     queryFn: async () => {
       const { data: allLawyers } = await supabase.from("lawyer_profiles").select("id, created_at");
-      const { data: recentTx } = await supabase.from("credit_transactions").select("lawyer_id, created_at").gte("created_at", range.start).lte("created_at", range.end);
-      const { data: prevTx } = await supabase.from("credit_transactions").select("lawyer_id, created_at").gte("created_at", range.prevStart).lte("created_at", range.prevEnd);
+      const { data: recentTx } = await supabase.from("credit_transactions").select("lawyer_id, created_at").gte("created_at", range.start).lt("created_at", range.end);
+      const { data: prevTx } = await supabase.from("credit_transactions").select("lawyer_id, created_at").gte("created_at", range.prevStart).lt("created_at", range.prevEnd);
 
       const total = allLawyers?.length ?? 0;
       const activeNow = new Set((recentTx ?? []).map((r: any) => r.lawyer_id)).size;
@@ -143,8 +135,8 @@ export function AARRRFunnelDashboard() {
     queryKey: ["aarrr-referral", period],
     queryFn: async () => {
       const [refs, prevRefs] = await Promise.all([
-        supabase.from("lawyer_referrals").select("id", { count: "exact", head: true }).gt("referrals_count", 0).gte("created_at", range.start).lte("created_at", range.end),
-        supabase.from("lawyer_referrals").select("id", { count: "exact", head: true }).gt("referrals_count", 0).gte("created_at", range.prevStart).lte("created_at", range.prevEnd),
+        supabase.from("lawyer_referrals").select("id", { count: "exact", head: true }).gt("referrals_count", 0).gte("created_at", range.start).lt("created_at", range.end),
+        supabase.from("lawyer_referrals").select("id", { count: "exact", head: true }).gt("referrals_count", 0).gte("created_at", range.prevStart).lt("created_at", range.prevEnd),
       ]);
       return {
         referrals: refs.count ?? 0,
