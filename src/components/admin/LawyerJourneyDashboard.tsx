@@ -55,7 +55,7 @@ export const LawyerJourneyDashboard = () => {
         .select('journey_step, lawyer_id, sent_at, action_taken, metadata') as any;
 
       // Get lawyer names for tracking
-      const lawyerIds = [...new Set((tracking || []).map(t => t.lawyer_id))];
+      const lawyerIds: string[] = [...new Set((tracking || []).map((t: any) => t.lawyer_id))];
       const { data: lawyerProfiles } = await supabase
         .from('lawyer_profiles')
         .select('id, full_name, email')
