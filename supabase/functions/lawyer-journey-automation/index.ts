@@ -376,18 +376,9 @@ serve(async (req) => {
             summary.notifications_created++;
           }
 
-          // Send admin alert for critical/churned re-engagement
+          // Log admin alert for critical/churned re-engagement (admin already receives BCC)
           if (step.recurring && (step.step === 'reengagement_critical' || step.step === 'reengagement_churned')) {
-            const { data: adminProfile } = await supabase
-              .from('admin_profiles')
-              .select('email')
-              .eq('active', true)
-              .limit(1)
-              .single();
-
-            if (adminProfile) {
-              console.log(`[journey-automation] Admin alert: ${lawyer.full_name} entered ${step.step}`);
-            }
+            console.log(`[journey-automation] Admin alert (BCC): ${lawyer.full_name} entered ${step.step}`);
           }
 
           // Record tracking
