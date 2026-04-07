@@ -9,6 +9,7 @@ const corsHeaders = {
 
 interface SendEmailRequest {
   to: string;
+  bcc?: string;
   subject: string;
   html: string;
   template_key?: string;
