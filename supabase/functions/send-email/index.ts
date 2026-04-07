@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import nodemailer from "npm:nodemailer@6.9.16";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -25,6 +25,42 @@ function replaceVariables(text: string, variables: Record<string, string>): stri
     result = result.replace(regex, value || '');
   }
   return result;
+}
+
+function sanitizeHeaderValue(value: string | null | undefined): string {
+  return (value ?? '').replace(/[\r\n]+/g, ' ').trim();
+}
+
+function stripHtml(html: string): string {
+  return html
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n\n')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/\s+\n/g, '\n')
+    .replace(/\n\s+/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+}
+
+function getFromConfig(config: { smtp_from_email?: string | null; smtp_from_name?: string | null }) {
+  const address = sanitizeHeaderValue(config.smtp_from_email);
+  const name = sanitizeHeaderValue(config.smtp_from_name);
+
+  if (!address || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)) {
+    throw new Error('Invalid SMTP from email configuration');
+  }
+
+  return {
+    address,
+    name: name || undefined,
+  };
 }
 
 serve(async (req) => {
@@ -136,21 +172,16 @@ serve(async (req) => {
 
     try {
       console.log(`Connecting to SMTP server: ${config.smtp_host}:${config.smtp_port}`);
-      
-      // Crear cliente SMTP con denomailer (versión actualizada)
-      const client = new SMTPClient({
-        connection: {
-          hostname: config.smtp_host,
-          port: config.smtp_port,
-          tls: config.smtp_secure,
-          auth: {
-            username: config.smtp_user,
-            password: smtpPassword,
-          },
+
+      const transporter = nodemailer.createTransport({
+        host: config.smtp_host,
+        port: config.smtp_port,
+        secure: config.smtp_secure,
+        auth: {
+          user: config.smtp_user,
+          pass: smtpPassword,
         },
       });
-
-      console.log('SMTP connection established, sending email...');
 
       // Limpiar espacios en blanco al final de cada línea para evitar "=20" en quoted-printable
       const cleanedHtml = finalHtml
@@ -158,23 +189,28 @@ serve(async (req) => {
         .map(line => line.trimEnd())
         .join('\n');
 
-      // Construir dirección From RFC 5322 compliant
-      const fromAddress = config.smtp_from_name 
-        ? `"${config.smtp_from_name.replace(/"/g, '\\"')}" <${config.smtp_from_email}>`
-        : config.smtp_from_email;
+      const fromConfig = getFromConfig(config);
+      const sanitizedTo = sanitizeHeaderValue(to);
+      const sanitizedSubject = sanitizeHeaderValue(finalSubject);
+      const textVersion = stripHtml(cleanedHtml) || 'Mensaje de Praxis Hub';
 
-      console.log(`Using From address: ${fromAddress}`);
+      console.log(`Using From address: ${fromConfig.name ? `${fromConfig.name} <${fromConfig.address}>` : fromConfig.address}`);
 
-      // Enviar email - sin content:'auto' para evitar problemas con headers RFC 5322
-      await client.send({
-        from: fromAddress,
-        to: to,
-        subject: finalSubject,
+      await transporter.sendMail({
+        from: fromConfig,
+        sender: fromConfig,
+        replyTo: fromConfig.address,
+        to: sanitizedTo,
+        subject: sanitizedSubject,
         html: cleanedHtml,
+        text: textVersion,
+        envelope: {
+          from: fromConfig.address,
+          to: [sanitizedTo],
+        },
       });
 
-      // Cerrar conexión
-      await client.close();
+      transporter.close();
 
       console.log(`Email sent successfully to ${to}`);
       
