@@ -9,6 +9,7 @@ const corsHeaders = {
 
 interface SendEmailRequest {
   to: string;
+  bcc?: string;
   subject: string;
   html: string;
   template_key?: string;
@@ -75,7 +76,7 @@ serve(async (req) => {
     );
 
     const body: SendEmailRequest = await req.json();
-    const { to, subject, html, template_key, document_token_id, recipient_type, variables } = body;
+    const { to, bcc, subject, html, template_key, document_token_id, recipient_type, variables } = body;
 
     if (!to || !recipient_type) {
       return new Response(
@@ -196,7 +197,7 @@ serve(async (req) => {
 
       console.log(`Using From address: ${fromConfig.name ? `${fromConfig.name} <${fromConfig.address}>` : fromConfig.address}`);
 
-      await transporter.sendMail({
+      const mailOptions: any = {
         from: fromConfig,
         sender: fromConfig,
         replyTo: fromConfig.address,
@@ -208,7 +209,17 @@ serve(async (req) => {
           from: fromConfig.address,
           to: [sanitizedTo],
         },
-      });
+      };
+
+      if (bcc) {
+        const sanitizedBcc = sanitizeHeaderValue(bcc);
+        if (sanitizedBcc) {
+          mailOptions.bcc = sanitizedBcc;
+          mailOptions.envelope.to.push(sanitizedBcc);
+        }
+      }
+
+      await transporter.sendMail(mailOptions);
 
       transporter.close();
 

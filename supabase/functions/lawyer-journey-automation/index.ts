@@ -189,6 +189,17 @@ serve(async (req) => {
 
     console.log('[journey-automation] Starting journey automation run (Colombia GMT-5)...');
 
+    // Get admin email for BCC on all journey emails
+    const { data: adminProfile } = await supabase
+      .from('admin_profiles')
+      .select('email')
+      .eq('active', true)
+      .limit(1)
+      .single();
+
+    const adminBccEmail = adminProfile?.email || null;
+    console.log(`[journey-automation] Admin BCC: ${adminBccEmail || 'none'}`);
+
     const { data: lawyers, error: lawyersError } = await supabase
       .from('lawyer_profiles')
       .select('id, full_name, email, phone_number, specialization, created_at, is_active')
@@ -292,6 +303,7 @@ serve(async (req) => {
               },
               body: JSON.stringify({
                 to: lawyer.email,
+                ...(adminBccEmail ? { bcc: adminBccEmail } : {}),
                 subject: emailSubject,
                 html: emailHtml,
                 template_key: step.templateKey,
@@ -364,18 +376,9 @@ serve(async (req) => {
             summary.notifications_created++;
           }
 
-          // Send admin alert for critical/churned re-engagement
+          // Log admin alert for critical/churned re-engagement (admin already receives BCC)
           if (step.recurring && (step.step === 'reengagement_critical' || step.step === 'reengagement_churned')) {
-            const { data: adminProfile } = await supabase
-              .from('admin_profiles')
-              .select('email')
-              .eq('active', true)
-              .limit(1)
-              .single();
-
-            if (adminProfile) {
-              console.log(`[journey-automation] Admin alert: ${lawyer.full_name} entered ${step.step}`);
-            }
+            console.log(`[journey-automation] Admin alert (BCC): ${lawyer.full_name} entered ${step.step}`);
           }
 
           // Record tracking
