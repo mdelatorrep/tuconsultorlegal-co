@@ -189,6 +189,17 @@ serve(async (req) => {
 
     console.log('[journey-automation] Starting journey automation run (Colombia GMT-5)...');
 
+    // Get admin email for BCC on all journey emails
+    const { data: adminProfile } = await supabase
+      .from('admin_profiles')
+      .select('email')
+      .eq('active', true)
+      .limit(1)
+      .single();
+
+    const adminBccEmail = adminProfile?.email || null;
+    console.log(`[journey-automation] Admin BCC: ${adminBccEmail || 'none'}`);
+
     const { data: lawyers, error: lawyersError } = await supabase
       .from('lawyer_profiles')
       .select('id, full_name, email, phone_number, specialization, created_at, is_active')
