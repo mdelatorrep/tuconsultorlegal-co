@@ -303,6 +303,7 @@ serve(async (req) => {
               },
               body: JSON.stringify({
                 to: lawyer.email,
+                ...(adminBccEmail ? { bcc: adminBccEmail } : {}),
                 subject: emailSubject,
                 html: emailHtml,
                 template_key: step.templateKey,
