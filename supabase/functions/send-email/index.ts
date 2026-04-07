@@ -76,7 +76,7 @@ serve(async (req) => {
     );
 
     const body: SendEmailRequest = await req.json();
-    const { to, subject, html, template_key, document_token_id, recipient_type, variables } = body;
+    const { to, bcc, subject, html, template_key, document_token_id, recipient_type, variables } = body;
 
     if (!to || !recipient_type) {
       return new Response(
